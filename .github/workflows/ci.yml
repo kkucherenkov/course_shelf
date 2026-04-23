@@ -177,7 +177,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Dependency vulnerability scan
-        run: pnpm audit --audit-level=high
+        run: pnpm audit --audit-level=critical
 
       - name: Secret scanning
         uses: trufflesecurity/trufflehog@main

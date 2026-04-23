@@ -37,24 +37,11 @@ export default defineNuxtConfig({
       cookieKey: 'i18n_locale',
       redirectOn: 'root',
     },
-    // Opt out of the deprecated translation-directive optimizer. We use
-    // `$t()` / `t()` in `<template>`, not the `v-t` directive, so the
-    // optimizer has nothing to do and its warning is just noise.
-    // Will be removed entirely in @nuxtjs/i18n v10.
-    bundle: {
-      optimizeTranslationDirective: false,
-    },
   },
 
   css: ['~/assets/css/main.css'],
 
   vite: {
-    // Nuxt 4.4 ships Vite 7 via @nuxt/vite-builder; @tailwindcss/vite resolves
-    // against Vite 6 through @nuxt/ui's peer graph — the two Plugin type
-    // signatures diverged on `hotUpdate` between 6 and 7. Runtime is fine
-    // (both satisfy the plugin contract); only TS narrowing fails. Expected
-    // to clear once @nuxt/ui bumps to Vite 7 peer.
-    // @ts-expect-error Vite 6/7 Plugin type skew across the peer graph.
     plugins: [tailwindcss()],
     // Pre-bundle libs Vite would otherwise discover at runtime and trigger
     // a full dev-server reload for.

@@ -7,7 +7,9 @@ The only durable record of what Claude (or a human) is working on, what is block
 
 ## Rules
 
-1. **Before touching code**, push a new entry to the top of `active.md`:
+1. **Before touching code**, push a new entry to the top of `active.md` using
+   the template at [`templates/feature.md`](templates/feature.md). Minimal
+   example:
 
    ```md
    ## T-2026-04-18-001 — add booking endpoint
@@ -15,6 +17,9 @@ The only durable record of what Claude (or a human) is working on, what is block
    - Created: 2026-04-18
    - Owner: claude
    - Spec: [specs/features/booking-create.md](../features/booking-create.md)
+   - Goal: users can create a booking from the detail page.
+   - Spec diff: openapi.yaml — POST /api/v1/bookings
+   - Codegen impact: yes
    - Sub-steps:
      - [ ] extend openapi.yaml with POST /api/v1/bookings
      - [ ] regen clients

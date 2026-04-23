@@ -33,6 +33,49 @@ This repo codifies the guardrails that stop that drift at the source:
 - `.claude/` carries the project rules, subagent roster, and a handbook per
   domain. A fresh Claude Code session picks them up automatically.
 
+## Architecture at a glance
+
+```mermaid
+flowchart LR
+  subgraph clients[" "]
+    web["web<br/><sub>Nuxt 4 SPA · :3001</sub>"]
+    mobile["mobile<br/><sub>Flutter 3.41</sub>"]
+  end
+
+  subgraph backend_group[" "]
+    backend["backend<br/><sub>NestJS 11 · :3000/api/v1</sub>"]
+  end
+
+  subgraph infra["local stack · docker/compose.yml"]
+    postgres[("postgres<br/>:5432")]
+    redis[("redis<br/>:6379")]
+    centrifugo["centrifugo<br/>:8000"]
+    otel["grafana + otel-lgtm<br/>:3200"]
+  end
+
+  subgraph contracts["packages/specs — single source of truth"]
+    openapi["openapi.yaml"]
+    asyncapi["centrifugo.yaml"]
+  end
+
+  web -->|"api-client-ts"| backend
+  mobile -->|"api-client-dart"| backend
+  web -.->|"ws subscribe"| centrifugo
+  mobile -.->|"ws subscribe"| centrifugo
+  backend --> postgres
+  backend --> redis
+  backend -->|"publish"| centrifugo
+  backend -->|"OTLP"| otel
+
+  openapi -. "codegen" .-> web
+  openapi -. "codegen" .-> mobile
+  asyncapi -. "codegen" .-> web
+  asyncapi -. "codegen" .-> mobile
+```
+
+Wire contracts (`packages/specs`) are the single source of truth. Generated
+clients (`packages/api-client-{ts,dart}`) are read-only — codegen owns them.
+
 ## What's in the box
 
 ### Backend — `apps/backend`

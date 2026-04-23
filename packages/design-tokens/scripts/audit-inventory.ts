@@ -92,13 +92,13 @@ const flutterPascal = new Set(
 // Non-component folders we know about — exclude from drift checks.
 const flutterNonComponent = new Set(['AppTheme']);
 
-const vueMissingInInventory = [...vueFolders].filter((name) => !inventory.has(name)).sort();
+const vueMissingInInventory = [...vueFolders].filter((name) => !inventory.has(name)).toSorted();
 const inventoryMissingInVue = [...inventory]
   .filter((name) => !vueFolders.has(name) && !name.endsWith('State'))
-  .sort();
+  .toSorted();
 const flutterMissingInInventory = [...flutterPascal]
   .filter((name) => !inventory.has(name) && !flutterNonComponent.has(name))
-  .sort();
+  .toSorted();
 
 function report(title: string, list: string[]): boolean {
   if (list.length === 0) {

@@ -44,9 +44,8 @@ function themedBlock(themeName: ThemeName, tokens: TokenBundle): string {
 }
 
 export function emitScss(tokens: TokenBundle): string {
-  const sections: string[] = [BANNER, ''];
+  const sections: string[] = [BANNER, '', ':root {'];
 
-  sections.push(':root {');
 
   const { typography, spacing, radius, motion, color } = tokens;
 

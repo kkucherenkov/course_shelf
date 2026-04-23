@@ -4,45 +4,45 @@
   "globalEnv": ["NODE_ENV"],
   "tasks": {
     "build": {
-      "dependsOn": ["^build", "spec:codegen", "@app/design-tokens#build"],
+      "dependsOn": ["^build", "@app/specs#codegen", "@app/design-tokens#build"],
       "outputs": ["dist/**", ".output/**", ".nuxt/**", "build/**"],
       "inputs": ["$TURBO_DEFAULT$", "!**/*.md"]
     },
     "dev": {
-      "dependsOn": ["^spec:codegen", "@app/design-tokens#build"],
+      "dependsOn": ["@app/specs#codegen", "@app/design-tokens#build"],
       "cache": false,
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^spec:codegen", "@app/design-tokens#build"],
+      "dependsOn": ["@app/specs#codegen", "@app/design-tokens#build"],
       "outputs": []
     },
     "test": {
-      "dependsOn": ["^build", "spec:codegen", "@app/design-tokens#build"],
+      "dependsOn": ["^build", "@app/specs#codegen", "@app/design-tokens#build"],
       "outputs": ["coverage/**"]
     },
     "typecheck": {
-      "dependsOn": ["^build", "spec:codegen", "@app/design-tokens#build"],
+      "dependsOn": ["^build", "@app/specs#codegen", "@app/design-tokens#build"],
       "outputs": ["*.tsbuildinfo"]
     },
     "audit:components": {
       "cache": false,
       "outputs": []
     },
-    "spec:validate": {
+    "@app/specs#validate": {
       "outputs": []
     },
-    "spec:bundle": {
-      "dependsOn": ["spec:validate"],
+    "@app/specs#bundle": {
+      "dependsOn": ["@app/specs#validate"],
       "outputs": ["dist/**"]
     },
-    "spec:codegen": {
-      "dependsOn": ["spec:bundle"],
+    "@app/specs#codegen": {
+      "dependsOn": ["@app/specs#bundle"],
       "outputs": ["../api-client-ts/src/generated/**", "../api-client-dart/lib/generated/**"]
     },
-    "spec:contract-test": {
-      "cache": false,
-      "dependsOn": ["spec:bundle"]
+    "@app/specs#contract-test": {
+      "dependsOn": ["@app/specs#bundle"],
+      "cache": false
     },
     "@app/design-tokens#build": {
       "inputs": ["src/**", "../../specs/design/tokens/**"],

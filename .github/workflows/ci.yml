@@ -127,9 +127,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Bundle specs
-        run: pnpm spec:bundle
-
       - name: Regenerate clients
         run: pnpm spec:codegen
 

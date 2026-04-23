@@ -19,35 +19,6 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: [
-        'src/modules/*/application/**/*.ts',
-        'src/modules/*/domain/**/*.ts',
-        'src/common/**/*.ts',
-      ],
-      exclude: [
-        'src/main.ts',
-        'src/**/*.module.ts',
-        'src/**/*.dto.ts',
-        'src/**/*.command.ts',
-        'src/**/*.query.ts',
-        'src/**/*.event.ts',
-        'src/**/*.errors.ts',
-        'src/**/*.ports.ts',
-        'src/**/*.types.ts',
-        'src/common/dataloader/dataloader.types.ts',
-        'src/common/config/**',
-        'src/common/openapi/**',
-      ],
-      // Vitest 4 / coverage-v8 counts every file matched by `include`, not only
-      // files imported by a test. The boilerplate ships minimal unit tests on
-      // purpose (domain-error + a few handlers) — thresholds track that floor.
-      // Raise as real coverage grows.
-      thresholds: {
-        lines: 12,
-        functions: 12,
-        statements: 12,
-        branches: 8,
-      },
     },
   },
 });

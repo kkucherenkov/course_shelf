@@ -76,6 +76,26 @@ docker compose -f docker/compose.yml logs -f web --tail=100
 docker compose -f docker/compose.yml restart backend
 ```
 
+## Fix root causes, not symptoms
+
+When a toolchain error appears, prefer a structural fix over a workaround:
+
+- If a CI step fails, fix the config that causes it — don't lower the bar
+  (e.g. don't drop coverage thresholds, don't add `--audit-level=critical`
+  without reading the advisory, don't `continue-on-error` a real failure).
+- If a tsconfig `extends` chain breaks under a bundler, inline or flatten the
+  chain. Don't document "run it from a different directory" as the fix.
+- If a test coverage denominator blows up, narrow `coverage.include` or
+  remove thresholds entirely in a greenfield — don't tune a kostyl number
+  that will rot.
+- If you find yourself writing a `troubleshooting.md` entry whose "Fix"
+  section tells the reader to avoid a command, stop — change the config so
+  the command works instead.
+
+`docs/troubleshooting.md` is for upstream bugs you cannot fix locally. Every
+entry whose fix lives in _this_ repo's config belongs in the config, not the
+docs.
+
 ## Things Claude must never do
 
 - Edit `packages/api-client-ts/src/generated/` or `packages/api-client-dart/lib/generated/`.

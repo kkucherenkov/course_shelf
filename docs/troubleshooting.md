@@ -3,6 +3,11 @@
 Known gotchas for the toolchain this boilerplate pins. Every entry lists the
 symptom, the actual cause, and the fix. Updated as we hit new ones.
 
+**Rule of thumb:** if a workaround can be replaced by a structural fix (change
+the config, change the layout, pin a different version), fix it and delete the
+entry. This file is for genuinely upstream-recurring issues — not a graveyard
+of one-off bumps.
+
 ## Prisma 7 — `P1012: datasource url argument` on `prisma generate`
 
 **Symptom:**
@@ -23,17 +28,6 @@ export default defineConfig({
 ```
 Remove any `url = env("DATABASE_URL")` line from `schema.prisma`.
 
-## Prisma 7 — `--skip-generate` rejected
-
-**Symptom:** `prisma db push --skip-generate --accept-data-loss` fails with
-`unknown flag --skip-generate`.
-
-**Cause:** Prisma 7 removed the flag; `prisma generate` no longer runs as part
-of `db push`.
-
-**Fix:** Drop `--skip-generate` from scripts. Run `prisma generate` as a
-separate step when needed.
-
 ## Vite 8 — `TSCONFIG_ERROR` on `vitest` or build
 
 **Symptom:**
@@ -52,28 +46,6 @@ export default defineConfig({
   // …
 });
 ```
-
-## `@nuxtjs/i18n` — `optimizeTranslationDirective` does not exist
-
-**Symptom:** `nuxt typecheck` fails on `nuxt.config.ts` with
-`'optimizeTranslationDirective' does not exist in type`.
-
-**Cause:** The option was removed in a recent `@nuxtjs/i18n` release. Dependabot
-bumped past the removal.
-
-**Fix:** Delete the `bundle.optimizeTranslationDirective: false` block from
-`nuxt.config.ts`.
-
-## Vitest 4 — coverage drops to single digits
-
-**Symptom:** `pnpm test:coverage` passes tests but fails thresholds; coverage
-shows e.g. 14% lines where it used to be 60%+.
-
-**Cause:** Vitest 4 / `@vitest/coverage-v8` widened the denominator to include
-every file matched by `coverage.include`, not only files imported by a test.
-
-**Fix:** Lower thresholds to the new reality or narrow `coverage.include` to
-files you actually test. Don't add `coverage.all: false` — it's gone.
 
 ## `pnpm/action-setup@v6` — `Multiple versions of pnpm specified`
 
@@ -110,52 +82,6 @@ head: ${{ github.event.pull_request.head.sha || github.sha }}
 counts them anyway.
 
 **Fix:** Add `--excludePrivatePackages` to the invocation.
-
-## Codegen drift CI — `Missing .../dist/openapi.json`
-
-**Symptom:** `codegen-drift` CI job fails with `Missing /…/packages/specs/dist/openapi.json. Run pnpm ...bundle first.`
-
-**Cause:** `spec:codegen` needs `dist/openapi.json` from `spec:bundle`. A CI
-job that runs only `pnpm spec:codegen` on a fresh runner has no bundle.
-
-**Fix:** The root script now goes through turbo
-(`turbo run codegen --filter=@app/specs`), which chains
-`validate → bundle → codegen` automatically. If you forked before this change,
-either update to the turbo-based script or add an explicit `pnpm spec:bundle`
-step before codegen in your CI.
-
-## Docker compose — backend container unhealthy on first boot
-
-**Symptom:** `docker compose up -d` — backend stays `starting` forever, logs
-show `P3005: The database schema is not empty`.
-
-**Cause:** Greenfield repos have no migrations, but the backend was trying to
-run `prisma migrate deploy` against an empty history.
-
-**Fix:** `Dockerfile.dev` CMD uses `prisma db push` (declarative apply), not
-`migrate deploy`. If you fork and add real migrations later, switch back to
-`migrate deploy` in CMD.
-
-## Vite 8 / rolldown — `Tsconfig not found .../node_modules/tsconfig.base.json`
-
-**Symptom:** `pnpm --filter @app/ui build` (or root `pnpm typecheck` which
-triggers it via turbo `^build`) fails with:
-```
-Tsconfig not found /path/to/packages/ui/node_modules/tsconfig.base.json
-```
-
-**Cause:** Vite 8 uses rolldown, which resolves `extends` relatively without
-following pnpm symlinks. The chain
-`packages/ui/tsconfig.json → @app/tsconfig/vue-lib.json → ./base.json → ../../tsconfig.base.json`
-breaks at the last hop because rolldown resolves `../../` from the symlinked
-location in `node_modules`, not the real package directory.
-
-**Fix (workaround):** CI jobs use `pnpm typecheck` inside each app
-(`apps/backend`, `apps/web`) instead of root-level turbo, which dodges the
-bug. If you need root `pnpm build` locally, either:
-- Inline the relevant compiler options in `packages/tsconfig/base.json`
-  (stop extending the root `tsconfig.base.json`), or
-- Wait for a Vite 8 / rolldown fix upstream.
 
 ## Flutter — SDK version mismatch after upgrading macOS or Xcode
 

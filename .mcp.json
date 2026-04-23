@@ -1,0 +1,40 @@
+{
+  "$comment": "MCP server suggestions for this boilerplate — all entries are DISABLED by default. To enable a server, move it out of the `_disabled` stub and into `mcpServers`, replace env placeholders, and restart your agent client. Do NOT commit real credentials. The boilerplate ships this file so every clone gets the same starting menu.",
+
+  "mcpServers": {},
+
+  "_disabled": {
+    "$comment": "Uncomment by copying an entry into `mcpServers` above.",
+
+    "postgres": {
+      "$why": "Introspect the local Postgres container for schema-aware queries during feature work.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://app:app@localhost:5432/app"]
+    },
+
+    "playwright": {
+      "$why": "Drive a headless browser during e2e development; pair with tests/e2e/.",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    },
+
+    "filesystem-repo": {
+      "$why": "Read-only filesystem access scoped to this repo. Useful when the agent client lacks native file tools.",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${MCP_REPO_ROOT}"
+      ]
+    },
+
+    "github": {
+      "$why": "Query PRs, issues, and CI runs without shelling out to gh.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    }
+  }
+}

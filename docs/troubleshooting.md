@@ -136,6 +136,27 @@ run `prisma migrate deploy` against an empty history.
 `migrate deploy`. If you fork and add real migrations later, switch back to
 `migrate deploy` in CMD.
 
+## Vite 8 / rolldown — `Tsconfig not found .../node_modules/tsconfig.base.json`
+
+**Symptom:** `pnpm --filter @app/ui build` (or root `pnpm typecheck` which
+triggers it via turbo `^build`) fails with:
+```
+Tsconfig not found /path/to/packages/ui/node_modules/tsconfig.base.json
+```
+
+**Cause:** Vite 8 uses rolldown, which resolves `extends` relatively without
+following pnpm symlinks. The chain
+`packages/ui/tsconfig.json → @app/tsconfig/vue-lib.json → ./base.json → ../../tsconfig.base.json`
+breaks at the last hop because rolldown resolves `../../` from the symlinked
+location in `node_modules`, not the real package directory.
+
+**Fix (workaround):** CI jobs use `pnpm typecheck` inside each app
+(`apps/backend`, `apps/web`) instead of root-level turbo, which dodges the
+bug. If you need root `pnpm build` locally, either:
+- Inline the relevant compiler options in `packages/tsconfig/base.json`
+  (stop extending the root `tsconfig.base.json`), or
+- Wait for a Vite 8 / rolldown fix upstream.
+
 ## Flutter — SDK version mismatch after upgrading macOS or Xcode
 
 **Symptom:** `flutter analyze` or `flutter pub get` complains about Dart SDK

@@ -22,29 +22,26 @@ gantt
     Env scaffolding and dev docker-compose                       :active, e01f02s01, after e01f01s01, 1d
 
     section E02 API contracts as the spine
-    OpenAPI workspace, Spectral lint, bundle script              :active, e02f01s01, after e01f01s02, 1d
+    OpenAPI + AsyncAPI workspace, Spectral lint, bundle scripts  :active, e02f01s01, after e01f01s02, 1d
     Reusable error schema, security scheme, version prefix       :active, e02f01s02, after e02f01s01, 1d
-    Generate `@courseshelf/api-types` from the spec              :active, e02f02s01, after e02f01s02, 2d
-    Generate `@courseshelf/api-dtos-nest` with class-validator   :active, e02f02s02, after e02f01s02, 2d
-    Generate Dart Dio client                                     :active, e02f02s03, after e02f01s02, 2d
-    Aggregate `gen —all` and contract-test scaffold              :active, e02f02s04, after e02f02s01 e02f02s02 e02f02s03, 1d
+    Generate `@app/api-client-ts` from the spec                  :active, e02f02s01, after e02f01s02, 2d
+    Generate NestJS DTOs as `@app/api-client-ts/server` subpath  :active, e02f02s02, after e02f01s02, 2d
+    Generate Dart Dio client as `@app/api-client-dart`           :active, e02f02s03, after e02f01s02, 2d
+    `pnpm spec —codegen` aggregate + contract-test scaffold      :active, e02f02s04, after e02f02s01 e02f02s02 e02f02s03, 1d
 
     section E03 Design tokens
-    Import bundle tokens.json verbatim; wire Style Dictionary    :active, e03f01s01, after e00f01s01 e01f01s02, 2d
-    Vuetify and Flutter theme adapters + Foundations canvas      :active, e03f01s02, after e03f01s01, 2d
+    Import bundle tokens.json verbatim; wire custom design-token :active, e03f01s01, after e00f01s01 e01f01s02, 2d
+    Tailwind/Nuxt UI and Flutter theme adapters + Foundations ca :active, e03f01s02, after e03f01s01, 2d
 
     section E04 Backend skeleton + Better Auth
-    Bootstrap apps/api with Prisma and modules skeleton          :active, e04f01s01, after e02f02s04, 2d
+    Bootstrap apps/backend with Prisma, modules skeleton, and sh :active, e04f01s01, after e02f02s04, 2d
     `/healthz` and `/readyz` outside the OpenAPI spec            :active, e04f01s02, after e04f01s01, 1d
     Configure Better Auth with bearer + admin plugins            :active, e04f02s01, after e04f01s01, 2d
     Mount Better Auth + register global guard                    :active, e04f02s02, after e04f02s01, 1d
     Mount express-openapi-validator for /api/v1/*                :active, e04f02s03, after e04f02s02, 1d
 
-    section E05 Shared kernel
-    Branded ID + DomainError module                              :active, e05f01s01, after e01f01s02, 1d
-
     section E06 Catalog bounded context
-    Library aggregate + repository port                          :active, e06f01s01, after e04f02s03 e05f01s01, 2d
+    Library aggregate + repository port                          :active, e06f01s01, after e04f02s03, 2d
     Scan aggregate, FsAdapter, incremental scan                  :active, e06f02s01, after e06f01s01, 3d
     ffprobe + thumbnail extraction                               :active, e06f02s02, after e06f02s01, 2d
     Course aggregate + slug uniqueness + section ordering        :active, e06f03s01, after e06f02s01, 2d
@@ -60,7 +57,7 @@ gantt
     Subtitle delivery (SRT → VTT)                                :active, e08f02s02, after e06f03s02, 1d
 
     section E09 Learning
-    LessonProgress aggregate + record endpoint                   :active, e09f01s01, after e04f02s03 e05f01s01, 2d
+    LessonProgress aggregate + record endpoint                   :active, e09f01s01, after e04f02s03, 2d
     Batch progress endpoint for sync                             :active, e09f01s02, after e09f01s01, 1d
     Bookmarks endpoints                                          :active, e09f02s01, after e04f02s03, 1d
     Notes endpoints (one per user+lesson)                        :active, e09f02s02, after e04f02s03, 1d
@@ -69,12 +66,12 @@ gantt
     CourseProgressProjector + read model table                   :active, e10f01s01, after e06f03s02 e09f01s01, 2d
 
     section E11 Web foundations
-    Bootstrap Nuxt SPA with Vuetify and tokens                   :active, e11f01s01, after e03f01s02 e04f02s03, 2d
-    useApi, useAuth, useAuthToken composables                    :active, e11f01s02, after e11f01s01, 2d
-    useAuthStore + minimal login/setup pages                     :active, e11f01s03, after e11f01s02, 2d
+    Bootstrap Nuxt SPA with Nuxt UI v4, Tailwind 4, and tokens   :active, e11f01s01, after e03f01s02 e04f02s03, 2d
+    Wire @app/api-client-ts with bearer interceptor + auth store :active, e11f01s02, after e11f01s01, 2d
+    Auth store + minimal sign-in/setup pages                     :active, e11f01s03, after e11f01s02, 2d
 
     section E12 Storybook for web
-    Configure Storybook for Vue 3 + Vuetify + tokens             :active, e12f01s01, after e11f01s01, 1d
+    Configure Storybook for Vue 3 + Nuxt UI v4 + tokens          :active, e12f01s01, after e11f01s01, 1d
 
     section E13 Web component catalog
     IconCS — port the bundle's 61-icon family to Vue             :active, e13f01s01, after e12f01s01, 2d
@@ -176,6 +173,9 @@ gantt
     Seed ADRs (10 entries)                                       :active, e23f02s02, after e04f02s03, 2d
     Contributor docs covering the spec-first and design-first wo :active, e23f02s03, after e14f01s01, 2d
 
+    section E24 Realtime / Centrifugo
+    AsyncAPI Centrifugo channels + POST /api/v1/realtime/token   :active, e24f01s01, after e04f02s03, 2d
+
 ```
 
 ## Reading the chart
@@ -204,5 +204,5 @@ bundle while implementation continues on Stage A stories.
 
 This file (and every task file) is generated by
 `docs/roadmap/tools/generate.py` from a story registry. Edit story
-metadata in the script, then re-run the generator. Avoid hand-editing
-the chart — it'll get clobbered.
+metadata in the script, then re-run the generator. Avoid
+hand-editing the chart — it'll get clobbered.

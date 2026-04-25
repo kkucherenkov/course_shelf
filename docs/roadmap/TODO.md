@@ -20,33 +20,29 @@ Progress: `0 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E02 — API contracts as the spine
 
-- [ ] [E02-F01-S01](./tasks/E02-F01-S01.md) `A` — OpenAPI workspace, Spectral lint, bundle script · ⇐ E01-F01-S02
+- [ ] [E02-F01-S01](./tasks/E02-F01-S01.md) `A` — OpenAPI + AsyncAPI workspace, Spectral lint, bundle scripts · ⇐ E01-F01-S02
 - [ ] [E02-F01-S02](./tasks/E02-F01-S02.md) `A` — Reusable error schema, security scheme, version prefix · ⇐ E02-F01-S01
-- [ ] [E02-F02-S01](./tasks/E02-F02-S01.md) `A` — Generate `@courseshelf/api-types` from the spec · ⇐ E02-F01-S02
-- [ ] [E02-F02-S02](./tasks/E02-F02-S02.md) `A` — Generate `@courseshelf/api-dtos-nest` with class-validator · ⇐ E02-F01-S02
-- [ ] [E02-F02-S03](./tasks/E02-F02-S03.md) `A` — Generate Dart Dio client · ⇐ E02-F01-S02
-- [ ] [E02-F02-S04](./tasks/E02-F02-S04.md) `A` — Aggregate `gen:all` and contract-test scaffold · ⇐ E02-F02-S01, E02-F02-S02, E02-F02-S03
+- [ ] [E02-F02-S01](./tasks/E02-F02-S01.md) `A` — Generate `@app/api-client-ts` from the spec · ⇐ E02-F01-S02
+- [ ] [E02-F02-S02](./tasks/E02-F02-S02.md) `A` — Generate NestJS DTOs as `@app/api-client-ts/server` subpath · ⇐ E02-F01-S02
+- [ ] [E02-F02-S03](./tasks/E02-F02-S03.md) `A` — Generate Dart Dio client as `@app/api-client-dart` · ⇐ E02-F01-S02
+- [ ] [E02-F02-S04](./tasks/E02-F02-S04.md) `A` — `pnpm spec:codegen` aggregate + contract-test scaffold · ⇐ E02-F02-S01, E02-F02-S02, E02-F02-S03
 
 ## E03 — Design tokens
 
-- [ ] [E03-F01-S01](./tasks/E03-F01-S01.md) `A` — Import bundle tokens.json verbatim; wire Style Dictionary · ⇐ E00-F01-S01, E01-F01-S02
-- [ ] [E03-F01-S02](./tasks/E03-F01-S02.md) `A` — Vuetify and Flutter theme adapters + Foundations canvas · ⇐ E03-F01-S01
+- [ ] [E03-F01-S01](./tasks/E03-F01-S01.md) `A` — Import bundle tokens.json verbatim; wire custom design-tokens pipeline · ⇐ E00-F01-S01, E01-F01-S02
+- [ ] [E03-F01-S02](./tasks/E03-F01-S02.md) `A` — Tailwind/Nuxt UI and Flutter theme adapters + Foundations canvas · ⇐ E03-F01-S01
 
 ## E04 — Backend skeleton + Better Auth
 
-- [ ] [E04-F01-S01](./tasks/E04-F01-S01.md) `A` — Bootstrap apps/api with Prisma and modules skeleton · ⇐ E02-F02-S04
+- [ ] [E04-F01-S01](./tasks/E04-F01-S01.md) `A` — Bootstrap apps/backend with Prisma, modules skeleton, and shared kernel · ⇐ E02-F02-S04
 - [ ] [E04-F01-S02](./tasks/E04-F01-S02.md) `A` — `/healthz` and `/readyz` outside the OpenAPI spec · ⇐ E04-F01-S01
 - [ ] [E04-F02-S01](./tasks/E04-F02-S01.md) `A` — Configure Better Auth with bearer + admin plugins · ⇐ E04-F01-S01
 - [ ] [E04-F02-S02](./tasks/E04-F02-S02.md) `A` — Mount Better Auth + register global guard · ⇐ E04-F02-S01
-- [ ] [E04-F02-S03](./tasks/E04-F02-S03.md) `A` — Mount express-openapi-validator for /api/v1/* · ⇐ E04-F02-S02
-
-## E05 — Shared kernel
-
-- [ ] [E05-F01-S01](./tasks/E05-F01-S01.md) `A` — Branded ID + DomainError module · ⇐ E01-F01-S02
+- [ ] [E04-F02-S03](./tasks/E04-F02-S03.md) `A` — Mount express-openapi-validator for /api/v1/\* · ⇐ E04-F02-S02
 
 ## E06 — Catalog bounded context
 
-- [ ] [E06-F01-S01](./tasks/E06-F01-S01.md) `A` — Library aggregate + repository port · ⇐ E04-F02-S03, E05-F01-S01
+- [ ] [E06-F01-S01](./tasks/E06-F01-S01.md) `A` — Library aggregate + repository port · ⇐ E04-F02-S03
 - [ ] [E06-F02-S01](./tasks/E06-F02-S01.md) `A` — Scan aggregate, FsAdapter, incremental scan · ⇐ E06-F01-S01
 - [ ] [E06-F02-S02](./tasks/E06-F02-S02.md) `A` — ffprobe + thumbnail extraction · ⇐ E06-F02-S01
 - [ ] [E06-F03-S01](./tasks/E06-F03-S01.md) `A` — Course aggregate + slug uniqueness + section ordering · ⇐ E06-F02-S01
@@ -65,7 +61,7 @@ Progress: `0 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E09 — Learning
 
-- [ ] [E09-F01-S01](./tasks/E09-F01-S01.md) `A` — LessonProgress aggregate + record endpoint · ⇐ E04-F02-S03, E05-F01-S01
+- [ ] [E09-F01-S01](./tasks/E09-F01-S01.md) `A` — LessonProgress aggregate + record endpoint · ⇐ E04-F02-S03
 - [ ] [E09-F01-S02](./tasks/E09-F01-S02.md) `A` — Batch progress endpoint for sync · ⇐ E09-F01-S01
 - [ ] [E09-F02-S01](./tasks/E09-F02-S01.md) `A` — Bookmarks endpoints · ⇐ E04-F02-S03
 - [ ] [E09-F02-S02](./tasks/E09-F02-S02.md) `A` — Notes endpoints (one per user+lesson) · ⇐ E04-F02-S03
@@ -76,13 +72,13 @@ Progress: `0 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E11 — Web foundations
 
-- [ ] [E11-F01-S01](./tasks/E11-F01-S01.md) `A` — Bootstrap Nuxt SPA with Vuetify and tokens · ⇐ E03-F01-S02, E04-F02-S03
-- [ ] [E11-F01-S02](./tasks/E11-F01-S02.md) `A` — useApi, useAuth, useAuthToken composables · ⇐ E11-F01-S01
-- [ ] [E11-F01-S03](./tasks/E11-F01-S03.md) `A` — useAuthStore + minimal login/setup pages · ⇐ E11-F01-S02
+- [ ] [E11-F01-S01](./tasks/E11-F01-S01.md) `A` — Bootstrap Nuxt SPA with Nuxt UI v4, Tailwind 4, and tokens · ⇐ E03-F01-S02, E04-F02-S03
+- [ ] [E11-F01-S02](./tasks/E11-F01-S02.md) `A` — Wire @app/api-client-ts with bearer interceptor + auth store · ⇐ E11-F01-S01
+- [ ] [E11-F01-S03](./tasks/E11-F01-S03.md) `A` — Auth store + minimal sign-in/setup pages · ⇐ E11-F01-S02
 
 ## E12 — Storybook for web
 
-- [ ] [E12-F01-S01](./tasks/E12-F01-S01.md) `A` — Configure Storybook for Vue 3 + Vuetify + tokens · ⇐ E11-F01-S01
+- [ ] [E12-F01-S01](./tasks/E12-F01-S01.md) `A` — Configure Storybook for Vue 3 + Nuxt UI v4 + tokens · ⇐ E11-F01-S01
 
 ## E13 — Web component catalog
 
@@ -194,3 +190,7 @@ Progress: `0 / 115` complete (update by hand or via a pre-commit hook).
 - [ ] [E23-F02-S01](./tasks/E23-F02-S01.md) `A` — Top-level README + quickstart + screenshots · ⇐ E14-F03-S01, E18-F02-S01
 - [ ] [E23-F02-S02](./tasks/E23-F02-S02.md) `A` — Seed ADRs (10 entries) · ⇐ E04-F02-S03
 - [ ] [E23-F02-S03](./tasks/E23-F02-S03.md) `A` — Contributor docs covering the spec-first and design-first workflows · ⇐ E14-F01-S01
+
+## E24 — Realtime / Centrifugo
+
+- [ ] [E24-F01-S01](./tasks/E24-F01-S01.md) `A` — AsyncAPI Centrifugo channels + POST /api/v1/realtime/token · ⇐ E04-F02-S03

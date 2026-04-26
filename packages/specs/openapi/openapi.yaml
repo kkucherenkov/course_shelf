@@ -1925,6 +1925,100 @@ paths:
                     status: 404
                     detail: No progress record found for this lesson.
 
+  /api/v1/progress/batch:
+    post:
+      operationId: recordLessonProgressBatch
+      summary: Record up to 200 progress updates in a single call
+      description: |
+        Sync endpoint for offline-first clients. Per-item failures do **not**
+        abort the batch — every item gets its own status in the same order
+        as the input. Conflict detection: if the server's `lastSeenAt` for a
+        lesson is newer than the client's `clientUpdatedAt`, the item's
+        status is `stale` and `state` carries the server's view so the
+        client can overwrite local cache. Otherwise the status is `accepted`.
+        `forbidden` covers both "no READ grant" and "lesson does not exist"
+        (no-oracle rule, consistent with `POST /progress`).
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchProgressRequest"
+            examples:
+              mixedBatch:
+                summary: Three writes — one fresh, one already-newer-on-server, one no-grant
+                value:
+                  items:
+                    - lessonId: clxvles0000000000000000001
+                      positionSeconds: 600
+                      durationSeconds: 1800
+                      clientUpdatedAt: "2026-04-25T14:00:00Z"
+                    - lessonId: clxvles0000000000000000002
+                      positionSeconds: 30
+                      durationSeconds: 1200
+                      clientUpdatedAt: "2026-04-20T08:00:00Z"
+                    - lessonId: clxvles0000000000000000099
+                      positionSeconds: 0
+                      durationSeconds: 600
+                      clientUpdatedAt: "2026-04-25T14:05:00Z"
+      responses:
+        "200":
+          description: Per-item results, same order and length as input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchProgressResponse"
+              examples:
+                mixedBatch:
+                  value:
+                    results:
+                      - status: accepted
+                        state:
+                          lessonId: clxvles0000000000000000001
+                          positionSeconds: 600
+                          durationSeconds: 1800
+                          percent: 33
+                          completed: false
+                          lastSeenAt: "2026-04-25T14:00:00Z"
+                      - status: stale
+                        state:
+                          lessonId: clxvles0000000000000000002
+                          positionSeconds: 900
+                          durationSeconds: 1200
+                          percent: 75
+                          completed: false
+                          lastSeenAt: "2026-04-22T10:00:00Z"
+                      - status: forbidden
+                        lessonId: clxvles0000000000000000099
+        "400":
+          description: Request body is empty (`items.length === 0`) or too large (>200)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                tooMany:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: items must contain between 1 and 200 entries.
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+
   /api/v1/realtime/token:
     post:
       operationId: issueRealtimeToken
@@ -2723,6 +2817,93 @@ components:
         positionSeconds: 1080
         durationSeconds: 1800
         clientUpdatedAt: "2026-04-25T14:32:00Z"
+
+    BatchProgressRequest:
+      type: object
+      required: [items]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items:
+            $ref: "#/components/schemas/RecordProgressRequest"
+          description: |
+            Up to 200 progress writes. Cap exists to bound server-side work
+            and to keep request bodies under the 1 MiB JSON ceiling.
+
+    BatchProgressResponse:
+      type: object
+      required: [results]
+      additionalProperties: false
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchProgressItemResult"
+          description: |
+            Same length and order as the input `items` array. Index N in the
+            response maps 1:1 to index N in the request.
+
+    BatchProgressItemResult:
+      oneOf:
+        - $ref: "#/components/schemas/BatchProgressItemAccepted"
+        - $ref: "#/components/schemas/BatchProgressItemStale"
+        - $ref: "#/components/schemas/BatchProgressItemForbidden"
+      discriminator:
+        propertyName: status
+        mapping:
+          accepted: "#/components/schemas/BatchProgressItemAccepted"
+          stale: "#/components/schemas/BatchProgressItemStale"
+          forbidden: "#/components/schemas/BatchProgressItemForbidden"
+
+    BatchProgressItemAccepted:
+      type: object
+      required: [status, state]
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [accepted]
+          description: |
+            The client write was applied (or absorbed by last-write-wins
+            with no resulting state change). `state` reflects the post-merge
+            server state.
+        state:
+          $ref: "#/components/schemas/LessonProgressDto"
+
+    BatchProgressItemStale:
+      type: object
+      required: [status, state]
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [stale]
+          description: |
+            The client's `clientUpdatedAt` was older than the server's
+            `lastSeenAt` for this lesson. The write was absorbed but the
+            server already had newer state — the client should overwrite
+            its local cache from `state`.
+        state:
+          $ref: "#/components/schemas/LessonProgressDto"
+
+    BatchProgressItemForbidden:
+      type: object
+      required: [status, lessonId]
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [forbidden]
+          description: |
+            Actor has no READ grant covering this lesson, OR the lesson does
+            not exist. The two cases are collapsed deliberately to avoid
+            existence leakage (no-oracle rule).
+        lessonId:
+          type: string
+          description: Echoes the input `lessonId` for client correlation.
 
     RegisterGrantRequest:
       type: object

@@ -24,6 +24,7 @@ import { RedisModule } from './common/redis/redis.module';
 import { SmsModule } from './common/sms/sms.module';
 import { AccessModule } from './modules/access/access.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { LearningModule } from './modules/learning/learning.module';
 import { StreamingModule } from './modules/streaming/streaming.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { HealthModule } from './modules/health/health.module';
@@ -67,6 +68,7 @@ const devOnlyModules: ImportableModule[] = [];
     RealtimeModule,
     CatalogModule,
     StreamingModule,
+    LearningModule,
     AccessModule,
     ...devOnlyModules,
   ],

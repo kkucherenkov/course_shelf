@@ -1,3 +1,45 @@
 # Active tasks
 
-_No tasks in progress. Start here when beginning new work._
+## T-2026-04-26-021 — LessonProgress aggregate + record endpoint (E09-F01-S01)
+
+- Created: 2026-04-26
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E09-F01-S01.md` — Learning bounded context first slice. New module `apps/backend/src/modules/learning/`. Establishes the per-(user, lesson) progress model and emits `LessonCompleted` domain event when watch crosses 90 %. Unblocks E09-F01-S02 (batch progress sync), E09-F02-S0{1,2} (bookmarks + notes — they share the Learning module), and E10-F01-S01 (CourseProgressProjector that subscribes to `LessonCompleted` to backfill the `progress` placeholders in CourseDto / LessonDto). Also closes the final dep for E14-F03-S01 (web lesson player).
+- Goal: an authenticated session can `POST /api/v1/progress` with `{ lessonId, positionSeconds, durationSeconds, clientUpdatedAt }` to upsert their own progress; out-of-order writes (older `clientUpdatedAt`) are silently ignored. `GET /api/v1/progress/{lessonId}` returns the current state. When watch crosses the 90 % threshold for the first time, `LessonCompleted` is emitted via Nest's `EventBus` exactly once per `(userId, lessonId)`.
+- Acceptance:
+  - OpenAPI under tag `Learning` (new tag): `POST /progress` (200 → `LessonProgressDto`, 400/401/404 Problem; lesson must exist + be accessible to actor), `GET /progress/{lessonId}` (200 → `LessonProgressDto`, 401/403/404 Problem). `bearerAuth`. Spec version 0.7.0 → 0.8.0.
+  - Schemas: `RecordProgressRequest` (`lessonId`, `positionSeconds` integer ≥ 0, `durationSeconds` integer ≥ 1, `clientUpdatedAt` date-time), `LessonProgressDto` (`lessonId`, `positionSeconds`, `durationSeconds`, `percent`, `completed`, `lastSeenAt` date-time, `completedAt?` date-time).
+  - Codegen: TS + Dart in their own commit.
+  - Domain: `apps/backend/src/modules/learning/domain/progress/{lesson-progress.ts, lesson-progress.repository.ts, lesson-progress.errors.ts, lesson-completed.event.ts}`.
+    - `LessonProgress.create({ userId, lessonId, durationSeconds, positionSeconds, clientUpdatedAt })` — initial state. Throws `InvariantViolation` for `positionSeconds < 0`, `durationSeconds < 1`, `positionSeconds > durationSeconds` (clamp to duration is acceptable in v1; document the chosen rule).
+    - `record({ positionSeconds, clientUpdatedAt })` — last-write-wins on `clientUpdatedAt`: returns `{ aggregate, accepted: boolean, completedThisCall: boolean }`. If incoming `clientUpdatedAt <= current.lastSeenAt`, returns `accepted: false`, no state change. Otherwise updates `lastSeenAt` + `positionSeconds`. Computes `percent = positionSeconds / durationSeconds * 100`. If `percent >= 90` and previously `completed === false`, marks `completed = true`, sets `completedAt = clientUpdatedAt`, sets `completedThisCall = true`. The handler's job is to publish `LessonCompleted` only when `completedThisCall` is true.
+    - `LessonCompleted` event carries `{ userId, lessonId, completedAt, courseId }` (the handler attaches `courseId` after the lesson lookup so the projector doesn't need to round-trip).
+    - Errors: `LessonProgressOutOfOrderError` (silenced — the handler decides; aggregate just returns the flag), `LessonProgressNotFoundError extends NotFound` for the GET path.
+  - Persistence: Prisma `LessonProgress` model with composite primary key `(userId, lessonId)` (or surrogate id + composite unique). Manual migration SQL.
+  - Application:
+    - `RecordProgressCommand` (carries the request body + `actor: { id, role }`) + handler. Loads existing aggregate via `findByUserAndLesson`; if absent, creates one (after verifying the lesson exists via `LESSON_REPOSITORY` and the actor has grant via `AuthorizationService.canSee`). Calls `aggregate.record(...)`. Persists. If `completedThisCall`, publishes `LessonCompleted` via `EventBus.publish`.
+    - `GetLessonProgressQuery` (`{ lessonId, actor }`) + handler. Reads the aggregate; throws `LessonProgressNotFoundError` when absent (controllers map to 404). Verifies grant first (so absent doesn't leak existence — return 403 in absent + no-grant case to avoid an oracle).
+  - Presentation: `ProgressController` (`@Controller('progress')`) under a new `LearningModule`. `POST /` and `GET /:lessonId`. Forward `actor` from session.
+  - Catalog cross-module wiring: re-use `apps/backend/src/common/catalog-tokens/` to inject `LESSON_REPOSITORY` + `COURSE_REPOSITORY` + `LessonNotFoundError` (the streaming-tokens story established this pattern). `AUTHORIZATION_SERVICE` from `common/access`.
+  - Tests:
+    - `lesson-progress.spec.ts`: invariants; first record happy path; second record with newer clientUpdatedAt updates; second record with older clientUpdatedAt is ignored (returns `accepted: false`); 90 % threshold crossing returns `completedThisCall: true` exactly once (a third call after completion does NOT re-emit).
+    - `record-progress.handler.spec.ts`: admin happy; non-admin with grant; non-admin without grant → `PermissionDenied`; missing lesson → `LessonNotFoundError`. Assert `EventBus.publish(LessonCompleted)` is called exactly once when crossing 90 %, zero times when below threshold or already completed.
+    - `get-lesson-progress.handler.spec.ts`: present; absent + grant → `LessonProgressNotFoundError`; absent + no-grant → `PermissionDenied` (no oracle).
+    - `prisma-lesson-progress.repository.spec.ts`: roundtrip with mocked Prisma.
+  - Quality gates: backend lint + typecheck + test all clean.
+- Spec diff: yes — two new paths + two new schemas.
+- Codegen impact: yes — TS + Dart.
+- Design impact: none for v1 (player UI lands in E14-F03-S01).
+- Tests: see Acceptance.
+- Sub-steps:
+  - [x] T-021-A: spec edit (spec-writer)
+  - [x] T-021-B: codegen (codegen-runner)
+  - [x] T-021-C: Prisma `LessonProgress` model + migration SQL
+  - [x] T-021-D: domain — aggregate + repo port + errors + `LessonCompleted` event
+  - [x] T-021-E: persistence — Prisma adapter + mapper
+  - [x] T-021-F: application — RecordProgressCommand + GetLessonProgressQuery + handlers; `EventBus.publish(LessonCompleted)` on threshold crossing
+  - [x] T-021-G: presentation — `LearningModule` + `ProgressController` registered in `app.module.ts`
+  - [x] T-021-H: tests
+  - [x] T-021-I: lint, typecheck, test, prettier; flip card; archive T-021
+- Status: done
+- Blockers: —

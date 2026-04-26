@@ -2,6 +2,13 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-021 — LessonProgress aggregate + record endpoint (E09-F01-S01)
+
+- Created: 2026-04-26
+- Completed: 2026-04-27
+- Result: single impl commit on `feat/lesson-progress`. Backend tests 441/441 (+34 new); lint + typecheck clean.
+- Owner: claude
+
 ## T-2026-04-26-020 — `GET /stream/lessons/{id}` with HTTP Range support (E08-F02-S01)
 
 - Created: 2026-04-26

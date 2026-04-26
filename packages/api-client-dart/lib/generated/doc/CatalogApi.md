@@ -11,6 +11,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**getCourse**](CatalogApi.md#getcourse) | **GET** /api/v1/courses/{id} | Get a single course
 [**getLatestLibraryScan**](CatalogApi.md#getlatestlibraryscan) | **GET** /api/v1/libraries/{id}/scans/latest | Get the most recent scan for a library
+[**getLesson**](CatalogApi.md#getlesson) | **GET** /api/v1/lessons/{id} | Get a lesson with its materials and subtitles
 [**getLibrary**](CatalogApi.md#getlibrary) | **GET** /api/v1/libraries/{id} | Get a library by id
 [**listCourses**](CatalogApi.md#listcourses) | **GET** /api/v1/courses | List courses (optionally filtered by library)
 [**listLibraries**](CatalogApi.md#listlibraries) | **GET** /api/v1/libraries | List all registered libraries
@@ -93,6 +94,49 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**ScanDto**](ScanDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getLesson**
+> LessonDto getLesson(id)
+
+Get a lesson with its materials and subtitles
+
+Returns lesson metadata, sidecar materials (PDF / Markdown / text / image), and available subtitle tracks. Raw filesystem paths are intentionally absent from the response (NFR-S-01); the player obtains a signed stream token for the lesson video and the material/subtitle blobs separately. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String id = id_example; // String | Server-generated cuid identifying the lesson.
+
+try {
+    final response = api.getLesson(id);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->getLesson: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the lesson. | 
+
+### Return type
+
+[**LessonDto**](LessonDto.md)
 
 ### Authorization
 

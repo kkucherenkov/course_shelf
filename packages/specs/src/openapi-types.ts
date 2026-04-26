@@ -98,6 +98,29 @@ export interface paths {
     patch: operations['updateCourse'];
     trace?: never;
   };
+  '/api/v1/lessons/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a lesson with its materials and subtitles
+     * @description Returns lesson metadata, sidecar materials (PDF / Markdown / text / image),
+     *     and available subtitle tracks. Raw filesystem paths are intentionally absent
+     *     from the response (NFR-S-01); the player obtains a signed stream token for
+     *     the lesson video and the material/subtitle blobs separately.
+     */
+    get: operations['getLesson'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/libraries': {
     parameters: {
       query?: never;
@@ -543,6 +566,95 @@ export interface components {
     LibraryListDto: {
       items: components['schemas']['LibraryDto'][];
     };
+    /**
+     * @description Full representation of a Lesson aggregate, including sidecar materials and subtitle tracks.
+     * @example {
+     *       "id": "clxvles0000000000000000001",
+     *       "courseId": "clxvcrs0000000000000000001",
+     *       "sectionId": "clxvsec0000000000000000002",
+     *       "position": 3,
+     *       "title": "Aggregates",
+     *       "durationSeconds": 2847,
+     *       "materials": [
+     *         {
+     *           "id": "clxvmat0000000000000000001",
+     *           "kind": "doc",
+     *           "label": "03 - Aggregates slides",
+     *           "sizeBytes": 204800
+     *         }
+     *       ],
+     *       "subtitles": [
+     *         {
+     *           "id": "clxvsub0000000000000000001",
+     *           "language": "en",
+     *           "label": "English"
+     *         }
+     *       ],
+     *       "progress": {
+     *         "percent": 0,
+     *         "completed": false,
+     *         "lastSeenAtSeconds": 0
+     *       }
+     *     }
+     */
+    LessonDto: {
+      /** @description Server-generated cuid identifying this lesson. */
+      id: string;
+      /** @description cuid of the course this lesson belongs to. */
+      courseId: string;
+      /** @description cuid of the section this lesson belongs to. */
+      sectionId: string;
+      /** @description 1-based position within the section. */
+      position: number;
+      title: string;
+      /** @description Video duration in seconds. Populated by E06-F02-S02 (ffprobe). `undefined` until then. */
+      durationSeconds?: number;
+      /** @description Sidecar materials (PDF / Markdown / text / image). Empty array when none. */
+      materials: components['schemas']['MaterialDto'][];
+      /** @description Available subtitle tracks. Empty array when none. */
+      subtitles: components['schemas']['SubtitleDto'][];
+      progress: components['schemas']['LessonProgress'];
+    };
+    /**
+     * @description Per-lesson playback progress for the requesting user.
+     * @example {
+     *       "percent": 0,
+     *       "completed": false,
+     *       "lastSeenAtSeconds": 0
+     *     }
+     */
+    LessonProgress: {
+      /** @description Completion percent. v1 always returns 0 — populated once the LessonProgress projector lands (E10-F01-S01). */
+      percent: number;
+      /** @description Whether the lesson is marked as completed. */
+      completed: boolean;
+      /** @description Last reported watched position in seconds. v1 always returns 0 — populated by the LessonProgress projector (E10-F01-S01). */
+      lastSeenAtSeconds: number;
+    };
+    /**
+     * @description A sidecar material attached to a lesson.
+     * @example {
+     *       "id": "clxvmat0000000000000000001",
+     *       "kind": "doc",
+     *       "label": "03 - Aggregates slides",
+     *       "sizeBytes": 204800
+     *     }
+     */
+    MaterialDto: {
+      /** @description Server-generated cuid identifying this material. */
+      id: string;
+      kind: components['schemas']['MaterialKind'];
+      /** @description Human-readable name derived from the original filename (extension stripped, ordinal prefix preserved if present). */
+      label: string;
+      /** @description File size in bytes. */
+      sizeBytes: number;
+    };
+    /**
+     * @description Coarse classification of a sidecar material. `doc` is `.pdf`, `note` is `.md` / `.txt`, `image` is `.png` / `.jpg`, `slide` is reserved for future use.
+     * @example doc
+     * @enum {string}
+     */
+    MaterialKind: 'doc' | 'note' | 'image' | 'slide';
     /** @description RFC 9457 problem details */
     Problem: {
       /**
@@ -669,6 +781,22 @@ export interface components {
      * @enum {string}
      */
     ScanStatus: 'running' | 'succeeded' | 'failed' | 'cancelled';
+    /**
+     * @description A subtitle track available for a lesson.
+     * @example {
+     *       "id": "clxvsub0000000000000000001",
+     *       "language": "en",
+     *       "label": "English"
+     *     }
+     */
+    SubtitleDto: {
+      /** @description Server-generated cuid identifying this subtitle track. */
+      id: string;
+      /** @description BCP-47-ish language code parsed from the filename suffix (`Lesson.en.srt` → `en`). `und` when no suffix is present. */
+      language: string;
+      /** @description Human-readable label for the subtitle track (e.g. "English"). */
+      label: string;
+    };
     /**
      * @description A section within a course.
      * @example {
@@ -1020,6 +1148,56 @@ export interface operations {
       };
       /** @description A course with the same slug already exists in this library */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getLesson: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the lesson. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Lesson found */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LessonDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Requester has no READ grant covering the parent library or course */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Lesson not found */
+      404: {
         headers: {
           [name: string]: unknown;
         };

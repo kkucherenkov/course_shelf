@@ -176,6 +176,84 @@ export type LibraryListDto = {
 };
 
 /**
+ * Full representation of a Lesson aggregate, including sidecar materials and subtitle tracks.
+ */
+export type LessonDto = {
+    /**
+     * Server-generated cuid identifying this lesson.
+     */
+    id: string;
+    /**
+     * cuid of the course this lesson belongs to.
+     */
+    courseId: string;
+    /**
+     * cuid of the section this lesson belongs to.
+     */
+    sectionId: string;
+    /**
+     * 1-based position within the section.
+     */
+    position: number;
+    title: string;
+    /**
+     * Video duration in seconds. Populated by E06-F02-S02 (ffprobe). `undefined` until then.
+     */
+    durationSeconds?: number;
+    /**
+     * Sidecar materials (PDF / Markdown / text / image). Empty array when none.
+     */
+    materials: Array<MaterialDto>;
+    /**
+     * Available subtitle tracks. Empty array when none.
+     */
+    subtitles: Array<SubtitleDto>;
+    progress: LessonProgress;
+};
+
+/**
+ * Per-lesson playback progress for the requesting user.
+ */
+export type LessonProgress = {
+    /**
+     * Completion percent. v1 always returns 0 — populated once the LessonProgress projector lands (E10-F01-S01).
+     */
+    percent: number;
+    /**
+     * Whether the lesson is marked as completed.
+     */
+    completed: boolean;
+    /**
+     * Last reported watched position in seconds. v1 always returns 0 — populated by the LessonProgress projector (E10-F01-S01).
+     */
+    lastSeenAtSeconds: number;
+};
+
+/**
+ * A sidecar material attached to a lesson.
+ */
+export type MaterialDto = {
+    /**
+     * Server-generated cuid identifying this material.
+     */
+    id: string;
+    kind: MaterialKind;
+    /**
+     * Human-readable name derived from the original filename (extension stripped, ordinal prefix preserved if present).
+     */
+    label: string;
+    /**
+     * File size in bytes.
+     */
+    sizeBytes: number;
+};
+
+/**
+ * Coarse classification of a sidecar material. `doc` is `.pdf`, `note` is `.md` / `.txt`, `image` is `.png` / `.jpg`, `slide` is reserved for future use.
+ */
+export type MaterialKind = 'doc' | 'note' | 'image' | 'slide';
+
+/**
  * RFC 9457 problem details
  */
 export type Problem = {
@@ -286,6 +364,24 @@ export type ScanError = {
  * Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans only ever transition `running → {succeeded, failed}`.
  */
 export type ScanStatus = 'running' | 'succeeded' | 'failed' | 'cancelled';
+
+/**
+ * A subtitle track available for a lesson.
+ */
+export type SubtitleDto = {
+    /**
+     * Server-generated cuid identifying this subtitle track.
+     */
+    id: string;
+    /**
+     * BCP-47-ish language code parsed from the filename suffix (`Lesson.en.srt` → `en`). `und` when no suffix is present.
+     */
+    language: string;
+    /**
+     * Human-readable label for the subtitle track (e.g. "English").
+     */
+    label: string;
+};
 
 /**
  * A section within a course.
@@ -545,6 +641,44 @@ export type UpdateCourseResponses = {
 };
 
 export type UpdateCourseResponse = UpdateCourseResponses[keyof UpdateCourseResponses];
+
+export type GetLessonData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the lesson.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/lessons/{id}';
+};
+
+export type GetLessonErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Requester has no READ grant covering the parent library or course
+     */
+    403: Problem;
+    /**
+     * Lesson not found
+     */
+    404: Problem;
+};
+
+export type GetLessonError = GetLessonErrors[keyof GetLessonErrors];
+
+export type GetLessonResponses = {
+    /**
+     * Lesson found
+     */
+    200: LessonDto;
+};
+
+export type GetLessonResponse = GetLessonResponses[keyof GetLessonResponses];
 
 export type ListLibrariesData = {
     body?: never;

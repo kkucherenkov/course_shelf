@@ -25,9 +25,13 @@ import 'package:app_api_client/src/model/grant_level.dart';
 import 'package:app_api_client/src/model/grant_target.dart';
 import 'package:app_api_client/src/model/health_status.dart';
 import 'package:app_api_client/src/model/health_status_dependencies.dart';
+import 'package:app_api_client/src/model/lesson_dto.dart';
+import 'package:app_api_client/src/model/lesson_progress.dart';
 import 'package:app_api_client/src/model/library_dto.dart';
 import 'package:app_api_client/src/model/library_list_dto.dart';
 import 'package:app_api_client/src/model/library_target.dart';
+import 'package:app_api_client/src/model/material_dto.dart';
+import 'package:app_api_client/src/model/material_kind.dart';
 import 'package:app_api_client/src/model/model0.dart';
 import 'package:app_api_client/src/model/model1.dart';
 import 'package:app_api_client/src/model/problem.dart';
@@ -38,6 +42,7 @@ import 'package:app_api_client/src/model/scan_dto.dart';
 import 'package:app_api_client/src/model/scan_error.dart';
 import 'package:app_api_client/src/model/scan_status.dart';
 import 'package:app_api_client/src/model/section_dto.dart';
+import 'package:app_api_client/src/model/subtitle_dto.dart';
 import 'package:app_api_client/src/model/update_course_request.dart';
 
 part 'serializers.g.dart';
@@ -54,9 +59,13 @@ part 'serializers.g.dart';
   GrantTarget,
   HealthStatus,
   HealthStatusDependencies,
+  LessonDto,
+  LessonProgress,
   LibraryDto,
   LibraryListDto,
   LibraryTarget,
+  MaterialDto,
+  MaterialKind,
   Model0,
   Model1,
   Problem,
@@ -67,6 +76,7 @@ part 'serializers.g.dart';
   ScanError,
   ScanStatus,
   SectionDto,
+  SubtitleDto,
   UpdateCourseRequest,
 ])
 Serializers serializers = (_$serializers.toBuilder()

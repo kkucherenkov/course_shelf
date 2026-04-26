@@ -4,7 +4,90 @@ export type ClientOptions = {
     baseUrl: 'http://localhost:3000' | 'https://api.example.com' | (string & {});
 };
 
+/**
+ * LibraryTarget
+ */
+export type _0 = {
+    /**
+     * Discriminator value indicating a library-scoped grant.
+     */
+    kind: 'library';
+    /**
+     * Server-generated cuid of the target library.
+     */
+    libraryId: string;
+};
+
+/**
+ * CourseTarget
+ */
+export type _1 = {
+    /**
+     * Discriminator value indicating a course-scoped grant. Accepted in v1 even though the Course aggregate (E06-F03-S01) has not landed yet — keeps the contract stable for E14-F04-S01.
+     */
+    kind: 'course';
+    /**
+     * Server-generated cuid of the target course (e.g. "DDD by Eric Evans").
+     */
+    courseId: string;
+};
+
+/**
+ * A single access grant issued by an admin.
+ */
+export type AccessGrantDto = {
+    /**
+     * Server-generated cuid identifying this grant.
+     */
+    id: string;
+    /**
+     * Better Auth user id of the grantee.
+     */
+    userId: string;
+    target: GrantTarget;
+    level: GrantLevel;
+    /**
+     * ISO-8601 instant when the grant was created.
+     */
+    createdAt: string;
+};
+
+/**
+ * Paginated list of access grants for a given user.
+ */
+export type AccessGrantListDto = {
+    items: Array<AccessGrantDto>;
+};
+
 export type DependencyStatus = 'ok' | 'degraded' | 'down';
+
+/**
+ * Access level. v1 only issues READ; the enum is open for future levels (e.g. ADMIN, NONE for explicit denials).
+ */
+export type GrantLevel = 'READ';
+
+/**
+ * The resource to which access is granted. Discriminated by `kind`.
+ */
+export type GrantTarget = {
+    /**
+     * Discriminator value indicating a library-scoped grant.
+     */
+    kind: 'library';
+    /**
+     * Server-generated cuid of the target library.
+     */
+    libraryId: string;
+} | {
+    /**
+     * Discriminator value indicating a course-scoped grant. Accepted in v1 even though the Course aggregate (E06-F03-S01) has not landed yet — keeps the contract stable for E14-F04-S01.
+     */
+    kind: 'course';
+    /**
+     * Server-generated cuid of the target course (e.g. "DDD by Eric Evans").
+     */
+    courseId: string;
+};
 
 export type HealthStatus = {
     status: DependencyStatus;
@@ -67,6 +150,18 @@ export type RealtimeToken = {
     expiresAt: string | null;
 };
 
+/**
+ * Payload for issuing a new access grant.
+ */
+export type RegisterGrantRequest = {
+    /**
+     * Better Auth user id of the grantee.
+     */
+    userId: string;
+    target: GrantTarget;
+    level: GrantLevel;
+};
+
 export type RegisterLibraryRequest = {
     /**
      * Human-readable label.
@@ -77,6 +172,123 @@ export type RegisterLibraryRequest = {
      */
     rootPath: string;
 };
+
+export type ListGrantsByUserData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Better Auth user id whose grants should be returned.
+         */
+        userId: string;
+    };
+    url: '/api/v1/access/grants';
+};
+
+export type ListGrantsByUserErrors = {
+    /**
+     * userId query parameter is missing or empty
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+};
+
+export type ListGrantsByUserError = ListGrantsByUserErrors[keyof ListGrantsByUserErrors];
+
+export type ListGrantsByUserResponses = {
+    /**
+     * Grant list returned
+     */
+    200: AccessGrantListDto;
+};
+
+export type ListGrantsByUserResponse = ListGrantsByUserResponses[keyof ListGrantsByUserResponses];
+
+export type RegisterGrantData = {
+    body: RegisterGrantRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/access/grants';
+};
+
+export type RegisterGrantErrors = {
+    /**
+     * Validation error — missing or malformed fields
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Target library or course not found
+     */
+    404: Problem;
+    /**
+     * A grant for this (userId, target) pair already exists
+     */
+    409: Problem;
+};
+
+export type RegisterGrantError = RegisterGrantErrors[keyof RegisterGrantErrors];
+
+export type RegisterGrantResponses = {
+    /**
+     * Grant created
+     */
+    201: AccessGrantDto;
+};
+
+export type RegisterGrantResponse = RegisterGrantResponses[keyof RegisterGrantResponses];
+
+export type RevokeGrantData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the grant to revoke.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/access/grants/{id}';
+};
+
+export type RevokeGrantErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Grant not found
+     */
+    404: Problem;
+};
+
+export type RevokeGrantError = RevokeGrantErrors[keyof RevokeGrantErrors];
+
+export type RevokeGrantResponses = {
+    /**
+     * Grant revoked — no body
+     */
+    204: void;
+};
+
+export type RevokeGrantResponse = RevokeGrantResponses[keyof RevokeGrantResponses];
 
 export type ListLibrariesData = {
     body?: never;

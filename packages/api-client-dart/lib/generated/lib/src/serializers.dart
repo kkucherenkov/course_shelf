@@ -14,25 +14,43 @@ import 'package:built_value/iso_8601_date_time_serializer.dart';
 import 'package:app_api_client/src/date_serializer.dart';
 import 'package:app_api_client/src/model/date.dart';
 
+import 'package:app_api_client/src/model/access_grant_dto.dart';
+import 'package:app_api_client/src/model/access_grant_list_dto.dart';
+import 'package:app_api_client/src/model/course_target.dart';
 import 'package:app_api_client/src/model/dependency_status.dart';
+import 'package:app_api_client/src/model/grant_level.dart';
+import 'package:app_api_client/src/model/grant_target.dart';
 import 'package:app_api_client/src/model/health_status.dart';
 import 'package:app_api_client/src/model/health_status_dependencies.dart';
 import 'package:app_api_client/src/model/library_dto.dart';
 import 'package:app_api_client/src/model/library_list_dto.dart';
+import 'package:app_api_client/src/model/library_target.dart';
+import 'package:app_api_client/src/model/model0.dart';
+import 'package:app_api_client/src/model/model1.dart';
 import 'package:app_api_client/src/model/problem.dart';
 import 'package:app_api_client/src/model/realtime_token.dart';
+import 'package:app_api_client/src/model/register_grant_request.dart';
 import 'package:app_api_client/src/model/register_library_request.dart';
 
 part 'serializers.g.dart';
 
 @SerializersFor([
+  AccessGrantDto,
+  AccessGrantListDto,
+  CourseTarget,
   DependencyStatus,
+  GrantLevel,
+  GrantTarget,
   HealthStatus,
   HealthStatusDependencies,
   LibraryDto,
   LibraryListDto,
+  LibraryTarget,
+  Model0,
+  Model1,
   Problem,
   RealtimeToken,
+  RegisterGrantRequest,
   RegisterLibraryRequest,
 ])
 Serializers serializers = (_$serializers.toBuilder()

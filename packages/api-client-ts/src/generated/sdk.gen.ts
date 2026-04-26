@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetHealthData, GetHealthErrors, GetHealthResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses } from './types.gen';
+import type { GetHealthData, GetHealthErrors, GetHealthResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -17,6 +17,46 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
      */
     meta?: Record<string, unknown>;
 };
+
+/**
+ * List a user's access grants
+ *
+ * Returns every grant issued to the given user, both library- and course-scoped.
+ */
+export const listGrantsByUser = <ThrowOnError extends boolean = false>(options: Options<ListGrantsByUserData, ThrowOnError>) => (options.client ?? client).get<ListGrantsByUserResponses, ListGrantsByUserErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/access/grants',
+    ...options
+});
+
+/**
+ * Grant a user READ access to a library or course
+ *
+ * Idempotent on (userId, target). Returns 409 if the same grant already
+ * exists. Only admins (`session.user.role === 'admin'`) may call this;
+ * other authenticated users get 403.
+ *
+ */
+export const registerGrant = <ThrowOnError extends boolean = false>(options: Options<RegisterGrantData, ThrowOnError>) => (options.client ?? client).post<RegisterGrantResponses, RegisterGrantErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/access/grants',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Revoke an access grant
+ *
+ * Permanently removes the grant identified by `id`. The affected user immediately loses the access level the grant provided.
+ */
+export const revokeGrant = <ThrowOnError extends boolean = false>(options: Options<RevokeGrantData, ThrowOnError>) => (options.client ?? client).delete<RevokeGrantResponses, RevokeGrantErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/access/grants/{id}',
+    ...options
+});
 
 /**
  * List all registered libraries

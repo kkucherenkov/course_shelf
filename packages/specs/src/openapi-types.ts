@@ -4,6 +4,52 @@
  */
 
 export interface paths {
+  '/api/v1/access/grants': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List a user's access grants
+     * @description Returns every grant issued to the given user, both library- and course-scoped.
+     */
+    get: operations['listGrantsByUser'];
+    put?: never;
+    /**
+     * Grant a user READ access to a library or course
+     * @description Idempotent on (userId, target). Returns 409 if the same grant already
+     *     exists. Only admins (`session.user.role === 'admin'`) may call this;
+     *     other authenticated users get 403.
+     */
+    post: operations['registerGrant'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/access/grants/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Revoke an access grant
+     * @description Permanently removes the grant identified by `id`. The affected user immediately loses the access level the grant provided.
+     */
+    delete: operations['revokeGrant'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/libraries': {
     parameters: {
       query?: never;
@@ -98,8 +144,131 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * LibraryTarget
+     * @example {
+     *       "kind": "library",
+     *       "libraryId": "clxvp1234567890abcdefghij"
+     *     }
+     */
+    0: {
+      /**
+       * @description Discriminator value indicating a library-scoped grant. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      kind: 'library';
+      /** @description Server-generated cuid of the target library. */
+      libraryId: string;
+    };
+    /**
+     * CourseTarget
+     * @example {
+     *       "kind": "course",
+     *       "courseId": "clxvcrs0000000000000000001"
+     *     }
+     */
+    1: {
+      /**
+       * @description Discriminator value indicating a course-scoped grant. Accepted in v1 even though the Course aggregate (E06-F03-S01) has not landed yet — keeps the contract stable for E14-F04-S01. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      kind: 'course';
+      /** @description Server-generated cuid of the target course (e.g. "DDD by Eric Evans"). */
+      courseId: string;
+    };
+    /**
+     * @description A single access grant issued by an admin.
+     * @example {
+     *       "id": "clxvgnt0000000000000000001",
+     *       "userId": "clxvusr0000000000000000001",
+     *       "target": {
+     *         "kind": "library",
+     *         "libraryId": "clxvp1234567890abcdefghij"
+     *       },
+     *       "level": "READ",
+     *       "createdAt": "2026-04-25T10:00:00Z"
+     *     }
+     * @example {
+     *       "id": "clxvgnt0000000000000000002",
+     *       "userId": "clxvusr0000000000000000001",
+     *       "target": {
+     *         "kind": "course",
+     *         "courseId": "clxvcrs0000000000000000001"
+     *       },
+     *       "level": "READ",
+     *       "createdAt": "2026-04-25T10:05:00Z"
+     *     }
+     */
+    AccessGrantDto: {
+      /** @description Server-generated cuid identifying this grant. */
+      id: string;
+      /** @description Better Auth user id of the grantee. */
+      userId: string;
+      target: components['schemas']['GrantTarget'];
+      level: components['schemas']['GrantLevel'];
+      /**
+       * Format: date-time
+       * @description ISO-8601 instant when the grant was created.
+       */
+      createdAt: string;
+    };
+    /**
+     * @description Paginated list of access grants for a given user.
+     * @example {
+     *       "items": [
+     *         {
+     *           "id": "clxvgnt0000000000000000001",
+     *           "userId": "clxvusr0000000000000000001",
+     *           "target": {
+     *             "kind": "library",
+     *             "libraryId": "clxvp1234567890abcdefghij"
+     *           },
+     *           "level": "READ",
+     *           "createdAt": "2026-04-25T10:00:00Z"
+     *         },
+     *         {
+     *           "id": "clxvgnt0000000000000000002",
+     *           "userId": "clxvusr0000000000000000001",
+     *           "target": {
+     *             "kind": "course",
+     *             "courseId": "clxvcrs0000000000000000001"
+     *           },
+     *           "level": "READ",
+     *           "createdAt": "2026-04-25T10:05:00Z"
+     *         }
+     *       ]
+     *     }
+     */
+    AccessGrantListDto: {
+      items: components['schemas']['AccessGrantDto'][];
+    };
     /** @enum {string|null} */
     DependencyStatus: 'ok' | 'degraded' | 'down' | null;
+    /**
+     * @description Access level. v1 only issues READ; the enum is open for future levels (e.g. ADMIN, NONE for explicit denials).
+     * @enum {string}
+     */
+    GrantLevel: 'READ';
+    /** @description The resource to which access is granted. Discriminated by `kind`. */
+    GrantTarget:
+      | {
+          /**
+           * @description Discriminator value indicating a library-scoped grant.
+           * @enum {string}
+           */
+          kind: 'library';
+          /** @description Server-generated cuid of the target library. */
+          libraryId: string;
+        }
+      | {
+          /**
+           * @description Discriminator value indicating a course-scoped grant. Accepted in v1 even though the Course aggregate (E06-F03-S01) has not landed yet — keeps the contract stable for E14-F04-S01.
+           * @enum {string}
+           */
+          kind: 'course';
+          /** @description Server-generated cuid of the target course (e.g. "DDD by Eric Evans"). */
+          courseId: string;
+        };
     HealthStatus: {
       status: components['schemas']['DependencyStatus'];
       /** @description Semantic version of the running backend build */
@@ -180,6 +349,23 @@ export interface components {
       expiresAt: string | null;
     };
     /**
+     * @description Payload for issuing a new access grant.
+     * @example {
+     *       "userId": "clxvusr0000000000000000001",
+     *       "target": {
+     *         "kind": "library",
+     *         "libraryId": "clxvp1234567890abcdefghij"
+     *       },
+     *       "level": "READ"
+     *     }
+     */
+    RegisterGrantRequest: {
+      /** @description Better Auth user id of the grantee. */
+      userId: string;
+      target: components['schemas']['GrantTarget'];
+      level: components['schemas']['GrantLevel'];
+    };
+    /**
      * @example {
      *       "name": "Conference Recordings",
      *       "rootPath": "/srv/courses/conference"
@@ -200,6 +386,173 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  listGrantsByUser: {
+    parameters: {
+      query: {
+        /** @description Better Auth user id whose grants should be returned. */
+        userId: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Grant list returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AccessGrantListDto'];
+        };
+      };
+      /** @description userId query parameter is missing or empty */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  registerGrant: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegisterGrantRequest'];
+      };
+    };
+    responses: {
+      /** @description Grant created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AccessGrantDto'];
+        };
+      };
+      /** @description Validation error — missing or malformed fields */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Target library or course not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description A grant for this (userId, target) pair already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  revokeGrant: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the grant to revoke. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Grant revoked — no body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Grant not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
   listLibraries: {
     parameters: {
       query?: never;

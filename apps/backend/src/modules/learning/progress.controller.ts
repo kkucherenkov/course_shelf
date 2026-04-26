@@ -24,11 +24,17 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
 import { SessionGuard } from '../../common/auth/auth.guard';
 import { AuthService } from '../../common/auth/auth.service';
+import { RecordProgressBatchCommand } from './application/commands/record-progress-batch.command';
 import { RecordProgressCommand } from './application/commands/record-progress.command';
 import { GetLessonProgressQuery } from './application/queries/get-lesson-progress.query';
 
 import type { Request } from 'express';
-import type { LessonProgressDto, RecordProgressRequest } from '@app/api-client-ts';
+import type {
+  BatchProgressRequest,
+  BatchProgressResponse,
+  LessonProgressDto,
+  RecordProgressRequest,
+} from '@app/api-client-ts';
 
 @UseGuards(SessionGuard)
 @Controller({ path: 'progress', version: '1' })
@@ -47,6 +53,26 @@ export class ProgressController {
     const raw = (session.user as unknown as Record<string, unknown>)['role'];
     const role = typeof raw === 'string' ? raw : 'user';
     return { id: session.user.id, role };
+  }
+
+  /** POST /api/v1/progress/batch */
+  @Post('batch')
+  async recordProgressBatch(
+    @Body() body: BatchProgressRequest,
+    @Req() req: Request,
+  ): Promise<BatchProgressResponse> {
+    const actor = await this.resolveActor(req);
+    return this.commandBus.execute<RecordProgressBatchCommand, BatchProgressResponse>(
+      new RecordProgressBatchCommand(
+        body.items.map((it) => ({
+          lessonId: it.lessonId,
+          positionSeconds: it.positionSeconds,
+          durationSeconds: it.durationSeconds,
+          clientUpdatedAt: new Date(it.clientUpdatedAt),
+        })),
+        actor,
+      ),
+    );
   }
 
   /** POST /api/v1/progress */

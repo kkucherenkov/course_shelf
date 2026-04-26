@@ -433,6 +433,33 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/progress/batch': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Record up to 200 progress updates in a single call
+     * @description Sync endpoint for offline-first clients. Per-item failures do **not**
+     *     abort the batch — every item gets its own status in the same order
+     *     as the input. Conflict detection: if the server's `lastSeenAt` for a
+     *     lesson is newer than the client's `clientUpdatedAt`, the item's
+     *     status is `stale` and `state` carries the server's view so the
+     *     client can overwrite local cache. Otherwise the status is `accepted`.
+     *     `forbidden` covers both "no READ grant" and "lesson does not exist"
+     *     (no-oracle rule, consistent with `POST /progress`).
+     */
+    post: operations['recordLessonProgressBatch'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/realtime/token': {
     parameters: {
       query?: never;
@@ -1092,6 +1119,59 @@ export interface components {
        * @description ISO-8601 timestamp the client recorded the position. Out-of-order writes (older than the current `lastSeenAt`) are silently accepted and the response echoes the unchanged state.
        */
       clientUpdatedAt: string;
+    };
+    BatchProgressRequest: {
+      /**
+       * @description Up to 200 progress writes. Cap exists to bound server-side work
+       *     and to keep request bodies under the 1 MiB JSON ceiling.
+       */
+      items: components['schemas']['RecordProgressRequest'][];
+    };
+    BatchProgressResponse: {
+      /**
+       * @description Same length and order as the input `items` array. Index N in the
+       *     response maps 1:1 to index N in the request.
+       */
+      results: components['schemas']['BatchProgressItemResult'][];
+    };
+    BatchProgressItemResult:
+      | components['schemas']['BatchProgressItemAccepted']
+      | components['schemas']['BatchProgressItemStale']
+      | components['schemas']['BatchProgressItemForbidden'];
+    BatchProgressItemAccepted: {
+      /**
+       * @description The client write was applied (or absorbed by last-write-wins
+       *     with no resulting state change). `state` reflects the post-merge
+       *     server state.
+       *      (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      status: 'accepted';
+      state: components['schemas']['LessonProgressDto'];
+    };
+    BatchProgressItemStale: {
+      /**
+       * @description The client's `clientUpdatedAt` was older than the server's
+       *     `lastSeenAt` for this lesson. The write was absorbed but the
+       *     server already had newer state — the client should overwrite
+       *     its local cache from `state`.
+       *      (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      status: 'stale';
+      state: components['schemas']['LessonProgressDto'];
+    };
+    BatchProgressItemForbidden: {
+      /**
+       * @description Actor has no READ grant covering this lesson, OR the lesson does
+       *     not exist. The two cases are collapsed deliberately to avoid
+       *     existence leakage (no-oracle rule).
+       *      (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      status: 'forbidden';
+      /** @description Echoes the input `lessonId` for client correlation. */
+      lessonId: string;
     };
     /**
      * @description Payload for issuing a new access grant.
@@ -2514,6 +2594,48 @@ export interface operations {
       };
       /** @description Lesson exists but the requester has not yet recorded any progress */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  recordLessonProgressBatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BatchProgressRequest'];
+      };
+    };
+    responses: {
+      /** @description Per-item results, same order and length as input */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BatchProgressResponse'];
+        };
+      };
+      /** @description Request body is empty (`items.length === 0`) or too large (>200) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
         headers: {
           [name: string]: unknown;
         };

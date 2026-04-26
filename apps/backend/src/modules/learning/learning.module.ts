@@ -32,6 +32,7 @@ import { CatalogRepositoriesModule } from '../../common/catalog-tokens/catalog-r
 import { CreateBookmarkHandler } from './application/commands/create-bookmark.handler';
 import { DeleteBookmarkHandler } from './application/commands/delete-bookmark.handler';
 import { DeleteNoteHandler } from './application/commands/delete-note.handler';
+import { RecordProgressBatchHandler } from './application/commands/record-progress-batch.handler';
 import { RecordProgressHandler } from './application/commands/record-progress.handler';
 import { UpdateBookmarkHandler } from './application/commands/update-bookmark.handler';
 import { UpsertNoteHandler } from './application/commands/upsert-note.handler';
@@ -53,6 +54,7 @@ import { ProgressController } from './progress.controller';
   controllers: [ProgressController, BookmarksController, NotesController],
   providers: [
     RecordProgressHandler,
+    RecordProgressBatchHandler,
     GetLessonProgressHandler,
     ListBookmarksHandler,
     CreateBookmarkHandler,

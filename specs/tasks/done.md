@@ -2,6 +2,24 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-003 — brand-align design tokens + emit alias layer (PR 3a)
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: merged locally to main as `9e0a851` (no GitHub PR; merge happened on the local clone via `git merge --ff-only` from `chore/design-tokens-canonical`).
+- Owner: claude
+- Goal: replace the blue-stub palette in `specs/design/tokens/*.json` with CourseShelf brand values and teach the emitter to publish prototype short CSS-var names (`--bg`, `--surface`, `--primary`, …) as `var()` aliases of the DTCG long names.
+- Spec diff: none
+- Codegen impact: no
+- Design impact: yes — first time the code-stack carries actual CourseShelf brand
+- Sub-steps:
+  - [x] rewrite `specs/design/tokens/color.json` with brand hex values + new roles (text.loud, surface.skeleton{Base,Shine}, brand.accentSoft, status.{\*}Soft)
+  - [x] rewrite `specs/design/tokens/shadow.json` with brand shadow tints
+  - [x] tune `specs/design/tokens/motion.json` durations/easings to match prototype curves
+  - [x] extend `emit-scss.ts` with themed alias section + static `--d-*`/`--e-*` aliases
+  - [x] verified: short-name alias hex byte-equals prototype hex for all 22 color/shadow pairs (dark + light)
+  - [x] lint --fix + typecheck clean
+
 ## T-2026-04-26-002 — rewrite roadmap story registry under the current stack
 
 - Created: 2026-04-26

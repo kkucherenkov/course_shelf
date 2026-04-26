@@ -8,6 +8,7 @@
   "scripts": {
     "build": "node --experimental-strip-types src/build.ts",
     "audit:inventory": "node --experimental-strip-types scripts/audit-inventory.ts",
+    "audit:cross-source": "node --experimental-strip-types scripts/audit-cross-source.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },

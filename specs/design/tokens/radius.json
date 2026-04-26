@@ -1,14 +1,10 @@
 {
-  "$description": "Border-radius tokens.",
+  "$description": "Border-radius tokens — CourseShelf brand sm/md/lg/pill (matches docs/design/shared/tokens.json `radius`).",
   "radius": {
-    "none": { "$value": "0px",    "$type": "dimension" },
-    "xs":   { "$value": "2px",    "$type": "dimension" },
-    "sm":   { "$value": "4px",    "$type": "dimension" },
-    "md":   { "$value": "6px",    "$type": "dimension" },
-    "lg":   { "$value": "8px",    "$type": "dimension" },
-    "xl":   { "$value": "12px",   "$type": "dimension" },
-    "2xl":  { "$value": "16px",   "$type": "dimension" },
-    "3xl":  { "$value": "24px",   "$type": "dimension" },
-    "pill": { "$value": "9999px", "$type": "dimension" }
+    "none": { "$value": "0px", "$type": "dimension" },
+    "sm": { "$value": "4px", "$type": "dimension" },
+    "md": { "$value": "8px", "$type": "dimension" },
+    "lg": { "$value": "16px", "$type": "dimension" },
+    "pill": { "$value": "999px", "$type": "dimension" }
   }
 }

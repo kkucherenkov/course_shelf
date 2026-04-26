@@ -1,42 +1,30 @@
 # Active tasks
 
-## T-2026-04-26-003 — brand-align design tokens + emit alias layer (PR 3a)
+## T-2026-04-26-004 — design-token cross-source audit (PR 3b)
 
 - Created: 2026-04-26
 - Owner: claude
-- Spec: in-thread agreement (option C-full, split into 3a/3b).
-- Goal: replace the blue-stub palette in `specs/design/tokens/*.json` with the actual CourseShelf brand values used by `docs/design/shared/tokens.css`, and teach the emitter to publish the prototype's short CSS-var names (`--bg`, `--surface`, `--primary`, …) as aliases of the DTCG long names (`--surface-page`, `--surface-surface`, `--brand-accent`, …) so any component lifted from the JSX prototype works under code-stack tokens unchanged.
+- Spec: in-thread agreement (option C-full part 2). Stacks on the brand alignment landed by T-2026-04-26-003.
+- Goal: ship `packages/design-tokens/scripts/audit-cross-source.ts` that compares brand-affecting values between `docs/design/shared/tokens.json` (prototype, Style-Dictionary v3 schema) and `specs/design/tokens/*.json` (code-stack DTCG); the script exits 1 with a readable diff on any drift, and exits 0 with a one-line summary on parity.
 - Acceptance:
-  - Every hex in `apps/web/app/assets/css/tokens.generated.css` (and the mirror in `packages/ui/src/tokens.generated.css`) for the prototype's short-name vars **byte-equals** the corresponding hex in `docs/design/shared/tokens.css` for both `:root` (dark) and `[data-mode="light"]`.
-  - The emitter still produces the long-name DTCG vars unchanged (no regression on existing consumers).
-  - `pnpm --filter @app/design-tokens build` succeeds; `lint` + `typecheck` pass.
-  - Generated `tokens.g.dart` and `design-tokens.generated.ts` keep building (no API break).
-  - DTCG inputs (`specs/design/tokens/{color,shadow,opacity}.json`) carry CourseShelf hex values, not the Tailwind-blue defaults.
+  - `pnpm --filter @app/design-tokens audit:cross-source` exits 0 on the current repo state (PR 3a left both sources in sync).
+  - The script covers, at minimum: themed colors (`bg`, `surface`, `surface-2`, `surface-3`, `border`, `border-strong`, `focus-ring`, `text`, `text-loud`, `text-muted`, `primary`, `primary-hover`, `primary-text`) for both dark and light; semantic colors (`success`/`warning`/`error`/`info`, dark only); spacing (`0..9`), radius (`sm`/`md`/`lg`/`pill`), font families (`sans`/`mono`), durations (`fast`/`base`↔`normal`/`slow`), easings (`out`/`in`/`default`↔`inOut`), elevations (`shadow-1`↔`shadow.xs.dark`, `shadow-2`↔`shadow.md.dark`, `shadow-3`↔`shadow.lg.dark`).
+  - Mapping table is colocated with the script and references the same pairs used by `emit-scss.ts` (no two sources of truth for the mapping).
+  - Hex normalisation handles `#RGB`/`#RRGGBB`/`rgba(...)`/multi-shadow lists (so `#FFFFFF` ≡ `#fff`, `rgba(0,0,0,0.35)` ≡ `rgba(0, 0, 0, 0.35)`, `0 1px 2px rgba(0, 0, 0, 0.35)` ≡ same trimmed/spaced).
+  - On drift, the message names: short alias, dark/light side, both values; e.g. `--bg dark: proto=#0E0F12 ↔ dtcg=#0E1015`.
+  - `pnpm --filter @app/design-tokens lint && typecheck` clean after the script lands.
+  - Reasonable mutation test: temporarily flip one hex in `specs/design/tokens/color.json`, run audit, observe exit 1 + readable message, revert.
 - Spec diff: none
-- Codegen impact: no (no `@app/api-client-*` regen)
-- Design impact: yes — first time the code-stack carries actual CourseShelf brand
-- Tests: manual hex parity check between generated CSS and prototype CSS; visual sanity on a subset of vars; existing `pnpm --filter @app/design-tokens lint typecheck` clean.
+- Codegen impact: no
+- Design impact: locks brand parity behind a script (CI wiring deferred — script alone is enough for PR 3b).
+- Tests: mutation test described above; PR 3b ships only the script + `package.json` script entry; no CI workflow edits in this PR.
 - Sub-steps:
-  - [x] inventory short-name CSS vars in `docs/design/shared/tokens.css` (dark vs light blocks)
-  - [x] inventory DTCG roles in `specs/design/tokens/{color,shadow,opacity}.json`
-  - [x] write the role mapping (DTCG long → prototype short) as a const inside `emit-scss.ts` (annotated)
-  - [x] add new DTCG roles missing from current schema — `color.text.loud`, `color.surface.skeletonBase`, `color.surface.skeletonShine`, `color.brand.accentSoft`, `color.status.{success,warning,error,info}Soft` (types.ts permissive — no schema change required)
-  - [x] rewrite `specs/design/tokens/color.json` with brand hex values (warm neutrals + amber accent + brand semantic)
-  - [x] rewrite `specs/design/tokens/shadow.json` with brand shadow values
-  - [x] tune `specs/design/tokens/motion.json` durations (150/200/250) and easings to match prototype curves
-  - [x] extend `emit-scss.ts` with themed alias section + static `--d-*`/`--e-*` aliases
-  - [x] run `pnpm --filter @app/design-tokens build`; alias hex parity vs `docs/design/shared/tokens.css` is byte-equal for all checked pairs (dark + light)
-  - [x] `pnpm --filter @app/design-tokens lint --fix && pnpm --filter @app/design-tokens typecheck` clean
-  - [x] prettier-safe JSON (Write produced canonical form); emitter passed lint --fix
+  - [x] write `packages/design-tokens/scripts/audit-cross-source.ts` (parser, mapping, diff, exit codes)
+  - [x] add `audit:cross-source` script to `packages/design-tokens/package.json`
+  - [x] first run surfaced 14 drifts; 4 are known prototype-internal (tokens.json ≠ tokens.css) and reported as ℹ; remaining 10 closed in this PR by aligning `specs/design/tokens/{spacing,radius,typography}.json` with the brand
+  - [x] mutation test: flipped `text.fg.dark` `#E8EAEE` → `#FFFFFF`, audit exited 1 with readable diff, reverted
+  - [x] new `packages/design-tokens/README.md` documents both sources, the alias layer, and the audit's role
+  - [x] `pnpm --filter @app/design-tokens lint && typecheck && audit:cross-source` all green (42 pairs in sync, 4 known-internal drifts reported as ℹ)
+  - [x] prettier on touched files
 - Status: in-progress
 - Blockers: —
-
-## T-2026-04-26-004 — design-token cross-source audit + CI gate (PR 3b, queued)
-
-- Created: 2026-04-26
-- Owner: claude
-- Spec: in-thread agreement (option C-full part 2).
-- Goal: lock the brand alignment from PR 3a behind a CI gate that fails on hex drift between `docs/design/shared/tokens.json` and `specs/design/tokens/*.json` (after applying the role mapping).
-- Acceptance: deferred until PR 3a lands.
-- Status: queued
-- Blockers: depends on T-2026-04-26-003.

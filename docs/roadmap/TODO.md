@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `23 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `28 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -34,11 +34,11 @@ Progress: `23 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E04 — Backend skeleton + Better Auth
 
-- [ ] [E04-F01-S01](./tasks/E04-F01-S01.md) `A` — Bootstrap apps/backend with Prisma, modules skeleton, and shared kernel · ⇐ E02-F02-S04
-- [ ] [E04-F01-S02](./tasks/E04-F01-S02.md) `A` — `/healthz` and `/readyz` outside the OpenAPI spec · ⇐ E04-F01-S01
-- [ ] [E04-F02-S01](./tasks/E04-F02-S01.md) `A` — Configure Better Auth with bearer + admin plugins · ⇐ E04-F01-S01
-- [ ] [E04-F02-S02](./tasks/E04-F02-S02.md) `A` — Mount Better Auth + register global guard · ⇐ E04-F02-S01
-- [ ] [E04-F02-S03](./tasks/E04-F02-S03.md) `A` — Mount express-openapi-validator for /api/v1/\* · ⇐ E04-F02-S02
+- [x] [E04-F01-S01](./tasks/E04-F01-S01.md) `A` — Bootstrap apps/backend with Prisma, modules skeleton, and shared kernel · ⇐ E02-F02-S04
+- [x] [E04-F01-S02](./tasks/E04-F01-S02.md) `A` — `/healthz` and `/readyz` outside the OpenAPI spec · ⇐ E04-F01-S01
+- [x] [E04-F02-S01](./tasks/E04-F02-S01.md) `A` — Configure Better Auth with bearer + admin plugins · ⇐ E04-F01-S01
+- [x] [E04-F02-S02](./tasks/E04-F02-S02.md) `A` — Mount Better Auth + register global guard · ⇐ E04-F02-S01
+- [x] [E04-F02-S03](./tasks/E04-F02-S03.md) `A` — Mount express-openapi-validator for /api/v1/\* · ⇐ E04-F02-S02
 
 ## E06 — Catalog bounded context
 

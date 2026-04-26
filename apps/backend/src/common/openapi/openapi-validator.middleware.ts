@@ -59,7 +59,11 @@ export function registerOpenApiValidator(app: INestApplication, nodeEnv: string)
       // `/v1/stream/lessons/` is also exempt: the response is raw binary video
       // bytes (not JSON), so the OpenAPI validator has no schema to validate
       // against and must not intercept these requests.
-      ignorePaths: /\/v1\/auth(\/|$)|\/v1\/stream\/lessons\//,
+      // `req.path` inside this middleware is relative to the `/api` mount point,
+      // so the `/api` prefix is omitted. The pattern below matches both the
+      // relative form (`/v1/auth/…`) and an absolute form just in case the
+      // middleware is ever re-mounted at the root.
+      ignorePaths: /^\/v1\/auth(\/|$)|\/v1\/stream\/lessons\//,
     }),
   );
 

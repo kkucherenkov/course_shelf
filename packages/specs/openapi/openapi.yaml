@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.2.0
+  version: 0.3.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -21,6 +21,8 @@ servers:
   - url: https://api.example.com
     description: Production (placeholder)
 tags:
+  - name: Access
+    description: User → resource access grants. Admins issue and revoke; everyone else only ever reads their own implicit grants from session context.
   - name: Catalog
     description: Course library registration and lookup.
   - name: system
@@ -29,6 +31,250 @@ tags:
     description: Centrifugo connection tokens
 
 paths:
+  /api/v1/access/grants:
+    post:
+      operationId: registerGrant
+      summary: Grant a user READ access to a library or course
+      description: |
+        Idempotent on (userId, target). Returns 409 if the same grant already
+        exists. Only admins (`session.user.role === 'admin'`) may call this;
+        other authenticated users get 403.
+      tags: [Access]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterGrantRequest"
+            examples:
+              libraryGrant:
+                summary: Grant READ access to Conference Recordings
+                value:
+                  userId: clxvusr0000000000000000001
+                  target:
+                    kind: library
+                    libraryId: clxvp1234567890abcdefghij
+                  level: READ
+      responses:
+        "201":
+          description: Grant created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessGrantDto"
+              examples:
+                created:
+                  value:
+                    id: clxvgnt0000000000000000001
+                    userId: clxvusr0000000000000000001
+                    target:
+                      kind: library
+                      libraryId: clxvp1234567890abcdefghij
+                    level: READ
+                    createdAt: "2026-04-25T10:00:00Z"
+        "400":
+          description: Validation error — missing or malformed fields
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                badInput:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: "target.kind must be 'library' or 'course'."
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only admins may issue access grants.
+        "404":
+          description: Target library or course not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No library with that id exists.
+        "409":
+          description: A grant for this (userId, target) pair already exists
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                conflict:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: "A READ grant for user clxvusr0000000000000000001 on library clxvp1234567890abcdefghij already exists."
+
+    get:
+      operationId: listGrantsByUser
+      summary: List a user's access grants
+      description: Returns every grant issued to the given user, both library- and course-scoped.
+      tags: [Access]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          description: Better Auth user id whose grants should be returned.
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Grant list returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessGrantListDto"
+              examples:
+                list:
+                  value:
+                    items:
+                      - id: clxvgnt0000000000000000001
+                        userId: clxvusr0000000000000000001
+                        target:
+                          kind: library
+                          libraryId: clxvp1234567890abcdefghij
+                        level: READ
+                        createdAt: "2026-04-25T10:00:00Z"
+                      - id: clxvgnt0000000000000000002
+                        userId: clxvusr0000000000000000001
+                        target:
+                          kind: course
+                          courseId: clxvcrs0000000000000000001
+                        level: READ
+                        createdAt: "2026-04-25T10:05:00Z"
+        "400":
+          description: userId query parameter is missing or empty
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                missingUserId:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: "Query parameter 'userId' is required."
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only admins may list grants for arbitrary users.
+
+  /api/v1/access/grants/{id}:
+    delete:
+      operationId: revokeGrant
+      summary: Revoke an access grant
+      description: Permanently removes the grant identified by `id`. The affected user immediately loses the access level the grant provided.
+      tags: [Access]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the grant to revoke.
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Grant revoked — no body
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only admins may revoke access grants.
+        "404":
+          description: Grant not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No grant with that id exists.
+
   /api/v1/libraries:
     post:
       operationId: registerLibrary
@@ -314,9 +560,116 @@ components:
       scheme: bearer
       bearerFormat: Better Auth bearer token
   schemas:
+    AccessGrantDto:
+      type: object
+      required: [id, userId, target, level, createdAt]
+      description: A single access grant issued by an admin.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid identifying this grant.
+        userId:
+          type: string
+          description: Better Auth user id of the grantee.
+        target:
+          $ref: "#/components/schemas/GrantTarget"
+        level:
+          $ref: "#/components/schemas/GrantLevel"
+        createdAt:
+          type: string
+          format: date-time
+          description: ISO-8601 instant when the grant was created.
+      examples:
+        - id: clxvgnt0000000000000000001
+          userId: clxvusr0000000000000000001
+          target:
+            kind: library
+            libraryId: clxvp1234567890abcdefghij
+          level: READ
+          createdAt: "2026-04-25T10:00:00Z"
+        - id: clxvgnt0000000000000000002
+          userId: clxvusr0000000000000000001
+          target:
+            kind: course
+            courseId: clxvcrs0000000000000000001
+          level: READ
+          createdAt: "2026-04-25T10:05:00Z"
+
+    AccessGrantListDto:
+      type: object
+      required: [items]
+      description: Paginated list of access grants for a given user.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccessGrantDto"
+      example:
+        items:
+          - id: clxvgnt0000000000000000001
+            userId: clxvusr0000000000000000001
+            target:
+              kind: library
+              libraryId: clxvp1234567890abcdefghij
+            level: READ
+            createdAt: "2026-04-25T10:00:00Z"
+          - id: clxvgnt0000000000000000002
+            userId: clxvusr0000000000000000001
+            target:
+              kind: course
+              courseId: clxvcrs0000000000000000001
+            level: READ
+            createdAt: "2026-04-25T10:05:00Z"
+
     DependencyStatus:
       type: ["string", "null"]
       enum: [ok, degraded, down]
+
+    GrantLevel:
+      type: string
+      enum: [READ]
+      description: >-
+        Access level. v1 only issues READ; the enum is open for future levels
+        (e.g. ADMIN, NONE for explicit denials).
+
+    GrantTarget:
+      description: The resource to which access is granted. Discriminated by `kind`.
+      oneOf:
+        - title: LibraryTarget
+          type: object
+          required: [kind, libraryId]
+          properties:
+            kind:
+              type: string
+              enum: [library]
+              description: Discriminator value indicating a library-scoped grant.
+            libraryId:
+              type: string
+              description: Server-generated cuid of the target library.
+          additionalProperties: false
+          example:
+            kind: library
+            libraryId: clxvp1234567890abcdefghij
+        - title: CourseTarget
+          type: object
+          required: [kind, courseId]
+          properties:
+            kind:
+              type: string
+              enum: [course]
+              description: Discriminator value indicating a course-scoped grant. Accepted in v1 even though the Course aggregate (E06-F03-S01) has not landed yet — keeps the contract stable for E14-F04-S01.
+            courseId:
+              type: string
+              description: Server-generated cuid of the target course (e.g. "DDD by Eric Evans").
+          additionalProperties: false
+          example:
+            kind: course
+            courseId: clxvcrs0000000000000000001
+      discriminator:
+        propertyName: kind
+        mapping:
+          library: "#/components/schemas/GrantTarget/oneOf/0"
+          course: "#/components/schemas/GrantTarget/oneOf/1"
 
     HealthStatus:
       type: object
@@ -426,6 +779,25 @@ components:
           type: ["string", "null"]
           format: date-time
           description: ISO-8601 instant when the token expires
+
+    RegisterGrantRequest:
+      type: object
+      required: [userId, target, level]
+      description: Payload for issuing a new access grant.
+      properties:
+        userId:
+          type: string
+          description: Better Auth user id of the grantee.
+        target:
+          $ref: "#/components/schemas/GrantTarget"
+        level:
+          $ref: "#/components/schemas/GrantLevel"
+      example:
+        userId: clxvusr0000000000000000001
+        target:
+          kind: library
+          libraryId: clxvp1234567890abcdefghij
+        level: READ
 
     RegisterLibraryRequest:
       type: object

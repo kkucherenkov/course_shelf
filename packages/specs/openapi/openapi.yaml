@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.7.0
+  version: 0.8.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -25,6 +25,8 @@ tags:
     description: User → resource access grants. Admins issue and revoke; everyone else only ever reads their own implicit grants from session context.
   - name: Catalog
     description: Course library registration and lookup.
+  - name: Learning
+    description: Per-user lesson progress, bookmarks, and notes.
   - name: Streaming
     description: Lesson streaming and signed URLs.
   - name: system
@@ -1135,6 +1137,177 @@ paths:
                       redis: degraded
                       centrifugo: ok
 
+  /api/v1/progress:
+    post:
+      operationId: recordLessonProgress
+      summary: Record (upsert) the requester's progress on a lesson
+      description: |
+        Last-write-wins on `clientUpdatedAt`: out-of-order writes (older
+        timestamp than the current state) are silently accepted with the prior
+        state echoed back. The first write that crosses 90 % completion sets
+        `completed: true` and stamps `completedAt`; subsequent writes do not
+        re-emit completion. Always returns the post-merge state — clients can
+        use it to detect whether their write was the one that bumped the counter.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordProgressRequest"
+            examples:
+              watchingLesson:
+                summary: User watched 18 min of a 30-min lesson
+                value:
+                  lessonId: clxvles0000000000000000001
+                  positionSeconds: 1080
+                  durationSeconds: 1800
+                  clientUpdatedAt: "2026-04-25T14:32:00Z"
+      responses:
+        "200":
+          description: Post-merge progress state returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonProgressDto"
+              examples:
+                merged:
+                  value:
+                    lessonId: clxvles0000000000000000001
+                    positionSeconds: 1080
+                    durationSeconds: 1800
+                    percent: 60
+                    completed: false
+                    lastSeenAt: "2026-04-25T14:32:00Z"
+        "400":
+          description: Validation error — missing or malformed fields
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                badInput:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: "positionSeconds must be >= 0."
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Requester has no READ grant covering the parent library or course
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not have access to this lesson.
+        "404":
+          description: Lesson not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No lesson with that id exists.
+
+  /api/v1/progress/{lessonId}:
+    get:
+      operationId: getLessonProgress
+      summary: Get the requester's progress on a lesson
+      description: |
+        Returns the current progress record for the requesting user on the
+        given lesson. 403 is returned both when the requester has no READ grant
+        covering the lesson **and** when the lesson does not exist — preventing
+        existence leakage. 404 is returned only when the lesson exists but the
+        requester has not yet recorded any progress.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          description: Server-generated cuid identifying the lesson.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Progress record returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonProgressDto"
+              examples:
+                inProgress:
+                  value:
+                    lessonId: clxvles0000000000000000001
+                    positionSeconds: 1080
+                    durationSeconds: 1800
+                    percent: 60
+                    completed: false
+                    lastSeenAt: "2026-04-25T14:32:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: No READ grant — also covers "lesson missing + no grant" to avoid leaking existence
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not have access to this lesson.
+        "404":
+          description: Lesson exists but the requester has not yet recorded any progress
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                noProgress:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No progress record found for this lesson.
+
   /api/v1/realtime/token:
     post:
       operationId: issueRealtimeToken
@@ -1582,6 +1755,52 @@ components:
         completed: false
         lastSeenAtSeconds: 0
 
+    LessonProgressDto:
+      type: object
+      required: [lessonId, positionSeconds, durationSeconds, percent, completed, lastSeenAt]
+      description: Per-user progress state for a single lesson, as persisted after a merge.
+      properties:
+        lessonId:
+          type: string
+          description: Server-generated cuid identifying the lesson.
+        positionSeconds:
+          type: integer
+          minimum: 0
+          description: Last recorded watch position in seconds.
+        durationSeconds:
+          type: integer
+          minimum: 1
+          description: Lesson video duration in seconds.
+        percent:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: >-
+            Computed as `positionSeconds / durationSeconds * 100`.
+            Clamped to 100 when position >= duration.
+        completed:
+          type: boolean
+          description: >-
+            True once the user crosses the 90 % threshold; never flips back
+            to false.
+        lastSeenAt:
+          type: string
+          format: date-time
+          description: ISO-8601 instant of the last accepted progress write.
+        completedAt:
+          type: string
+          format: date-time
+          description: >-
+            Set the first time `completed` flips to true. Stable across
+            subsequent writes. Absent when `completed` is false.
+      example:
+        lessonId: clxvles0000000000000000001
+        positionSeconds: 1080
+        durationSeconds: 1800
+        percent: 60
+        completed: false
+        lastSeenAt: "2026-04-25T14:32:00Z"
+
     MaterialDto:
       type: object
       required: [id, kind, label, sizeBytes]
@@ -1649,6 +1868,41 @@ components:
           type: ["string", "null"]
           format: date-time
           description: ISO-8601 instant when the token expires
+
+    RecordProgressRequest:
+      type: object
+      required: [lessonId, positionSeconds, durationSeconds, clientUpdatedAt]
+      description: Payload for upserting the requester's progress on a lesson.
+      properties:
+        lessonId:
+          type: string
+          description: Server-generated cuid identifying the lesson.
+        positionSeconds:
+          type: integer
+          minimum: 0
+          description: >-
+            Last reported watch position in seconds. Clamped server-side to
+            `[0, durationSeconds]`.
+        durationSeconds:
+          type: integer
+          minimum: 1
+          description: >-
+            Lesson video duration in seconds. Clients pass the player's
+            `duration` from the `loadedmetadata` event; it must match the
+            server-side value once E06-F02-S02 (ffprobe) lands. v1 trusts
+            the client value.
+        clientUpdatedAt:
+          type: string
+          format: date-time
+          description: >-
+            ISO-8601 timestamp the client recorded the position. Out-of-order
+            writes (older than the current `lastSeenAt`) are silently accepted
+            and the response echoes the unchanged state.
+      example:
+        lessonId: clxvles0000000000000000001
+        positionSeconds: 1080
+        durationSeconds: 1800
+        clientUpdatedAt: "2026-04-25T14:32:00Z"
 
     RegisterGrantRequest:
       type: object

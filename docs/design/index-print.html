@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" data-mode="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>CourseShelf · Design system (Print)</title>
+<link rel="stylesheet" href="shared/tokens.css"/>
+<link rel="stylesheet" href="shared/screens.css"/>
+<style>
+  html, body { background: var(--bg); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { padding: 0; }
+  .idx-hero { padding: 64px 32px 32px; max-width: 1080px; margin: 0 auto; }
+  .idx-hero .mark { display: inline-flex; gap: 10px; align-items: center; margin-bottom: 24px; }
+  .idx-hero .mark-glyph { width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, var(--primary), var(--primary-hover)); display: grid; place-items: center; color: var(--primary-text); font-weight: 700; font-family: var(--font-mono); }
+  .idx-hero h1 { font-size: 56px; line-height: 1.05; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 12px; color: var(--text-loud); }
+  .idx-hero p { font-size: 17px; color: var(--text-muted); max-width: 60ch; line-height: 26px; margin: 0; }
+  .idx-meta { display: flex; gap: 32px; margin-top: 24px; }
+  .idx-meta-item .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-subtle); }
+  .idx-meta-item .value { font-size: 14px; color: var(--text); margin-top: 2px; font-family: var(--font-mono); }
+
+  @page { size: A4 portrait; margin: 0.5cm; }
+  @media print {
+    html, body { background: var(--bg) !important; }
+    .idx-hero { padding: 32px 24px 16px; break-after: page; }
+    .idx-root { padding: 24px !important; }
+    .idx-phase-h { break-after: avoid; }
+    .idx-grid { break-inside: avoid; }
+    .idx-card { break-inside: avoid; box-shadow: none !important; }
+    a { color: inherit !important; text-decoration: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="idx-hero">
+  <div class="mark"><div class="mark-glyph">CS</div><span style="color: var(--text-muted); font-size: 14px;">CourseShelf · Design system v0.1</span></div>
+  <h1>A self-hosted home<br/>for technical courses.</h1>
+  <p>Plex for technical courses — for people who already have a folder of MP4s and PDFs and want to actually finish them. Calm, dense, keyboard-friendly. Built on a small set of foundations that scale from desktop player to mobile downloads.</p>
+  <div class="idx-meta">
+    <div class="idx-meta-item"><div class="label">Surfaces</div><div class="value">Web + Mobile</div></div>
+    <div class="idx-meta-item"><div class="label">Mode</div><div class="value">Dark · Light</div></div>
+    <div class="idx-meta-item"><div class="label">Density</div><div class="value">Compact · Comfortable</div></div>
+    <div class="idx-meta-item"><div class="label">Status</div><div class="value">In review</div></div>
+  </div>
+</div>
+
+<div class="idx-root" style="padding-top: 24px;">
+  <div class="idx-phase-h">Phase 1 · Foundations</div>
+  <div class="idx-grid">
+    <a class="idx-card" href="cs-foundations/index.html"><span class="num">01</span><span class="name">Foundations canvas</span><span class="desc">Color, type, spacing, radii, shadows, buttons, inputs, cards, rows, tabs, feedback, overlays, progress, empty, skeletons.</span></a>
+  </div>
+
+  <div class="idx-phase-h">Phase 2 · Domain components</div>
+  <div class="idx-grid">
+    <a class="idx-card" href="cs-components/index.html"><span class="num">02</span><span class="name">Components</span><span class="desc">Course cards (3 layouts × 4 states), lesson rows, player chrome, bookmark/note, library scan, download row, progress badge.</span></a>
+  </div>
+
+  <div class="idx-phase-h">Phase 3 · Web sample screens</div>
+  <div class="idx-grid">
+    <a class="idx-card" href="cs-web-home/index.html"><span class="num">03</span><span class="name">Home</span><span class="desc">Continue watching, recently added, your week.</span></a>
+    <a class="idx-card" href="cs-web-course-detail/index.html"><span class="num">04</span><span class="name">Course detail</span><span class="desc">Hero, sections, lessons, materials rail.</span></a>
+    <a class="idx-card" href="cs-web-lesson-player/index.html"><span class="num">05</span><span class="name">Lesson player</span><span class="desc">Full chrome with sections / notes / bookmarks tabs.</span></a>
+  </div>
+
+  <div class="idx-phase-h">Phase 4 · Mobile sample screens</div>
+  <div class="idx-grid">
+    <a class="idx-card" href="cs-mobile-home/index.html"><span class="num">06</span><span class="name">Mobile · Home / Browse / Downloads</span><span class="desc">Three side-by-side phones showing the core mobile loop.</span></a>
+    <a class="idx-card" href="cs-mobile-lesson-player/index.html"><span class="num">07</span><span class="name">Mobile · Lesson player</span><span class="desc">Portrait with tabs + landscape immersive.</span></a>
+  </div>
+
+  <div style="margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--text-subtle); font-size: 12px;">
+    Design system files live under <span class="t-mono">shared/</span> · components under <span class="t-mono">cs-components/</span> · screens namespaced as <span class="t-mono">cs-{platform}-{screen}/</span>.
+  </div>
+</div>
+<script>
+  (async () => {
+    if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch(e){} }
+    setTimeout(() => window.print(), 500);
+  })();
+</script>
+</body>
+</html>

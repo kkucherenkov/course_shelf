@@ -6,11 +6,11 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `6 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `7 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
-- [ ] [E00-F01-S01](./tasks/E00-F01-S01.md) `A` — Place the Claude Design bundle under docs/design/
+- [x] [E00-F01-S01](./tasks/E00-F01-S01.md) `A` — Place the Claude Design bundle under docs/design/
 
 ## E01 — Repository foundations
 

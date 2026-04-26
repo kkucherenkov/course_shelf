@@ -1,30 +1,28 @@
 # Active tasks
 
-## T-2026-04-26-007 — apps/backend/src/shared kernel: Branded IDs + DomainError + subclasses
+## T-2026-04-26-008 — stage the design bundle under docs/design/ + index + .gitattributes
 
 - Created: 2026-04-26
 - Owner: claude
-- Spec: closes the shared-kernel acceptance bullets of `docs/roadmap/tasks/E04-F01-S01.md` (Branded ID at `apps/backend/src/shared/branded-id.ts`, DomainError + named subclasses at `apps/backend/src/shared/domain-error.ts`). E04-F01-S01 still has the empty bounded-context-modules bullet outstanding (Catalog/Access/Learning/Streaming/Ops do not exist yet — they materialise in their own epics), so the card stays at ⬜ for now.
-- Goal: every aggregate in `apps/backend` has a single import path for the cross-context kernel: `Brand<T,B>` / `Id<B>` for compile-time identifier safety, and `DomainError` (+ `InvariantViolation` / `NotFound` / `PermissionDenied`) so HttpExceptionFilter can map any business error to RFC 9457 without controller logic.
+- Spec: closes `docs/roadmap/tasks/E00-F01-S01.md`. The bundle had been sitting on disk as untracked files (every PR-3a/3b reference path under `docs/design/shared/` was unresolvable for any cloned checkout); this PR commits the entire bundle plus the index README and `.gitattributes` so the references are real.
+- Goal: a clone of the repository carries the full design handoff bundle alongside an index that names every project slug, its consumption story, and its file inventory; `.gitattributes` collapses prototype HTML/JSX/CSS as vendored so PR diffs and language stats stay relevant to actual source.
 - Acceptance:
-  - `apps/backend/src/shared/branded-id.ts` exports `Brand<T,B>`, `Id<B>`, and a `brand()` no-op cast.
-  - `apps/backend/src/shared/domain-error.ts` exports `DomainError` plus `InvariantViolation` (422), `NotFound` (404), `PermissionDenied` (403).
-  - `apps/backend/src/common/errors/` directory removed; old import paths (`../common/errors/domain-error`) replaced with `../shared/domain-error` in three call sites: `http-exception.filter.ts`, `_template/domain/_template.errors.ts`, `realtime/domain/realtime.errors.ts`.
-  - `boundaries/elements` in `packages/eslint-config/nest.mjs` carries a new `shared` element so `src/shared/**` is not flagged by `boundaries/no-unknown-files`.
-  - Unit tests: `apps/backend/src/shared/{branded-id,domain-error}.spec.ts` cover the API including a `@ts-expect-error` cross-brand assignment; `pnpm --filter @app/backend test -- src/shared` passes (43 / 43 in the suite).
-  - No regressions: lint and typecheck report only the same 4 pre-existing Prisma `no-unsafe-call` / TS2339 errors as before (Prisma client codegen is missing — separate concern).
+  - `docs/design/` is fully tracked; `git ls-files docs/design | wc -l` returns ≥ 50.
+  - `docs/design/DESIGN_BRIEF.md` exists at top-level (moved from `uploads/`).
+  - `docs/design/README.md` is an index keyed by project slug, with `Status` and `Consumed by` columns and a "Note on `cs-foundation`" row noting the singular-vs-plural slug discrepancy with `DESIGN_BRIEF.md §4`.
+  - `.gitattributes` marks `docs/design/**/*.{html,jsx,css,json}` as `linguist-vendored=true`, `*.png` as binary, and `packages/ui_flutter/lib/src/theme/tokens.g.dart` as `linguist-generated=true`.
+  - Card `docs/roadmap/tasks/E00-F01-S01.md` flips to ✅ Done with `Completed: 2026-04-26` + `Result:` lines under Notes; matching `- [ ]` in `docs/roadmap/TODO.md` is `- [x]` and progress counter goes from `6 / 115` to `7 / 115`.
+  - Side-effect cleanup: `T-2026-04-26-006` (eslint boundaries, merged `6a17c89`) and `T-2026-04-26-007` (shared kernel, merged `a3a8449`) move from `active.md` to `done.md` per the task-stack protocol.
 - Spec diff: none
 - Codegen impact: no
-- Design impact: none
-- Tests: vitest spec files cover `Brand<T,B>` no-op runtime + cross-brand type rejection, and DomainError + subclass instances (status/code/title/name/cause/instanceof).
+- Design impact: yes — the bundle is now first-class repo content, not local-only state.
+- Tests: visual sanity — `docs/design/README.md` renders the index table; index entries match the actual folders on disk.
 - Sub-steps:
-  - [x] write `apps/backend/src/shared/branded-id.ts` (`Brand<T,B>`, `Id<B>`, `brand()`)
-  - [x] write `apps/backend/src/shared/domain-error.ts` (base + `InvariantViolation` / `NotFound` / `PermissionDenied`)
-  - [x] write spec files for both modules
-  - [x] move all `common/errors/domain-error` imports to `shared/domain-error` (3 sites)
-  - [x] remove `apps/backend/src/common/errors/` directory
-  - [x] add `shared` element to `boundaries/elements` in `packages/eslint-config/nest.mjs`
-  - [x] verify: `pnpm --filter @app/backend test -- src/shared` 43/43 passing; lint/typecheck regress-free
-  - [x] prettier on touched files
+  - [x] move `docs/design/uploads/DESIGN_BRIEF.md` → `docs/design/DESIGN_BRIEF.md`
+  - [x] write `docs/design/README.md` (index + handoff conventions + sources-of-truth pointer)
+  - [x] write `.gitattributes` (linguist-vendored on `docs/design/**` + linguist-generated on Dart tokens)
+  - [x] flip `docs/roadmap/tasks/E00-F01-S01.md` to ✅ Done; tick TODO; bump progress counter
+  - [x] move T-006 / T-007 to `done.md` (this commit covers the carry-forward)
+  - [x] prettier on touched markdown
 - Status: in-progress
 - Blockers: —

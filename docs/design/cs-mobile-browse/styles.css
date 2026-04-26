@@ -1,0 +1,117 @@
+/* cs-mobile-browse — local stage + device size overrides + browse-specific tweaks */
+
+/* Stage */
+.mb-stage { padding: 32px 16px 96px; max-width: 1520px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+.mb-stage-h { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.mb-stage-h h1 { margin: 0; }
+.mb-cluster-h { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-family: var(--font-mono); margin: 32px 0 4px; }
+.mb-cluster-sub { font-size: 13px; color: var(--text-muted); margin: 0 0 16px; max-width: 72ch; line-height: 20px; }
+.mb-cluster-row { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+.mb-pair { display: flex; gap: 20px; align-items: flex-start; }
+.mb-pair-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-subtle); font-family: var(--font-mono); margin-bottom: 6px; text-align: center; }
+.mb-themed { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.mb-themed[data-theme="light"] { background: transparent; }
+
+/* Theme wrapper — render light variant via nested data-mode override.
+   tokens.css uses [data-mode="light"] selector at root; we mirror it on the wrapper. */
+.mb-themed[data-mode="light"] { color-scheme: light; }
+
+/* Device size overrides for the shared .phone frame.
+   Shared .phone = 360x760; we specialize per device. */
+.phone[data-device] { box-shadow: var(--shadow-3); }
+.phone[data-device="iphone-13-mini"]   { width: 375px; height: 812px; border-radius: 44px; }
+.phone[data-device="iphone-14-pro-max"]{ width: 428px; height: 926px; border-radius: 50px; }
+.phone[data-device="pixel-7"]          { width: 412px; height: 915px; border-radius: 36px; border-color: #0d0d0d; }
+
+/* Pixel uses a different status bar layout — we don't need to redraw, just hint */
+.phone[data-device="pixel-7"] .phone-status { font-family: var(--font-sans); }
+
+/* Notch / pill marker */
+.phone[data-device^="iphone"] .phone-notch {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  width: 96px; height: 26px; background: #0a0a0a; border-radius: 14px; z-index: 5;
+}
+.phone[data-device="pixel-7"] .phone-notch {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  width: 10px; height: 10px; background: #0a0a0a; border-radius: 50%; z-index: 5;
+}
+
+/* Slightly raise status bar to clear the notch */
+.phone[data-device^="iphone"] .phone-status { padding-top: 8px; height: 44px; align-items: flex-end; padding-bottom: 6px; }
+.phone[data-device="pixel-7"]  .phone-status { padding-top: 4px; height: 32px; }
+
+/* Theme override on the .phone itself — the host doc is dark, but light pairs need light tokens.
+   We emulate the light mode by re-declaring tokens (mirrors shared/tokens.css [data-mode="light"]). */
+.mb-themed[data-mode="light"] .phone {
+  /* The phone surface should pick up local tokens. Tokens are defined on :root by default;
+     [data-mode="light"] on this wrapper rescopes them. */
+}
+
+/* Browse-specific layout inside the phone */
+.mb-top { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 6px; gap: 8px; }
+.mb-top h1 { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.015em; color: var(--text-loud); }
+.mb-top .mb-top-actions { display: inline-flex; gap: 6px; }
+
+.mb-search { padding: 4px 16px 10px; }
+.mb-search .input-with-icon { width: 100%; }
+.mb-search .input-with-icon input { height: 38px; font-size: 14px; background: var(--surface-2); border-color: transparent; }
+
+.mb-chiprow { display: flex; gap: 6px; padding: 0 16px 10px; overflow-x: auto; scrollbar-width: none; }
+.mb-chiprow::-webkit-scrollbar { display: none; }
+.mb-chiprow .chip { flex-shrink: 0; }
+
+.mb-meta { display: flex; align-items: center; justify-content: space-between; padding: 0 16px 8px; }
+.mb-meta .count { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+.mb-meta .sort-btn { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; color: var(--text-muted); padding: 4px 8px; border-radius: var(--radius-sm); cursor: pointer; }
+.mb-meta .sort-btn:hover { background: var(--surface-2); color: var(--text); }
+
+.mb-grid { display: grid; gap: 12px; padding: 0 16px 16px; }
+.mb-grid[data-cols="2"] { grid-template-columns: 1fr 1fr; }
+.mb-grid[data-cols="3"] { grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+/* Tablet check (412+ Android) — switch to 3 cols if requested */
+.phone[data-cols="3"] .mb-grid { grid-template-columns: 1fr 1fr 1fr; }
+
+/* Filter button + active count badge */
+.mb-filter-btn { position: relative; display: inline-flex; gap: 6px; align-items: center; padding: 7px 12px; border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); }
+.mb-filter-btn .pill-count { background: var(--primary); color: var(--primary-text); padding: 0 6px; min-width: 18px; height: 16px; border-radius: var(--radius-pill); font-family: var(--font-mono); font-size: 11px; display: inline-grid; place-items: center; }
+.mb-icon-btn { width: 36px; height: 36px; display: inline-grid; place-items: center; border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+
+/* Active chip rail (mirrors web's bs-active-chip but tighter) */
+.mb-active-rail { display: flex; gap: 6px; padding: 0 16px 10px; overflow-x: auto; scrollbar-width: none; align-items: center; }
+.mb-active-rail::-webkit-scrollbar { display: none; }
+.mb-active-rail .clear { font-size: 12px; color: var(--text-muted); padding: 4px 8px; flex-shrink: 0; cursor: pointer; }
+
+/* Bottom sheet — re-target the absolute backdrop to the phone screen, not the page */
+.phone-screen { position: relative; }
+.phone-screen .bs-sheet-backdrop { position: absolute; inset: 0; z-index: 20; }
+.phone-screen .bs-sheet { max-height: 85%; }
+
+/* The Sort row inside the sheet (we extend FilterSheet by injecting a Sort header above filters) */
+.mb-sort-section { padding: 14px 16px 4px; border-bottom: 1px solid var(--border); }
+.mb-sort-section h4 { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: var(--text-loud); text-transform: uppercase; letter-spacing: 0.05em; }
+.mb-sort-options { display: flex; flex-direction: column; gap: 0; }
+.mb-sort-options label { display: flex; align-items: center; gap: 10px; padding: 8px 4px; cursor: pointer; font-size: 14px; color: var(--text); }
+.mb-sort-options input { accent-color: var(--primary); }
+
+/* Empty state */
+.mb-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 64px 24px; text-align: center; }
+.mb-empty .glyph { width: 56px; height: 56px; border-radius: 50%; background: var(--surface-2); display: grid; place-items: center; color: var(--text-muted); }
+.mb-empty h3 { margin: 0; font-size: 16px; color: var(--text-loud); font-weight: 600; }
+.mb-empty p { margin: 0; font-size: 13px; color: var(--text-muted); max-width: 32ch; line-height: 18px; }
+.mb-empty .btn { margin-top: 8px; }
+
+/* Error state */
+.mb-error { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 64px 24px; text-align: center; }
+.mb-error .glyph { width: 56px; height: 56px; border-radius: 50%; background: var(--error-soft); color: var(--error); display: grid; place-items: center; }
+.mb-error h3 { margin: 0; font-size: 16px; color: var(--text-loud); font-weight: 600; }
+.mb-error p { margin: 0; font-size: 13px; color: var(--text-muted); max-width: 34ch; line-height: 18px; }
+.mb-error code { font-family: var(--font-mono); font-size: 11px; color: var(--text-subtle); padding-top: 4px; }
+
+/* Skeleton card */
+.mb-skel-card { display: flex; flex-direction: column; gap: 8px; }
+.mb-skel-card .skel-cover { aspect-ratio: 3/4; border-radius: var(--radius-md); }
+.mb-skel-card .skel-line { height: 11px; border-radius: 4px; }
+
+/* Scroll regions inside phone-screen need padding-bottom so content doesn't sit under tabbar */
+.mb-screen { padding-bottom: 16px; }

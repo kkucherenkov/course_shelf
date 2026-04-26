@@ -1,0 +1,11 @@
+# Mark the design bundle as vendored so GitHub stops counting JSX / HTML / CSS
+# prototype files toward language statistics, and collapses their diffs by
+# default in PR review (these are visual references, not first-class source).
+docs/design/**/*.html linguist-vendored=true
+docs/design/**/*.jsx linguist-vendored=true
+docs/design/**/*.css linguist-vendored=true
+docs/design/**/*.json linguist-vendored=true
+docs/design/**/*.png binary
+
+# Generated artefacts that live in-tree but are reproducible from inputs.
+packages/ui_flutter/lib/src/theme/tokens.g.dart linguist-generated=true

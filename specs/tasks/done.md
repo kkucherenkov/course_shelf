@@ -2,6 +2,39 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-007 — apps/backend/src/shared kernel: Branded IDs + DomainError + subclasses
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: merged locally to main as `a3a8449` (no GitHub PR; `git merge --ff-only` from `chore/backend-shared-kernel`).
+- Owner: claude
+- Goal: cross-context kernel for `apps/backend` — `Brand<T,B>`/`Id<B>` for compile-time identifier safety and `DomainError` (+ `InvariantViolation`/`NotFound`/`PermissionDenied`) for RFC 9457 mapping.
+- Spec diff: none
+- Codegen impact: no
+- Design impact: none
+- Sub-steps:
+  - [x] write `apps/backend/src/shared/{branded-id,domain-error}.ts` + spec files
+  - [x] move three `common/errors/domain-error` import sites to `shared/`
+  - [x] remove `apps/backend/src/common/errors/`
+  - [x] add `shared` element to `boundaries/elements`
+  - [x] tests 43/43; lint/typecheck regress-free (only pre-existing prisma type errors remain)
+
+## T-2026-04-26-006 — eslint-plugin-boundaries: enforce DDD bounded-context boundaries
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: merged locally to main as `6a17c89` (no GitHub PR; `git merge --ff-only` from `chore/eslint-boundaries`).
+- Owner: claude
+- Goal: a sibling-module import inside `apps/backend/src/modules/<X>` referencing `apps/backend/src/modules/<Y>` (Y ≠ X) fails lint with a readable, action-oriented message.
+- Spec diff: none
+- Codegen impact: no
+- Design impact: none
+- Sub-steps:
+  - [x] add `eslint-plugin-boundaries` + `eslint-import-resolver-typescript` to `@app/eslint-config`
+  - [x] wire `boundaries/elements` (module / common / i18n / app) and `boundaries/element-types` rule in `nest.mjs`
+  - [x] mutation test confirmed cross-import rejection with the expected message
+  - [x] left `boundaries/element-types` (v5 syntax) — v6 `boundaries/dependencies` rejected the migrated config; deferred follow-up
+
 ## T-2026-04-26-005 — archive sweep: mark already-shipped roadmap stories as Done
 
 - Created: 2026-04-26

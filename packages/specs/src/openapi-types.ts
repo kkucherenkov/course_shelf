@@ -259,6 +259,55 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/progress': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Record (upsert) the requester's progress on a lesson
+     * @description Last-write-wins on `clientUpdatedAt`: out-of-order writes (older
+     *     timestamp than the current state) are silently accepted with the prior
+     *     state echoed back. The first write that crosses 90 % completion sets
+     *     `completed: true` and stamps `completedAt`; subsequent writes do not
+     *     re-emit completion. Always returns the post-merge state — clients can
+     *     use it to detect whether their write was the one that bumped the counter.
+     */
+    post: operations['recordLessonProgress'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/progress/{lessonId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the requester's progress on a lesson
+     * @description Returns the current progress record for the requesting user on the
+     *     given lesson. 403 is returned both when the requester has no READ grant
+     *     covering the lesson **and** when the lesson does not exist — preventing
+     *     existence leakage. 404 is returned only when the lesson exists but the
+     *     requester has not yet recorded any progress.
+     */
+    get: operations['getLessonProgress'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/realtime/token': {
     parameters: {
       query?: never;
@@ -657,6 +706,39 @@ export interface components {
       lastSeenAtSeconds: number;
     };
     /**
+     * @description Per-user progress state for a single lesson, as persisted after a merge.
+     * @example {
+     *       "lessonId": "clxvles0000000000000000001",
+     *       "positionSeconds": 1080,
+     *       "durationSeconds": 1800,
+     *       "percent": 60,
+     *       "completed": false,
+     *       "lastSeenAt": "2026-04-25T14:32:00Z"
+     *     }
+     */
+    LessonProgressDto: {
+      /** @description Server-generated cuid identifying the lesson. */
+      lessonId: string;
+      /** @description Last recorded watch position in seconds. */
+      positionSeconds: number;
+      /** @description Lesson video duration in seconds. */
+      durationSeconds: number;
+      /** @description Computed as `positionSeconds / durationSeconds * 100`. Clamped to 100 when position >= duration. */
+      percent: number;
+      /** @description True once the user crosses the 90 % threshold; never flips back to false. */
+      completed: boolean;
+      /**
+       * Format: date-time
+       * @description ISO-8601 instant of the last accepted progress write.
+       */
+      lastSeenAt: string;
+      /**
+       * Format: date-time
+       * @description Set the first time `completed` flips to true. Stable across subsequent writes. Absent when `completed` is false.
+       */
+      completedAt?: string;
+    };
+    /**
      * @description A sidecar material attached to a lesson.
      * @example {
      *       "id": "clxvmat0000000000000000001",
@@ -702,6 +784,28 @@ export interface components {
        * @description ISO-8601 instant when the token expires
        */
       expiresAt: string | null;
+    };
+    /**
+     * @description Payload for upserting the requester's progress on a lesson.
+     * @example {
+     *       "lessonId": "clxvles0000000000000000001",
+     *       "positionSeconds": 1080,
+     *       "durationSeconds": 1800,
+     *       "clientUpdatedAt": "2026-04-25T14:32:00Z"
+     *     }
+     */
+    RecordProgressRequest: {
+      /** @description Server-generated cuid identifying the lesson. */
+      lessonId: string;
+      /** @description Last reported watch position in seconds. Clamped server-side to `[0, durationSeconds]`. */
+      positionSeconds: number;
+      /** @description Lesson video duration in seconds. Clients pass the player's `duration` from the `loadedmetadata` event; it must match the server-side value once E06-F02-S02 (ffprobe) lands. v1 trusts the client value. */
+      durationSeconds: number;
+      /**
+       * Format: date-time
+       * @description ISO-8601 timestamp the client recorded the position. Out-of-order writes (older than the current `lastSeenAt`) are silently accepted and the response echoes the unchanged state.
+       */
+      clientUpdatedAt: string;
     };
     /**
      * @description Payload for issuing a new access grant.
@@ -1577,6 +1681,116 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['HealthStatus'];
+        };
+      };
+    };
+  };
+  recordLessonProgress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RecordProgressRequest'];
+      };
+    };
+    responses: {
+      /** @description Post-merge progress state returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LessonProgressDto'];
+        };
+      };
+      /** @description Validation error — missing or malformed fields */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Requester has no READ grant covering the parent library or course */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Lesson not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getLessonProgress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the lesson. */
+        lessonId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Progress record returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LessonProgressDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description No READ grant — also covers "lesson missing + no grant" to avoid leaking existence */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Lesson exists but the requester has not yet recorded any progress */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
         };
       };
     };

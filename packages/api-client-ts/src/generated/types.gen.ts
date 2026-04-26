@@ -230,6 +230,40 @@ export type LessonProgress = {
 };
 
 /**
+ * Per-user progress state for a single lesson, as persisted after a merge.
+ */
+export type LessonProgressDto = {
+    /**
+     * Server-generated cuid identifying the lesson.
+     */
+    lessonId: string;
+    /**
+     * Last recorded watch position in seconds.
+     */
+    positionSeconds: number;
+    /**
+     * Lesson video duration in seconds.
+     */
+    durationSeconds: number;
+    /**
+     * Computed as `positionSeconds / durationSeconds * 100`. Clamped to 100 when position >= duration.
+     */
+    percent: number;
+    /**
+     * True once the user crosses the 90 % threshold; never flips back to false.
+     */
+    completed: boolean;
+    /**
+     * ISO-8601 instant of the last accepted progress write.
+     */
+    lastSeenAt: string;
+    /**
+     * Set the first time `completed` flips to true. Stable across subsequent writes. Absent when `completed` is false.
+     */
+    completedAt?: string;
+};
+
+/**
  * A sidecar material attached to a lesson.
  */
 export type MaterialDto = {
@@ -274,6 +308,28 @@ export type RealtimeToken = {
      * ISO-8601 instant when the token expires
      */
     expiresAt: string | null;
+};
+
+/**
+ * Payload for upserting the requester's progress on a lesson.
+ */
+export type RecordProgressRequest = {
+    /**
+     * Server-generated cuid identifying the lesson.
+     */
+    lessonId: string;
+    /**
+     * Last reported watch position in seconds. Clamped server-side to `[0, durationSeconds]`.
+     */
+    positionSeconds: number;
+    /**
+     * Lesson video duration in seconds. Clients pass the player's `duration` from the `loadedmetadata` event; it must match the server-side value once E06-F02-S02 (ffprobe) lands. v1 trusts the client value.
+     */
+    durationSeconds: number;
+    /**
+     * ISO-8601 timestamp the client recorded the position. Out-of-order writes (older than the current `lastSeenAt`) are silently accepted and the response echoes the unchanged state.
+     */
+    clientUpdatedAt: string;
 };
 
 /**
@@ -940,6 +996,81 @@ export type GetHealthResponses = {
 };
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
+
+export type RecordLessonProgressData = {
+    body: RecordProgressRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/progress';
+};
+
+export type RecordLessonProgressErrors = {
+    /**
+     * Validation error — missing or malformed fields
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Requester has no READ grant covering the parent library or course
+     */
+    403: Problem;
+    /**
+     * Lesson not found
+     */
+    404: Problem;
+};
+
+export type RecordLessonProgressError = RecordLessonProgressErrors[keyof RecordLessonProgressErrors];
+
+export type RecordLessonProgressResponses = {
+    /**
+     * Post-merge progress state returned
+     */
+    200: LessonProgressDto;
+};
+
+export type RecordLessonProgressResponse = RecordLessonProgressResponses[keyof RecordLessonProgressResponses];
+
+export type GetLessonProgressData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the lesson.
+         */
+        lessonId: string;
+    };
+    query?: never;
+    url: '/api/v1/progress/{lessonId}';
+};
+
+export type GetLessonProgressErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * No READ grant — also covers "lesson missing + no grant" to avoid leaking existence
+     */
+    403: Problem;
+    /**
+     * Lesson exists but the requester has not yet recorded any progress
+     */
+    404: Problem;
+};
+
+export type GetLessonProgressError = GetLessonProgressErrors[keyof GetLessonProgressErrors];
+
+export type GetLessonProgressResponses = {
+    /**
+     * Progress record returned
+     */
+    200: LessonProgressDto;
+};
+
+export type GetLessonProgressResponse = GetLessonProgressResponses[keyof GetLessonProgressResponses];
 
 export type IssueRealtimeTokenData = {
     body?: never;

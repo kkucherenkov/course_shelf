@@ -27,6 +27,7 @@ import 'package:app_api_client/src/model/health_status.dart';
 import 'package:app_api_client/src/model/health_status_dependencies.dart';
 import 'package:app_api_client/src/model/lesson_dto.dart';
 import 'package:app_api_client/src/model/lesson_progress.dart';
+import 'package:app_api_client/src/model/lesson_progress_dto.dart';
 import 'package:app_api_client/src/model/library_dto.dart';
 import 'package:app_api_client/src/model/library_list_dto.dart';
 import 'package:app_api_client/src/model/library_target.dart';
@@ -36,6 +37,7 @@ import 'package:app_api_client/src/model/model0.dart';
 import 'package:app_api_client/src/model/model1.dart';
 import 'package:app_api_client/src/model/problem.dart';
 import 'package:app_api_client/src/model/realtime_token.dart';
+import 'package:app_api_client/src/model/record_progress_request.dart';
 import 'package:app_api_client/src/model/register_grant_request.dart';
 import 'package:app_api_client/src/model/register_library_request.dart';
 import 'package:app_api_client/src/model/scan_dto.dart';
@@ -62,6 +64,7 @@ part 'serializers.g.dart';
   HealthStatusDependencies,
   LessonDto,
   LessonProgress,
+  LessonProgressDto,
   LibraryDto,
   LibraryListDto,
   LibraryTarget,
@@ -71,6 +74,7 @@ part 'serializers.g.dart';
   Model1,
   Problem,
   RealtimeToken,
+  RecordProgressRequest,
   RegisterGrantRequest,
   RegisterLibraryRequest,
   ScanDto,

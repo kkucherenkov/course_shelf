@@ -11,6 +11,7 @@ import 'package:app_api_client/src/auth/bearer_auth.dart';
 import 'package:app_api_client/src/auth/oauth.dart';
 import 'package:app_api_client/src/api/access_api.dart';
 import 'package:app_api_client/src/api/catalog_api.dart';
+import 'package:app_api_client/src/api/learning_api.dart';
 import 'package:app_api_client/src/api/realtime_api.dart';
 import 'package:app_api_client/src/api/streaming_api.dart';
 import 'package:app_api_client/src/api/system_api.dart';
@@ -79,6 +80,12 @@ class AppApiClient {
   /// by doing that all interceptors will not be executed
   CatalogApi getCatalogApi() {
     return CatalogApi(dio, serializers);
+  }
+
+  /// Get LearningApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  LearningApi getLearningApi() {
+    return LearningApi(dio, serializers);
   }
 
   /// Get RealtimeApi instance, base route and serializer can be overridden by a given but be careful,

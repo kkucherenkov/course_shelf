@@ -1,7 +1,7 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { bearer, phoneNumber } from 'better-auth/plugins';
+import { admin, bearer, phoneNumber } from 'better-auth/plugins';
 
 import { AppConfig } from '../config/app-config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -29,7 +29,19 @@ function createInstance(
     // contract and are consistent with seed data.
     advanced: { database: { generateId: () => crypto.randomUUID() } },
     emailAndPassword: { enabled: true, autoSignIn: true },
+    // Additional fields on the user model:
+    //   - role: stored by the admin plugin for RBAC checks (defaultValue 'USER').
+    //   - displayName: optional user-facing name separate from the auth name.
+    // These fields are type-safe in the DB and accessible on session.user via
+    // the (session.user as Record<string, unknown>).role / .displayName cast pattern.
+    user: {
+      additionalFields: {
+        role: { type: 'string', defaultValue: 'USER' },
+        displayName: { type: 'string', required: false },
+      },
+    },
     plugins: [
+      admin(),
       bearer(),
       phoneNumber({
         sendOTP: async ({ phoneNumber: phone, code }) => {

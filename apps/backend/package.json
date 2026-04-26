@@ -23,6 +23,7 @@
     "db:seed": "node --experimental-strip-types prisma/seed.ts",
     "db:reset": "prisma migrate reset --force && pnpm db:seed",
     "auth:generate-schema": "better-auth generate --output prisma/schema.prisma",
+    "auth:schema": "better-auth generate --output prisma/schema.prisma -y",
     "rebuild-projections": "node --experimental-strip-types scripts/rebuild-projections.ts"
   },
   "dependencies": {

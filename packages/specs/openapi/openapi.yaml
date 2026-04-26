@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.4.0
+  version: 0.5.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -274,6 +274,287 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No grant with that id exists.
+
+  /api/v1/courses:
+    get:
+      operationId: listCourses
+      summary: List courses (optionally filtered by library)
+      description: |
+        Returns courses the requester can see. Non-admins see only courses inside
+        libraries they have a READ AccessGrant for; admins see all.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: libraryId
+          in: query
+          required: false
+          description: Filter to a single library; omit for everything visible.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Course list returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CourseListDto"
+              examples:
+                list:
+                  value:
+                    items:
+                      - id: clxvcrs0000000000000000001
+                        libraryId: clxvp1234567890abcdefghij
+                        slug: pragmatic-clean-architecture
+                        title: Pragmatic Clean Architecture
+                        description: Milan Jovanović's deep-dive into Clean Architecture with .NET.
+                        sections:
+                          - id: clxvsec0000000000000000001
+                            position: 1
+                            title: Introduction
+                          - id: clxvsec0000000000000000002
+                            position: 2
+                            title: Domain Layer
+                        progress:
+                          percent: 0
+                          lessonsCompleted: 0
+                          lessonsTotal: 24
+                        createdAt: "2026-04-25T09:00:00Z"
+                        updatedAt: "2026-04-25T09:00:00Z"
+                      - id: clxvcrs0000000000000000002
+                        libraryId: clxvp1234567890abcdefghij
+                        slug: ddd-by-eric-evans
+                        title: Domain-Driven Design by Eric Evans
+                        sections:
+                          - id: clxvsec0000000000000000003
+                            position: 1
+                            title: Putting the Domain Model to Work
+                          - id: clxvsec0000000000000000004
+                            position: 2
+                            title: Building Blocks of a Model-Driven Design
+                        progress:
+                          percent: 0
+                          lessonsCompleted: 0
+                          lessonsTotal: 18
+                        createdAt: "2026-04-25T09:05:00Z"
+                        updatedAt: "2026-04-25T09:05:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+
+  /api/v1/courses/{id}:
+    get:
+      operationId: getCourse
+      summary: Get a single course
+      description: Returns the full CourseDto for one course by its server-generated cuid. Non-admins must hold a READ AccessGrant on the course's library.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the course.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Course found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CourseDto"
+              examples:
+                found:
+                  value:
+                    id: clxvcrs0000000000000000001
+                    libraryId: clxvp1234567890abcdefghij
+                    slug: pragmatic-clean-architecture
+                    title: Pragmatic Clean Architecture
+                    description: Milan Jovanović's deep-dive into Clean Architecture with .NET.
+                    sections:
+                      - id: clxvsec0000000000000000001
+                        position: 1
+                        title: Introduction
+                      - id: clxvsec0000000000000000002
+                        position: 2
+                        title: Domain Layer
+                    progress:
+                      percent: 0
+                      lessonsCompleted: 0
+                      lessonsTotal: 24
+                    createdAt: "2026-04-25T09:00:00Z"
+                    updatedAt: "2026-04-25T09:00:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have a READ grant for the course's library
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not have access to this course.
+        "404":
+          description: Course not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No course with that id exists.
+
+    patch:
+      operationId: updateCourse
+      summary: Update course metadata
+      description: |
+        Admin-only. Updates any combination of title / description / slug.
+        Slug must be unique within the same library.
+        At least one of `title`, `description`, or `slug` must be present
+        (server-side validation rule — OpenAPI cannot express "at-least-one" natively).
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the course to update.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCourseRequest"
+            examples:
+              renameAndReslug:
+                summary: Rename title and update slug
+                value:
+                  title: Pragmatic Clean Architecture (2nd ed.)
+                  slug: pragmatic-clean-architecture-2nd-ed
+      responses:
+        "200":
+          description: Course updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CourseDto"
+              examples:
+                updated:
+                  value:
+                    id: clxvcrs0000000000000000001
+                    libraryId: clxvp1234567890abcdefghij
+                    slug: pragmatic-clean-architecture-2nd-ed
+                    title: Pragmatic Clean Architecture (2nd ed.)
+                    description: Milan Jovanović's deep-dive into Clean Architecture with .NET.
+                    sections:
+                      - id: clxvsec0000000000000000001
+                        position: 1
+                        title: Introduction
+                      - id: clxvsec0000000000000000002
+                        position: 2
+                        title: Domain Layer
+                    progress:
+                      percent: 0
+                      lessonsCompleted: 0
+                      lessonsTotal: 24
+                    createdAt: "2026-04-25T09:00:00Z"
+                    updatedAt: "2026-04-25T10:15:00Z"
+        "400":
+          description: Validation error — malformed fields or no fields provided
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                badInput:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: At least one of title, description, or slug must be present.
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only admins may update course metadata.
+        "404":
+          description: Course not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No course with that id exists.
+        "409":
+          description: A course with the same slug already exists in this library
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                conflict:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: A course with slug 'pragmatic-clean-architecture-2nd-ed' already exists in this library.
 
   /api/v1/libraries:
     post:
@@ -795,6 +1076,137 @@ components:
             level: READ
             createdAt: "2026-04-25T10:05:00Z"
 
+    CourseDto:
+      type: object
+      required: [id, libraryId, slug, title, sections, progress, createdAt, updatedAt]
+      description: Full representation of a Course aggregate.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid identifying this course.
+        libraryId:
+          type: string
+          description: cuid of the library this course belongs to.
+        slug:
+          $ref: "#/components/schemas/CourseSlug"
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 4000
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/SectionDto"
+          description: Sections sorted ascending by position.
+        progress:
+          $ref: "#/components/schemas/CourseProgress"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      example:
+        id: clxvcrs0000000000000000001
+        libraryId: clxvp1234567890abcdefghij
+        slug: pragmatic-clean-architecture
+        title: Pragmatic Clean Architecture
+        description: Milan Jovanović's deep-dive into Clean Architecture with .NET.
+        sections:
+          - id: clxvsec0000000000000000001
+            position: 1
+            title: Introduction
+          - id: clxvsec0000000000000000002
+            position: 2
+            title: Domain Layer
+        progress:
+          percent: 0
+          lessonsCompleted: 0
+          lessonsTotal: 24
+        createdAt: "2026-04-25T09:00:00Z"
+        updatedAt: "2026-04-25T09:00:00Z"
+
+    CourseListDto:
+      type: object
+      required: [items]
+      description: List of courses visible to the requester.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CourseDto"
+      example:
+        items:
+          - id: clxvcrs0000000000000000001
+            libraryId: clxvp1234567890abcdefghij
+            slug: pragmatic-clean-architecture
+            title: Pragmatic Clean Architecture
+            description: Milan Jovanović's deep-dive into Clean Architecture with .NET.
+            sections:
+              - id: clxvsec0000000000000000001
+                position: 1
+                title: Introduction
+              - id: clxvsec0000000000000000002
+                position: 2
+                title: Domain Layer
+            progress:
+              percent: 0
+              lessonsCompleted: 0
+              lessonsTotal: 24
+            createdAt: "2026-04-25T09:00:00Z"
+            updatedAt: "2026-04-25T09:00:00Z"
+          - id: clxvcrs0000000000000000002
+            libraryId: clxvp1234567890abcdefghij
+            slug: ddd-by-eric-evans
+            title: Domain-Driven Design by Eric Evans
+            sections:
+              - id: clxvsec0000000000000000003
+                position: 1
+                title: Putting the Domain Model to Work
+              - id: clxvsec0000000000000000004
+                position: 2
+                title: Building Blocks of a Model-Driven Design
+            progress:
+              percent: 0
+              lessonsCompleted: 0
+              lessonsTotal: 18
+            createdAt: "2026-04-25T09:05:00Z"
+            updatedAt: "2026-04-25T09:05:00Z"
+
+    CourseProgress:
+      type: object
+      required: [percent, lessonsCompleted, lessonsTotal]
+      description: Progress summary for a course from the requester's perspective.
+      properties:
+        percent:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: >-
+            Completion percent. v1 always returns 0 — populated once the
+            LessonProgress projector lands (E10-F01-S01).
+        lessonsCompleted:
+          type: integer
+          minimum: 0
+        lessonsTotal:
+          type: integer
+          minimum: 0
+      example:
+        percent: 0
+        lessonsCompleted: 0
+        lessonsTotal: 24
+
+    CourseSlug:
+      type: string
+      pattern: '^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$'
+      description: >-
+        URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens;
+        cannot start or end with a hyphen. Unique within a library.
+      example: pragmatic-clean-architecture
+
     DependencyStatus:
       type: ["string", "null"]
       enum: [ok, degraded, down]
@@ -1096,3 +1508,45 @@ components:
       description: >-
         Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans
         only ever transition `running → {succeeded, failed}`.
+
+    SectionDto:
+      type: object
+      required: [id, position, title]
+      description: A section within a course.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid identifying this section.
+        position:
+          type: integer
+          minimum: 1
+          description: 1-based position within the course. Sections are returned sorted by position.
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+      example:
+        id: clxvsec0000000000000000001
+        position: 1
+        title: Introduction
+
+    UpdateCourseRequest:
+      type: object
+      description: |
+        Payload for updating course metadata. All fields are optional, but at
+        least one of `title`, `description`, or `slug` must be present
+        (server-side validation rule — OpenAPI does not have a native
+        "at-least-one" constraint).
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 4000
+        slug:
+          $ref: "#/components/schemas/CourseSlug"
+      example:
+        title: Pragmatic Clean Architecture (2nd ed.)
+        slug: pragmatic-clean-architecture-2nd-ed

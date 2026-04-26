@@ -2,6 +2,23 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-016 — extend scan parser: composite ordinals + word-prefixed sections
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: single commit on `feat/scan-parser-extended` — `901aa83`. Backend tests 200/200; lint + typecheck clean.
+- Owner: claude
+- Goal: every realistic Russian / Udemy-style course folder layout in `docs/data/courses/` is recognised with clean section/lesson labels and correct ordinals.
+- Spec diff: none
+- Codegen impact: no
+- Design impact: none
+- Sub-steps:
+  - [x] tier-3 `COMPOSITE_LESSON_RE` for `N.M Title` and `N.M` lessons (`2.5 Установка…` → `sectionOrdinal=2, ordinal=5, label="Установка на Windows"`)
+  - [x] tier-2 `WORD_PREFIXED_RE` (`\p{L}+ N - Title`) for Russian / English module folders (`Модуль 2 - Настройки окружения` → `ordinal=2, label="Настройки окружения"`)
+  - [x] `RunScanHandler` runs `parseFolderName` on section folders so `sectionTitles` are clean labels
+  - [x] +9 spec cases covering composite + word-prefixed forms; existing 191 tests still green
+  - [x] sample `course.json` for `videosmile - Super Figma` (gitignored — manual-verification helper for lessons whose file names are just `N.M.mp4` with no inline title)
+
 ## T-2026-04-26-015 — Scan aggregate, FsAdapter, incremental scan (E06-F02-S01)
 
 - Created: 2026-04-25

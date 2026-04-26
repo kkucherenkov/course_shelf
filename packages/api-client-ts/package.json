@@ -6,14 +6,19 @@
   "description": "Generated HTTP client for the App API (TypeScript). DO NOT EDIT BY HAND — regenerate via `pnpm spec:codegen`.",
   "type": "module",
   "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    }
   },
   "files": [
-    "src"
+    "src",
+    "dist"
   ],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "lint": "eslint src --no-warn-ignored",
     "typecheck": "tsc --noEmit"
   },

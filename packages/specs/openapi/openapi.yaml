@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.3.0
+  version: 0.4.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -476,6 +476,180 @@ paths:
                     status: 404
                     detail: No library with that id exists.
 
+  /api/v1/libraries/{id}/scans:
+    post:
+      operationId: runLibraryScan
+      summary: Trigger a scan of a library
+      description: |
+        Walks the library tree, recognises Course / Section / Lesson layout,
+        and records discoveries on a Scan aggregate. Returns 202 immediately
+        with `status: running`; clients poll
+        `GET /libraries/{id}/scans/latest`. A second scan with no filesystem
+        changes is observably a no-op (`filesAdded` and `filesUpdated` are
+        zero).
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the library to scan.
+          schema:
+            type: string
+      responses:
+        "202":
+          description: Scan accepted and running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanDto"
+              examples:
+                accepted:
+                  value:
+                    id: clxvscn0000000000000000001
+                    libraryId: clxvp1234567890abcdefghij
+                    status: running
+                    startedAt: "2026-04-25T10:30:00Z"
+                    filesScanned: 0
+                    filesAdded: 0
+                    filesUpdated: 0
+                    coursesDiscovered: 0
+                    errors: []
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only admins may trigger library scans.
+        "404":
+          description: Library not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No library with that id exists.
+        "409":
+          description: A scan is already running for this library
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                conflict:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: A scan is already running for library clxvp1234567890abcdefghij.
+
+  /api/v1/libraries/{id}/scans/latest:
+    get:
+      operationId: getLatestLibraryScan
+      summary: Get the most recent scan for a library
+      description: >-
+        Returns the latest scan record regardless of status
+        (running, succeeded, failed, cancelled).
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the library.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Latest scan returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanDto"
+              examples:
+                succeeded:
+                  value:
+                    id: clxvscn0000000000000000001
+                    libraryId: clxvp1234567890abcdefghij
+                    status: succeeded
+                    startedAt: "2026-04-25T10:30:00Z"
+                    finishedAt: "2026-04-25T10:31:42Z"
+                    filesScanned: 314
+                    filesAdded: 12
+                    filesUpdated: 3
+                    coursesDiscovered: 7
+                    errors:
+                      - path: "02 - Patterns/05 - Repositories.mp4"
+                        message: "File is not readable — permission denied."
+                        code: unreadable-file
+                      - path: "04 - Bounded Contexts/course.json"
+                        message: "JSON schema validation failed: missing required field 'title'."
+                        code: course-json-invalid
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only admins may view scan records.
+        "404":
+          description: Library not found or no scan has been run yet
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No scan record found for this library.
+
   /api/v1/health:
     get:
       operationId: getHealth
@@ -819,3 +993,106 @@ components:
       example:
         name: Conference Recordings
         rootPath: /srv/courses/conference
+
+    ScanDto:
+      type: object
+      required:
+        - id
+        - libraryId
+        - status
+        - startedAt
+        - filesScanned
+        - filesAdded
+        - filesUpdated
+        - coursesDiscovered
+        - errors
+      description: A scan record for a library, produced by the Scan aggregate.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid identifying this scan.
+        libraryId:
+          type: string
+          description: cuid of the library that was scanned.
+        status:
+          $ref: "#/components/schemas/ScanStatus"
+        startedAt:
+          type: string
+          format: date-time
+          description: ISO-8601 instant when the scan was started.
+        finishedAt:
+          type: string
+          format: date-time
+          description: >-
+            Set on terminal status (`succeeded` / `failed` / `cancelled`).
+            Absent while `status: running`.
+        filesScanned:
+          type: integer
+          minimum: 0
+          description: Total number of filesystem entries inspected.
+        filesAdded:
+          type: integer
+          minimum: 0
+          description: Files that did not exist in the catalog before this scan.
+        filesUpdated:
+          type: integer
+          minimum: 0
+          description: Files whose metadata changed since the last scan.
+        coursesDiscovered:
+          type: integer
+          minimum: 0
+          description: Course roots detected during this scan.
+        errors:
+          type: array
+          minItems: 0
+          items:
+            $ref: "#/components/schemas/ScanError"
+          description: Non-fatal per-file errors encountered during the scan.
+      example:
+        id: clxvscn0000000000000000001
+        libraryId: clxvp1234567890abcdefghij
+        status: succeeded
+        startedAt: "2026-04-25T10:30:00Z"
+        finishedAt: "2026-04-25T10:31:42Z"
+        filesScanned: 314
+        filesAdded: 12
+        filesUpdated: 3
+        coursesDiscovered: 7
+        errors:
+          - path: "02 - Patterns/05 - Repositories.mp4"
+            message: "File is not readable — permission denied."
+            code: unreadable-file
+          - path: "04 - Bounded Contexts/course.json"
+            message: "JSON schema validation failed: missing required field 'title'."
+            code: course-json-invalid
+
+    ScanError:
+      type: object
+      required: [path, message]
+      description: A non-fatal error encountered while processing a single file during a scan.
+      properties:
+        path:
+          type: string
+          description: >-
+            Filesystem path relative to the library root,
+            e.g. `01 - Intro to DDD/03 - Aggregates.mp4`.
+        message:
+          type: string
+          description: Human-readable description of what went wrong.
+        code:
+          type: string
+          description: >-
+            Machine-readable error key
+            (e.g. `course-json-invalid`, `unreadable-file`,
+            `unsupported-extension`).
+      example:
+        path: "02 - Patterns/05 - Repositories.mp4"
+        message: "File is not readable — permission denied."
+        code: unreadable-file
+
+    ScanStatus:
+      type: string
+      enum: [running, succeeded, failed, cancelled]
+      description: >-
+        Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans
+        only ever transition `running → {succeeded, failed}`.

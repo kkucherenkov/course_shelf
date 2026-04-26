@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `16 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `17 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -61,7 +61,7 @@ Progress: `16 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E09 — Learning
 
-- [ ] [E09-F01-S01](./tasks/E09-F01-S01.md) `A` — LessonProgress aggregate + record endpoint · ⇐ E04-F02-S03
+- [x] [E09-F01-S01](./tasks/E09-F01-S01.md) `A` — LessonProgress aggregate + record endpoint · ⇐ E04-F02-S03
 - [ ] [E09-F01-S02](./tasks/E09-F01-S02.md) `A` — Batch progress endpoint for sync · ⇐ E09-F01-S01
 - [ ] [E09-F02-S01](./tasks/E09-F02-S01.md) `A` — Bookmarks endpoints · ⇐ E04-F02-S03
 - [ ] [E09-F02-S02](./tasks/E09-F02-S02.md) `A` — Notes endpoints (one per user+lesson) · ⇐ E04-F02-S03

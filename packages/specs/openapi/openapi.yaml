@@ -1728,7 +1728,7 @@ components:
           description: Server-generated cuid identifying this subtitle track.
         language:
           type: string
-          pattern: '^[a-z]{2,3}$|^und$'
+          pattern: "^[a-z]{2,3}$|^und$"
           description: >-
             BCP-47-ish language code parsed from the filename suffix
             (`Lesson.en.srt` → `en`). `und` when no suffix is present.

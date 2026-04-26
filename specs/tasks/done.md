@@ -2,6 +2,22 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-011 — fix workspace tsc regression in generated `@app/api-client-ts`
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: merged locally to main as `03a6030` (`git merge --ff-only` from `chore/api-client-ts-strictness`).
+- Owner: claude
+- Goal: workspace `tsc --noEmit` exits 0 across the repo after E06 codegen introduced strict-typing mismatches in the generated `@hey-api/openapi-ts` output.
+- Spec diff: none
+- Codegen impact: subtle — consumers now read `.d.ts` from `dist/`, not raw `.ts`
+- Design impact: none
+- Sub-steps:
+  - [x] add `packages/api-client-ts/tsconfig.build.json` (emitDeclarationOnly to `dist/`)
+  - [x] flip `package.json`: `types`, `exports.types` → `./dist/index.d.ts`; runtime `main` stays at raw `.ts` (Node `--experimental-strip-types`)
+  - [x] root `prepare` and `spec:codegen` chain `pnpm --filter @app/api-client-ts build` so dist always exists after install / codegen
+  - [x] verified: `pnpm -r typecheck` clean for all 8 TS projects; lint 0 errors / 53 vue-formatting warnings; backend tests 70/70
+
 ## T-2026-04-26-010 — Library aggregate + register/list/get endpoints (E06-F01-S01)
 
 - Created: 2026-04-26

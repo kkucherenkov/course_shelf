@@ -30,6 +30,7 @@ import { OpsModule } from './modules/ops/ops.module';
 import { StreamingModule } from './modules/streaming/streaming.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { HealthModule } from './modules/health/health.module';
+import { PingModule } from './modules/ping/ping.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 
 type ImportableModule = DynamicModule | (new (...args: unknown[]) => unknown);
@@ -68,12 +69,12 @@ const devOnlyModules: ImportableModule[] = [];
     CommonAccessModule,
     HealthModule,
     OpsModule,
+    PingModule,
     RealtimeModule,
     CatalogModule,
     StreamingModule,
     LearningModule,
     AccessModule,
-    // PingModule is wired in the follow-up after the /api/v1/ping spec lands.
     ...devOnlyModules,
   ],
   providers: [

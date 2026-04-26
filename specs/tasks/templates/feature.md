@@ -27,7 +27,7 @@ described in [`specs/tasks/README.md`](../README.md).
 
 ## Field rules
 
-- **Goal** is the *why*. The sub-steps are the *how*. Keep them separate —
+- **Goal** is the _why_. The sub-steps are the _how_. Keep them separate —
   goal survives re-planning, sub-steps don't.
 - **Acceptance** is what a human can verify without reading code. "Users can
   cancel a booking from the detail page" — not "CancelBookingCommand is

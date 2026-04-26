@@ -2,6 +2,23 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-009 — Prisma generate postinstall + close E01-F01-S02
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: merged locally to main as `a6006cf` (no GitHub PR; `git merge --ff-only` from `chore/prisma-generate`).
+- Owner: claude
+- Goal: workspace-wide `pnpm -r lint` finishes with zero errors on a clean clone right after `pnpm install`, without any manual codegen step.
+- Spec diff: none
+- Codegen impact: no
+- Design impact: none
+- Sub-steps:
+  - [x] run `prisma generate` once to verify lint/typecheck go green
+  - [x] wire `postinstall: prisma generate` in `apps/backend/package.json`
+  - [x] verify postinstall fires on `pnpm install`
+  - [x] confirm `pnpm -r lint` reports 0 errors workspace-wide
+  - [x] flip E01-F01-S02 to ✅ Done; TODO progress 7 / 115 → 8 / 115
+
 ## T-2026-04-26-008 — stage the design bundle under docs/design/ + index + .gitattributes
 
 - Created: 2026-04-26

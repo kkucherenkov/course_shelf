@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.6.0
+  version: 0.7.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -25,6 +25,8 @@ tags:
     description: User → resource access grants. Admins issue and revoke; everyone else only ever reads their own implicit grants from session context.
   - name: Catalog
     description: Course library registration and lookup.
+  - name: Streaming
+    description: Lesson streaming and signed URLs.
   - name: system
     description: Health and liveness endpoints
   - name: realtime
@@ -618,6 +620,79 @@ paths:
                     status: 401
         "403":
           description: Requester has no READ grant covering the parent library or course
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not have access to this lesson.
+        "404":
+          description: Lesson not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No lesson with that id exists.
+
+  /api/v1/lessons/{id}/stream-url:
+    get:
+      operationId: issueStreamUrl
+      summary: Mint a short-lived signed URL for a lesson video
+      description: |
+        Returns a URL pointing at `/api/v1/stream/lessons/{id}` with a signed
+        query-param token bound to `(userId, lessonId, expiresAt)`. The token
+        is HMAC-signed; the streaming endpoint verifies it without a database
+        lookup. Default TTL is 15 minutes (configurable server-side). Clients
+        must request a fresh URL when the previous one expires — refresh policy
+        is up to the player.
+      tags: [Streaming]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the lesson.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Signed stream URL issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreamUrlDto"
+              examples:
+                issued:
+                  value:
+                    url: "http://localhost:3000/api/v1/stream/lessons/clxvles0000000000000000001?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibGVzc29uSWQiOiJjbHh2bGVzMDAwMDAwMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzQ1NTc0NDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+                    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibGVzc29uSWQiOiJjbHh2bGVzMDAwMDAwMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzQ1NTc0NDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+                    expiresAt: "2026-04-25T10:15:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Requester has no READ grant on the parent library or course
           content:
             application/problem+json:
               schema:
@@ -1717,6 +1792,36 @@ components:
       description: >-
         Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans
         only ever transition `running → {succeeded, failed}`.
+
+    StreamUrlDto:
+      type: object
+      required: [url, token, expiresAt]
+      description: Short-lived signed URL for streaming a lesson video.
+      properties:
+        url:
+          type: string
+          format: uri
+          description: >-
+            Full URL the player should request. Carries the signed token as the
+            `token` query parameter so existing video-element implementations
+            work without an Authorization header.
+        token:
+          type: string
+          minLength: 1
+          description: >-
+            Opaque signed token. Format is internal to the backend (currently a
+            JWT-like compact form `header.payload.signature`); clients must
+            round-trip it untouched.
+        expiresAt:
+          type: string
+          format: date-time
+          description: >-
+            ISO-8601 timestamp at which the token + URL stop being accepted.
+            Clients should request a fresh URL before this moment.
+      example:
+        url: "http://localhost:3000/api/v1/stream/lessons/clxvles0000000000000000001?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibGVzc29uSWQiOiJjbHh2bGVzMDAwMDAwMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzQ1NTc0NDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibGVzc29uSWQiOiJjbHh2bGVzMDAwMDAwMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzQ1NTc0NDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+        expiresAt: "2026-04-25T10:15:00Z"
 
     SubtitleDto:
       type: object

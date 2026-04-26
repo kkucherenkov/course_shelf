@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.11.0
+  version: 0.12.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -27,6 +27,8 @@ tags:
     description: Course library registration and lookup.
   - name: Learning
     description: Per-user lesson progress, bookmarks, and notes.
+  - name: Ops
+    description: Operational endpoints for liveness checks and self-tests.
   - name: Streaming
     description: Lesson streaming and signed URLs.
   - name: system
@@ -1754,6 +1756,45 @@ paths:
                       redis: degraded
                       centrifugo: ok
 
+  /api/v1/ping:
+    get:
+      operationId: ping
+      summary: Verify the bearer token resolves a session
+      description: |
+        Smoke-test endpoint for the authentication chain. Returns the
+        requesting user's identity if the bearer token is valid; returns
+        `401 Unauthorized` otherwise. Useful for clients that want to
+        confirm their stored token is still good without making a real
+        domain call.
+      tags: [Ops]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Authenticated identity echoed back
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PingResponse"
+              examples:
+                authenticated:
+                  value:
+                    id: 0193a1b2-c3d4-7e5f-8a90-1234567890ab
+                    role: USER
+                    displayName: Sam Reader
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+
   /api/v1/progress:
     post:
       operationId: recordLessonProgress
@@ -2749,6 +2790,24 @@ components:
         body: "## Aggregates\n\nKey insight: aggregates enforce invariants across their boundary."
         createdAt: "2026-04-25T15:00:00Z"
         updatedAt: "2026-04-25T15:05:00Z"
+
+    PingResponse:
+      type: object
+      required: [id, role]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User id (UUID v4) — Better Auth's internal identifier.
+        role:
+          type: string
+          description: |
+            Role string from Better Auth's `additionalFields.role`. Default
+            `USER` for fresh sign-ups; admin tooling may assign others.
+        displayName:
+          type: string
+          description: Optional friendly label set by the user in their profile.
 
     Problem:
       type: object

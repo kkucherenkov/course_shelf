@@ -2,6 +2,13 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-015 — Scan aggregate, FsAdapter, incremental scan (E06-F02-S01)
+
+- Created: 2026-04-25
+- Completed: 2026-04-26
+- Result: single commit on `feat/library-scan`. Scan aggregate + FsAdapter port + NodeFsAdapter + incremental (mtime,size) detection + course.json v1 parser + folder-name parser + RunScanHandler (fire-and-forget walk) + GetLatestScanHandler + ScansController + PrismaScanRepository + migration. 191 tests green; lint/typecheck clean.
+- Owner: claude
+
 ## T-2026-04-26-014 — AuthorizationService consumed by Catalog & Streaming (E07-F01-S02)
 
 - Created: 2026-04-26

@@ -60,6 +60,51 @@ export type AccessGrantListDto = {
 };
 
 /**
+ * Ordered list of courses the requester is in the middle of, most-recently- watched first. Empty array for new users.
+ */
+export type ContinueWatchingDto = {
+    items: Array<ContinueWatchingItem>;
+};
+
+/**
+ * A single entry in the continue-watching row, sourced from the `CourseProgressReadModel` projection.
+ */
+export type ContinueWatchingItem = {
+    /**
+     * Server-generated cuid identifying the course.
+     */
+    courseId: string;
+    /**
+     * Display title of the course.
+     */
+    courseTitle: string;
+    /**
+     * Slug of the parent library, included for the URL builder. Optional because not every layout exposes a per-library slug yet.
+     */
+    librarySlug?: string;
+    /**
+     * Course completion = `lessonsCompleted / lessonsTotal * 100`.
+     */
+    percent: number;
+    /**
+     * Number of lessons the user has completed in this course.
+     */
+    lessonsCompleted: number;
+    /**
+     * Total number of lessons in the course.
+     */
+    lessonsTotal: number;
+    /**
+     * Most recent moment any lesson in this course was watched (completed or not).
+     */
+    lastSeenAt: string;
+    /**
+     * The lesson the player last reported a position on, used to wire the 'Resume' CTA.
+     */
+    lastSeenLessonId: string;
+};
+
+/**
  * Full representation of a Course aggregate.
  */
 export type CourseDto = {
@@ -715,6 +760,36 @@ export type UpdateCourseResponses = {
 };
 
 export type UpdateCourseResponse = UpdateCourseResponses[keyof UpdateCourseResponses];
+
+export type GetContinueWatchingData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * How many items the home row needs.
+         */
+        limit?: number;
+    };
+    url: '/api/v1/home/continue-watching';
+};
+
+export type GetContinueWatchingErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+};
+
+export type GetContinueWatchingError = GetContinueWatchingErrors[keyof GetContinueWatchingErrors];
+
+export type GetContinueWatchingResponses = {
+    /**
+     * Continue-watching list returned
+     */
+    200: ContinueWatchingDto;
+};
+
+export type GetContinueWatchingResponse = GetContinueWatchingResponses[keyof GetContinueWatchingResponses];
 
 export type GetLessonData = {
     body?: never;

@@ -19,6 +19,8 @@ export 'package:app_api_client/src/api/system_api.dart';
 
 export 'package:app_api_client/src/model/access_grant_dto.dart';
 export 'package:app_api_client/src/model/access_grant_list_dto.dart';
+export 'package:app_api_client/src/model/continue_watching_dto.dart';
+export 'package:app_api_client/src/model/continue_watching_item.dart';
 export 'package:app_api_client/src/model/course_dto.dart';
 export 'package:app_api_client/src/model/course_list_dto.dart';
 export 'package:app_api_client/src/model/course_progress.dart';

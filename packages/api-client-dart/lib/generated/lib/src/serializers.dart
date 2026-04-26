@@ -16,6 +16,8 @@ import 'package:app_api_client/src/model/date.dart';
 
 import 'package:app_api_client/src/model/access_grant_dto.dart';
 import 'package:app_api_client/src/model/access_grant_list_dto.dart';
+import 'package:app_api_client/src/model/continue_watching_dto.dart';
+import 'package:app_api_client/src/model/continue_watching_item.dart';
 import 'package:app_api_client/src/model/course_dto.dart';
 import 'package:app_api_client/src/model/course_list_dto.dart';
 import 'package:app_api_client/src/model/course_progress.dart';
@@ -53,6 +55,8 @@ part 'serializers.g.dart';
 @SerializersFor([
   AccessGrantDto,
   AccessGrantListDto,
+  ContinueWatchingDto,
+  ContinueWatchingItem,
   CourseDto,
   CourseListDto,
   CourseProgress,

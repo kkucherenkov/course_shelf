@@ -9,6 +9,7 @@ All URIs are relative to *http://localhost:3000*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**getContinueWatching**](CatalogApi.md#getcontinuewatching) | **GET** /api/v1/home/continue-watching | List courses the requester is in the middle of
 [**getCourse**](CatalogApi.md#getcourse) | **GET** /api/v1/courses/{id} | Get a single course
 [**getLatestLibraryScan**](CatalogApi.md#getlatestlibraryscan) | **GET** /api/v1/libraries/{id}/scans/latest | Get the most recent scan for a library
 [**getLesson**](CatalogApi.md#getlesson) | **GET** /api/v1/lessons/{id} | Get a lesson with its materials and subtitles
@@ -19,6 +20,49 @@ Method | HTTP request | Description
 [**runLibraryScan**](CatalogApi.md#runlibraryscan) | **POST** /api/v1/libraries/{id}/scans | Trigger a scan of a library
 [**updateCourse**](CatalogApi.md#updatecourse) | **PATCH** /api/v1/courses/{id} | Update course metadata
 
+
+# **getContinueWatching**
+> ContinueWatchingDto getContinueWatching(limit)
+
+List courses the requester is in the middle of
+
+Returns the requester's courses ordered by recency (most-recently-watched first), capped by `limit`. Reads from a denormalised `CourseProgressReadModel` projection that's updated by `LessonCompleted` and `LessonProgressRecorded` events. Empty array for new users. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final int limit = 56; // int | How many items the home row needs.
+
+try {
+    final response = api.getContinueWatching(limit);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->getContinueWatching: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **limit** | **int**| How many items the home row needs. | [optional] [default to 10]
+
+### Return type
+
+[**ContinueWatchingDto**](ContinueWatchingDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **getCourse**
 > CourseDto getCourse(id)

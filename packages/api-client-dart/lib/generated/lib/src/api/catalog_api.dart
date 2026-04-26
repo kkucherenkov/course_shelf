@@ -8,6 +8,7 @@ import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
 import 'package:app_api_client/src/api_util.dart';
+import 'package:app_api_client/src/model/continue_watching_dto.dart';
 import 'package:app_api_client/src/model/course_dto.dart';
 import 'package:app_api_client/src/model/course_list_dto.dart';
 import 'package:app_api_client/src/model/lesson_dto.dart';
@@ -24,6 +25,92 @@ class CatalogApi {
   final Serializers _serializers;
 
   const CatalogApi(this._dio, this._serializers);
+
+  /// List courses the requester is in the middle of
+  /// Returns the requester&#39;s courses ordered by recency (most-recently-watched first), capped by &#x60;limit&#x60;. Reads from a denormalised &#x60;CourseProgressReadModel&#x60; projection that&#39;s updated by &#x60;LessonCompleted&#x60; and &#x60;LessonProgressRecorded&#x60; events. Empty array for new users. 
+  ///
+  /// Parameters:
+  /// * [limit] - How many items the home row needs.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [ContinueWatchingDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<ContinueWatchingDto>> getContinueWatching({ 
+    int? limit = 10,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/home/continue-watching';
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      if (limit != null) r'limit': encodeQueryParameter(_serializers, limit, const FullType(int)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    ContinueWatchingDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(ContinueWatchingDto),
+      ) as ContinueWatchingDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<ContinueWatchingDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
 
   /// Get a single course
   /// Returns the full CourseDto for one course by its server-generated cuid. Non-admins must hold a READ AccessGrant on the course&#39;s library.

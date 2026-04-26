@@ -98,6 +98,29 @@ export interface paths {
     patch: operations['updateCourse'];
     trace?: never;
   };
+  '/api/v1/home/continue-watching': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List courses the requester is in the middle of
+     * @description Returns the requester's courses ordered by recency (most-recently-watched
+     *     first), capped by `limit`. Reads from a denormalised
+     *     `CourseProgressReadModel` projection that's updated by `LessonCompleted`
+     *     and `LessonProgressRecorded` events. Empty array for new users.
+     */
+    get: operations['getContinueWatching'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/lessons/{id}': {
     parameters: {
       query?: never;
@@ -431,6 +454,69 @@ export interface components {
      */
     AccessGrantListDto: {
       items: components['schemas']['AccessGrantDto'][];
+    };
+    /**
+     * @description Ordered list of courses the requester is in the middle of, most-recently- watched first. Empty array for new users.
+     * @example {
+     *       "items": [
+     *         {
+     *           "courseId": "clxvcrs0000000000000000001",
+     *           "courseTitle": "Pragmatic Clean Architecture",
+     *           "librarySlug": "conference-recordings",
+     *           "percent": 15.79,
+     *           "lessonsCompleted": 12,
+     *           "lessonsTotal": 76,
+     *           "lastSeenAt": "2026-04-25T14:32:00Z",
+     *           "lastSeenLessonId": "clxvles0000000000000000042"
+     *         },
+     *         {
+     *           "courseId": "clxvcrs0000000000000000002",
+     *           "courseTitle": "Domain-Driven Design by Eric Evans",
+     *           "percent": 33.33,
+     *           "lessonsCompleted": 6,
+     *           "lessonsTotal": 18,
+     *           "lastSeenAt": "2026-04-24T10:10:00Z",
+     *           "lastSeenLessonId": "clxvles0000000000000000007"
+     *         }
+     *       ]
+     *     }
+     */
+    ContinueWatchingDto: {
+      items: components['schemas']['ContinueWatchingItem'][];
+    };
+    /**
+     * @description A single entry in the continue-watching row, sourced from the `CourseProgressReadModel` projection.
+     * @example {
+     *       "courseId": "clxvcrs0000000000000000001",
+     *       "courseTitle": "Pragmatic Clean Architecture",
+     *       "librarySlug": "conference-recordings",
+     *       "percent": 15.79,
+     *       "lessonsCompleted": 12,
+     *       "lessonsTotal": 76,
+     *       "lastSeenAt": "2026-04-25T14:32:00Z",
+     *       "lastSeenLessonId": "clxvles0000000000000000042"
+     *     }
+     */
+    ContinueWatchingItem: {
+      /** @description Server-generated cuid identifying the course. */
+      courseId: string;
+      /** @description Display title of the course. */
+      courseTitle: string;
+      /** @description Slug of the parent library, included for the URL builder. Optional because not every layout exposes a per-library slug yet. */
+      librarySlug?: string;
+      /** @description Course completion = `lessonsCompleted / lessonsTotal * 100`. */
+      percent: number;
+      /** @description Number of lessons the user has completed in this course. */
+      lessonsCompleted: number;
+      /** @description Total number of lessons in the course. */
+      lessonsTotal: number;
+      /**
+       * Format: date-time
+       * @description Most recent moment any lesson in this course was watched (completed or not).
+       */
+      lastSeenAt: string;
+      /** @description The lesson the player last reported a position on, used to wire the 'Resume' CTA. */
+      lastSeenLessonId: string;
     };
     /**
      * @description Full representation of a Course aggregate.
@@ -1299,6 +1385,38 @@ export interface operations {
       };
       /** @description A course with the same slug already exists in this library */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getContinueWatching: {
+    parameters: {
+      query?: {
+        /** @description How many items the home row needs. */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Continue-watching list returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ContinueWatchingDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
         headers: {
           [name: string]: unknown;
         };

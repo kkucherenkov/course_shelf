@@ -409,6 +409,23 @@ export type NoteDto = {
     updatedAt: string;
 };
 
+export type PingResponse = {
+    /**
+     * User id (UUID v4) — Better Auth's internal identifier.
+     */
+    id: string;
+    /**
+     * Role string from Better Auth's `additionalFields.role`. Default
+     * `USER` for fresh sign-ups; admin tooling may assign others.
+     *
+     */
+    role: string;
+    /**
+     * Optional friendly label set by the user in their profile.
+     */
+    displayName?: string;
+};
+
 /**
  * RFC 9457 problem details
  */
@@ -1515,6 +1532,31 @@ export type GetHealthResponses = {
 };
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
+
+export type PingData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/ping';
+};
+
+export type PingErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+};
+
+export type PingError = PingErrors[keyof PingErrors];
+
+export type PingResponses = {
+    /**
+     * Authenticated identity echoed back
+     */
+    200: PingResponse;
+};
+
+export type PingResponse2 = PingResponses[keyof PingResponses];
 
 export type RecordLessonProgressData = {
     body: RecordProgressRequest;

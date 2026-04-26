@@ -46,6 +46,7 @@ export default [
           capture: ['name'],
         },
         { type: 'common', pattern: 'src/common/**' },
+        { type: 'shared', pattern: 'src/shared/**' },
         { type: 'i18n', pattern: 'src/i18n/**' },
         {
           // Top-level entry / bootstrap files live directly under src/ — main.ts,

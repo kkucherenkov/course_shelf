@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
 
-import { DomainError } from '../errors/domain-error';
+import { DomainError } from '../../shared/domain-error';
 
 import type { Request, Response } from 'express';
 

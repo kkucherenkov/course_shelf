@@ -7,7 +7,7 @@
  * Add one subclass per distinct failure case in the bounded context. Keep the
  * `code` slug stable — clients key off it for i18n / retry logic.
  */
-import { DomainError } from '../../../common/errors/domain-error';
+import { DomainError } from '../../../shared/domain-error';
 
 /** Thrown when the requested resource does not exist in the database. */
 export class TemplateNotFoundError extends DomainError {

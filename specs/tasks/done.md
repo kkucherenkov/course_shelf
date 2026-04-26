@@ -19,8 +19,6 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - [x] BookmarksController in LearningModule
   - [x] ~30 new tests; 547/547 total
 
-
-
 ## T-2026-04-26-022 — CourseProgressProjector + continue-watching endpoint (E10-F01-S01)
 
 - Created: 2026-04-26

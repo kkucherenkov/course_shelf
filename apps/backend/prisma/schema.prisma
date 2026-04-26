@@ -134,6 +134,34 @@ model DiscoveredFile {
   @@map("discovered_file")
 }
 
+// ----- Course -----
+
+model Course {
+  id          String    @id @default(cuid())
+  libraryId   String
+  slug        String
+  title       String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  sections    Section[]
+
+  @@unique([libraryId, slug], name: "uq_course_library_slug")
+  @@index([libraryId])
+  @@map("course")
+}
+
+model Section {
+  id       String @id @default(cuid())
+  courseId String
+  position Int
+  title    String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, position], name: "uq_section_course_position")
+  @@map("section")
+}
+
 // ----- Access -----
 
 enum GrantTargetKind {

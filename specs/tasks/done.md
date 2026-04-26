@@ -2,6 +2,27 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-017 — Course aggregate + slug uniqueness + section ordering (E06-F03-S01)
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: single impl commit on `feat/course-aggregate`. 73 new tests (273 total); lint/typecheck clean.
+- Owner: claude
+- Goal: Course aggregate keyed by (libraryId, slug) with ordered Section list; three new endpoints; admin-only PATCH; grant-filtered GETs.
+- Spec diff: yes — spec commit acd4b97; codegen commit bd2251f
+- Codegen impact: yes (TS + Dart — separate commits already landed)
+- Design impact: none
+- Sub-steps:
+  - [x] T-017-A: spec edit — acd4b97
+  - [x] T-017-B: codegen — bd2251f
+  - [x] T-017-C: Prisma Course + Section models + migration SQL
+  - [x] T-017-D: domain — Slug/Title/Position VOs + Course aggregate + errors + repo port
+  - [x] T-017-E: PrismaCourseRepository (delete-and-recreate sections in $transaction; P2002 → CourseSlugAlreadyTakenError)
+  - [x] T-017-F: UpdateCourseMetadataHandler + ListCoursesHandler + GetCourseHandler
+  - [x] T-017-G: CoursesController (SessionGuard on GETs, AdminGuard on PATCH); wired into CatalogModule
+  - [x] T-017-H: 73 new tests (value objects + aggregate invariants + 3 handlers + repo roundtrip)
+  - [x] T-017-I: lint/typecheck/test/prettier all clean
+
 ## T-2026-04-26-016 — extend scan parser: composite ordinals + word-prefixed sections
 
 - Created: 2026-04-26

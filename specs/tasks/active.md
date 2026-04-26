@@ -1,3 +1,3 @@
 # Active tasks
 
-_No tasks in progress. Start here when beginning new work._
+_No active tasks._

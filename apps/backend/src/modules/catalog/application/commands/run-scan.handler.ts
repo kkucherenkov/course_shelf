@@ -171,12 +171,18 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
 
           lessonFiles.push(file.path);
 
-          // Determine which section this file belongs to (2nd path segment under course).
+          // Determine which section this file belongs to (2nd path segment
+          // under course). Run the section folder name through parseFolderName
+          // so word-prefixed layouts ("Модуль 2 - Настройки окружения",
+          // "Глава 2. Продвинутые техники") and the numeric "01 - …" form
+          // both yield clean labels in `sectionTitles` rather than the raw
+          // folder string.
           const relFromCourse = path.relative(courseFolder, file.path);
           const relSegments = relFromCourse.split(/[/\\]/);
           if (relSegments.length > 1) {
-            // relSegments[0] is defined when length > 1
-            sectionSet.add(relSegments[0] ?? '');
+            const sectionFolder = relSegments[0] ?? '';
+            const { label } = parseFolderName(sectionFolder);
+            sectionSet.add(label);
           }
 
           // Incremental comparison.

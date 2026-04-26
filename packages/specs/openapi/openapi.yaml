@@ -1201,7 +1201,7 @@ components:
 
     CourseSlug:
       type: string
-      pattern: '^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$'
+      pattern: "^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$"
       description: >-
         URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens;
         cannot start or end with a hyphen. Unique within a library.

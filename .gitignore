@@ -92,3 +92,6 @@ test-results
 # boilerplate-specific ignores
 specs/local-dev.md
 architecture.pptx
+
+# example data
+docs/data

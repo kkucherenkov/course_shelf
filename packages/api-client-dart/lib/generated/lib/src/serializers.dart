@@ -31,6 +31,9 @@ import 'package:app_api_client/src/model/problem.dart';
 import 'package:app_api_client/src/model/realtime_token.dart';
 import 'package:app_api_client/src/model/register_grant_request.dart';
 import 'package:app_api_client/src/model/register_library_request.dart';
+import 'package:app_api_client/src/model/scan_dto.dart';
+import 'package:app_api_client/src/model/scan_error.dart';
+import 'package:app_api_client/src/model/scan_status.dart';
 
 part 'serializers.g.dart';
 
@@ -52,6 +55,9 @@ part 'serializers.g.dart';
   RealtimeToken,
   RegisterGrantRequest,
   RegisterLibraryRequest,
+  ScanDto,
+  ScanError,
+  ScanStatus,
 ])
 Serializers serializers = (_$serializers.toBuilder()
       ..add(const OneOfSerializer())

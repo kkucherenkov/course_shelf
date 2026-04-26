@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetHealthData, GetHealthErrors, GetHealthResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses } from './types.gen';
+import type { GetHealthData, GetHealthErrors, GetHealthResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -97,6 +97,34 @@ export const registerLibrary = <ThrowOnError extends boolean = false>(options: O
 export const getLibrary = <ThrowOnError extends boolean = false>(options: Options<GetLibraryData, ThrowOnError>) => (options.client ?? client).get<GetLibraryResponses, GetLibraryErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/libraries/{id}',
+    ...options
+});
+
+/**
+ * Trigger a scan of a library
+ *
+ * Walks the library tree, recognises Course / Section / Lesson layout,
+ * and records discoveries on a Scan aggregate. Returns 202 immediately
+ * with `status: running`; clients poll
+ * `GET /libraries/{id}/scans/latest`. A second scan with no filesystem
+ * changes is observably a no-op (`filesAdded` and `filesUpdated` are
+ * zero).
+ *
+ */
+export const runLibraryScan = <ThrowOnError extends boolean = false>(options: Options<RunLibraryScanData, ThrowOnError>) => (options.client ?? client).post<RunLibraryScanResponses, RunLibraryScanErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/libraries/{id}/scans',
+    ...options
+});
+
+/**
+ * Get the most recent scan for a library
+ *
+ * Returns the latest scan record regardless of status (running, succeeded, failed, cancelled).
+ */
+export const getLatestLibraryScan = <ThrowOnError extends boolean = false>(options: Options<GetLatestLibraryScanData, ThrowOnError>) => (options.client ?? client).get<GetLatestLibraryScanResponses, GetLatestLibraryScanErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/libraries/{id}/scans/latest',
     ...options
 });
 

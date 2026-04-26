@@ -97,6 +97,51 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/libraries/{id}/scans': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Trigger a scan of a library
+     * @description Walks the library tree, recognises Course / Section / Lesson layout,
+     *     and records discoveries on a Scan aggregate. Returns 202 immediately
+     *     with `status: running`; clients poll
+     *     `GET /libraries/{id}/scans/latest`. A second scan with no filesystem
+     *     changes is observably a no-op (`filesAdded` and `filesUpdated` are
+     *     zero).
+     */
+    post: operations['runLibraryScan'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/libraries/{id}/scans/latest': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the most recent scan for a library
+     * @description Returns the latest scan record regardless of status (running, succeeded, failed, cancelled).
+     */
+    get: operations['getLatestLibraryScan'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/health': {
     parameters: {
       query?: never;
@@ -377,6 +422,80 @@ export interface components {
       /** @description Absolute filesystem path to the library root. Accepts POSIX paths starting with `/` or Windows drive paths starting with `[A-Za-z]:\`. Trailing slashes are allowed. */
       rootPath: string;
     };
+    /**
+     * @description A scan record for a library, produced by the Scan aggregate.
+     * @example {
+     *       "id": "clxvscn0000000000000000001",
+     *       "libraryId": "clxvp1234567890abcdefghij",
+     *       "status": "succeeded",
+     *       "startedAt": "2026-04-25T10:30:00Z",
+     *       "finishedAt": "2026-04-25T10:31:42Z",
+     *       "filesScanned": 314,
+     *       "filesAdded": 12,
+     *       "filesUpdated": 3,
+     *       "coursesDiscovered": 7,
+     *       "errors": [
+     *         {
+     *           "path": "02 - Patterns/05 - Repositories.mp4",
+     *           "message": "File is not readable — permission denied.",
+     *           "code": "unreadable-file"
+     *         },
+     *         {
+     *           "path": "04 - Bounded Contexts/course.json",
+     *           "message": "JSON schema validation failed: missing required field 'title'.",
+     *           "code": "course-json-invalid"
+     *         }
+     *       ]
+     *     }
+     */
+    ScanDto: {
+      /** @description Server-generated cuid identifying this scan. */
+      id: string;
+      /** @description cuid of the library that was scanned. */
+      libraryId: string;
+      status: components['schemas']['ScanStatus'];
+      /**
+       * Format: date-time
+       * @description ISO-8601 instant when the scan was started.
+       */
+      startedAt: string;
+      /**
+       * Format: date-time
+       * @description Set on terminal status (`succeeded` / `failed` / `cancelled`). Absent while `status: running`.
+       */
+      finishedAt?: string;
+      /** @description Total number of filesystem entries inspected. */
+      filesScanned: number;
+      /** @description Files that did not exist in the catalog before this scan. */
+      filesAdded: number;
+      /** @description Files whose metadata changed since the last scan. */
+      filesUpdated: number;
+      /** @description Course roots detected during this scan. */
+      coursesDiscovered: number;
+      /** @description Non-fatal per-file errors encountered during the scan. */
+      errors: components['schemas']['ScanError'][];
+    };
+    /**
+     * @description A non-fatal error encountered while processing a single file during a scan.
+     * @example {
+     *       "path": "02 - Patterns/05 - Repositories.mp4",
+     *       "message": "File is not readable — permission denied.",
+     *       "code": "unreadable-file"
+     *     }
+     */
+    ScanError: {
+      /** @description Filesystem path relative to the library root, e.g. `01 - Intro to DDD/03 - Aggregates.mp4`. */
+      path: string;
+      /** @description Human-readable description of what went wrong. */
+      message: string;
+      /** @description Machine-readable error key (e.g. `course-json-invalid`, `unreadable-file`, `unsupported-extension`). */
+      code?: string;
+    };
+    /**
+     * @description Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans only ever transition `running → {succeeded, failed}`.
+     * @enum {string}
+     */
+    ScanStatus: 'running' | 'succeeded' | 'failed' | 'cancelled';
   };
   responses: never;
   parameters: never;
@@ -682,6 +801,115 @@ export interface operations {
         };
       };
       /** @description Library not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  runLibraryScan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the library to scan. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Scan accepted and running */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScanDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Library not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description A scan is already running for this library */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getLatestLibraryScan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the library. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Latest scan returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScanDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Library not found or no scan has been run yet */
       404: {
         headers: {
           [name: string]: unknown;

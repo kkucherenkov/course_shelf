@@ -32,4 +32,7 @@ export 'package:app_api_client/src/model/problem.dart';
 export 'package:app_api_client/src/model/realtime_token.dart';
 export 'package:app_api_client/src/model/register_grant_request.dart';
 export 'package:app_api_client/src/model/register_library_request.dart';
+export 'package:app_api_client/src/model/scan_dto.dart';
+export 'package:app_api_client/src/model/scan_error.dart';
+export 'package:app_api_client/src/model/scan_status.dart';
 

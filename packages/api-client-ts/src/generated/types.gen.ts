@@ -173,6 +173,72 @@ export type RegisterLibraryRequest = {
     rootPath: string;
 };
 
+/**
+ * A scan record for a library, produced by the Scan aggregate.
+ */
+export type ScanDto = {
+    /**
+     * Server-generated cuid identifying this scan.
+     */
+    id: string;
+    /**
+     * cuid of the library that was scanned.
+     */
+    libraryId: string;
+    status: ScanStatus;
+    /**
+     * ISO-8601 instant when the scan was started.
+     */
+    startedAt: string;
+    /**
+     * Set on terminal status (`succeeded` / `failed` / `cancelled`). Absent while `status: running`.
+     */
+    finishedAt?: string;
+    /**
+     * Total number of filesystem entries inspected.
+     */
+    filesScanned: number;
+    /**
+     * Files that did not exist in the catalog before this scan.
+     */
+    filesAdded: number;
+    /**
+     * Files whose metadata changed since the last scan.
+     */
+    filesUpdated: number;
+    /**
+     * Course roots detected during this scan.
+     */
+    coursesDiscovered: number;
+    /**
+     * Non-fatal per-file errors encountered during the scan.
+     */
+    errors: Array<ScanError>;
+};
+
+/**
+ * A non-fatal error encountered while processing a single file during a scan.
+ */
+export type ScanError = {
+    /**
+     * Filesystem path relative to the library root, e.g. `01 - Intro to DDD/03 - Aggregates.mp4`.
+     */
+    path: string;
+    /**
+     * Human-readable description of what went wrong.
+     */
+    message: string;
+    /**
+     * Machine-readable error key (e.g. `course-json-invalid`, `unreadable-file`, `unsupported-extension`).
+     */
+    code?: string;
+};
+
+/**
+ * Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans only ever transition `running → {succeeded, failed}`.
+ */
+export type ScanStatus = 'running' | 'succeeded' | 'failed' | 'cancelled';
+
 export type ListGrantsByUserData = {
     body?: never;
     path?: never;
@@ -389,6 +455,86 @@ export type GetLibraryResponses = {
 };
 
 export type GetLibraryResponse = GetLibraryResponses[keyof GetLibraryResponses];
+
+export type RunLibraryScanData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the library to scan.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/libraries/{id}/scans';
+};
+
+export type RunLibraryScanErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Library not found
+     */
+    404: Problem;
+    /**
+     * A scan is already running for this library
+     */
+    409: Problem;
+};
+
+export type RunLibraryScanError = RunLibraryScanErrors[keyof RunLibraryScanErrors];
+
+export type RunLibraryScanResponses = {
+    /**
+     * Scan accepted and running
+     */
+    202: ScanDto;
+};
+
+export type RunLibraryScanResponse = RunLibraryScanResponses[keyof RunLibraryScanResponses];
+
+export type GetLatestLibraryScanData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the library.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/libraries/{id}/scans/latest';
+};
+
+export type GetLatestLibraryScanErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Library not found or no scan has been run yet
+     */
+    404: Problem;
+};
+
+export type GetLatestLibraryScanError = GetLatestLibraryScanErrors[keyof GetLatestLibraryScanErrors];
+
+export type GetLatestLibraryScanResponses = {
+    /**
+     * Latest scan returned
+     */
+    200: ScanDto;
+};
+
+export type GetLatestLibraryScanResponse = GetLatestLibraryScanResponses[keyof GetLatestLibraryScanResponses];
 
 export type GetHealthData = {
     body?: never;

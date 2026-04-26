@@ -17,8 +17,11 @@ import 'package:app_api_client/src/model/date.dart';
 import 'package:app_api_client/src/model/dependency_status.dart';
 import 'package:app_api_client/src/model/health_status.dart';
 import 'package:app_api_client/src/model/health_status_dependencies.dart';
+import 'package:app_api_client/src/model/library_dto.dart';
+import 'package:app_api_client/src/model/library_list_dto.dart';
 import 'package:app_api_client/src/model/problem.dart';
 import 'package:app_api_client/src/model/realtime_token.dart';
+import 'package:app_api_client/src/model/register_library_request.dart';
 
 part 'serializers.g.dart';
 
@@ -26,8 +29,11 @@ part 'serializers.g.dart';
   DependencyStatus,
   HealthStatus,
   HealthStatusDependencies,
+  LibraryDto,
+  LibraryListDto,
   Problem,
   RealtimeToken,
+  RegisterLibraryRequest,
 ])
 Serializers serializers = (_$serializers.toBuilder()
       ..add(const OneOfSerializer())

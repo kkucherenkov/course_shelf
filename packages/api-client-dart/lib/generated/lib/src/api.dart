@@ -9,6 +9,7 @@ import 'package:app_api_client/src/auth/api_key_auth.dart';
 import 'package:app_api_client/src/auth/basic_auth.dart';
 import 'package:app_api_client/src/auth/bearer_auth.dart';
 import 'package:app_api_client/src/auth/oauth.dart';
+import 'package:app_api_client/src/api/catalog_api.dart';
 import 'package:app_api_client/src/api/realtime_api.dart';
 import 'package:app_api_client/src/api/system_api.dart';
 
@@ -64,6 +65,12 @@ class AppApiClient {
     if (this.dio.interceptors.any((i) => i is ApiKeyAuthInterceptor)) {
       (this.dio.interceptors.firstWhere((element) => element is ApiKeyAuthInterceptor) as ApiKeyAuthInterceptor).apiKeys[name] = apiKey;
     }
+  }
+
+  /// Get CatalogApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  CatalogApi getCatalogApi() {
+    return CatalogApi(dio, serializers);
   }
 
   /// Get RealtimeApi instance, base route and serializer can be overridden by a given but be careful,

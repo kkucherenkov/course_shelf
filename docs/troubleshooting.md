@@ -8,6 +8,43 @@ the config, change the layout, pin a different version), fix it and delete the
 entry. This file is for genuinely upstream-recurring issues — not a graveyard
 of one-off bumps.
 
+## openapi-generator-cli — `Unable to locate a Java Runtime` on `pnpm spec:codegen`
+
+**Symptom:**
+
+```
+[codegen] 3/3 openapi-generator-cli (dart-dio) → @app/api-client-dart
+The operation couldn't be completed. Unable to locate a Java Runtime.
+Please visit http://www.java.com for information on installing Java.
+```
+
+`pnpm spec:codegen` makes it through the `openapi-typescript` and
+`@hey-api/openapi-ts` legs, then fails on the Dart leg.
+
+**Cause:** `@openapitools/openapi-generator-cli` is a thin Node wrapper around
+the upstream Java `openapi-generator` JAR. It needs a real JVM on the host.
+On a stock macOS install, `/usr/bin/java` is just a shim that prints the
+"Unable to locate a Java Runtime" message — no JDK is present.
+
+**Fix:** install OpenJDK 21 (the closest LTS to the one Homebrew ships):
+
+```sh
+brew install openjdk@21
+# Either symlink it system-wide (sudo, optional):
+sudo ln -sfn /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk \
+  /Library/Java/JavaVirtualMachines/openjdk-21.jdk
+# … or set JAVA_HOME in your shell rc:
+export JAVA_HOME="$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home"
+export PATH="$JAVA_HOME/bin:$PATH"
+```
+
+`java -version` should then print `openjdk version "21.x"` and
+`pnpm spec:codegen` runs end-to-end. Linux + Windows: install OpenJDK 21
+through your package manager (`apt install openjdk-21-jre-headless`,
+`choco install openjdk21`, etc.). CI: add
+`actions/setup-java@v4` with `distribution: temurin, java-version: '21'`
+to any workflow that calls `pnpm spec:codegen`.
+
 ## Prisma 7 — `P1012: datasource url argument` on `prisma generate`
 
 **Symptom:**

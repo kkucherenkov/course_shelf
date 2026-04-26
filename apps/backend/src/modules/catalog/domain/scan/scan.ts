@@ -51,6 +51,47 @@ export interface ScannedSection {
 }
 
 /**
+ * A sidecar material file grouped with a lesson during the scan walk.
+ * In-memory only — persisted to the `material` table by a follow-up story
+ * that materialises Lesson rows from scan data.
+ */
+export interface ScannedMaterial {
+  readonly path: string;
+  readonly sizeBytes: number;
+}
+
+/**
+ * A subtitle track file grouped with a lesson during the scan walk.
+ * In-memory only — persisted to the `subtitle` table by the same follow-up.
+ */
+export interface ScannedSubtitle {
+  readonly path: string;
+  readonly language: string;
+}
+
+/**
+ * A fully-resolved lesson group produced during the scan walk.
+ * One entry per stem-matched video file. Holds the video path plus any
+ * sidecar materials + subtitle tracks that share the same canonical stem.
+ *
+ * WHY in-memory only (not persisted to a `discovered_lesson` DB table):
+ *   Lesson rows are created by a future story (the Course materialisation
+ *   pipeline). This story (E06-F03-S02) establishes the read model and the
+ *   grouping logic; the actual INSERT of Lesson/Material/Subtitle rows will
+ *   follow in the scan-materialise handler. Storing a `discovered_lesson`
+ *   table here would duplicate state that will be superseded by the real
+ *   Lesson aggregate table and complicate the migration.
+ */
+export interface ScannedLessonEntry {
+  /** Absolute path to the video file. */
+  readonly videoPath: string;
+  readonly mtime: Date;
+  readonly sizeBytes: number;
+  readonly materials: ScannedMaterial[];
+  readonly subtitles: ScannedSubtitle[];
+}
+
+/**
  * Course-level value object discovered during the walk.
  * Not persisted as its own row; used to populate counters and response DTOs
  * until the E06-F03 chain (Course aggregate) lands.
@@ -60,6 +101,14 @@ export interface ScannedCourse {
   readonly title: string;
   readonly sectionTitles: string[];
   readonly lessonFiles: string[];
+  /**
+   * Stem-matched lesson entries for this course, populated by the upgraded
+   * scan handler. Each entry corresponds to one video file and carries its
+   * grouped sidecar materials + subtitle tracks.
+   *
+   * In-memory only — see ScannedLessonEntry for the reasoning.
+   */
+  readonly discoveredLessons: ScannedLessonEntry[];
 }
 
 export interface ScanProps {
@@ -225,10 +274,19 @@ export class Scan {
   }
 
   /** Bump the discovered-course counter and record the course value object. */
-  incrementCoursesDiscovered(course: ScannedCourse): void {
+  incrementCoursesDiscovered(course: {
+    path: string;
+    title: string;
+    sectionTitles: string[];
+    lessonFiles: string[];
+    discoveredLessons?: ScannedLessonEntry[];
+  }): void {
     this.assertRunning();
     this._coursesDiscovered++;
-    this._courses.push(course);
+    this._courses.push({
+      ...course,
+      discoveredLessons: course.discoveredLessons ?? [],
+    });
   }
 
   /** Transition to succeeded. Sets finishedAt. */

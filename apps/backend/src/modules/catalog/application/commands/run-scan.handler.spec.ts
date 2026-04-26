@@ -14,12 +14,18 @@
  *   /lib/.hidden/skip.mp4             → skipped (dotfile folder)
  *   /lib/02 - Course B (no json)/broken.txt → unsupported extension ScanError
  *
+ * Stem-match regression fixture (E06-F03-S02):
+ *   /lib/03 - Neovim Course/01 - Intro.mp4
+ *   /lib/03 - Neovim Course/01 - Intro.pdf    → material, NOT a ScanError
+ *   /lib/03 - Neovim Course/01 - Intro.en.srt → subtitle (lang=en), NOT a ScanError
+ *
  * Acceptance assertions per the story:
  *   First scan:  coursesDiscovered=2, filesAdded=3, filesUpdated=0, filesScanned=4,
  *                errors.length=1 (broken.txt).
  *   Second scan: all counters zero (no-op — FS unchanged).
  *   course.json overrides folder title for Course A.
  *   Malformed course.json adds a ScanError without failing the scan.
+ *   Neovim regression: zero unsupported-extension errors for the stem-matched group.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -300,5 +306,111 @@ describe('RunScanHandler', () => {
     await expect(handler.execute(new RunScanCommand('lib-1'))).rejects.toBeInstanceOf(
       ScanAlreadyRunningError,
     );
+  });
+
+  // -------------------------------------------------------------------------
+  // Neovim stem-match regression (E06-F03-S02)
+  //
+  // A course folder contains a video alongside a same-stem PDF and an SRT
+  // subtitle. Before stem-matching landed, the PDF + SRT would produce
+  // unsupported-extension ScanErrors. This fixture asserts zero such errors
+  // for the matched group and verifies discoveredLessons is populated.
+  //
+  // Pre-existing assertions (filesAdded/filesUpdated etc.) use ONLY the
+  // original fixture files — the Neovim course is scanned as a third course
+  // in a separate handler/repo/fs setup so it does not disturb the counters
+  // of the primary fixture.
+  // -------------------------------------------------------------------------
+  describe('Neovim stem-match regression', () => {
+    it('zero unsupported-extension errors for stem-matched sidecar files', async () => {
+      vi.useRealTimers();
+
+      const neovimFiles: FileRecord[] = [
+        {
+          path: '/lib/03 - Neovim Course/01 - Intro.mp4',
+          mtime: BASE_TIME,
+          size: 500,
+        },
+        {
+          path: '/lib/03 - Neovim Course/01 - Intro.pdf',
+          mtime: BASE_TIME,
+          size: 100,
+        },
+        {
+          path: '/lib/03 - Neovim Course/01 - Intro.en.srt',
+          mtime: BASE_TIME,
+          size: 20,
+        },
+      ];
+
+      const neovimFs = new FakeFsAdapter(neovimFiles);
+      const neovimScanRepo = makeScanRepo();
+      const neovimHandler = new RunScanHandler(libraryRepo, neovimScanRepo, neovimFs);
+
+      const scan = await neovimHandler.execute(new RunScanCommand('lib-1'));
+      await drainMicrotasks();
+
+      const saved = neovimScanRepo.store.get(scan.id)!;
+
+      // Zero unsupported-extension errors.
+      const unsupportedErrors = saved.errors.filter((e) => e.code === 'unsupported-extension');
+      expect(unsupportedErrors).toHaveLength(0);
+
+      // One course discovered.
+      expect(saved.coursesDiscovered).toBe(1);
+
+      // One video file counted as filesAdded (sidecars do NOT bump the counter).
+      expect(saved.filesAdded).toBe(1);
+      expect(saved.filesScanned).toBe(1);
+
+      // discoveredLessons is populated on the course.
+      const course = saved.courses[0]!;
+      expect(course.discoveredLessons).toHaveLength(1);
+
+      const lesson = course.discoveredLessons[0]!;
+      expect(lesson.videoPath).toBe('/lib/03 - Neovim Course/01 - Intro.mp4');
+
+      // PDF is in materials.
+      expect(lesson.materials).toHaveLength(1);
+      expect(lesson.materials[0]!.path).toBe('/lib/03 - Neovim Course/01 - Intro.pdf');
+
+      // SRT is in subtitles with language=en.
+      expect(lesson.subtitles).toHaveLength(1);
+      expect(lesson.subtitles[0]!.language).toBe('en');
+    });
+
+    it('dot-prefix variant: "1.1. Vim.pdf" groups with "1.1 Vim.mp4"', async () => {
+      vi.useRealTimers();
+
+      const dotVariantFiles: FileRecord[] = [
+        {
+          path: '/lib/Vim Course/1.1 Почему Vim.mp4',
+          mtime: BASE_TIME,
+          size: 500,
+        },
+        {
+          // Dot-variant: 1.1. (trailing dot) — must match the video above.
+          path: '/lib/Vim Course/1.1. Почему Vim.pdf',
+          mtime: BASE_TIME,
+          size: 100,
+        },
+      ];
+
+      const dotFs = new FakeFsAdapter(dotVariantFiles);
+      const dotScanRepo = makeScanRepo();
+      const dotHandler = new RunScanHandler(libraryRepo, dotScanRepo, dotFs);
+
+      const scan = await dotHandler.execute(new RunScanCommand('lib-1'));
+      await drainMicrotasks();
+
+      const saved = dotScanRepo.store.get(scan.id)!;
+
+      // PDF should be a material, not a ScanError.
+      const unsupportedErrors = saved.errors.filter((e) => e.code === 'unsupported-extension');
+      expect(unsupportedErrors).toHaveLength(0);
+
+      const lesson = saved.courses[0]!.discoveredLessons[0]!;
+      expect(lesson.materials).toHaveLength(1);
+    });
   });
 });

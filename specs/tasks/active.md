@@ -1,3 +1,42 @@
 # Active tasks
 
-_No active tasks._
+## T-2026-04-26-018 — Lesson + Material + Subtitle read model (E06-F03-S02)
+
+- Created: 2026-04-26
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E06-F03-S02.md` — Catalog domain final slice. Closes the Neovim "mass ScanError" pattern (`1.1. Почему Vim.{pdf,png,txt}` are now Materials, not unsupported-extension errors). Unblocks E08-F01-S01 (signed stream tokens for `/lessons/{id}` content) and E14-F03-S01 (web lesson player).
+- Goal: a `GET /api/v1/lessons/{id}` returns lesson metadata + a list of sidecar **materials** (`.pdf`/`.md`/`.txt`/`.png`/`.jpg`) and **subtitles** (`.srt`/`.vtt`, with a language guessed from the filename suffix). Raw filesystem paths never appear in the DTO (NFR-S-01).
+- Acceptance:
+  - OpenAPI under tag `Catalog`: `GET /lessons/{id}` (200 → `LessonDto`, 401/403/404 Problem). `bearerAuth`-secured. Spec version 0.5.0 → 0.6.0.
+  - Schemas: `LessonDto` (id, courseId, sectionId, position, title, durationSeconds?, materials: `MaterialDto[]`, subtitles: `SubtitleDto[]`, progress placeholder `LessonProgress { percent: 0, completed: false, lastSeenAtSeconds: 0 }` filled by E10), `MaterialDto` ({ id, kind: enum doc/slide/note/image, label, sizeBytes }), `SubtitleDto` ({ id, language, label }).
+  - Codegen: TS + Dart in their own commit.
+  - Domain: `apps/backend/src/modules/catalog/domain/lesson/{lesson.ts, lesson.repository.ts, lesson.errors.ts}` plus value objects for `Material` (kind enum + label + size) and `Subtitle` (language code + label) — both modelled inside the Lesson aggregate, no separate aggregate root. `LessonNotFoundError extends NotFound`.
+  - Persistence: Prisma `Lesson` + `Material` + `Subtitle` models. `Lesson` has `(sectionId, position)` unique + `(courseId, sectionId)` index. Manual migration SQL.
+  - Stem-matching at scan time: when scanner sees `<dir>/01 - Intro.mp4`, it groups any `<dir>/01. Intro.{pdf,md,txt,png,jpg,srt,vtt}` (note the `.` form is also accepted because Neovim emits `1.1. Почему Vim.pdf` next to `1.1 Почему Vim.mp4`) and `<dir>/01. Intro.{en,ru,…}.srt` as that lesson's sidecars. Stem comparison strips composite/ordinal prefixes so `2.5 Установка на Windows.mp4` and `2.5. Установка на Windows.pdf` match.
+  - Subtitle language: parsed from the filename suffix `.<lang>.srt` or `.<lang>.vtt` (`en`, `ru`, `es`, etc.); when no suffix, defaults to `und` (undetermined). Label = the original filename with extension stripped.
+  - Material `kind`: derived from extension — `.pdf` → `doc`, `.md`/`.txt` → `note`, `.png`/`.jpg` → `image`, anything else not exposed (still a ScanError).
+  - Application: `GetLessonQuery` + handler — loads the lesson, enforces grant via `AuthorizationService.canSee({ kind: 'lesson', id, courseId, libraryId })`, maps to `LessonDto` with raw `path` fields stripped.
+  - Presentation: `LessonsController` (`@Controller('lessons')`) with the single GET. Session forwarded to handler.
+  - **Scan handler update**: `RunScanHandler` no longer reports sidecar `.pdf/.md/.txt/.png/.jpg/.srt/.vtt` as `unsupported-extension` ScanErrors when they stem-match an adjacent video file. The Neovim layout now produces zero ScanError for those companions. Truly unsupported extensions still surface as ScanError as before.
+  - Tests: domain — Lesson invariants, Material kind derivation, Subtitle language extraction; stem-matching parser unit tests; handler unit (admin + non-admin grant flows); repo roundtrip; ScanHandler regression test asserting the Neovim-style fixture produces 0 unsupported-extension errors and the Materials/Subtitles attach to the right lesson.
+  - Quality gates: backend lint + typecheck + test all clean.
+- Spec diff: yes — one new path + three new schemas.
+- Codegen impact: yes — TS + Dart.
+- Design impact: none.
+- Tests: see Acceptance.
+- Sub-steps:
+  - [ ] T-018-A: spec edit (spec-writer)
+  - [ ] T-018-B: codegen (codegen-runner)
+  - [ ] T-018-A: spec edit (spec-writer)
+  - [ ] T-018-B: codegen (codegen-runner)
+  - [x] T-018-C: Prisma `Lesson` + `Material` + `Subtitle` + migration SQL
+  - [x] T-018-D: domain — Lesson aggregate + Material/Subtitle value objects + repo port + errors
+  - [x] T-018-E: persistence — Prisma adapter + mapper
+  - [x] T-018-F: stem-matching parser (`stem-match.ts`) — derives `(canonicalStem, kind)` for video/material/subtitle inputs
+  - [x] T-018-G: scan handler upgrade — group sidecars by stem, attach to Lesson on save, drop matched companions from ScanError list
+  - [x] T-018-H: application — GetLessonQuery + handler with grant filter
+  - [x] T-018-I: presentation — LessonsController + module wiring
+  - [x] T-018-J: tests
+  - [x] T-018-K: lint, typecheck, test, prettier; flip card; archive T-018
+- Status: done (pending T-018-A spec edit and T-018-B codegen — both require spec-writer/codegen-runner agents)
+- Blockers: —

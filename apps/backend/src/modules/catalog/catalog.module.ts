@@ -31,21 +31,25 @@ import { GetLatestScanHandler } from './application/queries/get-latest-scan.hand
 import { ListLibrariesHandler } from './application/queries/list-libraries.handler';
 import { GetCourseHandler } from './application/queries/get-course.handler';
 import { ListCoursesHandler } from './application/queries/list-courses.handler';
+import { GetLessonHandler } from './application/queries/get-lesson.handler';
 import { CatalogController } from './catalog.controller';
 import { CoursesController } from './courses.controller';
+import { LessonsController } from './lessons.controller';
 import { ScansController } from './scans.controller';
 import { LIBRARY_REPOSITORY } from './domain/library/library.repository';
 import { SCAN_REPOSITORY } from './domain/scan/scan.repository';
 import { COURSE_REPOSITORY } from './domain/course/course.repository';
+import { LESSON_REPOSITORY } from './domain/lesson/lesson.repository';
 import { FS_ADAPTER } from './domain/scan/fs-adapter';
 import { PrismaLibraryRepository } from './infra/prisma-library.repository';
 import { PrismaScanRepository } from './infra/prisma-scan.repository';
 import { PrismaCourseRepository } from './infra/prisma-course.repository';
+import { PrismaLessonRepository } from './infra/prisma-lesson.repository';
 import { NodeFsAdapter } from './infra/node-fs-adapter';
 
 @Module({
   imports: [CqrsModule, CommonAccessModule],
-  controllers: [CatalogController, ScansController, CoursesController],
+  controllers: [CatalogController, ScansController, CoursesController, LessonsController],
   providers: [
     RegisterLibraryHandler,
     GetLibraryHandler,
@@ -55,10 +59,12 @@ import { NodeFsAdapter } from './infra/node-fs-adapter';
     UpdateCourseMetadataHandler,
     GetCourseHandler,
     ListCoursesHandler,
+    GetLessonHandler,
     AdminGuard,
     { provide: LIBRARY_REPOSITORY, useClass: PrismaLibraryRepository },
     { provide: SCAN_REPOSITORY, useClass: PrismaScanRepository },
     { provide: COURSE_REPOSITORY, useClass: PrismaCourseRepository },
+    { provide: LESSON_REPOSITORY, useClass: PrismaLessonRepository },
     { provide: FS_ADAPTER, useClass: NodeFsAdapter },
   ],
 })

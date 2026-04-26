@@ -34,7 +34,8 @@ import { LibraryNotFoundError } from '../../domain/library/library.errors';
 import { LIBRARY_REPOSITORY } from '../../domain/library/library.repository';
 import { parseCourseJson } from '../../domain/scan/course-json.schema';
 import { FS_ADAPTER } from '../../domain/scan/fs-adapter';
-import { parseFolderName, parseLessonFileName } from '../../domain/scan/folder-name.parser';
+import { parseFolderName } from '../../domain/scan/folder-name.parser';
+import { stemMatch } from '../../domain/scan/stem-match';
 import { Scan } from '../../domain/scan/scan';
 import { ScanAlreadyRunningError } from '../../domain/scan/scan.errors';
 import { SCAN_REPOSITORY } from '../../domain/scan/scan.repository';
@@ -44,7 +45,12 @@ import { RunScanCommand } from './run-scan.command';
 import type { LibraryRepository } from '../../domain/library/library.repository';
 import type { FsAdapter } from '../../domain/scan/fs-adapter';
 import type { ScanRepository } from '../../domain/scan/scan.repository';
-import type { DiscoveredFileEntry } from '../../domain/scan/scan';
+import type {
+  DiscoveredFileEntry,
+  ScannedLessonEntry,
+  ScannedMaterial,
+  ScannedSubtitle,
+} from '../../domain/scan/scan';
 
 @CommandHandler(RunScanCommand)
 export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
@@ -150,33 +156,73 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           }
         }
 
-        // Process lesson files (non-course.json files).
-        const lessonFiles: string[] = [];
+        // -----------------------------------------------------------------------
+        // Step 1: Group non-course.json files by canonical stem.
+        //
+        // WHY: A course folder may contain `1.1 Vim.mp4` alongside sidecar
+        // files like `1.1. Vim.pdf` (dot-variant) or `1.1 Vim.en.srt`.
+        // Without grouping, the PDF and SRT would fall through as
+        // unsupported-extension ScanErrors. stemMatch normalises both prefix
+        // variants to the same canonical stem so sidecar files can be
+        // associated with their video (the "Neovim mass ScanError" fix).
+        // -----------------------------------------------------------------------
+
+        // key = canonical stem; value = collections of files by kind.
+        const stemGroups = new Map<
+          string,
+          {
+            video: { path: string; mtime: Date; size: number } | undefined;
+            materials: { path: string; size: number }[];
+            subtitles: { path: string; language: string }[];
+            unsupported: { path: string; ext: string }[];
+          }
+        >();
+
         const sectionSet = new Set<string>();
 
         for (const file of files) {
           const fileBasename = path.basename(file.path);
           if (fileBasename === 'course.json') continue;
 
-          const parsed = parseLessonFileName(fileBasename);
+          const { canonicalStem, kind } = stemMatch(file.path);
 
-          if (parsed.unsupportedExtension) {
-            scan.recordError({
-              path: path.relative(rootPath, file.path),
-              message: `Unsupported file extension "${parsed.extension}".`,
-              code: 'unsupported-extension',
+          if (!stemGroups.has(canonicalStem)) {
+            stemGroups.set(canonicalStem, {
+              video: undefined,
+              materials: [],
+              subtitles: [],
+              unsupported: [],
             });
-            continue;
+          }
+          // Non-null guaranteed: we just set the entry with stemGroups.set() above.
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- guaranteed above
+          const group = stemGroups.get(canonicalStem)!;
+
+          switch (kind) {
+            case 'video': {
+              group.video = { path: file.path, mtime: file.mtime, size: file.size };
+              break;
+            }
+            case 'material': {
+              group.materials.push({ path: file.path, size: file.size });
+              break;
+            }
+            case 'subtitle': {
+              // Extract the language from the subtitle filename for ScannedSubtitle.
+              const langMatch = /\.([a-z]{2,3})\.(srt|vtt)$/i.exec(fileBasename);
+              const lang = langMatch?.[1]?.toLowerCase() ?? 'und';
+              group.subtitles.push({ path: file.path, language: lang });
+              break;
+            }
+            default: {
+              group.unsupported.push({
+                path: file.path,
+                ext: fileBasename.slice(fileBasename.lastIndexOf('.')).toLowerCase(),
+              });
+            }
           }
 
-          lessonFiles.push(file.path);
-
-          // Determine which section this file belongs to (2nd path segment
-          // under course). Run the section folder name through parseFolderName
-          // so word-prefixed layouts ("Модуль 2 - Настройки окружения",
-          // "Глава 2. Продвинутые техники") and the numeric "01 - …" form
-          // both yield clean labels in `sectionTitles` rather than the raw
-          // folder string.
+          // Track section folders for course metadata.
           const relFromCourse = path.relative(courseFolder, file.path);
           const relSegments = relFromCourse.split(/[/\\]/);
           if (relSegments.length > 1) {
@@ -184,21 +230,91 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
             const { label } = parseFolderName(sectionFolder);
             sectionSet.add(label);
           }
+        }
 
-          // Incremental comparison.
-          const prev = prevFileMap.get(file.path);
-          const fileEntry: DiscoveredFileEntry = {
-            path: file.path,
-            mtime: file.mtime,
-            size: file.size,
-          };
+        // -----------------------------------------------------------------------
+        // Step 2: Process each stem group.
+        //
+        // - Groups WITH a video:  video = lesson, sidecars attach to it.
+        //   Video file participates in incremental comparison (filesAdded/Updated).
+        //   Sidecars do NOT bump filesAdded/filesUpdated — only the video does.
+        //   Unsupported files in the group are still ScanErrors (belt-and-suspenders).
+        // - Groups WITHOUT a video: every non-video file in the group falls
+        //   back to being an unsupported-extension ScanError (original behaviour).
+        // -----------------------------------------------------------------------
 
-          if (!prev) {
-            scan.recordFileAdded(fileEntry);
-          } else if (prev.mtime.getTime() !== file.mtime.getTime() || prev.size !== file.size) {
-            scan.recordFileUpdated(fileEntry);
+        const lessonFiles: string[] = [];
+        const discoveredLessons: ScannedLessonEntry[] = [];
+
+        for (const [, group] of stemGroups) {
+          if (group.video) {
+            const videoFile = group.video;
+            lessonFiles.push(videoFile.path);
+
+            // Incremental comparison for the video file only.
+            const prev = prevFileMap.get(videoFile.path);
+            const fileEntry: DiscoveredFileEntry = {
+              path: videoFile.path,
+              mtime: videoFile.mtime,
+              size: videoFile.size,
+            };
+
+            if (!prev) {
+              scan.recordFileAdded(fileEntry);
+            } else if (
+              prev.mtime.getTime() !== videoFile.mtime.getTime() ||
+              prev.size !== videoFile.size
+            ) {
+              scan.recordFileUpdated(fileEntry);
+            } else {
+              scan.recordFileUnchanged(fileEntry);
+            }
+
+            // Build the discovered lesson entry with sidecar collections.
+            const materials: ScannedMaterial[] = group.materials.map((m) => ({
+              path: m.path,
+              sizeBytes: m.size,
+            }));
+            const subtitles: ScannedSubtitle[] = group.subtitles.map((s) => ({
+              path: s.path,
+              language: s.language,
+            }));
+
+            discoveredLessons.push({
+              videoPath: videoFile.path,
+              mtime: videoFile.mtime,
+              sizeBytes: videoFile.size,
+              materials,
+              subtitles,
+            });
+
+            // Belt-and-suspenders: truly unsupported files even within a
+            // stem group with a video still surface as ScanErrors.
+            for (const u of group.unsupported) {
+              scan.recordError({
+                path: path.relative(rootPath, u.path),
+                message: `Unsupported file extension "${u.ext}".`,
+                code: 'unsupported-extension',
+              });
+            }
           } else {
-            scan.recordFileUnchanged(fileEntry);
+            // No video in this stem group — all files are unsupported-extension errors.
+            const allFiles = [
+              ...group.materials,
+              ...group.subtitles.map((s) => ({ path: s.path, size: 0 })),
+              ...group.unsupported.map((u) => ({ path: u.path, size: 0 })),
+            ];
+            for (const f of allFiles) {
+              const basename = path.basename(f.path);
+              const ext = basename.includes('.')
+                ? basename.slice(basename.lastIndexOf('.')).toLowerCase()
+                : '';
+              scan.recordError({
+                path: path.relative(rootPath, f.path),
+                message: `Unsupported file extension "${ext}".`,
+                code: 'unsupported-extension',
+              });
+            }
           }
         }
 
@@ -209,6 +325,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
             title: courseTitle,
             sectionTitles: [...sectionSet],
             lessonFiles,
+            discoveredLessons,
           });
         }
       }

@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `14 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `15 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -55,7 +55,7 @@ Progress: `14 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E08 — Streaming
 
-- [ ] [E08-F01-S01](./tasks/E08-F01-S01.md) `A` — Short-lived signed stream tokens · ⇐ E06-F03-S02, E07-F01-S02
+- [x] [E08-F01-S01](./tasks/E08-F01-S01.md) `A` — Short-lived signed stream tokens · ⇐ E06-F03-S02, E07-F01-S02
 - [ ] [E08-F02-S01](./tasks/E08-F02-S01.md) `A` — `GET /stream/lessons/{id}` with Range support · ⇐ E08-F01-S01
 - [ ] [E08-F02-S02](./tasks/E08-F02-S02.md) `A` — Subtitle delivery (SRT → VTT) · ⇐ E06-F03-S02
 

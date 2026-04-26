@@ -23,6 +23,27 @@ export type HealthStatus = {
     };
 };
 
+export type LibraryDto = {
+    /**
+     * Server-generated identifier.
+     */
+    id: string;
+    /**
+     * Human-readable label.
+     */
+    name: string;
+    /**
+     * Absolute filesystem path to the library root. Must start with `/` (POSIX) or `[A-Za-z]:\` (Windows).
+     */
+    rootPath: string;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type LibraryListDto = {
+    items: Array<LibraryDto>;
+};
+
 /**
  * RFC 9457 problem details
  */
@@ -45,6 +66,117 @@ export type RealtimeToken = {
      */
     expiresAt: string | null;
 };
+
+export type RegisterLibraryRequest = {
+    /**
+     * Human-readable label.
+     */
+    name: string;
+    /**
+     * Absolute filesystem path to the library root. Accepts POSIX paths starting with `/` or Windows drive paths starting with `[A-Za-z]:\`. Trailing slashes are allowed.
+     */
+    rootPath: string;
+};
+
+export type ListLibrariesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/libraries';
+};
+
+export type ListLibrariesErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+};
+
+export type ListLibrariesError = ListLibrariesErrors[keyof ListLibrariesErrors];
+
+export type ListLibrariesResponses = {
+    /**
+     * Library list returned
+     */
+    200: LibraryListDto;
+};
+
+export type ListLibrariesResponse = ListLibrariesResponses[keyof ListLibrariesResponses];
+
+export type RegisterLibraryData = {
+    body: RegisterLibraryRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/libraries';
+};
+
+export type RegisterLibraryErrors = {
+    /**
+     * Validation error — missing or malformed fields
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the Owner-Admin role
+     */
+    403: Problem;
+    /**
+     * A library with the same rootPath already exists
+     */
+    409: Problem;
+};
+
+export type RegisterLibraryError = RegisterLibraryErrors[keyof RegisterLibraryErrors];
+
+export type RegisterLibraryResponses = {
+    /**
+     * Library registered successfully
+     */
+    201: LibraryDto;
+};
+
+export type RegisterLibraryResponse = RegisterLibraryResponses[keyof RegisterLibraryResponses];
+
+export type GetLibraryData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the library.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/libraries/{id}';
+};
+
+export type GetLibraryErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have access to this library
+     */
+    403: Problem;
+    /**
+     * Library not found
+     */
+    404: Problem;
+};
+
+export type GetLibraryError = GetLibraryErrors[keyof GetLibraryErrors];
+
+export type GetLibraryResponses = {
+    /**
+     * Library found
+     */
+    200: LibraryDto;
+};
+
+export type GetLibraryResponse = GetLibraryResponses[keyof GetLibraryResponses];
 
 export type GetHealthData = {
     body?: never;

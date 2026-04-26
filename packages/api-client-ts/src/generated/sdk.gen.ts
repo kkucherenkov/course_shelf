@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetHealthData, GetHealthErrors, GetHealthResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses } from './types.gen';
+import type { GetHealthData, GetHealthErrors, GetHealthResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -17,6 +17,48 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
      */
     meta?: Record<string, unknown>;
 };
+
+/**
+ * List all registered libraries
+ *
+ * Returns all libraries the requester has READ access to. Admins see
+ * everything.
+ *
+ */
+export const listLibraries = <ThrowOnError extends boolean = false>(options?: Options<ListLibrariesData, ThrowOnError>) => (options?.client ?? client).get<ListLibrariesResponses, ListLibrariesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/libraries',
+    ...options
+});
+
+/**
+ * Register a new library
+ *
+ * Persists a new library pointing at an absolute filesystem path.
+ * Idempotent on rootPath: a 409 is returned if a library with the same
+ * rootPath already exists.
+ *
+ */
+export const registerLibrary = <ThrowOnError extends boolean = false>(options: Options<RegisterLibraryData, ThrowOnError>) => (options.client ?? client).post<RegisterLibraryResponses, RegisterLibraryErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/libraries',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Get a library by id
+ *
+ * Returns a single library by its server-generated identifier.
+ */
+export const getLibrary = <ThrowOnError extends boolean = false>(options: Options<GetLibraryData, ThrowOnError>) => (options.client ?? client).get<GetLibraryResponses, GetLibraryErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/libraries/{id}',
+    ...options
+});
 
 /**
  * Service health probe

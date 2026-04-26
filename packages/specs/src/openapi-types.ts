@@ -4,155 +4,397 @@
  */
 
 export interface paths {
-  '/api/v1/health': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/libraries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all registered libraries
+         * @description Returns all libraries the requester has READ access to. Admins see
+         *     everything.
+         */
+        get: operations["listLibraries"];
+        put?: never;
+        /**
+         * Register a new library
+         * @description Persists a new library pointing at an absolute filesystem path.
+         *     Idempotent on rootPath: a 409 is returned if a library with the same
+         *     rootPath already exists.
+         */
+        post: operations["registerLibrary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Service health probe
-     * @description Reports combined health status of the service and its runtime
-     *     dependencies (database, cache, realtime bus).
-     */
-    get: operations['getHealth'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/realtime/token': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/libraries/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a library by id
+         * @description Returns a single library by its server-generated identifier.
+         */
+        get: operations["getLibrary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Issue a short-lived Centrifugo connection token
-     * @description Mints a short-lived HMAC-signed JWT that the client can use to connect
-     *     to Centrifugo. Requires an active Better Auth session (cookie on web,
-     *     bearer token on mobile).
-     */
-    post: operations['issueRealtimeToken'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
+    "/api/v1/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Service health probe
+         * @description Reports combined health status of the service and its runtime
+         *     dependencies (database, cache, realtime bus).
+         */
+        get: operations["getHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/realtime/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a short-lived Centrifugo connection token
+         * @description Mints a short-lived HMAC-signed JWT that the client can use to connect
+         *     to Centrifugo. Requires an active Better Auth session (cookie on web,
+         *     bearer token on mobile).
+         */
+        post: operations["issueRealtimeToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    /** @enum {string|null} */
-    DependencyStatus: 'ok' | 'degraded' | 'down' | null;
-    HealthStatus: {
-      status: components['schemas']['DependencyStatus'];
-      /** @description Semantic version of the running backend build */
-      version: string | null;
-      /** @description Seconds since the backend process started */
-      uptimeSeconds: number;
-      dependencies: {
-        db: components['schemas']['DependencyStatus'];
-        redis: components['schemas']['DependencyStatus'];
-        centrifugo: components['schemas']['DependencyStatus'];
-      };
+    schemas: {
+        /** @enum {string|null} */
+        DependencyStatus: "ok" | "degraded" | "down" | null;
+        HealthStatus: {
+            status: components["schemas"]["DependencyStatus"];
+            /** @description Semantic version of the running backend build */
+            version: string | null;
+            /** @description Seconds since the backend process started */
+            uptimeSeconds: number;
+            dependencies: {
+                db: components["schemas"]["DependencyStatus"];
+                redis: components["schemas"]["DependencyStatus"];
+                centrifugo: components["schemas"]["DependencyStatus"];
+            };
+        };
+        /**
+         * @example {
+         *       "id": "clxvp1234567890abcdefghij",
+         *       "name": "Conference Recordings",
+         *       "rootPath": "/srv/courses/conference",
+         *       "createdAt": "2026-04-25T09:00:00Z",
+         *       "updatedAt": "2026-04-25T09:00:00Z"
+         *     }
+         */
+        LibraryDto: {
+            /** @description Server-generated identifier. */
+            id: string;
+            /** @description Human-readable label. */
+            name: string;
+            /** @description Absolute filesystem path to the library root. Must start with `/` (POSIX) or `[A-Za-z]:\` (Windows). */
+            rootPath: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /**
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "clxvp1234567890abcdefghij",
+         *           "name": "Conference Recordings",
+         *           "rootPath": "/srv/courses/conference",
+         *           "createdAt": "2026-04-25T09:00:00Z",
+         *           "updatedAt": "2026-04-25T09:00:00Z"
+         *         },
+         *         {
+         *           "id": "clxvp0987654321zyxwvutsrq",
+         *           "name": "Tutorial Screencasts",
+         *           "rootPath": "/srv/courses/tutorials",
+         *           "createdAt": "2026-04-20T14:30:00Z",
+         *           "updatedAt": "2026-04-22T11:00:00Z"
+         *         }
+         *       ]
+         *     }
+         */
+        LibraryListDto: {
+            items: components["schemas"]["LibraryDto"][];
+        };
+        /** @description RFC 9457 problem details */
+        Problem: {
+            /**
+             * Format: uri
+             * @default about:blank
+             */
+            type: string | null;
+            title: string | null;
+            /** Format: int32 */
+            status: number;
+            detail?: string | null;
+            instance?: string | null;
+            code?: string | null;
+        };
+        RealtimeToken: {
+            /** @description Short-lived HMAC-signed JWT for Centrifugo */
+            token: string | null;
+            /**
+             * Format: date-time
+             * @description ISO-8601 instant when the token expires
+             */
+            expiresAt: string | null;
+        };
+        /**
+         * @example {
+         *       "name": "Conference Recordings",
+         *       "rootPath": "/srv/courses/conference"
+         *     }
+         */
+        RegisterLibraryRequest: {
+            /** @description Human-readable label. */
+            name: string;
+            /** @description Absolute filesystem path to the library root. Accepts POSIX paths starting with `/` or Windows drive paths starting with `[A-Za-z]:\`. Trailing slashes are allowed. */
+            rootPath: string;
+        };
     };
-    /** @description RFC 9457 problem details */
-    Problem: {
-      /**
-       * Format: uri
-       * @default about:blank
-       */
-      type: string | null;
-      title: string | null;
-      /** Format: int32 */
-      status: number;
-      detail?: string | null;
-      instance?: string | null;
-      code?: string | null;
-    };
-    RealtimeToken: {
-      /** @description Short-lived HMAC-signed JWT for Centrifugo */
-      token: string | null;
-      /**
-       * Format: date-time
-       * @description ISO-8601 instant when the token expires
-       */
-      expiresAt: string | null;
-    };
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  getHealth: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    listLibraries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Library list returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryListDto"];
+                };
+            };
+            /** @description Missing or invalid bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Service and all dependencies are operational */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    registerLibrary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['HealthStatus'];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterLibraryRequest"];
+            };
         };
-      };
-      /** @description One or more dependencies are degraded or down */
-      503: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            /** @description Library registered successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryDto"];
+                };
+            };
+            /** @description Validation error — missing or malformed fields */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing or invalid bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Caller does not have the Owner-Admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A library with the same rootPath already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
-        content: {
-          'application/json': components['schemas']['HealthStatus'];
-        };
-      };
     };
-  };
-  issueRealtimeToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    getLibrary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Server-generated cuid identifying the library. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Library found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryDto"];
+                };
+            };
+            /** @description Missing or invalid bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Caller does not have access to this library */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Library not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Token issued */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    getHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['RealtimeToken'];
+        requestBody?: never;
+        responses: {
+            /** @description Service and all dependencies are operational */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthStatus"];
+                };
+            };
+            /** @description One or more dependencies are degraded or down */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthStatus"];
+                };
+            };
         };
-      };
-      /** @description No active session */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['Problem'];
-        };
-      };
     };
-  };
+    issueRealtimeToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Token issued */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RealtimeToken"];
+                };
+            };
+            /** @description No active session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
 }

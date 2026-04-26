@@ -255,6 +255,22 @@ model CourseProgressReadModel {
   @@map("course_progress_read_model")
 }
 
+// ----- Bookmark -----
+
+model Bookmark {
+  id              String   @id @default(cuid())
+  userId          String
+  lessonId        String
+  positionSeconds Int
+  label           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, lessonId])
+  @@index([userId, id])
+  @@map("bookmark")
+}
+
 // ----- Access -----
 
 enum GrantTargetKind {

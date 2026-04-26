@@ -55,7 +55,11 @@ export function registerOpenApiValidator(app: INestApplication, nodeEnv: string)
       // mounted inside URI versioning so the namespace is consistent.
       // `ignorePaths` is tested against `req.path`, which is relative to the
       // middleware mount point (`/api`), so the `/api` prefix must be omitted.
-      ignorePaths: /\/v1\/auth(\/|$)/,
+      //
+      // `/v1/stream/lessons/` is also exempt: the response is raw binary video
+      // bytes (not JSON), so the OpenAPI validator has no schema to validate
+      // against and must not intercept these requests.
+      ignorePaths: /\/v1\/auth(\/|$)|\/v1\/stream\/lessons\//,
     }),
   );
 

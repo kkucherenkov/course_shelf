@@ -21,3 +21,7 @@ export type { LessonRepository } from '../../modules/catalog/domain/lesson/lesso
 export { COURSE_REPOSITORY } from '../../modules/catalog/domain/course/course.repository';
 export type { CourseRepository } from '../../modules/catalog/domain/course/course.repository';
 export { LessonNotFoundError } from '../../modules/catalog/domain/lesson/lesson.errors';
+// Added for E08-F02-S01: LessonFileLocator needs Library.rootPath to compute
+// the video file's absolute path for range-based streaming.
+export { LIBRARY_REPOSITORY } from '../../modules/catalog/domain/library/library.repository';
+export type { LibraryRepository } from '../../modules/catalog/domain/library/library.repository';

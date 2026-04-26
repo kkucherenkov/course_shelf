@@ -19,14 +19,19 @@ import { Module } from '@nestjs/common';
 
 import { PrismaCourseRepository } from '../../modules/catalog/infra/prisma-course.repository';
 import { PrismaLessonRepository } from '../../modules/catalog/infra/prisma-lesson.repository';
+import { PrismaLibraryRepository } from '../../modules/catalog/infra/prisma-library.repository';
 import { COURSE_REPOSITORY } from '../../modules/catalog/domain/course/course.repository';
 import { LESSON_REPOSITORY } from '../../modules/catalog/domain/lesson/lesson.repository';
+import { LIBRARY_REPOSITORY } from '../../modules/catalog/domain/library/library.repository';
 
+// LIBRARY_REPOSITORY added for E08-F02-S01: LessonFileLocator resolves
+// lesson.videoPath against library.rootPath to obtain the absolute video path.
 @Module({
   providers: [
     { provide: LESSON_REPOSITORY, useClass: PrismaLessonRepository },
     { provide: COURSE_REPOSITORY, useClass: PrismaCourseRepository },
+    { provide: LIBRARY_REPOSITORY, useClass: PrismaLibraryRepository },
   ],
-  exports: [LESSON_REPOSITORY, COURSE_REPOSITORY],
+  exports: [LESSON_REPOSITORY, COURSE_REPOSITORY, LIBRARY_REPOSITORY],
 })
 export class CatalogRepositoriesModule {}

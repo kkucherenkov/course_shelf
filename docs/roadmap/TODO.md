@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `7 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `8 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -15,7 +15,7 @@ Progress: `7 / 115` complete (update by hand or via a pre-commit hook).
 ## E01 — Repository foundations
 
 - [x] [E01-F01-S01](./tasks/E01-F01-S01.md) `A` — Initialize pnpm + Turborepo workspace
-- [ ] [E01-F01-S02](./tasks/E01-F01-S02.md) `A` — Shared TypeScript & lint configs · ⇐ E01-F01-S01
+- [x] [E01-F01-S02](./tasks/E01-F01-S02.md) `A` — Shared TypeScript & lint configs · ⇐ E01-F01-S01
 - [ ] [E01-F02-S01](./tasks/E01-F02-S01.md) `A` — Env scaffolding and dev docker-compose · ⇐ E01-F01-S01
 
 ## E02 — API contracts as the spine

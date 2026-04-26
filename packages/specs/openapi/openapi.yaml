@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.5.0
+  version: 0.6.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -555,6 +555,93 @@ paths:
                     title: Conflict
                     status: 409
                     detail: A course with slug 'pragmatic-clean-architecture-2nd-ed' already exists in this library.
+
+  /api/v1/lessons/{id}:
+    get:
+      operationId: getLesson
+      summary: Get a lesson with its materials and subtitles
+      description: |
+        Returns lesson metadata, sidecar materials (PDF / Markdown / text / image),
+        and available subtitle tracks. Raw filesystem paths are intentionally absent
+        from the response (NFR-S-01); the player obtains a signed stream token for
+        the lesson video and the material/subtitle blobs separately.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the lesson.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lesson found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonDto"
+              examples:
+                found:
+                  value:
+                    id: clxvles0000000000000000001
+                    courseId: clxvcrs0000000000000000001
+                    sectionId: clxvsec0000000000000000002
+                    position: 3
+                    title: Aggregates
+                    durationSeconds: 2847
+                    materials:
+                      - id: clxvmat0000000000000000001
+                        kind: doc
+                        label: 03 - Aggregates slides
+                        sizeBytes: 204800
+                    subtitles:
+                      - id: clxvsub0000000000000000001
+                        language: en
+                        label: English
+                    progress:
+                      percent: 0
+                      completed: false
+                      lastSeenAtSeconds: 0
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Requester has no READ grant covering the parent library or course
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not have access to this lesson.
+        "404":
+          description: Lesson not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No lesson with that id exists.
 
   /api/v1/libraries:
     post:
@@ -1333,6 +1420,128 @@ components:
             createdAt: "2026-04-20T14:30:00Z"
             updatedAt: "2026-04-22T11:00:00Z"
 
+    LessonDto:
+      type: object
+      required: [id, courseId, sectionId, position, title, materials, subtitles, progress]
+      description: Full representation of a Lesson aggregate, including sidecar materials and subtitle tracks.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid identifying this lesson.
+        courseId:
+          type: string
+          description: cuid of the course this lesson belongs to.
+        sectionId:
+          type: string
+          description: cuid of the section this lesson belongs to.
+        position:
+          type: integer
+          minimum: 1
+          description: 1-based position within the section.
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        durationSeconds:
+          type: integer
+          minimum: 0
+          description: >-
+            Video duration in seconds. Populated by E06-F02-S02 (ffprobe).
+            `undefined` until then.
+        materials:
+          type: array
+          items:
+            $ref: "#/components/schemas/MaterialDto"
+          description: Sidecar materials (PDF / Markdown / text / image). Empty array when none.
+        subtitles:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubtitleDto"
+          description: Available subtitle tracks. Empty array when none.
+        progress:
+          $ref: "#/components/schemas/LessonProgress"
+      example:
+        id: clxvles0000000000000000001
+        courseId: clxvcrs0000000000000000001
+        sectionId: clxvsec0000000000000000002
+        position: 3
+        title: Aggregates
+        durationSeconds: 2847
+        materials:
+          - id: clxvmat0000000000000000001
+            kind: doc
+            label: 03 - Aggregates slides
+            sizeBytes: 204800
+        subtitles:
+          - id: clxvsub0000000000000000001
+            language: en
+            label: English
+        progress:
+          percent: 0
+          completed: false
+          lastSeenAtSeconds: 0
+
+    LessonProgress:
+      type: object
+      required: [percent, completed, lastSeenAtSeconds]
+      description: Per-lesson playback progress for the requesting user.
+      properties:
+        percent:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: >-
+            Completion percent. v1 always returns 0 — populated once the
+            LessonProgress projector lands (E10-F01-S01).
+        completed:
+          type: boolean
+          description: Whether the lesson is marked as completed.
+        lastSeenAtSeconds:
+          type: integer
+          minimum: 0
+          description: >-
+            Last reported watched position in seconds. v1 always returns 0 —
+            populated by the LessonProgress projector (E10-F01-S01).
+      example:
+        percent: 0
+        completed: false
+        lastSeenAtSeconds: 0
+
+    MaterialDto:
+      type: object
+      required: [id, kind, label, sizeBytes]
+      description: A sidecar material attached to a lesson.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid identifying this material.
+        kind:
+          $ref: "#/components/schemas/MaterialKind"
+        label:
+          type: string
+          minLength: 1
+          description: >-
+            Human-readable name derived from the original filename (extension
+            stripped, ordinal prefix preserved if present).
+        sizeBytes:
+          type: integer
+          minimum: 0
+          description: File size in bytes.
+      example:
+        id: clxvmat0000000000000000001
+        kind: doc
+        label: 03 - Aggregates slides
+        sizeBytes: 204800
+
+    MaterialKind:
+      type: string
+      enum: [doc, note, image, slide]
+      description: >-
+        Coarse classification of a sidecar material. `doc` is `.pdf`,
+        `note` is `.md` / `.txt`, `image` is `.png` / `.jpg`,
+        `slide` is reserved for future use.
+      example: doc
+
     Problem:
       type: object
       description: RFC 9457 problem details
@@ -1508,6 +1717,29 @@ components:
       description: >-
         Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans
         only ever transition `running → {succeeded, failed}`.
+
+    SubtitleDto:
+      type: object
+      required: [id, language, label]
+      description: A subtitle track available for a lesson.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid identifying this subtitle track.
+        language:
+          type: string
+          pattern: '^[a-z]{2,3}$|^und$'
+          description: >-
+            BCP-47-ish language code parsed from the filename suffix
+            (`Lesson.en.srt` → `en`). `und` when no suffix is present.
+        label:
+          type: string
+          minLength: 1
+          description: Human-readable label for the subtitle track (e.g. "English").
+      example:
+        id: clxvsub0000000000000000001
+        language: en
+        label: English
 
     SectionDto:
       type: object

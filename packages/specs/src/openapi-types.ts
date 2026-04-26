@@ -50,6 +50,54 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/courses': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List courses (optionally filtered by library)
+     * @description Returns courses the requester can see. Non-admins see only courses inside
+     *     libraries they have a READ AccessGrant for; admins see all.
+     */
+    get: operations['listCourses'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/courses/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a single course
+     * @description Returns the full CourseDto for one course by its server-generated cuid. Non-admins must hold a READ AccessGrant on the course's library.
+     */
+    get: operations['getCourse'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Update course metadata
+     * @description Admin-only. Updates any combination of title / description / slug.
+     *     Slug must be unique within the same library.
+     *     At least one of `title`, `description`, or `slug` must be present
+     *     (server-side validation rule — OpenAPI cannot express "at-least-one" natively).
+     */
+    patch: operations['updateCourse'];
+    trace?: never;
+  };
   '/api/v1/libraries': {
     parameters: {
       query?: never;
@@ -287,6 +335,131 @@ export interface components {
     AccessGrantListDto: {
       items: components['schemas']['AccessGrantDto'][];
     };
+    /**
+     * @description Full representation of a Course aggregate.
+     * @example {
+     *       "id": "clxvcrs0000000000000000001",
+     *       "libraryId": "clxvp1234567890abcdefghij",
+     *       "slug": "pragmatic-clean-architecture",
+     *       "title": "Pragmatic Clean Architecture",
+     *       "description": "Milan Jovanović's deep-dive into Clean Architecture with .NET.",
+     *       "sections": [
+     *         {
+     *           "id": "clxvsec0000000000000000001",
+     *           "position": 1,
+     *           "title": "Introduction"
+     *         },
+     *         {
+     *           "id": "clxvsec0000000000000000002",
+     *           "position": 2,
+     *           "title": "Domain Layer"
+     *         }
+     *       ],
+     *       "progress": {
+     *         "percent": 0,
+     *         "lessonsCompleted": 0,
+     *         "lessonsTotal": 24
+     *       },
+     *       "createdAt": "2026-04-25T09:00:00Z",
+     *       "updatedAt": "2026-04-25T09:00:00Z"
+     *     }
+     */
+    CourseDto: {
+      /** @description Server-generated cuid identifying this course. */
+      id: string;
+      /** @description cuid of the library this course belongs to. */
+      libraryId: string;
+      slug: components['schemas']['CourseSlug'];
+      title: string;
+      description?: string;
+      /** @description Sections sorted ascending by position. */
+      sections: components['schemas']['SectionDto'][];
+      progress: components['schemas']['CourseProgress'];
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    /**
+     * @description List of courses visible to the requester.
+     * @example {
+     *       "items": [
+     *         {
+     *           "id": "clxvcrs0000000000000000001",
+     *           "libraryId": "clxvp1234567890abcdefghij",
+     *           "slug": "pragmatic-clean-architecture",
+     *           "title": "Pragmatic Clean Architecture",
+     *           "description": "Milan Jovanović's deep-dive into Clean Architecture with .NET.",
+     *           "sections": [
+     *             {
+     *               "id": "clxvsec0000000000000000001",
+     *               "position": 1,
+     *               "title": "Introduction"
+     *             },
+     *             {
+     *               "id": "clxvsec0000000000000000002",
+     *               "position": 2,
+     *               "title": "Domain Layer"
+     *             }
+     *           ],
+     *           "progress": {
+     *             "percent": 0,
+     *             "lessonsCompleted": 0,
+     *             "lessonsTotal": 24
+     *           },
+     *           "createdAt": "2026-04-25T09:00:00Z",
+     *           "updatedAt": "2026-04-25T09:00:00Z"
+     *         },
+     *         {
+     *           "id": "clxvcrs0000000000000000002",
+     *           "libraryId": "clxvp1234567890abcdefghij",
+     *           "slug": "ddd-by-eric-evans",
+     *           "title": "Domain-Driven Design by Eric Evans",
+     *           "sections": [
+     *             {
+     *               "id": "clxvsec0000000000000000003",
+     *               "position": 1,
+     *               "title": "Putting the Domain Model to Work"
+     *             },
+     *             {
+     *               "id": "clxvsec0000000000000000004",
+     *               "position": 2,
+     *               "title": "Building Blocks of a Model-Driven Design"
+     *             }
+     *           ],
+     *           "progress": {
+     *             "percent": 0,
+     *             "lessonsCompleted": 0,
+     *             "lessonsTotal": 18
+     *           },
+     *           "createdAt": "2026-04-25T09:05:00Z",
+     *           "updatedAt": "2026-04-25T09:05:00Z"
+     *         }
+     *       ]
+     *     }
+     */
+    CourseListDto: {
+      items: components['schemas']['CourseDto'][];
+    };
+    /**
+     * @description Progress summary for a course from the requester's perspective.
+     * @example {
+     *       "percent": 0,
+     *       "lessonsCompleted": 0,
+     *       "lessonsTotal": 24
+     *     }
+     */
+    CourseProgress: {
+      /** @description Completion percent. v1 always returns 0 — populated once the LessonProgress projector lands (E10-F01-S01). */
+      percent: number;
+      lessonsCompleted: number;
+      lessonsTotal: number;
+    };
+    /**
+     * @description URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens; cannot start or end with a hyphen. Unique within a library.
+     * @example pragmatic-clean-architecture
+     */
+    CourseSlug: string;
     /** @enum {string|null} */
     DependencyStatus: 'ok' | 'degraded' | 'down' | null;
     /**
@@ -496,6 +669,36 @@ export interface components {
      * @enum {string}
      */
     ScanStatus: 'running' | 'succeeded' | 'failed' | 'cancelled';
+    /**
+     * @description A section within a course.
+     * @example {
+     *       "id": "clxvsec0000000000000000001",
+     *       "position": 1,
+     *       "title": "Introduction"
+     *     }
+     */
+    SectionDto: {
+      /** @description Server-generated cuid identifying this section. */
+      id: string;
+      /** @description 1-based position within the course. Sections are returned sorted by position. */
+      position: number;
+      title: string;
+    };
+    /**
+     * @description Payload for updating course metadata. All fields are optional, but at
+     *     least one of `title`, `description`, or `slug` must be present
+     *     (server-side validation rule — OpenAPI does not have a native
+     *     "at-least-one" constraint).
+     * @example {
+     *       "title": "Pragmatic Clean Architecture (2nd ed.)",
+     *       "slug": "pragmatic-clean-architecture-2nd-ed"
+     *     }
+     */
+    UpdateCourseRequest: {
+      title?: string;
+      description?: string;
+      slug?: components['schemas']['CourseSlug'];
+    };
   };
   responses: never;
   parameters: never;
@@ -663,6 +866,160 @@ export interface operations {
       };
       /** @description Grant not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listCourses: {
+    parameters: {
+      query?: {
+        /** @description Filter to a single library; omit for everything visible. */
+        libraryId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Course list returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CourseListDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getCourse: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the course. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Course found */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CourseDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have a READ grant for the course's library */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Course not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  updateCourse: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the course to update. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateCourseRequest'];
+      };
+    };
+    responses: {
+      /** @description Course updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CourseDto'];
+        };
+      };
+      /** @description Validation error — malformed fields or no fields provided */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Course not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description A course with the same slug already exists in this library */
+      409: {
         headers: {
           [name: string]: unknown;
         };

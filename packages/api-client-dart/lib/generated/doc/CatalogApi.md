@@ -9,12 +9,58 @@ All URIs are relative to *http://localhost:3000*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**getCourse**](CatalogApi.md#getcourse) | **GET** /api/v1/courses/{id} | Get a single course
 [**getLatestLibraryScan**](CatalogApi.md#getlatestlibraryscan) | **GET** /api/v1/libraries/{id}/scans/latest | Get the most recent scan for a library
 [**getLibrary**](CatalogApi.md#getlibrary) | **GET** /api/v1/libraries/{id} | Get a library by id
+[**listCourses**](CatalogApi.md#listcourses) | **GET** /api/v1/courses | List courses (optionally filtered by library)
 [**listLibraries**](CatalogApi.md#listlibraries) | **GET** /api/v1/libraries | List all registered libraries
 [**registerLibrary**](CatalogApi.md#registerlibrary) | **POST** /api/v1/libraries | Register a new library
 [**runLibraryScan**](CatalogApi.md#runlibraryscan) | **POST** /api/v1/libraries/{id}/scans | Trigger a scan of a library
+[**updateCourse**](CatalogApi.md#updatecourse) | **PATCH** /api/v1/courses/{id} | Update course metadata
 
+
+# **getCourse**
+> CourseDto getCourse(id)
+
+Get a single course
+
+Returns the full CourseDto for one course by its server-generated cuid. Non-admins must hold a READ AccessGrant on the course's library.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String id = id_example; // String | Server-generated cuid identifying the course.
+
+try {
+    final response = api.getCourse(id);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->getCourse: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the course. | 
+
+### Return type
+
+[**CourseDto**](CourseDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **getLatestLibraryScan**
 > ScanDto getLatestLibraryScan(id)
@@ -90,6 +136,49 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**LibraryDto**](LibraryDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **listCourses**
+> CourseListDto listCourses(libraryId)
+
+List courses (optionally filtered by library)
+
+Returns courses the requester can see. Non-admins see only courses inside libraries they have a READ AccessGrant for; admins see all. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String libraryId = libraryId_example; // String | Filter to a single library; omit for everything visible.
+
+try {
+    final response = api.listCourses(libraryId);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->listCourses: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **libraryId** | **String**| Filter to a single library; omit for everything visible. | [optional] 
+
+### Return type
+
+[**CourseListDto**](CourseListDto.md)
 
 ### Authorization
 
@@ -223,6 +312,51 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
  - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **updateCourse**
+> CourseDto updateCourse(id, updateCourseRequest)
+
+Update course metadata
+
+Admin-only. Updates any combination of title / description / slug. Slug must be unique within the same library. At least one of `title`, `description`, or `slug` must be present (server-side validation rule — OpenAPI cannot express \"at-least-one\" natively). 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String id = id_example; // String | Server-generated cuid identifying the course to update.
+final UpdateCourseRequest updateCourseRequest = {"title":"Pragmatic Clean Architecture (2nd ed.)","slug":"pragmatic-clean-architecture-2nd-ed"}; // UpdateCourseRequest | 
+
+try {
+    final response = api.updateCourse(id, updateCourseRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->updateCourse: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the course to update. | 
+ **updateCourseRequest** | [**UpdateCourseRequest**](UpdateCourseRequest.md)|  | 
+
+### Return type
+
+[**CourseDto**](CourseDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
  - **Accept**: application/json, application/problem+json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

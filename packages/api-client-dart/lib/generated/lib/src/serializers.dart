@@ -16,6 +16,9 @@ import 'package:app_api_client/src/model/date.dart';
 
 import 'package:app_api_client/src/model/access_grant_dto.dart';
 import 'package:app_api_client/src/model/access_grant_list_dto.dart';
+import 'package:app_api_client/src/model/course_dto.dart';
+import 'package:app_api_client/src/model/course_list_dto.dart';
+import 'package:app_api_client/src/model/course_progress.dart';
 import 'package:app_api_client/src/model/course_target.dart';
 import 'package:app_api_client/src/model/dependency_status.dart';
 import 'package:app_api_client/src/model/grant_level.dart';
@@ -34,12 +37,17 @@ import 'package:app_api_client/src/model/register_library_request.dart';
 import 'package:app_api_client/src/model/scan_dto.dart';
 import 'package:app_api_client/src/model/scan_error.dart';
 import 'package:app_api_client/src/model/scan_status.dart';
+import 'package:app_api_client/src/model/section_dto.dart';
+import 'package:app_api_client/src/model/update_course_request.dart';
 
 part 'serializers.g.dart';
 
 @SerializersFor([
   AccessGrantDto,
   AccessGrantListDto,
+  CourseDto,
+  CourseListDto,
+  CourseProgress,
   CourseTarget,
   DependencyStatus,
   GrantLevel,
@@ -58,6 +66,8 @@ part 'serializers.g.dart';
   ScanDto,
   ScanError,
   ScanStatus,
+  SectionDto,
+  UpdateCourseRequest,
 ])
 Serializers serializers = (_$serializers.toBuilder()
       ..add(const OneOfSerializer())

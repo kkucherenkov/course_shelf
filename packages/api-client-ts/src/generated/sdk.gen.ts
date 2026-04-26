@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetHealthData, GetHealthErrors, GetHealthResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses } from './types.gen';
+import type { GetCourseData, GetCourseErrors, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -56,6 +56,49 @@ export const revokeGrant = <ThrowOnError extends boolean = false>(options: Optio
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/access/grants/{id}',
     ...options
+});
+
+/**
+ * List courses (optionally filtered by library)
+ *
+ * Returns courses the requester can see. Non-admins see only courses inside
+ * libraries they have a READ AccessGrant for; admins see all.
+ *
+ */
+export const listCourses = <ThrowOnError extends boolean = false>(options?: Options<ListCoursesData, ThrowOnError>) => (options?.client ?? client).get<ListCoursesResponses, ListCoursesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/courses',
+    ...options
+});
+
+/**
+ * Get a single course
+ *
+ * Returns the full CourseDto for one course by its server-generated cuid. Non-admins must hold a READ AccessGrant on the course's library.
+ */
+export const getCourse = <ThrowOnError extends boolean = false>(options: Options<GetCourseData, ThrowOnError>) => (options.client ?? client).get<GetCourseResponses, GetCourseErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/courses/{id}',
+    ...options
+});
+
+/**
+ * Update course metadata
+ *
+ * Admin-only. Updates any combination of title / description / slug.
+ * Slug must be unique within the same library.
+ * At least one of `title`, `description`, or `slug` must be present
+ * (server-side validation rule — OpenAPI cannot express "at-least-one" natively).
+ *
+ */
+export const updateCourse = <ThrowOnError extends boolean = false>(options: Options<UpdateCourseData, ThrowOnError>) => (options.client ?? client).patch<UpdateCourseResponses, UpdateCourseErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/courses/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

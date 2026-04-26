@@ -59,6 +59,54 @@ export type AccessGrantListDto = {
     items: Array<AccessGrantDto>;
 };
 
+/**
+ * Full representation of a Course aggregate.
+ */
+export type CourseDto = {
+    /**
+     * Server-generated cuid identifying this course.
+     */
+    id: string;
+    /**
+     * cuid of the library this course belongs to.
+     */
+    libraryId: string;
+    slug: CourseSlug;
+    title: string;
+    description?: string;
+    /**
+     * Sections sorted ascending by position.
+     */
+    sections: Array<SectionDto>;
+    progress: CourseProgress;
+    createdAt: string;
+    updatedAt: string;
+};
+
+/**
+ * List of courses visible to the requester.
+ */
+export type CourseListDto = {
+    items: Array<CourseDto>;
+};
+
+/**
+ * Progress summary for a course from the requester's perspective.
+ */
+export type CourseProgress = {
+    /**
+     * Completion percent. v1 always returns 0 — populated once the LessonProgress projector lands (E10-F01-S01).
+     */
+    percent: number;
+    lessonsCompleted: number;
+    lessonsTotal: number;
+};
+
+/**
+ * URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens; cannot start or end with a hyphen. Unique within a library.
+ */
+export type CourseSlug = string;
+
 export type DependencyStatus = 'ok' | 'degraded' | 'down';
 
 /**
@@ -239,6 +287,34 @@ export type ScanError = {
  */
 export type ScanStatus = 'running' | 'succeeded' | 'failed' | 'cancelled';
 
+/**
+ * A section within a course.
+ */
+export type SectionDto = {
+    /**
+     * Server-generated cuid identifying this section.
+     */
+    id: string;
+    /**
+     * 1-based position within the course. Sections are returned sorted by position.
+     */
+    position: number;
+    title: string;
+};
+
+/**
+ * Payload for updating course metadata. All fields are optional, but at
+ * least one of `title`, `description`, or `slug` must be present
+ * (server-side validation rule — OpenAPI does not have a native
+ * "at-least-one" constraint).
+ *
+ */
+export type UpdateCourseRequest = {
+    title?: string;
+    description?: string;
+    slug?: CourseSlug;
+};
+
 export type ListGrantsByUserData = {
     body?: never;
     path?: never;
@@ -355,6 +431,120 @@ export type RevokeGrantResponses = {
 };
 
 export type RevokeGrantResponse = RevokeGrantResponses[keyof RevokeGrantResponses];
+
+export type ListCoursesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Filter to a single library; omit for everything visible.
+         */
+        libraryId?: string;
+    };
+    url: '/api/v1/courses';
+};
+
+export type ListCoursesErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+};
+
+export type ListCoursesError = ListCoursesErrors[keyof ListCoursesErrors];
+
+export type ListCoursesResponses = {
+    /**
+     * Course list returned
+     */
+    200: CourseListDto;
+};
+
+export type ListCoursesResponse = ListCoursesResponses[keyof ListCoursesResponses];
+
+export type GetCourseData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the course.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/courses/{id}';
+};
+
+export type GetCourseErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have a READ grant for the course's library
+     */
+    403: Problem;
+    /**
+     * Course not found
+     */
+    404: Problem;
+};
+
+export type GetCourseError = GetCourseErrors[keyof GetCourseErrors];
+
+export type GetCourseResponses = {
+    /**
+     * Course found
+     */
+    200: CourseDto;
+};
+
+export type GetCourseResponse = GetCourseResponses[keyof GetCourseResponses];
+
+export type UpdateCourseData = {
+    body: UpdateCourseRequest;
+    path: {
+        /**
+         * Server-generated cuid identifying the course to update.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/courses/{id}';
+};
+
+export type UpdateCourseErrors = {
+    /**
+     * Validation error — malformed fields or no fields provided
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Course not found
+     */
+    404: Problem;
+    /**
+     * A course with the same slug already exists in this library
+     */
+    409: Problem;
+};
+
+export type UpdateCourseError = UpdateCourseErrors[keyof UpdateCourseErrors];
+
+export type UpdateCourseResponses = {
+    /**
+     * Course updated
+     */
+    200: CourseDto;
+};
+
+export type UpdateCourseResponse = UpdateCourseResponses[keyof UpdateCourseResponses];
 
 export type ListLibrariesData = {
     body?: never;

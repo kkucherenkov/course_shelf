@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `0 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `6 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -14,22 +14,22 @@ Progress: `0 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E01 — Repository foundations
 
-- [ ] [E01-F01-S01](./tasks/E01-F01-S01.md) `A` — Initialize pnpm + Turborepo workspace
+- [x] [E01-F01-S01](./tasks/E01-F01-S01.md) `A` — Initialize pnpm + Turborepo workspace
 - [ ] [E01-F01-S02](./tasks/E01-F01-S02.md) `A` — Shared TypeScript & lint configs · ⇐ E01-F01-S01
 - [ ] [E01-F02-S01](./tasks/E01-F02-S01.md) `A` — Env scaffolding and dev docker-compose · ⇐ E01-F01-S01
 
 ## E02 — API contracts as the spine
 
 - [ ] [E02-F01-S01](./tasks/E02-F01-S01.md) `A` — OpenAPI + AsyncAPI workspace, Spectral lint, bundle scripts · ⇐ E01-F01-S02
-- [ ] [E02-F01-S02](./tasks/E02-F01-S02.md) `A` — Reusable error schema, security scheme, version prefix · ⇐ E02-F01-S01
+- [x] [E02-F01-S02](./tasks/E02-F01-S02.md) `A` — Reusable error schema, security scheme, version prefix · ⇐ E02-F01-S01
 - [ ] [E02-F02-S01](./tasks/E02-F02-S01.md) `A` — Generate `@app/api-client-ts` from the spec · ⇐ E02-F01-S02
 - [ ] [E02-F02-S02](./tasks/E02-F02-S02.md) `A` — Generate NestJS DTOs as `@app/api-client-ts/server` subpath · ⇐ E02-F01-S02
-- [ ] [E02-F02-S03](./tasks/E02-F02-S03.md) `A` — Generate Dart Dio client as `@app/api-client-dart` · ⇐ E02-F01-S02
+- [x] [E02-F02-S03](./tasks/E02-F02-S03.md) `A` — Generate Dart Dio client as `@app/api-client-dart` · ⇐ E02-F01-S02
 - [ ] [E02-F02-S04](./tasks/E02-F02-S04.md) `A` — `pnpm spec:codegen` aggregate + contract-test scaffold · ⇐ E02-F02-S01, E02-F02-S02, E02-F02-S03
 
 ## E03 — Design tokens
 
-- [ ] [E03-F01-S01](./tasks/E03-F01-S01.md) `A` — Import bundle tokens.json verbatim; wire custom design-tokens pipeline · ⇐ E00-F01-S01, E01-F01-S02
+- [x] [E03-F01-S01](./tasks/E03-F01-S01.md) `A` — Import bundle tokens.json verbatim; wire custom design-tokens pipeline · ⇐ E00-F01-S01, E01-F01-S02
 - [ ] [E03-F01-S02](./tasks/E03-F01-S02.md) `A` — Tailwind/Nuxt UI and Flutter theme adapters + Foundations canvas · ⇐ E03-F01-S01
 
 ## E04 — Backend skeleton + Better Auth
@@ -78,7 +78,7 @@ Progress: `0 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E12 — Storybook for web
 
-- [ ] [E12-F01-S01](./tasks/E12-F01-S01.md) `A` — Configure Storybook for Vue 3 + Nuxt UI v4 + tokens · ⇐ E11-F01-S01
+- [x] [E12-F01-S01](./tasks/E12-F01-S01.md) `A` — Configure Storybook for Vue 3 + Nuxt UI v4 + tokens · ⇐ E11-F01-S01
 
 ## E13 — Web component catalog
 
@@ -177,7 +177,7 @@ Progress: `0 / 115` complete (update by hand or via a pre-commit hook).
 ## E22 — CI/CD
 
 - [ ] [E22-F01-S01](./tasks/E22-F01-S01.md) `A` — Reusable setup action (Node + pnpm + Flutter cache) · ⇐ E01-F02-S01
-- [ ] [E22-F01-S02](./tasks/E22-F01-S02.md) `A` — ci.yml with parallel jobs per app/package · ⇐ E22-F01-S01
+- [x] [E22-F01-S02](./tasks/E22-F01-S02.md) `A` — ci.yml with parallel jobs per app/package · ⇐ E22-F01-S01
 - [ ] [E22-F01-S03](./tasks/E22-F01-S03.md) `A` — Storybook test-runner job · ⇐ E22-F01-S01, E12-F01-S01
 - [ ] [E22-F01-S04](./tasks/E22-F01-S04.md) `A` — Visual regression (Storybook test-runner snapshots) + manual approval label · ⇐ E22-F01-S03
 - [ ] [E22-F01-S05](./tasks/E22-F01-S05.md) `A` — Flutter golden test job · ⇐ E22-F01-S01, E16-F01-S01

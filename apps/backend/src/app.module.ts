@@ -21,6 +21,7 @@ import { ObservabilityModule } from './common/observability/observability.module
 import { PrismaModule } from './common/prisma/prisma.module';
 import { RedisModule } from './common/redis/redis.module';
 import { SmsModule } from './common/sms/sms.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { HealthModule } from './modules/health/health.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
@@ -60,6 +61,7 @@ const devOnlyModules: ImportableModule[] = [];
     AuthModule,
     HealthModule,
     RealtimeModule,
+    CatalogModule,
     ...devOnlyModules,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

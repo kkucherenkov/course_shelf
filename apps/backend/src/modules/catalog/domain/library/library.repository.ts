@@ -1,0 +1,31 @@
+/**
+ * WHY this file exists:
+ * Domain code must not depend on infrastructure. This port (interface + Symbol
+ * token) is the only contract the application layer and domain layer see.
+ * The Prisma adapter in infra/ implements it and is bound via the token in
+ * CatalogModule — swapped for a vi.fn() mock in unit tests.
+ *
+ * Naming convention:
+ *   Token:   LIBRARY_REPOSITORY
+ *   Port:    LibraryRepository (interface)
+ *   Adapter: PrismaLibraryRepository (infra/prisma-library.repository.ts)
+ *   Binding: { provide: LIBRARY_REPOSITORY, useClass: PrismaLibraryRepository }
+ */
+import type { Library } from './library';
+
+/** Injection token — Symbol ensures global uniqueness across the process. */
+export const LIBRARY_REPOSITORY = Symbol('LIBRARY_REPOSITORY');
+
+export interface LibraryRepository {
+  /**
+   * Persist the aggregate. Throws LibraryAlreadyExistsError when the rootPath
+   * unique constraint is violated (Prisma P2002 → translated in the adapter).
+   */
+  save(library: Library): Promise<void>;
+
+  /** Return the aggregate by id, or null when not found. */
+  findById(id: string): Promise<Library | null>;
+
+  /** Return all libraries, ordered by name. */
+  findAll(): Promise<Library[]>;
+}

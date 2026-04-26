@@ -73,13 +73,13 @@ model Verification {
 }
 
 // ----- Domain -----
-// Add your domain models here. Example:
-//
-// model Post {
-//   id        String   @id @default(uuid())
-//   title     String
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
-//
-//   @@map("post")
-// }
+
+model Library {
+  id        String   @id @default(cuid())
+  name      String
+  rootPath  String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("library")
+}

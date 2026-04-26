@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `9 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `10 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -50,7 +50,7 @@ Progress: `9 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E07 — Access control
 
-- [ ] [E07-F01-S01](./tasks/E07-F01-S01.md) `A` — AccessGrant aggregate + admin endpoints · ⇐ E06-F01-S01
+- [x] [E07-F01-S01](./tasks/E07-F01-S01.md) `A` — AccessGrant aggregate + admin endpoints · ⇐ E06-F01-S01
 - [ ] [E07-F01-S02](./tasks/E07-F01-S02.md) `A` — AuthorizationService consumed by Catalog & Streaming · ⇐ E07-F01-S01
 
 ## E08 — Streaming

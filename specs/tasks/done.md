@@ -2,6 +2,26 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-013 — AccessGrant aggregate + admin endpoints (E07-F01-S01)
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: three commits on `feat/access-grant`: `d82bceb` (spec), `cba2ae2` (codegen), `9315210` (impl). Merged into main as a fast-forward chain.
+- Owner: claude
+- Goal: admin can grant a user READ access on a library or course, revoke it, and list a user's grants — gated by Better Auth session role check.
+- Spec diff: `packages/specs/openapi/openapi.yaml` — three new paths + AccessGrantDto / AccessGrantListDto / RegisterGrantRequest / GrantTarget / GrantLevel. Spec version 0.2.0 → 0.3.0.
+- Codegen impact: yes — TS + Dart regenerated end-to-end (Java prerequisite from T-012 in place).
+- Design impact: none for v1.
+- Sub-steps:
+  - [x] OpenAPI: registerGrant / revokeGrant / listGrantsByUser + DTOs with discriminated GrantTarget
+  - [x] TS + Dart codegen
+  - [x] Prisma `AccessGrant` model + composite unique + migration SQL
+  - [x] domain aggregate at `apps/backend/src/modules/access/domain/grant/` (mirror of catalog pattern)
+  - [x] Prisma adapter; P2002 → `GrantAlreadyExistsError` (409)
+  - [x] CQRS handlers: register, revoke, list-by-user, plus get-by-id for post-write re-read
+  - [x] AccessController + AdminGuard + AccessModule registered in app.module.ts
+  - [x] 32 new tests covering domain invariants, all four handlers, repo roundtrip, admin-guard. 102/102 passing.
+
 ## T-2026-04-26-012 — fix Dart codegen (openapi-generator-cli env conflict)
 
 - Created: 2026-04-26

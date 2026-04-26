@@ -5,7 +5,7 @@
  * `library.rootPath` combine, and the single place that enforces the
  * traversal-protection invariant.
  *
- * Steps:
+ * Steps (locate):
  *   1. Load lesson by id → 404 if absent.
  *   2. Load parent course → defensive 404 if absent (data inconsistency).
  *   3. Load library by course.libraryId → defensive 404 if absent.
@@ -14,6 +14,12 @@
  *      If it does → LessonFilePathEscapedError (500) — fail closed.
  *   6. Stat the file → LessonFileNotFoundError (404) if absent.
  *   7. Return { absolutePath, sizeBytes, libraryId, courseId }.
+ *
+ * locateSubtitle adds a parallel path for subtitle files:
+ *   - Same lesson/course/library load + traversal guard.
+ *   - Finds the first Subtitle on the lesson whose language matches (case-insensitive).
+ *   - Returns { absolutePath, extension, courseId, libraryId }.
+ *   - Missing language or unrecognised extension → SubtitleNotFoundError (404).
  *
  * Symlink handling (v1): we trust that the library.rootPath and videoPath are
  * not symlinks pointing outside the root. path.relative-based traversal check
@@ -34,6 +40,7 @@ import {
 import {
   LessonFileNotFoundError,
   LessonFilePathEscapedError,
+  SubtitleNotFoundError,
 } from './stream-token/stream-file.errors';
 
 import type {
@@ -49,6 +56,13 @@ export interface LocatedFile {
   readonly courseId: string;
 }
 
+export interface LocatedSubtitle {
+  readonly absolutePath: string;
+  readonly extension: '.srt' | '.vtt';
+  readonly courseId: string;
+  readonly libraryId: string;
+}
+
 @Injectable()
 export class LessonFileLocator {
   constructor(
@@ -58,25 +72,7 @@ export class LessonFileLocator {
   ) {}
 
   async locate(lessonId: string): Promise<LocatedFile> {
-    // 1. Load lesson.
-    const lesson = await this.lessonRepo.findById(lessonId);
-    if (!lesson) {
-      throw new LessonNotFoundError(lessonId);
-    }
-
-    // 2. Load parent course (needed for libraryId).
-    const course = await this.courseRepo.findById(lesson.courseId);
-    if (!course) {
-      // Defensive — orphan lesson means our own data is inconsistent.
-      throw new LessonNotFoundError(lessonId);
-    }
-
-    // 3. Load library (needed for rootPath).
-    const library = await this.libraryRepo.findById(course.libraryId);
-    if (!library) {
-      // Defensive — library deleted after course was created.
-      throw new LessonNotFoundError(lessonId);
-    }
+    const { lesson, course, library } = await this.loadLessonContext(lessonId);
 
     // 4. Compute absolute path from rootPath + relative videoPath.
     const canonicalRoot = path.resolve(library.rootPath);
@@ -102,5 +98,89 @@ export class LessonFileLocator {
       libraryId: course.libraryId,
       courseId: lesson.courseId,
     };
+  }
+
+  /**
+   * Resolve the absolute path of a subtitle track identified by lessonId + language.
+   *
+   * - Loads lesson / course / library (same path as locate()).
+   * - Finds the first Subtitle whose `language` matches (case-insensitive).
+   * - Applies the traversal-protection guard to the subtitle path.
+   * - Returns { absolutePath, extension, courseId, libraryId }.
+   *
+   * Throws:
+   *   SubtitleNotFoundError — no matching language, or extension not .srt/.vtt.
+   *   LessonNotFoundError   — lesson/course/library missing.
+   *   LessonFilePathEscapedError — path escapes library root (500, fail-closed).
+   */
+  async locateSubtitle(lessonId: string, language: string): Promise<LocatedSubtitle> {
+    const { lesson, course, library } = await this.loadLessonContext(lessonId);
+
+    const langLower = language.toLowerCase();
+    const subtitle = lesson.subtitles.find((s) => s.language.toLowerCase() === langLower);
+    if (!subtitle) {
+      throw new SubtitleNotFoundError(lessonId, language);
+    }
+
+    // Resolve and guard the subtitle path the same way as the video path.
+    const canonicalRoot = path.resolve(library.rootPath);
+    const absolutePath = path.resolve(library.rootPath, subtitle.path);
+
+    const rel = path.relative(canonicalRoot, absolutePath);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
+      throw new LessonFilePathEscapedError(lessonId);
+    }
+
+    // Only .srt and .vtt are valid subtitle extensions. Anything else means
+    // the subtitle record is corrupt — treat as not-found (defensive).
+    const rawExt = path.extname(absolutePath).toLowerCase();
+    if (rawExt !== '.srt' && rawExt !== '.vtt') {
+      throw new SubtitleNotFoundError(lessonId, language);
+    }
+    // At this point rawExt is narrowed to '.srt' | '.vtt' by the guard above.
+    const extension = rawExt;
+
+    return {
+      absolutePath,
+      extension,
+      courseId: lesson.courseId,
+      libraryId: course.libraryId,
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Load and validate the lesson → course → library chain.
+   * Throws LessonNotFoundError if any link is missing.
+   */
+  private async loadLessonContext(lessonId: string): Promise<{
+    lesson: Awaited<ReturnType<LessonRepository['findById']>> & NonNullable<unknown>;
+    course: Awaited<ReturnType<CourseRepository['findById']>> & NonNullable<unknown>;
+    library: Awaited<ReturnType<LibraryRepository['findById']>> & NonNullable<unknown>;
+  }> {
+    // 1. Load lesson.
+    const lesson = await this.lessonRepo.findById(lessonId);
+    if (!lesson) {
+      throw new LessonNotFoundError(lessonId);
+    }
+
+    // 2. Load parent course (needed for libraryId).
+    const course = await this.courseRepo.findById(lesson.courseId);
+    if (!course) {
+      // Defensive — orphan lesson means our own data is inconsistent.
+      throw new LessonNotFoundError(lessonId);
+    }
+
+    // 3. Load library (needed for rootPath).
+    const library = await this.libraryRepo.findById(course.libraryId);
+    if (!library) {
+      // Defensive — library deleted after course was created.
+      throw new LessonNotFoundError(lessonId);
+    }
+
+    return { lesson, course, library };
   }
 }

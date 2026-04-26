@@ -26,13 +26,20 @@
  *   (2–3 lowercase letters) is also stripped so `Intro.en.srt` and `Intro.mp4`
  *   both produce the canonical stem `Intro`.
  *
+ * Ignored files (kind: 'ignored'):
+ *   Files matching `*.cache.vtt` are generated caches produced by the SRT→VTT
+ *   conversion endpoint (E08-F02-S02). They must not be treated as discovered
+ *   Subtitle tracks — the scan handler silently skips `ignored` entries without
+ *   recording a ScanError. This is distinct from `unsupported` which does
+ *   produce a ScanError for unrecognised extensions.
+ *
  * Returns:
  *   canonicalStem — the normalised base name with extension (and language suffix
  *                   for subtitles) removed.
- *   kind          — 'video' | 'material' | 'subtitle' | 'unsupported'.
+ *   kind          — 'video' | 'material' | 'subtitle' | 'unsupported' | 'ignored'.
  */
 
-export type StemKind = 'video' | 'material' | 'subtitle' | 'unsupported';
+export type StemKind = 'video' | 'material' | 'subtitle' | 'unsupported' | 'ignored';
 
 export interface StemMatchResult {
   readonly canonicalStem: string;
@@ -89,6 +96,15 @@ const LANG_SUFFIX_RE = /\.([a-z]{2,3})$/i;
  */
 export function stemMatch(filePath: string): StemMatchResult {
   const basename = filePath.split(/[/\\]/).pop() ?? filePath;
+
+  // Early-exit for generated SRT→VTT cache files so they are never mistaken
+  // for real subtitle tracks. The scan handler silently skips 'ignored' kind.
+  if (basename.toLowerCase().endsWith('.cache.vtt')) {
+    return {
+      canonicalStem: normalise(basename.slice(0, basename.lastIndexOf('.'))),
+      kind: 'ignored',
+    };
+  }
 
   // Strip the final extension.
   const lastDot = basename.lastIndexOf('.');

@@ -11,6 +11,9 @@
  *
  *   LessonFileNotFoundError — 404. The lesson entity exists in the database but
  *     the video file is absent on disk (deleted, moved, or scan hasn't run yet).
+ *
+ *   SubtitleNotFoundError — 404. The lesson has no subtitle track for the
+ *     requested language, or the subtitle's file extension is not `.srt`/`.vtt`.
  */
 import { DomainError, NotFound } from '../../../../shared/domain-error';
 
@@ -41,5 +44,19 @@ export class LessonFileNotFoundError extends NotFound {
   constructor(lessonId: string) {
     super(`Video file for lesson "${lessonId}" was not found on disk.`, 'lesson-file-not-found');
     this.name = 'LessonFileNotFoundError';
+  }
+}
+
+/**
+ * Thrown when a subtitle track in the requested language does not exist on the
+ * lesson, or the subtitle path carries an unrecognised extension. Status 404.
+ */
+export class SubtitleNotFoundError extends NotFound {
+  constructor(lessonId: string, language: string) {
+    super(
+      `No subtitle with language "${language}" found for lesson "${lessonId}".`,
+      'subtitle-not-found',
+    );
+    this.name = 'SubtitleNotFoundError';
   }
 }

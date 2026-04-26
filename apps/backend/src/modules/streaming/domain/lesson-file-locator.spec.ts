@@ -7,7 +7,7 @@
  *   - LIBRARY_REPOSITORY → vi.fn() mock
  *   - fs.promises.stat   → vi.spyOn
  *
- * Scenarios:
+ * Scenarios — locate():
  *   1. Happy path — returns { absolutePath, sizeBytes, libraryId, courseId }.
  *   2. Missing lesson → LessonNotFoundError.
  *   3. Missing course (orphan lesson) → LessonNotFoundError.
@@ -15,6 +15,12 @@
  *   5. Path traversal via relative videoPath (../../etc/passwd) → LessonFilePathEscapedError.
  *   6. Absolute videoPath that escapes the root (/etc/passwd) → LessonFilePathEscapedError.
  *   7. File absent on disk (stat throws) → LessonFileNotFoundError.
+ *
+ * Scenarios — locateSubtitle():
+ *   8.  Happy path VTT — returns extension='.vtt'.
+ *   9.  Happy path SRT — returns extension='.srt'.
+ *   10. Language not found → SubtitleNotFoundError.
+ *   11. Path traversal on subtitle path → LessonFilePathEscapedError.
  */
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -25,6 +31,7 @@ import { LessonNotFoundError } from '../../../common/catalog-tokens';
 import {
   LessonFileNotFoundError,
   LessonFilePathEscapedError,
+  SubtitleNotFoundError,
 } from './stream-token/stream-file.errors';
 import { LessonFileLocator } from './lesson-file-locator';
 
@@ -45,12 +52,29 @@ const LIBRARY_ID = 'lib-1';
 const VIDEO_RELATIVE = 'intro/lesson.mp4';
 const EXPECTED_ABS = path.resolve(ROOT, VIDEO_RELATIVE);
 
+const SUBTITLE_VTT_RELATIVE = 'intro/lesson.en.vtt';
+const SUBTITLE_SRT_RELATIVE = 'intro/lesson.ru.srt';
+
+function makeLessonWithSubtitles(subtitles: { language: string; path: string }[] = []): object {
+  return {
+    id: LESSON_ID,
+    courseId: COURSE_ID,
+    videoPath: VIDEO_RELATIVE,
+    subtitles,
+  };
+}
+
 function makeLessonRepo(overrides?: Partial<LessonRepository>): LessonRepository {
   return {
     save: vi.fn(),
     findById: vi
       .fn()
-      .mockResolvedValue({ id: LESSON_ID, courseId: COURSE_ID, videoPath: VIDEO_RELATIVE }),
+      .mockResolvedValue({
+        id: LESSON_ID,
+        courseId: COURSE_ID,
+        videoPath: VIDEO_RELATIVE,
+        subtitles: [],
+      }),
     findByCourse: vi.fn(),
     findBySection: vi.fn(),
     ...overrides,
@@ -178,5 +202,85 @@ describe('LessonFileLocator', () => {
     const locator = makeLocator(makeLessonRepo(), makeCourseRepo(), makeLibraryRepo());
 
     await expect(locator.locate(LESSON_ID)).rejects.toBeInstanceOf(LessonFileNotFoundError);
+  });
+
+  // ---------------------------------------------------------------------------
+  // locateSubtitle
+  // ---------------------------------------------------------------------------
+
+  it('locateSubtitle happy path — VTT returns extension .vtt', async () => {
+    const lessonWithVtt = makeLessonWithSubtitles([
+      { language: 'en', path: SUBTITLE_VTT_RELATIVE },
+    ]);
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithVtt) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+    );
+
+    const result = await locator.locateSubtitle(LESSON_ID, 'en');
+
+    expect(result.extension).toBe('.vtt');
+    expect(result.absolutePath).toBe(path.resolve(ROOT, SUBTITLE_VTT_RELATIVE));
+    expect(result.courseId).toBe(COURSE_ID);
+    expect(result.libraryId).toBe(LIBRARY_ID);
+  });
+
+  it('locateSubtitle happy path — SRT returns extension .srt', async () => {
+    const lessonWithSrt = makeLessonWithSubtitles([
+      { language: 'ru', path: SUBTITLE_SRT_RELATIVE },
+    ]);
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithSrt) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+    );
+
+    const result = await locator.locateSubtitle(LESSON_ID, 'ru');
+
+    expect(result.extension).toBe('.srt');
+    expect(result.absolutePath).toBe(path.resolve(ROOT, SUBTITLE_SRT_RELATIVE));
+  });
+
+  it('locateSubtitle — language lookup is case-insensitive', async () => {
+    const lessonWithVtt = makeLessonWithSubtitles([
+      { language: 'EN', path: SUBTITLE_VTT_RELATIVE },
+    ]);
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithVtt) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+    );
+
+    const result = await locator.locateSubtitle(LESSON_ID, 'en');
+    expect(result.extension).toBe('.vtt');
+  });
+
+  it('locateSubtitle throws SubtitleNotFoundError when language is missing', async () => {
+    const lessonNoSubtitles = makeLessonWithSubtitles([]);
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonNoSubtitles) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+    );
+
+    await expect(locator.locateSubtitle(LESSON_ID, 'fr')).rejects.toBeInstanceOf(
+      SubtitleNotFoundError,
+    );
+  });
+
+  it('locateSubtitle throws LessonFilePathEscapedError for traversal on subtitle path', async () => {
+    const lessonWithEvilSubtitle = makeLessonWithSubtitles([
+      { language: 'en', path: '../../etc/passwd' },
+    ]);
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithEvilSubtitle) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+    );
+
+    await expect(locator.locateSubtitle(LESSON_ID, 'en')).rejects.toBeInstanceOf(
+      LessonFilePathEscapedError,
+    );
   });
 });

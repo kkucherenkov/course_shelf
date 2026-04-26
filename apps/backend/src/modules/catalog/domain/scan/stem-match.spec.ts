@@ -57,6 +57,24 @@ describe('stemMatch', () => {
   });
 
   // -------------------------------------------------------------------------
+  // Ignored kind — generated SRT→VTT cache files (E08-F02-S02)
+  // -------------------------------------------------------------------------
+
+  it.each([
+    ['/lib/01 - Intro.en.cache.vtt', 'ignored'],
+    ['/lib/Lesson.ru.cache.vtt', 'ignored'],
+    ['/lib/some.cache.vtt', 'ignored'],
+  ])('%s → kind=ignored (cache file)', (path, expectedKind) => {
+    expect(stemMatch(path).kind).toBe(expectedKind);
+  });
+
+  it('.cache.vtt is NOT classified as subtitle', () => {
+    const result = stemMatch('/lib/01 - Intro.en.cache.vtt');
+    expect(result.kind).not.toBe('subtitle');
+    expect(result.kind).toBe('ignored');
+  });
+
+  // -------------------------------------------------------------------------
   // Composite prefix dot-vs-space normalisation
   // -------------------------------------------------------------------------
 

@@ -214,6 +214,10 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               group.subtitles.push({ path: file.path, language: lang });
               break;
             }
+            case 'ignored': {
+              // Generated cache files (*.cache.vtt) — silently skip, no ScanError.
+              break;
+            }
             default: {
               group.unsupported.push({
                 path: file.path,

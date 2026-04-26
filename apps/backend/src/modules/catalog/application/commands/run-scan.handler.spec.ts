@@ -385,6 +385,47 @@ describe('RunScanHandler', () => {
       expect(lesson.subtitles[0]!.language).toBe('en');
     });
 
+    it('.cache.vtt file produces zero ScanErrors and zero Subtitle entries', async () => {
+      vi.useRealTimers();
+
+      const cacheFiles: FileRecord[] = [
+        {
+          path: '/lib/04 - Cache Course/01 - Intro.mp4',
+          mtime: BASE_TIME,
+          size: 500,
+        },
+        {
+          path: '/lib/04 - Cache Course/01 - Intro.en.srt',
+          mtime: BASE_TIME,
+          size: 20,
+        },
+        {
+          // Generated cache — must be silently ignored.
+          path: '/lib/04 - Cache Course/01 - Intro.en.cache.vtt',
+          mtime: BASE_TIME,
+          size: 25,
+        },
+      ];
+
+      const cacheFs = new FakeFsAdapter(cacheFiles);
+      const cacheScanRepo = makeScanRepo();
+      const cacheHandler = new RunScanHandler(libraryRepo, cacheScanRepo, cacheFs);
+
+      const scan = await cacheHandler.execute(new RunScanCommand('lib-1'));
+      await drainMicrotasks();
+
+      const saved = cacheScanRepo.store.get(scan.id)!;
+
+      // Zero ScanErrors (the .cache.vtt must NOT produce an unsupported-extension error).
+      expect(saved.errors).toHaveLength(0);
+
+      // One course, one lesson, subtitles contain only the .srt (not the cache).
+      expect(saved.coursesDiscovered).toBe(1);
+      const lesson = saved.courses[0]!.discoveredLessons[0]!;
+      expect(lesson.subtitles).toHaveLength(1);
+      expect(lesson.subtitles[0]!.language).toBe('en');
+    });
+
     it('dot-prefix variant: "1.1. Vim.pdf" groups with "1.1 Vim.mp4"', async () => {
       vi.useRealTimers();
 

@@ -1,5 +1,6 @@
 /**
  * Controller-level tests for GET /api/v1/stream/lessons/:id
+ *                         and GET /api/v1/stream/lessons/:id/subtitles/:language
  *
  * Approach: boot a minimal NestJS test module that mounts only
  * StreamingController. All domain dependencies (StreamTokenSigner,
@@ -10,7 +11,7 @@
  * Fixture: a 1 024-byte deterministic file written to os.tmpdir() in beforeAll,
  * cleaned up in afterAll.
  *
- * Scenarios:
+ * Video scenarios:
  *   1.  200 full file — no Range; Content-Type, Content-Length, Accept-Ranges.
  *   2.  206 single range bytes=0-9; Content-Range, body = first 10 bytes.
  *   3.  206 multi-range bytes=0-9,20-29; multipart/byteranges + correct slices.
@@ -21,8 +22,16 @@
  *   8.  401 expired token.
  *   9.  404 unknown lesson (LessonNotFoundError).
  *   10. 500 path-escape (LessonFilePathEscapedError).
+ *
+ * Subtitle scenarios (E08-F02-S02):
+ *   11. 200 VTT pass-through — body matches source, Content-Type: text/vtt.
+ *   12. 200 SRT conversion — body starts with WEBVTT, timestamps use dot.
+ *   13. Cache hit on second request — file is served from .cache.vtt sibling.
+ *   14. 404 unknown language — SubtitleNotFoundError.
+ *   15. 401 bad token on subtitle route.
  */
 import { unlinkSync, writeFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import type { IncomingMessage } from 'node:http';
 import type supertest from 'supertest';
 import os from 'node:os';
@@ -46,7 +55,10 @@ import { AuthService } from '../../common/auth/auth.service';
 import { SessionGuard } from '../../common/auth/auth.guard';
 import { LessonNotFoundError } from '../../common/catalog-tokens';
 import { LessonFileLocator } from './domain/lesson-file-locator';
-import { LessonFilePathEscapedError } from './domain/stream-token/stream-file.errors';
+import {
+  LessonFilePathEscapedError,
+  SubtitleNotFoundError,
+} from './domain/stream-token/stream-file.errors';
 import { StreamTokenSigner } from './domain/stream-token/stream-token-signer';
 import {
   StreamTokenExpiredError,
@@ -60,6 +72,12 @@ import { StreamingController } from './streaming.controller';
 
 const FIXTURE_SIZE = 1024;
 let FIXTURE_PATH: string;
+
+// Subtitle fixtures
+let VTT_FIXTURE_PATH: string;
+let SRT_FIXTURE_PATH: string;
+const VTT_CONTENT = 'WEBVTT\n\n00:00:01.500 --> 00:00:04.000\nHello VTT\n';
+const SRT_CONTENT = '1\n00:00:01,500 --> 00:00:04,000\nHello SRT\n';
 
 // Deterministic content: bytes 0x00..0xFF repeated
 function makeFixtureBuffer(): Buffer {
@@ -102,6 +120,12 @@ function makeLocatorStub(): LessonFileLocator {
       sizeBytes: FIXTURE_SIZE,
       libraryId: 'lib-1',
       courseId: 'course-1',
+    }),
+    locateSubtitle: vi.fn().mockResolvedValue({
+      absolutePath: '', // overridden per-test
+      extension: '.vtt',
+      courseId: 'course-1',
+      libraryId: 'lib-1',
     }),
   } as unknown as LessonFileLocator;
 }
@@ -148,6 +172,11 @@ function url(id = 'lesson-1', token: string | null = VALID_TOKEN): string {
     : `/api/v1/stream/lessons/${id}?token=${encodeURIComponent(token)}`;
 }
 
+function subtitleUrl(id = 'lesson-1', lang = 'en', token: string | null = VALID_TOKEN): string {
+  const base = `/api/v1/stream/lessons/${id}/subtitles/${lang}`;
+  return token === null ? base : `${base}?token=${encodeURIComponent(token)}`;
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -157,13 +186,25 @@ describe('StreamingController — GET /api/v1/stream/lessons/:id', () => {
     FIXTURE_PATH = path.join(os.tmpdir(), `stream-fixture-${process.pid}.mp4`);
     fixtureBytes = makeFixtureBuffer();
     writeFileSync(FIXTURE_PATH, fixtureBytes);
+
+    VTT_FIXTURE_PATH = path.join(os.tmpdir(), `subtitle-fixture-${process.pid}.vtt`);
+    SRT_FIXTURE_PATH = path.join(os.tmpdir(), `subtitle-fixture-${process.pid}.srt`);
+    writeFileSync(VTT_FIXTURE_PATH, VTT_CONTENT, 'utf8');
+    writeFileSync(SRT_FIXTURE_PATH, SRT_CONTENT, 'utf8');
   });
 
   afterAll(() => {
-    try {
-      unlinkSync(FIXTURE_PATH);
-    } catch {
-      // ignore cleanup errors
+    for (const p of [
+      FIXTURE_PATH,
+      VTT_FIXTURE_PATH,
+      SRT_FIXTURE_PATH,
+      `${SRT_FIXTURE_PATH.slice(0, -4)}.cache.vtt`,
+    ]) {
+      try {
+        unlinkSync(p);
+      } catch {
+        // ignore cleanup errors
+      }
     }
   });
 
@@ -388,6 +429,142 @@ describe('StreamingController — GET /api/v1/stream/lessons/:id', () => {
     expect(res.status).toBe(500);
     expect(res.headers['content-type']).toContain('application/problem+json');
     expect((res.body as Record<string, unknown>)['code']).toBe('lesson-file-path-escaped');
+
+    await app.close();
+  });
+
+  // =========================================================================
+  // Subtitle route (E08-F02-S02)
+  // =========================================================================
+
+  // -------------------------------------------------------------------------
+  // 200 VTT pass-through
+  // -------------------------------------------------------------------------
+  it('subtitle 200 VTT pass-through — Content-Type: text/vtt, body matches source', async () => {
+    const signer = makeSignerStub();
+    const locator = makeLocatorStub();
+    vi.mocked(locator.locateSubtitle).mockResolvedValue({
+      absolutePath: VTT_FIXTURE_PATH,
+      extension: '.vtt',
+      courseId: 'course-1',
+      libraryId: 'lib-1',
+    });
+
+    const app = await buildApp(signer, locator);
+
+    const res = await request(app.getHttpServer()).get(subtitleUrl());
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('text/vtt');
+    expect(res.text).toBe(VTT_CONTENT);
+
+    await app.close();
+  });
+
+  // -------------------------------------------------------------------------
+  // 200 SRT conversion
+  // -------------------------------------------------------------------------
+  it('subtitle 200 SRT conversion — body starts with WEBVTT, timestamps use dot', async () => {
+    const signer = makeSignerStub();
+    const locator = makeLocatorStub();
+    vi.mocked(locator.locateSubtitle).mockResolvedValue({
+      absolutePath: SRT_FIXTURE_PATH,
+      extension: '.srt',
+      courseId: 'course-1',
+      libraryId: 'lib-1',
+    });
+
+    const app = await buildApp(signer, locator);
+
+    const res = await request(app.getHttpServer()).get(subtitleUrl('lesson-1', 'ru'));
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('text/vtt');
+    expect(res.text.startsWith('WEBVTT')).toBe(true);
+    expect(res.text).toContain('00:00:01.500 --> 00:00:04.000');
+    expect(res.text).not.toContain('00:00:01,500');
+
+    await app.close();
+  });
+
+  // -------------------------------------------------------------------------
+  // Cache hit on second request
+  // -------------------------------------------------------------------------
+  it('subtitle cache hit — second SRT request reads from .cache.vtt sibling', async () => {
+    const signer = makeSignerStub();
+    const locator = makeLocatorStub();
+    vi.mocked(locator.locateSubtitle).mockResolvedValue({
+      absolutePath: SRT_FIXTURE_PATH,
+      extension: '.srt',
+      courseId: 'course-1',
+      libraryId: 'lib-1',
+    });
+
+    const app = await buildApp(signer, locator);
+
+    // First request — generates the cache.
+    await request(app.getHttpServer()).get(subtitleUrl('lesson-1', 'ru'));
+
+    // Verify the cache was written.
+    const cachePath = `${SRT_FIXTURE_PATH.slice(0, -4)}.cache.vtt`;
+    const cacheContent = await readFile(cachePath, 'utf8');
+    expect(cacheContent.startsWith('WEBVTT')).toBe(true);
+
+    // Second request — should serve the cache (body is identical).
+    const res2 = await request(app.getHttpServer()).get(subtitleUrl('lesson-1', 'ru'));
+    expect(res2.status).toBe(200);
+    expect(res2.text).toBe(cacheContent);
+
+    await app.close();
+  });
+
+  // -------------------------------------------------------------------------
+  // 404 unknown language
+  // -------------------------------------------------------------------------
+  it('subtitle 404 when language is not found', async () => {
+    const signer = makeSignerStub();
+    const locator = makeLocatorStub();
+    vi.mocked(locator.locateSubtitle).mockRejectedValue(
+      new SubtitleNotFoundError('lesson-1', 'fr'),
+    );
+
+    const app = await buildApp(signer, locator);
+
+    const res = await request(app.getHttpServer()).get(subtitleUrl('lesson-1', 'fr'));
+
+    expect(res.status).toBe(404);
+    expect(res.headers['content-type']).toContain('application/problem+json');
+    expect((res.body as Record<string, unknown>)['code']).toBe('subtitle-not-found');
+
+    await app.close();
+  });
+
+  // -------------------------------------------------------------------------
+  // 401 bad token on subtitle route
+  // -------------------------------------------------------------------------
+  it('subtitle 401 when token is absent', async () => {
+    const signer = makeSignerStub();
+    const locator = makeLocatorStub();
+    const app = await buildApp(signer, locator);
+
+    const res = await request(app.getHttpServer()).get(subtitleUrl('lesson-1', 'en', null));
+
+    expect(res.status).toBe(401);
+
+    await app.close();
+  });
+
+  it('subtitle 401 when token is tampered', async () => {
+    const signer = makeSignerStub();
+    vi.mocked(signer.verify).mockImplementation(() => {
+      throw new StreamTokenTamperedError();
+    });
+    const locator = makeLocatorStub();
+    const app = await buildApp(signer, locator);
+
+    const res = await request(app.getHttpServer()).get(subtitleUrl('lesson-1', 'en', 'bad.tok.en'));
+
+    expect(res.status).toBe(401);
 
     await app.close();
   });

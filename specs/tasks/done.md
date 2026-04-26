@@ -2,6 +2,13 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-025 — Subtitle delivery (SRT → VTT) (E08-F02-S02)
+
+- Created: 2026-04-26
+- Completed: 2026-04-27
+- Result: single impl commit on `feat/subtitle-vtt`. Backend tests 617/617; lint + typecheck clean.
+- Owner: claude
+
 ## T-2026-04-26-024 — Notes endpoints (E09-F02-S02)
 
 - Created: 2026-04-26

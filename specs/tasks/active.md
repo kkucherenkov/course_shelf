@@ -1,3 +1,49 @@
 # Active tasks
 
-_No tasks in progress. Start here when beginning new work._
+## T-2026-04-26-025 — Subtitle delivery (SRT → VTT) (E08-F02-S02)
+
+- Created: 2026-04-26
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E08-F02-S02.md` — Streaming F02 second slice. Lessons can carry sidecar `.srt` and `.vtt` subtitle files (E06-F03-S02 already wires them as `Subtitle` value objects on the Lesson aggregate). The player needs them as **WebVTT** (the only format `<track>` understands). For `.vtt` files we serve raw bytes; for `.srt` we convert on the fly and cache the conversion next to the source so the second hit is zero-cost.
+- Goal: a `<track src="/api/v1/stream/lessons/{id}/subtitles/{language}?token=…">` element on the player picks up VTT, regardless of whether the source is `.srt` or `.vtt`. Validator-exempted (binary-ish text response, like the video stream).
+- Acceptance:
+  - Route: `GET /api/v1/stream/lessons/:id/subtitles/:language?token=…`. Response `Content-Type: text/vtt; charset=utf-8`. Token is the same `StreamTokenSigner` token the video endpoint uses (same `(userId, lessonId)` binding); no separate subtitle token.
+  - openapi-validator middleware exempts `/api/v1/stream/lessons/` already (added in E08-F02-S01); the new sub-route `/subtitles/:language` falls under the same prefix and stays exempt.
+  - `200 OK` for both source forms:
+    - Source `.vtt`: stream the file as-is.
+    - Source `.srt`: convert to VTT (in-process, single read into memory — subtitle files are small) and cache to `<sourceWithoutExt>.cache.vtt` next to the source. On subsequent requests, if `cacheStat.mtime > sourceStat.mtime`, serve the cache; else regenerate.
+  - `404 Not Found` (Problem) when:
+    - lesson missing, OR
+    - lesson exists but has no subtitle in the requested `language`. Include a Problem detail noting the missing language.
+  - `401 Unauthorized` for missing / tampered / expired token.
+  - SRT → VTT conversion rules:
+    - Replace the cue-counter line if present (a leading numeric line before timestamps) — VTT doesn't use it but spec allows it.
+    - Replace `,` with `.` in timestamps (`00:00:01,500` → `00:00:01.500`).
+    - Prepend `WEBVTT\n\n` header.
+    - Keep cue text verbatim (HTML tags, `<i>` etc., are valid in both formats).
+    - Normalise line endings to `\n`.
+  - Cache file naming: if source is `01 - Intro.en.srt`, cache is `01 - Intro.en.cache.vtt` next to it. The `.cache.` infix is the marker scan-handler must skip (otherwise next scan re-detects it as a Subtitle and round-trips).
+  - **Scan-handler update**: `stem-match.ts` adds an "ignore `.cache.vtt` cache files" rule so a generated cache doesn't reappear as a discovered Subtitle.
+  - Domain: `apps/backend/src/modules/streaming/domain/subtitle-converter.ts` — pure function `convertSrtToVtt(input: string): string`. Companion spec covers cue-counter, timestamps, multi-cue, and a no-op-already-VTT case (input starting with `WEBVTT` is returned unchanged).
+  - Application: `GetSubtitleQuery` (`{ lessonId, language, actor }`) + handler. Verifies token (the controller does that via `StreamTokenSigner.verify`); locates the `Subtitle` matching `language`; returns `{ absolutePath, contentType: 'text/vtt; charset=utf-8', source: 'cache' | 'srt-converted' | 'vtt-raw' }`.
+  - Presentation: extend `StreamingController` with `@Get('stream/lessons/:id/subtitles/:language')`. Same `@Res()` streaming approach as the video route. For `.vtt`: `fs.createReadStream`. For `.srt`: write the converted bytes directly to the response (small) or to the cache file then to the response.
+  - Tests:
+    - `subtitle-converter.spec.ts`: cue counter stripping, comma→dot timestamps, multi-cue, already-VTT no-op, empty input.
+    - `subtitle-locator.spec.ts` (or part of `lesson-file-locator.ts`): finds the right subtitle entry by language; missing language → null; multiple subtitles same language → first.
+    - `subtitle-controller.e2e.spec.ts` (supertest, tmpfs fixture): VTT pass-through; SRT conversion + cache write; cache hit on second request; 404 unknown language; 401 bad token; 404 unknown lesson.
+    - `stem-match.spec.ts` regression: a `.cache.vtt` filename is classified as ignored (not subtitle).
+  - OpenAPI: do **not** add `GET /lessons/{id}/subtitle/{language}` to the spec — like `GET /stream/lessons/{id}`, this is a binary-ish text endpoint outside the schema-validated surface (per the card's pattern with E08-F02-S01). However, **do** extend the existing `IssueStreamUrlDto` flow to accept an optional subtitle URL alongside the video URL? — No: keep it simple, the player already knows the lesson id and the available subtitle languages from `LessonDto.subtitles`. It builds `${streamUrl.replace('/stream/lessons/', '/stream/lessons/').replace(/\?token=/, `/subtitles/${lang}?token=`)}` itself. Document this in the controller comment.
+  - Note: the card says "Spec diff: yes — Codegen impact: yes" but on inspection that's only true if we surface a new schema for the route. Mirror E08-F02-S01: spec-exempt binary endpoint, no codegen. Document the deviation in the commit message.
+  - Quality gates: backend lint + typecheck + test all clean.
+- Spec diff: none (deviation from card — see Notes)
+- Codegen impact: no
+- Design impact: none
+- Tests: see Acceptance.
+- Sub-steps:
+  - [x] T-025-A: `subtitle-converter.ts` pure function + spec
+  - [x] T-025-B: extend `LessonFileLocator` with `locateSubtitle(lessonId, language)` (or a sibling `subtitle-locator.ts`)
+  - [x] T-025-C: `StreamingController.getLessonSubtitle` route — token verify, locator, source-form switch, optional cache write, response stream
+  - [x] T-025-D: `stem-match.ts` ignore `.cache.vtt` rule + spec
+  - [x] T-025-E: tests
+  - [x] T-025-F: lint, typecheck, test, prettier; flip card; archive T-025
+- Status: done

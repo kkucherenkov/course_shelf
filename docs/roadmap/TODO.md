@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `8 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `9 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -42,7 +42,7 @@ Progress: `8 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E06 — Catalog bounded context
 
-- [ ] [E06-F01-S01](./tasks/E06-F01-S01.md) `A` — Library aggregate + repository port · ⇐ E04-F02-S03
+- [x] [E06-F01-S01](./tasks/E06-F01-S01.md) `A` — Library aggregate + repository port · ⇐ E04-F02-S03
 - [ ] [E06-F02-S01](./tasks/E06-F02-S01.md) `A` — Scan aggregate, FsAdapter, incremental scan · ⇐ E06-F01-S01
 - [ ] [E06-F02-S02](./tasks/E06-F02-S02.md) `A` — ffprobe + thumbnail extraction · ⇐ E06-F02-S01
 - [ ] [E06-F03-S01](./tasks/E06-F03-S01.md) `A` — Course aggregate + slug uniqueness + section ordering · ⇐ E06-F02-S01

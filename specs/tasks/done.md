@@ -2,6 +2,27 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-010 — Library aggregate + register/list/get endpoints (E06-F01-S01)
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: three commits on `feat/library-aggregate`: `a710c5d` (spec), `be9ac44` (TS codegen), `0ef1607` (impl). Merged into main as a fast-forward chain.
+- Owner: claude
+- Goal: first real domain story for Catalog — Library aggregate with name + rootPath invariants, persisted via Prisma behind a domain-owned port, exposed at `POST/GET /api/v1/libraries{,/{id}}`.
+- Spec diff: `packages/specs/openapi/openapi.yaml` (3 paths + 3 schemas, version bumped 0.1.0 → 0.2.0)
+- Codegen impact: yes — TS regenerated; Dart skipped (env issue tracked separately)
+- Design impact: none
+- Sub-steps:
+  - [x] OpenAPI: registerLibrary / listLibraries / getLibrary + LibraryDto / LibraryListDto / RegisterLibraryRequest
+  - [x] TS codegen committed separately
+  - [x] Library aggregate at `apps/backend/src/modules/catalog/domain/library/` (path corrected from `contexts/` to match the existing `modules/` pattern + boundaries)
+  - [x] LibraryRepository port + Prisma adapter + mapper
+  - [x] CQRS: RegisterLibraryCommand + ListLibrariesQuery + GetLibraryQuery handlers
+  - [x] CatalogController + CatalogModule registered in app.module.ts
+  - [x] Prisma `Library` model + migration SQL (authored manually because Docker was off; identical to what `prisma migrate dev --create-only` would produce)
+  - [x] 5 spec files (aggregate, three handlers, repository roundtrip), 70/70 passing
+  - [x] backend `lint` clean; workspace `tsc` regression in generated TS clients tracked as T-011 (not E06 fault)
+
 ## T-2026-04-26-009 — Prisma generate postinstall + close E01-F01-S02
 
 - Created: 2026-04-26

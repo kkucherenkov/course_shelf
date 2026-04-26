@@ -7,61 +7,77 @@
 import 'package:flutter/widgets.dart';
 
 abstract final class AppColorsLight {
-  static const Color brandAccent = Color(0xFF3B82F6);
-  static const Color brandAccentHover = Color(0xFF2563EB);
-  static const Color brandAccentActive = Color(0xFF1D4ED8);
+  static const Color brandAccent = Color(0xFF9C6612);
+  static const Color brandAccentHover = Color(0xFF6E480C);
+  static const Color brandAccentActive = Color(0xFF6E480C);
   static const Color brandAccentFg = Color(0xFFFFFFFF);
-  static const Color brandAccentSubtle = Color(0xFFEFF6FF);
-  static const Color surfacePage = Color(0xFFFFFFFF);
-  static const Color surfaceSurface = Color(0xFFF8FAFC);
-  static const Color surfaceRaised = Color(0xFFFFFFFF);
-  static const Color surfaceOverlay = Color(0xFFFFFFFF);
-  static const Color borderDefault = Color(0xFFE2E8F0);
-  static const Color borderStrong = Color(0xFFCBD5E1);
-  static const Color borderFocus = Color(0xFF3B82F6);
-  static const Color textFg = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF475569);
-  static const Color textTertiary = Color(0xFF94A3B8);
-  static const Color textDisabled = Color(0xFFCBD5E1);
-  static const Color textInverse = Color(0xFFFFFFFF);
-  static const Color textLink = Color(0xFF3B82F6);
-  static const Color statusSuccessFg = Color(0xFF16A34A);
-  static const Color statusSuccessSubtle = Color(0xFFF0FDF4);
-  static const Color statusWarningFg = Color(0xFFD97706);
-  static const Color statusWarningSubtle = Color(0xFFFFFBEB);
-  static const Color statusErrorFg = Color(0xFFDC2626);
-  static const Color statusErrorSubtle = Color(0xFFFEF2F2);
-  static const Color statusInfoFg = Color(0xFF0EA5E9);
-  static const Color statusInfoSubtle = Color(0xFFF0F9FF);
+  static const Color brandAccentSubtle = Color(0xFFF5F0E7);
+  static const Color brandAccentSoft = Color(0x1A9C6612);
+  static const Color surfacePage = Color(0xFFFAFAF7);
+  static const Color surfaceSurface = Color(0xFFFFFFFF);
+  static const Color surfaceRaised = Color(0xFFF4F3EE);
+  static const Color surfaceOverlay = Color(0xFFEAE8E1);
+  static const Color surfaceSkeletonBase = Color(0xFFEAE8E1);
+  static const Color surfaceSkeletonShine = Color(0xFFF4F3EE);
+  static const Color borderDefault = Color(0xFFD9D5C9);
+  static const Color borderStrong = Color(0xFFBBB4A2);
+  static const Color borderFocus = Color(0xFFC8821C);
+  static const Color textFg = Color(0xFF211E15);
+  static const Color textLoud = Color(0xFF15130C);
+  static const Color textSecondary = Color(0xFF5C5644);
+  static const Color textTertiary = Color(0xFF8E8773);
+  static const Color textDisabled = Color(0xFFBBB4A2);
+  static const Color textInverse = Color(0xFFF5F6F8);
+  static const Color textLink = Color(0xFF9C6612);
+  static const Color statusSuccessFg = Color(0xFF2D6A63);
+  static const Color statusSuccessSubtle = Color(0xFFE5F0EE);
+  static const Color statusSuccessSoft = Color(0x1F2D6A63);
+  static const Color statusWarningFg = Color(0xFF9C6612);
+  static const Color statusWarningSubtle = Color(0xFFF5EAD8);
+  static const Color statusWarningSoft = Color(0x1F9C6612);
+  static const Color statusErrorFg = Color(0xFFA04434);
+  static const Color statusErrorSubtle = Color(0xFFF4DED9);
+  static const Color statusErrorSoft = Color(0x1FA04434);
+  static const Color statusInfoFg = Color(0xFF4F5694);
+  static const Color statusInfoSubtle = Color(0xFFE1E3F2);
+  static const Color statusInfoSoft = Color(0x1F4F5694);
 }
 
 abstract final class AppColorsDark {
-  static const Color brandAccent = Color(0xFF60A5FA);
-  static const Color brandAccentHover = Color(0xFF93C5FD);
-  static const Color brandAccentActive = Color(0xFFBFDBFE);
-  static const Color brandAccentFg = Color(0xFF1E3A5F);
-  static const Color brandAccentSubtle = Color(0xFF1E3A5F);
-  static const Color surfacePage = Color(0xFF0F172A);
-  static const Color surfaceSurface = Color(0xFF1E293B);
-  static const Color surfaceRaised = Color(0xFF334155);
-  static const Color surfaceOverlay = Color(0xFF1E293B);
-  static const Color borderDefault = Color(0xFF334155);
-  static const Color borderStrong = Color(0xFF475569);
-  static const Color borderFocus = Color(0xFF60A5FA);
-  static const Color textFg = Color(0xFFF1F5F9);
-  static const Color textSecondary = Color(0xFF94A3B8);
-  static const Color textTertiary = Color(0xFF64748B);
-  static const Color textDisabled = Color(0xFF334155);
-  static const Color textInverse = Color(0xFF0F172A);
-  static const Color textLink = Color(0xFF60A5FA);
-  static const Color statusSuccessFg = Color(0xFF4ADE80);
-  static const Color statusSuccessSubtle = Color(0xFF14532D);
-  static const Color statusWarningFg = Color(0xFFFCD34D);
-  static const Color statusWarningSubtle = Color(0xFF451A03);
-  static const Color statusErrorFg = Color(0xFFF87171);
-  static const Color statusErrorSubtle = Color(0xFF450A0A);
-  static const Color statusInfoFg = Color(0xFF38BDF8);
-  static const Color statusInfoSubtle = Color(0xFF082F49);
+  static const Color brandAccent = Color(0xFFC8821C);
+  static const Color brandAccentHover = Color(0xFFE0A23B);
+  static const Color brandAccentActive = Color(0xFFE0A23B);
+  static const Color brandAccentFg = Color(0xFF15130C);
+  static const Color brandAccentSubtle = Color(0xFF2E2620);
+  static const Color brandAccentSoft = Color(0x24C8821C);
+  static const Color surfacePage = Color(0xFF0E0F12);
+  static const Color surfaceSurface = Color(0xFF15171B);
+  static const Color surfaceRaised = Color(0xFF1A1C20);
+  static const Color surfaceOverlay = Color(0xFF22252B);
+  static const Color surfaceSkeletonBase = Color(0xFF1F2228);
+  static const Color surfaceSkeletonShine = Color(0xFF2A2E36);
+  static const Color borderDefault = Color(0xFF2D3037);
+  static const Color borderStrong = Color(0xFF454952);
+  static const Color borderFocus = Color(0xFFE0A23B);
+  static const Color textFg = Color(0xFFE8EAEE);
+  static const Color textLoud = Color(0xFFF5F6F8);
+  static const Color textSecondary = Color(0xFF9CA0A8);
+  static const Color textTertiary = Color(0xFF6B6F78);
+  static const Color textDisabled = Color(0xFF454952);
+  static const Color textInverse = Color(0xFF15130C);
+  static const Color textLink = Color(0xFFC8821C);
+  static const Color statusSuccessFg = Color(0xFF5BA89F);
+  static const Color statusSuccessSubtle = Color(0xFF1F2A28);
+  static const Color statusSuccessSoft = Color(0x245BA89F);
+  static const Color statusWarningFg = Color(0xFFE0A23B);
+  static const Color statusWarningSubtle = Color(0xFF2E2620);
+  static const Color statusWarningSoft = Color(0x24E0A23B);
+  static const Color statusErrorFg = Color(0xFFD26B5C);
+  static const Color statusErrorSubtle = Color(0xFF2E1F1B);
+  static const Color statusErrorSoft = Color(0x24D26B5C);
+  static const Color statusInfoFg = Color(0xFF8189C7);
+  static const Color statusInfoSubtle = Color(0xFF1F2230);
+  static const Color statusInfoSoft = Color(0x248189C7);
 }
 
 abstract final class AppVerticalColors {
@@ -216,16 +232,16 @@ abstract final class AppTextStyles {
 }
 
 abstract final class AppDuration {
-  static const Duration fast = Duration(milliseconds: 120);
-  static const Duration base = Duration(milliseconds: 180);
-  static const Duration slow = Duration(milliseconds: 280);
+  static const Duration fast = Duration(milliseconds: 150);
+  static const Duration base = Duration(milliseconds: 200);
+  static const Duration slow = Duration(milliseconds: 250);
   static const Duration slower = Duration(milliseconds: 400);
 }
 
 abstract final class AppEasing {
   static const Cubic easeDefault = Cubic(0.4, 0, 0.2, 1);
-  static const Cubic out = Cubic(0, 0, 0.2, 1);
-  static const Cubic easeIn = Cubic(0.4, 0, 1, 1);
+  static const Cubic out = Cubic(0.2, 0.7, 0.2, 1);
+  static const Cubic easeIn = Cubic(0.4, 0, 1, 0.6);
   static const Cubic spring = Cubic(0.34, 1.56, 0.64, 1);
 }
 
@@ -254,17 +270,17 @@ abstract final class AppZIndex {
 }
 
 abstract final class AppShadowsLight {
-  static const List<BoxShadow> xs = <BoxShadow>[BoxShadow(color: Color(0x0D000000), offset: Offset(0, 1), blurRadius: 2, spreadRadius: 0)];
-  static const List<BoxShadow> sm = <BoxShadow>[BoxShadow(color: Color(0x1A000000), offset: Offset(0, 1), blurRadius: 3, spreadRadius: 0), BoxShadow(color: Color(0x0F000000), offset: Offset(0, 1), blurRadius: 2, spreadRadius: 0)];
-  static const List<BoxShadow> md = <BoxShadow>[BoxShadow(color: Color(0x12000000), offset: Offset(0, 4), blurRadius: 6, spreadRadius: 0), BoxShadow(color: Color(0x0F000000), offset: Offset(0, 2), blurRadius: 4, spreadRadius: 0)];
-  static const List<BoxShadow> lg = <BoxShadow>[BoxShadow(color: Color(0x1A000000), offset: Offset(0, 10), blurRadius: 15, spreadRadius: 0), BoxShadow(color: Color(0x0D000000), offset: Offset(0, 4), blurRadius: 6, spreadRadius: 0)];
-  static const List<BoxShadow> focus = <BoxShadow>[BoxShadow(color: Color(0x593B82F6), offset: Offset(0, 0), blurRadius: 0, spreadRadius: 3)];
+  static const List<BoxShadow> xs = <BoxShadow>[BoxShadow(color: Color(0x0F141108), offset: Offset(0, 1), blurRadius: 2, spreadRadius: 0)];
+  static const List<BoxShadow> sm = <BoxShadow>[BoxShadow(color: Color(0x0F141108), offset: Offset(0, 1), blurRadius: 2, spreadRadius: 0), BoxShadow(color: Color(0x0A141108), offset: Offset(0, 2), blurRadius: 4, spreadRadius: 0)];
+  static const List<BoxShadow> md = <BoxShadow>[BoxShadow(color: Color(0x1A141108), offset: Offset(0, 8), blurRadius: 24, spreadRadius: 0), BoxShadow(color: Color(0x0D141108), offset: Offset(0, 2), blurRadius: 6, spreadRadius: 0)];
+  static const List<BoxShadow> lg = <BoxShadow>[BoxShadow(color: Color(0x2E141108), offset: Offset(0, 24), blurRadius: 64, spreadRadius: 0), BoxShadow(color: Color(0x14141108), offset: Offset(0, 8), blurRadius: 16, spreadRadius: 0)];
+  static const List<BoxShadow> focus = <BoxShadow>[BoxShadow(color: Color(0x59C8821C), offset: Offset(0, 0), blurRadius: 0, spreadRadius: 3)];
 }
 
 abstract final class AppShadowsDark {
-  static const List<BoxShadow> xs = <BoxShadow>[BoxShadow(color: Color(0x4D000000), offset: Offset(0, 1), blurRadius: 2, spreadRadius: 0)];
-  static const List<BoxShadow> sm = <BoxShadow>[BoxShadow(color: Color(0x66000000), offset: Offset(0, 1), blurRadius: 3, spreadRadius: 0), BoxShadow(color: Color(0x4D000000), offset: Offset(0, 1), blurRadius: 2, spreadRadius: 0)];
-  static const List<BoxShadow> md = <BoxShadow>[BoxShadow(color: Color(0x66000000), offset: Offset(0, 4), blurRadius: 6, spreadRadius: 0), BoxShadow(color: Color(0x4D000000), offset: Offset(0, 2), blurRadius: 4, spreadRadius: 0)];
-  static const List<BoxShadow> lg = <BoxShadow>[BoxShadow(color: Color(0x80000000), offset: Offset(0, 10), blurRadius: 15, spreadRadius: 0), BoxShadow(color: Color(0x4D000000), offset: Offset(0, 4), blurRadius: 6, spreadRadius: 0)];
-  static const List<BoxShadow> focus = <BoxShadow>[BoxShadow(color: Color(0x6660A5FA), offset: Offset(0, 0), blurRadius: 0, spreadRadius: 3)];
+  static const List<BoxShadow> xs = <BoxShadow>[BoxShadow(color: Color(0x59000000), offset: Offset(0, 1), blurRadius: 2, spreadRadius: 0)];
+  static const List<BoxShadow> sm = <BoxShadow>[BoxShadow(color: Color(0x59000000), offset: Offset(0, 1), blurRadius: 2, spreadRadius: 0), BoxShadow(color: Color(0x33000000), offset: Offset(0, 2), blurRadius: 4, spreadRadius: 0)];
+  static const List<BoxShadow> md = <BoxShadow>[BoxShadow(color: Color(0x73000000), offset: Offset(0, 8), blurRadius: 24, spreadRadius: 0), BoxShadow(color: Color(0x40000000), offset: Offset(0, 2), blurRadius: 6, spreadRadius: 0)];
+  static const List<BoxShadow> lg = <BoxShadow>[BoxShadow(color: Color(0x8C000000), offset: Offset(0, 24), blurRadius: 64, spreadRadius: 0), BoxShadow(color: Color(0x59000000), offset: Offset(0, 8), blurRadius: 16, spreadRadius: 0)];
+  static const List<BoxShadow> focus = <BoxShadow>[BoxShadow(color: Color(0x66E0A23B), offset: Offset(0, 0), blurRadius: 0, spreadRadius: 3)];
 }

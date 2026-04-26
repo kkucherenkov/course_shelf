@@ -39,8 +39,45 @@ function themedBlock(themeName: ThemeName, tokens: TokenBundle): string {
     lines.push(`  --shadow-${kebab(key)}: ${value};`);
   }
 
-  lines.push('}');
+  // Aliases: the JSX prototype under docs/design/ uses short names
+  // (--bg, --primary, --text, --shadow-1, …). Re-export those as `var()`
+  // references to the DTCG long names so any component lifted from the
+  // prototype keeps working under code-stack tokens.
+  lines.push(...themedAliasLines(), '}');
   return lines.join('\n');
+}
+
+function themedAliasLines(): string[] {
+  // Each pair: short name from the prototype → DTCG long name emitted above.
+  const pairs: readonly (readonly [string, string])[] = [
+    ['bg', 'surface-page'],
+    ['surface', 'surface-surface'],
+    ['surface-2', 'surface-raised'],
+    ['surface-3', 'surface-overlay'],
+    ['border', 'border-default'],
+    ['focus-ring', 'border-focus'],
+    ['text', 'text-fg'],
+    ['text-muted', 'text-secondary'],
+    ['text-subtle', 'text-tertiary'],
+    ['primary', 'brand-accent'],
+    ['primary-hover', 'brand-accent-hover'],
+    ['primary-soft', 'brand-accent-soft'],
+    ['primary-text', 'brand-accent-fg'],
+    ['success', 'status-success-fg'],
+    ['warning', 'status-warning-fg'],
+    ['error', 'status-error-fg'],
+    ['info', 'status-info-fg'],
+    ['success-soft', 'status-success-soft'],
+    ['warning-soft', 'status-warning-soft'],
+    ['error-soft', 'status-error-soft'],
+    ['info-soft', 'status-info-soft'],
+    ['skeleton-base', 'surface-skeleton-base'],
+    ['skeleton-shine', 'surface-skeleton-shine'],
+    ['shadow-1', 'shadow-xs'],
+    ['shadow-2', 'shadow-md'],
+    ['shadow-3', 'shadow-lg'],
+  ];
+  return pairs.map(([alias, target]) => `  --${alias}: var(--${target});`);
 }
 
 export function emitScss(tokens: TokenBundle): string {
@@ -115,6 +152,19 @@ export function emitScss(tokens: TokenBundle): string {
     if (key.startsWith('$')) continue;
     sections.push(`  --z-${kebab(key)}: ${leaf.$value.toString()};`);
   }
+
+  // Static aliases for duration and easing — the JSX prototype uses
+  // --d-fast/--d-normal/--d-slow and --e-out/--e-in/--e-io. Re-export those
+  // as `var()` references to the DTCG long names so prototype components
+  // animate identically under code-stack tokens.
+  sections.push(
+    `  --d-fast: var(--dur-fast);`,
+    `  --d-normal: var(--dur-base);`,
+    `  --d-slow: var(--dur-slow);`,
+    `  --e-out: var(--ease-out);`,
+    `  --e-in: var(--ease-in);`,
+    `  --e-io: var(--ease-default);`,
+  );
 
   for (const [key, leaf] of Object.entries(color.color.vertical)) {
     if (leaf.$value !== undefined) {

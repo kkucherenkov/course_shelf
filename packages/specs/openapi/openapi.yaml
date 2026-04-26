@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.1.0
+  version: 0.2.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -21,12 +21,215 @@ servers:
   - url: https://api.example.com
     description: Production (placeholder)
 tags:
+  - name: Catalog
+    description: Course library registration and lookup.
   - name: system
     description: Health and liveness endpoints
   - name: realtime
     description: Centrifugo connection tokens
 
 paths:
+  /api/v1/libraries:
+    post:
+      operationId: registerLibrary
+      summary: Register a new library
+      description: |
+        Persists a new library pointing at an absolute filesystem path.
+        Idempotent on rootPath: a 409 is returned if a library with the same
+        rootPath already exists.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterLibraryRequest"
+            examples:
+              conference:
+                value:
+                  name: Conference Recordings
+                  rootPath: /srv/courses/conference
+      responses:
+        "201":
+          description: Library registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryDto"
+              examples:
+                created:
+                  value:
+                    id: clxvp1234567890abcdefghij
+                    name: Conference Recordings
+                    rootPath: /srv/courses/conference
+                    createdAt: "2026-04-25T09:00:00Z"
+                    updatedAt: "2026-04-25T09:00:00Z"
+        "400":
+          description: Validation error — missing or malformed fields
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                badInput:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: "rootPath must be an absolute POSIX or Windows path."
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the Owner-Admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only Owner-Admins may register libraries.
+        "409":
+          description: A library with the same rootPath already exists
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                conflict:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: "A library at /srv/courses/conference is already registered."
+
+    get:
+      operationId: listLibraries
+      summary: List all registered libraries
+      description: |
+        Returns all libraries the requester has READ access to. Admins see
+        everything.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Library list returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryListDto"
+              examples:
+                list:
+                  value:
+                    items:
+                      - id: clxvp1234567890abcdefghij
+                        name: Conference Recordings
+                        rootPath: /srv/courses/conference
+                        createdAt: "2026-04-25T09:00:00Z"
+                        updatedAt: "2026-04-25T09:00:00Z"
+                      - id: clxvp0987654321zyxwvutsrq
+                        name: Tutorial Screencasts
+                        rootPath: /srv/courses/tutorials
+                        createdAt: "2026-04-20T14:30:00Z"
+                        updatedAt: "2026-04-22T11:00:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+
+  /api/v1/libraries/{id}:
+    get:
+      operationId: getLibrary
+      summary: Get a library by id
+      description: Returns a single library by its server-generated identifier.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the library.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Library found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryDto"
+              examples:
+                found:
+                  value:
+                    id: clxvp1234567890abcdefghij
+                    name: Conference Recordings
+                    rootPath: /srv/courses/conference
+                    createdAt: "2026-04-25T09:00:00Z"
+                    updatedAt: "2026-04-25T09:00:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have access to this library
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not have access to this library.
+        "404":
+          description: Library not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No library with that id exists.
+
   /api/v1/health:
     get:
       operationId: getHealth
@@ -139,6 +342,58 @@ components:
             centrifugo:
               $ref: "#/components/schemas/DependencyStatus"
 
+    LibraryDto:
+      type: object
+      required: [id, name, rootPath, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          description: Server-generated identifier.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Human-readable label.
+        rootPath:
+          type: string
+          minLength: 1
+          description: >-
+            Absolute filesystem path to the library root. Must start with `/`
+            (POSIX) or `[A-Za-z]:\` (Windows).
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      example:
+        id: clxvp1234567890abcdefghij
+        name: Conference Recordings
+        rootPath: /srv/courses/conference
+        createdAt: "2026-04-25T09:00:00Z"
+        updatedAt: "2026-04-25T09:00:00Z"
+
+    LibraryListDto:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryDto"
+      example:
+        items:
+          - id: clxvp1234567890abcdefghij
+            name: Conference Recordings
+            rootPath: /srv/courses/conference
+            createdAt: "2026-04-25T09:00:00Z"
+            updatedAt: "2026-04-25T09:00:00Z"
+          - id: clxvp0987654321zyxwvutsrq
+            name: Tutorial Screencasts
+            rootPath: /srv/courses/tutorials
+            createdAt: "2026-04-20T14:30:00Z"
+            updatedAt: "2026-04-22T11:00:00Z"
+
     Problem:
       type: object
       description: RFC 9457 problem details
@@ -171,3 +426,24 @@ components:
           type: ["string", "null"]
           format: date-time
           description: ISO-8601 instant when the token expires
+
+    RegisterLibraryRequest:
+      type: object
+      required: [name, rootPath]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Human-readable label.
+        rootPath:
+          type: string
+          minLength: 1
+          pattern: '^(?:/[^\0]*|[A-Za-z]:\\[^\0]*)$'
+          description: >-
+            Absolute filesystem path to the library root. Accepts POSIX paths
+            starting with `/` or Windows drive paths starting with `[A-Za-z]:\`.
+            Trailing slashes are allowed.
+      example:
+        name: Conference Recordings
+        rootPath: /srv/courses/conference

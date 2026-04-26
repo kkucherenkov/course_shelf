@@ -313,6 +313,56 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/notes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Upsert the requester's note for a lesson
+     * @description Exactly one note exists per `(userId, lessonId)`. PUT semantics: replaces
+     *     the existing note's body if any, otherwise creates a new one. Markdown is
+     *     stored verbatim — the server does not render or sanitise.
+     */
+    put: operations['upsertNote'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/notes/{lessonId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the requester's note for a lesson
+     * @description Returns the authenticated user's note for the given lesson. 403 is
+     *     returned both when the requester has no READ grant covering the lesson
+     *     and when the lesson does not exist — preventing existence leakage.
+     *     404 is returned only when the lesson exists but no note has been written yet.
+     */
+    get: operations['getNote'];
+    put?: never;
+    post?: never;
+    /**
+     * Clear the requester's note for a lesson
+     * @description Idempotent: returns 204 even when no note exists. Owner-only — there is
+     *     no concept of admin moderation for notes (notes are personal).
+     */
+    delete: operations['deleteNote'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/health': {
     parameters: {
       query?: never;
@@ -970,6 +1020,34 @@ export interface components {
      * @enum {string}
      */
     MaterialKind: 'doc' | 'note' | 'image' | 'slide';
+    /**
+     * @description A user-owned Markdown note attached to a single lesson.
+     * @example {
+     *       "id": "clxvnot0000000000000000001",
+     *       "lessonId": "clxvles0000000000000000001",
+     *       "body": "## Aggregates\n\nKey insight: aggregates enforce invariants across their boundary.",
+     *       "createdAt": "2026-04-25T15:00:00Z",
+     *       "updatedAt": "2026-04-25T15:05:00Z"
+     *     }
+     */
+    NoteDto: {
+      /** @description Server-generated cuid identifying this note. */
+      id: string;
+      /** @description cuid of the lesson this note belongs to. */
+      lessonId: string;
+      /** @description Plain Markdown stored verbatim. Server does not render. */
+      body: string;
+      /**
+       * Format: date-time
+       * @description ISO-8601 instant when the note was first created.
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description ISO-8601 instant when the note body was last replaced.
+       */
+      updatedAt: string;
+    };
     /** @description RFC 9457 problem details */
     Problem: {
       /**
@@ -1200,6 +1278,19 @@ export interface components {
       title?: string;
       description?: string;
       slug?: components['schemas']['CourseSlug'];
+    };
+    /**
+     * @description Payload for creating or replacing the requester's note on a lesson.
+     * @example {
+     *       "lessonId": "clxvles0000000000000000001",
+     *       "body": "## Aggregates\n\nKey insight: aggregates enforce invariants across their boundary."
+     *     }
+     */
+    UpsertNoteRequest: {
+      /** @description Server-generated cuid identifying the lesson. */
+      lessonId: string;
+      /** @description Plain Markdown. Trimmed server-side; an empty post-trim body is rejected as 400. */
+      body: string;
     };
   };
   responses: never;
@@ -2125,6 +2216,164 @@ export interface operations {
         };
       };
       /** @description Library not found or no scan has been run yet */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  upsertNote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpsertNoteRequest'];
+      };
+    };
+    responses: {
+      /** @description Note upserted — current state returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NoteDto'];
+        };
+      };
+      /** @description Validation error — missing fields or post-trim body is empty */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Requester has no READ grant on the parent library or course */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Lesson not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getNote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the lesson. */
+        lessonId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Note returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NoteDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description No READ grant on the parent library or course — also covers "lesson missing + no grant" to avoid leaking existence. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Lesson exists but the requester has not yet created a note */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  deleteNote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the lesson. */
+        lessonId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Note deleted — no body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Requester has no READ grant on the parent library or course */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Lesson not found */
       404: {
         headers: {
           [name: string]: unknown;

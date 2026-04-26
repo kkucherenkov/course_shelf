@@ -11,10 +11,13 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**createBookmark**](LearningApi.md#createbookmark) | **POST** /api/v1/lessons/{lessonId}/bookmarks | Create a bookmark on a lesson
 [**deleteBookmark**](LearningApi.md#deletebookmark) | **DELETE** /api/v1/bookmarks/{id} | Delete a bookmark
+[**deleteNote**](LearningApi.md#deletenote) | **DELETE** /api/v1/notes/{lessonId} | Clear the requester&#39;s note for a lesson
 [**getLessonProgress**](LearningApi.md#getlessonprogress) | **GET** /api/v1/progress/{lessonId} | Get the requester&#39;s progress on a lesson
+[**getNote**](LearningApi.md#getnote) | **GET** /api/v1/notes/{lessonId} | Get the requester&#39;s note for a lesson
 [**listLessonBookmarks**](LearningApi.md#listlessonbookmarks) | **GET** /api/v1/lessons/{lessonId}/bookmarks | List the requester&#39;s bookmarks for a lesson
 [**recordLessonProgress**](LearningApi.md#recordlessonprogress) | **POST** /api/v1/progress | Record (upsert) the requester&#39;s progress on a lesson
 [**updateBookmark**](LearningApi.md#updatebookmark) | **PATCH** /api/v1/bookmarks/{id} | Update a bookmark&#39;s position or label
+[**upsertNote**](LearningApi.md#upsertnote) | **PUT** /api/v1/notes | Upsert the requester&#39;s note for a lesson
 
 
 # **createBookmark**
@@ -104,6 +107,48 @@ void (empty response body)
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **deleteNote**
+> deleteNote(lessonId)
+
+Clear the requester's note for a lesson
+
+Idempotent: returns 204 even when no note exists. Owner-only — there is no concept of admin moderation for notes (notes are personal). 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String lessonId = lessonId_example; // String | Server-generated cuid identifying the lesson.
+
+try {
+    api.deleteNote(lessonId);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->deleteNote: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **lessonId** | **String**| Server-generated cuid identifying the lesson. | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **getLessonProgress**
 > LessonProgressDto getLessonProgress(lessonId)
 
@@ -135,6 +180,49 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**LessonProgressDto**](LessonProgressDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getNote**
+> NoteDto getNote(lessonId)
+
+Get the requester's note for a lesson
+
+Returns the authenticated user's note for the given lesson. 403 is returned both when the requester has no READ grant covering the lesson and when the lesson does not exist — preventing existence leakage. 404 is returned only when the lesson exists but no note has been written yet. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String lessonId = lessonId_example; // String | Server-generated cuid identifying the lesson.
+
+try {
+    final response = api.getNote(lessonId);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->getNote: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **lessonId** | **String**| Server-generated cuid identifying the lesson. | 
+
+### Return type
+
+[**NoteDto**](NoteDto.md)
 
 ### Authorization
 
@@ -266,6 +354,49 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**BookmarkDto**](BookmarkDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **upsertNote**
+> NoteDto upsertNote(upsertNoteRequest)
+
+Upsert the requester's note for a lesson
+
+Exactly one note exists per `(userId, lessonId)`. PUT semantics: replaces the existing note's body if any, otherwise creates a new one. Markdown is stored verbatim — the server does not render or sanitise. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final UpsertNoteRequest upsertNoteRequest = {"lessonId":"clxvles0000000000000000001","body":"## Aggregates\n\nKey insight: aggregates enforce invariants across their boundary."}; // UpsertNoteRequest | 
+
+try {
+    final response = api.upsertNote(upsertNoteRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->upsertNote: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **upsertNoteRequest** | [**UpsertNoteRequest**](UpsertNoteRequest.md)|  | 
+
+### Return type
+
+[**NoteDto**](NoteDto.md)
 
 ### Authorization
 

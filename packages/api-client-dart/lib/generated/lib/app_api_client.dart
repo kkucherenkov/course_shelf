@@ -43,6 +43,7 @@ export 'package:app_api_client/src/model/material_dto.dart';
 export 'package:app_api_client/src/model/material_kind.dart';
 export 'package:app_api_client/src/model/model0.dart';
 export 'package:app_api_client/src/model/model1.dart';
+export 'package:app_api_client/src/model/note_dto.dart';
 export 'package:app_api_client/src/model/problem.dart';
 export 'package:app_api_client/src/model/realtime_token.dart';
 export 'package:app_api_client/src/model/record_progress_request.dart';
@@ -56,4 +57,5 @@ export 'package:app_api_client/src/model/stream_url_dto.dart';
 export 'package:app_api_client/src/model/subtitle_dto.dart';
 export 'package:app_api_client/src/model/update_bookmark_request.dart';
 export 'package:app_api_client/src/model/update_course_request.dart';
+export 'package:app_api_client/src/model/upsert_note_request.dart';
 

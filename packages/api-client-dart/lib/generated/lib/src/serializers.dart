@@ -40,6 +40,7 @@ import 'package:app_api_client/src/model/material_dto.dart';
 import 'package:app_api_client/src/model/material_kind.dart';
 import 'package:app_api_client/src/model/model0.dart';
 import 'package:app_api_client/src/model/model1.dart';
+import 'package:app_api_client/src/model/note_dto.dart';
 import 'package:app_api_client/src/model/problem.dart';
 import 'package:app_api_client/src/model/realtime_token.dart';
 import 'package:app_api_client/src/model/record_progress_request.dart';
@@ -53,6 +54,7 @@ import 'package:app_api_client/src/model/stream_url_dto.dart';
 import 'package:app_api_client/src/model/subtitle_dto.dart';
 import 'package:app_api_client/src/model/update_bookmark_request.dart';
 import 'package:app_api_client/src/model/update_course_request.dart';
+import 'package:app_api_client/src/model/upsert_note_request.dart';
 
 part 'serializers.g.dart';
 
@@ -83,6 +85,7 @@ part 'serializers.g.dart';
   MaterialKind,
   Model0,
   Model1,
+  NoteDto,
   Problem,
   RealtimeToken,
   RecordProgressRequest,
@@ -96,6 +99,7 @@ part 'serializers.g.dart';
   SubtitleDto,
   UpdateBookmarkRequest,
   UpdateCourseRequest,
+  UpsertNoteRequest,
 ])
 Serializers serializers = (_$serializers.toBuilder()
       ..add(const OneOfSerializer())

@@ -384,6 +384,32 @@ export type MaterialDto = {
 export type MaterialKind = 'doc' | 'note' | 'image' | 'slide';
 
 /**
+ * A user-owned Markdown note attached to a single lesson.
+ */
+export type NoteDto = {
+    /**
+     * Server-generated cuid identifying this note.
+     */
+    id: string;
+    /**
+     * cuid of the lesson this note belongs to.
+     */
+    lessonId: string;
+    /**
+     * Plain Markdown stored verbatim. Server does not render.
+     */
+    body: string;
+    /**
+     * ISO-8601 instant when the note was first created.
+     */
+    createdAt: string;
+    /**
+     * ISO-8601 instant when the note body was last replaced.
+     */
+    updatedAt: string;
+};
+
+/**
  * RFC 9457 problem details
  */
 export type Problem = {
@@ -596,6 +622,20 @@ export type UpdateCourseRequest = {
     title?: string;
     description?: string;
     slug?: CourseSlug;
+};
+
+/**
+ * Payload for creating or replacing the requester's note on a lesson.
+ */
+export type UpsertNoteRequest = {
+    /**
+     * Server-generated cuid identifying the lesson.
+     */
+    lessonId: string;
+    /**
+     * Plain Markdown. Trimmed server-side; an empty post-trim body is rejected as 400.
+     */
+    body: string;
 };
 
 export type ListGrantsByUserData = {
@@ -1274,6 +1314,119 @@ export type GetLatestLibraryScanResponses = {
 };
 
 export type GetLatestLibraryScanResponse = GetLatestLibraryScanResponses[keyof GetLatestLibraryScanResponses];
+
+export type UpsertNoteData = {
+    body: UpsertNoteRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notes';
+};
+
+export type UpsertNoteErrors = {
+    /**
+     * Validation error — missing fields or post-trim body is empty
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Requester has no READ grant on the parent library or course
+     */
+    403: Problem;
+    /**
+     * Lesson not found
+     */
+    404: Problem;
+};
+
+export type UpsertNoteError = UpsertNoteErrors[keyof UpsertNoteErrors];
+
+export type UpsertNoteResponses = {
+    /**
+     * Note upserted — current state returned
+     */
+    200: NoteDto;
+};
+
+export type UpsertNoteResponse = UpsertNoteResponses[keyof UpsertNoteResponses];
+
+export type DeleteNoteData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the lesson.
+         */
+        lessonId: string;
+    };
+    query?: never;
+    url: '/api/v1/notes/{lessonId}';
+};
+
+export type DeleteNoteErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Requester has no READ grant on the parent library or course
+     */
+    403: Problem;
+    /**
+     * Lesson not found
+     */
+    404: Problem;
+};
+
+export type DeleteNoteError = DeleteNoteErrors[keyof DeleteNoteErrors];
+
+export type DeleteNoteResponses = {
+    /**
+     * Note deleted — no body
+     */
+    204: void;
+};
+
+export type DeleteNoteResponse = DeleteNoteResponses[keyof DeleteNoteResponses];
+
+export type GetNoteData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the lesson.
+         */
+        lessonId: string;
+    };
+    query?: never;
+    url: '/api/v1/notes/{lessonId}';
+};
+
+export type GetNoteErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * No READ grant on the parent library or course — also covers "lesson missing + no grant" to avoid leaking existence.
+     */
+    403: Problem;
+    /**
+     * Lesson exists but the requester has not yet created a note
+     */
+    404: Problem;
+};
+
+export type GetNoteError = GetNoteErrors[keyof GetNoteErrors];
+
+export type GetNoteResponses = {
+    /**
+     * Note returned
+     */
+    200: NoteDto;
+};
+
+export type GetNoteResponse = GetNoteResponses[keyof GetNoteResponses];
 
 export type GetHealthData = {
     body?: never;

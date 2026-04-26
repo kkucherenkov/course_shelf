@@ -106,6 +106,16 @@ export function stemMatch(filePath: string): StemMatchResult {
     };
   }
 
+  // Early-exit for generated poster thumbnails written by LocalFfmpegAdapter
+  // (E06-F02-S02). They must not be picked up as image Material entries on
+  // subsequent scans. The scan handler silently skips 'ignored' kind.
+  if (basename.toLowerCase().endsWith('.thumb.jpg')) {
+    return {
+      canonicalStem: normalise(basename.slice(0, basename.toLowerCase().lastIndexOf('.thumb.jpg'))),
+      kind: 'ignored',
+    };
+  }
+
   // Strip the final extension.
   const lastDot = basename.lastIndexOf('.');
   if (lastDot === -1) {

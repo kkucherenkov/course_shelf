@@ -126,6 +126,58 @@ counts them anyway.
 
 **Fix:** Add `--excludePrivatePackages` to the invocation.
 
+## ffmpeg/ffprobe — Unable to extract video metadata or thumbnails
+
+**Symptom:**
+
+Scan completes with status `succeeded` but `LessonDto.durationSeconds` stays
+`null` and no `*.thumb.jpg` files appear next to the video files. The scan
+response may include `ScanError` entries with `code: "ffmpeg-probe-failed"` or
+`code: "ffmpeg-thumbnail-failed"`.
+
+**Cause:** The scanner shells out to `ffprobe` and `ffmpeg` via
+`child_process.execFile`. If neither binary is on `PATH` (or the configured
+absolute path is wrong), the call fails, the error is recorded as a `ScanError`,
+and the walk continues — no metadata is extracted and no poster is written.
+
+**Fix (local dev):**
+
+```sh
+# macOS
+brew install ffmpeg    # installs both ffmpeg and ffprobe
+
+# Ubuntu / Debian
+apt install -y ffmpeg
+```
+
+If the binaries live outside `PATH`, point to them explicitly:
+
+```sh
+export FFPROBE_PATH=/opt/ffmpeg/bin/ffprobe
+export FFMPEG_PATH=/opt/ffmpeg/bin/ffmpeg
+```
+
+These env vars are read by `AppConfig.ffprobePath` / `AppConfig.ffmpegPath`.
+
+**Fix (CI):**
+
+Add one of the following before any job that runs `pnpm --filter @app/backend test`
+or `pnpm spec:codegen`:
+
+```yaml
+# GitHub Actions — fastest option (cached binary):
+- uses: xt0rted/setup-ffmpeg@v1
+
+# Ubuntu runner (slower, always pulls from apt):
+- run: sudo apt-get install -y ffmpeg
+```
+
+**Test isolation:**
+
+Integration tests in `local-ffmpeg.adapter.integration.spec.ts` check for the
+binary at suite startup via `spawnSync('which', ['ffmpeg'])` and skip the entire
+suite when it returns non-zero, so CI without ffmpeg stays green.
+
 ## Flutter — SDK version mismatch after upgrading macOS or Xcode
 
 **Symptom:** `flutter analyze` or `flutter pub get` complains about Dart SDK

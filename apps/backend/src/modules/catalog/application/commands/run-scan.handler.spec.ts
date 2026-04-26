@@ -3,6 +3,7 @@
  *
  * Uses:
  *   - FakeFsAdapter exposing a fixture tree in memory (no real disk I/O).
+ *   - FakeFfmpegAdapter (no real child_process calls).
  *   - In-memory ScanRepository backed by a plain Map.
  *   - In-memory LibraryRepository backed by a plain Map.
  *
@@ -26,6 +27,16 @@
  *   course.json overrides folder title for Course A.
  *   Malformed course.json adds a ScanError without failing the scan.
  *   Neovim regression: zero unsupported-extension errors for the stem-matched group.
+ *
+ * E06-F02-S02 ffprobe/thumbnail scenario:
+ *   Two-video fixture where the first video has a successful probe but a failing
+ *   thumbnail write, and the second video has a failing probe (so thumbnail is
+ *   never attempted). Asserts:
+ *     - scan status = 'succeeded'
+ *     - discoveredLessons[0].metadata is populated (probe succeeded)
+ *     - discoveredLessons[1].metadata is undefined (probe failed)
+ *     - exactly two ScanErrors: one 'ffmpeg-thumbnail-failed' (first video) and
+ *       one 'ffmpeg-probe-failed' (second video)
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -36,9 +47,11 @@ import { ScanAlreadyRunningError } from '../../domain/scan/scan.errors';
 import { RunScanCommand } from './run-scan.command';
 import { RunScanHandler } from './run-scan.handler';
 
+import type { FfmpegAdapter, VideoMetadata } from '../../domain/scan/ffmpeg-adapter';
 import type { FsAdapter, FsEntry } from '../../domain/scan/fs-adapter';
 import type { LibraryRepository } from '../../domain/library/library.repository';
 import type { ScanRepository } from '../../domain/scan/scan.repository';
+import type { AppConfig } from '../../../../common/config/app-config';
 
 // ---------------------------------------------------------------------------
 // In-memory repositories
@@ -122,6 +135,44 @@ class FakeFsAdapter implements FsAdapter {
 }
 
 // ---------------------------------------------------------------------------
+// FakeFfmpegAdapter — configurable per-path probe/thumbnail behaviour
+// ---------------------------------------------------------------------------
+
+class FakeFfmpegAdapter implements FfmpegAdapter {
+  constructor(
+    private readonly probeResults: Map<string, VideoMetadata | Error>,
+    private readonly thumbnailResults: Map<string, Error | null>,
+  ) {}
+
+  async probe(absolutePath: string): Promise<VideoMetadata> {
+    const result = this.probeResults.get(absolutePath);
+    if (!result) {
+      // Default: succeed with generic metadata.
+      return { durationSeconds: 60, widthPx: 1280, heightPx: 720, codec: 'h264' };
+    }
+    if (result instanceof Error) throw result;
+    return result;
+  }
+
+  async writeThumbnail(req: { videoAbsolutePath: string }): Promise<void> {
+    const err = this.thumbnailResults.get(req.videoAbsolutePath);
+    if (err) throw err;
+  }
+}
+
+function makePassthroughFfmpeg(): FakeFfmpegAdapter {
+  return new FakeFfmpegAdapter(new Map(), new Map());
+}
+
+function makeFakeAppConfig(): AppConfig {
+  return {
+    ffprobePath: 'ffprobe',
+    ffmpegPath: 'ffmpeg',
+    thumbnailJpegQuality: 30,
+  } as unknown as AppConfig;
+}
+
+// ---------------------------------------------------------------------------
 // Fixture helpers
 // ---------------------------------------------------------------------------
 
@@ -169,12 +220,13 @@ function makeLibrary(): Library {
 // Helper to drain the fire-and-forget walk
 // ---------------------------------------------------------------------------
 async function drainMicrotasks(): Promise<void> {
-  // Allow the Promise.resolve().then(...) chain inside the handler to flush.
-  await new Promise<void>((resolve) => setImmediate(resolve));
-  // A second drain handles any nested awaits inside the walk.
-  await new Promise<void>((resolve) => setImmediate(resolve));
-  // Third pass to be safe with multiple async hops.
-  await new Promise<void>((resolve) => setImmediate(resolve));
+  // Pump the event loop enough times to flush the fire-and-forget walk chain.
+  // The walk now contains additional async hops (ffprobe, stat, writeThumbnail)
+  // so we need more rounds than the original three. Ten rounds is conservative
+  // but still much faster than a real sleep.
+  for (let i = 0; i < 10; i++) {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -193,7 +245,13 @@ describe('RunScanHandler', () => {
     libraryRepo = makeLibraryRepo(lib);
     scanRepo = makeScanRepo();
     fs = new FakeFsAdapter(makeFixtureFiles());
-    handler = new RunScanHandler(libraryRepo, scanRepo, fs);
+    handler = new RunScanHandler(
+      libraryRepo,
+      scanRepo,
+      fs,
+      makePassthroughFfmpeg(),
+      makeFakeAppConfig(),
+    );
   });
 
   afterEach(() => {
@@ -269,7 +327,13 @@ describe('RunScanHandler', () => {
     jsonFile.content = '{ "title": "No schema version" }';
 
     const badFs = new FakeFsAdapter(files);
-    handler = new RunScanHandler(libraryRepo, scanRepo, badFs);
+    handler = new RunScanHandler(
+      libraryRepo,
+      scanRepo,
+      badFs,
+      makePassthroughFfmpeg(),
+      makeFakeAppConfig(),
+    );
 
     const scan = await handler.execute(new RunScanCommand('lib-1'));
     await drainMicrotasks();
@@ -284,7 +348,13 @@ describe('RunScanHandler', () => {
   // Guard: library not found
   // -------------------------------------------------------------------------
   it('throws LibraryNotFoundError when library does not exist', async () => {
-    handler = new RunScanHandler(makeLibraryRepo(), scanRepo, fs);
+    handler = new RunScanHandler(
+      makeLibraryRepo(),
+      scanRepo,
+      fs,
+      makePassthroughFfmpeg(),
+      makeFakeAppConfig(),
+    );
 
     await expect(handler.execute(new RunScanCommand('nonexistent'))).rejects.toBeInstanceOf(
       LibraryNotFoundError,
@@ -307,7 +377,13 @@ describe('RunScanHandler', () => {
     // Re-create handler with a repo that reports a running scan.
     const blockedScanRepo = makeScanRepo();
     blockedScanRepo.store.set(runningScan.id, runningScan);
-    handler = new RunScanHandler(libraryRepo, blockedScanRepo, fs);
+    handler = new RunScanHandler(
+      libraryRepo,
+      blockedScanRepo,
+      fs,
+      makePassthroughFfmpeg(),
+      makeFakeAppConfig(),
+    );
 
     await expect(handler.execute(new RunScanCommand('lib-1'))).rejects.toBeInstanceOf(
       ScanAlreadyRunningError,
@@ -351,7 +427,13 @@ describe('RunScanHandler', () => {
 
       const neovimFs = new FakeFsAdapter(neovimFiles);
       const neovimScanRepo = makeScanRepo();
-      const neovimHandler = new RunScanHandler(libraryRepo, neovimScanRepo, neovimFs);
+      const neovimHandler = new RunScanHandler(
+        libraryRepo,
+        neovimScanRepo,
+        neovimFs,
+        makePassthroughFfmpeg(),
+        makeFakeAppConfig(),
+      );
 
       const scan = await neovimHandler.execute(new RunScanCommand('lib-1'));
       await drainMicrotasks();
@@ -409,7 +491,13 @@ describe('RunScanHandler', () => {
 
       const cacheFs = new FakeFsAdapter(cacheFiles);
       const cacheScanRepo = makeScanRepo();
-      const cacheHandler = new RunScanHandler(libraryRepo, cacheScanRepo, cacheFs);
+      const cacheHandler = new RunScanHandler(
+        libraryRepo,
+        cacheScanRepo,
+        cacheFs,
+        makePassthroughFfmpeg(),
+        makeFakeAppConfig(),
+      );
 
       const scan = await cacheHandler.execute(new RunScanCommand('lib-1'));
       await drainMicrotasks();
@@ -445,7 +533,13 @@ describe('RunScanHandler', () => {
 
       const dotFs = new FakeFsAdapter(dotVariantFiles);
       const dotScanRepo = makeScanRepo();
-      const dotHandler = new RunScanHandler(libraryRepo, dotScanRepo, dotFs);
+      const dotHandler = new RunScanHandler(
+        libraryRepo,
+        dotScanRepo,
+        dotFs,
+        makePassthroughFfmpeg(),
+        makeFakeAppConfig(),
+      );
 
       const scan = await dotHandler.execute(new RunScanCommand('lib-1'));
       await drainMicrotasks();
@@ -458,6 +552,94 @@ describe('RunScanHandler', () => {
 
       const lesson = saved.courses[0]!.discoveredLessons[0]!;
       expect(lesson.materials).toHaveLength(1);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // E06-F02-S02: ffprobe + thumbnail integration into scan walk
+  //
+  // Scenario chosen for clarity:
+  //   - Video A (/lib/05 - FF Course/01 - Probe OK.mp4):
+  //       probe succeeds → metadata populated.
+  //       thumbnail write fails → ScanError 'ffmpeg-thumbnail-failed', walk continues.
+  //   - Video B (/lib/05 - FF Course/02 - Probe Fail.mp4):
+  //       probe fails → ScanError 'ffmpeg-probe-failed'.
+  //       thumbnail NOT attempted (probe failed).
+  //       lesson entry has metadata === undefined.
+  //
+  // Result: scan status = 'succeeded', two ScanErrors (one per video with the
+  // respective code), discoveredLessons[0].metadata populated,
+  // discoveredLessons[1].metadata undefined.
+  // -------------------------------------------------------------------------
+  describe('E06-F02-S02: ffprobe + thumbnail errors are non-fatal', () => {
+    it('records ScanErrors for probe failure and thumbnail failure without aborting the scan', async () => {
+      vi.useRealTimers();
+
+      const videoA = '/lib/05 - FF Course/01 - Probe OK.mp4';
+      const videoB = '/lib/05 - FF Course/02 - Probe Fail.mp4';
+
+      const ffFiles: FileRecord[] = [
+        { path: videoA, mtime: BASE_TIME, size: 500 },
+        { path: videoB, mtime: BASE_TIME, size: 600 },
+      ];
+
+      const probeResults = new Map<string, VideoMetadata | Error>([
+        [videoA, { durationSeconds: 120, widthPx: 1920, heightPx: 1080, codec: 'h264' }],
+        [videoB, new Error('ffprobe boom')],
+      ]);
+      const thumbnailResults = new Map<string, Error | null>([
+        [videoA, new Error('ffmpeg thumbnail boom')],
+        // videoB never reaches thumbnail (probe failed).
+      ]);
+
+      const ffmpegAdapter = new FakeFfmpegAdapter(probeResults, thumbnailResults);
+      const ffFs = new FakeFsAdapter(ffFiles);
+      const ffScanRepo = makeScanRepo();
+      const ffHandler = new RunScanHandler(
+        libraryRepo,
+        ffScanRepo,
+        ffFs,
+        ffmpegAdapter,
+        makeFakeAppConfig(),
+      );
+
+      const scan = await ffHandler.execute(new RunScanCommand('lib-1'));
+      await drainMicrotasks();
+
+      const saved = ffScanRepo.store.get(scan.id)!;
+
+      // Scan completes successfully despite per-file failures.
+      expect(saved.status).toBe('succeeded');
+
+      // One course, two lessons discovered.
+      expect(saved.coursesDiscovered).toBe(1);
+      const course = saved.courses[0]!;
+      expect(course.discoveredLessons).toHaveLength(2);
+
+      // Video A: probe succeeded → metadata populated.
+      const lessonA = course.discoveredLessons.find((l) => l.videoPath === videoA)!;
+      expect(lessonA.metadata).toBeDefined();
+      expect(lessonA.metadata!.durationSeconds).toBe(120);
+      expect(lessonA.metadata!.codec).toBe('h264');
+
+      // Video B: probe failed → metadata undefined.
+      const lessonB = course.discoveredLessons.find((l) => l.videoPath === videoB)!;
+      expect(lessonB.metadata).toBeUndefined();
+
+      // Exactly two ScanErrors:
+      //   - 'ffmpeg-thumbnail-failed' for videoA (probe OK, thumbnail failed)
+      //   - 'ffmpeg-probe-failed' for videoB (probe failed)
+      const thumbnailErr = saved.errors.find((e) => e.code === 'ffmpeg-thumbnail-failed');
+      expect(thumbnailErr).toBeDefined();
+
+      const probeErr = saved.errors.find((e) => e.code === 'ffmpeg-probe-failed');
+      expect(probeErr).toBeDefined();
+
+      // No other error codes.
+      const unexpectedErrors = saved.errors.filter(
+        (e) => e.code !== 'ffmpeg-thumbnail-failed' && e.code !== 'ffmpeg-probe-failed',
+      );
+      expect(unexpectedErrors).toHaveLength(0);
     });
   });
 });

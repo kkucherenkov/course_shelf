@@ -17,6 +17,7 @@
  *   - PrismaCourseProgressReadModelRepository bound behind
  *     COURSE_PROGRESS_READ_MODEL_REPOSITORY
  *   - NodeFsAdapter bound behind the FS_ADAPTER port token
+ *   - LocalFfmpegAdapter bound behind the FFMPEG_ADAPTER port token
  *   - AdminGuard (provided here for ScansController/CoursesController)
  *
  * Learning-side ports (LESSON_PROGRESS_REPOSITORY) are imported via
@@ -56,12 +57,14 @@ import { SCAN_REPOSITORY } from './domain/scan/scan.repository';
 import { COURSE_REPOSITORY } from './domain/course/course.repository';
 import { LESSON_REPOSITORY } from './domain/lesson/lesson.repository';
 import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from './domain/progress/course-progress-read-model.repository';
+import { FFMPEG_ADAPTER } from './domain/scan/ffmpeg-adapter';
 import { FS_ADAPTER } from './domain/scan/fs-adapter';
 import { PrismaLibraryRepository } from './infra/prisma-library.repository';
 import { PrismaScanRepository } from './infra/prisma-scan.repository';
 import { PrismaCourseRepository } from './infra/prisma-course.repository';
 import { PrismaLessonRepository } from './infra/prisma-lesson.repository';
 import { PrismaCourseProgressReadModelRepository } from './infra/prisma-course-progress-read-model.repository';
+import { LocalFfmpegAdapter } from './infra/local-ffmpeg.adapter';
 import { NodeFsAdapter } from './infra/node-fs-adapter';
 
 @Module({
@@ -97,6 +100,7 @@ import { NodeFsAdapter } from './infra/node-fs-adapter';
       useClass: PrismaCourseProgressReadModelRepository,
     },
     { provide: FS_ADAPTER, useClass: NodeFsAdapter },
+    { provide: FFMPEG_ADAPTER, useClass: LocalFfmpegAdapter },
   ],
 })
 export class CatalogModule {}

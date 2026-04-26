@@ -64,3 +64,38 @@ export class CourseJsonInvalidError extends DomainError {
     this.name = 'CourseJsonInvalidError';
   }
 }
+
+/**
+ * Thrown by LocalFfmpegAdapter.probe() when ffprobe exits non-zero, returns
+ * unparseable JSON, or the video stream is missing required fields.
+ * Never surfaces in a request handler — caught inside the scan walk and wrapped
+ * into a ScanError row so the scan continues.
+ */
+export class FfmpegProbeError extends DomainError {
+  constructor(path: string, detail: string) {
+    super({
+      code: 'ffmpeg-probe-failed',
+      status: 500,
+      title: 'ffprobe failed',
+      detail: `ffprobe on "${path}" failed: ${detail}`,
+    });
+    this.name = 'FfmpegProbeError';
+  }
+}
+
+/**
+ * Thrown by LocalFfmpegAdapter.writeThumbnail() when ffmpeg exits non-zero.
+ * Never surfaces in a request handler — caught inside the scan walk and wrapped
+ * into a ScanError row so the scan continues.
+ */
+export class FfmpegThumbnailError extends DomainError {
+  constructor(path: string, detail: string) {
+    super({
+      code: 'ffmpeg-thumbnail-failed',
+      status: 500,
+      title: 'ffmpeg thumbnail write failed',
+      detail: `ffmpeg thumbnail for "${path}" failed: ${detail}`,
+    });
+    this.name = 'FfmpegThumbnailError';
+  }
+}

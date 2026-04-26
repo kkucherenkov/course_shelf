@@ -75,6 +75,28 @@ describe('stemMatch', () => {
   });
 
   // -------------------------------------------------------------------------
+  // Ignored kind — generated poster thumbnails (E06-F02-S02)
+  //
+  // LocalFfmpegAdapter writes <stem>.thumb.jpg next to each video. On
+  // subsequent scans these files must NOT be picked up as image Material
+  // entries — they must be silently ignored just like .cache.vtt files.
+  // -------------------------------------------------------------------------
+
+  it.each([
+    ['/lib/01 - Intro.thumb.jpg', 'ignored'],
+    ['/lib/Lesson.thumb.jpg', 'ignored'],
+    ['/lib/1.1 Почему Vim.thumb.jpg', 'ignored'],
+  ])('%s → kind=ignored (generated thumbnail)', (path, expectedKind) => {
+    expect(stemMatch(path).kind).toBe(expectedKind);
+  });
+
+  it('.thumb.jpg is NOT classified as material', () => {
+    const result = stemMatch('/lib/01 - Intro.thumb.jpg');
+    expect(result.kind).not.toBe('material');
+    expect(result.kind).toBe('ignored');
+  });
+
+  // -------------------------------------------------------------------------
   // Composite prefix dot-vs-space normalisation
   // -------------------------------------------------------------------------
 

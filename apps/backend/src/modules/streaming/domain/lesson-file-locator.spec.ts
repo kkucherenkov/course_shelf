@@ -67,14 +67,12 @@ function makeLessonWithSubtitles(subtitles: { language: string; path: string }[]
 function makeLessonRepo(overrides?: Partial<LessonRepository>): LessonRepository {
   return {
     save: vi.fn(),
-    findById: vi
-      .fn()
-      .mockResolvedValue({
-        id: LESSON_ID,
-        courseId: COURSE_ID,
-        videoPath: VIDEO_RELATIVE,
-        subtitles: [],
-      }),
+    findById: vi.fn().mockResolvedValue({
+      id: LESSON_ID,
+      courseId: COURSE_ID,
+      videoPath: VIDEO_RELATIVE,
+      subtitles: [],
+    }),
     findByCourse: vi.fn(),
     findBySection: vi.fn(),
     ...overrides,

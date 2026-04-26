@@ -17,6 +17,8 @@
 import { brand } from '../../../../shared/branded-id';
 import { ScanInTerminalStateError } from './scan.errors';
 
+import type { VideoMetadata } from './ffmpeg-adapter';
+
 import type { Id } from '../../../../shared/branded-id';
 
 export type ScanId = Id<'Scan'>;
@@ -81,6 +83,13 @@ export interface ScannedSubtitle {
  *   follow in the scan-materialise handler. Storing a `discovered_lesson`
  *   table here would duplicate state that will be superseded by the real
  *   Lesson aggregate table and complicate the migration.
+ *
+ * WHY metadata is in-memory only (not persisted here):
+ *   Persistence of durationSeconds/widthPx/heightPx/codec onto the Lesson row
+ *   is deferred to the scan-materialise story. This commit only populates the
+ *   aggregate's in-memory metadata and writes the poster thumbnail to disk.
+ *   LessonDto.durationSeconds will flip from null to real numbers once that
+ *   story lands.
  */
 export interface ScannedLessonEntry {
   /** Absolute path to the video file. */
@@ -89,6 +98,12 @@ export interface ScannedLessonEntry {
   readonly sizeBytes: number;
   readonly materials: ScannedMaterial[];
   readonly subtitles: ScannedSubtitle[];
+  /**
+   * Video metadata extracted by ffprobe during this scan (E06-F02-S02).
+   * Undefined when ffprobe failed or was not attempted (e.g. non-video file).
+   * In-memory only — see the WHY comment on this interface for persistence details.
+   */
+  readonly metadata?: VideoMetadata;
 }
 
 /**

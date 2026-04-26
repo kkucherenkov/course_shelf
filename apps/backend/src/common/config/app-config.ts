@@ -155,6 +155,32 @@ export class AppConfig {
     };
   }
 
+  /**
+   * Absolute path to the `ffprobe` binary.
+   * Default: 'ffprobe' (resolved via PATH).
+   * Env: FFPROBE_PATH.
+   */
+  get ffprobePath(): string {
+    return this.stringOrDefault('FFPROBE_PATH', 'ffprobe');
+  }
+
+  /**
+   * Absolute path to the `ffmpeg` binary.
+   * Default: 'ffmpeg' (resolved via PATH).
+   * Env: FFMPEG_PATH.
+   */
+  get ffmpegPath(): string {
+    return this.stringOrDefault('FFMPEG_PATH', 'ffmpeg');
+  }
+
+  /**
+   * JPEG quality for generated lesson thumbnails. Range: 0–100. Default: 30.
+   * Env: THUMBNAIL_JPEG_QUALITY.
+   */
+  get thumbnailJpegQuality(): number {
+    return this.numberOrDefault('THUMBNAIL_JPEG_QUALITY', 30);
+  }
+
   get streaming(): StreamingConfig {
     return {
       // Re-uses BETTER_AUTH_SECRET as HKDF input key material. The derived

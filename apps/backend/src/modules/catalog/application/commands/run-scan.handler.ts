@@ -29,10 +29,13 @@ import { Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { nanoid } from 'nanoid';
 import path from 'node:path';
+import { stat } from 'node:fs/promises';
 
+import { AppConfig } from '../../../../common/config/app-config';
 import { LibraryNotFoundError } from '../../domain/library/library.errors';
 import { LIBRARY_REPOSITORY } from '../../domain/library/library.repository';
 import { parseCourseJson } from '../../domain/scan/course-json.schema';
+import { FFMPEG_ADAPTER } from '../../domain/scan/ffmpeg-adapter';
 import { FS_ADAPTER } from '../../domain/scan/fs-adapter';
 import { parseFolderName } from '../../domain/scan/folder-name.parser';
 import { stemMatch } from '../../domain/scan/stem-match';
@@ -42,6 +45,7 @@ import { SCAN_REPOSITORY } from '../../domain/scan/scan.repository';
 
 import { RunScanCommand } from './run-scan.command';
 
+import type { FfmpegAdapter, VideoMetadata } from '../../domain/scan/ffmpeg-adapter';
 import type { LibraryRepository } from '../../domain/library/library.repository';
 import type { FsAdapter } from '../../domain/scan/fs-adapter';
 import type { ScanRepository } from '../../domain/scan/scan.repository';
@@ -58,6 +62,8 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
     @Inject(LIBRARY_REPOSITORY) private readonly libraryRepo: LibraryRepository,
     @Inject(SCAN_REPOSITORY) private readonly scanRepo: ScanRepository,
     @Inject(FS_ADAPTER) private readonly fs: FsAdapter,
+    @Inject(FFMPEG_ADAPTER) private readonly ffmpeg: FfmpegAdapter,
+    private readonly appConfig: AppConfig,
   ) {}
 
   async execute(command: RunScanCommand): Promise<Scan> {
@@ -284,12 +290,86 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               language: s.language,
             }));
 
+            // -----------------------------------------------------------------------
+            // ffprobe + thumbnail extraction (E06-F02-S02)
+            //
+            // Probe the video for duration/resolution/codec. On failure record a
+            // ScanError with code 'ffmpeg-probe-failed' and continue — no metadata,
+            // no thumbnail attempt for this lesson.
+            //
+            // On probe success: write a 320×180 JPEG poster next to the source file.
+            // The thumbnail write is idempotent: skip if the existing thumbnail's
+            // mtime is newer than the video's mtime (meaning it was already generated
+            // for the current version of the video).
+            //
+            // Failure on writeThumbnail is also non-fatal: ScanError recorded,
+            // walk continues, metadata is still stored on the lesson entry.
+            // -----------------------------------------------------------------------
+
+            let metadata: VideoMetadata | undefined;
+
+            try {
+              metadata = await this.ffmpeg.probe(videoFile.path);
+            } catch (error) {
+              scan.recordError({
+                path: path.relative(rootPath, videoFile.path),
+                message: error instanceof Error ? error.message : String(error),
+                code: 'ffmpeg-probe-failed',
+              });
+            }
+
+            if (metadata !== undefined) {
+              // Derive thumbnail path: <stem without final ext>.thumb.jpg
+              const videoExt = path.extname(videoFile.path);
+              const stemWithoutExt = videoFile.path.slice(
+                0,
+                videoFile.path.length - videoExt.length,
+              );
+              const thumbPath = `${stemWithoutExt}.thumb.jpg`;
+
+              // Idempotency: skip write if thumbnail is already up-to-date.
+              let shouldWriteThumb = true;
+              try {
+                const [videoStat, thumbStat] = await Promise.all([
+                  stat(videoFile.path),
+                  stat(thumbPath),
+                ]);
+                if (thumbStat.mtime.getTime() > videoStat.mtime.getTime()) {
+                  shouldWriteThumb = false;
+                }
+              } catch {
+                // Either stat call failed (thumbnail likely does not exist) — proceed.
+                shouldWriteThumb = true;
+              }
+
+              if (shouldWriteThumb) {
+                const atSecond = Math.max(metadata.durationSeconds / 4, 1);
+                try {
+                  await this.ffmpeg.writeThumbnail({
+                    videoAbsolutePath: videoFile.path,
+                    outAbsolutePath: thumbPath,
+                    atSecond,
+                    widthPx: 320,
+                    heightPx: 180,
+                    jpegQuality: this.appConfig.thumbnailJpegQuality,
+                  });
+                } catch (error) {
+                  scan.recordError({
+                    path: path.relative(rootPath, videoFile.path),
+                    message: error instanceof Error ? error.message : String(error),
+                    code: 'ffmpeg-thumbnail-failed',
+                  });
+                }
+              }
+            }
+
             discoveredLessons.push({
               videoPath: videoFile.path,
               mtime: videoFile.mtime,
               sizeBytes: videoFile.size,
               materials,
               subtitles,
+              ...(metadata === undefined ? {} : { metadata }),
             });
 
             // Belt-and-suspenders: truly unsupported files even within a

@@ -2,6 +2,23 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-024 — Notes endpoints (E09-F02-S02)
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: three commits on `feat/notes`: `a0fd960` (spec), `4ff5f71` (codegen), `ef7f86f` (impl). Backend tests 591/591; lint + typecheck clean.
+- Owner: claude
+- Goal: free-form Markdown note, one per `(userId, lessonId)`, with PUT-upsert + GET + idempotent DELETE.
+- Sub-steps:
+  - [x] OpenAPI: `upsertNote` / `getNote` / `deleteNote` + NoteDto / UpsertNoteRequest. Spec version 0.10.0 → 0.11.0.
+  - [x] TS + Dart codegen
+  - [x] Prisma `Note` + manual migration SQL
+  - [x] domain — aggregate (trim + 1..16384 length) + repo + 2 errors
+  - [x] Prisma adapter; `deleteMany` for clean idempotency
+  - [x] 3 handlers; GET + DELETE no-oracle rule (missing lesson → 403)
+  - [x] `NotesController` in `LearningModule`
+  - [x] ~25 new tests; 591/591 total
+
 ## T-2026-04-26-023 — Bookmarks endpoints (E09-F02-S01)
 
 - Created: 2026-04-26

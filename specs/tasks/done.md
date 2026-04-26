@@ -2,6 +2,28 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-018 — Lesson + Material + Subtitle read model (E06-F03-S02)
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: three commits on `feat/lesson-material`: `e36b5ed` (spec), `f44ce5a` (codegen), `1b4533f` (impl). Backend tests 355/355; lint + typecheck clean.
+- Owner: claude
+- Goal: `GET /api/v1/lessons/{id}` returns lesson metadata + sidecar materials and subtitles (language guessed from filename suffix); raw paths never leak in the DTO (NFR-S-01).
+- Spec diff: `packages/specs/openapi/openapi.yaml` — `GET /lessons/{id}` + `LessonDto` / `MaterialDto` / `MaterialKind` / `SubtitleDto` / `LessonProgress`. Spec version 0.5.0 → 0.6.0.
+- Codegen impact: yes — TS + Dart regenerated.
+- Design impact: none for v1.
+- Sub-steps:
+  - [x] OpenAPI: `getLesson` + DTOs
+  - [x] TS + Dart codegen
+  - [x] Prisma `Lesson` + `Material` + `Subtitle` + manual migration SQL
+  - [x] domain layer at `apps/backend/src/modules/catalog/domain/lesson/`: aggregate, value objects, errors, repo port
+  - [x] Prisma adapter (delete-and-recreate of children inside `$transaction`)
+  - [x] `stem-match.ts` utility — composite (`1.1 Title`/`1.1. Title`) + simple `01 - Title` prefixes; sidecars attach to videos instead of becoming `unsupported-extension` ScanErrors
+  - [x] `RunScanHandler` upgraded — Scan aggregate gains `discoveredLessons[]` (in-memory only); Neovim "mass ScanError" pattern produces zero errors for matched companions
+  - [x] `GetLessonQuery` + handler with `AuthorizationService.canSee` grant filter; DTO mapper strips raw paths
+  - [x] `LessonsController` registered in `CatalogModule`
+  - [x] ~30 new tests (value objects, aggregate, stem-match, handler, repo, scan-regression); 355 / 355 total
+
 ## T-2026-04-26-017 — Course aggregate + slug uniqueness + section ordering (E06-F03-S01)
 
 - Created: 2026-04-26

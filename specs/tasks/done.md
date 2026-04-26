@@ -2,6 +2,14 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-022 — CourseProgressProjector + continue-watching endpoint (E10-F01-S01)
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: single impl commit `3c0e35e` on `feat/progress-projector`. 47 files changed, 2456 insertions(+). Backend tests 486/486; lint + typecheck clean.
+- Owner: claude
+- PR: feat/progress-projector → main
+
 ## T-2026-04-26-021 — LessonProgress aggregate + record endpoint (E09-F01-S01)
 
 - Created: 2026-04-26

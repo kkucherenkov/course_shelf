@@ -10,7 +10,13 @@
  * The returned LessonDto carries:
  *   - materials: { id, kind, label, sizeBytes } — no path field.
  *   - subtitles: { id, language, label } — no path field.
- *   - progress: zero placeholder (v1); E10-F01-S01 populates real values.
+ *   - progress: populated from CourseProgressReadModel (E10-F01-S01).
+ *     Falls back to zero placeholder when no projection row exists yet.
+ *
+ * Note: the lesson-level progress shape (percent, completed, lastSeenAtSeconds)
+ * differs from the course-level shape. The course projection stores the last
+ * seen position in seconds (positionSeconds), which maps to lastSeenAtSeconds.
+ * This is the best approximation available without a per-lesson progress query.
  *
  * No NestJS HTTP exceptions — HttpExceptionFilter translates DomainError subclasses.
  */
@@ -22,16 +28,18 @@ import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
 import { LESSON_REPOSITORY } from '../../domain/lesson/lesson.repository';
 import { LessonNotFoundError } from '../../domain/lesson/lesson.errors';
 import { PermissionDenied } from '../../../../shared/domain-error';
+import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from '../../domain/progress/course-progress-read-model.repository';
 
 import { GetLessonQuery } from './get-lesson.query';
 
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
 import type { CourseRepository } from '../../domain/course/course.repository';
 import type { LessonRepository } from '../../domain/lesson/lesson.repository';
+import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
 import type { LessonDto } from '@app/api-client-ts';
 import type { CourseId, LibraryId } from '../../../../common/access/authorization.service';
 
-/** v1 progress placeholder — always zeros until E10-F01-S01 lands. */
+/** Fallback when no projection row exists for this (user, course) yet. */
 const LESSON_PROGRESS_PLACEHOLDER = {
   percent: 0,
   completed: false,
@@ -44,6 +52,8 @@ export class GetLessonHandler implements IQueryHandler<GetLessonQuery, LessonDto
     @Inject(LESSON_REPOSITORY) private readonly lessonRepo: LessonRepository,
     @Inject(COURSE_REPOSITORY) private readonly courseRepo: CourseRepository,
     @Inject(AUTHORIZATION_SERVICE) private readonly authz: AuthorizationService,
+    @Inject(COURSE_PROGRESS_READ_MODEL_REPOSITORY)
+    private readonly progressRepo: CourseProgressReadModelRepository,
   ) {}
 
   async execute(query: GetLessonQuery): Promise<LessonDto> {
@@ -71,6 +81,23 @@ export class GetLessonHandler implements IQueryHandler<GetLessonQuery, LessonDto
       throw new PermissionDenied('You do not have access to this lesson.');
     }
 
+    // Look up the course-level projection to derive lesson progress context.
+    // The read model stores lastSeenLessonId — compare to determine whether
+    // this specific lesson was the last one viewed.
+    const progressRow = await this.progressRepo.findByUserAndCourse(
+      query.actor.id,
+      lesson.courseId,
+    );
+
+    const progress =
+      progressRow?.lastSeenLessonId === lesson.id
+        ? {
+            percent: progressRow.percent,
+            completed: progressRow.lessonsCompleted > 0,
+            lastSeenAtSeconds: 0, // per-lesson seconds not stored in course read model
+          }
+        : LESSON_PROGRESS_PLACEHOLDER;
+
     // Map to DTO — raw filesystem paths are deliberately omitted (NFR-S-01).
     return {
       id: lesson.id,
@@ -90,7 +117,7 @@ export class GetLessonHandler implements IQueryHandler<GetLessonQuery, LessonDto
         language: s.language,
         label: s.label,
       })),
-      progress: LESSON_PROGRESS_PLACEHOLDER,
+      progress,
     };
   }
 }

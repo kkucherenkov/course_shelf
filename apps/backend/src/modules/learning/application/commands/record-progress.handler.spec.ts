@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { LessonCompleted } from '../../domain/progress/lesson-completed.event';
+import { LessonProgressRecorded } from '../../domain/progress/lesson-progress-recorded.event';
 import { LessonProgress } from '../../domain/progress/lesson-progress';
 
 import { RecordProgressCommand } from './record-progress.command';
@@ -44,6 +45,9 @@ function makeProgressRepo(existing: LessonProgress | null = null): LessonProgres
   return {
     save: vi.fn().mockResolvedValue(undefined),
     findByUserAndLesson: vi.fn().mockResolvedValue(existing),
+    countCompletedByUserAndCourse: vi.fn().mockResolvedValue(0),
+    findAllUserCoursePairs: vi.fn().mockResolvedValue([]),
+    findLatestByUserAndCourse: vi.fn().mockResolvedValue(null),
   };
 }
 
@@ -91,41 +95,61 @@ function makeCommand(
 describe('RecordProgressHandler', () => {
   describe('happy path — admin, below threshold', () => {
     it('saves progress and returns DTO', async () => {
-      const { handler, progressRepo, eventBus } = makeHandler();
+      const { handler, progressRepo } = makeHandler();
       const dto = await handler.execute(makeCommand());
 
       expect(progressRepo.save).toHaveBeenCalledOnce();
       expect(dto.lessonId).toBe('lesson-1');
       expect(dto.positionSeconds).toBe(50);
       expect(dto.completed).toBe(false);
-      expect(eventBus.publish).not.toHaveBeenCalled();
+    });
+
+    it('publishes LessonProgressRecorded (not LessonCompleted) when below threshold', async () => {
+      const { handler, eventBus } = makeHandler();
+      await handler.execute(makeCommand(ADMIN, 50, 100));
+
+      expect(eventBus.publish).toHaveBeenCalledOnce();
+      const event = vi.mocked(eventBus.publish).mock.calls[0]?.[0];
+      expect(event).toBeInstanceOf(LessonProgressRecorded);
+      expect((event as LessonProgressRecorded).userId).toBe(ADMIN.id);
+      expect((event as LessonProgressRecorded).lessonId).toBe('lesson-1');
+      expect((event as LessonProgressRecorded).courseId).toBe('course-1');
     });
   });
 
   describe('threshold crossing', () => {
-    it('publishes LessonCompleted exactly once when crossing 90 %', async () => {
+    it('publishes LessonProgressRecorded FIRST, then LessonCompleted on 90% crossing', async () => {
       const { handler, eventBus } = makeHandler();
       await handler.execute(makeCommand(ADMIN, 95, 100));
 
-      expect(eventBus.publish).toHaveBeenCalledOnce();
-      const event = vi.mocked(eventBus.publish).mock.calls[0]?.[0];
-      expect(event).toBeInstanceOf(LessonCompleted);
-      expect((event as LessonCompleted).userId).toBe(ADMIN.id);
-      expect((event as LessonCompleted).lessonId).toBe('lesson-1');
-      expect((event as LessonCompleted).courseId).toBe('course-1');
+      expect(eventBus.publish).toHaveBeenCalledTimes(2);
+
+      const [firstCall, secondCall] = vi.mocked(eventBus.publish).mock.calls;
+      expect(firstCall?.[0]).toBeInstanceOf(LessonProgressRecorded);
+      expect(secondCall?.[0]).toBeInstanceOf(LessonCompleted);
+
+      const recorded = firstCall?.[0] as LessonProgressRecorded;
+      expect(recorded.userId).toBe(ADMIN.id);
+      expect(recorded.lessonId).toBe('lesson-1');
+      expect(recorded.courseId).toBe('course-1');
+
+      const completed = secondCall?.[0] as LessonCompleted;
+      expect(completed.userId).toBe(ADMIN.id);
+      expect(completed.lessonId).toBe('lesson-1');
+      expect(completed.courseId).toBe('course-1');
     });
 
-    it('does NOT publish LessonCompleted when below threshold', async () => {
+    it('publishes only LessonProgressRecorded when below threshold', async () => {
       const { handler, eventBus } = makeHandler();
       await handler.execute(makeCommand(ADMIN, 50, 100));
 
-      expect(eventBus.publish).not.toHaveBeenCalled();
+      expect(eventBus.publish).toHaveBeenCalledOnce();
+      expect(vi.mocked(eventBus.publish).mock.calls[0]?.[0]).toBeInstanceOf(LessonProgressRecorded);
     });
   });
 
   describe('upsert — existing aggregate', () => {
     it('calls record() on existing aggregate instead of start()', async () => {
-      // Pre-existing at 50 % with an earlier timestamp.
       const T_earlier = new Date('2025-12-31T23:00:00.000Z');
       const { aggregate: existing } = LessonProgress.start({
         id: 'lp-existing',
@@ -139,9 +163,27 @@ describe('RecordProgressHandler', () => {
       const { handler, progressRepo, eventBus } = makeHandler({ existing });
       const dto = await handler.execute(makeCommand(ADMIN, 60, 100));
 
-      // repo.save was called with the mutated aggregate (60 s)
       expect(progressRepo.save).toHaveBeenCalledOnce();
       expect(dto.positionSeconds).toBe(60);
+      // LessonProgressRecorded published (accepted=true)
+      expect(eventBus.publish).toHaveBeenCalledOnce();
+      expect(vi.mocked(eventBus.publish).mock.calls[0]?.[0]).toBeInstanceOf(LessonProgressRecorded);
+    });
+
+    it('does NOT publish any events when existing aggregate rejects the write (stale)', async () => {
+      const T_later = new Date('2030-01-01T00:00:00.000Z');
+      const { aggregate: existing } = LessonProgress.start({
+        id: 'lp-existing',
+        userId: USER.id,
+        lessonId: 'lesson-1',
+        durationSeconds: 100,
+        positionSeconds: 50,
+        clientUpdatedAt: T_later, // future — command's T0 is stale
+      });
+
+      const { handler, eventBus } = makeHandler({ existing });
+      await handler.execute(makeCommand(ADMIN, 60, 100)); // T0 < T_later → rejected
+
       expect(eventBus.publish).not.toHaveBeenCalled();
     });
   });

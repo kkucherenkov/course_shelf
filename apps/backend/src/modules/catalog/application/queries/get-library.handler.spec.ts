@@ -15,6 +15,7 @@ function makeRepo(): LibraryRepository {
     save: vi.fn(),
     findById: vi.fn(),
     findAll: vi.fn(),
+    findByIds: vi.fn(),
   };
 }
 

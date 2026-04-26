@@ -13,6 +13,7 @@ function makeRepo(): LibraryRepository {
     save: vi.fn<(library: Library) => Promise<void>>().mockResolvedValue(undefined),
     findById: vi.fn(),
     findAll: vi.fn(),
+    findByIds: vi.fn(),
   };
 }
 

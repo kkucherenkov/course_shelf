@@ -131,6 +131,17 @@ export class PrismaCourseRepository implements CourseRepository {
     return rows.map((r: CourseRow) => this.rowToAggregate(r));
   }
 
+  async findByIds(ids: string[]): Promise<Course[]> {
+    if (ids.length === 0) return [];
+
+    const rows = await this.prisma.course.findMany({
+      where: { id: { in: ids } },
+      select: COURSE_WITH_SECTIONS_SELECT,
+    });
+
+    return rows.map((r: CourseRow) => this.rowToAggregate(r));
+  }
+
   // ---------------------------------------------------------------------------
   // Private mapper — row shape → domain aggregate
   // ---------------------------------------------------------------------------

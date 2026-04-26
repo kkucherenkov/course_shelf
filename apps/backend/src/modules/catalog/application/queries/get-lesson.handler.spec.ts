@@ -8,6 +8,8 @@
  *   4. Lesson not found → LessonNotFoundError.
  *   5. Parent course missing (defensive) → LessonNotFoundError.
  *   6. The returned DTO carries NO path fields anywhere (NFR-S-01).
+ *   7. Progress reads from projection when row exists and lesson matches.
+ *   8. Progress falls back to zero placeholder when no projection row.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -17,12 +19,14 @@ import { Material } from '../../domain/lesson/material';
 import { Subtitle } from '../../domain/lesson/subtitle';
 import { LessonNotFoundError } from '../../domain/lesson/lesson.errors';
 import { PermissionDenied } from '../../../../shared/domain-error';
+import { CourseProgressReadModel } from '../../domain/progress/course-progress-read-model';
 import { GetLessonQuery } from './get-lesson.query';
 import { GetLessonHandler } from './get-lesson.handler';
 
 import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { CourseRepository } from '../../domain/course/course.repository';
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
+import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -45,6 +49,7 @@ function makeCourseRepo(): CourseRepository {
     findById: vi.fn(),
     findManyByLibrary: vi.fn(),
     findAll: vi.fn(),
+    findByIds: vi.fn(),
   };
 }
 
@@ -52,6 +57,18 @@ function makeAuthz(allow: boolean): AuthorizationService {
   return {
     canSee: vi.fn().mockResolvedValue(allow),
     invalidate: vi.fn(),
+  };
+}
+
+function makeProgressRepo(
+  row: CourseProgressReadModel | null = null,
+): CourseProgressReadModelRepository {
+  return {
+    upsert: vi.fn(),
+    findByUserAndCourse: vi.fn().mockResolvedValue(row),
+    findManyByUser: vi.fn(),
+    findManyByCourseIdsForUser: vi.fn(),
+    deleteAll: vi.fn(),
   };
 }
 
@@ -81,6 +98,19 @@ function makeCourse(): Course {
     slug: 'my-course',
     title: 'My Course',
     now: NOW,
+  });
+}
+
+function makeProgressRow(lastSeenLessonId = 'lesson-1'): CourseProgressReadModel {
+  return CourseProgressReadModel.create({
+    id: 'cprm-1',
+    userId: 'admin-1',
+    courseId: 'course-1',
+    lessonsCompleted: 2,
+    lessonsTotal: 5,
+    percent: 40,
+    lastSeenAt: NOW,
+    lastSeenLessonId,
   });
 }
 
@@ -120,7 +150,12 @@ describe('GetLessonHandler', () => {
     it('returns LessonDto when lesson + course exist', async () => {
       vi.mocked(lessonRepo.findById).mockResolvedValue(makeLesson());
       vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
-      const handler = new GetLessonHandler(lessonRepo, courseRepo, makeAuthz(true));
+      const handler = new GetLessonHandler(
+        lessonRepo,
+        courseRepo,
+        makeAuthz(true),
+        makeProgressRepo(),
+      );
 
       const result = await handler.execute(new GetLessonQuery('lesson-1', adminActor));
 
@@ -135,10 +170,48 @@ describe('GetLessonHandler', () => {
       expect(result.subtitles[0]!.language).toBe('en');
     });
 
-    it('progress is the v1 zero placeholder', async () => {
+    it('progress is zero placeholder when no projection row', async () => {
       vi.mocked(lessonRepo.findById).mockResolvedValue(makeLesson());
       vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
-      const handler = new GetLessonHandler(lessonRepo, courseRepo, makeAuthz(true));
+      const handler = new GetLessonHandler(
+        lessonRepo,
+        courseRepo,
+        makeAuthz(true),
+        makeProgressRepo(null),
+      );
+
+      const result = await handler.execute(new GetLessonQuery('lesson-1', adminActor));
+
+      expect(result.progress).toEqual({ percent: 0, completed: false, lastSeenAtSeconds: 0 });
+    });
+
+    it('progress is populated from projection when lastSeenLessonId matches', async () => {
+      vi.mocked(lessonRepo.findById).mockResolvedValue(makeLesson());
+      vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
+      const progressRow = makeProgressRow('lesson-1'); // matches lesson.id
+      const handler = new GetLessonHandler(
+        lessonRepo,
+        courseRepo,
+        makeAuthz(true),
+        makeProgressRepo(progressRow),
+      );
+
+      const result = await handler.execute(new GetLessonQuery('lesson-1', adminActor));
+
+      // percent comes from the course progress row
+      expect(result.progress.percent).toBe(40);
+    });
+
+    it('progress is zero placeholder when projection row exists but lastSeenLessonId differs', async () => {
+      vi.mocked(lessonRepo.findById).mockResolvedValue(makeLesson());
+      vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
+      const progressRow = makeProgressRow('lesson-2'); // different from lesson.id
+      const handler = new GetLessonHandler(
+        lessonRepo,
+        courseRepo,
+        makeAuthz(true),
+        makeProgressRepo(progressRow),
+      );
 
       const result = await handler.execute(new GetLessonQuery('lesson-1', adminActor));
 
@@ -148,11 +221,27 @@ describe('GetLessonHandler', () => {
     it('durationSeconds is omitted when lesson has no duration', async () => {
       vi.mocked(lessonRepo.findById).mockResolvedValue(makeLesson());
       vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
-      const handler = new GetLessonHandler(lessonRepo, courseRepo, makeAuthz(true));
+      const handler = new GetLessonHandler(
+        lessonRepo,
+        courseRepo,
+        makeAuthz(true),
+        makeProgressRepo(),
+      );
 
       const result = await handler.execute(new GetLessonQuery('lesson-1', adminActor));
 
       expect('durationSeconds' in result).toBe(false);
+    });
+
+    it('reads progress from repo — findByUserAndCourse called with actor.id', async () => {
+      vi.mocked(lessonRepo.findById).mockResolvedValue(makeLesson());
+      vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
+      const progressRepo = makeProgressRepo(null);
+      const handler = new GetLessonHandler(lessonRepo, courseRepo, makeAuthz(true), progressRepo);
+
+      await handler.execute(new GetLessonQuery('lesson-1', adminActor));
+
+      expect(progressRepo.findByUserAndCourse).toHaveBeenCalledWith('admin-1', 'course-1');
     });
   });
 
@@ -165,7 +254,12 @@ describe('GetLessonHandler', () => {
       courseRepo = makeCourseRepo();
       vi.mocked(lessonRepo.findById).mockResolvedValue(makeLesson());
       vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
-      const handler = new GetLessonHandler(lessonRepo, courseRepo, makeAuthz(true));
+      const handler = new GetLessonHandler(
+        lessonRepo,
+        courseRepo,
+        makeAuthz(true),
+        makeProgressRepo(),
+      );
 
       const result = await handler.execute(new GetLessonQuery('lesson-1', userActor));
 
@@ -182,7 +276,12 @@ describe('GetLessonHandler', () => {
       courseRepo = makeCourseRepo();
       vi.mocked(lessonRepo.findById).mockResolvedValue(makeLesson());
       vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
-      const handler = new GetLessonHandler(lessonRepo, courseRepo, makeAuthz(false));
+      const handler = new GetLessonHandler(
+        lessonRepo,
+        courseRepo,
+        makeAuthz(false),
+        makeProgressRepo(),
+      );
 
       await expect(
         handler.execute(new GetLessonQuery('lesson-1', userActor)),
@@ -198,7 +297,12 @@ describe('GetLessonHandler', () => {
       lessonRepo = makeLessonRepo();
       courseRepo = makeCourseRepo();
       vi.mocked(lessonRepo.findById).mockResolvedValue(null);
-      const handler = new GetLessonHandler(lessonRepo, courseRepo, makeAuthz(true));
+      const handler = new GetLessonHandler(
+        lessonRepo,
+        courseRepo,
+        makeAuthz(true),
+        makeProgressRepo(),
+      );
 
       await expect(
         handler.execute(new GetLessonQuery('missing', adminActor)),
@@ -215,7 +319,12 @@ describe('GetLessonHandler', () => {
       courseRepo = makeCourseRepo();
       vi.mocked(lessonRepo.findById).mockResolvedValue(makeLesson());
       vi.mocked(courseRepo.findById).mockResolvedValue(null);
-      const handler = new GetLessonHandler(lessonRepo, courseRepo, makeAuthz(true));
+      const handler = new GetLessonHandler(
+        lessonRepo,
+        courseRepo,
+        makeAuthz(true),
+        makeProgressRepo(),
+      );
 
       await expect(
         handler.execute(new GetLessonQuery('lesson-1', adminActor)),
@@ -232,7 +341,12 @@ describe('GetLessonHandler', () => {
       courseRepo = makeCourseRepo();
       vi.mocked(lessonRepo.findById).mockResolvedValue(makeLesson());
       vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
-      const handler = new GetLessonHandler(lessonRepo, courseRepo, makeAuthz(true));
+      const handler = new GetLessonHandler(
+        lessonRepo,
+        courseRepo,
+        makeAuthz(true),
+        makeProgressRepo(),
+      );
 
       const result = await handler.execute(new GetLessonQuery('lesson-1', adminActor));
 

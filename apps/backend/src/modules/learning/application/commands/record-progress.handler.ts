@@ -27,6 +27,7 @@ import {
 } from '../../../../common/catalog-tokens';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { LessonCompleted } from '../../domain/progress/lesson-completed.event';
+import { LessonProgressRecorded } from '../../domain/progress/lesson-progress-recorded.event';
 import { LessonProgress } from '../../domain/progress/lesson-progress';
 import { LESSON_PROGRESS_REPOSITORY } from '../../domain/progress/lesson-progress.repository';
 
@@ -107,6 +108,21 @@ export class RecordProgressHandler implements ICommandHandler<
 
     // Persist regardless of accepted flag — upsert is idempotent.
     await this.progressRepo.save(result.aggregate);
+
+    if (result.accepted) {
+      // LessonProgressRecorded fires on every accepted write (in-progress or completed).
+      // Publish first so downstream projections always receive the position update
+      // before the completion notification.
+      this.eventBus.publish(
+        new LessonProgressRecorded(
+          actor.id,
+          lessonId,
+          course.id,
+          result.aggregate.positionSeconds,
+          result.aggregate.lastSeenAt,
+        ),
+      );
+    }
 
     if (result.completedThisCall) {
       this.eventBus.publish(

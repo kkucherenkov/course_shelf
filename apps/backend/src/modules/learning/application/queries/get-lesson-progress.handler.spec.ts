@@ -58,6 +58,9 @@ function makeHandler(opts: {
   const progressRepo: LessonProgressRepository = {
     save: vi.fn(),
     findByUserAndLesson: vi.fn().mockResolvedValue(opts.progress ?? null),
+    countCompletedByUserAndCourse: vi.fn(),
+    findAllUserCoursePairs: vi.fn(),
+    findLatestByUserAndCourse: vi.fn(),
   };
 
   const handler = new GetLessonProgressHandler(lessonRepo, courseRepo, authz, progressRepo);

@@ -11,8 +11,15 @@
  *
  * completedAt boundary: the aggregate stores undefined when not yet completed;
  * Prisma requires null in the DB. The mapper converts in both directions.
+ *
+ * countCompletedByUserAndCourse() and findAllUserCoursePairs() join through the
+ * lesson table (lesson_progress has lessonId but not courseId) via $queryRaw.
+ * Prisma's type-safe query builder does not support cross-table aggregates
+ * without a relation declared in the schema; $queryRaw is the pragmatic choice
+ * for these two narrow projection-support methods.
  */
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { LessonProgress } from '../domain/progress/lesson-progress';
@@ -108,5 +115,65 @@ export class PrismaLessonProgressRepository implements LessonProgressRepository 
     if (!row) return null;
 
     return rowToAggregate(row);
+  }
+
+  /**
+   * Count lessons the user has completed within a course. Joins lesson_progress
+   * to lesson via lessonId. Uses $queryRaw because Prisma's typed client does
+   * not support cross-table aggregates without a schema relation.
+   *
+   * Idempotent: can be called repeatedly; always returns the current DB count.
+   */
+  async countCompletedByUserAndCourse(userId: string, courseId: string): Promise<number> {
+    const result = await this.prisma.$queryRaw<{ count: bigint }[]>(
+      Prisma.sql`
+        SELECT COUNT(lp.id) AS count
+        FROM lesson_progress lp
+        JOIN lesson l ON l.id = lp."lessonId"
+        WHERE lp."userId" = ${userId}
+          AND l."courseId" = ${courseId}
+          AND lp.completed = true
+      `,
+    );
+    return Number(result[0]?.count ?? 0);
+  }
+
+  /**
+   * Return every distinct (userId, courseId) pair that has at least one
+   * LessonProgress row. Joins through the lesson table.
+   * Used exclusively by the rebuild-projections script.
+   */
+  async findAllUserCoursePairs(): Promise<{ userId: string; courseId: string }[]> {
+    const rows = await this.prisma.$queryRaw<{ userId: string; courseId: string }[]>(
+      Prisma.sql`
+        SELECT DISTINCT lp."userId", l."courseId"
+        FROM lesson_progress lp
+        JOIN lesson l ON l.id = lp."lessonId"
+      `,
+    );
+    return rows;
+  }
+
+  /**
+   * Return the most recent LessonProgress row (highest lastSeenAt) for a
+   * (userId, courseId) pair. Joins through the lesson table.
+   * Returns null when no rows exist.
+   */
+  async findLatestByUserAndCourse(
+    userId: string,
+    courseId: string,
+  ): Promise<{ lessonId: string; lastSeenAt: Date } | null> {
+    const rows = await this.prisma.$queryRaw<{ lessonId: string; lastSeenAt: Date }[]>(
+      Prisma.sql`
+        SELECT lp."lessonId", lp."lastSeenAt"
+        FROM lesson_progress lp
+        JOIN lesson l ON l.id = lp."lessonId"
+        WHERE lp."userId" = ${userId}
+          AND l."courseId" = ${courseId}
+        ORDER BY lp."lastSeenAt" DESC
+        LIMIT 1
+      `,
+    );
+    return rows[0] ?? null;
   }
 }

@@ -5,7 +5,9 @@
  * evaluated (→ 403). This prevents attackers from distinguishing "does not exist"
  * from "you cannot see it" via a timing or status-code oracle.
  *
- * Progress is a v1 placeholder — E10-F01-S01 will populate it.
+ * Progress: as of E10-F01-S01, the progress field is populated from the
+ * CourseProgressReadModel projection (single keyed lookup). When no row exists
+ * yet, the zero placeholder is returned — DTO shape is unchanged.
  */
 import { Inject } from '@nestjs/common';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
@@ -14,12 +16,14 @@ import { AUTHORIZATION_SERVICE } from '../../../../common/access/authorization.s
 import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
 import { CourseNotFoundError } from '../../domain/course/course.errors';
 import { PermissionDenied } from '../../../../shared/domain-error';
+import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from '../../domain/progress/course-progress-read-model.repository';
 import { toCourseDto } from '../../courses.dto';
 
 import { GetCourseQuery } from './get-course.query';
 
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
 import type { CourseRepository } from '../../domain/course/course.repository';
+import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
 import type { CourseDto } from '@app/api-client-ts';
 import type { LibraryId } from '../../../../common/access/authorization.service';
 
@@ -28,6 +32,8 @@ export class GetCourseHandler implements IQueryHandler<GetCourseQuery, CourseDto
   constructor(
     @Inject(COURSE_REPOSITORY) private readonly repo: CourseRepository,
     @Inject(AUTHORIZATION_SERVICE) private readonly authz: AuthorizationService,
+    @Inject(COURSE_PROGRESS_READ_MODEL_REPOSITORY)
+    private readonly progressRepo: CourseProgressReadModelRepository,
   ) {}
 
   async execute(query: GetCourseQuery): Promise<CourseDto> {
@@ -46,6 +52,8 @@ export class GetCourseHandler implements IQueryHandler<GetCourseQuery, CourseDto
       throw new PermissionDenied('You do not have access to this course.');
     }
 
-    return toCourseDto(course);
+    const progressRow = await this.progressRepo.findByUserAndCourse(query.actor.id, course.id);
+
+    return toCourseDto(course, progressRow);
   }
 }

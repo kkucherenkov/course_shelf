@@ -53,6 +53,12 @@ function makeLibraryRepo(lib?: Library): LibraryRepository {
     }),
     findById: vi.fn(async (id: string) => store.get(id) ?? null),
     findAll: vi.fn(async () => [...store.values()]),
+    findByIds: vi.fn(async (ids: string[]) =>
+      ids.flatMap((id) => {
+        const lib = store.get(id);
+        return lib ? [lib] : [];
+      }),
+    ),
   };
 }
 

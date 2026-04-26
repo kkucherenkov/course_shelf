@@ -28,4 +28,11 @@ export interface LibraryRepository {
 
   /** Return all libraries, ordered by name. */
   findAll(): Promise<Library[]>;
+
+  /**
+   * Bulk fetch libraries by a set of ids. Returns only the libraries that exist.
+   * Order is unspecified — callers must index by id if order matters.
+   * Added for the continue-watching query handler (E10-F01-S01).
+   */
+  findByIds(ids: string[]): Promise<Library[]>;
 }

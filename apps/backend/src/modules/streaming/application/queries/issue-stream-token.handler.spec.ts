@@ -50,6 +50,7 @@ function makeCourseRepo(): CourseRepository {
     findById: vi.fn(),
     findManyByLibrary: vi.fn(),
     findAll: vi.fn(),
+    findByIds: vi.fn(),
   };
 }
 

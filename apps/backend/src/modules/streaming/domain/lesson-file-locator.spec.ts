@@ -63,6 +63,7 @@ function makeCourseRepo(overrides?: Partial<CourseRepository>): CourseRepository
     findById: vi.fn().mockResolvedValue({ id: COURSE_ID, libraryId: LIBRARY_ID }),
     findManyByLibrary: vi.fn(),
     findAll: vi.fn(),
+    findByIds: vi.fn(),
     ...overrides,
   };
 }
@@ -72,6 +73,7 @@ function makeLibraryRepo(overrides?: Partial<LibraryRepository>): LibraryReposit
     save: vi.fn(),
     findById: vi.fn().mockResolvedValue({ id: LIBRARY_ID, rootPath: ROOT }),
     findAll: vi.fn(),
+    findByIds: vi.fn(),
     ...overrides,
   };
 }

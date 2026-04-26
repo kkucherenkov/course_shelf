@@ -43,4 +43,11 @@ export interface CourseRepository {
    * Ordered by title asc. Used by admin list endpoint.
    */
   findAll(): Promise<Course[]>;
+
+  /**
+   * Bulk fetch courses by a set of ids. Returns only the courses that exist.
+   * Order is unspecified — callers must index by id if order matters.
+   * Added for the continue-watching query handler (E10-F01-S01).
+   */
+  findByIds(ids: string[]): Promise<Course[]>;
 }

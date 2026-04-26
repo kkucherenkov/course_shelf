@@ -88,4 +88,29 @@ export class PrismaLibraryRepository implements LibraryRepository {
       }),
     );
   }
+
+  async findByIds(ids: string[]): Promise<Library[]> {
+    if (ids.length === 0) return [];
+
+    const rows = await this.prisma.library.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        name: true,
+        rootPath: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return rows.map((row) =>
+      Library.reconstitute({
+        id: row.id as LibraryId,
+        name: row.name,
+        rootPath: row.rootPath,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      }),
+    );
+  }
 }

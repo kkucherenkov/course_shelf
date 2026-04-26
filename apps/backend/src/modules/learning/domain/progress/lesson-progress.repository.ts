@@ -9,6 +9,30 @@ import type { LessonProgress } from './lesson-progress';
 export interface LessonProgressRepository {
   save(progress: LessonProgress): Promise<void>;
   findByUserAndLesson(userId: string, lessonId: string): Promise<LessonProgress | null>;
+
+  /**
+   * Count lessons completed (completed = true) by a user within a course.
+   * Used by event handlers to keep lessonsCompleted in sync on the
+   * CourseProgressReadModel projection.
+   */
+  countCompletedByUserAndCourse(userId: string, courseId: string): Promise<number>;
+
+  /**
+   * Return every distinct (userId, courseId) pair that has at least one
+   * LessonProgress row. Used by the rebuild-projections script to enumerate
+   * all (user, course) combinations that need a projection row.
+   */
+  findAllUserCoursePairs(): Promise<{ userId: string; courseId: string }[]>;
+
+  /**
+   * Return the most recent LessonProgress row for a (userId, courseId) pair
+   * — i.e. the row with the highest lastSeenAt. Returns null when no rows exist.
+   * Used by the rebuild-projections service to determine lastSeenLessonId.
+   */
+  findLatestByUserAndCourse(
+    userId: string,
+    courseId: string,
+  ): Promise<{ lessonId: string; lastSeenAt: Date } | null>;
 }
 
 /** Nest DI injection token — Symbol prevents collisions with class-name strings. */

@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
+import { Logger, RequestMethod, ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
 
@@ -29,7 +29,12 @@ async function bootstrap(): Promise<void> {
   app.set('trust proxy', 'loopback');
   app.use(nodeEnv === 'production' ? helmet() : helmet({ contentSecurityPolicy: false }));
 
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', {
+    exclude: [
+      { path: 'healthz', method: RequestMethod.GET },
+      { path: 'readyz', method: RequestMethod.GET },
+    ],
+  });
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 
   app.enableCors({

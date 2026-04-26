@@ -42,6 +42,7 @@ import 'package:app_api_client/src/model/scan_dto.dart';
 import 'package:app_api_client/src/model/scan_error.dart';
 import 'package:app_api_client/src/model/scan_status.dart';
 import 'package:app_api_client/src/model/section_dto.dart';
+import 'package:app_api_client/src/model/stream_url_dto.dart';
 import 'package:app_api_client/src/model/subtitle_dto.dart';
 import 'package:app_api_client/src/model/update_course_request.dart';
 
@@ -76,6 +77,7 @@ part 'serializers.g.dart';
   ScanError,
   ScanStatus,
   SectionDto,
+  StreamUrlDto,
   SubtitleDto,
   UpdateCourseRequest,
 ])

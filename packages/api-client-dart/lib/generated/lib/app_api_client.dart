@@ -13,6 +13,7 @@ export 'package:app_api_client/src/model/date.dart';
 export 'package:app_api_client/src/api/access_api.dart';
 export 'package:app_api_client/src/api/catalog_api.dart';
 export 'package:app_api_client/src/api/realtime_api.dart';
+export 'package:app_api_client/src/api/streaming_api.dart';
 export 'package:app_api_client/src/api/system_api.dart';
 
 export 'package:app_api_client/src/model/access_grant_dto.dart';
@@ -43,6 +44,7 @@ export 'package:app_api_client/src/model/scan_dto.dart';
 export 'package:app_api_client/src/model/scan_error.dart';
 export 'package:app_api_client/src/model/scan_status.dart';
 export 'package:app_api_client/src/model/section_dto.dart';
+export 'package:app_api_client/src/model/stream_url_dto.dart';
 export 'package:app_api_client/src/model/subtitle_dto.dart';
 export 'package:app_api_client/src/model/update_course_request.dart';
 

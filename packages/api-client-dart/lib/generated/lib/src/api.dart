@@ -12,6 +12,7 @@ import 'package:app_api_client/src/auth/oauth.dart';
 import 'package:app_api_client/src/api/access_api.dart';
 import 'package:app_api_client/src/api/catalog_api.dart';
 import 'package:app_api_client/src/api/realtime_api.dart';
+import 'package:app_api_client/src/api/streaming_api.dart';
 import 'package:app_api_client/src/api/system_api.dart';
 
 class AppApiClient {
@@ -84,6 +85,12 @@ class AppApiClient {
   /// by doing that all interceptors will not be executed
   RealtimeApi getRealtimeApi() {
     return RealtimeApi(dio, serializers);
+  }
+
+  /// Get StreamingApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  StreamingApi getStreamingApi() {
+    return StreamingApi(dio, serializers);
   }
 
   /// Get SystemApi instance, base route and serializer can be overridden by a given but be careful,

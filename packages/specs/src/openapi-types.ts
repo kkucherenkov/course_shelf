@@ -121,6 +121,31 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/lessons/{id}/stream-url': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mint a short-lived signed URL for a lesson video
+     * @description Returns a URL pointing at `/api/v1/stream/lessons/{id}` with a signed
+     *     query-param token bound to `(userId, lessonId, expiresAt)`. The token
+     *     is HMAC-signed; the streaming endpoint verifies it without a database
+     *     lookup. Default TTL is 15 minutes (configurable server-side). Clients
+     *     must request a fresh URL when the previous one expires — refresh policy
+     *     is up to the player.
+     */
+    get: operations['issueStreamUrl'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/libraries': {
     parameters: {
       query?: never;
@@ -782,6 +807,28 @@ export interface components {
      */
     ScanStatus: 'running' | 'succeeded' | 'failed' | 'cancelled';
     /**
+     * @description Short-lived signed URL for streaming a lesson video.
+     * @example {
+     *       "url": "http://localhost:3000/api/v1/stream/lessons/clxvles0000000000000000001?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibGVzc29uSWQiOiJjbHh2bGVzMDAwMDAwMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzQ1NTc0NDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+     *       "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibGVzc29uSWQiOiJjbHh2bGVzMDAwMDAwMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzQ1NTc0NDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+     *       "expiresAt": "2026-04-25T10:15:00Z"
+     *     }
+     */
+    StreamUrlDto: {
+      /**
+       * Format: uri
+       * @description Full URL the player should request. Carries the signed token as the `token` query parameter so existing video-element implementations work without an Authorization header.
+       */
+      url: string;
+      /** @description Opaque signed token. Format is internal to the backend (currently a JWT-like compact form `header.payload.signature`); clients must round-trip it untouched. */
+      token: string;
+      /**
+       * Format: date-time
+       * @description ISO-8601 timestamp at which the token + URL stop being accepted. Clients should request a fresh URL before this moment.
+       */
+      expiresAt: string;
+    };
+    /**
      * @description A subtitle track available for a lesson.
      * @example {
      *       "id": "clxvsub0000000000000000001",
@@ -1188,6 +1235,56 @@ export interface operations {
         };
       };
       /** @description Requester has no READ grant covering the parent library or course */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Lesson not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  issueStreamUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the lesson. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Signed stream URL issued */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StreamUrlDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Requester has no READ grant on the parent library or course */
       403: {
         headers: {
           [name: string]: unknown;

@@ -366,6 +366,24 @@ export type ScanError = {
 export type ScanStatus = 'running' | 'succeeded' | 'failed' | 'cancelled';
 
 /**
+ * Short-lived signed URL for streaming a lesson video.
+ */
+export type StreamUrlDto = {
+    /**
+     * Full URL the player should request. Carries the signed token as the `token` query parameter so existing video-element implementations work without an Authorization header.
+     */
+    url: string;
+    /**
+     * Opaque signed token. Format is internal to the backend (currently a JWT-like compact form `header.payload.signature`); clients must round-trip it untouched.
+     */
+    token: string;
+    /**
+     * ISO-8601 timestamp at which the token + URL stop being accepted. Clients should request a fresh URL before this moment.
+     */
+    expiresAt: string;
+};
+
+/**
  * A subtitle track available for a lesson.
  */
 export type SubtitleDto = {
@@ -679,6 +697,44 @@ export type GetLessonResponses = {
 };
 
 export type GetLessonResponse = GetLessonResponses[keyof GetLessonResponses];
+
+export type IssueStreamUrlData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the lesson.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/lessons/{id}/stream-url';
+};
+
+export type IssueStreamUrlErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Requester has no READ grant on the parent library or course
+     */
+    403: Problem;
+    /**
+     * Lesson not found
+     */
+    404: Problem;
+};
+
+export type IssueStreamUrlError = IssueStreamUrlErrors[keyof IssueStreamUrlErrors];
+
+export type IssueStreamUrlResponses = {
+    /**
+     * Signed stream URL issued
+     */
+    200: StreamUrlDto;
+};
+
+export type IssueStreamUrlResponse = IssueStreamUrlResponses[keyof IssueStreamUrlResponses];
 
 export type ListLibrariesData = {
     body?: never;

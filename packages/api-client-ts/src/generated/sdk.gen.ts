@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetCourseData, GetCourseErrors, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses } from './types.gen';
+import type { GetCourseData, GetCourseErrors, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -113,6 +113,23 @@ export const updateCourse = <ThrowOnError extends boolean = false>(options: Opti
 export const getLesson = <ThrowOnError extends boolean = false>(options: Options<GetLessonData, ThrowOnError>) => (options.client ?? client).get<GetLessonResponses, GetLessonErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/lessons/{id}',
+    ...options
+});
+
+/**
+ * Mint a short-lived signed URL for a lesson video
+ *
+ * Returns a URL pointing at `/api/v1/stream/lessons/{id}` with a signed
+ * query-param token bound to `(userId, lessonId, expiresAt)`. The token
+ * is HMAC-signed; the streaming endpoint verifies it without a database
+ * lookup. Default TTL is 15 minutes (configurable server-side). Clients
+ * must request a fresh URL when the previous one expires — refresh policy
+ * is up to the player.
+ *
+ */
+export const issueStreamUrl = <ThrowOnError extends boolean = false>(options: Options<IssueStreamUrlData, ThrowOnError>) => (options.client ?? client).get<IssueStreamUrlResponses, IssueStreamUrlErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/lessons/{id}/stream-url',
     ...options
 });
 

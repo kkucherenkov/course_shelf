@@ -2,6 +2,25 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-023 — Bookmarks endpoints (E09-F02-S01)
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: three commits on `feat/bookmarks`: `cdd36b7` (spec), `195ee04` (codegen), `421881d` (impl). Backend tests 547/547; lint + typecheck clean.
+- Owner: claude
+- Goal: per-user, per-lesson timestamped bookmarks; owner-only mutations + admin moderation bypass.
+- Sub-steps:
+  - [x] OpenAPI: list / create / update / delete + 4 schemas
+  - [x] TS + Dart codegen
+  - [x] Prisma `Bookmark` + manual migration SQL
+  - [x] domain — aggregate (trim + 1–200 label, at-least-one-field, label:null clears) + repo + 4 errors
+  - [x] Prisma adapter; ordering by positionSeconds ASC; null/undefined label mapping
+  - [x] 4 handlers; admin bypass symmetric on UPDATE + DELETE
+  - [x] BookmarksController in LearningModule
+  - [x] ~30 new tests; 547/547 total
+
+
+
 ## T-2026-04-26-022 — CourseProgressProjector + continue-watching endpoint (E10-F01-S01)
 
 - Created: 2026-04-26

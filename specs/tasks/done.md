@@ -2,6 +2,14 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-020 — `GET /stream/lessons/{id}` with HTTP Range support (E08-F02-S01)
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: single impl commit `1751817` on `feat/stream-range`. Backend tests 407/407; lint + typecheck clean.
+- Owner: claude
+- Goal: standards-compliant byte-range video delivery; full 200/206/416/400/401/404/500 branch coverage; path traversal provably impossible.
+
 ## T-2026-04-26-019 — Short-lived signed stream tokens (E08-F01-S01)
 
 - Created: 2026-04-26

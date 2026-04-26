@@ -34,5 +34,5 @@
   - [x] T-020-D: openapi-validator `ignorePaths` extension — `/api/v1/stream/lessons/` added
   - [x] T-020-E: unit tests — parser + locator + controller (supertest)
   - [x] T-020-F: lint, typecheck, test, prettier; flip card; archive T-020
-- Status: done
+- Status: ✅ done
 - Blockers: —

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.8.0
+  version: 0.9.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -559,6 +559,68 @@ paths:
                     title: Conflict
                     status: 409
                     detail: A course with slug 'pragmatic-clean-architecture-2nd-ed' already exists in this library.
+
+  /api/v1/home/continue-watching:
+    get:
+      operationId: getContinueWatching
+      summary: List courses the requester is in the middle of
+      description: |
+        Returns the requester's courses ordered by recency (most-recently-watched
+        first), capped by `limit`. Reads from a denormalised
+        `CourseProgressReadModel` projection that's updated by `LessonCompleted`
+        and `LessonProgressRecorded` events. Empty array for new users.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: How many items the home row needs.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        "200":
+          description: Continue-watching list returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContinueWatchingDto"
+              examples:
+                twoInProgress:
+                  summary: Two courses in progress
+                  value:
+                    items:
+                      - courseId: clxvcrs0000000000000000001
+                        courseTitle: Pragmatic Clean Architecture
+                        librarySlug: conference-recordings
+                        percent: 15.79
+                        lessonsCompleted: 12
+                        lessonsTotal: 76
+                        lastSeenAt: "2026-04-25T14:32:00Z"
+                        lastSeenLessonId: clxvles0000000000000000042
+                      - courseId: clxvcrs0000000000000000002
+                        courseTitle: Domain-Driven Design by Eric Evans
+                        percent: 33.33
+                        lessonsCompleted: 6
+                        lessonsTotal: 18
+                        lastSeenAt: "2026-04-24T10:10:00Z"
+                        lastSeenLessonId: clxvles0000000000000000007
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
 
   /api/v1/lessons/{id}:
     get:
@@ -1410,6 +1472,96 @@ components:
               courseId: clxvcrs0000000000000000001
             level: READ
             createdAt: "2026-04-25T10:05:00Z"
+
+    ContinueWatchingDto:
+      type: object
+      required: [items]
+      description: >-
+        Ordered list of courses the requester is in the middle of, most-recently-
+        watched first. Empty array for new users.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContinueWatchingItem"
+      example:
+        items:
+          - courseId: clxvcrs0000000000000000001
+            courseTitle: Pragmatic Clean Architecture
+            librarySlug: conference-recordings
+            percent: 15.79
+            lessonsCompleted: 12
+            lessonsTotal: 76
+            lastSeenAt: "2026-04-25T14:32:00Z"
+            lastSeenLessonId: clxvles0000000000000000042
+          - courseId: clxvcrs0000000000000000002
+            courseTitle: Domain-Driven Design by Eric Evans
+            percent: 33.33
+            lessonsCompleted: 6
+            lessonsTotal: 18
+            lastSeenAt: "2026-04-24T10:10:00Z"
+            lastSeenLessonId: clxvles0000000000000000007
+
+    ContinueWatchingItem:
+      type: object
+      required:
+        - courseId
+        - courseTitle
+        - percent
+        - lessonsCompleted
+        - lessonsTotal
+        - lastSeenAt
+        - lastSeenLessonId
+      description: >-
+        A single entry in the continue-watching row, sourced from the
+        `CourseProgressReadModel` projection.
+      properties:
+        courseId:
+          type: string
+          description: Server-generated cuid identifying the course.
+        courseTitle:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Display title of the course.
+        librarySlug:
+          type: string
+          description: >-
+            Slug of the parent library, included for the URL builder.
+            Optional because not every layout exposes a per-library slug yet.
+        percent:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: "Course completion = `lessonsCompleted / lessonsTotal * 100`."
+        lessonsCompleted:
+          type: integer
+          minimum: 0
+          description: Number of lessons the user has completed in this course.
+        lessonsTotal:
+          type: integer
+          minimum: 0
+          description: Total number of lessons in the course.
+        lastSeenAt:
+          type: string
+          format: date-time
+          description: >-
+            Most recent moment any lesson in this course was watched
+            (completed or not).
+        lastSeenLessonId:
+          type: string
+          description: >-
+            The lesson the player last reported a position on, used to wire
+            the 'Resume' CTA.
+      example:
+        courseId: clxvcrs0000000000000000001
+        courseTitle: Pragmatic Clean Architecture
+        librarySlug: conference-recordings
+        percent: 15.79
+        lessonsCompleted: 12
+        lessonsTotal: 76
+        lastSeenAt: "2026-04-25T14:32:00Z"
+        lastSeenLessonId: clxvles0000000000000000042
 
     CourseDto:
       type: object

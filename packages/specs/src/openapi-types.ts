@@ -384,6 +384,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/ping': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Verify the bearer token resolves a session
+     * @description Smoke-test endpoint for the authentication chain. Returns the
+     *     requesting user's identity if the bearer token is valid; returns
+     *     `401 Unauthorized` otherwise. Useful for clients that want to
+     *     confirm their stored token is still good without making a real
+     *     domain call.
+     */
+    get: operations['ping'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/progress': {
     parameters: {
       query?: never;
@@ -1074,6 +1098,20 @@ export interface components {
        * @description ISO-8601 instant when the note body was last replaced.
        */
       updatedAt: string;
+    };
+    PingResponse: {
+      /**
+       * Format: uuid
+       * @description User id (UUID v4) — Better Auth's internal identifier.
+       */
+      id: string;
+      /**
+       * @description Role string from Better Auth's `additionalFields.role`. Default
+       *     `USER` for fresh sign-ups; admin tooling may assign others.
+       */
+      role: string;
+      /** @description Optional friendly label set by the user in their profile. */
+      displayName?: string;
     };
     /** @description RFC 9457 problem details */
     Problem: {
@@ -2489,6 +2527,35 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['HealthStatus'];
+        };
+      };
+    };
+  };
+  ping: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Authenticated identity echoed back */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PingResponse'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
         };
       };
     };

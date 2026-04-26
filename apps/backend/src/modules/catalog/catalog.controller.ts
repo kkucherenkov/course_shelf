@@ -2,9 +2,8 @@
  * WHY this file exists:
  * HTTP entry point for the Catalog bounded context. Its only jobs are:
  *   1. Receive the request (body already validated by express-openapi-validator).
- *   2. Resolve the session via AuthService to extract actor (id + role).
- *   3. Dispatch a Command or Query via the CQRS bus.
- *   4. Return the result shaped as the OpenAPI-specified response.
+ *   2. Dispatch a Command or Query via the CQRS bus.
+ *   3. Return the result shaped as the OpenAPI-specified response.
  *
  * No business logic, no Prisma, no mapping beyond the command/query result.
  * The toLibraryDto helper is called only in query handlers; here the controller
@@ -13,30 +12,18 @@
  * POST pattern: command returns { id }, controller issues GetLibraryQuery
  * to return the full resource. This keeps write and read models cleanly separated.
  *
- * Session pattern: the controller resolves the session once per request and
- * passes actor (id, role) down into the query. Unauthenticated callers receive
- * 401 here — domain errors from handlers are 403/404 and flow through the
- * HttpExceptionFilter as application/problem+json.
+ * Session pattern: the global SessionGuard resolves the session and attaches
+ * req.session before the handler runs. Use @Session() to extract the actor.
  */
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  Req,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
-import { AuthService } from '../../common/auth/auth.service';
+import { Session } from '../../common/auth/decorators';
 import { RegisterLibraryCommand } from './application/commands/register-library.command';
 import { GetLibraryQuery } from './application/queries/get-library.query';
 import { ListLibrariesQuery } from './application/queries/list-libraries.query';
 
-import type { Request } from 'express';
+import type { SessionContext } from '../../common/auth/decorators';
 import type { LibraryDto, LibraryListDto, RegisterLibraryRequest } from '@app/api-client-ts';
 
 @Controller({ path: 'libraries', version: '1' })
@@ -44,28 +31,12 @@ export class CatalogController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly auth: AuthService,
   ) {}
-
-  /**
-   * Resolves the session from the request. Throws UnauthorizedException (401)
-   * when no session is present — this is the only HTTP exception allowed in a
-   * controller; domain errors are thrown by handlers.
-   */
-  private async resolveActor(req: Request): Promise<{ id: string; role: string }> {
-    const session = await this.auth.getSession(req);
-    if (!session?.user) {
-      throw new UnauthorizedException('Authentication required.');
-    }
-    const raw = (session.user as unknown as Record<string, unknown>)['role'];
-    const role = typeof raw === 'string' ? raw : 'user';
-    return { id: session.user.id, role };
-  }
 
   /** GET /api/v1/libraries */
   @Get()
-  async listLibraries(@Req() req: Request): Promise<LibraryListDto> {
-    const actor = await this.resolveActor(req);
+  async listLibraries(@Session() session: SessionContext): Promise<LibraryListDto> {
+    const actor = session.user;
     const items = await this.queryBus.execute<ListLibrariesQuery, LibraryDto[]>(
       new ListLibrariesQuery(actor),
     );
@@ -81,9 +52,9 @@ export class CatalogController {
   @HttpCode(HttpStatus.CREATED)
   async registerLibrary(
     @Body() body: RegisterLibraryRequest,
-    @Req() req: Request,
+    @Session() session: SessionContext,
   ): Promise<LibraryDto> {
-    const actor = await this.resolveActor(req);
+    const actor = session.user;
     const { id } = await this.commandBus.execute<RegisterLibraryCommand, { id: string }>(
       new RegisterLibraryCommand(body.name, body.rootPath),
     );
@@ -92,8 +63,11 @@ export class CatalogController {
 
   /** GET /api/v1/libraries/:id */
   @Get(':id')
-  async getLibrary(@Param('id') id: string, @Req() req: Request): Promise<LibraryDto> {
-    const actor = await this.resolveActor(req);
+  async getLibrary(
+    @Param('id') id: string,
+    @Session() session: SessionContext,
+  ): Promise<LibraryDto> {
+    const actor = session.user;
     return this.queryBus.execute<GetLibraryQuery, LibraryDto>(new GetLibraryQuery(id, actor));
   }
 }

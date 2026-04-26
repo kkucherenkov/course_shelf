@@ -1,6 +1,7 @@
 import { All, Controller, Req, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 
+import { AllowAnonymous } from './decorators';
 import { AuthService } from './auth.service';
 
 import type { Request, Response } from 'express';
@@ -14,6 +15,7 @@ import type { Request, Response } from 'express';
  * `/api/v1/auth/*` via `setGlobalPrefix('api')` + `enableVersioning({ URI, defaultVersion: '1' })`.
  * No `VERSION_NEUTRAL` — we deliberately live under `v1`.
  */
+@AllowAnonymous()
 @Throttle({ default: { limit: 10, ttl: 60_000 } })
 @Controller({ path: 'auth/{*rest}', version: '1' })
 export class AuthController {

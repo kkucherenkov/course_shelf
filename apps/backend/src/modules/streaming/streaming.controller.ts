@@ -2,7 +2,7 @@
  * WHY this file exists:
  * HTTP entry point for the Streaming bounded context. Follows the exact same
  * pattern as LessonsController:
- *   1. Resolve session → actor (id + role).
+ *   1. Extract the actor from @Session() — resolved by the global SessionGuard.
  *   2. Dispatch via QueryBus.
  *   3. Return the result typed as the OpenAPI-specified response.
  *
@@ -20,10 +20,15 @@
  *   The empty-string base path is idiomatic NestJS when routes in one controller
  *   span multiple URL segments.
  *
- * getLessonStream uses `@Res()` directly:
+ * getLessonStream and getLessonSubtitle use `@Res()` directly:
  *   Nest's standard return-value pipeline cannot stream binary data with custom
  *   status codes and Range headers. We take over the response manually. This is
  *   the documented NestJS escape hatch for streaming / binary endpoints.
+ *
+ *   Both streaming routes are @AllowAnonymous() because the caller presents a
+ *   short-lived HMAC stream token (issued by issueStreamUrl) as the auth
+ *   mechanism. The global SessionGuard must not intercept these routes; the
+ *   StreamTokenSigner.verify() call is the only auth check needed here.
  *
  * getLessonSubtitle (E08-F02-S02):
  *   Reuses the same StreamTokenSigner.verify() call as the video endpoint. For
@@ -40,21 +45,10 @@ import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { randomBytes } from 'node:crypto';
 
-import {
-  BadRequestException,
-  Controller,
-  Get,
-  Param,
-  Query,
-  Req,
-  Res,
-  UnauthorizedException,
-  UseGuards,
-} from '@nestjs/common';
+import { BadRequestException, Controller, Get, Param, Query, Req, Res } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 
-import { SessionGuard } from '../../common/auth/auth.guard';
-import { AuthService } from '../../common/auth/auth.service';
+import { AllowAnonymous, Session } from '../../common/auth/decorators';
 import { IssueStreamTokenQuery } from './application/queries/issue-stream-token.query';
 import { LessonFileLocator } from './domain/lesson-file-locator';
 import { parseRangeHeader } from './domain/range-request-parser';
@@ -62,6 +56,7 @@ import { convertSrtToVtt } from './domain/subtitle-converter';
 import { StreamTokenSigner } from './domain/stream-token/stream-token-signer';
 import { StreamTokenInvalidError } from './domain/stream-token/stream-token.errors';
 
+import type { SessionContext } from '../../common/auth/decorators';
 import type { Request, Response } from 'express';
 import type { StreamUrlDto } from '@app/api-client-ts';
 
@@ -95,31 +90,17 @@ function firstHeader(h: string | string[] | undefined): string | undefined {
 export class StreamingController {
   constructor(
     private readonly queryBus: QueryBus,
-    private readonly auth: AuthService,
     private readonly streamTokenSigner: StreamTokenSigner,
     private readonly lessonFileLocator: LessonFileLocator,
   ) {}
 
-  /**
-   * Resolves the session and returns the actor (id + role).
-   * Throws UnauthorizedException (401) — the only HTTP exception allowed in a
-   * controller; domain errors are thrown by handlers.
-   */
-  private async resolveActor(req: Request): Promise<{ id: string; role: string }> {
-    const session = await this.auth.getSession(req);
-    if (!session?.user) {
-      throw new UnauthorizedException('Authentication required.');
-    }
-    const raw = (session.user as unknown as Record<string, unknown>)['role'];
-    const role = typeof raw === 'string' ? raw : 'user';
-    return { id: session.user.id, role };
-  }
-
   /** GET /api/v1/lessons/:id/stream-url */
-  @UseGuards(SessionGuard)
   @Get('lessons/:id/stream-url')
-  async issueStreamUrl(@Param('id') id: string, @Req() req: Request): Promise<StreamUrlDto> {
-    const actor = await this.resolveActor(req);
+  async issueStreamUrl(
+    @Param('id') id: string,
+    @Session() session: SessionContext,
+  ): Promise<StreamUrlDto> {
+    const actor = session.user;
     return this.queryBus.execute<IssueStreamTokenQuery, StreamUrlDto>(
       new IssueStreamTokenQuery(id, actor),
     );
@@ -137,10 +118,15 @@ export class StreamingController {
    *   416  — range not satisfiable
    *   500  — path-traversal guard triggered (LessonFilePathEscapedError)
    *
+   * WHY @AllowAnonymous(): the caller presents a short-lived HMAC stream token
+   * in the query string as the auth mechanism; no session cookie is expected.
+   * StreamTokenSigner.verify() is the sole auth check for this route.
+   *
    * WHY @Res(): Nest's return-value pipeline cannot send binary data with
    * custom status codes, Range headers, and streaming body together. This is
    * the standard NestJS documented exception for full response control.
    */
+  @AllowAnonymous()
   @Get('stream/lessons/:id')
   async getLessonStream(
     @Req() req: Request,
@@ -231,6 +217,9 @@ export class StreamingController {
    *   401  — missing / expired / tampered token
    *   404  — lesson not found OR no subtitle in the requested language
    *
+   * WHY @AllowAnonymous(): same rationale as getLessonStream — the stream token
+   * is the auth mechanism; no session cookie is expected.
+   *
    * Source-form switch:
    *   .vtt  — pipe the file as-is.
    *   .srt  — convert in-memory, write result to `<abs>.cache.vtt` sibling
@@ -243,6 +232,7 @@ export class StreamingController {
    * This route is exempt from the OpenAPI validator (falls under the
    * `/v1/stream/lessons/` prefix already ignored in openapi-validator.middleware.ts).
    */
+  @AllowAnonymous()
   @Get('stream/lessons/:id/subtitles/:language')
   async getLessonSubtitle(
     @Req() req: Request,

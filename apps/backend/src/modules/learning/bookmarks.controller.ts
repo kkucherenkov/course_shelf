@@ -6,14 +6,11 @@
  * dedicated file avoids mixing two different resource shapes in one controller.
  *
  * Responsibilities:
- *   1. Resolve session → actor (id + role).
+ *   1. Extract the actor from @Session() — resolved by the global SessionGuard.
  *   2. Dispatch Command or Query via CQRS bus.
  *   3. Return the result typed per the OpenAPI spec.
  *
  * No business logic, no Prisma, no domain mapping here.
- * UnauthorizedException (401) is the only NestJS exception allowed in a
- * controller. All domain errors are thrown by handlers and translated by
- * HttpExceptionFilter to application/problem+json.
  */
 import {
   Body,
@@ -25,20 +22,16 @@ import {
   Param,
   Patch,
   Post,
-  Req,
-  UnauthorizedException,
-  UseGuards,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
-import { SessionGuard } from '../../common/auth/auth.guard';
-import { AuthService } from '../../common/auth/auth.service';
+import { Session } from '../../common/auth/decorators';
 import { CreateBookmarkCommand } from './application/commands/create-bookmark.command';
 import { DeleteBookmarkCommand } from './application/commands/delete-bookmark.command';
 import { UpdateBookmarkCommand } from './application/commands/update-bookmark.command';
 import { ListBookmarksQuery } from './application/queries/list-bookmarks.query';
 
-import type { Request } from 'express';
+import type { SessionContext } from '../../common/auth/decorators';
 import type {
   BookmarkDto,
   BookmarkListDto,
@@ -46,32 +39,20 @@ import type {
   UpdateBookmarkRequest,
 } from '@app/api-client-ts';
 
-@UseGuards(SessionGuard)
 @Controller({ version: '1' })
 export class BookmarksController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly auth: AuthService,
   ) {}
-
-  private async resolveActor(req: Request): Promise<{ id: string; role: string }> {
-    const session = await this.auth.getSession(req);
-    if (!session?.user) {
-      throw new UnauthorizedException('Authentication required.');
-    }
-    const raw = (session.user as unknown as Record<string, unknown>)['role'];
-    const role = typeof raw === 'string' ? raw : 'user';
-    return { id: session.user.id, role };
-  }
 
   /** GET /api/v1/lessons/:lessonId/bookmarks */
   @Get('lessons/:lessonId/bookmarks')
   async listBookmarks(
     @Param('lessonId') lessonId: string,
-    @Req() req: Request,
+    @Session() session: SessionContext,
   ): Promise<BookmarkListDto> {
-    const actor = await this.resolveActor(req);
+    const actor = session.user;
     return this.queryBus.execute<ListBookmarksQuery, BookmarkListDto>(
       new ListBookmarksQuery(lessonId, actor),
     );
@@ -83,9 +64,9 @@ export class BookmarksController {
   async createBookmark(
     @Param('lessonId') lessonId: string,
     @Body() body: CreateBookmarkRequest,
-    @Req() req: Request,
+    @Session() session: SessionContext,
   ): Promise<BookmarkDto> {
-    const actor = await this.resolveActor(req);
+    const actor = session.user;
     return this.commandBus.execute<CreateBookmarkCommand, BookmarkDto>(
       new CreateBookmarkCommand(lessonId, body.positionSeconds, body.label, actor),
     );
@@ -96,9 +77,9 @@ export class BookmarksController {
   async updateBookmark(
     @Param('id') id: string,
     @Body() body: UpdateBookmarkRequest,
-    @Req() req: Request,
+    @Session() session: SessionContext,
   ): Promise<BookmarkDto> {
-    const actor = await this.resolveActor(req);
+    const actor = session.user;
     return this.commandBus.execute<UpdateBookmarkCommand, BookmarkDto>(
       new UpdateBookmarkCommand(id, body.positionSeconds, body.label, actor),
     );
@@ -107,8 +88,8 @@ export class BookmarksController {
   /** DELETE /api/v1/bookmarks/:id */
   @Delete('bookmarks/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteBookmark(@Param('id') id: string, @Req() req: Request): Promise<void> {
-    const actor = await this.resolveActor(req);
+  async deleteBookmark(@Param('id') id: string, @Session() session: SessionContext): Promise<void> {
+    const actor = session.user;
     await this.commandBus.execute(new DeleteBookmarkCommand(id, actor));
   }
 }

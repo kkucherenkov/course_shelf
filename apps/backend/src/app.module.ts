@@ -13,6 +13,7 @@ import {
 } from 'nestjs-i18n';
 
 import { AuthModule } from './common/auth/auth.module';
+import { SessionGuard } from './common/auth/auth.guard';
 import { CommonAccessModule } from './common/access/access.module';
 import { CentrifugoModule } from './common/centrifugo/centrifugo.module';
 import { DataLoaderModule } from './common/dataloader/dataloader.module';
@@ -25,6 +26,7 @@ import { SmsModule } from './common/sms/sms.module';
 import { AccessModule } from './modules/access/access.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { LearningModule } from './modules/learning/learning.module';
+import { OpsModule } from './modules/ops/ops.module';
 import { StreamingModule } from './modules/streaming/streaming.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { HealthModule } from './modules/health/health.module';
@@ -65,13 +67,20 @@ const devOnlyModules: ImportableModule[] = [];
     AuthModule,
     CommonAccessModule,
     HealthModule,
+    OpsModule,
     RealtimeModule,
     CatalogModule,
     StreamingModule,
     LearningModule,
     AccessModule,
+    // PingModule is wired in the follow-up after the /api/v1/ping spec lands.
     ...devOnlyModules,
   ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    // Order matters: ThrottlerGuard runs first (rate-limit before auth),
+    // SessionGuard second (auth-by-default for all routes).
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: SessionGuard },
+  ],
 })
 export class AppModule {}

@@ -19,12 +19,15 @@ export 'package:app_api_client/src/api/system_api.dart';
 
 export 'package:app_api_client/src/model/access_grant_dto.dart';
 export 'package:app_api_client/src/model/access_grant_list_dto.dart';
+export 'package:app_api_client/src/model/bookmark_dto.dart';
+export 'package:app_api_client/src/model/bookmark_list_dto.dart';
 export 'package:app_api_client/src/model/continue_watching_dto.dart';
 export 'package:app_api_client/src/model/continue_watching_item.dart';
 export 'package:app_api_client/src/model/course_dto.dart';
 export 'package:app_api_client/src/model/course_list_dto.dart';
 export 'package:app_api_client/src/model/course_progress.dart';
 export 'package:app_api_client/src/model/course_target.dart';
+export 'package:app_api_client/src/model/create_bookmark_request.dart';
 export 'package:app_api_client/src/model/dependency_status.dart';
 export 'package:app_api_client/src/model/grant_level.dart';
 export 'package:app_api_client/src/model/grant_target.dart';
@@ -51,5 +54,6 @@ export 'package:app_api_client/src/model/scan_status.dart';
 export 'package:app_api_client/src/model/section_dto.dart';
 export 'package:app_api_client/src/model/stream_url_dto.dart';
 export 'package:app_api_client/src/model/subtitle_dto.dart';
+export 'package:app_api_client/src/model/update_bookmark_request.dart';
 export 'package:app_api_client/src/model/update_course_request.dart';
 

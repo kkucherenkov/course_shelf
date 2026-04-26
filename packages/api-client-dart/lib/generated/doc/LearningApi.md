@@ -9,9 +9,100 @@ All URIs are relative to *http://localhost:3000*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**createBookmark**](LearningApi.md#createbookmark) | **POST** /api/v1/lessons/{lessonId}/bookmarks | Create a bookmark on a lesson
+[**deleteBookmark**](LearningApi.md#deletebookmark) | **DELETE** /api/v1/bookmarks/{id} | Delete a bookmark
 [**getLessonProgress**](LearningApi.md#getlessonprogress) | **GET** /api/v1/progress/{lessonId} | Get the requester&#39;s progress on a lesson
+[**listLessonBookmarks**](LearningApi.md#listlessonbookmarks) | **GET** /api/v1/lessons/{lessonId}/bookmarks | List the requester&#39;s bookmarks for a lesson
 [**recordLessonProgress**](LearningApi.md#recordlessonprogress) | **POST** /api/v1/progress | Record (upsert) the requester&#39;s progress on a lesson
+[**updateBookmark**](LearningApi.md#updatebookmark) | **PATCH** /api/v1/bookmarks/{id} | Update a bookmark&#39;s position or label
 
+
+# **createBookmark**
+> BookmarkDto createBookmark(lessonId, createBookmarkRequest)
+
+Create a bookmark on a lesson
+
+Bookmarks are personal — even your own admin role does not surface them in listings for other users. The body carries `positionSeconds` and an optional `label`. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String lessonId = lessonId_example; // String | Server-generated cuid identifying the lesson.
+final CreateBookmarkRequest createBookmarkRequest = {"positionSeconds":187,"label":"Aggregates intro"}; // CreateBookmarkRequest | 
+
+try {
+    final response = api.createBookmark(lessonId, createBookmarkRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->createBookmark: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **lessonId** | **String**| Server-generated cuid identifying the lesson. | 
+ **createBookmarkRequest** | [**CreateBookmarkRequest**](CreateBookmarkRequest.md)|  | 
+
+### Return type
+
+[**BookmarkDto**](BookmarkDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **deleteBookmark**
+> deleteBookmark(id)
+
+Delete a bookmark
+
+Owner-only. Admins may delete any bookmark for moderation.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String id = id_example; // String | Server-generated cuid identifying the bookmark to delete.
+
+try {
+    api.deleteBookmark(id);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->deleteBookmark: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the bookmark to delete. | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **getLessonProgress**
 > LessonProgressDto getLessonProgress(lessonId)
@@ -56,6 +147,49 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **listLessonBookmarks**
+> BookmarkListDto listLessonBookmarks(lessonId)
+
+List the requester's bookmarks for a lesson
+
+Returns all bookmarks the authenticated user has created for the given lesson, sorted ascending by `positionSeconds`. An empty `items` array is returned when no bookmarks exist yet.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String lessonId = lessonId_example; // String | Server-generated cuid identifying the lesson.
+
+try {
+    final response = api.listLessonBookmarks(lessonId);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->listLessonBookmarks: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **lessonId** | **String**| Server-generated cuid identifying the lesson. | 
+
+### Return type
+
+[**BookmarkListDto**](BookmarkListDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **recordLessonProgress**
 > LessonProgressDto recordLessonProgress(recordProgressRequest)
 
@@ -87,6 +221,51 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**LessonProgressDto**](LessonProgressDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **updateBookmark**
+> BookmarkDto updateBookmark(id, updateBookmarkRequest)
+
+Update a bookmark's position or label
+
+Owner-only. At least one of `positionSeconds` / `label` must be present. Pass `label: null` to clear an existing label. The server returns 400 on empty patches (no fields provided). 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String id = id_example; // String | Server-generated cuid identifying the bookmark to update.
+final UpdateBookmarkRequest updateBookmarkRequest = {"positionSeconds":210,"label":"Aggregate boundaries explained"}; // UpdateBookmarkRequest | 
+
+try {
+    final response = api.updateBookmark(id, updateBookmarkRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->updateBookmark: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the bookmark to update. | 
+ **updateBookmarkRequest** | [**UpdateBookmarkRequest**](UpdateBookmarkRequest.md)|  | 
+
+### Return type
+
+[**BookmarkDto**](BookmarkDto.md)
 
 ### Authorization
 

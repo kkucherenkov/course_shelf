@@ -50,6 +50,32 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/bookmarks/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete a bookmark
+     * @description Owner-only. Admins may delete any bookmark for moderation.
+     */
+    delete: operations['deleteBookmark'];
+    options?: never;
+    head?: never;
+    /**
+     * Update a bookmark's position or label
+     * @description Owner-only. At least one of `positionSeconds` / `label` must be present.
+     *     Pass `label: null` to clear an existing label. The server returns 400 on
+     *     empty patches (no fields provided).
+     */
+    patch: operations['updateBookmark'];
+    trace?: never;
+  };
   '/api/v1/courses': {
     parameters: {
       query?: never;
@@ -163,6 +189,32 @@ export interface paths {
     get: operations['issueStreamUrl'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/lessons/{lessonId}/bookmarks': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the requester's bookmarks for a lesson
+     * @description Returns all bookmarks the authenticated user has created for the given lesson, sorted ascending by `positionSeconds`. An empty `items` array is returned when no bookmarks exist yet.
+     */
+    get: operations['listLessonBookmarks'];
+    put?: never;
+    /**
+     * Create a bookmark on a lesson
+     * @description Bookmarks are personal — even your own admin role does not surface them
+     *     in listings for other users. The body carries `positionSeconds` and an
+     *     optional `label`.
+     */
+    post: operations['createBookmark'];
     delete?: never;
     options?: never;
     head?: never;
@@ -454,6 +506,76 @@ export interface components {
      */
     AccessGrantListDto: {
       items: components['schemas']['AccessGrantDto'][];
+    };
+    /**
+     * @description A single user-owned bookmark pinned to a position within a lesson.
+     * @example {
+     *       "id": "clxvbkm0000000000000000001",
+     *       "lessonId": "clxvles0000000000000000001",
+     *       "positionSeconds": 187,
+     *       "label": "Aggregates intro",
+     *       "createdAt": "2026-04-25T14:00:00Z",
+     *       "updatedAt": "2026-04-25T14:00:00Z"
+     *     }
+     */
+    BookmarkDto: {
+      /** @description Server-generated cuid identifying this bookmark. */
+      id: string;
+      /** @description cuid of the lesson this bookmark belongs to. */
+      lessonId: string;
+      /** @description Playback position in seconds where the bookmark is pinned. */
+      positionSeconds: number;
+      /** @description Free-form label. Trimmed server-side; absent means the bookmark has no label. */
+      label?: string;
+      /**
+       * Format: date-time
+       * @description ISO-8601 instant when the bookmark was created.
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description ISO-8601 instant when the bookmark was last updated.
+       */
+      updatedAt: string;
+    };
+    /**
+     * @description The requesting user's bookmarks for a single lesson, sorted ascending by `positionSeconds`.
+     * @example {
+     *       "items": [
+     *         {
+     *           "id": "clxvbkm0000000000000000001",
+     *           "lessonId": "clxvles0000000000000000001",
+     *           "positionSeconds": 187,
+     *           "label": "Aggregates intro",
+     *           "createdAt": "2026-04-25T14:00:00Z",
+     *           "updatedAt": "2026-04-25T14:00:00Z"
+     *         },
+     *         {
+     *           "id": "clxvbkm0000000000000000002",
+     *           "lessonId": "clxvles0000000000000000001",
+     *           "positionSeconds": 742,
+     *           "label": "Invariants section",
+     *           "createdAt": "2026-04-25T14:12:00Z",
+     *           "updatedAt": "2026-04-25T14:12:00Z"
+     *         }
+     *       ]
+     *     }
+     */
+    BookmarkListDto: {
+      items: components['schemas']['BookmarkDto'][];
+    };
+    /**
+     * @description Payload for creating a new bookmark on a lesson.
+     * @example {
+     *       "positionSeconds": 187,
+     *       "label": "Aggregates intro"
+     *     }
+     */
+    CreateBookmarkRequest: {
+      /** @description Playback position in seconds to pin the bookmark at. */
+      positionSeconds: number;
+      /** @description Optional free-form label. Trimmed server-side. */
+      label?: string;
     };
     /**
      * @description Ordered list of courses the requester is in the middle of, most-recently- watched first. Empty array for new users.
@@ -1050,6 +1172,21 @@ export interface components {
       title: string;
     };
     /**
+     * @description Payload for updating a bookmark. All fields are optional, but at least
+     *     one of `positionSeconds` or `label` must be present — the server returns
+     *     400 on empty patches.
+     * @example {
+     *       "positionSeconds": 210,
+     *       "label": "Aggregate boundaries explained"
+     *     }
+     */
+    UpdateBookmarkRequest: {
+      /** @description New playback position in seconds. */
+      positionSeconds?: number;
+      /** @description Pass an explicit `null` to clear the label; omit to leave it untouched. */
+      label?: string | null;
+    };
+    /**
      * @description Payload for updating course metadata. All fields are optional, but at
      *     least one of `title`, `description`, or `slug` must be present
      *     (server-side validation rule — OpenAPI does not have a native
@@ -1230,6 +1367,117 @@ export interface operations {
         };
       };
       /** @description Grant not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  deleteBookmark: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the bookmark to delete. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Bookmark deleted — no body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller is not the bookmark owner (and not an admin) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Bookmark not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  updateBookmark: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the bookmark to update. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateBookmarkRequest'];
+      };
+    };
+    responses: {
+      /** @description Bookmark updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BookmarkDto'];
+        };
+      };
+      /** @description Empty patch — no fields provided */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller is not the bookmark owner */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Bookmark not found */
       404: {
         headers: {
           [name: string]: unknown;
@@ -1507,6 +1755,119 @@ export interface operations {
         };
       };
       /** @description Requester has no READ grant on the parent library or course */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Lesson not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listLessonBookmarks: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the lesson. */
+        lessonId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Bookmark list returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BookmarkListDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description No READ grant on the parent library or course */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Lesson not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  createBookmark: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the lesson. */
+        lessonId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateBookmarkRequest'];
+      };
+    };
+    responses: {
+      /** @description Bookmark created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BookmarkDto'];
+        };
+      };
+      /** @description Validation error — missing or malformed fields */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description No READ grant on the parent library or course */
       403: {
         headers: {
           [name: string]: unknown;

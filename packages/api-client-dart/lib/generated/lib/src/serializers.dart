@@ -16,12 +16,15 @@ import 'package:app_api_client/src/model/date.dart';
 
 import 'package:app_api_client/src/model/access_grant_dto.dart';
 import 'package:app_api_client/src/model/access_grant_list_dto.dart';
+import 'package:app_api_client/src/model/bookmark_dto.dart';
+import 'package:app_api_client/src/model/bookmark_list_dto.dart';
 import 'package:app_api_client/src/model/continue_watching_dto.dart';
 import 'package:app_api_client/src/model/continue_watching_item.dart';
 import 'package:app_api_client/src/model/course_dto.dart';
 import 'package:app_api_client/src/model/course_list_dto.dart';
 import 'package:app_api_client/src/model/course_progress.dart';
 import 'package:app_api_client/src/model/course_target.dart';
+import 'package:app_api_client/src/model/create_bookmark_request.dart';
 import 'package:app_api_client/src/model/dependency_status.dart';
 import 'package:app_api_client/src/model/grant_level.dart';
 import 'package:app_api_client/src/model/grant_target.dart';
@@ -48,6 +51,7 @@ import 'package:app_api_client/src/model/scan_status.dart';
 import 'package:app_api_client/src/model/section_dto.dart';
 import 'package:app_api_client/src/model/stream_url_dto.dart';
 import 'package:app_api_client/src/model/subtitle_dto.dart';
+import 'package:app_api_client/src/model/update_bookmark_request.dart';
 import 'package:app_api_client/src/model/update_course_request.dart';
 
 part 'serializers.g.dart';
@@ -55,12 +59,15 @@ part 'serializers.g.dart';
 @SerializersFor([
   AccessGrantDto,
   AccessGrantListDto,
+  BookmarkDto,
+  BookmarkListDto,
   ContinueWatchingDto,
   ContinueWatchingItem,
   CourseDto,
   CourseListDto,
   CourseProgress,
   CourseTarget,
+  CreateBookmarkRequest,
   DependencyStatus,
   GrantLevel,
   GrantTarget,
@@ -87,6 +94,7 @@ part 'serializers.g.dart';
   SectionDto,
   StreamUrlDto,
   SubtitleDto,
+  UpdateBookmarkRequest,
   UpdateCourseRequest,
 ])
 Serializers serializers = (_$serializers.toBuilder()

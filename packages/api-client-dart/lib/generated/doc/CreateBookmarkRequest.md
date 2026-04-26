@@ -1,0 +1,16 @@
+# app_api_client.model.CreateBookmarkRequest
+
+## Load the model package
+```dart
+import 'package:app_api_client/api.dart';
+```
+
+## Properties
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**positionSeconds** | **int** | Playback position in seconds to pin the bookmark at. | 
+**label** | **String** | Optional free-form label. Trimmed server-side. | [optional] 
+
+[[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
+
+

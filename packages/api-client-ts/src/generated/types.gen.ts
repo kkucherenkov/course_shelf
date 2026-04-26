@@ -60,6 +60,57 @@ export type AccessGrantListDto = {
 };
 
 /**
+ * A single user-owned bookmark pinned to a position within a lesson.
+ */
+export type BookmarkDto = {
+    /**
+     * Server-generated cuid identifying this bookmark.
+     */
+    id: string;
+    /**
+     * cuid of the lesson this bookmark belongs to.
+     */
+    lessonId: string;
+    /**
+     * Playback position in seconds where the bookmark is pinned.
+     */
+    positionSeconds: number;
+    /**
+     * Free-form label. Trimmed server-side; absent means the bookmark has no label.
+     */
+    label?: string;
+    /**
+     * ISO-8601 instant when the bookmark was created.
+     */
+    createdAt: string;
+    /**
+     * ISO-8601 instant when the bookmark was last updated.
+     */
+    updatedAt: string;
+};
+
+/**
+ * The requesting user's bookmarks for a single lesson, sorted ascending by `positionSeconds`.
+ */
+export type BookmarkListDto = {
+    items: Array<BookmarkDto>;
+};
+
+/**
+ * Payload for creating a new bookmark on a lesson.
+ */
+export type CreateBookmarkRequest = {
+    /**
+     * Playback position in seconds to pin the bookmark at.
+     */
+    positionSeconds: number;
+    /**
+     * Optional free-form label. Trimmed server-side.
+     */
+    label?: string;
+};
+
+/**
  * Ordered list of courses the requester is in the middle of, most-recently- watched first. Empty array for new users.
  */
 export type ContinueWatchingDto = {
@@ -518,6 +569,23 @@ export type SectionDto = {
 };
 
 /**
+ * Payload for updating a bookmark. All fields are optional, but at least
+ * one of `positionSeconds` or `label` must be present — the server returns
+ * 400 on empty patches.
+ *
+ */
+export type UpdateBookmarkRequest = {
+    /**
+     * New playback position in seconds.
+     */
+    positionSeconds?: number;
+    /**
+     * Pass an explicit `null` to clear the label; omit to leave it untouched.
+     */
+    label?: string | null;
+};
+
+/**
  * Payload for updating course metadata. All fields are optional, but at
  * least one of `title`, `description`, or `slug` must be present
  * (server-side validation rule — OpenAPI does not have a native
@@ -646,6 +714,86 @@ export type RevokeGrantResponses = {
 };
 
 export type RevokeGrantResponse = RevokeGrantResponses[keyof RevokeGrantResponses];
+
+export type DeleteBookmarkData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the bookmark to delete.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/bookmarks/{id}';
+};
+
+export type DeleteBookmarkErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller is not the bookmark owner (and not an admin)
+     */
+    403: Problem;
+    /**
+     * Bookmark not found
+     */
+    404: Problem;
+};
+
+export type DeleteBookmarkError = DeleteBookmarkErrors[keyof DeleteBookmarkErrors];
+
+export type DeleteBookmarkResponses = {
+    /**
+     * Bookmark deleted — no body
+     */
+    204: void;
+};
+
+export type DeleteBookmarkResponse = DeleteBookmarkResponses[keyof DeleteBookmarkResponses];
+
+export type UpdateBookmarkData = {
+    body: UpdateBookmarkRequest;
+    path: {
+        /**
+         * Server-generated cuid identifying the bookmark to update.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/bookmarks/{id}';
+};
+
+export type UpdateBookmarkErrors = {
+    /**
+     * Empty patch — no fields provided
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller is not the bookmark owner
+     */
+    403: Problem;
+    /**
+     * Bookmark not found
+     */
+    404: Problem;
+};
+
+export type UpdateBookmarkError = UpdateBookmarkErrors[keyof UpdateBookmarkErrors];
+
+export type UpdateBookmarkResponses = {
+    /**
+     * Bookmark updated
+     */
+    200: BookmarkDto;
+};
+
+export type UpdateBookmarkResponse = UpdateBookmarkResponses[keyof UpdateBookmarkResponses];
 
 export type ListCoursesData = {
     body?: never;
@@ -866,6 +1014,86 @@ export type IssueStreamUrlResponses = {
 };
 
 export type IssueStreamUrlResponse = IssueStreamUrlResponses[keyof IssueStreamUrlResponses];
+
+export type ListLessonBookmarksData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the lesson.
+         */
+        lessonId: string;
+    };
+    query?: never;
+    url: '/api/v1/lessons/{lessonId}/bookmarks';
+};
+
+export type ListLessonBookmarksErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * No READ grant on the parent library or course
+     */
+    403: Problem;
+    /**
+     * Lesson not found
+     */
+    404: Problem;
+};
+
+export type ListLessonBookmarksError = ListLessonBookmarksErrors[keyof ListLessonBookmarksErrors];
+
+export type ListLessonBookmarksResponses = {
+    /**
+     * Bookmark list returned
+     */
+    200: BookmarkListDto;
+};
+
+export type ListLessonBookmarksResponse = ListLessonBookmarksResponses[keyof ListLessonBookmarksResponses];
+
+export type CreateBookmarkData = {
+    body: CreateBookmarkRequest;
+    path: {
+        /**
+         * Server-generated cuid identifying the lesson.
+         */
+        lessonId: string;
+    };
+    query?: never;
+    url: '/api/v1/lessons/{lessonId}/bookmarks';
+};
+
+export type CreateBookmarkErrors = {
+    /**
+     * Validation error — missing or malformed fields
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * No READ grant on the parent library or course
+     */
+    403: Problem;
+    /**
+     * Lesson not found
+     */
+    404: Problem;
+};
+
+export type CreateBookmarkError = CreateBookmarkErrors[keyof CreateBookmarkErrors];
+
+export type CreateBookmarkResponses = {
+    /**
+     * Bookmark created
+     */
+    201: BookmarkDto;
+};
+
+export type CreateBookmarkResponse = CreateBookmarkResponses[keyof CreateBookmarkResponses];
 
 export type ListLibrariesData = {
     body?: never;

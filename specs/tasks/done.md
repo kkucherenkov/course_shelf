@@ -2,6 +2,23 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-008 — stage the design bundle under docs/design/ + index + .gitattributes
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: merged locally to main as `5a57b7f` (no GitHub PR; `git merge --ff-only` from `chore/design-bundle-index`).
+- Owner: claude
+- Goal: a clone of the repository carries the full design handoff bundle alongside an index that names every project slug, its consumption story, and its file inventory; `.gitattributes` collapses prototype HTML/JSX/CSS as vendored.
+- Spec diff: none
+- Codegen impact: no
+- Design impact: yes — bundle is now first-class repo content
+- Sub-steps:
+  - [x] move `docs/design/uploads/DESIGN_BRIEF.md` → `docs/design/DESIGN_BRIEF.md`
+  - [x] write `docs/design/README.md` (index + handoff conventions)
+  - [x] write `.gitattributes` (linguist-vendored on `docs/design/**` + linguist-generated on Dart tokens)
+  - [x] flip `docs/roadmap/tasks/E00-F01-S01.md` to ✅ Done; tick TODO; bump progress to 7 / 115
+  - [x] move T-006 / T-007 to `done.md`
+
 ## T-2026-04-26-007 — apps/backend/src/shared kernel: Branded IDs + DomainError + subclasses
 
 - Created: 2026-04-26

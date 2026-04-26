@@ -45,6 +45,25 @@ export interface FirebaseConfig {
   readonly configured: boolean;
 }
 
+export interface StreamingConfig {
+  /**
+   * Master key passed to HKDF as IKM. Re-uses BETTER_AUTH_SECRET so no extra
+   * env var is required — the derived subkey provides domain separation.
+   */
+  readonly secret: string;
+  /**
+   * HKDF info string. Changing this rotates the subkey (invalidates all
+   * outstanding tokens). Default: "courseshelf:stream-token:v1".
+   * Env: STREAM_TOKEN_HKDF_INFO.
+   */
+  readonly hkdfInfo: string;
+  /**
+   * Default TTL for issued stream tokens, in seconds. Default: 900 (15 min).
+   * Env: STREAM_TOKEN_TTL_SECONDS.
+   */
+  readonly ttlSeconds: number;
+}
+
 export type ProviderMode = 'mock' | 'real';
 
 export interface ProvidersConfig {
@@ -133,6 +152,16 @@ export class AppConfig {
       apiKey: this.requireString('CENTRIFUGO_API_KEY'),
       tokenHmacSecret: this.requireString('CENTRIFUGO_TOKEN_HMAC_SECRET'),
       tokenTtlSeconds: this.numberOrDefault('CENTRIFUGO_TOKEN_TTL_SECONDS', 300),
+    };
+  }
+
+  get streaming(): StreamingConfig {
+    return {
+      // Re-uses BETTER_AUTH_SECRET as HKDF input key material. The derived
+      // subkey provides domain separation without requiring a separate env var.
+      secret: this.requireString('BETTER_AUTH_SECRET'),
+      hkdfInfo: this.stringOrDefault('STREAM_TOKEN_HKDF_INFO', 'courseshelf:stream-token:v1'),
+      ttlSeconds: this.numberOrDefault('STREAM_TOKEN_TTL_SECONDS', 900),
     };
   }
 

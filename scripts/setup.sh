@@ -19,9 +19,9 @@ find . -type f \( -name "*.json" -o -name "*.yaml" -o -name "*.yml" -o -name "*.
   ! -path "*/dist/*" \
   ! -path "*/*.generated.*" \
   -exec sed -i '' \
-    -e "s|{{APP_NAME}}|$APP_NAME|g" \
-    -e "s|{{APP_SLUG}}|$APP_SLUG|g" \
-    -e "s|{{APP_DESCRIPTION}}|$APP_DESCRIPTION|g" \
+    -e "s|Course Shelf|$APP_NAME|g" \
+    -e "s|course-shelf|$APP_SLUG|g" \
+    -e "s|Local first coursera|$APP_DESCRIPTION|g" \
     {} \;
 
 # Vue-i18n JSON blocks can't contain `{{...}}` (that's Mustache-style

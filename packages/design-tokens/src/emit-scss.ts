@@ -83,7 +83,6 @@ function themedAliasLines(): string[] {
 export function emitScss(tokens: TokenBundle): string {
   const sections: string[] = [BANNER, '', ':root {'];
 
-
   const { typography, spacing, radius, motion, color } = tokens;
 
   for (const [key, leaf] of Object.entries(typography.typography.font.family)) {

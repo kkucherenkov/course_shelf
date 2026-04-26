@@ -1,7 +1,7 @@
-name: "{{APP_SLUG}}"
+name: "course-shelf"
 
 networks:
-  "{{APP_SLUG}}-net":
+  "course-shelf-net":
     driver: bridge
 
 volumes:
@@ -14,9 +14,9 @@ services:
     image: postgres:18.1-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: "{{APP_SLUG}}"
-      POSTGRES_USER: "{{APP_SLUG}}"
-      POSTGRES_PASSWORD: "{{APP_SLUG}}"
+      POSTGRES_DB: "course-shelf"
+      POSTGRES_USER: "course-shelf"
+      POSTGRES_PASSWORD: "course-shelf"
       PGDATA: /var/lib/postgresql/18/docker
     ports:
       - "5432:5432"
@@ -24,11 +24,11 @@ services:
       - pgdata:/var/lib/postgresql
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U {{APP_SLUG}} -d {{APP_SLUG}}"]
+      test: ["CMD-SHELL", "pg_isready -U course-shelf -d course-shelf"]
       interval: 5s
       timeout: 3s
       retries: 20
-    networks: ["{{APP_SLUG}}-net"]
+    networks: ["course-shelf-net"]
 
   redis:
     image: redis:8.6-alpine
@@ -43,7 +43,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
-    networks: ["{{APP_SLUG}}-net"]
+    networks: ["course-shelf-net"]
 
   centrifugo:
     image: centrifugo/centrifugo:v6
@@ -62,7 +62,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
-    networks: ["{{APP_SLUG}}-net"]
+    networks: ["course-shelf-net"]
 
   otel-lgtm:
     image: grafana/otel-lgtm:0.8.1
@@ -77,7 +77,7 @@ services:
     volumes:
       - otel_lgtm_data:/data
       - ./grafana/provisioning:/etc/grafana/provisioning
-    networks: ["{{APP_SLUG}}-net"]
+    networks: ["course-shelf-net"]
 
   backend:
     build:
@@ -92,7 +92,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: "3000"
-      DATABASE_URL: "postgresql://{{APP_SLUG}}:{{APP_SLUG}}@postgres:5432/{{APP_SLUG}}"
+      DATABASE_URL: "postgresql://course-shelf:course-shelf@postgres:5432/course-shelf"
       REDIS_URL: redis://redis:6379/0
       BETTER_AUTH_SECRET: dev-secret-change-me
       BETTER_AUTH_URL: http://localhost:3000
@@ -118,7 +118,7 @@ services:
       timeout: 5s
       retries: 12
       start_period: 60s
-    networks: ["{{APP_SLUG}}-net"]
+    networks: ["course-shelf-net"]
 
   web:
     build:
@@ -138,4 +138,4 @@ services:
       - /workspace/apps/web/node_modules
     ports:
       - "3001:3001"
-    networks: ["{{APP_SLUG}}-net"]
+    networks: ["course-shelf-net"]

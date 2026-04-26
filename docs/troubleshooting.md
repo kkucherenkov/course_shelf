@@ -11,6 +11,7 @@ of one-off bumps.
 ## Prisma 7 — `P1012: datasource url argument` on `prisma generate`
 
 **Symptom:**
+
 ```
 error: Error validating datasource `db`: the url argument is required, but it was not set.
 ```
@@ -19,6 +20,7 @@ error: Error validating datasource `db`: the url argument is required, but it wa
 lives in `prisma.config.ts`.
 
 **Fix:** Ensure `apps/backend/prisma.config.ts` contains:
+
 ```ts
 export default defineConfig({
   schema: path.join('prisma', 'schema.prisma'),
@@ -26,11 +28,13 @@ export default defineConfig({
   datasource: { url: process.env.DATABASE_URL },
 });
 ```
+
 Remove any `url = env("DATABASE_URL")` line from `schema.prisma`.
 
 ## Vite 8 — `TSCONFIG_ERROR` on `vitest` or build
 
 **Symptom:**
+
 ```
 [vite:oxc] TSCONFIG_ERROR: cannot resolve extends "@app/tsconfig/..."
 ```
@@ -39,6 +43,7 @@ Remove any `url = env("DATABASE_URL")` line from `schema.prisma`.
 `extends` via workspace package names.
 
 **Fix:** In every Vite/Vitest config that loads workspace tsconfigs:
+
 ```ts
 export default defineConfig({
   plugins: [tsconfigPaths({ ignoreConfigErrors: true }), swc.vite({ module: { type: 'es6' } })],
@@ -68,6 +73,7 @@ and let `packageManager` in root `package.json` be the single source.
 On a push-to-default-branch, those refs resolve to the same commit.
 
 **Fix:**
+
 ```yaml
 base: ${{ github.event.pull_request.base.sha || github.event.before }}
 head: ${{ github.event.pull_request.head.sha || github.sha }}

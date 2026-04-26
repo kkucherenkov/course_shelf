@@ -9,7 +9,11 @@
     "postgres": {
       "$why": "Introspect the local Postgres container for schema-aware queries during feature work.",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://app:app@localhost:5432/app"]
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://app:app@localhost:5432/app"
+      ]
     },
 
     "playwright": {
@@ -21,11 +25,7 @@
     "filesystem-repo": {
       "$why": "Read-only filesystem access scoped to this repo. Useful when the agent client lacks native file tools.",
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "${MCP_REPO_ROOT}"
-      ]
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${MCP_REPO_ROOT}"]
     },
 
     "github": {

@@ -5,10 +5,10 @@
 <i18n lang="json">
 {
   "en": {
-    "title": "Welcome to YourApp"
+    "title": "Welcome to Course Shelf"
   },
   "ru": {
-    "title": "Добро пожаловать в YourApp"
+    "title": "Добро пожаловать в Course Shelf"
   }
 }
 </i18n>

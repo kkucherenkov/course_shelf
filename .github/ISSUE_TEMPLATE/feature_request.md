@@ -1,7 +1,7 @@
 ---
 name: Feature request
 about: Suggest a guardrail, default, or piece of scaffolding the template should ship
-title: "feat: <short summary>"
+title: 'feat: <short summary>'
 labels: enhancement
 ---
 

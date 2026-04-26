@@ -20,6 +20,14 @@ import { MockStorageService } from './infra/mock-storage.service';
     MockEmailService,
     MockPushService,
   ],
-  exports: [SMS_PORT, EMAIL_PORT, PUSH_PORT, STORAGE_PORT, MockSmsService, MockEmailService, MockPushService],
+  exports: [
+    SMS_PORT,
+    EMAIL_PORT,
+    PUSH_PORT,
+    STORAGE_PORT,
+    MockSmsService,
+    MockEmailService,
+    MockPushService,
+  ],
 })
 export class IntegrationsModule {}

@@ -1,1 +1,1 @@
-export { default as AppField } from "./AppField.vue";
+export { default as AppField } from './AppField.vue';

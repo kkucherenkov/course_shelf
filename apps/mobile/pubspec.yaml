@@ -1,5 +1,5 @@
 name: app_mobile
-description: "{{APP_DESCRIPTION}}"
+description: "Local first coursera"
 publish_to: "none"
 version: 0.1.0+1
 

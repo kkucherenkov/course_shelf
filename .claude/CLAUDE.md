@@ -68,13 +68,70 @@ Containers mount the repo as a volume — edits reach the running container auto
 ## Common commands
 
 ```sh
+# spec / codegen
 pnpm spec:validate && pnpm spec:bundle && pnpm spec:codegen
-pnpm --filter @app/ui storybook          # :6006
+pnpm spec:contract-test                  # Dredd/Prism-style contract tests
+
+# design tokens
+pnpm design:build                        # JSON → CSS / TS / Dart
+pnpm design:audit                        # inventory drift report
+
+# quality gates (whole monorepo)
 turbo run lint test typecheck
+pnpm format && pnpm stylelint:fix        # Prettier + Stylelint
+pnpm check:i18n                          # locale key parity (web + mobile + backend)
+pnpm e2e                                 # Playwright (tests/e2e/playwright.config.ts)
+
+# storybook & docker
+pnpm --filter @app/ui storybook          # :6006
 docker compose -f docker/compose.yml up -d
 docker compose -f docker/compose.yml logs -f web --tail=100
 docker compose -f docker/compose.yml restart backend
 ```
+
+### Running a single test
+
+```sh
+# backend (vitest)
+pnpm --filter @app/backend test -- src/path/to/file.spec.ts
+pnpm --filter @app/backend test -- -t "test name pattern"
+
+# web (vitest + @nuxt/test-utils)
+pnpm --filter @app/web test -- app/components/Foo.spec.ts
+
+# @app/ui (vitest)
+pnpm --filter @app/ui test -- src/Button/Button.spec.ts
+
+# mobile (Flutter)
+cd apps/mobile && flutter test test/path/to/file_test.dart
+
+# e2e (Playwright)
+pnpm e2e -- --grep "smoke"
+```
+
+## Commits
+
+Conventional Commits enforced by `commitlint` (see `commitlint.config.mjs`).
+`husky` runs `lint-staged` on pre-commit — staged `.ts`/`.vue` get
+`eslint --fix` + `prettier --write`, `.scss`/`.css` get `stylelint --fix`,
+spec edits trigger `pnpm --filter @app/specs validate`. Don't double-format
+manually after staging.
+
+Allowed types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `perf`,
+`ci`, `build`, `style`. PRs go through `main` — never push directly.
+
+## Subagents (`.claude/agents/`)
+
+Delegate when the task scope is bounded to one of these surfaces:
+
+| Agent               | Use for                                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `backend-engineer`  | Anything in `apps/backend` (NestJS / CQRS / Prisma)                                                          |
+| `frontend-engineer` | `apps/web` and `packages/ui`                                                                                 |
+| `flutter-engineer`  | `apps/mobile`                                                                                                |
+| `spec-writer`       | Adding/changing routes or channels in `packages/specs`                                                       |
+| `spec-reviewer`     | Read-only review of spec changes before merge                                                                |
+| `codegen-runner`    | Re-run `spec:validate && spec:bundle && spec:codegen` after a spec edit and stage the diff as its own commit |
 
 ## Fix root causes, not symptoms
 

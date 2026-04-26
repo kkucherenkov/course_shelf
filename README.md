@@ -139,14 +139,14 @@ clients (`packages/api-client-{ts,dart}`) are read-only — codegen owns them.
 
 ### Local stack — `docker/compose.yml`
 
-| Service    | Version        | Port | Notes                          |
-| ---------- | -------------- | ---- | ------------------------------ |
-| postgres   | 18.1-alpine    | 5432 | init SQL in `postgres/init.sql`|
-| redis      | 8.6-alpine     | 6379 | appendonly                     |
-| centrifugo | v6             | 8000 | config in `centrifugo/`        |
+| Service    | Version        | Port | Notes                              |
+| ---------- | -------------- | ---- | ---------------------------------- |
+| postgres   | 18.1-alpine    | 5432 | init SQL in `postgres/init.sql`    |
+| redis      | 8.6-alpine     | 6379 | appendonly                         |
+| centrifugo | v6             | 8000 | config in `centrifugo/`            |
 | backend    | Dockerfile.dev | 3000 | waits on postgres/redis/centrifugo |
-| web        | Dockerfile.dev | 3001 | Nuxt dev server                |
-| otel-lgtm  | grafana        | 3200 | local Grafana + LGTM stack     |
+| web        | Dockerfile.dev | 3001 | Nuxt dev server                    |
+| otel-lgtm  | grafana        | 3200 | local Grafana + LGTM stack         |
 
 Containers mount the repo as a volume, so edits reach the container without
 a rebuild. Matching `pnpm dev` and `docker compose up` at the same time
@@ -164,24 +164,24 @@ would fight over host ports — pick one.
 
 ## Drift protections — at a glance
 
-| What could drift                      | What stops it                                            |
-| ------------------------------------- | -------------------------------------------------------- |
-| API route not in spec                 | `express-openapi-validator` rejects at runtime           |
-| Generated TS / Dart client out of sync| `codegen-drift` CI job runs `spec:codegen` and diffs     |
-| Hex colour snuck into a component     | Stylelint `color-no-hex: true` in `stylelint.config.mjs` |
-| Inline `style=""` / `!important`      | Stylelint rules                                          |
-| Component without story or spec       | `pnpm --filter @app/ui audit:components` in CI           |
-| Design token used but not documented  | `pnpm design:audit` cross-checks inventory               |
-| Missing translations in a locale      | `pnpm check:i18n` key-parity check                       |
-| Secret committed                      | TruffleHog on every PR                                   |
-| Unapproved license                    | `license-checker` allowlist                              |
+| What could drift                       | What stops it                                            |
+| -------------------------------------- | -------------------------------------------------------- |
+| API route not in spec                  | `express-openapi-validator` rejects at runtime           |
+| Generated TS / Dart client out of sync | `codegen-drift` CI job runs `spec:codegen` and diffs     |
+| Hex colour snuck into a component      | Stylelint `color-no-hex: true` in `stylelint.config.mjs` |
+| Inline `style=""` / `!important`       | Stylelint rules                                          |
+| Component without story or spec        | `pnpm --filter @app/ui audit:components` in CI           |
+| Design token used but not documented   | `pnpm design:audit` cross-checks inventory               |
+| Missing translations in a locale       | `pnpm check:i18n` key-parity check                       |
+| Secret committed                       | TruffleHog on every PR                                   |
+| Unapproved license                     | `license-checker` allowlist                              |
 
 ## Quick start
 
 ```sh
 git clone <this-repo> my-project
 cd my-project
-bash scripts/setup.sh            # substitute {{APP_NAME}} / {{APP_SLUG}} / {{APP_DESCRIPTION}}
+bash scripts/setup.sh            # substitute Course Shelf / course-shelf / Local first coursera
 pnpm install
 pnpm spec:codegen                # generate TS + Dart API clients from the spec
 pnpm design:build                # generate CSS / TS / Dart tokens
@@ -229,31 +229,31 @@ scripts/            setup.sh + cross-repo helpers
 
 ## Scripts reference
 
-| Command                | What it does                                             |
-| ---------------------- | -------------------------------------------------------- |
-| `pnpm spec:validate`   | Redocly + AsyncAPI lint                                  |
-| `pnpm spec:bundle`     | Bundle OpenAPI to a single JSON                          |
-| `pnpm spec:codegen`    | Regenerate every client from the spec                    |
-| `pnpm spec:contract-test` | Run Dredd/Prism-style contract tests                  |
-| `pnpm design:build`    | Regenerate CSS / TS / Dart tokens                        |
-| `pnpm design:audit`    | Inventory drift report                                   |
-| `pnpm lint`            | Turbo — ESLint across every workspace                    |
-| `pnpm typecheck`       | Turbo — tsc / nuxt typecheck                             |
-| `pnpm test`            | Turbo — vitest across every workspace                    |
-| `pnpm build`           | Turbo — production build                                 |
-| `pnpm storybook`       | `@app/ui` Storybook on :6006                             |
-| `pnpm check:i18n`      | Locale key-parity across backend / web / mobile          |
-| `pnpm format`          | Prettier                                                 |
-| `pnpm stylelint`       | Stylelint (SCSS + Vue)                                   |
+| Command                   | What it does                                    |
+| ------------------------- | ----------------------------------------------- |
+| `pnpm spec:validate`      | Redocly + AsyncAPI lint                         |
+| `pnpm spec:bundle`        | Bundle OpenAPI to a single JSON                 |
+| `pnpm spec:codegen`       | Regenerate every client from the spec           |
+| `pnpm spec:contract-test` | Run Dredd/Prism-style contract tests            |
+| `pnpm design:build`       | Regenerate CSS / TS / Dart tokens               |
+| `pnpm design:audit`       | Inventory drift report                          |
+| `pnpm lint`               | Turbo — ESLint across every workspace           |
+| `pnpm typecheck`          | Turbo — tsc / nuxt typecheck                    |
+| `pnpm test`               | Turbo — vitest across every workspace           |
+| `pnpm build`              | Turbo — production build                        |
+| `pnpm storybook`          | `@app/ui` Storybook on :6006                    |
+| `pnpm check:i18n`         | Locale key-parity across backend / web / mobile |
+| `pnpm format`             | Prettier                                        |
+| `pnpm stylelint`          | Stylelint (SCSS + Vue)                          |
 
 ## Customising the template
 
 `scripts/setup.sh` walks the tree and replaces:
 
-- `{{APP_NAME}}` — human-readable name (`"My SaaS"`)
-- `{{APP_SLUG}}` — lowercase hyphenated slug (`my-saas`), used as
+- `Course Shelf` — human-readable name (`"My SaaS"`)
+- `course-shelf` — lowercase hyphenated slug (`my-saas`), used as
   docker project name, database name, etc.
-- `{{APP_DESCRIPTION}}` — one-line description
+- `Local first coursera` — one-line description
 
 It also rewrites the sentinel `YourApp` that sits inside Nuxt `<i18n>` JSON
 blocks (vue-i18n can't contain `{{...}}` so those blocks use a literal
@@ -279,14 +279,14 @@ Edit what the setup script doesn't cover:
 
 Shared handbook lives under [.claude/docs](.claude/docs):
 
-| Topic                                      | File                                           |
-| ------------------------------------------ | ---------------------------------------------- |
-| Backend, CQRS, Prisma, API conventions     | [`handbook.md`](.claude/docs/handbook.md)       |
+| Topic                                      | File                                                |
+| ------------------------------------------ | --------------------------------------------------- |
+| Backend, CQRS, Prisma, API conventions     | [`handbook.md`](.claude/docs/handbook.md)           |
 | Design system, @app/ui, tokens, BEM        | [`design-system.md`](.claude/docs/design-system.md) |
-| i18n (web + mobile + backend)              | [`i18n.md`](.claude/docs/i18n.md)               |
-| Testing pyramid, DoD, PR checklist         | [`testing.md`](.claude/docs/testing.md)         |
-| Security, observability, a11y, performance | [`security.md`](.claude/docs/security.md)       |
-| Feature migration from another project     | [`migration.md`](.claude/docs/migration.md)     |
+| i18n (web + mobile + backend)              | [`i18n.md`](.claude/docs/i18n.md)                   |
+| Testing pyramid, DoD, PR checklist         | [`testing.md`](.claude/docs/testing.md)             |
+| Security, observability, a11y, performance | [`security.md`](.claude/docs/security.md)           |
+| Feature migration from another project     | [`migration.md`](.claude/docs/migration.md)         |
 
 See also [specs/design/README.md](specs/design/README.md) for the design
 workflow and [.claude/CLAUDE.md](.claude/CLAUDE.md) for the full set of

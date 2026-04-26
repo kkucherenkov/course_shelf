@@ -33,9 +33,11 @@ docker/         local stack (postgres / redis / centrifugo / otel-lgtm)
 
 2. **Spec-first.** Any wire change starts in `packages/specs/openapi/openapi.yaml`
    or `packages/specs/asyncapi/centrifugo.yaml`. Then:
+
    ```sh
    pnpm spec:codegen   # turbo chains validate → bundle → codegen
    ```
+
    Then implement. `express-openapi-validator` rejects drift at runtime; CI
    rejects drift in generated clients.
 
@@ -69,7 +71,7 @@ docker ps --format '{{.Names}} {{.Status}} {{.Ports}}'
 ```
 
 | Service    | Port | URL                          |
-|------------|------|------------------------------|
+| ---------- | ---- | ---------------------------- |
 | web        | 3001 | http://localhost:3001        |
 | backend    | 3000 | http://localhost:3000/api/v1 |
 | centrifugo | 8000 | ws://localhost:8000          |

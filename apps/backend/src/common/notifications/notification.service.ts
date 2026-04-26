@@ -26,10 +26,7 @@ export class NotificationService implements OnModuleInit {
     }
     try {
       const serviceAccount = JSON.parse(serviceAccountJson) as admin.ServiceAccount;
-      this.app = admin.initializeApp(
-        { credential: admin.credential.cert(serviceAccount) },
-        'app',
-      );
+      this.app = admin.initializeApp({ credential: admin.credential.cert(serviceAccount) }, 'app');
       this.logger.log('Firebase Admin initialised');
     } catch (error: unknown) {
       this.logger.error(

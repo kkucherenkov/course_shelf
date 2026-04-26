@@ -39,8 +39,7 @@ function createInstance(
         // The email is a synthetic non-deliverable placeholder; the phone number
         // is the primary credential. Users update their display name in /me.
         signUpOnVerification: {
-          getTempEmail: (phone: string) =>
-            `phone-${phone.replace(/^\+/, '')}@noreply.app.internal`,
+          getTempEmail: (phone: string) => `phone-${phone.replace(/^\+/, '')}@noreply.app.internal`,
           getTempName: (phone: string) => phone,
         },
       }),

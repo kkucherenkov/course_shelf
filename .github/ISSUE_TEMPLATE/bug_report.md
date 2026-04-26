@@ -1,7 +1,7 @@
 ---
 name: Bug report
 about: Something in the boilerplate itself is broken or misleading
-title: "bug: <short summary>"
+title: 'bug: <short summary>'
 labels: bug
 ---
 

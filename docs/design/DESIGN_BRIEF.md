@@ -27,10 +27,11 @@ contains:
 **What CourseShelf is.** A self-hosted course management platform for people
 who own large local collections of video courses (Udemy exports, conference
 recordings, ripped DVDs, etc.) and want a tidy, trackable way to actually
-finish them. *Audiobookshelf, but for video courses.* Web + Flutter mobile,
+finish them. _Audiobookshelf, but for video courses._ Web + Flutter mobile,
 sharing one self-hosted backend.
 
 **Who uses it.**
+
 - **Owner-Admin** — tech-comfortable self-hoster. Sets it up, scans
   libraries, manages users.
 - **Household / Team learner** — has their own account, picks up where
@@ -43,6 +44,7 @@ Reeder than to a marketing-heavy SaaS dashboard. Generous whitespace,
 clear hierarchy, no decorative noise.
 
 **Top-level UX principles** (from PRD §7):
+
 - **Library first.** Home screen answers "what should I watch next?" — not
   a marketing pitch, not a menu.
 - **One click to resume.** The most-recently-watched lesson is always one
@@ -114,6 +116,7 @@ under `packages/design-tokens/`).
 > reduce-motion.
 >
 > **Component patterns** (please define):
+>
 > - Buttons (primary, secondary, ghost, destructive; with loading, disabled, focus states)
 > - Inputs (text, number, search, select, switch, checkbox, radio)
 > - Cards (course card, lesson row, dashboard tile)
@@ -135,6 +138,7 @@ under `packages/design-tokens/`).
 > projects.
 
 **What you should have after Phase 0:**
+
 - A published design system in your Claude Design organization.
 - Tokens exportable as Style Dictionary JSON (drop into
   `packages/design-tokens/tokens.json`).
@@ -146,24 +150,24 @@ under `packages/design-tokens/`).
 
 ## 3. Project plan (ordered)
 
-| # | Project | Phase | Output |
-|---|---|---|---|
-| 1 | Design System & Foundations | 1 | Tokens, primitive components |
-| 2 | Domain components | 2 | CourseCard, LessonRow, PlayerChrome, etc. |
-| 3 | Web — Auth & first-run | 3 | Login, sign-up, setup wizard |
-| 4 | Web — Home | 3 | Continue watching + recents |
-| 5 | Web — Browse & search | 3 | Course grid, filters, search |
-| 6 | Web — Course detail | 3 | Sections, lessons, progress |
-| 7 | Web — Lesson player | 3 | Player + sidebar (notes/bookmarks/materials) |
-| 8 | Web — Admin | 3 | Dashboard, users, libraries, permissions, scans |
-| 9 | Web — Settings | 3 | Profile, theme, account |
-| 10 | Mobile — Auth | 4 | Sign in / sign up |
-| 11 | Mobile — Home | 4 | Continue watching, jump back in |
-| 12 | Mobile — Browse | 4 | Library list, course list |
-| 13 | Mobile — Course detail | 4 | Sections + download controls |
-| 14 | Mobile — Lesson player | 4 | Portrait + landscape, offline indicator |
-| 15 | Mobile — Downloads | 4 | Manager, queue, storage |
-| 16 | Mobile — Search & settings | 4 | Search results, settings, profile |
+| #   | Project                     | Phase | Output                                          |
+| --- | --------------------------- | ----- | ----------------------------------------------- |
+| 1   | Design System & Foundations | 1     | Tokens, primitive components                    |
+| 2   | Domain components           | 2     | CourseCard, LessonRow, PlayerChrome, etc.       |
+| 3   | Web — Auth & first-run      | 3     | Login, sign-up, setup wizard                    |
+| 4   | Web — Home                  | 3     | Continue watching + recents                     |
+| 5   | Web — Browse & search       | 3     | Course grid, filters, search                    |
+| 6   | Web — Course detail         | 3     | Sections, lessons, progress                     |
+| 7   | Web — Lesson player         | 3     | Player + sidebar (notes/bookmarks/materials)    |
+| 8   | Web — Admin                 | 3     | Dashboard, users, libraries, permissions, scans |
+| 9   | Web — Settings              | 3     | Profile, theme, account                         |
+| 10  | Mobile — Auth               | 4     | Sign in / sign up                               |
+| 11  | Mobile — Home               | 4     | Continue watching, jump back in                 |
+| 12  | Mobile — Browse             | 4     | Library list, course list                       |
+| 13  | Mobile — Course detail      | 4     | Sections + download controls                    |
+| 14  | Mobile — Lesson player      | 4     | Portrait + landscape, offline indicator         |
+| 15  | Mobile — Downloads          | 4     | Manager, queue, storage                         |
+| 16  | Mobile — Search & settings  | 4     | Search results, settings, profile               |
 
 Do them in order. Phase 1–2 establish primitives; phases 3–4 compose them.
 
@@ -212,6 +216,7 @@ Do them in order. Phase 1–2 establish primitives; phases 3–4 compose them.
 > names) — no lorem ipsum.
 
 **Acceptance**:
+
 - Every primitive enumerated above is present.
 - All required states are visually distinct.
 - Tokens used everywhere (no hard-coded hex outside the palette).
@@ -231,6 +236,7 @@ designed once and adapt across breakpoints/platforms.
 > grids and rows.
 >
 > Three variants:
+>
 > - **Poster card** (used in grids): vertical, cover image fills the
 >   top, title + instructor + progress bar below.
 > - **Wide card** (used in continue-watching rows): horizontal,
@@ -272,6 +278,7 @@ designed once and adapt across breakpoints/platforms.
 > with language list, fullscreen, picture-in-picture, settings menu.
 >
 > Three contexts:
+>
 > - **Web — desktop hover-revealed overlay**.
 > - **Web — desktop minimal mode** (after 3s of no movement: only the
 >   scrubber peeks at the bottom).
@@ -327,13 +334,13 @@ designed once and adapt across breakpoints/platforms.
 
 ### 6.1 Responsive breakpoints
 
-| Name | Width | Layout posture |
-|---|---|---|
-| `xs` | < 600 | Single column, full-bleed cards, bottom-tab navigation |
-| `sm` | 600–959 | Two-column where it helps, condensed nav |
-| `md` | 960–1279 | Sidebar + content; standard reading width |
-| `lg` | 1280–1919 | Sidebar + content + optional secondary panel |
-| `xl` | ≥ 1920 | Same as `lg`, just more breathing room (cap content max-width) |
+| Name | Width     | Layout posture                                                 |
+| ---- | --------- | -------------------------------------------------------------- |
+| `xs` | < 600     | Single column, full-bleed cards, bottom-tab navigation         |
+| `sm` | 600–959   | Two-column where it helps, condensed nav                       |
+| `md` | 960–1279  | Sidebar + content; standard reading width                      |
+| `lg` | 1280–1919 | Sidebar + content + optional secondary panel                   |
+| `xl` | ≥ 1920    | Same as `lg`, just more breathing room (cap content max-width) |
 
 Web is responsive end-to-end, including the player. The player on `xs`
 goes full-bleed with the sidebar collapsing into a bottom sheet.
@@ -346,6 +353,7 @@ Every web screen brief below includes layouts at three reference widths:
 > Design CourseShelf's authentication screens.
 >
 > Screens:
+>
 > - **Sign in** (email + password). Single column, centered, max 380px
 >   wide. "Sign in" primary button, "Forgot password?" tertiary link.
 >   No marketing copy, no third-party auth providers (those are v2).
@@ -368,6 +376,7 @@ Every web screen brief below includes layouts at three reference widths:
 > Design the **Home** screen — the first screen after login.
 >
 > Layout (desktop, 1440):
+>
 > - Top: greeting + role indicator.
 > - "Continue watching" row: 5 wide cards visible, horizontal scroll
 >   if more, with "next lesson" CTA on each. Empty: "Pick a course to
@@ -391,6 +400,7 @@ Every web screen brief below includes layouts at three reference widths:
 > Design the **Browse** and **Search** screens.
 >
 > Browse:
+>
 > - Filters as a left sidebar at md+: status (not started / in-progress
 >   / complete), library, duration buckets, instructor (if many).
 > - At xs/sm: filters open in a bottom sheet from a floating "Filters"
@@ -400,6 +410,7 @@ Every web screen brief below includes layouts at three reference widths:
 >   options.
 >
 > Search:
+>
 > - Top search bar persistent across the layout (no separate page on
 >   xs — search opens a full-screen overlay).
 > - Results grouped by type: Courses, Lessons. Each result shows a
@@ -413,6 +424,7 @@ Every web screen brief below includes layouts at three reference widths:
 > Design the **Course Detail** screen.
 >
 > Layout (1440):
+>
 > - Hero: cover image left, title / instructor / overall progress /
 >   description right. Primary action: "Resume" (or "Start" if
 >   not-started); secondary: "Mark complete" / "Reset progress".
@@ -436,6 +448,7 @@ Every web screen brief below includes layouts at three reference widths:
 > Design the **Lesson Player** screen.
 >
 > Layout (1440):
+>
 > - Player on the left/center, takes ~70% width, max 16:9 aspect.
 > - Right sidebar (~30%): tabs for "Sections", "Notes", "Bookmarks",
 >   "Materials". Each tab loads its content inline.
@@ -461,6 +474,7 @@ Every web screen brief below includes layouts at three reference widths:
 > Design the **Admin** section.
 >
 > Screens:
+>
 > - **Dashboard**: cards for library count + total size, user count,
 >   last scan summary, error count over 24h. Recent scans table with
 >   status pills.
@@ -484,6 +498,7 @@ Every web screen brief below includes layouts at three reference widths:
 > Design the **Settings** screen.
 >
 > Sections:
+>
 > - Profile (display name, avatar, change password).
 > - Appearance (theme: dark / light / system; density).
 > - Playback defaults (default speed, autoplay next lesson, completion
@@ -535,6 +550,7 @@ Mobile screens below assume **375×812** (iPhone 13 mini) and
 > scroll; Material parallax on Android).
 >
 > Sections:
+>
 > - Continue watching: horizontal carousel of wide CourseCards, with
 >   resume time visible.
 > - Recently added: horizontal carousel of poster CourseCards.
@@ -600,6 +616,7 @@ Mobile screens below assume **375×812** (iPhone 13 mini) and
 > device, with a thin proportional bar.
 >
 > Sections (collapsed by default per course, expandable):
+>
 > - **In progress**: queued + actively downloading lessons (uses
 >   DownloadRow).
 > - **Downloaded**: by course, with per-course "delete all" affordance.
@@ -676,7 +693,7 @@ bookmark-on vs bookmark-off).
 - Sentence case for labels, buttons, and titles. No All-Caps Buttons.
 - Prefer verbs over nouns ("Resume", "Download course", not "Resume
   Watching", "Course Download").
-- Errors: tell the user what happened *and* what to do next.
+- Errors: tell the user what happened _and_ what to do next.
 - Empty states: name the gap, propose an action.
 - No exclamation marks. No emoji in the UI itself.
 
@@ -698,6 +715,7 @@ For each Claude Design project that's accepted:
    `apps/mobile/lib/design/tokens.dart`.
 
 Per **AGENTS.md §6.4**, no UI work merges without:
+
 - A Storybook story per visual state for any web component touched.
 - A Widgetbook use case per state for any Flutter widget touched.
 - A link to the corresponding handoff bundle in the PR.

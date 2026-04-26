@@ -111,9 +111,7 @@ for (const bucket of buckets) {
     const missing = [...union].filter((k) => !got.has(k)).sort();
     if (missing.length > 0) {
       drifted = true;
-      process.stderr.write(
-        `[i18n] ${bucket.source}/${locale} missing ${missing.length} key(s):\n`,
-      );
+      process.stderr.write(`[i18n] ${bucket.source}/${locale} missing ${missing.length} key(s):\n`);
       for (const k of missing.slice(0, 10)) process.stderr.write(`  • ${k}\n`);
       if (missing.length > 10) process.stderr.write(`  … and ${missing.length - 10} more\n`);
     }

@@ -1,10 +1,18 @@
 {
   "$description": "Opacity tokens for interactive and decorative states.",
   "opacity": {
-    "disabled":   { "$value": 0.4,  "$type": "number", "$description": "Disabled interactive elements" },
-    "muted":      { "$value": 0.6,  "$type": "number", "$description": "De-emphasised content" },
-    "overlay":    { "$value": 0.4,  "$type": "number", "$description": "Modal backdrop" },
-    "scrim":      { "$value": 0.72, "$type": "number", "$description": "Full-screen scrim" },
-    "dangerHover":{ "$value": 0.92, "$type": "number", "$description": "Danger button hover state" }
+    "disabled": {
+      "$value": 0.4,
+      "$type": "number",
+      "$description": "Disabled interactive elements"
+    },
+    "muted": { "$value": 0.6, "$type": "number", "$description": "De-emphasised content" },
+    "overlay": { "$value": 0.4, "$type": "number", "$description": "Modal backdrop" },
+    "scrim": { "$value": 0.72, "$type": "number", "$description": "Full-screen scrim" },
+    "dangerHover": {
+      "$value": 0.92,
+      "$type": "number",
+      "$description": "Danger button hover state"
+    }
   }
 }

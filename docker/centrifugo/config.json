@@ -15,9 +15,7 @@
     "enabled": true
   },
   "channel": {
-    "namespaces": [
-      { "name": "system", "presence": true, "history_size": 10, "history_ttl": "60s" }
-    ]
+    "namespaces": [{ "name": "system", "presence": true, "history_size": 10, "history_ttl": "60s" }]
   },
   "log": {
     "level": "info"

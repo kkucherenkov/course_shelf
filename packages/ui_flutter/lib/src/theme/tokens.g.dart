@@ -89,38 +89,19 @@ abstract final class AppSpacing {
   static const double s2 = 8.0;
   static const double s3 = 12.0;
   static const double s4 = 16.0;
-  static const double s5 = 20.0;
-  static const double s6 = 24.0;
-  static const double s7 = 28.0;
-  static const double s8 = 32.0;
-  static const double s9 = 36.0;
-  static const double s10 = 40.0;
-  static const double s11 = 44.0;
-  static const double s12 = 48.0;
-  static const double s14 = 56.0;
-  static const double s16 = 64.0;
-  static const double s18 = 72.0;
-  static const double s20 = 80.0;
-  static const double s24 = 96.0;
-  static const double s28 = 112.0;
-  static const double s32 = 128.0;
-  static const double px = 1.0;
-  static const double s0.5 = 2.0;
-  static const double s1.5 = 6.0;
-  static const double s2.5 = 10.0;
-  static const double s3.5 = 14.0;
+  static const double s5 = 24.0;
+  static const double s6 = 32.0;
+  static const double s7 = 48.0;
+  static const double s8 = 64.0;
+  static const double s9 = 96.0;
 }
 
 abstract final class AppRadius {
   static const double none = 0.0;
-  static const double xs = 2.0;
   static const double sm = 4.0;
-  static const double md = 6.0;
-  static const double lg = 8.0;
-  static const double xl = 12.0;
-  static const double r2xl = 16.0;
-  static const double r3xl = 24.0;
-  static const double pill = 9999.0;
+  static const double md = 8.0;
+  static const double lg = 16.0;
+  static const double pill = 999.0;
 }
 
 abstract final class AppFontSize {
@@ -146,8 +127,8 @@ abstract final class AppFontWeight {
 }
 
 abstract final class AppFontFamily {
-  static const String sans = "Inter";
-  static const String mono = "JetBrains Mono";
+  static const String sans = "IBM Plex Sans";
+  static const String mono = "IBM Plex Mono";
 }
 
 abstract final class AppLeading {

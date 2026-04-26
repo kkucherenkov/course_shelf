@@ -1,7 +1,7 @@
 # Architecture Decision Records (ADRs)
 
 A short, dated write-up of any non-obvious decision that shapes the codebase.
-ADRs exist because git history records the *what* but not the *why*, and issues
+ADRs exist because git history records the _what_ but not the _why_, and issues
 get closed. An ADR survives both.
 
 ## When to write one

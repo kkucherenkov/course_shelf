@@ -29,7 +29,10 @@
       const result = await auth.signIn.email({ email: email.value, password: password.value });
       if (result.error) {
         const msg = result.error.message?.toLowerCase() ?? '';
-        errorMsg.value = msg.includes('invalid') || msg.includes('credential') || msg.includes('password') ? t('errorCredentials') : t('errorGeneric');
+        errorMsg.value =
+          msg.includes('invalid') || msg.includes('credential') || msg.includes('password')
+            ? t('errorCredentials')
+            : t('errorGeneric');
         return;
       }
       globalThis.location.href = '/';
@@ -79,10 +82,7 @@
 </i18n>
 
 <template>
-  <div
-    class="page-login"
-    data-testid="page-login"
-  >
+  <div class="page-login" data-testid="page-login">
     <div class="page-login__card">
       <div class="page-login__header">
         <h1 class="page-login__title">
@@ -93,24 +93,12 @@
         </p>
       </div>
 
-      <p
-        v-if="errorMsg"
-        role="alert"
-        class="page-login__error"
-      >
+      <p v-if="errorMsg" role="alert" class="page-login__error">
         {{ errorMsg }}
       </p>
 
-      <form
-        class="page-login__form"
-        novalidate
-        @submit.prevent="onSignIn"
-      >
-        <AppField
-          :label="t('emailLabel')"
-          :help="t('emailHint')"
-          required
-        >
+      <form class="page-login__form" novalidate @submit.prevent="onSignIn">
+        <AppField :label="t('emailLabel')" :help="t('emailHint')" required>
           <template #default="slotAttrs">
             <AppInput
               v-bind="slotAttrs"
@@ -123,11 +111,7 @@
           </template>
         </AppField>
 
-        <AppField
-          :label="t('passwordLabel')"
-          :help="t('passwordHint')"
-          required
-        >
+        <AppField :label="t('passwordLabel')" :help="t('passwordHint')" required>
           <template #default="slotAttrs">
             <AppInput
               v-bind="slotAttrs"
@@ -151,10 +135,7 @@
 
       <p class="page-login__footnote-link">
         {{ t('noAccount') }}
-        <NuxtLink
-          to="/signup"
-          class="page-login__link"
-        >
+        <NuxtLink to="/signup" class="page-login__link">
           {{ t('signUpLink') }}
         </NuxtLink>
       </p>

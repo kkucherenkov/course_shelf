@@ -152,19 +152,19 @@ contract — any drift from it should be fixed at the source.
 
 ## Component inventory
 
-| Category | Component       | Vue (`@app/ui`) | Flutter (`app_ui`) |
-| -------- | --------------- | --------------- | ------------------ |
-| Feedback | `AppBadge`      | ✓               | —                  |
-| Forms    | `AppButton`     | ✓               | —                  |
-| Surface  | `AppCard`       | ✓               | —                  |
-| Feedback | `AppChip`       | ✓               | —                  |
-| Forms    | `AppField`      | ✓               | —                  |
-| Media    | `AppIcon`       | ✓               | —                  |
-| Forms    | `AppInput`      | ✓               | —                  |
-| Forms    | `AppLabel`      | ✓               | —                  |
-| Forms    | `AppSelect`     | ✓               | —                  |
-| Forms    | `AppSwitch`     | ✓               | —                  |
-| Forms    | `AppTextarea`   | ✓               | —                  |
+| Category | Component     | Vue (`@app/ui`) | Flutter (`app_ui`) |
+| -------- | ------------- | --------------- | ------------------ |
+| Feedback | `AppBadge`    | ✓               | —                  |
+| Forms    | `AppButton`   | ✓               | —                  |
+| Surface  | `AppCard`     | ✓               | —                  |
+| Feedback | `AppChip`     | ✓               | —                  |
+| Forms    | `AppField`    | ✓               | —                  |
+| Media    | `AppIcon`     | ✓               | —                  |
+| Forms    | `AppInput`    | ✓               | —                  |
+| Forms    | `AppLabel`    | ✓               | —                  |
+| Forms    | `AppSelect`   | ✓               | —                  |
+| Forms    | `AppSwitch`   | ✓               | —                  |
+| Forms    | `AppTextarea` | ✓               | —                  |
 
 > The `pnpm design:audit` script cross-checks this table against the actual
 > component folders. Run it before shipping new components.

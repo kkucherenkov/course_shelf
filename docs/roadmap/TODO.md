@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `17 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `18 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -68,7 +68,7 @@ Progress: `17 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E10 — Cross-context coupling
 
-- [ ] [E10-F01-S01](./tasks/E10-F01-S01.md) `A` — CourseProgressProjector + read model table · ⇐ E06-F03-S02, E09-F01-S01
+- [x] [E10-F01-S01](./tasks/E10-F01-S01.md) `A` — CourseProgressProjector + read model table · ⇐ E06-F03-S02, E09-F01-S01
 
 ## E11 — Web foundations
 

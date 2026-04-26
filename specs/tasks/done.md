@@ -2,6 +2,13 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-26-014 — AuthorizationService consumed by Catalog & Streaming (E07-F01-S02)
+
+- Created: 2026-04-26
+- Completed: 2026-04-26
+- Result: single commit on `feat/authorization-service`. `CommonAccessModule` in `src/common/access/` provides `LruAuthorizationService` behind `AUTHORIZATION_SERVICE` token. `ListLibrariesHandler` + `GetLibraryHandler` filter by grant. 127 tests green.
+- Owner: claude
+
 ## T-2026-04-26-013 — AccessGrant aggregate + admin endpoints (E07-F01-S01)
 
 - Created: 2026-04-26

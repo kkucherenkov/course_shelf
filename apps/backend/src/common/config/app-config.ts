@@ -32,6 +32,13 @@ export interface AppRuntimeConfig {
   readonly otelEndpoint: string | null;
 }
 
+export interface AuthorizationCacheConfig {
+  /** TTL for each canSee() result, in milliseconds. Default 30 000 (30 s). */
+  readonly ttlMs: number;
+  /** Maximum number of entries in the LRU. Default 1 000. */
+  readonly maxEntries: number;
+}
+
 export interface FirebaseConfig {
   /** JSON-encoded service account credentials. Empty string = Firebase disabled. */
   readonly serviceAccountJson: string;
@@ -110,6 +117,13 @@ export class AppConfig {
       email: 'mock',
       push: 'mock',
       storage: 'mock',
+    };
+  }
+
+  get authorizationCache(): AuthorizationCacheConfig {
+    return {
+      ttlMs: this.numberOrDefault('AUTHZ_CACHE_TTL_MS', 30_000),
+      maxEntries: this.numberOrDefault('AUTHZ_CACHE_MAX_ENTRIES', 1000),
     };
   }
 

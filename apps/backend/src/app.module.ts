@@ -13,6 +13,7 @@ import {
 } from 'nestjs-i18n';
 
 import { AuthModule } from './common/auth/auth.module';
+import { CommonAccessModule } from './common/access/access.module';
 import { CentrifugoModule } from './common/centrifugo/centrifugo.module';
 import { DataLoaderModule } from './common/dataloader/dataloader.module';
 import { NotificationsModule } from './common/notifications/notifications.module';
@@ -60,6 +61,7 @@ const devOnlyModules: ImportableModule[] = [];
     NotificationsModule,
     IntegrationsModule,
     AuthModule,
+    CommonAccessModule,
     HealthModule,
     RealtimeModule,
     CatalogModule,

@@ -1,18 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LibraryNotFoundError } from '../../domain/library/library.errors';
+import { PermissionDenied } from '../../../../shared/domain-error';
 import { Library } from '../../domain/library/library';
 
 import { GetLibraryQuery } from './get-library.query';
 import { GetLibraryHandler } from './get-library.handler';
 
 import type { LibraryRepository } from '../../domain/library/library.repository';
+import type { AuthorizationService } from '../../../../common/access/authorization.service';
 
 function makeRepo(): LibraryRepository {
   return {
     save: vi.fn(),
     findById: vi.fn(),
     findAll: vi.fn(),
+  };
+}
+
+function makeAuthz(allow: boolean): AuthorizationService {
+  return {
+    canSee: vi.fn().mockResolvedValue(allow),
+    invalidate: vi.fn(),
   };
 }
 
@@ -26,46 +35,104 @@ function makeLibrary(): Library {
   });
 }
 
+const adminActor = { id: 'admin-1', role: 'admin' };
+const userActor = { id: 'user-1', role: 'user' };
+
 describe('GetLibraryHandler', () => {
   let repo: LibraryRepository;
   let handler: GetLibraryHandler;
 
-  beforeEach(() => {
-    repo = makeRepo();
-    handler = new GetLibraryHandler(repo);
+  describe('admin actor', () => {
+    beforeEach(() => {
+      repo = makeRepo();
+      handler = new GetLibraryHandler(repo, makeAuthz(true));
+    });
+
+    it('returns the LibraryDto when the library is found', async () => {
+      const lib = makeLibrary();
+      vi.mocked(repo.findById).mockResolvedValue(lib);
+
+      const result = await handler.execute(new GetLibraryQuery('lib-1', adminActor));
+
+      expect(result.id).toBe(lib.id);
+      expect(result.name).toBe(lib.name);
+      expect(result.rootPath).toBe(lib.rootPath);
+      expect(typeof result.createdAt).toBe('string');
+      expect(typeof result.updatedAt).toBe('string');
+      expect(repo.findById).toHaveBeenCalledWith('lib-1');
+    });
+
+    it('throws LibraryNotFoundError when repo returns null', async () => {
+      vi.mocked(repo.findById).mockResolvedValue(null);
+
+      await expect(
+        handler.execute(new GetLibraryQuery('missing', adminActor)),
+      ).rejects.toBeInstanceOf(LibraryNotFoundError);
+    });
+
+    it('LibraryNotFoundError has status 404', async () => {
+      vi.mocked(repo.findById).mockResolvedValue(null);
+
+      const err = await handler
+        .execute(new GetLibraryQuery('missing', adminActor))
+        .catch((error: unknown) => error);
+
+      expect(err).toBeInstanceOf(LibraryNotFoundError);
+      expect((err as LibraryNotFoundError).status).toBe(404);
+      expect((err as LibraryNotFoundError).code).toBe('library-not-found');
+    });
   });
 
-  it('returns the LibraryDto when the library is found', async () => {
-    const lib = makeLibrary();
-    vi.mocked(repo.findById).mockResolvedValue(lib);
+  describe('non-admin actor without a grant', () => {
+    beforeEach(() => {
+      repo = makeRepo();
+      handler = new GetLibraryHandler(repo, makeAuthz(false));
+    });
 
-    const result = await handler.execute(new GetLibraryQuery('lib-1'));
+    it('throws PermissionDenied when library exists but user has no grant', async () => {
+      const lib = makeLibrary();
+      vi.mocked(repo.findById).mockResolvedValue(lib);
 
-    expect(result.id).toBe(lib.id);
-    expect(result.name).toBe(lib.name);
-    expect(result.rootPath).toBe(lib.rootPath);
-    expect(typeof result.createdAt).toBe('string');
-    expect(typeof result.updatedAt).toBe('string');
-    expect(repo.findById).toHaveBeenCalledWith('lib-1');
+      await expect(handler.execute(new GetLibraryQuery('lib-1', userActor))).rejects.toBeInstanceOf(
+        PermissionDenied,
+      );
+    });
+
+    it('PermissionDenied has status 403', async () => {
+      const lib = makeLibrary();
+      vi.mocked(repo.findById).mockResolvedValue(lib);
+
+      const err = await handler
+        .execute(new GetLibraryQuery('lib-1', userActor))
+        .catch((error: unknown) => error);
+
+      expect((err as PermissionDenied).status).toBe(403);
+      expect((err as PermissionDenied).code).toBe('permission-denied');
+    });
+
+    it('throws LibraryNotFoundError before checking grants when library is missing', async () => {
+      vi.mocked(repo.findById).mockResolvedValue(null);
+
+      await expect(
+        handler.execute(new GetLibraryQuery('missing', userActor)),
+      ).rejects.toBeInstanceOf(LibraryNotFoundError);
+    });
   });
 
-  it('throws LibraryNotFoundError when repo returns null', async () => {
-    vi.mocked(repo.findById).mockResolvedValue(null);
+  describe('non-admin actor with a grant', () => {
+    beforeEach(() => {
+      repo = makeRepo();
+      handler = new GetLibraryHandler(repo, makeAuthz(true));
+    });
 
-    await expect(handler.execute(new GetLibraryQuery('missing'))).rejects.toBeInstanceOf(
-      LibraryNotFoundError,
-    );
-  });
+    it('returns the LibraryDto when user has a grant', async () => {
+      const lib = makeLibrary();
+      vi.mocked(repo.findById).mockResolvedValue(lib);
 
-  it('LibraryNotFoundError has status 404', async () => {
-    vi.mocked(repo.findById).mockResolvedValue(null);
+      const result = await handler.execute(new GetLibraryQuery('lib-1', userActor));
 
-    const err = await handler
-      .execute(new GetLibraryQuery('missing'))
-      .catch((error: unknown) => error);
-
-    expect(err).toBeInstanceOf(LibraryNotFoundError);
-    expect((err as LibraryNotFoundError).status).toBe(404);
-    expect((err as LibraryNotFoundError).code).toBe('library-not-found');
+      expect(result.id).toBe(lib.id);
+      expect(result.name).toBe(lib.name);
+    });
   });
 });

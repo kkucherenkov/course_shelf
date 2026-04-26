@@ -6,6 +6,7 @@ import { RegisterGrantCommand } from './register-grant.command';
 import { RegisterGrantHandler } from './register-grant.handler';
 
 import type { GrantRepository } from '../../domain/grant/grant.repository';
+import type { AuthorizationService } from '../../../../common/access/authorization.service';
 import type { AccessGrant } from '../../domain/grant/grant';
 
 function makeRepo(): GrantRepository {
@@ -17,13 +18,22 @@ function makeRepo(): GrantRepository {
   };
 }
 
+function makeAuthz(): AuthorizationService {
+  return {
+    canSee: vi.fn().mockResolvedValue(true),
+    invalidate: vi.fn(),
+  };
+}
+
 describe('RegisterGrantHandler', () => {
   let repo: GrantRepository;
+  let authz: AuthorizationService;
   let handler: RegisterGrantHandler;
 
   beforeEach(() => {
     repo = makeRepo();
-    handler = new RegisterGrantHandler(repo);
+    authz = makeAuthz();
+    handler = new RegisterGrantHandler(repo, authz);
   });
 
   it('calls repo.save with the registered aggregate', async () => {
@@ -56,5 +66,26 @@ describe('RegisterGrantHandler', () => {
         new RegisterGrantCommand('user-1', { kind: 'library', libraryId: 'lib-1' }, 'READ'),
       ),
     ).rejects.toBeInstanceOf(GrantAlreadyExistsError);
+  });
+
+  it('calls authz.invalidate with the userId after a successful save', async () => {
+    await handler.execute(
+      new RegisterGrantCommand('user-42', { kind: 'library', libraryId: 'lib-1' }, 'READ'),
+    );
+
+    expect(authz.invalidate).toHaveBeenCalledOnce();
+    expect(authz.invalidate).toHaveBeenCalledWith('user-42');
+  });
+
+  it('does not call authz.invalidate when save throws', async () => {
+    vi.mocked(repo.save).mockRejectedValue(new GrantAlreadyExistsError());
+
+    await expect(
+      handler.execute(
+        new RegisterGrantCommand('user-1', { kind: 'library', libraryId: 'lib-1' }, 'READ'),
+      ),
+    ).rejects.toBeInstanceOf(GrantAlreadyExistsError);
+
+    expect(authz.invalidate).not.toHaveBeenCalled();
   });
 });

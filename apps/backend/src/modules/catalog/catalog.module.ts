@@ -15,6 +15,7 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 
+import { CommonAccessModule } from '../../common/access/access.module';
 import { RegisterLibraryHandler } from './application/commands/register-library.handler';
 import { GetLibraryHandler } from './application/queries/get-library.handler';
 import { ListLibrariesHandler } from './application/queries/list-libraries.handler';
@@ -23,7 +24,7 @@ import { LIBRARY_REPOSITORY } from './domain/library/library.repository';
 import { PrismaLibraryRepository } from './infra/prisma-library.repository';
 
 @Module({
-  imports: [CqrsModule],
+  imports: [CqrsModule, CommonAccessModule],
   controllers: [CatalogController],
   providers: [
     RegisterLibraryHandler,

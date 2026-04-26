@@ -454,6 +454,69 @@ export type RecordProgressRequest = {
     clientUpdatedAt: string;
 };
 
+export type BatchProgressRequest = {
+    /**
+     * Up to 200 progress writes. Cap exists to bound server-side work
+     * and to keep request bodies under the 1 MiB JSON ceiling.
+     *
+     */
+    items: Array<RecordProgressRequest>;
+};
+
+export type BatchProgressResponse = {
+    /**
+     * Same length and order as the input `items` array. Index N in the
+     * response maps 1:1 to index N in the request.
+     *
+     */
+    results: Array<BatchProgressItemResult>;
+};
+
+export type BatchProgressItemResult = ({
+    status: 'accepted';
+} & BatchProgressItemAccepted) | ({
+    status: 'stale';
+} & BatchProgressItemStale) | ({
+    status: 'forbidden';
+} & BatchProgressItemForbidden);
+
+export type BatchProgressItemAccepted = {
+    /**
+     * The client write was applied (or absorbed by last-write-wins
+     * with no resulting state change). `state` reflects the post-merge
+     * server state.
+     *
+     */
+    status: 'accepted';
+    state: LessonProgressDto;
+};
+
+export type BatchProgressItemStale = {
+    /**
+     * The client's `clientUpdatedAt` was older than the server's
+     * `lastSeenAt` for this lesson. The write was absorbed but the
+     * server already had newer state — the client should overwrite
+     * its local cache from `state`.
+     *
+     */
+    status: 'stale';
+    state: LessonProgressDto;
+};
+
+export type BatchProgressItemForbidden = {
+    /**
+     * Actor has no READ grant covering this lesson, OR the lesson does
+     * not exist. The two cases are collapsed deliberately to avoid
+     * existence leakage (no-oracle rule).
+     *
+     */
+    status: 'forbidden';
+    /**
+     * Echoes the input `lessonId` for client correlation.
+     */
+    lessonId: string;
+};
+
 /**
  * Payload for issuing a new access grant.
  */
@@ -1527,6 +1590,35 @@ export type GetLessonProgressResponses = {
 };
 
 export type GetLessonProgressResponse = GetLessonProgressResponses[keyof GetLessonProgressResponses];
+
+export type RecordLessonProgressBatchData = {
+    body: BatchProgressRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/progress/batch';
+};
+
+export type RecordLessonProgressBatchErrors = {
+    /**
+     * Request body is empty (`items.length === 0`) or too large (>200)
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+};
+
+export type RecordLessonProgressBatchError = RecordLessonProgressBatchErrors[keyof RecordLessonProgressBatchErrors];
+
+export type RecordLessonProgressBatchResponses = {
+    /**
+     * Per-item results, same order and length as input
+     */
+    200: BatchProgressResponse;
+};
+
+export type RecordLessonProgressBatchResponse = RecordLessonProgressBatchResponses[keyof RecordLessonProgressBatchResponses];
 
 export type IssueRealtimeTokenData = {
     body?: never;

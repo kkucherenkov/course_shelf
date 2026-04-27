@@ -3,7 +3,7 @@
 
   import { useAuthStore } from '~/stores/auth';
 
-  const { t } = useI18n({ useScope: 'local' });
+  const { t } = useI18n();
   const route = useRoute();
   const authStore = useAuthStore();
 
@@ -18,29 +18,12 @@
   }
 </script>
 
-<i18n lang="json">
-{
-  "en": {
-    "appName": "Course Shelf",
-    "navHome": "Home",
-    "navLogin": "Login",
-    "navSignOut": "Sign out"
-  },
-  "ru": {
-    "appName": "Course Shelf",
-    "navHome": "Главная",
-    "navLogin": "Войти",
-    "navSignOut": "Выйти"
-  }
-}
-</i18n>
-
 <template>
   <div class="default-layout">
     <header class="default-layout__header">
-      <nav class="default-layout__nav" :aria-label="t('appName')">
+      <nav class="default-layout__nav" :aria-label="t('layouts.default.appName')">
         <NuxtLink to="/" class="default-layout__brand">
-          {{ t('appName') }}
+          {{ t('layouts.default.appName') }}
         </NuxtLink>
         <ul class="default-layout__nav-list">
           <li class="default-layout__nav-item">
@@ -49,7 +32,7 @@
               class="default-layout__nav-link"
               :class="{ 'default-layout__nav-link--active': route.path === '/' }"
             >
-              {{ t('navHome') }}
+              {{ t('layouts.default.navHome') }}
             </NuxtLink>
           </li>
           <li v-if="!isAuthenticated" class="default-layout__nav-item">
@@ -58,12 +41,12 @@
               class="default-layout__nav-link"
               :class="{ 'default-layout__nav-link--active': route.path === '/login' }"
             >
-              {{ t('navLogin') }}
+              {{ t('layouts.default.navLogin') }}
             </NuxtLink>
           </li>
           <li v-if="isAuthenticated" class="default-layout__nav-item">
             <button type="button" class="default-layout__nav-link" @click="onSignOut">
-              {{ t('navSignOut') }}
+              {{ t('layouts.default.navSignOut') }}
             </button>
           </li>
         </ul>
@@ -75,7 +58,9 @@
     </main>
 
     <footer class="default-layout__footer">
-      <span class="default-layout__footer-copy">&copy; 2026 {{ t('appName') }}</span>
+      <span class="default-layout__footer-copy"
+        >&copy; 2026 {{ t('layouts.default.appName') }}</span
+      >
     </footer>
   </div>
 </template>

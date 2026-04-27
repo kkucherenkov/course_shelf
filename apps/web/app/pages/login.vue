@@ -4,7 +4,7 @@
 
   import { useAuthStore } from '~/stores/auth';
 
-  const { t } = useI18n({ useScope: 'local' });
+  const { t } = useI18n();
   const authStore = useAuthStore();
 
   const email = ref('');
@@ -18,11 +18,11 @@
   async function onSignIn(): Promise<void> {
     errorMsg.value = '';
     if (!emailValid.value) {
-      errorMsg.value = t('errorEmailInvalid');
+      errorMsg.value = t('pages.login.errorEmailInvalid');
       return;
     }
     if (!passwordValid.value) {
-      errorMsg.value = t('errorPasswordTooShort');
+      errorMsg.value = t('pages.login.errorPasswordTooShort');
       return;
     }
     const result = await authStore.signIn(email.value, password.value);
@@ -30,60 +30,23 @@
       const msg = (result.error ?? '').toLowerCase();
       errorMsg.value =
         msg.includes('invalid') || msg.includes('credential') || msg.includes('password')
-          ? t('errorCredentials')
-          : t('errorGeneric');
+          ? t('pages.login.errorCredentials')
+          : t('pages.login.errorGeneric');
       return;
     }
     await navigateTo('/');
   }
 </script>
 
-<i18n lang="json">
-{
-  "en": {
-    "title": "Sign in",
-    "subtitle": "Enter your email and password to continue.",
-    "emailLabel": "Email",
-    "emailHint": "Your registered email address.",
-    "passwordLabel": "Password",
-    "passwordHint": "At least 8 characters.",
-    "signInButton": "Sign in",
-    "noAccount": "Don't have an account?",
-    "signUpLink": "Sign up",
-    "legalFootnote": "By continuing, you agree to our Terms and Privacy Policy.",
-    "errorEmailInvalid": "Please enter a valid email address.",
-    "errorPasswordTooShort": "Password must be at least 8 characters.",
-    "errorCredentials": "Incorrect email or password. Please try again.",
-    "errorGeneric": "Something went wrong. Please try again."
-  },
-  "ru": {
-    "title": "Войти",
-    "subtitle": "Введите email и пароль для входа.",
-    "emailLabel": "Email",
-    "emailHint": "Ваш зарегистрированный email.",
-    "passwordLabel": "Пароль",
-    "passwordHint": "Не менее 8 символов.",
-    "signInButton": "Войти",
-    "noAccount": "Нет аккаунта?",
-    "signUpLink": "Зарегистрироваться",
-    "legalFootnote": "Продолжая, вы соглашаетесь с условиями и политикой конфиденциальности.",
-    "errorEmailInvalid": "Введите корректный email.",
-    "errorPasswordTooShort": "Пароль должен содержать не менее 8 символов.",
-    "errorCredentials": "Неверный email или пароль. Попробуйте ещё раз.",
-    "errorGeneric": "Что-то пошло не так. Попробуйте ещё раз."
-  }
-}
-</i18n>
-
 <template>
   <div class="page-login" data-testid="page-login">
     <div class="page-login__card">
       <div class="page-login__header">
         <h1 class="page-login__title">
-          {{ t('title') }}
+          {{ t('pages.login.title') }}
         </h1>
         <p class="page-login__subtitle">
-          {{ t('subtitle') }}
+          {{ t('pages.login.subtitle') }}
         </p>
       </div>
 
@@ -92,7 +55,7 @@
       </p>
 
       <form class="page-login__form" novalidate @submit.prevent="onSignIn">
-        <AppField :label="t('emailLabel')" :help="t('emailHint')" required>
+        <AppField :label="t('pages.login.emailLabel')" :help="t('pages.login.emailHint')" required>
           <template #default="slotAttrs">
             <AppInput
               v-bind="slotAttrs"
@@ -105,7 +68,11 @@
           </template>
         </AppField>
 
-        <AppField :label="t('passwordLabel')" :help="t('passwordHint')" required>
+        <AppField
+          :label="t('pages.login.passwordLabel')"
+          :help="t('pages.login.passwordHint')"
+          required
+        >
           <template #default="slotAttrs">
             <AppInput
               v-bind="slotAttrs"
@@ -117,7 +84,7 @@
         </AppField>
 
         <AppButton
-          :label="t('signInButton')"
+          :label="t('pages.login.signInButton')"
           type="submit"
           variant="primary"
           block
@@ -127,14 +94,14 @@
       </form>
 
       <p class="page-login__footnote-link">
-        {{ t('noAccount') }}
+        {{ t('pages.login.noAccount') }}
         <NuxtLink to="/signup" class="page-login__link">
-          {{ t('signUpLink') }}
+          {{ t('pages.login.signUpLink') }}
         </NuxtLink>
       </p>
 
       <p class="page-login__legal">
-        {{ t('legalFootnote') }}
+        {{ t('pages.login.legalFootnote') }}
       </p>
     </div>
   </div>

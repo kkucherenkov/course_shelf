@@ -1,21 +1,10 @@
 <script setup lang="ts">
-  const { t } = useI18n({ useScope: 'local' });
+  const { t } = useI18n();
 </script>
-
-<i18n lang="json">
-{
-  "en": {
-    "title": "Welcome to Course Shelf"
-  },
-  "ru": {
-    "title": "Добро пожаловать в Course Shelf"
-  }
-}
-</i18n>
 
 <template>
   <div class="page-home">
-    <h1>{{ t('title') }}</h1>
+    <h1>{{ t('pages.home.title') }}</h1>
   </div>
 </template>
 

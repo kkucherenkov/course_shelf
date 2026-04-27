@@ -41,7 +41,7 @@ export const Default: Story = {
         <AppRadio value="banana" label="Banana" />
         <AppRadio value="cherry" label="Cherry" />
       </AppRadioGroup>
-      <p style="margin-top:8px;font-size:12px;color:var(--text-secondary)">
+      <p style="margin-top:var(--space-2);font-size:var(--text-sm);color:var(--text-secondary)">
         Selected: {{ selected }}
       </p>
     `,

@@ -69,15 +69,15 @@ export const WithRoleBadge: Story = {
       <div style="display: flex; gap: var(--space-5); align-items: center;">
         <div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-2);">
           <AppAvatar v-bind="args" role="admin" size="lg" />
-          <span style="font-size: 12px; color: var(--text-secondary);">Admin</span>
+          <span style="font-size: var(--text-sm); color: var(--text-secondary);">Admin</span>
         </div>
         <div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-2);">
           <AppAvatar v-bind="args" role="guest" size="lg" />
-          <span style="font-size: 12px; color: var(--text-secondary);">Guest</span>
+          <span style="font-size: var(--text-sm); color: var(--text-secondary);">Guest</span>
         </div>
         <div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-2);">
           <AppAvatar v-bind="args" size="lg" />
-          <span style="font-size: 12px; color: var(--text-secondary);">No role</span>
+          <span style="font-size: var(--text-sm); color: var(--text-secondary);">No role</span>
         </div>
       </div>
     `,

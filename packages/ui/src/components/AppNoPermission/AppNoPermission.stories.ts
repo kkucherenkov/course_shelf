@@ -28,7 +28,7 @@ export const WithLoginAction: Story = {
     template: `
       <AppNoPermission v-bind="args">
         <template #action>
-          <button style="padding:var(--space-2) var(--space-4);background:var(--status-warning-fg);color:white;border:none;border-radius:var(--radius-md);cursor:pointer;font-weight:var(--fw-medium);">
+          <button style="padding:var(--space-2) var(--space-4);background:var(--status-warning-fg);color:var(--brand-accent-fg);border:none;border-radius:var(--radius-md);cursor:pointer;font-weight:var(--fw-medium);">
             Log in
           </button>
         </template>

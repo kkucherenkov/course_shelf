@@ -74,10 +74,10 @@ export const Default: Story = {
     },
     template: `
       <div>
-        <div style="display:flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+        <div style="display:flex; gap: var(--space-3); align-items: center; margin-bottom: var(--space-4);">
           <button
             @click="open = true"
-            style="padding: 8px 16px; background: var(--brand-accent); color: white; border: none; border-radius: 8px; cursor: pointer;"
+            style="padding: var(--space-2) var(--space-4); background: var(--brand-accent); color: var(--brand-accent-fg); border: none; border-radius: var(--radius-md); cursor: pointer;"
           >
             Open palette (or Cmd+K)
           </button>
@@ -112,9 +112,9 @@ export const WithGlobalShortcut: Story = {
       return { args, open, onKeydown };
     },
     template: `
-      <div @keydown="onKeydown" tabindex="0" style="padding: 16px; border: 1px dashed var(--border-default); border-radius: 8px; outline: none;">
+      <div @keydown="onKeydown" tabindex="0" style="padding: var(--space-4); border: 1px dashed var(--border-default); border-radius: var(--radius-md); outline: none;">
         <p style="color: var(--text-secondary); font-size: 13px;">
-          Click here to focus, then press <kbd style="padding: 2px 6px; background: var(--surface-raised); border: 1px solid var(--border-default); border-radius: 4px; font-size: 12px;">Cmd+K</kbd> or <kbd style="padding: 2px 6px; background: var(--surface-raised); border: 1px solid var(--border-default); border-radius: 4px; font-size: 12px;">Ctrl+K</kbd>
+          Click here to focus, then press <kbd style="padding: 2px 6px; background: var(--surface-raised); border: 1px solid var(--border-default); border-radius: var(--radius-sm); font-size: var(--text-sm);">Cmd+K</kbd> or <kbd style="padding: 2px 6px; background: var(--surface-raised); border: 1px solid var(--border-default); border-radius: var(--radius-sm); font-size: var(--text-sm);">Ctrl+K</kbd>
         </p>
         <AppCommandPalette
           v-bind="args"

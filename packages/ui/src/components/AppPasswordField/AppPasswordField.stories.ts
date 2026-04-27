@@ -25,7 +25,7 @@ const meta: Meta<typeof AppPasswordField> = {
       const value = ref(args.modelValue);
       return { args, value };
     },
-    template: `<div style="max-width: 360px; padding: 16px;"><AppPasswordField v-bind="args" v-model="value" /></div>`,
+    template: `<div style="max-width: 360px; padding: var(--space-4);"><AppPasswordField v-bind="args" v-model="value" /></div>`,
   }),
 };
 export default meta;

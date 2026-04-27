@@ -72,9 +72,9 @@ export const VariantsMatrix: Story = {
   render: () => ({
     components: { AppButton },
     template: `
-      <div style="display:flex; flex-direction:column; gap: 16px;">
+      <div style="display:flex; flex-direction:column; gap: var(--space-4);">
         <template v-for="variant in ['primary','secondary','ghost','destructive']" :key="variant">
-          <div style="display:flex; gap: 12px; align-items:center;">
+          <div style="display:flex; gap: var(--space-3); align-items:center;">
             <AppButton :label="variant" :variant="variant" size="sm" />
             <AppButton :label="variant" :variant="variant" size="md" />
             <AppButton :label="variant" :variant="variant" size="lg" />

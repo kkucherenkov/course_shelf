@@ -47,7 +47,7 @@ export const Error: Story = {
     },
     template: `
       <AppCheckbox v-bind="args" aria-invalid="true" aria-describedby="cb-err" />
-      <p id="cb-err" style="color:var(--status-error-fg);font-size:12px;margin-top:4px;">
+      <p id="cb-err" style="color:var(--status-error-fg);font-size:var(--text-sm);margin-top:var(--space-1);">
         You must accept the terms.
       </p>
     `,

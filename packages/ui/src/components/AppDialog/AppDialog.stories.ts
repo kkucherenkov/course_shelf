@@ -38,7 +38,7 @@ export const Default: Story = {
     },
     template: `
       <div>
-        <button @click="open = true" style="padding: 8px 16px; background: var(--brand-accent); color: white; border: none; border-radius: 8px; cursor: pointer;">
+        <button @click="open = true" style="padding: var(--space-2) var(--space-4); background: var(--brand-accent); color: var(--brand-accent-fg); border: none; border-radius: var(--radius-md); cursor: pointer;">
           Open dialog
         </button>
         <AppDialog v-bind="args" :open="open" @update:open="open = $event">
@@ -58,7 +58,7 @@ export const WithDescription: Story = {
     },
     template: `
       <div>
-        <button @click="open = true" style="padding: 8px 16px; background: var(--brand-accent); color: white; border: none; border-radius: 8px; cursor: pointer;">
+        <button @click="open = true" style="padding: var(--space-2) var(--space-4); background: var(--brand-accent); color: var(--brand-accent-fg); border: none; border-radius: var(--radius-md); cursor: pointer;">
           Open dialog
         </button>
         <AppDialog v-bind="args" :open="open" description="This is an optional description that provides context." @update:open="open = $event">
@@ -78,7 +78,7 @@ export const WithFooter: Story = {
     },
     template: `
       <div>
-        <button @click="open = true" style="padding: 8px 16px; background: var(--brand-accent); color: white; border: none; border-radius: 8px; cursor: pointer;">
+        <button @click="open = true" style="padding: var(--space-2) var(--space-4); background: var(--brand-accent); color: var(--brand-accent-fg); border: none; border-radius: var(--radius-md); cursor: pointer;">
           Open dialog
         </button>
         <AppDialog v-bind="args" :open="open" @update:open="open = $event">
@@ -87,7 +87,7 @@ export const WithFooter: Story = {
             <button @click="open = false" style="padding: 6px 14px; border: 1px solid var(--border-default); border-radius: 6px; cursor: pointer; background: transparent;">
               Cancel
             </button>
-            <button @click="open = false" style="padding: 6px 14px; background: var(--brand-accent); color: white; border: none; border-radius: 6px; cursor: pointer;">
+            <button @click="open = false" style="padding: 6px 14px; background: var(--brand-accent); color: var(--brand-accent-fg); border: none; border-radius: 6px; cursor: pointer;">
               Confirm
             </button>
           </template>
@@ -106,7 +106,7 @@ export const SmallSize: Story = {
     },
     template: `
       <div>
-        <button @click="open = true" style="padding: 8px 16px; background: var(--brand-accent); color: white; border: none; border-radius: 8px; cursor: pointer;">
+        <button @click="open = true" style="padding: var(--space-2) var(--space-4); background: var(--brand-accent); color: var(--brand-accent-fg); border: none; border-radius: var(--radius-md); cursor: pointer;">
           Open small dialog
         </button>
         <AppDialog v-bind="args" :open="open" size="sm" title="Small dialog" @update:open="open = $event">
@@ -126,13 +126,13 @@ export const NonDismissible: Story = {
     },
     template: `
       <div>
-        <button @click="open = true" style="padding: 8px 16px; background: var(--brand-accent); color: white; border: none; border-radius: 8px; cursor: pointer;">
+        <button @click="open = true" style="padding: var(--space-2) var(--space-4); background: var(--brand-accent); color: var(--brand-accent-fg); border: none; border-radius: var(--radius-md); cursor: pointer;">
           Open non-dismissible dialog
         </button>
         <AppDialog v-bind="args" :open="open" :dismissible="false" title="Mandatory action" @update:open="open = $event">
           <p>This dialog cannot be dismissed with ESC or backdrop click.</p>
           <template #footer>
-            <button @click="open = false" style="padding: 6px 14px; background: var(--brand-accent); color: white; border: none; border-radius: 6px; cursor: pointer;">
+            <button @click="open = false" style="padding: 6px 14px; background: var(--brand-accent); color: var(--brand-accent-fg); border: none; border-radius: 6px; cursor: pointer;">
               I accept
             </button>
           </template>

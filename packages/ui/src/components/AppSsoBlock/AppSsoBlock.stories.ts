@@ -11,7 +11,7 @@ const meta: Meta<typeof AppSsoBlock> = {
     setup() {
       return { args };
     },
-    template: `<div style="max-width: 360px; padding: 16px;"><AppSsoBlock v-bind="args" /></div>`,
+    template: `<div style="max-width: 360px; padding: var(--space-4);"><AppSsoBlock v-bind="args" /></div>`,
   }),
 };
 export default meta;

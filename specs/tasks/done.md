@@ -2,6 +2,17 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-039 — AppBanner / AppToast / AppAlert (E13-F01-S07)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: three feature commits on `feat/banners-alerts` — `8f4b996` (AppBanner), `65790c4` (AppToast), `7b24087` (AppAlert + barrel). UI tests 410/410 (+54); lint + typecheck + stylelint clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F01-S07.md`
+- Outcome: three notification-surface components covering the bundle CSS contract. `AppBanner` (4 variants, optional title, dismissible) uses `IconCS` for the leading glyph (info / check-circle / alert) and `AppIconButton` for the dismiss control. `AppToast` is the compact transient surface with the colored 8px dot indicator (success/info/error). `AppAlert` is the single-line inline variant for under-the-input validation messages. All three drive only off shipped status tokens (`--success`, `--success-soft`, etc.); no token-name deviations needed.
+- A11y: error variants use `role="alert"` (assertive); other variants use `role="status"` (polite). `AppAlert` is always `role="alert"`. Dismiss buttons carry `aria-label` (overridable, defaults to "Dismiss").
+- Out of scope: toast queue/container with auto-dismiss timing — left for a future story (E13-F01-S08 deals with dialogs which include some toast-adjacent behaviour).
+
 ## T-2026-04-27-038 — AppCard size + hoverable (E13-F01-S04)
 
 - Created: 2026-04-27

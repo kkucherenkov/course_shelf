@@ -39,13 +39,7 @@
 </script>
 
 <template>
-  <AppField
-    :label="label"
-    :help="help"
-    :error="error"
-    :required="required"
-    :size="size"
-  >
+  <AppField :label="label" :help="help" :error="error" :required="required" :size="size">
     <template #default="slotAttrs">
       <AppInput
         v-bind="slotAttrs"

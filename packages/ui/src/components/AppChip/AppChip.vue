@@ -96,16 +96,8 @@
     :aria-disabled="disabled ? 'true' : undefined"
     @click="handleClick"
   >
-    <AppIcon
-      v-if="icon"
-      :name="icon"
-      :size="iconSize"
-      class="app-chip__icon"
-    />
-    <span
-      v-if="$slots['default'] || label"
-      class="app-chip__label"
-    >
+    <AppIcon v-if="icon" :name="icon" :size="iconSize" class="app-chip__icon" />
+    <span v-if="$slots['default'] || label" class="app-chip__label">
       <slot>{{ label }}</slot>
     </span>
     <span
@@ -118,10 +110,7 @@
       @keydown.enter.prevent="handleDismiss"
       @keydown.space.prevent="handleDismiss"
     >
-      <AppIcon
-        name="i-lucide-x"
-        :size="iconSize"
-      />
+      <AppIcon name="i-lucide-x" :size="iconSize" />
     </span>
   </component>
 </template>

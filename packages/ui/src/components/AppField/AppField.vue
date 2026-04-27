@@ -46,19 +46,10 @@
     <div class="app-field__control">
       <slot v-bind="slotAttrs" />
     </div>
-    <p
-      v-if="error"
-      :id="descId"
-      class="app-field__error"
-      role="alert"
-    >
+    <p v-if="error" :id="descId" class="app-field__error" role="alert">
       {{ error }}
     </p>
-    <p
-      v-else-if="help"
-      :id="descId"
-      class="app-field__help"
-    >
+    <p v-else-if="help" :id="descId" class="app-field__help">
       {{ help }}
     </p>
   </div>

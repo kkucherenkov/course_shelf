@@ -73,11 +73,7 @@
 <template>
   <!-- When attrs carries an `id` from AppField, prefer it over the internal switchId
        so the <label for="..."> association remains consistent. -->
-  <label
-    v-if="label"
-    :class="rootClasses"
-    :for="effectiveSwitchId"
-  >
+  <label v-if="label" :class="rootClasses" :for="effectiveSwitchId">
     <!-- v-bind="attrs" lands id / aria-describedby / aria-invalid / aria-required
          from AppField's slot contract onto the interactive element, not the label. -->
     <button

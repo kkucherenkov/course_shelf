@@ -59,11 +59,7 @@
       @keydown="onKeydown"
     >
       <!-- Visual: checkmark when checked, dash when indeterminate. -->
-      <svg
-        v-if="modelValue && !indeterminate"
-        viewBox="0 0 16 16"
-        aria-hidden="true"
-      >
+      <svg v-if="modelValue && !indeterminate" viewBox="0 0 16 16" aria-hidden="true">
         <path
           d="M3 8.5l3 3 7-7"
           fill="none"
@@ -73,11 +69,7 @@
           stroke-linejoin="round"
         />
       </svg>
-      <svg
-        v-else-if="indeterminate"
-        viewBox="0 0 16 16"
-        aria-hidden="true"
-      >
+      <svg v-else-if="indeterminate" viewBox="0 0 16 16" aria-hidden="true">
         <path
           d="M3.5 8h9"
           fill="none"
@@ -87,10 +79,7 @@
         />
       </svg>
     </button>
-    <span
-      v-if="label || $slots['default']"
-      class="app-checkbox__label"
-    >
+    <span v-if="label || $slots['default']" class="app-checkbox__label">
       <slot>{{ label }}</slot>
     </span>
   </label>

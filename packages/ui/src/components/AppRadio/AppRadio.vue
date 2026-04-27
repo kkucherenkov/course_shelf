@@ -89,16 +89,9 @@
       @click="select"
       @keydown="onKeydown"
     >
-      <span
-        v-if="checked"
-        class="app-radio__dot"
-        aria-hidden="true"
-      />
+      <span v-if="checked" class="app-radio__dot" aria-hidden="true" />
     </button>
-    <span
-      v-if="label || $slots['default']"
-      class="app-radio__label"
-    >
+    <span v-if="label || $slots['default']" class="app-radio__label">
       <slot>{{ label }}</slot>
     </span>
   </label>

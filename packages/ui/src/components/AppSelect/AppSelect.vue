@@ -82,12 +82,7 @@
     >
       <!-- Placeholder sits as a disabled, hidden option so it shows on the
            trigger until the user makes a real choice. -->
-      <option
-        v-if="placeholder !== undefined"
-        :value="PLACEHOLDER_VALUE"
-        disabled
-        hidden
-      >
+      <option v-if="placeholder !== undefined" :value="PLACEHOLDER_VALUE" disabled hidden>
         {{ placeholder }}
       </option>
       <option
@@ -102,16 +97,8 @@
     <!-- Decorative caret — real chevron token would live in tokens.generated.
          Uses currentColor so it tracks the text colour, stays out of the a11y
          tree via aria-hidden. -->
-    <span
-      class="app-select__chevron"
-      aria-hidden="true"
-    >
-      <svg
-        viewBox="0 0 12 12"
-        width="12"
-        height="12"
-        fill="none"
-      >
+    <span class="app-select__chevron" aria-hidden="true">
+      <svg viewBox="0 0 12 12" width="12" height="12" fill="none">
         <path
           d="M3 4.5l3 3 3-3"
           stroke="currentColor"

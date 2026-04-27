@@ -49,24 +49,12 @@
 </script>
 
 <template>
-  <AppField
-    :label="label"
-    :help="help"
-    :error="error"
-    :required="required"
-    :size="size"
-  >
+  <AppField :label="label" :help="help" :error="error" :required="required" :size="size">
     <template #default="slotAttrs">
       <div class="app-search-field__wrapper">
         <!-- Leading search icon — decorative -->
-        <span
-          class="app-search-field__icon-leading"
-          aria-hidden="true"
-        >
-          <IconCS
-            name="search"
-            :size="iconSize"
-          />
+        <span class="app-search-field__icon-leading" aria-hidden="true">
+          <IconCS name="search" :size="iconSize" />
         </span>
         <AppInput
           v-bind="slotAttrs"
@@ -80,10 +68,7 @@
           @update:model-value="$emit('update:modelValue', $event)"
         />
         <!-- Trailing clear button — only when there is a value -->
-        <span
-          v-if="hasValue"
-          class="app-search-field__clear"
-        >
+        <span v-if="hasValue" class="app-search-field__clear">
           <!-- ariaLabel is a component prop (exempted from kebab rule in eslint.config.mjs). -->
           <AppIconButton
             name="x"

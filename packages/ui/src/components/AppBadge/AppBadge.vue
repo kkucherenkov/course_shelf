@@ -46,18 +46,8 @@
 </script>
 
 <template>
-  <UBadge
-    :color="color"
-    :variant="variant"
-    :size="size"
-    :class="rootClasses"
-  >
-    <AppIcon
-      v-if="icon"
-      :name="icon"
-      :size="iconSize"
-      class="app-badge__icon"
-    />
+  <UBadge :color="color" :variant="variant" :size="size" :class="rootClasses">
+    <AppIcon v-if="icon" :name="icon" :size="iconSize" class="app-badge__icon" />
     <span class="app-badge__label">
       <slot>{{ label }}</slot>
     </span>

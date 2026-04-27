@@ -13,16 +13,9 @@
 </script>
 
 <template>
-  <label
-    :for="$props.for"
-    :class="['app-label', `app-label--${size}`]"
-  >
+  <label :for="$props.for" :class="['app-label', `app-label--${size}`]">
     <span class="app-label__text">{{ text }}</span>
-    <span
-      v-if="required"
-      class="app-label__required"
-      aria-hidden="true"
-    >*</span>
+    <span v-if="required" class="app-label__required" aria-hidden="true">*</span>
   </label>
 </template>
 

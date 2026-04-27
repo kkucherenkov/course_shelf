@@ -84,13 +84,7 @@
 </script>
 
 <template>
-  <AppField
-    :label="label"
-    :help="help"
-    :error="error"
-    :required="required"
-    :size="size"
-  >
+  <AppField :label="label" :help="help" :error="error" :required="required" :size="size">
     <template #default="slotAttrs">
       <div class="app-number-field__wrapper">
         <!-- Decrement stepper — ariaLabel is a component prop (exempted from kebab rule).

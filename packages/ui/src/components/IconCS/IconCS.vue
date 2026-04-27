@@ -100,28 +100,12 @@
     <title v-if="!decorative">{{ title }}</title>
 
     <!-- play -->
-    <path
-      v-if="name === 'play'"
-      d="M7 5l12 7-12 7V5z"
-      :fill="fill ? 'currentColor' : 'none'"
-    />
+    <path v-if="name === 'play'" d="M7 5l12 7-12 7V5z" :fill="fill ? 'currentColor' : 'none'" />
 
     <!-- pause -->
     <template v-else-if="name === 'pause'">
-      <rect
-        x="6"
-        y="5"
-        width="4"
-        height="14"
-        rx="1"
-      />
-      <rect
-        x="14"
-        y="5"
-        width="4"
-        height="14"
-        rx="1"
-      />
+      <rect x="6" y="5" width="4" height="14" rx="1" />
+      <rect x="14" y="5" width="4" height="14" rx="1" />
     </template>
 
     <!-- next -->
@@ -144,78 +128,40 @@
 
     <!-- library -->
     <template v-else-if="name === 'library'">
-      <rect
-        x="3"
-        y="4"
-        width="4"
-        height="16"
-        rx="1"
-      />
-      <rect
-        x="9"
-        y="4"
-        width="4"
-        height="16"
-        rx="1"
-      />
+      <rect x="3" y="4" width="4" height="16" rx="1" />
+      <rect x="9" y="4" width="4" height="16" rx="1" />
       <path d="M16 5l4 14" />
     </template>
 
     <!-- search -->
     <template v-else-if="name === 'search'">
-      <circle
-        cx="11"
-        cy="11"
-        r="6"
-      />
+      <circle cx="11" cy="11" r="6" />
       <path d="M16 16l4 4" />
     </template>
 
     <!-- settings -->
     <template v-else-if="name === 'settings'">
-      <circle
-        cx="12"
-        cy="12"
-        r="3"
-      />
+      <circle cx="12" cy="12" r="3" />
       <path
         d="M19 12c0 .5-.05 1-.13 1.5l2 1.5-2 3.5-2.4-1a7 7 0 01-2.6 1.5L13.5 22h-3l-.4-3a7 7 0 01-2.6-1.5l-2.4 1-2-3.5 2-1.5A7 7 0 015 12c0-.5.05-1 .13-1.5l-2-1.5 2-3.5 2.4 1A7 7 0 0110 5L10.5 2h3l.4 3a7 7 0 012.6 1.5l2.4-1 2 3.5-2 1.5c.08.5.13 1 .13 1.5z"
       />
     </template>
 
     <!-- check -->
-    <path
-      v-else-if="name === 'check'"
-      d="M5 12l5 5 9-11"
-    />
+    <path v-else-if="name === 'check'" d="M5 12l5 5 9-11" />
 
     <!-- check-circle -->
     <template v-else-if="name === 'check-circle'">
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-      />
+      <circle cx="12" cy="12" r="9" />
       <path d="M8 12l3 3 5-6" />
     </template>
 
     <!-- circle -->
-    <circle
-      v-else-if="name === 'circle'"
-      cx="12"
-      cy="12"
-      r="9"
-    />
+    <circle v-else-if="name === 'circle'" cx="12" cy="12" r="9" />
 
     <!-- lock -->
     <template v-else-if="name === 'lock'">
-      <rect
-        x="5"
-        y="11"
-        width="14"
-        height="10"
-        rx="2"
-      />
+      <rect x="5" y="11" width="14" height="10" rx="2" />
       <path d="M8 11V8a4 4 0 018 0v3" />
     </template>
 
@@ -227,10 +173,7 @@
     </template>
 
     <!-- cloud -->
-    <path
-      v-else-if="name === 'cloud'"
-      d="M7 18a4 4 0 010-8 5 5 0 019.6-1.5A4 4 0 0117 18H7z"
-    />
+    <path v-else-if="name === 'cloud'" d="M7 18a4 4 0 010-8 5 5 0 019.6-1.5A4 4 0 0117 18H7z" />
 
     <!-- cloud-down -->
     <template v-else-if="name === 'cloud-down'">
@@ -278,91 +221,52 @@
 
     <!-- user -->
     <template v-else-if="name === 'user'">
-      <circle
-        cx="12"
-        cy="8"
-        r="4"
-      />
+      <circle cx="12" cy="8" r="4" />
       <path d="M4 21a8 8 0 0116 0" />
     </template>
 
     <!-- users -->
     <template v-else-if="name === 'users'">
-      <circle
-        cx="9"
-        cy="8"
-        r="4"
-      />
+      <circle cx="9" cy="8" r="4" />
       <path d="M2 21a7 7 0 0114 0" />
       <path d="M16 3a4 4 0 010 8" />
       <path d="M22 21a7 7 0 00-7-7" />
     </template>
 
     <!-- plus -->
-    <path
-      v-else-if="name === 'plus'"
-      d="M12 5v14M5 12h14"
-    />
+    <path v-else-if="name === 'plus'" d="M12 5v14M5 12h14" />
 
     <!-- minus -->
-    <path
-      v-else-if="name === 'minus'"
-      d="M5 12h14"
-    />
+    <path v-else-if="name === 'minus'" d="M5 12h14" />
 
     <!-- x -->
-    <path
-      v-else-if="name === 'x'"
-      d="M6 6l12 12M18 6L6 18"
-    />
+    <path v-else-if="name === 'x'" d="M6 6l12 12M18 6L6 18" />
 
     <!-- chevron-right -->
-    <path
-      v-else-if="name === 'chevron-right'"
-      d="M9 5l7 7-7 7"
-    />
+    <path v-else-if="name === 'chevron-right'" d="M9 5l7 7-7 7" />
 
     <!-- chevron-left -->
-    <path
-      v-else-if="name === 'chevron-left'"
-      d="M15 5l-7 7 7 7"
-    />
+    <path v-else-if="name === 'chevron-left'" d="M15 5l-7 7 7 7" />
 
     <!-- chevron-down -->
-    <path
-      v-else-if="name === 'chevron-down'"
-      d="M5 9l7 7 7-7"
-    />
+    <path v-else-if="name === 'chevron-down'" d="M5 9l7 7 7-7" />
 
     <!-- chevron-up -->
-    <path
-      v-else-if="name === 'chevron-up'"
-      d="M5 15l7-7 7 7"
-    />
+    <path v-else-if="name === 'chevron-up'" d="M5 15l7-7 7 7" />
 
     <!-- arrow-right -->
-    <path
-      v-else-if="name === 'arrow-right'"
-      d="M5 12h14M13 6l6 6-6 6"
-    />
+    <path v-else-if="name === 'arrow-right'" d="M5 12h14M13 6l6 6-6 6" />
 
     <!-- sun -->
     <template v-else-if="name === 'sun'">
-      <circle
-        cx="12"
-        cy="12"
-        r="4"
-      />
+      <circle cx="12" cy="12" r="4" />
       <path
         d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"
       />
     </template>
 
     <!-- moon -->
-    <path
-      v-else-if="name === 'moon'"
-      d="M20 14a8 8 0 01-10-10 8 8 0 1010 10z"
-    />
+    <path v-else-if="name === 'moon'" d="M20 14a8 8 0 01-10-10 8 8 0 1010 10z" />
 
     <!-- volume -->
     <template v-else-if="name === 'volume'">
@@ -378,39 +282,17 @@
 
     <!-- subtitles -->
     <template v-else-if="name === 'subtitles'">
-      <rect
-        x="3"
-        y="5"
-        width="18"
-        height="14"
-        rx="2"
-      />
+      <rect x="3" y="5" width="18" height="14" rx="2" />
       <path d="M7 14h4M13 14h4M7 11h2M11 11h6" />
     </template>
 
     <!-- fullscreen -->
-    <path
-      v-else-if="name === 'fullscreen'"
-      d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"
-    />
+    <path v-else-if="name === 'fullscreen'" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
 
     <!-- pip -->
     <template v-else-if="name === 'pip'">
-      <rect
-        x="3"
-        y="5"
-        width="18"
-        height="14"
-        rx="2"
-      />
-      <rect
-        x="12"
-        y="11"
-        width="7"
-        height="6"
-        rx="1"
-        fill="currentColor"
-      />
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <rect x="12" y="11" width="7" height="6" rx="1" fill="currentColor" />
     </template>
 
     <!-- speed -->
@@ -422,63 +304,21 @@
     <!-- list -->
     <template v-else-if="name === 'list'">
       <path d="M8 6h13M8 12h13M8 18h13" />
-      <circle
-        cx="4"
-        cy="6"
-        r="1"
-        fill="currentColor"
-      />
-      <circle
-        cx="4"
-        cy="12"
-        r="1"
-        fill="currentColor"
-      />
-      <circle
-        cx="4"
-        cy="18"
-        r="1"
-        fill="currentColor"
-      />
+      <circle cx="4" cy="6" r="1" fill="currentColor" />
+      <circle cx="4" cy="12" r="1" fill="currentColor" />
+      <circle cx="4" cy="18" r="1" fill="currentColor" />
     </template>
 
     <!-- grid -->
     <template v-else-if="name === 'grid'">
-      <rect
-        x="4"
-        y="4"
-        width="7"
-        height="7"
-        rx="1"
-      />
-      <rect
-        x="13"
-        y="4"
-        width="7"
-        height="7"
-        rx="1"
-      />
-      <rect
-        x="4"
-        y="13"
-        width="7"
-        height="7"
-        rx="1"
-      />
-      <rect
-        x="13"
-        y="13"
-        width="7"
-        height="7"
-        rx="1"
-      />
+      <rect x="4" y="4" width="7" height="7" rx="1" />
+      <rect x="13" y="4" width="7" height="7" rx="1" />
+      <rect x="4" y="13" width="7" height="7" rx="1" />
+      <rect x="13" y="13" width="7" height="7" rx="1" />
     </template>
 
     <!-- filter -->
-    <path
-      v-else-if="name === 'filter'"
-      d="M4 5h16l-6 8v6l-4-2v-4L4 5z"
-    />
+    <path v-else-if="name === 'filter'" d="M4 5h16l-6 8v6l-4-2v-4L4 5z" />
 
     <!-- sort -->
     <template v-else-if="name === 'sort'">
@@ -489,11 +329,7 @@
     <!-- eye -->
     <template v-else-if="name === 'eye'">
       <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" />
-      <circle
-        cx="12"
-        cy="12"
-        r="3"
-      />
+      <circle cx="12" cy="12" r="3" />
     </template>
 
     <!-- eye-off -->
@@ -507,58 +343,31 @@
 
     <!-- mail -->
     <template v-else-if="name === 'mail'">
-      <rect
-        x="3"
-        y="5"
-        width="18"
-        height="14"
-        rx="2"
-      />
+      <rect x="3" y="5" width="18" height="14" rx="2" />
       <path d="M3 7l9 7 9-7" />
     </template>
 
     <!-- key -->
     <template v-else-if="name === 'key'">
-      <circle
-        cx="8"
-        cy="14"
-        r="4"
-      />
+      <circle cx="8" cy="14" r="4" />
       <path d="M11 12l9-9M16 7l3 3" />
     </template>
 
     <!-- shield -->
-    <path
-      v-else-if="name === 'shield'"
-      d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"
-    />
+    <path v-else-if="name === 'shield'" d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" />
 
     <!-- alert -->
     <template v-else-if="name === 'alert'">
       <path d="M12 4l10 17H2L12 4z" />
       <path d="M12 10v5" />
-      <circle
-        cx="12"
-        cy="18"
-        r="0.5"
-        fill="currentColor"
-      />
+      <circle cx="12" cy="18" r="0.5" fill="currentColor" />
     </template>
 
     <!-- info -->
     <template v-else-if="name === 'info'">
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-      />
+      <circle cx="12" cy="12" r="9" />
       <path d="M12 11v5" />
-      <circle
-        cx="12"
-        cy="8"
-        r="0.5"
-        fill="currentColor"
-      />
+      <circle cx="12" cy="8" r="0.5" fill="currentColor" />
     </template>
 
     <!-- wifi-off -->
@@ -566,12 +375,7 @@
       <path d="M3 3l18 18" />
       <path d="M5 12a10 10 0 0112-1" />
       <path d="M8 16a5 5 0 016-1" />
-      <circle
-        cx="12"
-        cy="20"
-        r="0.5"
-        fill="currentColor"
-      />
+      <circle cx="12" cy="20" r="0.5" fill="currentColor" />
     </template>
 
     <!-- refresh -->
@@ -596,13 +400,7 @@
 
     <!-- copy -->
     <template v-else-if="name === 'copy'">
-      <rect
-        x="8"
-        y="8"
-        width="12"
-        height="12"
-        rx="2"
-      />
+      <rect x="8" y="8" width="12" height="12" rx="2" />
       <path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3" />
     </template>
 
@@ -614,114 +412,49 @@
     </template>
 
     <!-- menu -->
-    <path
-      v-else-if="name === 'menu'"
-      d="M4 6h16M4 12h16M4 18h16"
-    />
+    <path v-else-if="name === 'menu'" d="M4 6h16M4 12h16M4 18h16" />
 
     <!-- more -->
     <template v-else-if="name === 'more'">
-      <circle
-        cx="6"
-        cy="12"
-        r="1.2"
-        fill="currentColor"
-        stroke="none"
-      />
-      <circle
-        cx="12"
-        cy="12"
-        r="1.2"
-        fill="currentColor"
-        stroke="none"
-      />
-      <circle
-        cx="18"
-        cy="12"
-        r="1.2"
-        fill="currentColor"
-        stroke="none"
-      />
+      <circle cx="6" cy="12" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="12" r="1.2" fill="currentColor" stroke="none" />
     </template>
 
     <!-- clock -->
     <template v-else-if="name === 'clock'">
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-      />
+      <circle cx="12" cy="12" r="9" />
       <path d="M12 7v5l3 2" />
     </template>
 
     <!-- calendar -->
     <template v-else-if="name === 'calendar'">
-      <rect
-        x="3"
-        y="5"
-        width="18"
-        height="16"
-        rx="2"
-      />
+      <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M3 10h18M8 3v4M16 3v4" />
     </template>
 
     <!-- at -->
     <template v-else-if="name === 'at'">
-      <circle
-        cx="12"
-        cy="12"
-        r="4"
-      />
+      <circle cx="12" cy="12" r="4" />
       <path d="M16 8v5a3 3 0 006 0v-1a9 9 0 10-3.5 7" />
     </template>
 
     <!-- sliders -->
     <template v-else-if="name === 'sliders'">
       <path d="M4 6h10M18 6h2M4 18h2M10 18h10M4 12h6M14 12h6" />
-      <circle
-        cx="16"
-        cy="6"
-        r="2"
-      />
-      <circle
-        cx="8"
-        cy="18"
-        r="2"
-      />
-      <circle
-        cx="12"
-        cy="12"
-        r="2"
-      />
+      <circle cx="16" cy="6" r="2" />
+      <circle cx="8" cy="18" r="2" />
+      <circle cx="12" cy="12" r="2" />
     </template>
 
     <!-- arrow-left -->
-    <path
-      v-else-if="name === 'arrow-left'"
-      d="M19 12H5M11 18l-6-6 6-6"
-    />
+    <path v-else-if="name === 'arrow-left'" d="M19 12H5M11 18l-6-6 6-6" />
 
     <!-- more-h -->
     <template v-else-if="name === 'more-h'">
-      <circle
-        cx="6"
-        cy="12"
-        r="1.2"
-        fill="currentColor"
-      />
-      <circle
-        cx="12"
-        cy="12"
-        r="1.2"
-        fill="currentColor"
-      />
-      <circle
-        cx="18"
-        cy="12"
-        r="1.2"
-        fill="currentColor"
-      />
+      <circle cx="6" cy="12" r="1.2" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+      <circle cx="18" cy="12" r="1.2" fill="currentColor" />
     </template>
 
     <!-- corner-down-right -->
@@ -732,26 +465,10 @@
 
     <!-- hard-drive -->
     <template v-else-if="name === 'hard-drive'">
-      <rect
-        x="3"
-        y="13"
-        width="18"
-        height="7"
-        rx="2"
-      />
+      <rect x="3" y="13" width="18" height="7" rx="2" />
       <path d="M5 13l3-7h8l3 7" />
-      <circle
-        cx="7.5"
-        cy="16.5"
-        r="0.6"
-        fill="currentColor"
-      />
-      <circle
-        cx="11"
-        cy="16.5"
-        r="0.6"
-        fill="currentColor"
-      />
+      <circle cx="7.5" cy="16.5" r="0.6" fill="currentColor" />
+      <circle cx="11" cy="16.5" r="0.6" fill="currentColor" />
     </template>
 
     <!-- github -->
@@ -761,12 +478,7 @@
     />
 
     <!-- banner (also the default fallback in the JSX) -->
-    <circle
-      v-else-if="name === 'banner'"
-      cx="12"
-      cy="12"
-      r="9"
-    />
+    <circle v-else-if="name === 'banner'" cx="12" cy="12" r="9" />
   </svg>
 </template>
 

@@ -41,3 +41,5 @@ export { AppProgressBadge } from './components/AppProgressBadge';
 export { AppPasswordField } from './components/AppPasswordField';
 export { CoursePosterCard, CourseWideCard, CourseCompactRow } from './components/CourseCard';
 export type { Course, CourseAccent, CourseState, CourseRealState } from './components/CourseCard';
+export { AppNavigationShell } from './components/AppNavigationShell';
+export type { NavItem, ShellUser } from './components/AppNavigationShell';

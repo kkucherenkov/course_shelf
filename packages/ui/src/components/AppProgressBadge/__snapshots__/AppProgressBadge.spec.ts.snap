@@ -1,0 +1,104 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AppProgressBadge > renders bar × completed with the right modifier classes 1`] = `
+"<!-- ring -->
+<!-- bar -->
+<div data-v-9ddce9d4="" class="app-progress-badge app-progress-badge--bar app-progress-badge--completed" role="img" aria-label="100%">
+  <div data-v-9ddce9d4="" class="app-progress-badge__bar-track">
+    <div data-v-9ddce9d4="" class="app-progress-badge__bar-fill" style="width: 100%;"></div>
+  </div><span data-v-9ddce9d4="" class="app-progress-badge__bar-pct">100%</span>
+</div>"
+`;
+
+exports[`AppProgressBadge > renders bar × in-progress with the right modifier classes 1`] = `
+"<!-- ring -->
+<!-- bar -->
+<div data-v-9ddce9d4="" class="app-progress-badge app-progress-badge--bar app-progress-badge--in-progress" role="img" aria-label="33%">
+  <div data-v-9ddce9d4="" class="app-progress-badge__bar-track">
+    <div data-v-9ddce9d4="" class="app-progress-badge__bar-fill" style="width: 33%;"></div>
+  </div><span data-v-9ddce9d4="" class="app-progress-badge__bar-pct">33%</span>
+</div>"
+`;
+
+exports[`AppProgressBadge > renders bar × locked with the right modifier classes 1`] = `
+"<!-- ring -->
+<!-- bar -->
+<div data-v-9ddce9d4="" class="app-progress-badge app-progress-badge--bar app-progress-badge--locked" role="img" aria-label="0%">
+  <div data-v-9ddce9d4="" class="app-progress-badge__bar-track">
+    <div data-v-9ddce9d4="" class="app-progress-badge__bar-fill" style="width: 0%;"></div>
+  </div><span data-v-9ddce9d4="" class="app-progress-badge__bar-pct">0%</span>
+</div>"
+`;
+
+exports[`AppProgressBadge > renders bar × not-started with the right modifier classes 1`] = `
+"<!-- ring -->
+<!-- bar -->
+<div data-v-9ddce9d4="" class="app-progress-badge app-progress-badge--bar app-progress-badge--not-started" role="img" aria-label="0%">
+  <div data-v-9ddce9d4="" class="app-progress-badge__bar-track">
+    <div data-v-9ddce9d4="" class="app-progress-badge__bar-fill" style="width: 0%;"></div>
+  </div><span data-v-9ddce9d4="" class="app-progress-badge__bar-pct">0%</span>
+</div>"
+`;
+
+exports[`AppProgressBadge > renders pill × completed with the right modifier classes 1`] = `
+"<!-- ring -->
+<!-- pill (default) -->
+<span data-v-9ddce9d4="" class="app-progress-badge app-progress-badge--pill app-progress-badge--completed" data-state="completed"><svg data-v-6f4b1ecb="" data-v-9ddce9d4="" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs"><!--v-if--><!-- play --><!-- check --><path data-v-6f4b1ecb="" d="M5 12l5 5 9-11"></path></svg> Done </span>"
+`;
+
+exports[`AppProgressBadge > renders pill × in-progress with the right modifier classes 1`] = `
+"<!-- ring -->
+<!-- pill (default) -->
+<span data-v-9ddce9d4="" class="app-progress-badge app-progress-badge--pill app-progress-badge--in-progress" data-state="in-progress">4 of 12</span>"
+`;
+
+exports[`AppProgressBadge > renders pill × locked with the right modifier classes 1`] = `
+"<!-- ring -->
+<!-- pill (default) -->
+<span data-v-9ddce9d4="" class="app-progress-badge app-progress-badge--pill app-progress-badge--locked" data-state="locked"><svg data-v-6f4b1ecb="" data-v-9ddce9d4="" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs"><!--v-if--><!-- play --><!-- lock --><rect data-v-6f4b1ecb="" x="5" y="11" width="14" height="10" rx="2"></rect><path data-v-6f4b1ecb="" d="M8 11V8a4 4 0 018 0v3"></path></svg> Locked </span>"
+`;
+
+exports[`AppProgressBadge > renders pill × not-started with the right modifier classes 1`] = `
+"<!-- ring -->
+<!-- pill (default) -->
+<span data-v-9ddce9d4="" class="app-progress-badge app-progress-badge--pill app-progress-badge--not-started" data-state="not-started">—</span>"
+`;
+
+exports[`AppProgressBadge > renders ring × completed with the right modifier classes 1`] = `
+"<!-- ring -->
+<div data-v-9ddce9d4="" class="app-progress-badge app-progress-badge--ring app-progress-badge--completed" style="background: conic-gradient(var(--brand-accent) 100%, var(--surface-overlay) 0);" role="img" aria-label="100%">
+  <div data-v-9ddce9d4="" class="app-progress-badge__ring-inner"><svg data-v-6f4b1ecb="" data-v-9ddce9d4="" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+      <!--v-if-->
+      <!-- play -->
+      <!-- check -->
+      <path data-v-6f4b1ecb="" d="M5 12l5 5 9-11"></path>
+    </svg></div>
+</div>"
+`;
+
+exports[`AppProgressBadge > renders ring × in-progress with the right modifier classes 1`] = `
+"<!-- ring -->
+<div data-v-9ddce9d4="" class="app-progress-badge app-progress-badge--ring app-progress-badge--in-progress" style="background: conic-gradient(var(--brand-accent) 33%, var(--surface-overlay) 0);" role="img" aria-label="33%">
+  <div data-v-9ddce9d4="" class="app-progress-badge__ring-inner"><span data-v-9ddce9d4="" class="app-progress-badge__ring-pct">33%</span></div>
+</div>"
+`;
+
+exports[`AppProgressBadge > renders ring × locked with the right modifier classes 1`] = `
+"<!-- ring -->
+<div data-v-9ddce9d4="" class="app-progress-badge app-progress-badge--ring app-progress-badge--locked" style="background: var(--surface-overlay);" role="img" aria-label="0%">
+  <div data-v-9ddce9d4="" class="app-progress-badge__ring-inner"><svg data-v-6f4b1ecb="" data-v-9ddce9d4="" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+      <!--v-if-->
+      <!-- play -->
+      <!-- lock -->
+      <rect data-v-6f4b1ecb="" x="5" y="11" width="14" height="10" rx="2"></rect>
+      <path data-v-6f4b1ecb="" d="M8 11V8a4 4 0 018 0v3"></path>
+    </svg></div>
+</div>"
+`;
+
+exports[`AppProgressBadge > renders ring × not-started with the right modifier classes 1`] = `
+"<!-- ring -->
+<div data-v-9ddce9d4="" class="app-progress-badge app-progress-badge--ring app-progress-badge--not-started" style="background: conic-gradient(var(--brand-accent) 0%, var(--surface-overlay) 0);" role="img" aria-label="0%">
+  <div data-v-9ddce9d4="" class="app-progress-badge__ring-inner"><span data-v-9ddce9d4="" class="app-progress-badge__ring-pct">0%</span></div>
+</div>"
+`;

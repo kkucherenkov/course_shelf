@@ -1,3 +1,7 @@
+export { AppDialog } from './components/AppDialog';
+export { AppCommandPalette } from './components/AppCommandPalette';
+export type { Command } from './components/AppCommandPalette';
+export { AppAvatar } from './components/AppAvatar';
 export { AppButton } from './components/AppButton';
 export { AppInput } from './components/AppInput';
 export { AppTextarea } from './components/AppTextarea';

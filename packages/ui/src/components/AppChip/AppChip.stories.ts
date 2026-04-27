@@ -2,8 +2,7 @@ import AppChip from './AppChip.vue';
 
 import type { Meta, StoryObj } from '@storybook/vue3';
 
-const COLORS = ['primary', 'neutral', 'success', 'warning', 'error', 'info'] as const;
-const VARIANTS = ['solid', 'soft', 'subtle', 'outline'] as const;
+const VARIANTS = ['default', 'primary', 'success', 'warning', 'error', 'info'] as const;
 const SIZES = ['sm', 'md', 'lg'] as const;
 
 const meta: Meta<typeof AppChip> = {
@@ -13,14 +12,14 @@ const meta: Meta<typeof AppChip> = {
   args: { label: 'Chip' },
   argTypes: {
     label: { control: 'text' },
-    color: { control: 'select', options: COLORS },
     variant: { control: 'select', options: VARIANTS },
     size: { control: 'select', options: SIZES },
     icon: {
-      control: 'text',
-      description: 'Optional iconify name (e.g. `i-lucide-check`) rendered on the leading side.',
+      control: 'select',
+      options: [undefined, 'check', 'check-circle', 'info', 'alert', 'clock', 'user'],
+      description: 'Optional IconCS name rendered on the leading side.',
     },
-    dismissible: { control: 'boolean' },
+    removable: { control: 'boolean' },
     selected: { control: 'boolean' },
     disabled: { control: 'boolean' },
   },
@@ -32,38 +31,24 @@ type Story = StoryObj<typeof AppChip>;
 
 export const Default: Story = {};
 
-export const AllColors: Story = {
-  render: (args) => ({
-    components: { AppChip },
-    setup: () => ({ args, colors: COLORS }),
-    template: `
-      <div style="display:grid; grid-template-columns: repeat(3, auto); gap: var(--space-4); align-items:center; justify-content:start;">
-        <AppChip v-for="c in colors" :key="c" v-bind="args" :color="c" :label="c" />
-      </div>
-    `,
-  }),
-};
-
 export const AllVariants: Story = {
   render: (args) => ({
     components: { AppChip },
-    setup: () => ({ args, colors: COLORS, variants: VARIANTS }),
+    setup: () => ({ args, variants: VARIANTS }),
     template: `
-      <div style="display:grid; grid-template-columns: repeat(6, auto); gap: var(--space-4); align-items:center; justify-content:start;">
-        <template v-for="v in variants" :key="v">
-          <AppChip v-for="c in colors" :key="c + v" v-bind="args" :color="c" :variant="v" :label="c" />
-        </template>
+      <div style="display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center;">
+        <AppChip v-for="v in variants" :key="v" v-bind="args" :variant="v" :label="v" />
       </div>
     `,
   }),
 };
 
-export const Sizes: Story = {
+export const AllSizes: Story = {
   render: (args) => ({
     components: { AppChip },
     setup: () => ({ args, sizes: SIZES }),
     template: `
-      <div style="display:flex; gap: var(--space-4); align-items:center;">
+      <div style="display: flex; gap: var(--space-4); align-items: center;">
         <AppChip v-for="s in sizes" :key="s" v-bind="args" :size="s" :label="s" />
       </div>
     `,
@@ -72,18 +57,16 @@ export const Sizes: Story = {
 
 export const WithIcon: Story = {
   args: {
-    icon: 'i-lucide-check',
-    color: 'success',
-    variant: 'soft',
+    icon: 'check',
+    variant: 'success',
     label: 'Verified',
   },
 };
 
-export const Dismissible: Story = {
+export const Removable: Story = {
   args: {
-    dismissible: true,
-    color: 'primary',
-    variant: 'soft',
+    removable: true,
+    variant: 'primary',
     label: 'Filter: In-progress',
   },
 };
@@ -91,8 +74,7 @@ export const Dismissible: Story = {
 export const Selected: Story = {
   args: {
     selected: true,
-    color: 'primary',
-    variant: 'soft',
+    variant: 'primary',
     label: 'Picked',
   },
 };
@@ -100,8 +82,30 @@ export const Selected: Story = {
 export const Disabled: Story = {
   args: {
     disabled: true,
-    color: 'neutral',
-    variant: 'soft',
+    variant: 'default',
     label: 'Unavailable',
   },
+};
+
+export const AllVariantsWithIcon: Story = {
+  render: (args) => ({
+    components: { AppChip },
+    setup: () => ({
+      args,
+      variants: VARIANTS,
+      icons: ['info', 'check-circle', 'check', 'alert', 'alert', 'info'],
+    }),
+    template: `
+      <div style="display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center;">
+        <AppChip
+          v-for="(v, i) in variants"
+          :key="v"
+          v-bind="args"
+          :variant="v"
+          :icon="icons[i]"
+          :label="v"
+        />
+      </div>
+    `,
+  }),
 };

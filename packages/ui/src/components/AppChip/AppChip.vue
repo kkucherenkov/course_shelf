@@ -2,21 +2,18 @@
   import { computed, resolveComponent } from 'vue';
   import type { RouteLocationRaw } from 'vue-router';
 
-  import AppIcon from '../AppIcon/AppIcon.vue';
+  import IconCS, { type IconName } from '../IconCS/IconCS.vue';
 
-  type Color = 'primary' | 'neutral' | 'success' | 'warning' | 'error' | 'info';
-  type Variant = 'solid' | 'soft' | 'subtle' | 'outline';
+  type Variant = 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info';
   type Size = 'sm' | 'md' | 'lg';
-  type IconSize = 'xs' | 'sm' | 'md';
 
   const props = withDefaults(
     defineProps<{
       label?: string;
-      color?: Color;
       variant?: Variant;
       size?: Size;
-      icon?: string;
-      dismissible?: boolean;
+      icon?: IconName;
+      removable?: boolean;
       selected?: boolean;
       disabled?: boolean;
       /** If set, chip renders as a NuxtLink instead of a button. */
@@ -24,11 +21,10 @@
     }>(),
     {
       label: undefined,
-      color: 'neutral',
-      variant: 'soft',
+      variant: 'default',
       size: 'md',
       icon: undefined,
-      dismissible: false,
+      removable: false,
       selected: false,
       disabled: false,
       to: undefined,
@@ -37,7 +33,7 @@
 
   const emit = defineEmits<{
     click: [event: MouseEvent];
-    dismiss: [event: Event];
+    remove: [event: Event];
   }>();
 
   const isLink = computed(() => Boolean(props.to) && !props.disabled);
@@ -45,30 +41,20 @@
 
   const rootClasses = computed(() => [
     'app-chip',
-    `app-chip--${props.color}`,
     `app-chip--${props.variant}`,
     `app-chip--${props.size}`,
     {
       'app-chip--selected': props.selected,
       'app-chip--disabled': props.disabled,
-      'app-chip--dismissible': props.dismissible,
+      'app-chip--removable': props.removable,
     },
   ]);
 
-  // AppIcon size scale is `xs|sm|md|lg|xl` — chip only uses the small end, one
-  // step smaller than the chip itself so the glyph doesn't crowd the label.
-  const iconSize = computed<IconSize>(() => {
-    switch (props.size) {
-      case 'sm': {
-        return 'xs';
-      }
-      case 'lg': {
-        return 'md';
-      }
-      default: {
-        return 'sm';
-      }
-    }
+  // Icon pixel size — one step smaller than the chip so the glyph doesn't crowd the label.
+  const iconPx = computed<number>(() => {
+    if (props.size === 'sm') return 10;
+    if (props.size === 'lg') return 14;
+    return 12;
   });
 
   function handleClick(event: MouseEvent): void {
@@ -76,12 +62,11 @@
     emit('click', event);
   }
 
-  function handleDismiss(event: Event): void {
+  function handleRemove(event: Event): void {
     if (props.disabled) return;
-    // Prevent the dismiss click from bubbling up as a chip click. The caller
-    // can listen for `dismiss` and `click` independently.
+    // Prevent the remove click from bubbling up as a chip click.
     event.stopPropagation();
-    emit('dismiss', event);
+    emit('remove', event);
   }
 </script>
 
@@ -96,21 +81,21 @@
     :aria-disabled="disabled ? 'true' : undefined"
     @click="handleClick"
   >
-    <AppIcon v-if="icon" :name="icon" :size="iconSize" class="app-chip__icon" />
+    <IconCS v-if="icon" :name="icon" :size="iconPx" class="app-chip__icon" />
     <span v-if="$slots['default'] || label" class="app-chip__label">
       <slot>{{ label }}</slot>
     </span>
     <span
-      v-if="dismissible"
-      class="app-chip__dismiss"
+      v-if="removable"
+      class="app-chip__remove"
       role="button"
       tabindex="0"
-      aria-label="Dismiss"
-      @click="handleDismiss"
-      @keydown.enter.prevent="handleDismiss"
-      @keydown.space.prevent="handleDismiss"
+      aria-label="Remove"
+      @click="handleRemove"
+      @keydown.enter.prevent="handleRemove"
+      @keydown.space.prevent="handleRemove"
     >
-      <AppIcon name="i-lucide-x" :size="iconSize" />
+      <IconCS name="x" :size="iconPx" />
     </span>
   </component>
 </template>
@@ -119,15 +104,16 @@
   .app-chip {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-6);
-    border: 1px solid transparent;
+    gap: 6px;
+    height: 22px;
+    padding: 0 var(--space-2);
+    border: 1px solid var(--border-default);
     border-radius: var(--radius-pill);
-    background: transparent;
+    background: var(--surface-overlay);
     color: var(--text-fg);
     font-family: var(--font-sans);
     font-weight: var(--fw-medium);
-    font-size: var(--text-sm);
+    font-size: 12px;
     line-height: var(--leading-snug);
     text-decoration: none;
     cursor: pointer;
@@ -150,20 +136,20 @@
       align-items: center;
     }
 
-    &__dismiss {
+    &__remove {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      margin-inline-start: var(--space-1);
-      padding: var(--space-1);
+      margin-inline-start: 2px;
+      padding: 2px;
       border-radius: var(--radius-pill);
       color: currentcolor;
       cursor: pointer;
       transition: background-color var(--dur-fast) var(--ease-default);
 
       &:hover {
-        background-color: var(--surface-bg-muted);
+        background-color: rgba(0, 0, 0, 0.08);
       }
 
       &:focus-visible {
@@ -174,160 +160,54 @@
 
     /* ----- sizes ----- */
     &--sm {
-      padding: var(--space-1) var(--space-4);
+      height: 18px;
+      padding: 0 var(--space-1);
       font-size: var(--text-xs);
     }
 
     &--md {
-      padding: var(--space-2) var(--space-6);
-      font-size: var(--text-sm);
+      height: 22px;
+      padding: 0 var(--space-2);
+      font-size: 12px;
     }
 
     &--lg {
-      padding: var(--space-3) var(--space-8);
+      height: 28px;
+      padding: 0 var(--space-3);
       font-size: var(--text-md);
     }
 
-    /* ----- colour × variant matrix -----
-     Each (colour) block defines the `solid`, `soft`, `subtle`, `outline`
-     variants by composing token families. `subtle` is a lighter take on
-     `soft` — the background is the same token at a reduced opacity. */
+    /* ----- flat variant axis ----- */
+    // default: neutral chip with surface-overlay background (base styles above)
+
     &--primary {
-      &.app-chip--solid {
-        background-color: var(--brand-accent);
-        border-color: var(--brand-accent);
-        color: var(--text-fg-inverse);
-      }
-
-      &.app-chip--soft {
-        background-color: var(--brand-accent-soft);
-        color: var(--brand-accent-fg);
-      }
-
-      &.app-chip--subtle {
-        background-color: color-mix(in srgb, var(--brand-accent-soft) 60%, transparent);
-        color: var(--brand-accent-fg);
-      }
-
-      &.app-chip--outline {
-        border-color: var(--brand-accent);
-        color: var(--brand-accent-fg);
-      }
-    }
-
-    &--neutral {
-      &.app-chip--solid {
-        background-color: var(--text-fg);
-        border-color: var(--text-fg);
-        color: var(--text-fg-inverse);
-      }
-
-      &.app-chip--soft {
-        background-color: var(--surface-bg-muted);
-        color: var(--text-fg);
-      }
-
-      &.app-chip--subtle {
-        background-color: color-mix(in srgb, var(--surface-bg-muted) 60%, transparent);
-        color: var(--text-fg-muted);
-      }
-
-      &.app-chip--outline {
-        border-color: var(--border-strong);
-        color: var(--text-fg);
-      }
+      background: var(--brand-accent-soft);
+      color: var(--brand-accent-hover);
+      border-color: transparent;
     }
 
     &--success {
-      &.app-chip--solid {
-        background-color: var(--status-success);
-        border-color: var(--status-success);
-        color: var(--text-fg-inverse);
-      }
-
-      &.app-chip--soft {
-        background-color: var(--status-success-soft);
-        color: var(--status-success);
-      }
-
-      &.app-chip--subtle {
-        background-color: color-mix(in srgb, var(--status-success-soft) 60%, transparent);
-        color: var(--status-success);
-      }
-
-      &.app-chip--outline {
-        border-color: var(--status-success);
-        color: var(--status-success);
-      }
+      background: var(--status-success-soft);
+      color: var(--status-success-fg);
+      border-color: transparent;
     }
 
     &--warning {
-      &.app-chip--solid {
-        background-color: var(--status-warning);
-        border-color: var(--status-warning);
-        color: var(--text-fg-inverse);
-      }
-
-      &.app-chip--soft {
-        background-color: var(--status-warning-soft);
-        color: var(--status-warning);
-      }
-
-      &.app-chip--subtle {
-        background-color: color-mix(in srgb, var(--status-warning-soft) 60%, transparent);
-        color: var(--status-warning);
-      }
-
-      &.app-chip--outline {
-        border-color: var(--status-warning);
-        color: var(--status-warning);
-      }
+      background: var(--status-warning-soft);
+      color: var(--status-warning-fg);
+      border-color: transparent;
     }
 
     &--error {
-      &.app-chip--solid {
-        background-color: var(--status-danger);
-        border-color: var(--status-danger);
-        color: var(--text-fg-inverse);
-      }
-
-      &.app-chip--soft {
-        background-color: var(--status-danger-soft);
-        color: var(--status-danger);
-      }
-
-      &.app-chip--subtle {
-        background-color: color-mix(in srgb, var(--status-danger-soft) 60%, transparent);
-        color: var(--status-danger);
-      }
-
-      &.app-chip--outline {
-        border-color: var(--status-danger);
-        color: var(--status-danger);
-      }
+      background: var(--status-error-soft);
+      color: var(--status-error-fg);
+      border-color: transparent;
     }
 
     &--info {
-      &.app-chip--solid {
-        background-color: var(--status-info);
-        border-color: var(--status-info);
-        color: var(--text-fg-inverse);
-      }
-
-      &.app-chip--soft {
-        background-color: var(--status-info-soft);
-        color: var(--status-info);
-      }
-
-      &.app-chip--subtle {
-        background-color: color-mix(in srgb, var(--status-info-soft) 60%, transparent);
-        color: var(--status-info);
-      }
-
-      &.app-chip--outline {
-        border-color: var(--status-info);
-        color: var(--status-info);
-      }
+      background: var(--status-info-soft);
+      color: var(--status-info-fg);
+      border-color: transparent;
     }
 
     /* ----- selected / disabled ----- */
@@ -340,7 +220,7 @@
       cursor: not-allowed;
       opacity: var(--opacity-disabled);
 
-      .app-chip__dismiss {
+      .app-chip__remove {
         cursor: not-allowed;
       }
     }

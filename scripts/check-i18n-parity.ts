@@ -70,34 +70,27 @@ try {
   // skip
 }
 
-// ── web: <i18n lang="json">…</i18n> blocks in .vue files
-try {
-  const stdout = execSync('git ls-files "apps/web/**/*.vue"', { cwd: repo, encoding: 'utf8' });
-  const vueFiles = stdout.split('\n').filter(Boolean);
-  const bucket: Bucket = { source: 'web', byLocale: new Map() };
-  const blockRe = /<i18n[^>]*lang=["']json["'][^>]*>([\s\S]*?)<\/i18n>/g;
-  for (const rel of vueFiles) {
-    const abs = path.join(repo, rel);
-    const text = readFileSync(abs, 'utf8');
-    let m: RegExpExecArray | null;
-    while ((m = blockRe.exec(text))) {
-      let blob: Record<string, unknown>;
-      try {
-        blob = JSON.parse(m[1]) as Record<string, unknown>;
-      } catch {
-        process.stderr.write(`web: unparseable <i18n> block in ${rel}\n`);
-        continue;
-      }
-      for (const [locale, payload] of Object.entries(blob)) {
-        const keys = bucket.byLocale.get(locale) ?? new Set<string>();
-        collectKeys(payload, rel, keys);
-        bucket.byLocale.set(locale, keys);
-      }
+// ── web: TS locale modules at apps/web/i18n/locales/<locale>.ts
+//
+// The old SFC `<i18n lang="json">` block pattern is forbidden — see
+// `.claude/docs/i18n.md`. Each locale is now a `.ts` module with a single
+// `export default { ... }`. We parse the messages tree by dynamic import.
+{
+  const localesDir = path.join(repo, 'apps/web/i18n/locales');
+  try {
+    const entries = readdirSync(localesDir).filter((f) => f.endsWith('.ts'));
+    const bucket: Bucket = { source: 'web', byLocale: new Map() };
+    for (const entry of entries) {
+      const locale = entry.replace(/\.ts$/, '');
+      const mod = (await import(path.join(localesDir, entry))) as { default: unknown };
+      const keys = new Set<string>();
+      collectKeys(mod.default, '', keys);
+      bucket.byLocale.set(locale, keys);
     }
+    if (bucket.byLocale.size > 1) buckets.push(bucket);
+  } catch {
+    // skip
   }
-  if (bucket.byLocale.size > 1) buckets.push(bucket);
-} catch {
-  // skip
 }
 
 // ── report

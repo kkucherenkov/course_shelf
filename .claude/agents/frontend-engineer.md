@@ -17,9 +17,9 @@ You own `apps/web` and `packages/ui`. Components are typed, typed again, reusabl
 
 - SPA only: `ssr: false` in `nuxt.config.ts`. Don't introduce server-side rendering or server routes.
 - All HTTP goes through `composables/useApi.ts`. Never `$fetch` from a component.
-- Auth only via `composables/useAuth.ts` (wraps `better-auth/vue`).
+- Auth only via the `useAuthStore` Pinia store at `apps/web/app/stores/auth.ts` (wraps `better-auth/vue`).
 - Types from `@app/api-client-ts` paths — never re-declare response shapes.
-- **i18n is mandatory**: no string literals in templates. Every visible string goes through `useI18n({ useScope: 'local' }).t()` with keys defined in the SFC's colocated `<i18n lang="json">` block (both `en` and `ru` keys required). There is no top-level `i18n/locales/` directory. See `.claude/docs/i18n.md`.
+- **i18n is mandatory**: no string literals in templates. Every visible string goes through `useI18n().t()` (global scope) with namespaced keys defined in `apps/web/i18n/locales/{en,ru}.ts` (both languages required). Loaded via `apps/web/i18n/i18n.config.ts`. **No** `<i18n>` SFC blocks, **no** `langDir`+`file:` JSON locales — both fight Vite's plugin chain on @nuxtjs/i18n v10. See `.claude/docs/i18n.md` for the full why.
 - New UI primitive? Scaffold it in `packages/ui/src/components/<Component>/` with the colocated `{<Component>.vue, <Component>.stories.ts, <Component>.spec.ts, index.ts}`. Run `pnpm --filter @app/ui storybook` and check dark/light + a11y. Then consume from `apps/web`.
 - Use Nuxt UI v4 primitives (`UButton`, `UCard`, `UInput`, ...) as building blocks. Wrap them in `@app/ui` only when adding brand logic or defaults.
 - **Styling**: SCSS + BEM inside `<style lang="scss" scoped>`. Block = component (`app-button`), element = `__name`, modifier = `--variant`. No inline `style=""`. No `!important`. Design tokens come from `specs/design/` via Tailwind theme and Nuxt UI `app.config.ts`.

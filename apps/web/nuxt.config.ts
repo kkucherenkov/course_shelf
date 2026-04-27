@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   srcDir: 'app/',
   ssr: false,
   devtools: { enabled: true },
-  modules: ['@nuxt/ui', '@nuxtjs/i18n'],
+  modules: ['@nuxt/ui', '@pinia/nuxt', '@nuxtjs/i18n'],
 
   nitro: {
     // No explicit `preset: 'static'`. With `ssr: false` Nuxt infers the static

@@ -1,0 +1,661 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`IconCS > renders alert with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- alert -->
+  <path data-v-6f4b1ecb="" d="M12 4l10 17H2L12 4z"></path>
+  <path data-v-6f4b1ecb="" d="M12 10v5"></path>
+  <circle data-v-6f4b1ecb="" cx="12" cy="18" r="0.5" fill="currentColor"></circle>
+</svg>"
+`;
+
+exports[`IconCS > renders arrow-left with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- arrow-left -->
+  <path data-v-6f4b1ecb="" d="M19 12H5M11 18l-6-6 6-6"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders arrow-right with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- arrow-right -->
+  <path data-v-6f4b1ecb="" d="M5 12h14M13 6l6 6-6 6"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders at with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- at -->
+  <circle data-v-6f4b1ecb="" cx="12" cy="12" r="4"></circle>
+  <path data-v-6f4b1ecb="" d="M16 8v5a3 3 0 006 0v-1a9 9 0 10-3.5 7"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders banner with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- banner (also the default fallback in the JSX) -->
+  <circle data-v-6f4b1ecb="" cx="12" cy="12" r="9"></circle>
+</svg>"
+`;
+
+exports[`IconCS > renders bookmark with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- bookmark -->
+  <path data-v-6f4b1ecb="" d="M6 4h12v17l-6-4-6 4V4z" fill="none"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders calendar with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- calendar -->
+  <rect data-v-6f4b1ecb="" x="3" y="5" width="18" height="16" rx="2"></rect>
+  <path data-v-6f4b1ecb="" d="M3 10h18M8 3v4M16 3v4"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders check with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- check -->
+  <path data-v-6f4b1ecb="" d="M5 12l5 5 9-11"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders check-circle with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- check-circle -->
+  <circle data-v-6f4b1ecb="" cx="12" cy="12" r="9"></circle>
+  <path data-v-6f4b1ecb="" d="M8 12l3 3 5-6"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders chevron-down with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- chevron-down -->
+  <path data-v-6f4b1ecb="" d="M5 9l7 7 7-7"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders chevron-left with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- chevron-left -->
+  <path data-v-6f4b1ecb="" d="M15 5l-7 7 7 7"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders chevron-right with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- chevron-right -->
+  <path data-v-6f4b1ecb="" d="M9 5l7 7-7 7"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders chevron-up with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- chevron-up -->
+  <path data-v-6f4b1ecb="" d="M5 15l7-7 7 7"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders circle with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- circle -->
+  <circle data-v-6f4b1ecb="" cx="12" cy="12" r="9"></circle>
+</svg>"
+`;
+
+exports[`IconCS > renders clock with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- clock -->
+  <circle data-v-6f4b1ecb="" cx="12" cy="12" r="9"></circle>
+  <path data-v-6f4b1ecb="" d="M12 7v5l3 2"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders cloud with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- cloud -->
+  <path data-v-6f4b1ecb="" d="M7 18a4 4 0 010-8 5 5 0 019.6-1.5A4 4 0 0117 18H7z"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders cloud-down with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- cloud-down -->
+  <path data-v-6f4b1ecb="" d="M7 18a4 4 0 010-8 5 5 0 019.6-1.5A4 4 0 0117 18"></path>
+  <path data-v-6f4b1ecb="" d="M12 13v6"></path>
+  <path data-v-6f4b1ecb="" d="M9 16l3 3 3-3"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders copy with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- copy -->
+  <rect data-v-6f4b1ecb="" x="8" y="8" width="12" height="12" rx="2"></rect>
+  <path data-v-6f4b1ecb="" d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders corner-down-right with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- corner-down-right -->
+  <path data-v-6f4b1ecb="" d="M5 4v8a3 3 0 003 3h11"></path>
+  <path data-v-6f4b1ecb="" d="M14 10l5 5-5 5"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders download with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- download -->
+  <path data-v-6f4b1ecb="" d="M12 4v12"></path>
+  <path data-v-6f4b1ecb="" d="M7 11l5 5 5-5"></path>
+  <path data-v-6f4b1ecb="" d="M5 20h14"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders edit with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- edit -->
+  <path data-v-6f4b1ecb="" d="M4 20l4-1 11-11-3-3L5 16l-1 4z"></path>
+  <path data-v-6f4b1ecb="" d="M14 6l3 3"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders eye with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- eye -->
+  <path data-v-6f4b1ecb="" d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path>
+  <circle data-v-6f4b1ecb="" cx="12" cy="12" r="3"></circle>
+</svg>"
+`;
+
+exports[`IconCS > renders eye-off with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- eye-off -->
+  <path data-v-6f4b1ecb="" d="M3 3l18 18"></path>
+  <path data-v-6f4b1ecb="" d="M10.6 6.1A11 11 0 0112 6c6 0 10 7 10 7a16 16 0 01-3 3.7M6 7.5A16 16 0 002 12s4 7 10 7a11 11 0 005.6-1.5"></path>
+  <path data-v-6f4b1ecb="" d="M9.5 10a3 3 0 004.2 4.2"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders filter with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- filter -->
+  <path data-v-6f4b1ecb="" d="M4 5h16l-6 8v6l-4-2v-4L4 5z"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders folder with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- folder -->
+  <path data-v-6f4b1ecb="" d="M3 6a1 1 0 011-1h4l2 2h10a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders fullscreen with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- fullscreen -->
+  <path data-v-6f4b1ecb="" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders github with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- github -->
+  <path data-v-6f4b1ecb="" d="M9 19c-4 1.5-4-2-6-2.5M15 21v-3.5a3 3 0 00-.8-2.3c2.6-.3 5.3-1.3 5.3-5.7 0-1.1-.4-2.2-1.2-3 .4-1 .4-2.2-.1-3.2 0 0-1-.3-3.2 1.2a11 11 0 00-6 0C6.8 2 5.8 2.3 5.8 2.3c-.5 1-.5 2.2-.1 3.2-.8.8-1.2 1.9-1.2 3 0 4.4 2.7 5.4 5.3 5.7a3 3 0 00-.8 2.3V21"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders grid with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- grid -->
+  <rect data-v-6f4b1ecb="" x="4" y="4" width="7" height="7" rx="1"></rect>
+  <rect data-v-6f4b1ecb="" x="13" y="4" width="7" height="7" rx="1"></rect>
+  <rect data-v-6f4b1ecb="" x="4" y="13" width="7" height="7" rx="1"></rect>
+  <rect data-v-6f4b1ecb="" x="13" y="13" width="7" height="7" rx="1"></rect>
+</svg>"
+`;
+
+exports[`IconCS > renders hard-drive with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- hard-drive -->
+  <rect data-v-6f4b1ecb="" x="3" y="13" width="18" height="7" rx="2"></rect>
+  <path data-v-6f4b1ecb="" d="M5 13l3-7h8l3 7"></path>
+  <circle data-v-6f4b1ecb="" cx="7.5" cy="16.5" r="0.6" fill="currentColor"></circle>
+  <circle data-v-6f4b1ecb="" cx="11" cy="16.5" r="0.6" fill="currentColor"></circle>
+</svg>"
+`;
+
+exports[`IconCS > renders home with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- home -->
+  <path data-v-6f4b1ecb="" d="M3 11l9-7 9 7"></path>
+  <path data-v-6f4b1ecb="" d="M5 10v9a1 1 0 001 1h12a1 1 0 001-1v-9"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders info with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- info -->
+  <circle data-v-6f4b1ecb="" cx="12" cy="12" r="9"></circle>
+  <path data-v-6f4b1ecb="" d="M12 11v5"></path>
+  <circle data-v-6f4b1ecb="" cx="12" cy="8" r="0.5" fill="currentColor"></circle>
+</svg>"
+`;
+
+exports[`IconCS > renders key with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- key -->
+  <circle data-v-6f4b1ecb="" cx="8" cy="14" r="4"></circle>
+  <path data-v-6f4b1ecb="" d="M11 12l9-9M16 7l3 3"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders library with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- library -->
+  <rect data-v-6f4b1ecb="" x="3" y="4" width="4" height="16" rx="1"></rect>
+  <rect data-v-6f4b1ecb="" x="9" y="4" width="4" height="16" rx="1"></rect>
+  <path data-v-6f4b1ecb="" d="M16 5l4 14"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders list with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- list -->
+  <path data-v-6f4b1ecb="" d="M8 6h13M8 12h13M8 18h13"></path>
+  <circle data-v-6f4b1ecb="" cx="4" cy="6" r="1" fill="currentColor"></circle>
+  <circle data-v-6f4b1ecb="" cx="4" cy="12" r="1" fill="currentColor"></circle>
+  <circle data-v-6f4b1ecb="" cx="4" cy="18" r="1" fill="currentColor"></circle>
+</svg>"
+`;
+
+exports[`IconCS > renders lock with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- lock -->
+  <rect data-v-6f4b1ecb="" x="5" y="11" width="14" height="10" rx="2"></rect>
+  <path data-v-6f4b1ecb="" d="M8 11V8a4 4 0 018 0v3"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders logout with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- logout -->
+  <path data-v-6f4b1ecb="" d="M9 4H5a1 1 0 00-1 1v14a1 1 0 001 1h4"></path>
+  <path data-v-6f4b1ecb="" d="M16 17l5-5-5-5"></path>
+  <path data-v-6f4b1ecb="" d="M21 12H9"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders mail with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- mail -->
+  <rect data-v-6f4b1ecb="" x="3" y="5" width="18" height="14" rx="2"></rect>
+  <path data-v-6f4b1ecb="" d="M3 7l9 7 9-7"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders menu with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- menu -->
+  <path data-v-6f4b1ecb="" d="M4 6h16M4 12h16M4 18h16"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders minus with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- minus -->
+  <path data-v-6f4b1ecb="" d="M5 12h14"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders moon with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- moon -->
+  <path data-v-6f4b1ecb="" d="M20 14a8 8 0 01-10-10 8 8 0 1010 10z"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders more with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- more -->
+  <circle data-v-6f4b1ecb="" cx="6" cy="12" r="1.2" fill="currentColor" stroke="none"></circle>
+  <circle data-v-6f4b1ecb="" cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"></circle>
+  <circle data-v-6f4b1ecb="" cx="18" cy="12" r="1.2" fill="currentColor" stroke="none"></circle>
+</svg>"
+`;
+
+exports[`IconCS > renders more-h with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- more-h -->
+  <circle data-v-6f4b1ecb="" cx="6" cy="12" r="1.2" fill="currentColor"></circle>
+  <circle data-v-6f4b1ecb="" cx="12" cy="12" r="1.2" fill="currentColor"></circle>
+  <circle data-v-6f4b1ecb="" cx="18" cy="12" r="1.2" fill="currentColor"></circle>
+</svg>"
+`;
+
+exports[`IconCS > renders next with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- next -->
+  <path data-v-6f4b1ecb="" d="M5 5l10 7-10 7V5z"></path>
+  <path data-v-6f4b1ecb="" d="M19 5v14"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders note with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- note -->
+  <path data-v-6f4b1ecb="" d="M5 4h11l4 4v12a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z"></path>
+  <path data-v-6f4b1ecb="" d="M16 4v4h4"></path>
+  <path data-v-6f4b1ecb="" d="M8 13h8M8 17h5"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders pause with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- pause -->
+  <rect data-v-6f4b1ecb="" x="6" y="5" width="4" height="14" rx="1"></rect>
+  <rect data-v-6f4b1ecb="" x="14" y="5" width="4" height="14" rx="1"></rect>
+</svg>"
+`;
+
+exports[`IconCS > renders pdf with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- pdf -->
+  <path data-v-6f4b1ecb="" d="M7 3h8l4 4v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"></path>
+  <path data-v-6f4b1ecb="" d="M15 3v4h4"></path><text data-v-6f4b1ecb="" x="9" y="17" font-size="6" fill="currentColor" stroke="none" font-family="monospace" font-weight="700"> PDF </text>
+</svg>"
+`;
+
+exports[`IconCS > renders pip with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- pip -->
+  <rect data-v-6f4b1ecb="" x="3" y="5" width="18" height="14" rx="2"></rect>
+  <rect data-v-6f4b1ecb="" x="12" y="11" width="7" height="6" rx="1" fill="currentColor"></rect>
+</svg>"
+`;
+
+exports[`IconCS > renders play with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <path data-v-6f4b1ecb="" d="M7 5l12 7-12 7V5z" fill="none"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders plus with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- plus -->
+  <path data-v-6f4b1ecb="" d="M12 5v14M5 12h14"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders prev with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- prev -->
+  <path data-v-6f4b1ecb="" d="M19 5L9 12l10 7V5z"></path>
+  <path data-v-6f4b1ecb="" d="M5 5v14"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders refresh with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- refresh -->
+  <path data-v-6f4b1ecb="" d="M3 12a9 9 0 0115-6.7L21 8"></path>
+  <path data-v-6f4b1ecb="" d="M21 4v4h-4"></path>
+  <path data-v-6f4b1ecb="" d="M21 12a9 9 0 01-15 6.7L3 16"></path>
+  <path data-v-6f4b1ecb="" d="M3 20v-4h4"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders search with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- search -->
+  <circle data-v-6f4b1ecb="" cx="11" cy="11" r="6"></circle>
+  <path data-v-6f4b1ecb="" d="M16 16l4 4"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders settings with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- settings -->
+  <circle data-v-6f4b1ecb="" cx="12" cy="12" r="3"></circle>
+  <path data-v-6f4b1ecb="" d="M19 12c0 .5-.05 1-.13 1.5l2 1.5-2 3.5-2.4-1a7 7 0 01-2.6 1.5L13.5 22h-3l-.4-3a7 7 0 01-2.6-1.5l-2.4 1-2-3.5 2-1.5A7 7 0 015 12c0-.5.05-1 .13-1.5l-2-1.5 2-3.5 2.4 1A7 7 0 0110 5L10.5 2h3l.4 3a7 7 0 012.6 1.5l2.4-1 2 3.5-2 1.5c.08.5.13 1 .13 1.5z"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders shield with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- shield -->
+  <path data-v-6f4b1ecb="" d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders sliders with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- sliders -->
+  <path data-v-6f4b1ecb="" d="M4 6h10M18 6h2M4 18h2M10 18h10M4 12h6M14 12h6"></path>
+  <circle data-v-6f4b1ecb="" cx="16" cy="6" r="2"></circle>
+  <circle data-v-6f4b1ecb="" cx="8" cy="18" r="2"></circle>
+  <circle data-v-6f4b1ecb="" cx="12" cy="12" r="2"></circle>
+</svg>"
+`;
+
+exports[`IconCS > renders sort with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- sort -->
+  <path data-v-6f4b1ecb="" d="M7 4v16M3 8l4-4 4 4"></path>
+  <path data-v-6f4b1ecb="" d="M17 4v16M13 16l4 4 4-4"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders speed with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- speed -->
+  <path data-v-6f4b1ecb="" d="M5 18a8 8 0 1114 0"></path>
+  <path data-v-6f4b1ecb="" d="M12 14l4-4"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders subtitles with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- subtitles -->
+  <rect data-v-6f4b1ecb="" x="3" y="5" width="18" height="14" rx="2"></rect>
+  <path data-v-6f4b1ecb="" d="M7 14h4M13 14h4M7 11h2M11 11h6"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders sun with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- sun -->
+  <circle data-v-6f4b1ecb="" cx="12" cy="12" r="4"></circle>
+  <path data-v-6f4b1ecb="" d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders trash with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- trash -->
+  <path data-v-6f4b1ecb="" d="M5 7h14M9 7V4h6v3M7 7l1 13a1 1 0 001 1h6a1 1 0 001-1l1-13"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders user with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- user -->
+  <circle data-v-6f4b1ecb="" cx="12" cy="8" r="4"></circle>
+  <path data-v-6f4b1ecb="" d="M4 21a8 8 0 0116 0"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders users with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- users -->
+  <circle data-v-6f4b1ecb="" cx="9" cy="8" r="4"></circle>
+  <path data-v-6f4b1ecb="" d="M2 21a7 7 0 0114 0"></path>
+  <path data-v-6f4b1ecb="" d="M16 3a4 4 0 010 8"></path>
+  <path data-v-6f4b1ecb="" d="M22 21a7 7 0 00-7-7"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders volume with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- volume -->
+  <path data-v-6f4b1ecb="" d="M4 9v6h4l5 4V5L8 9H4z"></path>
+  <path data-v-6f4b1ecb="" d="M16 8a5 5 0 010 8"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders volume-mute with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- volume-mute -->
+  <path data-v-6f4b1ecb="" d="M4 9v6h4l5 4V5L8 9H4z"></path>
+  <path data-v-6f4b1ecb="" d="M17 9l4 6M21 9l-4 6"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders wifi-off with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- wifi-off -->
+  <path data-v-6f4b1ecb="" d="M3 3l18 18"></path>
+  <path data-v-6f4b1ecb="" d="M5 12a10 10 0 0112-1"></path>
+  <path data-v-6f4b1ecb="" d="M8 16a5 5 0 016-1"></path>
+  <circle data-v-6f4b1ecb="" cx="12" cy="20" r="0.5" fill="currentColor"></circle>
+</svg>"
+`;
+
+exports[`IconCS > renders x with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- x -->
+  <path data-v-6f4b1ecb="" d="M6 6l12 12M18 6L6 18"></path>
+</svg>"
+`;

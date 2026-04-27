@@ -2,6 +2,16 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-034 — Wire api-client-ts + auth store (E11-F01-S02)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: six commits on `feat/web-auth-store` — `07374de` (Pinia install), `72e11c4` (auth store), `0780768` (api.client plugin), `2155d9e` (global middleware), `f247814` (login + layout migration + delete legacy composables), `b3647cf` (task-card flip). Web tests 17/17 (6 token-page + 11 auth-store); lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E11-F01-S02.md`
+- Outcome: bearer-auth-end-to-end on the Nuxt SPA. New Pinia `useAuthStore` wraps `better-auth/vue` and captures the bearer token via a `set-auth-token` response-header hook on sign-in. New `plugins/api.client.ts` Nuxt SPA plugin configures the singleton `client` from `@app/api-client-ts`: request interceptor adds `Authorization: Bearer <token>` when present; response interceptor on 401 calls `auth.refresh()` once then redirects to `/login` if refresh fails. New `middleware/auth.global.ts` gates every route except `/login`, `/signup`, `/__tokens`. `pages/login.vue` and `layouts/default.vue` migrated to the store; `composables/useApi.ts`, `useAuth.ts`, `useApiShape.ts` deleted.
+- Deviations: (1) `bearerClient()` plugin not present in `better-auth@1.6.8` — token captured via `@better-fetch/fetch` `onSuccess` hook reading `set-auth-token` instead. (2) Redirect target is `/login` (codebase route) rather than `/sign-in` (card text). (3) `plugins/api.client.spec.ts` deferred — Nuxt-runtime-context faking is awkward; 11 store tests cover the substance. (4) `useApiShape.ts` had zero callers; deleted with the other composables. (5) `@app/api-client-ts/src/index.ts` (hand-written entry) gained a `client` re-export — no codegen rule violated.
+
 ## T-2026-04-27-033 — Web SPA bootstrap closeout (E11-F01-S01)
 
 - Created: 2026-04-27

@@ -156,9 +156,7 @@
     <!-- --------------------------------------------------------- Header -->
     <header class="page-tokens__header">
       <div class="page-tokens__header-text">
-        <h1 class="page-tokens__title">
-          Foundations
-        </h1>
+        <h1 class="page-tokens__title">Foundations</h1>
         <p class="page-tokens__subtitle">
           Visual inventory of every design token. Toggle the theme to see light / dark variants.
         </p>
@@ -167,27 +165,14 @@
     </header>
 
     <!-- --------------------------------------------------------- Colors -->
-    <section
-      data-token-category="color"
-      class="page-tokens__section"
-    >
-      <h2 class="page-tokens__section-title">
-        Color
-      </h2>
-      <div
-        v-for="group in colorGroups"
-        :key="group.id"
-        class="page-tokens__color-group"
-      >
+    <section data-token-category="color" class="page-tokens__section">
+      <h2 class="page-tokens__section-title">Color</h2>
+      <div v-for="group in colorGroups" :key="group.id" class="page-tokens__color-group">
         <h3 class="page-tokens__color-group-title">
           {{ group.label }}
         </h3>
         <div class="page-tokens__grid page-tokens__grid--color">
-          <div
-            v-for="item in group.items"
-            :key="item.cssVar"
-            class="page-tokens__swatch"
-          >
+          <div v-for="item in group.items" :key="item.cssVar" class="page-tokens__swatch">
             <div
               class="page-tokens__swatch-chip"
               :style="{ background: `var(${item.cssVar})` }"
@@ -201,23 +186,11 @@
     </section>
 
     <!-- --------------------------------------------------------- Spacing -->
-    <section
-      data-token-category="spacing"
-      class="page-tokens__section"
-    >
-      <h2 class="page-tokens__section-title">
-        Spacing
-      </h2>
+    <section data-token-category="spacing" class="page-tokens__section">
+      <h2 class="page-tokens__section-title">Spacing</h2>
       <div class="page-tokens__grid page-tokens__grid--list">
-        <div
-          v-for="item in spacingItems"
-          :key="item.cssVar"
-          class="page-tokens__spacing-row"
-        >
-          <div
-            class="page-tokens__spacing-bar"
-            :style="{ width: `var(${item.cssVar})` }"
-          />
+        <div v-for="item in spacingItems" :key="item.cssVar" class="page-tokens__spacing-row">
+          <div class="page-tokens__spacing-bar" :style="{ width: `var(${item.cssVar})` }" />
           <span class="page-tokens__swatch-var">{{ item.label }}</span>
           <span class="page-tokens__swatch-value">{{ item.staticValue }}</span>
         </div>
@@ -225,23 +198,11 @@
     </section>
 
     <!-- --------------------------------------------------------- Radius -->
-    <section
-      data-token-category="radius"
-      class="page-tokens__section"
-    >
-      <h2 class="page-tokens__section-title">
-        Radius
-      </h2>
+    <section data-token-category="radius" class="page-tokens__section">
+      <h2 class="page-tokens__section-title">Radius</h2>
       <div class="page-tokens__grid page-tokens__grid--color">
-        <div
-          v-for="item in radiusItems"
-          :key="item.cssVar"
-          class="page-tokens__swatch"
-        >
-          <div
-            class="page-tokens__radius-chip"
-            :style="{ borderRadius: `var(${item.cssVar})` }"
-          />
+        <div v-for="item in radiusItems" :key="item.cssVar" class="page-tokens__swatch">
+          <div class="page-tokens__radius-chip" :style="{ borderRadius: `var(${item.cssVar})` }" />
           <span class="page-tokens__swatch-var">{{ item.cssVar }}</span>
           <span class="page-tokens__swatch-value">{{ item.staticValue }}</span>
         </div>
@@ -249,19 +210,10 @@
     </section>
 
     <!-- --------------------------------------------------------- Typography -->
-    <section
-      data-token-category="typography"
-      class="page-tokens__section"
-    >
-      <h2 class="page-tokens__section-title">
-        Typography
-      </h2>
+    <section data-token-category="typography" class="page-tokens__section">
+      <h2 class="page-tokens__section-title">Typography</h2>
       <div class="page-tokens__grid page-tokens__grid--list">
-        <div
-          v-for="item in typoItems"
-          :key="item.role"
-          class="page-tokens__typo-row"
-        >
+        <div v-for="item in typoItems" :key="item.role" class="page-tokens__typo-row">
           <div
             class="page-tokens__typo-specimen"
             :style="{
@@ -282,22 +234,12 @@
     </section>
 
     <!-- --------------------------------------------------------- Motion / Raw -->
-    <section
-      data-token-category="motion"
-      class="page-tokens__section"
-    >
-      <h2 class="page-tokens__section-title">
-        Motion &amp; Raw Values
-      </h2>
+    <section data-token-category="motion" class="page-tokens__section">
+      <h2 class="page-tokens__section-title">Motion &amp; Raw Values</h2>
 
-      <h3 class="page-tokens__color-group-title">
-        Duration
-      </h3>
+      <h3 class="page-tokens__color-group-title">Duration</h3>
       <dl class="page-tokens__dl">
-        <template
-          v-for="entry in durationEntries"
-          :key="entry.name"
-        >
+        <template v-for="entry in durationEntries" :key="entry.name">
           <dt class="page-tokens__dt">
             {{ entry.name }}
           </dt>
@@ -307,14 +249,9 @@
         </template>
       </dl>
 
-      <h3 class="page-tokens__color-group-title">
-        Easing
-      </h3>
+      <h3 class="page-tokens__color-group-title">Easing</h3>
       <dl class="page-tokens__dl">
-        <template
-          v-for="entry in easingEntries"
-          :key="entry.name"
-        >
+        <template v-for="entry in easingEntries" :key="entry.name">
           <dt class="page-tokens__dt">
             {{ entry.name }}
           </dt>
@@ -324,14 +261,9 @@
         </template>
       </dl>
 
-      <h3 class="page-tokens__color-group-title">
-        Lift
-      </h3>
+      <h3 class="page-tokens__color-group-title">Lift</h3>
       <dl class="page-tokens__dl">
-        <template
-          v-for="entry in liftEntries"
-          :key="entry.name"
-        >
+        <template v-for="entry in liftEntries" :key="entry.name">
           <dt class="page-tokens__dt">
             {{ entry.name }}
           </dt>
@@ -341,14 +273,9 @@
         </template>
       </dl>
 
-      <h3 class="page-tokens__color-group-title">
-        Opacity
-      </h3>
+      <h3 class="page-tokens__color-group-title">Opacity</h3>
       <dl class="page-tokens__dl">
-        <template
-          v-for="entry in opacityEntries"
-          :key="entry.name"
-        >
+        <template v-for="entry in opacityEntries" :key="entry.name">
           <dt class="page-tokens__dt">
             {{ entry.name }}
           </dt>

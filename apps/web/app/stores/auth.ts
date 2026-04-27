@@ -19,7 +19,8 @@ const TOKEN_STORAGE_KEY = 'cs.web.bearer';
 
 /** Guard: true in real browsers and in test environments that polyfill Storage. */
 function hasStorage(): boolean {
-  return typeof localStorage !== 'undefined' && localStorage !== null;
+  // typeof check is sufficient — Storage is never null when the global is defined.
+  return typeof localStorage !== 'undefined';
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -59,10 +60,7 @@ export const useAuthStore = defineStore('auth', () => {
    * On success the `set-auth-token` response header is captured and stored
    * in localStorage (the server-side `bearer` plugin sets this header).
    */
-  async function signIn(
-    email: string,
-    password: string,
-  ): Promise<{ ok: boolean; error?: string }> {
+  async function signIn(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
     error.value = null;
     isPending.value = true;
 
@@ -89,7 +87,10 @@ export const useAuthStore = defineStore('auth', () => {
         return { ok: false, error: message };
       }
 
-      if (capturedToken) {
+      // capturedToken is mutated inside the onSuccess callback above; TypeScript
+      // cannot see the mutation through the closure, hence the eslint-disable.
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (capturedToken !== null) {
         token.value = capturedToken;
         if (hasStorage()) {
           localStorage.setItem(TOKEN_STORAGE_KEY, capturedToken);
@@ -107,8 +108,8 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       return { ok: true };
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Unexpected error';
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : 'Unexpected error';
       error.value = message;
       return { ok: false, error: message };
     } finally {

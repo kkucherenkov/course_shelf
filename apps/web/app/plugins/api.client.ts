@@ -64,7 +64,7 @@ export default defineNuxtPlugin((nuxtApp) => {
       if (auth.token) {
         req.headers.set('Authorization', `Bearer ${auth.token}`);
       }
-      return fetch(req);
+      return await fetch(req);
     } finally {
       isRefreshing = false;
     }

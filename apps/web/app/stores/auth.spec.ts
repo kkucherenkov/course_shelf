@@ -37,12 +37,18 @@ vi.mock('better-auth/vue', () => ({
 // the global instead so the store's import.meta.client branch has a real
 // Storage-like object to call.
 // ---------------------------------------------------------------------------
-const localStorageStore: Record<string, string> = {};
+const localStorageStore = new Map<string, string>();
 const localStorageMock = {
-  getItem: (k: string) => localStorageStore[k] ?? null,
-  setItem: (k: string, v: string) => { localStorageStore[k] = v; },
-  removeItem: (k: string) => { delete localStorageStore[k]; },
-  clear: () => { for (const k in localStorageStore) delete localStorageStore[k]; },
+  getItem: (k: string) => localStorageStore.get(k) ?? null,
+  setItem: (k: string, v: string) => {
+    localStorageStore.set(k, v);
+  },
+  removeItem: (k: string) => {
+    localStorageStore.delete(k);
+  },
+  clear: () => {
+    localStorageStore.clear();
+  },
 };
 vi.stubGlobal('localStorage', localStorageMock);
 
@@ -61,15 +67,19 @@ import { useAuthStore } from './auth';
 // Helpers
 // ---------------------------------------------------------------------------
 
-type OnSuccessCtx = { response: Response };
+interface OnSuccessCtx {
+  response: Response;
+}
 
-function makeResponse(headers: Record<string, string> = {}): Response {
+const DEFAULT_USER_DATA = { id: 'u1', email: 'a@b.com', name: 'Alice' };
+
+function makeResponse(headers: Record<string, string>): Response {
   return new Response(null, { headers });
 }
 
 function setupSignInSuccess(
   token: string | null,
-  userData = { id: 'u1', email: 'a@b.com', name: 'Alice' },
+  userData: typeof DEFAULT_USER_DATA = DEFAULT_USER_DATA,
 ) {
   mockSignInEmail.mockImplementation(
     (_creds: unknown, opts?: { onSuccess?: (ctx: OnSuccessCtx) => void }) => {
@@ -82,9 +92,7 @@ function setupSignInSuccess(
 }
 
 function setupSignInError(message: string) {
-  mockSignInEmail.mockImplementation(() =>
-    Promise.resolve({ data: null, error: { message } }),
-  );
+  mockSignInEmail.mockImplementation(() => Promise.resolve({ data: null, error: { message } }));
 }
 
 // ---------------------------------------------------------------------------

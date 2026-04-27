@@ -2,12 +2,13 @@
   import { AppInput, AppField, AppButton } from '@app/ui';
   import { ref, computed } from 'vue';
 
+  import { useAuthStore } from '~/stores/auth';
+
   const { t } = useI18n({ useScope: 'local' });
-  const auth = useAuth();
+  const authStore = useAuthStore();
 
   const email = ref('');
   const password = ref('');
-  const loading = ref(false);
   const errorMsg = ref('');
 
   const emailValid = computed(() => email.value.includes('@') && email.value.length >= 5);
@@ -24,23 +25,16 @@
       errorMsg.value = t('errorPasswordTooShort');
       return;
     }
-    loading.value = true;
-    try {
-      const result = await auth.signIn.email({ email: email.value, password: password.value });
-      if (result.error) {
-        const msg = result.error.message?.toLowerCase() ?? '';
-        errorMsg.value =
-          msg.includes('invalid') || msg.includes('credential') || msg.includes('password')
-            ? t('errorCredentials')
-            : t('errorGeneric');
-        return;
-      }
-      globalThis.location.href = '/';
-    } catch {
-      errorMsg.value = t('errorGeneric');
-    } finally {
-      loading.value = false;
+    const result = await authStore.signIn(email.value, password.value);
+    if (!result.ok) {
+      const msg = (result.error ?? '').toLowerCase();
+      errorMsg.value =
+        msg.includes('invalid') || msg.includes('credential') || msg.includes('password')
+          ? t('errorCredentials')
+          : t('errorGeneric');
+      return;
     }
+    await navigateTo('/');
   }
 </script>
 
@@ -82,10 +76,7 @@
 </i18n>
 
 <template>
-  <div
-    class="page-login"
-    data-testid="page-login"
-  >
+  <div class="page-login" data-testid="page-login">
     <div class="page-login__card">
       <div class="page-login__header">
         <h1 class="page-login__title">
@@ -96,24 +87,12 @@
         </p>
       </div>
 
-      <p
-        v-if="errorMsg"
-        role="alert"
-        class="page-login__error"
-      >
+      <p v-if="errorMsg" role="alert" class="page-login__error">
         {{ errorMsg }}
       </p>
 
-      <form
-        class="page-login__form"
-        novalidate
-        @submit.prevent="onSignIn"
-      >
-        <AppField
-          :label="t('emailLabel')"
-          :help="t('emailHint')"
-          required
-        >
+      <form class="page-login__form" novalidate @submit.prevent="onSignIn">
+        <AppField :label="t('emailLabel')" :help="t('emailHint')" required>
           <template #default="slotAttrs">
             <AppInput
               v-bind="slotAttrs"
@@ -126,11 +105,7 @@
           </template>
         </AppField>
 
-        <AppField
-          :label="t('passwordLabel')"
-          :help="t('passwordHint')"
-          required
-        >
+        <AppField :label="t('passwordLabel')" :help="t('passwordHint')" required>
           <template #default="slotAttrs">
             <AppInput
               v-bind="slotAttrs"
@@ -147,17 +122,14 @@
           variant="solid"
           color="primary"
           block
-          :loading="loading"
-          :disabled="loading || !formValid"
+          :loading="authStore.isPending"
+          :disabled="authStore.isPending || !formValid"
         />
       </form>
 
       <p class="page-login__footnote-link">
         {{ t('noAccount') }}
-        <NuxtLink
-          to="/signup"
-          class="page-login__link"
-        >
+        <NuxtLink to="/signup" class="page-login__link">
           {{ t('signUpLink') }}
         </NuxtLink>
       </p>

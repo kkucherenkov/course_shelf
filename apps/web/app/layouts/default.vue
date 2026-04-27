@@ -1,18 +1,19 @@
 <script setup lang="ts">
   import { computed } from 'vue';
 
+  import { useAuthStore } from '~/stores/auth';
+
   const { t } = useI18n({ useScope: 'local' });
   const route = useRoute();
-  const auth = useAuth();
-  const session = auth.useSession();
+  const authStore = useAuthStore();
 
-  const isAuthenticated = computed(() => !!session.value.data);
+  const isAuthenticated = computed(() => authStore.isAuthenticated);
 
   const NO_PAD_ROUTES = new Set(['/login']);
   const isNoPad = computed(() => NO_PAD_ROUTES.has(route.path));
 
   async function onSignOut(): Promise<void> {
-    await auth.signOut();
+    await authStore.signOut();
     await navigateTo('/login');
   }
 </script>
@@ -37,14 +38,8 @@
 <template>
   <div class="default-layout">
     <header class="default-layout__header">
-      <nav
-        class="default-layout__nav"
-        :aria-label="t('appName')"
-      >
-        <NuxtLink
-          to="/"
-          class="default-layout__brand"
-        >
+      <nav class="default-layout__nav" :aria-label="t('appName')">
+        <NuxtLink to="/" class="default-layout__brand">
           {{ t('appName') }}
         </NuxtLink>
         <ul class="default-layout__nav-list">
@@ -57,10 +52,7 @@
               {{ t('navHome') }}
             </NuxtLink>
           </li>
-          <li
-            v-if="!isAuthenticated"
-            class="default-layout__nav-item"
-          >
+          <li v-if="!isAuthenticated" class="default-layout__nav-item">
             <NuxtLink
               to="/login"
               class="default-layout__nav-link"
@@ -69,15 +61,8 @@
               {{ t('navLogin') }}
             </NuxtLink>
           </li>
-          <li
-            v-if="isAuthenticated"
-            class="default-layout__nav-item"
-          >
-            <button
-              type="button"
-              class="default-layout__nav-link"
-              @click="onSignOut"
-            >
+          <li v-if="isAuthenticated" class="default-layout__nav-item">
+            <button type="button" class="default-layout__nav-link" @click="onSignOut">
               {{ t('navSignOut') }}
             </button>
           </li>
@@ -85,10 +70,7 @@
       </nav>
     </header>
 
-    <main
-      class="default-layout__main"
-      :class="{ 'default-layout__main--no-pad': isNoPad }"
-    >
+    <main class="default-layout__main" :class="{ 'default-layout__main--no-pad': isNoPad }">
       <slot />
     </main>
 

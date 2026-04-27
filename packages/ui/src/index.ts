@@ -48,3 +48,5 @@ export type { SsoProvider } from './components/AppSsoBlock';
 export { AppLessonRow } from './components/AppLessonRow';
 export type { LessonState } from './components/AppLessonRow';
 export { AppSectionHeader } from './components/AppSectionHeader';
+export { AppPlayerChrome } from './components/AppPlayerChrome';
+export type { PlayerState, PlayerMode, BookmarkMarker } from './components/AppPlayerChrome';

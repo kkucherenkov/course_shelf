@@ -2,6 +2,18 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-049 — PlayerChrome web component (E13-F02-S03)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: single feature commit `9eb8c6a` on `feat/player-chrome` (closes #51) → PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/132. UI tests 763/763 (+31); lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F02-S03.md` (source: `docs/design/cs-components/components.jsx` §PlayerChrome, CSS in `docs/design/cs-components/styles.css`)
+- Outcome: presentational lesson-player shell — no `<video>` yet (lands in E14-F03-S01). Two layout modes (`overlay` full chrome, `minimal` slim played-bar peek). Seven states (`idle`, `playing`, `paused`, `buffering`, `error`, `end`, `locked`); `error` and `locked` make the chrome inert (`tabindex=-1`, play disabled, keyboard + scrubber no-op). Scrubber renders track / buffered / played / thumb + optional chapter ticks + bookmark markers (clicking a marker emits `seek` to that time). Slider exposes `role="slider"`, `aria-valuemin=0`, `aria-valuemax=duration`, `aria-valuenow=position`, `aria-valuetext="<current> of <total>"`. Buffer spinner respects `prefers-reduced-motion`.
+- Emits: card-mandated `play, pause, seek, speed, toggleSubtitles, togglePip, toggleFullscreen, nextLesson` plus organic `toggleMute, retry, stayHere, prevLesson`.
+- Keyboard map: Space/K (play-pause), ←/→ (±5s), J/L (±10s), `,`/`.` (±1/24s), F (fullscreen), M (mute), 0–9 (jump n × 10 %). All seeks clamp to [0, duration]; inputs/textareas inside the chrome are skipped.
+- Storybook: 11 stories (each state + Minimal / Muted / NoChaptersOrBookmarks + an `Interactive` sandbox that wires every emit to local refs and prints the last event).
+
 ## T-2026-04-27-048 — LessonRow + SectionHeader (E13-F02-S02)
 
 - Created: 2026-04-27

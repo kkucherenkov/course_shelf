@@ -53,17 +53,18 @@ export function registerOpenApiValidator(app: INestApplication, nodeEnv: string)
       // Better Auth owns its own wire protocol — the validator has no OpenAPI
       // schema for these routes and must not reject them. `/api/v1/auth` is
       // mounted inside URI versioning so the namespace is consistent.
-      // `ignorePaths` is tested against `req.path`, which is relative to the
-      // middleware mount point (`/api`), so the `/api` prefix must be omitted.
       //
       // `/v1/stream/lessons/` is also exempt: the response is raw binary video
       // bytes (not JSON), so the OpenAPI validator has no schema to validate
       // against and must not intercept these requests.
-      // `req.path` inside this middleware is relative to the `/api` mount point,
-      // so the `/api` prefix is omitted. The pattern below matches both the
-      // relative form (`/v1/auth/…`) and an absolute form just in case the
-      // middleware is ever re-mounted at the root.
-      ignorePaths: /^\/v1\/auth(\/|$)|\/v1\/stream\/lessons\//,
+      //
+      // The pattern is intentionally non-anchored so it matches both the
+      // mount-relative form (`/v1/auth/...`) and the absolute form
+      // (`/api/v1/auth/...`). Express 5's behaviour for the path passed to
+      // `express-openapi-validator`'s ignorePaths matcher includes the `/api`
+      // mount prefix, while older Express versions stripped it — handling
+      // both keeps this resilient.
+      ignorePaths: /\/v1\/(?:auth(?:\/|$)|stream\/lessons\/)/,
     }),
   );
 

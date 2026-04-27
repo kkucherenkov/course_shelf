@@ -37,6 +37,7 @@ import 'package:app_api_client/src/model/create_bookmark_request.dart';
 import 'package:app_api_client/src/model/dependency_status.dart';
 import 'package:app_api_client/src/model/grant_level.dart';
 import 'package:app_api_client/src/model/grant_target.dart';
+import 'package:app_api_client/src/model/has_users_response.dart';
 import 'package:app_api_client/src/model/health_status.dart';
 import 'package:app_api_client/src/model/health_status_dependencies.dart';
 import 'package:app_api_client/src/model/lesson_dto.dart';
@@ -92,6 +93,7 @@ part 'serializers.g.dart';
   DependencyStatus,
   GrantLevel,
   GrantTarget,
+  HasUsersResponse,
   HealthStatus,
   HealthStatusDependencies,
   LessonDto,

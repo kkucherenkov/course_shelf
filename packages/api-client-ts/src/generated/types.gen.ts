@@ -283,6 +283,16 @@ export type GrantTarget = {
     courseId: string;
 };
 
+export type HasUsersResponse = {
+    /**
+     * True iff `users` table count > 0. The web SPA caches this for the
+     * session lifetime and re-checks only when the user explicitly
+     * signs out + back in.
+     *
+     */
+    hasUsers: boolean;
+};
+
 export type HealthStatus = {
     status: DependencyStatus;
     /**
@@ -913,6 +923,22 @@ export type GetAdminDashboardResponses = {
 };
 
 export type GetAdminDashboardResponse = GetAdminDashboardResponses[keyof GetAdminDashboardResponses];
+
+export type GetAdminHasUsersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/has-users';
+};
+
+export type GetAdminHasUsersResponses = {
+    /**
+     * Boolean signalling whether at least one user exists
+     */
+    200: HasUsersResponse;
+};
+
+export type GetAdminHasUsersResponse = GetAdminHasUsersResponses[keyof GetAdminHasUsersResponses];
 
 export type DeleteBookmarkData = {
     body?: never;

@@ -72,6 +72,33 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/has-users': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Indicate whether any users exist in the platform
+     * @description First-run probe. Returns `{ hasUsers: false }` when the database has
+     *     zero users — the SPA uses this to force `/setup` (admin onboarding).
+     *     Returns `{ hasUsers: true }` once at least one user exists, locking
+     *     `/setup` and routing fresh visitors to `/sign-in`.
+     *
+     *     No authentication is required: the very first request from a clean
+     *     browser must succeed without credentials, and the response carries
+     *     no sensitive information beyond a boolean.
+     */
+    get: operations['getAdminHasUsers'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/bookmarks/{id}': {
     parameters: {
       query?: never;
@@ -955,6 +982,14 @@ export interface components {
           /** @description Server-generated cuid of the target course (e.g. "DDD by Eric Evans"). */
           courseId: string;
         };
+    HasUsersResponse: {
+      /**
+       * @description True iff `users` table count > 0. The web SPA caches this for the
+       *     session lifetime and re-checks only when the user explicitly
+       *     signs out + back in.
+       */
+      hasUsers: boolean;
+    };
     HealthStatus: {
       status: components['schemas']['DependencyStatus'];
       /** @description Semantic version of the running backend build */
@@ -1682,6 +1717,26 @@ export interface operations {
         };
         content: {
           'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getAdminHasUsers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Boolean signalling whether at least one user exists */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HasUsersResponse'];
         };
       };
     };

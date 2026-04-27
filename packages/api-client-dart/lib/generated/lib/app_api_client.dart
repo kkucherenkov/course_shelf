@@ -42,6 +42,7 @@ export 'package:app_api_client/src/model/create_bookmark_request.dart';
 export 'package:app_api_client/src/model/dependency_status.dart';
 export 'package:app_api_client/src/model/grant_level.dart';
 export 'package:app_api_client/src/model/grant_target.dart';
+export 'package:app_api_client/src/model/has_users_response.dart';
 export 'package:app_api_client/src/model/health_status.dart';
 export 'package:app_api_client/src/model/health_status_dependencies.dart';
 export 'package:app_api_client/src/model/lesson_dto.dart';

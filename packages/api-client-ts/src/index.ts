@@ -8,4 +8,7 @@
  */
 
 export * from './generated/index.js';
+// Re-export the singleton client so consumers can configure interceptors
+// without importing from the generated sub-path directly.
+export { client } from './generated/client.gen.js';
 export * from './realtime/channels.js';

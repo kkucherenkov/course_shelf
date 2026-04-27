@@ -12,10 +12,97 @@ export interface HealthUpdate {
   reason?: string;
 }
 
-export type RealtimeChannel = 'system:health';
+/**
+ * Discriminated union of scan events. The `kind` field identifies the
+ * concrete type: `progress`, `lesson-discovered`, or `finished`.
+ *
+ */
+export type ScanEvent =
+  | {
+      kind: 'progress';
+      /**
+       * cuid
+       */
+      scanId: string;
+      /**
+       * cuid
+       */
+      libraryId: string;
+      at: string;
+      /**
+       * Relative path of the file being processed right now.
+       */
+      currentPath: string;
+      /**
+       * Lessons discovered so far in this scan.
+       */
+      lessonsSoFar: number;
+    }
+  | {
+      kind: 'lesson-discovered';
+      scanId: string;
+      libraryId: string;
+      at: string;
+      lessonRelativePath: string;
+      sectionTitle: string;
+    }
+  | {
+      kind: 'finished';
+      scanId: string;
+      libraryId: string;
+      at: string;
+      /**
+       * Terminal status of a library scan.
+       */
+      status: 'succeeded' | 'failed' | 'partial';
+      lessonsTotal: number;
+      errorsTotal: number;
+    };
+
+export interface NoteUpdated {
+  /**
+   * cuid
+   */
+  lessonId: string;
+  /**
+   * Better Auth user id (UUID v4)
+   */
+  userId: string;
+  updatedAt: string;
+  /**
+   * Full Markdown body after the edit. Sent in full (not as a diff)
+   * because notes are short and the network overhead is dwarfed by
+   * the simplicity of last-write-wins reconciliation.
+   *
+   */
+  body: string;
+}
+
+export interface ProgressUpdated {
+  userId: string;
+  lessonId: string;
+  positionSeconds: number;
+  durationSeconds: number;
+  percent: number;
+  completed: boolean;
+  lastSeenAt: string;
+  /**
+   * Set when `completed` is true (>= 90% threshold crossed).
+   */
+  completedAt?: string;
+}
+
+export type RealtimeChannel =
+  | 'system:health'
+  | 'library:scan:{libraryId}'
+  | 'notes:lesson:{lessonId}'
+  | 'progress:user:{userId}';
 
 export interface RealtimeChannelPayloadMap {
   'system:health': HealthUpdate;
+  'library:scan:{libraryId}': ScanEvent;
+  'notes:lesson:{lessonId}': NoteUpdated;
+  'progress:user:{userId}': ProgressUpdated;
 }
 
 export type RealtimeChannelPayload<C extends RealtimeChannel> = RealtimeChannelPayloadMap[C];

@@ -56,6 +56,33 @@ function resolveRef(ref: string): { name: string; value: unknown } {
   return { name: parts.at(-1) ?? '', value: node };
 }
 
+/**
+ * Walk a schema tree and replace every intra-document `$ref` with the
+ * dereferenced value. Required because we hand sub-schemas to
+ * `json-schema-to-typescript` standalone — its bundled ref-parser tries to
+ * resolve `#/components/...` against the sub-schema root, which has no
+ * `components` key, and throws `MissingPointerError`.
+ *
+ * Assumes the schema graph is acyclic (true for our AsyncAPI document — no
+ * recursive types). If recursion is ever introduced, swap to a visited-set
+ * keyed by `$ref`.
+ */
+function inlineRefs(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map((entry) => inlineRefs(entry));
+  if (node !== null && typeof node === 'object') {
+    const obj = node as Record<string, unknown>;
+    if (typeof obj['$ref'] === 'string') {
+      return inlineRefs(resolveRef(obj['$ref']).value);
+    }
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj)) {
+      out[k] = inlineRefs(v);
+    }
+    return out;
+  }
+  return node;
+}
+
 interface ChannelEntry {
   address: string;
   payloadName: string;
@@ -70,7 +97,7 @@ for (const channel of Object.values(doc.channels)) {
   const message = resolveRef(firstMessage.$ref).value as { payload: { $ref: string } };
   const payloadRef = resolveRef(message.payload.$ref);
   const schemaName = payloadRef.name;
-  payloadSchemas.set(schemaName, payloadRef.value);
+  payloadSchemas.set(schemaName, inlineRefs(payloadRef.value));
   channels.push({ address: channel.address, payloadName: schemaName });
 }
 

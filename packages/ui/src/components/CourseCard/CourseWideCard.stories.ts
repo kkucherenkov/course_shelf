@@ -102,7 +102,7 @@ export const Variants: Story = {
       return { courses };
     },
     template: `
-      <div style="max-width: 480px; display: flex; flex-direction: column; gap: 8px; padding: 16px;">
+      <div style="max-width: 480px; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4);">
         <CourseWideCard v-for="c in courses" :key="c.id" :course="c" :resume-at="c.completed * 60" />
       </div>
     `,
@@ -116,8 +116,8 @@ export const HoverFocus: Story = {
       return { course: sampleCourse };
     },
     template: `
-      <div style="max-width: 480px; display: flex; flex-direction: column; gap: 8px; padding: 16px;">
-        <p style="font-size: 12px; color: var(--text-secondary);">Hover or Tab to these cards to see focus/hover state.</p>
+      <div style="max-width: 480px; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4);">
+        <p style="font-size: var(--text-sm); color: var(--text-secondary);">Hover or Tab to these cards to see focus/hover state.</p>
         <CourseWideCard :course="course" :resume-at="125" />
         <CourseWideCard :course="course" />
       </div>

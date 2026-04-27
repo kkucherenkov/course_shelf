@@ -32,7 +32,7 @@ const meta: Meta<typeof CourseCompactRow> = {
     setup() {
       return { args };
     },
-    template: `<div style="max-width: 400px; padding: 8px;"><CourseCompactRow v-bind="args" /></div>`,
+    template: `<div style="max-width: 400px; padding: var(--space-2);"><CourseCompactRow v-bind="args" /></div>`,
   }),
 };
 
@@ -92,7 +92,7 @@ export const Variants: Story = {
       return { courses };
     },
     template: `
-      <div style="max-width: 400px; display: flex; flex-direction: column; gap: 4px; padding: 16px;">
+      <div style="max-width: 400px; display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4);">
         <CourseCompactRow v-for="c in courses" :key="c.id" :course="c" />
       </div>
     `,
@@ -106,8 +106,8 @@ export const HoverFocus: Story = {
       return { course: sampleCourse };
     },
     template: `
-      <div style="max-width: 400px; display: flex; flex-direction: column; gap: 4px; padding: 16px;">
-        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Tab to rows for focus ring.</p>
+      <div style="max-width: 400px; display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4);">
+        <p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-1);">Tab to rows for focus ring.</p>
         <CourseCompactRow :course="course" />
         <CourseCompactRow :course="{ ...course, id: '2', accent: 'amber', completed: 8 }" />
       </div>

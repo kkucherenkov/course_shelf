@@ -22,8 +22,8 @@ const meta: Meta<typeof AppRow> = {
           <div style="width:32px;height:32px;border-radius:50%;background:var(--surface-overlay);" />
         </template>
         <div>
-          <div style="font-size:14px;font-weight:500;color:var(--text-loud);">Course title</div>
-          <div style="font-size:12px;color:var(--text-secondary);">Author Name</div>
+          <div style="font-size:var(--text-md);font-weight:500;color:var(--text-loud);">Course title</div>
+          <div style="font-size:var(--text-sm);color:var(--text-secondary);">Author Name</div>
         </div>
         <template #trailing>42%</template>
       </AppRow>
@@ -58,14 +58,14 @@ export const Interactive: Story = {
           <template #leading>
             <div style="width:32px;height:32px;border-radius:50%;background:var(--surface-overlay);" />
           </template>
-          <div style="font-size:14px;font-weight:500;color:var(--text-loud);">Design Fundamentals</div>
+          <div style="font-size:var(--text-md);font-weight:500;color:var(--text-loud);">Design Fundamentals</div>
           <template #trailing>7h 12m</template>
         </AppRow>
         <AppRow v-bind="args" :selected="true">
           <template #leading>
             <div style="width:32px;height:32px;border-radius:50%;background:var(--brand-accent-soft);" />
           </template>
-          <div style="font-size:14px;font-weight:500;color:var(--text-loud);">Vue 3 Masterclass</div>
+          <div style="font-size:var(--text-md);font-weight:500;color:var(--text-loud);">Vue 3 Masterclass</div>
           <template #trailing>3h 45m</template>
         </AppRow>
       </div>

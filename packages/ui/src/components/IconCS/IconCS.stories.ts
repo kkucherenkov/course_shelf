@@ -102,14 +102,14 @@ export const Grid: Story = {
       return { names };
     },
     template: `
-      <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 24px; padding: 16px;">
+      <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: var(--space-5); padding: var(--space-4);">
         <div
           v-for="n in names"
           :key="n"
-          style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
+          style="display: flex; flex-direction: column; align-items: center; gap: var(--space-2);"
         >
           <IconCS :name="n" :size="32" />
-          <code style="font-size: 11px;">{{ n }}</code>
+          <code style="font-size: var(--text-xs);">{{ n }}</code>
         </div>
       </div>
     `,

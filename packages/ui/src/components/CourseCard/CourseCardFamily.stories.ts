@@ -30,21 +30,21 @@ export const Family: Story = {
       return { course: familyCourse };
     },
     template: `
-      <div style="padding: 24px; display: flex; flex-direction: column; gap: 32px; max-width: 600px;">
+      <div style="padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-6); max-width: 600px;">
         <div>
-          <p style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 12px;">CoursePosterCard — 3:4 cover</p>
+          <p style="font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 var(--space-3);">CoursePosterCard — 3:4 cover</p>
           <div style="width: 180px;">
             <CoursePosterCard :course="course" />
           </div>
         </div>
 
         <div>
-          <p style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 12px;">CourseWideCard — square thumb + body</p>
+          <p style="font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 var(--space-3);">CourseWideCard — square thumb + body</p>
           <CourseWideCard :course="course" :resume-at="125" />
         </div>
 
         <div>
-          <p style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 12px;">CourseCompactRow — single-line list row</p>
+          <p style="font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 var(--space-3);">CourseCompactRow — single-line list row</p>
           <CourseCompactRow :course="course" />
         </div>
       </div>
@@ -68,19 +68,19 @@ export const FamilyAllAccents: Story = {
       return { courses };
     },
     template: `
-      <div style="padding: 24px;">
-        <p style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 16px;">All 6 accents — Poster</p>
-        <div style="display: grid; grid-template-columns: repeat(6, 140px); gap: 12px; margin-bottom: 32px;">
+      <div style="padding: var(--space-5);">
+        <p style="font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 var(--space-4);">All 6 accents — Poster</p>
+        <div style="display: grid; grid-template-columns: repeat(6, 140px); gap: var(--space-3); margin-bottom: var(--space-6);">
           <CoursePosterCard v-for="c in courses" :key="c.id + '-poster'" :course="c" />
         </div>
 
-        <p style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 16px;">All 6 accents — Wide</p>
-        <div style="max-width: 480px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 32px;">
+        <p style="font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 var(--space-4);">All 6 accents — Wide</p>
+        <div style="max-width: 480px; display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-6);">
           <CourseWideCard v-for="c in courses" :key="c.id + '-wide'" :course="c" />
         </div>
 
-        <p style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 16px;">All 6 accents — Compact</p>
-        <div style="max-width: 400px; display: flex; flex-direction: column; gap: 4px;">
+        <p style="font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 var(--space-4);">All 6 accents — Compact</p>
+        <div style="max-width: 400px; display: flex; flex-direction: column; gap: var(--space-1);">
           <CourseCompactRow v-for="c in courses" :key="c.id + '-compact'" :course="c" />
         </div>
       </div>

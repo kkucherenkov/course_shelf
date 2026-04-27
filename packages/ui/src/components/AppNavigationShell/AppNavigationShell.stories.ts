@@ -79,8 +79,8 @@ export const Default: Story = {
         @update:colorMode="colorMode = $event"
         @nav="active = $event"
       >
-        <div style="padding: 24px;">
-          <h1 style="margin: 0 0 8px; font-size: 24px; color: var(--text-fg);">Home</h1>
+        <div style="padding: var(--space-5);">
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-2xl); color: var(--text-fg);">Home</h1>
           <p style="color: var(--text-secondary); margin: 0;">Welcome back, {{ args.user.name }}.</p>
         </div>
       </AppNavigationShell>
@@ -117,8 +117,8 @@ export const Admin: Story = {
         @update:colorMode="colorMode = $event"
         @nav="active = $event"
       >
-        <div style="padding: 24px;">
-          <h1 style="margin: 0 0 8px; font-size: 24px; color: var(--text-fg);">Admin Dashboard</h1>
+        <div style="padding: var(--space-5);">
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-2xl); color: var(--text-fg);">Admin Dashboard</h1>
           <p style="color: var(--text-secondary); margin: 0;">Manage your platform.</p>
         </div>
       </AppNavigationShell>
@@ -150,13 +150,13 @@ export const WithRightRail: Story = {
         @update:colorMode="colorMode = $event"
         @nav="active = $event"
       >
-        <div style="padding: 24px;">
-          <h1 style="margin: 0 0 8px; font-size: 24px; color: var(--text-fg);">Browse Courses</h1>
+        <div style="padding: var(--space-5);">
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-2xl); color: var(--text-fg);">Browse Courses</h1>
           <p style="color: var(--text-secondary); margin: 0;">Main content area (1fr).</p>
         </div>
         <template #right-rail>
-          <div style="padding: 16px;">
-            <h3 style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--text-fg);">Filters</h3>
+          <div style="padding: var(--space-4);">
+            <h3 style="margin: 0 0 var(--space-3); font-size: var(--text-md); font-weight: 600; color: var(--text-fg);">Filters</h3>
             <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Sticky right rail (280px).</p>
           </div>
         </template>
@@ -190,7 +190,7 @@ export const Narrow: Story = {
           @update:colorMode="colorMode = $event"
           @nav="active = $event"
         >
-          <div style="padding: 16px;">
+          <div style="padding: var(--space-4);">
             <p style="color: var(--text-secondary); margin: 0;">Mobile view — sidebar hidden, bottom-tab visible.</p>
           </div>
         </AppNavigationShell>
@@ -226,8 +226,8 @@ export const LightMode: Story = {
         @update:colorMode="colorMode = $event"
         @nav="active = $event"
       >
-        <div style="padding: 24px;">
-          <h1 style="margin: 0 0 8px; font-size: 24px; color: var(--text-fg);">Light Mode</h1>
+        <div style="padding: var(--space-5);">
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-2xl); color: var(--text-fg);">Light Mode</h1>
           <p style="color: var(--text-secondary); margin: 0;">Shell in light color mode.</p>
         </div>
       </AppNavigationShell>
@@ -259,7 +259,7 @@ export const MenuOpen: Story = {
         @update:colorMode="colorMode = $event"
         @nav="active = $event"
       >
-        <div style="padding: 24px;">
+        <div style="padding: var(--space-5);">
           <p style="color: var(--text-secondary); margin: 0;">
             Click the avatar button in the top-right corner to open the user menu.
           </p>

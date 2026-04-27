@@ -92,7 +92,7 @@ export const Variants: Story = {
       return { courses };
     },
     template: `
-      <div style="display: grid; grid-template-columns: repeat(6, 160px); gap: 16px; padding: 16px;">
+      <div style="display: grid; grid-template-columns: repeat(6, 160px); gap: var(--space-4); padding: var(--space-4);">
         <CoursePosterCard v-for="c in courses" :key="c.id" :course="c" />
       </div>
     `,
@@ -107,13 +107,13 @@ export const HoverFocus: Story = {
       return { course };
     },
     template: `
-      <div style="display: flex; gap: 16px; padding: 16px;">
+      <div style="display: flex; gap: var(--space-4); padding: var(--space-4);">
         <div style="width: 180px;">
-          <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Hover me</p>
+          <p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">Hover me</p>
           <CoursePosterCard :course="course" />
         </div>
         <div style="width: 180px;">
-          <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Focus (Tab to reach)</p>
+          <p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">Focus (Tab to reach)</p>
           <CoursePosterCard :course="course" />
         </div>
       </div>

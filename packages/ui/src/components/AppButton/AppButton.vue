@@ -70,7 +70,10 @@
       :size="iconPxSize"
       class="app-button__icon app-button__icon--leading"
     />
-    <span v-if="$slots['default'] || label" class="app-button__label">
+    <span
+      v-if="$slots['default'] || label"
+      class="app-button__label"
+    >
       <slot>{{ label }}</slot>
     </span>
     <IconCS

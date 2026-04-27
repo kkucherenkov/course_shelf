@@ -46,10 +46,19 @@
     <div class="app-field__control">
       <slot v-bind="slotAttrs" />
     </div>
-    <p v-if="error" :id="descId" class="app-field__error" role="alert">
+    <p
+      v-if="error"
+      :id="descId"
+      class="app-field__error"
+      role="alert"
+    >
       {{ error }}
     </p>
-    <p v-else-if="help" :id="descId" class="app-field__help">
+    <p
+      v-else-if="help"
+      :id="descId"
+      class="app-field__help"
+    >
       {{ help }}
     </p>
   </div>
@@ -79,7 +88,10 @@
     }
 
     &__error {
-      color: var(--status-danger);
+      // --status-danger is not a shipped token; the generated CSS ships
+      // --status-error-fg (light: #A04434, dark: #D26B5C). Alias confirmed in
+      // apps/web/app/assets/css/tokens.generated.css.
+      color: var(--status-error-fg);
       font-weight: var(--fw-medium);
     }
   }

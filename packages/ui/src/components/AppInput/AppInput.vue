@@ -111,22 +111,37 @@
       cursor: default;
     }
 
+    // Heights match the bundle's .btn-sm/default/lg and .input rules:
+    // sm = 28px, md = 36px (default .input), lg = 44px.
+    // No --space-16/20/24 tokens exist; the scale tops out at --space-9 (96px).
     &--sm {
-      padding: var(--space-2) var(--space-3);
-      font-size: var(--text-xs);
-      height: var(--space-16);
+      padding: 0 var(--space-3);
+      font-size: var(--text-sm);
+      height: 28px;
+      min-height: 28px;
     }
 
     &--md {
-      padding: var(--space-3) var(--space-4);
-      font-size: var(--text-sm);
-      height: var(--space-20);
+      padding: 0 var(--space-3);
+      font-size: var(--text-md);
+      height: 36px;
+      min-height: 36px;
     }
 
     &--lg {
-      padding: var(--space-3) var(--space-5);
+      padding: 0 var(--space-4);
       font-size: var(--text-md);
-      height: var(--space-24);
+      height: 44px;
+      min-height: 44px;
     }
+  }
+
+  // Compact density — bundle spec ([data-density="compact"] .input) drops md to 30px.
+  // The selector must pierce the scoped boundary so we address the host element
+  // via :deep() — but since this is a single native <input> root there is no
+  // child pierce needed; we address our own scoped class via a global ancestor.
+  :global([data-density='compact']) .app-input--md {
+    height: 30px;
+    min-height: 30px;
   }
 </style>

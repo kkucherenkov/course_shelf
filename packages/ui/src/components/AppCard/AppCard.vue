@@ -50,20 +50,35 @@
     @click="handleClick"
     @keydown="handleKeydown"
   >
-    <div v-if="title || description || $slots['header']" class="app-card__header">
+    <div
+      v-if="title || description || $slots['header']"
+      class="app-card__header"
+    >
       <slot name="header">
-        <h3 v-if="title" class="app-card__title">
+        <h3
+          v-if="title"
+          class="app-card__title"
+        >
           {{ title }}
         </h3>
-        <p v-if="description" class="app-card__description">
+        <p
+          v-if="description"
+          class="app-card__description"
+        >
           {{ description }}
         </p>
       </slot>
     </div>
-    <div v-if="$slots['default']" class="app-card__body">
+    <div
+      v-if="$slots['default']"
+      class="app-card__body"
+    >
       <slot />
     </div>
-    <div v-if="$slots['footer']" class="app-card__footer">
+    <div
+      v-if="$slots['footer']"
+      class="app-card__footer"
+    >
       <slot name="footer" />
     </div>
   </component>

@@ -82,7 +82,12 @@
     >
       <!-- Placeholder sits as a disabled, hidden option so it shows on the
            trigger until the user makes a real choice. -->
-      <option v-if="placeholder !== undefined" :value="PLACEHOLDER_VALUE" disabled hidden>
+      <option
+        v-if="placeholder !== undefined"
+        :value="PLACEHOLDER_VALUE"
+        disabled
+        hidden
+      >
         {{ placeholder }}
       </option>
       <option
@@ -97,8 +102,16 @@
     <!-- Decorative caret — real chevron token would live in tokens.generated.
          Uses currentColor so it tracks the text colour, stays out of the a11y
          tree via aria-hidden. -->
-    <span class="app-select__chevron" aria-hidden="true">
-      <svg viewBox="0 0 12 12" width="12" height="12" fill="none">
+    <span
+      class="app-select__chevron"
+      aria-hidden="true"
+    >
+      <svg
+        viewBox="0 0 12 12"
+        width="12"
+        height="12"
+        fill="none"
+      >
         <path
           d="M3 4.5l3 3 3-3"
           stroke="currentColor"
@@ -148,7 +161,8 @@
       }
 
       &[aria-invalid='true'] {
-        border-color: var(--status-danger);
+        // --status-danger is not a shipped token; use --status-error-fg (same alias as AppField).
+        border-color: var(--status-error-fg);
       }
 
       &:disabled {
@@ -170,10 +184,11 @@
       transform: translateY(-50%);
     }
 
-    /* ----- sizes ----- */
+    /* ----- sizes — explicit pixel heights matching AppInput / bundle .input ----- */
     &--sm {
       .app-select__control {
-        padding-block: var(--space-2);
+        height: 28px;
+        padding-block: 0;
         padding-inline: var(--space-3);
         padding-inline-end: var(--space-10);
         font-size: var(--text-sm);
@@ -186,8 +201,9 @@
 
     &--md {
       .app-select__control {
-        padding-block: var(--space-3);
-        padding-inline: var(--space-4);
+        height: 36px;
+        padding-block: 0;
+        padding-inline: var(--space-3);
         padding-inline-end: var(--space-12);
         font-size: var(--text-md);
       }
@@ -195,10 +211,11 @@
 
     &--lg {
       .app-select__control {
-        padding-block: var(--space-4);
-        padding-inline: var(--space-6);
+        height: 44px;
+        padding-block: 0;
+        padding-inline: var(--space-4);
         padding-inline-end: var(--space-14);
-        font-size: var(--text-lg);
+        font-size: var(--text-md);
       }
 
       .app-select__chevron {
@@ -209,5 +226,10 @@
     &--disabled {
       cursor: not-allowed;
     }
+  }
+
+  // Compact density — mirrors [data-density="compact"] .input → 30px height.
+  :global([data-density='compact']) .app-select--md .app-select__control {
+    height: 30px;
   }
 </style>

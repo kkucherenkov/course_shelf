@@ -18,6 +18,16 @@ export default [
     ],
   },
   {
+    // `ariaLabel` is a component-defined camelCase prop on AppIconButton (not an HTML
+    // attribute), so the vue/attribute-hyphenation rule must not force it to `aria-label`.
+    // vue-tsc type-checks the prop by its camelCase name and will error if the kebab form
+    // is used. Ignore the prop globally across all Vue SFCs in this package.
+    files: ['src/**/*.vue'],
+    rules: {
+      'vue/attribute-hyphenation': ['error', 'always', { ignore: ['ariaLabel'] }],
+    },
+  },
+  {
     // IconCS uses an all-caps acronym (CS = CourseShelf) — exempt the whole directory
     // from the filename-case rule rather than silently rename the public API.
     files: ['src/components/IconCS/**'],

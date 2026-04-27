@@ -48,7 +48,11 @@
     :aria-disabled="loading || disabled || undefined"
     @click="onClick"
   >
-    <IconCS v-if="!loading" :name="name" :size="iconPx" />
+    <IconCS
+      v-if="!loading"
+      :name="name"
+      :size="iconPx"
+    />
   </button>
 </template>
 

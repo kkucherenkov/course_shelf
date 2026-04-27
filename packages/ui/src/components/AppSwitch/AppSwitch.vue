@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, useId } from 'vue';
+  import { computed, useAttrs, useId } from 'vue';
 
   type Size = 'sm' | 'md' | 'lg';
   type Color = 'primary' | 'success' | 'neutral';
@@ -27,7 +27,17 @@
   // A local id lets the wrapper <label> associate with the switch button so a
   // click on the label text forwards to the switch's click handler — same
   // affordance as a native `<input type="checkbox">` + <label>.
+  // Disable automatic attr fallthrough so aria-* / id attrs from AppField's slot
+  // contract land on the inner <button role="switch">, not the wrapper <label>.
+  defineOptions({ inheritAttrs: false });
+
+  const attrs = useAttrs();
+
   const switchId = useId();
+
+  // Compute the effective button id: prefer the id passed in via attrs (from AppField)
+  // over the internal stable id. Using bracket notation to satisfy TS index-signature rule.
+  const effectiveSwitchId = computed(() => (attrs['id'] as string | undefined) ?? switchId);
 
   const rootClasses = computed(() => [
     'app-switch',
@@ -61,9 +71,18 @@
 </script>
 
 <template>
-  <label v-if="label" :class="rootClasses" :for="switchId">
+  <!-- When attrs carries an `id` from AppField, prefer it over the internal switchId
+       so the <label for="..."> association remains consistent. -->
+  <label
+    v-if="label"
+    :class="rootClasses"
+    :for="effectiveSwitchId"
+  >
+    <!-- v-bind="attrs" lands id / aria-describedby / aria-invalid / aria-required
+         from AppField's slot contract onto the interactive element, not the label. -->
     <button
-      :id="switchId"
+      v-bind="attrs"
+      :id="effectiveSwitchId"
       type="button"
       role="switch"
       :aria-checked="modelValue"
@@ -81,6 +100,7 @@
   </label>
   <button
     v-else
+    v-bind="attrs"
     type="button"
     role="switch"
     :aria-checked="modelValue"

@@ -16,7 +16,7 @@ const meta: Meta<typeof AppLessonRow> = {
     setup() {
       return { args };
     },
-    template: `<div style="max-width: 560px; padding: 16px;"><AppLessonRow v-bind="args" /></div>`,
+    template: `<div style="max-width: 560px; padding: var(--space-4);"><AppLessonRow v-bind="args" /></div>`,
   }),
 };
 export default meta;
@@ -49,7 +49,7 @@ export const Stack: Story = {
   render: () => ({
     components: { AppLessonRow },
     template: `
-      <div style="max-width: 560px; padding: 16px; display: flex; flex-direction: column; gap: 4px;">
+      <div style="max-width: 560px; padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-1);">
         <AppLessonRow :num="1" title="Setting up your editor" :duration="180" state="completed" materials />
         <AppLessonRow :num="2" title="The TypeScript type system, top-down" :duration="540" state="in-progress" :progress="35" current />
         <AppLessonRow :num="3" title="Discriminated unions in practice" :duration="425" />

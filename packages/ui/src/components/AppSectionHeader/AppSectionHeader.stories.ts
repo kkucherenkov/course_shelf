@@ -13,7 +13,7 @@ const meta: Meta<typeof AppSectionHeader> = {
     setup() {
       return { args };
     },
-    template: `<div style="max-width: 560px; padding: 16px;"><AppSectionHeader v-bind="args" /></div>`,
+    template: `<div style="max-width: 560px; padding: var(--space-4);"><AppSectionHeader v-bind="args" /></div>`,
   }),
 };
 export default meta;
@@ -49,7 +49,7 @@ export const InteractiveOutline: Story = {
       };
     },
     template: `
-      <div style="max-width: 560px; padding: 16px;">
+      <div style="max-width: 560px; padding: var(--space-4);">
         <AppSectionHeader
           :idx="1"
           title="TypeScript foundations"
@@ -58,7 +58,7 @@ export const InteractiveOutline: Story = {
           :open="open"
           @toggle="toggle"
         />
-        <div v-show="open" style="display: flex; flex-direction: column; gap: 4px; padding-top: 8px;">
+        <div v-show="open" style="display: flex; flex-direction: column; gap: var(--space-1); padding-top: var(--space-2);">
           <AppLessonRow :num="1" title="Setting up your editor" :duration="180" state="completed" />
           <AppLessonRow :num="2" title="The TypeScript type system, top-down" :duration="540" state="in-progress" :progress="35" current />
           <AppLessonRow :num="3" title="Discriminated unions in practice" :duration="425" />

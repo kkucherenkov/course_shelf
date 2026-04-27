@@ -16,6 +16,15 @@ import 'package:app_api_client/src/model/date.dart';
 
 import 'package:app_api_client/src/model/access_grant_dto.dart';
 import 'package:app_api_client/src/model/access_grant_list_dto.dart';
+import 'package:app_api_client/src/model/admin_dashboard_dto.dart';
+import 'package:app_api_client/src/model/admin_dashboard_dto_counts.dart';
+import 'package:app_api_client/src/model/admin_dashboard_latest_scan.dart';
+import 'package:app_api_client/src/model/batch_progress_item_accepted.dart';
+import 'package:app_api_client/src/model/batch_progress_item_forbidden.dart';
+import 'package:app_api_client/src/model/batch_progress_item_result.dart';
+import 'package:app_api_client/src/model/batch_progress_item_stale.dart';
+import 'package:app_api_client/src/model/batch_progress_request.dart';
+import 'package:app_api_client/src/model/batch_progress_response.dart';
 import 'package:app_api_client/src/model/bookmark_dto.dart';
 import 'package:app_api_client/src/model/bookmark_list_dto.dart';
 import 'package:app_api_client/src/model/continue_watching_dto.dart';
@@ -41,6 +50,7 @@ import 'package:app_api_client/src/model/material_kind.dart';
 import 'package:app_api_client/src/model/model0.dart';
 import 'package:app_api_client/src/model/model1.dart';
 import 'package:app_api_client/src/model/note_dto.dart';
+import 'package:app_api_client/src/model/ping_response.dart';
 import 'package:app_api_client/src/model/problem.dart';
 import 'package:app_api_client/src/model/realtime_token.dart';
 import 'package:app_api_client/src/model/record_progress_request.dart';
@@ -61,6 +71,15 @@ part 'serializers.g.dart';
 @SerializersFor([
   AccessGrantDto,
   AccessGrantListDto,
+  AdminDashboardDto,
+  AdminDashboardDtoCounts,
+  AdminDashboardLatestScan,
+  BatchProgressItemAccepted,
+  BatchProgressItemForbidden,
+  BatchProgressItemResult,
+  BatchProgressItemStale,
+  BatchProgressRequest,
+  BatchProgressResponse,
   BookmarkDto,
   BookmarkListDto,
   ContinueWatchingDto,
@@ -86,6 +105,7 @@ part 'serializers.g.dart';
   Model0,
   Model1,
   NoteDto,
+  PingResponse,
   Problem,
   RealtimeToken,
   RecordProgressRequest,

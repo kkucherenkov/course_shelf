@@ -8,6 +8,8 @@ import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
 import 'package:app_api_client/src/api_util.dart';
+import 'package:app_api_client/src/model/batch_progress_request.dart';
+import 'package:app_api_client/src/model/batch_progress_response.dart';
 import 'package:app_api_client/src/model/bookmark_dto.dart';
 import 'package:app_api_client/src/model/bookmark_list_dto.dart';
 import 'package:app_api_client/src/model/create_bookmark_request.dart';
@@ -567,6 +569,107 @@ class LearningApi {
     }
 
     return Response<LessonProgressDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Record up to 200 progress updates in a single call
+  /// Sync endpoint for offline-first clients. Per-item failures do **not** abort the batch — every item gets its own status in the same order as the input. Conflict detection: if the server&#39;s &#x60;lastSeenAt&#x60; for a lesson is newer than the client&#39;s &#x60;clientUpdatedAt&#x60;, the item&#39;s status is &#x60;stale&#x60; and &#x60;state&#x60; carries the server&#39;s view so the client can overwrite local cache. Otherwise the status is &#x60;accepted&#x60;. &#x60;forbidden&#x60; covers both \&quot;no READ grant\&quot; and \&quot;lesson does not exist\&quot; (no-oracle rule, consistent with &#x60;POST /progress&#x60;). 
+  ///
+  /// Parameters:
+  /// * [batchProgressRequest] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [BatchProgressResponse] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<BatchProgressResponse>> recordLessonProgressBatch({ 
+    required BatchProgressRequest batchProgressRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/progress/batch';
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(BatchProgressRequest);
+      _bodyData = _serializers.serialize(batchProgressRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    BatchProgressResponse? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(BatchProgressResponse),
+      ) as BatchProgressResponse;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<BatchProgressResponse>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

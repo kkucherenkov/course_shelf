@@ -16,6 +16,7 @@ Method | HTTP request | Description
 [**getNote**](LearningApi.md#getnote) | **GET** /api/v1/notes/{lessonId} | Get the requester&#39;s note for a lesson
 [**listLessonBookmarks**](LearningApi.md#listlessonbookmarks) | **GET** /api/v1/lessons/{lessonId}/bookmarks | List the requester&#39;s bookmarks for a lesson
 [**recordLessonProgress**](LearningApi.md#recordlessonprogress) | **POST** /api/v1/progress | Record (upsert) the requester&#39;s progress on a lesson
+[**recordLessonProgressBatch**](LearningApi.md#recordlessonprogressbatch) | **POST** /api/v1/progress/batch | Record up to 200 progress updates in a single call
 [**updateBookmark**](LearningApi.md#updatebookmark) | **PATCH** /api/v1/bookmarks/{id} | Update a bookmark&#39;s position or label
 [**upsertNote**](LearningApi.md#upsertnote) | **PUT** /api/v1/notes | Upsert the requester&#39;s note for a lesson
 
@@ -309,6 +310,49 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**LessonProgressDto**](LessonProgressDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **recordLessonProgressBatch**
+> BatchProgressResponse recordLessonProgressBatch(batchProgressRequest)
+
+Record up to 200 progress updates in a single call
+
+Sync endpoint for offline-first clients. Per-item failures do **not** abort the batch — every item gets its own status in the same order as the input. Conflict detection: if the server's `lastSeenAt` for a lesson is newer than the client's `clientUpdatedAt`, the item's status is `stale` and `state` carries the server's view so the client can overwrite local cache. Otherwise the status is `accepted`. `forbidden` covers both \"no READ grant\" and \"lesson does not exist\" (no-oracle rule, consistent with `POST /progress`). 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final BatchProgressRequest batchProgressRequest = {"items":[{"lessonId":"clxvles0000000000000000001","positionSeconds":600,"durationSeconds":1800,"clientUpdatedAt":"2026-04-25T14:00:00Z"},{"lessonId":"clxvles0000000000000000002","positionSeconds":30,"durationSeconds":1200,"clientUpdatedAt":"2026-04-20T08:00:00Z"},{"lessonId":"clxvles0000000000000000099","positionSeconds":0,"durationSeconds":600,"clientUpdatedAt":"2026-04-25T14:05:00Z"}]}; // BatchProgressRequest | 
+
+try {
+    final response = api.recordLessonProgressBatch(batchProgressRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->recordLessonProgressBatch: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **batchProgressRequest** | [**BatchProgressRequest**](BatchProgressRequest.md)|  | 
+
+### Return type
+
+[**BatchProgressResponse**](BatchProgressResponse.md)
 
 ### Authorization
 

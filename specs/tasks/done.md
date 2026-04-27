@@ -2,6 +2,19 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-050 — Bookmark family (E13-F02-S04)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: single feature commit `6060a41` on `feat/bookmark-family` (closes #52) → PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/133. UI tests 786/786 (+23); lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F02-S04.md` (source: `docs/design/cs-components/components.jsx` §Bookmark / BookmarkAdd, CSS in `docs/design/cs-components/styles.css`)
+- Outcome: three composable domain components for the lesson-player bookmark surface — no modal dialogs.
+  - `AppBookmark` — `time, label?, editable?`. Mono accent time chip + label + hover-revealed Edit / Delete actions; click / Enter / Space → `select`; edit and delete `@click.stop` so row select does not bubble. Descriptive `aria-label`.
+  - `AppBookmarkAdd` — `time, submitting?, placeholder?`. Inline add row (time chip + `AppInput` + Save). Enter saves, Escape cancels and clears the buffer, `submitting` disables input + blocks double-submit. Empty label allowed (matches JSX).
+  - `AppBookmarkList` — `bookmarks, addTime?, editable?, adding?, emptyTitle?, emptyBody?`. Renders the add row when `addTime` is defined, then the bookmark stack, then `AppEmptyState` (icon `bookmark`) when both are absent. Forwards `select / edit / delete` with the entry id and `addSave / addCancel` from the add row.
+- Storybook: 14 stories total (`AppBookmark`: Default / NoLabel / ReadOnly / Stack; `AppBookmarkAdd`: Default / Submitting / HourLong / Interactive; `AppBookmarkList`: Default / Empty / ReadOnly / WithAddRow / EmptyWithAddRow / Adding / Interactive).
+
 ## T-2026-04-27-049 — PlayerChrome web component (E13-F02-S03)
 
 - Created: 2026-04-27

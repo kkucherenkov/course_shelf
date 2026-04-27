@@ -17,6 +17,9 @@
  *
  * CLI flags:
  *   --dry-run         print would-be requests without calling the API
+ *   --print-map       print the card-id → issue-number map and exit
+ *                     (uses existing issues, doesn't create or reconcile)
+ *   --lookup=<id>     print only the issue number for one card (e.g. E13-F02-S07)
  *   --owner=<owner>   default kkucherenkov
  *   --repo=<repo>     default course_shelf
  *   --url=<url>       default http://code.homelab.local
@@ -289,8 +292,42 @@ async function reconcileIssues(idToIssue: Map<string, number>): Promise<void> {
   console.warn(`[seed] pass 2 done: ${String(updated)} updated`);
 }
 
+async function loadIssueMap(): Promise<Map<string, number>> {
+  const existing = await listAll<Issue>(`/repos/${owner}/${repo}/issues?state=all&type=issues`);
+  const titlePrefixRe = /^\[(E\d{2}-F\d{2}-S\d{2})\]/;
+  const map = new Map<string, number>();
+  for (const issue of existing) {
+    const m = titlePrefixRe.exec(issue.title);
+    if (m) map.set(m[1]!, issue.number);
+  }
+  return map;
+}
+
 // Main
 (async (): Promise<void> => {
+  // --lookup=<id>: print just the issue number for one card.
+  const lookup = argv.get('lookup');
+  if (lookup) {
+    const map = await loadIssueMap();
+    const num = map.get(lookup);
+    if (num === undefined) {
+      console.error(`[seed] no issue found for ${lookup}`);
+      process.exit(1);
+    }
+    console.log(String(num));
+    return;
+  }
+
+  // --print-map: dump all card-id → issue-number pairs and exit.
+  if (argv.has('print-map')) {
+    const map = await loadIssueMap();
+    const sorted = [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+    for (const [id, num] of sorted) {
+      console.log(`${id}\t#${String(num)}`);
+    }
+    return;
+  }
+
   const labelIds = await ensureLabels();
   const idToIssue = await ensureIssues(labelIds);
   await reconcileIssues(idToIssue);

@@ -27,20 +27,21 @@ export default defineNuxtConfig({
     // Pending https://github.com/nuxt/nuxt — expected to clear in 4.5.
   },
 
-  // Translations live in per-locale JSON files under `app/i18n/locales/`.
-  // We tried per-component `<i18n lang="json">` blocks, but @nuxtjs/i18n v10
-  // forces `include: []` on @intlify/unplugin-vue-i18n whenever `langDir` is
-  // unset, and with an empty include the unplugin's transform is a no-op.
-  // The result: vite:json wins the transform race for `?vue&type=i18n&...
-  // lang.json` URLs and throws "Failed to parse JSON file" on every page
-  // mount. Standard per-locale files are the @nuxtjs/i18n v10 supported path.
+  // Translation messages live in `i18n/locales/{en,ru}.json` (the source of
+  // truth). They're loaded via `i18n.config.ts` as plain JSON imports rather
+  // than @nuxtjs/i18n's `langDir`+`file` mechanism — that mechanism races with
+  // Vite's built-in `vite:json` plugin (the unplugin's `include` doesn't
+  // reliably match the absolute path Vite passes during transform, and
+  // vite:json wins the chain). The vueI18n config approach skips that race:
+  // the JSON imports go through Vite's normal module graph and `vite:json`
+  // happily parses valid JSON.
   i18n: {
+    vueI18n: './i18n.config.ts',
     strategy: 'no_prefix',
     defaultLocale: 'en',
-    langDir: 'locales',
     locales: [
-      { code: 'en', language: 'en-US', name: 'English', file: 'en.json' },
-      { code: 'ru', language: 'ru-RU', name: 'Русский', file: 'ru.json' },
+      { code: 'en', language: 'en-US', name: 'English' },
+      { code: 'ru', language: 'ru-RU', name: 'Русский' },
     ],
     detectBrowserLanguage: {
       useCookie: true,

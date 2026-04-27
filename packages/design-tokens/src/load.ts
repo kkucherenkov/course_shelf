@@ -12,20 +12,31 @@ import type {
   TypographyFile,
 } from './types.ts';
 
-function readJson(file: string): unknown {
-  const raw = readFileSync(file, 'utf8');
-  return JSON.parse(raw) as unknown;
+interface DocsTokensFile {
+  color: ColorFile['color'];
+  space: SpacingFile['space'];
+  radius: RadiusFile['radius'];
+  shadow: ShadowFile['shadow'];
+  motion: MotionFile['motion'];
+  zIndex: MotionFile['zIndex'];
+  opacity: OpacityFile['opacity'];
+  typography: TypographyFile['typography'];
 }
 
 export function loadTokens(repoRoot: string): TokenBundle {
-  const dir = path.join(repoRoot, 'specs/design/tokens');
+  // The single source of truth is the design handout. The `_palette` section
+  // (raw colour primitives) is intentionally ignored — codegen consumes only
+  // the semantic `color.*` group.
+  const file = path.join(repoRoot, 'docs/design/shared/tokens.json');
+  const raw = JSON.parse(readFileSync(file, 'utf8')) as DocsTokensFile;
+
   return {
-    color: readJson(path.join(dir, 'color.json')) as ColorFile,
-    typography: readJson(path.join(dir, 'typography.json')) as TypographyFile,
-    spacing: readJson(path.join(dir, 'spacing.json')) as SpacingFile,
-    radius: readJson(path.join(dir, 'radius.json')) as RadiusFile,
-    shadow: readJson(path.join(dir, 'shadow.json')) as ShadowFile,
-    motion: readJson(path.join(dir, 'motion.json')) as MotionFile,
-    opacity: readJson(path.join(dir, 'opacity.json')) as OpacityFile,
+    color: { color: raw.color },
+    typography: { typography: raw.typography },
+    spacing: { space: raw.space },
+    radius: { radius: raw.radius },
+    shadow: { shadow: raw.shadow },
+    motion: { motion: raw.motion, zIndex: raw.zIndex },
+    opacity: { opacity: raw.opacity },
   };
 }

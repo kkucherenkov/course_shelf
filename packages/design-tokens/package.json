@@ -3,12 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "license": "UNLICENSED",
-  "description": "Builds design-token artefacts (SCSS / TS / Dart) from specs/design/tokens/*.json",
+  "description": "Builds design-token artefacts (SCSS / TS / Dart) from docs/design/shared/tokens.json",
   "type": "module",
   "scripts": {
     "build": "node --experimental-strip-types src/build.ts",
     "audit:inventory": "node --experimental-strip-types scripts/audit-inventory.ts",
-    "audit:cross-source": "node --experimental-strip-types scripts/audit-cross-source.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },

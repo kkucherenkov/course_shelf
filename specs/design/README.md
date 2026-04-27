@@ -2,10 +2,11 @@
 
 ## Token pipeline
 
-Source of truth: `specs/design/tokens/*.json` (W3C DTCG format).
+Source of truth: `docs/design/shared/tokens.json` (W3C DTCG format) — owned by
+the design system.
 
 ```
-specs/design/tokens/*.json
+docs/design/shared/tokens.json
         │
         ▼  pnpm design:build  (@app/design-tokens)
         ├── apps/web/app/assets/css/tokens.generated.css
@@ -16,7 +17,7 @@ specs/design/tokens/*.json
 ```
 
 All generated files are committed — never edit them by hand. Run
-`pnpm design:build` after changing any token JSON.
+`pnpm design:build` after changing any token in `tokens.json`.
 
 ## Preparing a design in Claude for this repo
 
@@ -33,22 +34,25 @@ I'm designing the UI for [PRODUCT] in a greenfield repo that expects two
 kinds of design artefacts. Please produce both so they drop into the repo
 with no manual reformatting.
 
-### 1. Token JSON (W3C DTCG format)
+### 1. Token JSON (W3C DTCG format) — single file
 
-Output one JSON file per category, matching this layout exactly:
+Output **one** JSON file at `docs/design/shared/tokens.json` with these
+top-level groups:
 
-- color.json       — brand (accent/accentHover/accentActive/accentFg/accentSubtle),
-                     surface (page/surface/raised/overlay), border (default/muted/strong),
-                     text (fg/muted/subtle/inverse), status (success/warning/danger/info),
-                     each as { light: {...}, dark: {...} }
-- typography.json  — font families, weights, sizes, tracking, leading, text roles
-                     (displayLg, headlineMd, titleSm, body, caption, …)
-- spacing.json     — 4 px grid scale (space.0 … space.24)
-- radius.json      — sm / md / lg / xl / full
-- shadow.json      — elevation presets, light + dark variants
-- motion.json      — duration (fast/base/slow), easing (standard/decelerate/accelerate),
-                     lift, z-index scale
-- opacity.json     — muted / subtle / disabled / scrim
+- `color.{brand,surface,border,text,status}` — semantic tokens, each leaf
+  themed as `{ light: {...}, dark: {...} }`. Brand keys: `accent`,
+  `accentHover`, `accentActive`, `accentFg`, `accentSubtle`, `accentSoft`.
+- `typography.{font.{family,weight,size,tracking,leading},role}` — font
+  scales + role aliases (`display`, `h1..h4`, `body`, `small`, `meta`,
+  `label`, `code`).
+- `space` — 4 px grid scale (`0..9` = 0/4/8/12/16/24/32/48/64/96 px).
+- `radius` — `none`, `sm`, `md`, `lg`, `pill`.
+- `shadow` — elevation presets, themed light + dark.
+- `motion.{duration,easing,lift}` + `zIndex`.
+- `opacity` — `disabled`, `muted`, `overlay`, `scrim`, `dangerHover`.
+- `_palette` *(optional)* — raw colour primitives (`neutral`, `warm`,
+  `accent.{amber,teal,indigo}`, `semantic`) — designer reference; ignored
+  by codegen.
 
 Token shape:
   { "$value": "...", "$type": "color" | "dimension" | "duration" | ... }
@@ -92,14 +96,9 @@ the inventory so it flows into the Storybook pipeline.
 Return a single zip-ready bundle with this structure:
 
   design-bundle/
-    tokens/
-      color.json
-      typography.json
-      spacing.json
-      radius.json
-      shadow.json
-      motion.json
-      opacity.json
+    shared/
+      tokens.json        # the single DTCG token file
+      tokens.css         # CSS preview consumed by docs/design/index.html
     mockups/
       home.tsx
       sign-in.tsx
@@ -111,10 +110,11 @@ Return a single zip-ready bundle with this structure:
 
 ### Loading the bundle into the repo
 
-1. Unpack into `specs/design/`:
-   - `tokens/*.json` → `specs/design/tokens/` (overwrite, keep filenames).
+1. Unpack into the repo:
+   - `shared/tokens.json` → `docs/design/shared/tokens.json` (overwrite).
+   - `shared/tokens.css` → `docs/design/shared/tokens.css` (overwrite).
    - `mockups/*.tsx` → `specs/design/mockups/`.
-   - `README.md` → `specs/design/mockups/README.md` (append to existing).
+   - `README.md` → `specs/design/mockups/README.md` (append).
 2. Regenerate artefacts:
    ```sh
    pnpm design:build
@@ -131,21 +131,21 @@ Return a single zip-ready bundle with this structure:
 ### If the design doesn't match the expected shape
 
 Don't patch JSON by hand. Go back to Claude Design with the specific gap
-("tokens/shadow.json is missing the dark variants", "mockups use raw hex in
-the footer") and ask for a corrected bundle. The prompt above is the
-contract — any drift from it should be fixed at the source.
+("`shadow.dark` variants missing", "mockups use raw hex in the footer") and
+ask for a corrected bundle. The prompt above is the contract — any drift from
+it should be fixed at the source.
 
 ## Extracting tokens from design files
 
 1. Export the Figma / Penpot tokens plugin output as JSON.
-2. Map each token to the correct file:
-   - `color.json` — semantic colour roles (brand, surface, border, text, status)
-   - `typography.json` — font families, weights, sizes, tracking, leading, text roles
-   - `spacing.json` — spacing scale (4 px grid)
-   - `radius.json` — border-radius scale
-   - `shadow.json` — box-shadow presets (light + dark variants)
-   - `motion.json` — duration, easing, lift, z-index
-   - `opacity.json` — opacity presets
+2. Merge into `docs/design/shared/tokens.json` under the right top-level group:
+   - `color.*` — semantic colour roles (brand, surface, border, text, status).
+   - `typography.*` — font families, weights, sizes, tracking, leading, roles.
+   - `space` — spacing scale (4 px grid).
+   - `radius` — border-radius scale.
+   - `shadow.*` — box-shadow presets, themed light + dark.
+   - `motion.{duration,easing,lift}` + `zIndex`.
+   - `opacity.*` — opacity presets.
 3. All values use the DTCG `{ "$value": ..., "$type": ... }` shape.
    Themeable tokens use `{ "light": {...}, "dark": {...} }`.
 4. Run `pnpm design:build` and commit the generated artefacts.

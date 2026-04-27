@@ -2,6 +2,17 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-031 — Rate limit on Better Auth sign-in (E21-F02-S01)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: single impl commit `5116d9c` on `feat/auth-signin-ratelimit`. Backend tests 660/660; lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E21-F02-S01.md` (PRD NFR-S-03)
+- Outcome: new `SignInRateLimitMiddleware` (in-process token bucket keyed by `req.ip`, 5 attempts / 15 min rolling window) mounted on `POST /api/v1/auth/sign-in/*splat` via `AuthModule.configure`. 6th attempt → `429 Too Many Requests` + `Retry-After: <seconds>` header + RFC 9457 problem JSON. Successful sign-ins also count toward the cap (a successful brute-force probe is still a probe). Other Better Auth routes keep the existing 10/60s class-level `@Throttle` floor.
+- Tests: 5 cases — under cap allows, at-cap blocks 429, IPs counted independently, window expires (fake timers), Retry-After value tracks the oldest in-window attempt.
+- Trade-off: in-process Map state assumes single backend instance. Redis-backed store is deliberately deferred per the card's sub-step note. When we move to multi-instance, the swap is mechanical.
+
 ## T-2026-04-27-030 — E02 retroactive flips (E02-F01-S01, E02-F02-S01, E02-F02-S02, E02-F02-S04)
 
 - Created: 2026-04-27

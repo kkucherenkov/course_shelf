@@ -43,3 +43,5 @@ export { CoursePosterCard, CourseWideCard, CourseCompactRow } from './components
 export type { Course, CourseAccent, CourseState, CourseRealState } from './components/CourseCard';
 export { AppNavigationShell } from './components/AppNavigationShell';
 export type { NavItem, ShellUser } from './components/AppNavigationShell';
+export { AppSsoBlock } from './components/AppSsoBlock';
+export type { SsoProvider } from './components/AppSsoBlock';

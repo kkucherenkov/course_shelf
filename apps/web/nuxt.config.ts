@@ -4,7 +4,12 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-04-18',
   srcDir: 'app/',
   ssr: false,
-  devtools: { enabled: true },
+  // devtools is disabled in dev because vite-plugin-inspect (its hard
+  // dependency) interferes with plugin ordering for @intlify/unplugin-vue-i18n
+  // — it lets vite:json run after the unplugin's transform of locale JSON
+  // files, which then fails because the unplugin has already converted the
+  // JSON to a JS module. Re-enable per-developer if needed.
+  devtools: { enabled: false },
   modules: ['@nuxt/ui', '@pinia/nuxt', '@nuxtjs/i18n'],
 
   nitro: {

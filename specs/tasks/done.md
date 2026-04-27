@@ -2,6 +2,17 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-036 — AppButton + AppIconButton (E13-F01-S02)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: three commits on `feat/app-button-icon` — `0e64fe3` (AppButton refactor), `615cfd6` (AppIconButton), `104ca10` (login.vue migration). UI tests 272/272; web tests 17/17; lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F01-S02.md`
+- Outcome: `AppButton` collapsed to a flat 4-variant API (`primary | secondary | ghost | destructive`) matching the bundle's `.btn-*` CSS contract; loading state surfaces as `data-loading="true"` with the spinner painted via `::after`; icons typed as `IconName` literals from E13-F01-S01. New `AppIconButton` square component (28/36/44 width === height) wraps `IconCS` and requires `aria-label` (TypeScript-enforced). Storybook covers all 6 states (Default/Hover/Active/Focus/Disabled/Loading) plus a 4×3 Variants matrix for both components. `apps/web/app/pages/login.vue` migrated to the new prop shape.
+- Deviations: (1) Three token names from the brief didn't exist in `tokens.generated.css` — substituted: `--surface-surface-alt` → `--surface-raised`, `--status-danger` → `--status-error-fg`, `--text-fg-inverse` → `--text-inverse`. Documented inline in the SCSS. (2) `AppIcon` kept (still used by `AppChip` + `AppBadge`); future cleanup story can migrate those to `IconCS`.
+- Tests: +15 (12 new in `AppIconButton.spec.ts` + 3 new cases in updated `AppButton.spec.ts`).
+
 ## T-2026-04-27-035 — IconCS — port the bundle's 61-icon family to Vue (E13-F01-S01)
 
 - Created: 2026-04-27

@@ -62,6 +62,11 @@ export default defineNuxtConfig({
     },
   },
 
+  colorMode: {
+    preference: 'dark',
+    fallback: 'dark',
+  },
+
   ui: {
     colorMode: true,
   },

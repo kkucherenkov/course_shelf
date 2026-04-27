@@ -1,7 +1,7 @@
 asyncapi: 3.1.0
 info:
   title: App Realtime API
-  version: 0.1.0
+  version: 0.2.0
   description: |
     Real-time channels delivered via Centrifugo. Clients connect with a
     short-lived JWT issued by the backend (`POST /api/v1/realtime/token`)
@@ -31,6 +31,46 @@ channels:
         $ref: "#/components/messages/HealthUpdate"
     description: Broadcast of service health transitions (ok <-> degraded <-> down).
 
+  libraryScan:
+    address: 'library:scan:{libraryId}'
+    parameters:
+      libraryId:
+        description: Library cuid being scanned.
+    messages:
+      scanEvent:
+        $ref: '#/components/messages/ScanEvent'
+    description: |
+      Live scan-progress feed for a single library. Authorised receivers see
+      progress events as the scanner walks the filesystem, lesson-discovered
+      notifications, and a final finished event with rollup counts.
+
+  notesLesson:
+    address: 'notes:lesson:{lessonId}'
+    parameters:
+      lessonId:
+        description: Lesson cuid.
+    messages:
+      noteUpdated:
+        $ref: '#/components/messages/NoteUpdated'
+    description: |
+      Cross-device note synchronisation for a single lesson. Subscribers
+      receive the full updated body whenever the note's owner saves an edit
+      from any device. Subscribers should reconcile on `updatedAt` (last
+      write wins).
+
+  progressUser:
+    address: 'progress:user:{userId}'
+    parameters:
+      userId:
+        description: Better Auth user id (UUID v4).
+    messages:
+      progressUpdated:
+        $ref: '#/components/messages/ProgressUpdated'
+    description: |
+      Per-user lesson progress fan-out. The owning user's other connected
+      devices receive each progress write so their UI reflects the latest
+      position without polling.
+
 operations:
   receiveHealthUpdate:
     action: receive
@@ -40,6 +80,30 @@ operations:
     messages:
       - $ref: "#/channels/systemHealth/messages/healthUpdate"
 
+  receiveScanEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/libraryScan'
+    summary: Listen for scan progress on a specific library
+    messages:
+      - $ref: '#/channels/libraryScan/messages/scanEvent'
+
+  receiveNoteUpdated:
+    action: receive
+    channel:
+      $ref: '#/channels/notesLesson'
+    summary: Listen for note edits on a specific lesson
+    messages:
+      - $ref: '#/channels/notesLesson/messages/noteUpdated'
+
+  receiveProgressUpdated:
+    action: receive
+    channel:
+      $ref: '#/channels/progressUser'
+    summary: Listen for own progress updates across devices
+    messages:
+      - $ref: '#/channels/progressUser/messages/progressUpdated'
+
 components:
   messages:
     HealthUpdate:
@@ -47,6 +111,24 @@ components:
       contentType: application/json
       payload:
         $ref: "#/components/schemas/HealthUpdate"
+
+    ScanEvent:
+      name: ScanEvent
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ScanEvent'
+
+    NoteUpdated:
+      name: NoteUpdated
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/NoteUpdated'
+
+    ProgressUpdated:
+      name: ProgressUpdated
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ProgressUpdated'
 
   schemas:
     HealthUpdate:
@@ -61,6 +143,134 @@ components:
           format: date-time
         reason:
           type: string
+
+    ScanEvent:
+      description: |
+        Discriminated union of scan events. The `kind` field identifies the
+        concrete type: `progress`, `lesson-discovered`, or `finished`.
+      oneOf:
+        - $ref: "#/components/schemas/ScanEventProgress"
+        - $ref: "#/components/schemas/ScanEventLessonDiscovered"
+        - $ref: "#/components/schemas/ScanEventFinished"
+
+    ScanEventProgress:
+      type: object
+      required: [kind, scanId, libraryId, at, currentPath, lessonsSoFar]
+      properties:
+        kind:
+          type: string
+          enum: [progress]
+        scanId:
+          type: string
+          description: cuid
+        libraryId:
+          type: string
+          description: cuid
+        at:
+          type: string
+          format: date-time
+        currentPath:
+          type: string
+          description: Relative path of the file being processed right now.
+        lessonsSoFar:
+          type: integer
+          minimum: 0
+          description: Lessons discovered so far in this scan.
+
+    ScanEventLessonDiscovered:
+      type: object
+      required: [kind, scanId, libraryId, at, lessonRelativePath, sectionTitle]
+      properties:
+        kind:
+          type: string
+          enum: [lesson-discovered]
+        scanId:
+          type: string
+        libraryId:
+          type: string
+        at:
+          type: string
+          format: date-time
+        lessonRelativePath:
+          type: string
+        sectionTitle:
+          type: string
+
+    ScanEventFinished:
+      type: object
+      required: [kind, scanId, libraryId, at, status, lessonsTotal, errorsTotal]
+      properties:
+        kind:
+          type: string
+          enum: [finished]
+        scanId:
+          type: string
+        libraryId:
+          type: string
+        at:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/ScanStatus'
+        lessonsTotal:
+          type: integer
+          minimum: 0
+        errorsTotal:
+          type: integer
+          minimum: 0
+
+    ScanStatus:
+      type: string
+      enum: [succeeded, failed, partial]
+      description: Terminal status of a library scan.
+
+    NoteUpdated:
+      type: object
+      required: [lessonId, userId, updatedAt, body]
+      properties:
+        lessonId:
+          type: string
+          description: cuid
+        userId:
+          type: string
+          description: Better Auth user id (UUID v4)
+        updatedAt:
+          type: string
+          format: date-time
+        body:
+          type: string
+          description: |
+            Full Markdown body after the edit. Sent in full (not as a diff)
+            because notes are short and the network overhead is dwarfed by
+            the simplicity of last-write-wins reconciliation.
+
+    ProgressUpdated:
+      type: object
+      required: [userId, lessonId, positionSeconds, durationSeconds, percent, completed, lastSeenAt]
+      properties:
+        userId:
+          type: string
+        lessonId:
+          type: string
+        positionSeconds:
+          type: integer
+          minimum: 0
+        durationSeconds:
+          type: integer
+          minimum: 0
+        percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        completed:
+          type: boolean
+        lastSeenAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          description: Set when `completed` is true (>= 90% threshold crossed).
 
   securitySchemes:
     connectionJwt:

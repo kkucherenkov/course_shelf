@@ -5,7 +5,7 @@
 **JSX source bundle > screen `.md` specs > implementation.**
 
 1. **JSX mockups** — `specs/design/source-bundle/project/components/*.jsx` are the pixel-precise reference for every screen. If a `.md` spec contradicts the JSX, the JSX wins.
-2. **Tokens** — `specs/design/tokens/*.json` is the single source for color, typography, spacing, radius, shadow, motion, z-index. Every `.vue`, `.scss`, `.dart` references a token — never a literal hex / px / ms.
+2. **Tokens** — `docs/design/shared/tokens.json` is the single source for color, typography, spacing, radius, shadow, motion, z-index. Every `.vue`, `.scss`, `.dart` references a token — never a literal hex / px / ms.
 3. **Inventory** — `specs/design/README.md` lists every primitive, composition, and screen. Check it before building a new element.
 4. **Roadmap** — `specs/roadmap.md` assigns every feature to a phase.
 
@@ -15,7 +15,7 @@ See `specs/design/README.md` for how to load and extract design tokens from your
 
 ## Design workflow
 
-1. Brand change → edit `specs/design/tokens/*.json`.
+1. Brand change → edit `docs/design/shared/tokens.json`.
 2. Regenerate artefacts: `pnpm design:build` in `packages/design-tokens`. Emits `tokens.generated.css`, `design-tokens.generated.ts`, `tokens.g.dart`.
 3. Build/update `@app/ui` component: `packages/ui/src/components/<Name>/{Name.vue, Name.stories.ts, Name.spec.ts, index.ts}`.
 4. Consume in `apps/web` / `apps/mobile`.

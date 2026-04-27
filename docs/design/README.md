@@ -13,10 +13,13 @@ import-time source: the JSX prototypes do not get bundled into
 usage. When a Storybook story or a Nuxt page is implemented, the
 corresponding prototype is the spec.
 
-The two cousins of `tokens.json` — `docs/design/shared/tokens.json`
-(palette, prototype-only) and `specs/design/tokens/*.json` (DTCG
-semantic, code-stack) — are kept in lock-step by
-[`pnpm --filter @app/design-tokens audit:cross-source`](../../packages/design-tokens/README.md#cross-source-audit).
+`docs/design/shared/tokens.json` is the **single source of truth** for
+design tokens — both the JSX prototypes here and the code-stack
+(`apps/web`, `apps/mobile`, `packages/ui`) read the same values. The
+hand-written `docs/design/shared/tokens.css` is a CSS preview consumed
+only by `docs/design/index.html`; values track the JSON. Run
+`pnpm design:build` after editing `tokens.json` to regenerate the
+web/Storybook/Flutter artefacts.
 
 ## Project index
 

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.12.0
+  version: 0.13.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -33,6 +33,8 @@ tags:
     description: Lesson streaming and signed URLs.
   - name: system
     description: Health and liveness endpoints
+  - name: admin
+    description: "Administrator-only operations: dashboard, backups, configuration."
   - name: realtime
     description: Centrifugo connection tokens
 
@@ -280,6 +282,80 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No grant with that id exists.
+
+  /api/v1/admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      summary: Operational snapshot for the admin dashboard
+      description: |
+        Returns counts of major entities (libraries, users, courses, lessons),
+        a summary of the most recent scan (if any), and the count of scan
+        errors collected in the last 24 hours. Read-only — no side effects.
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboardDto"
+              examples:
+                populated:
+                  summary: A platform with one library, two users, mid-scan
+                  value:
+                    generatedAt: "2026-04-27T10:30:00Z"
+                    counts:
+                      libraries: 1
+                      users: 2
+                      courses: 7
+                      lessons: 184
+                    latestScan:
+                      scanId: clxvscn0000000000000000001
+                      libraryId: clxvlib0000000000000000001
+                      status: succeeded
+                      startedAt: "2026-04-27T09:55:00Z"
+                      finishedAt: "2026-04-27T09:58:12Z"
+                      filesScanned: 312
+                      errorsCount: 2
+                    errorsLast24h: 2
+                empty:
+                  summary: Fresh install — no scans yet
+                  value:
+                    generatedAt: "2026-04-27T10:30:00Z"
+                    counts:
+                      libraries: 0
+                      users: 1
+                      courses: 0
+                      lessons: 0
+                    latestScan: null
+                    errorsLast24h: 0
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller is authenticated but not an administrator
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
 
   /api/v1/bookmarks/{id}:
     patch:
@@ -2162,6 +2238,79 @@ components:
               courseId: clxvcrs0000000000000000001
             level: READ
             createdAt: "2026-04-25T10:05:00Z"
+
+    AdminDashboardDto:
+      type: object
+      required: [generatedAt, counts, latestScan, errorsLast24h]
+      additionalProperties: false
+      properties:
+        generatedAt:
+          type: string
+          format: date-time
+          description: ISO-8601 instant when the snapshot was assembled (server clock).
+        counts:
+          type: object
+          required: [libraries, users, courses, lessons]
+          additionalProperties: false
+          properties:
+            libraries:
+              type: integer
+              minimum: 0
+            users:
+              type: integer
+              minimum: 0
+            courses:
+              type: integer
+              minimum: 0
+            lessons:
+              type: integer
+              minimum: 0
+        latestScan:
+          oneOf:
+            - $ref: "#/components/schemas/AdminDashboardLatestScan"
+            - type: "null"
+          description: |
+            Most recent scan across all libraries (highest `startedAt`), or
+            `null` when no scan has ever run.
+        errorsLast24h:
+          type: integer
+          minimum: 0
+          description: |
+            Count of `ScanErrorRecord` rows whose parent scan started within
+            the last 24 hours (rolling window from `generatedAt`). Uses the
+            parent scan's `startedAt` because the error record itself has no
+            timestamp; works because no scan is expected to outlive a single
+            24-hour window.
+
+    AdminDashboardLatestScan:
+      type: object
+      required: [scanId, libraryId, status, startedAt, finishedAt, filesScanned, errorsCount]
+      additionalProperties: false
+      properties:
+        scanId:
+          type: string
+          description: cuid identifying the scan.
+        libraryId:
+          type: string
+          description: cuid of the library this scan ran against.
+        status:
+          $ref: "#/components/schemas/ScanStatus"
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+          description: null while still `running`.
+        filesScanned:
+          type: integer
+          minimum: 0
+        errorsCount:
+          type: integer
+          minimum: 0
+          description: Number of error records attached to this scan.
 
     BookmarkDto:
       type: object

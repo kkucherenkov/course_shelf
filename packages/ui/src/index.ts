@@ -50,3 +50,7 @@ export type { LessonState } from './components/AppLessonRow';
 export { AppSectionHeader } from './components/AppSectionHeader';
 export { AppPlayerChrome } from './components/AppPlayerChrome';
 export type { PlayerState, PlayerMode, BookmarkMarker } from './components/AppPlayerChrome';
+export { AppBookmark } from './components/AppBookmark';
+export { AppBookmarkAdd } from './components/AppBookmarkAdd';
+export { AppBookmarkList } from './components/AppBookmarkList';
+export type { BookmarkEntry } from './components/AppBookmarkList';

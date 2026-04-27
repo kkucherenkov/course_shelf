@@ -2,6 +2,16 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-043 — AppProgressBadge — ring/bar/pill variants (E13-F02-S06)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: single feature commit `9c37d9b` on `feat/progress-badge`. UI tests 573/573 (+21); lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F02-S06.md` (source: `docs/design/cs-components/components.jsx` §ProgressBadge)
+- Outcome: new `AppProgressBadge` covering three visual variants (`ring` 32px conic-gradient, `bar` 4px filled with mono pct, `pill` text matrix) and four domain states (`not-started | in-progress | completed | locked`). Percentage compute: `completed` → 100, `locked`/`not-started` → 0, otherwise `round((completed / total) × 100)` with `total ≤ 0` guard. Drives only off shipped tokens (no hard-coded colors). Storybook ships a 3×4 Variants matrix.
+- Architectural notes: multi-root SFC (one branch per variant via `v-if/v-else-if/v-else`) — tests query `.find('.app-progress-badge')` for root-level attributes since `wrapper.attributes()` doesn't traverse multi-root fragments reliably.
+
 ## T-2026-04-27-042 — Auth setup wizard + sign-in flow (E11-F01-S03)
 
 - Created: 2026-04-27

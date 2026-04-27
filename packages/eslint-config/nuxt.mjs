@@ -1,12 +1,28 @@
 import vue from 'eslint-plugin-vue';
 import vueParser from 'vue-eslint-parser';
 import tseslint from 'typescript-eslint';
+import prettier from 'eslint-config-prettier';
 
 import base from './base.mjs';
 
 export default [
   ...base,
   ...vue.configs['flat/recommended'],
+  // Re-apply Prettier disables AFTER vue/flat-recommended so Prettier owns
+  // attribute placement, line wrapping, and other formatting rules. Without
+  // this, `pnpm format` and `pnpm lint` fight each other (e.g. Prettier
+  // collapses attributes onto one line, then `vue/max-attributes-per-line`
+  // re-flags them).
+  prettier,
+  {
+    // Spec files legitimately define inline test-wrapper components (via
+    // `defineComponent({ template: '…' })`) to compose primitives under
+    // test. The rule is enforced everywhere else.
+    files: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.test.ts', '**/*.test.tsx'],
+    rules: {
+      'vue/one-component-per-file': 'off',
+    },
+  },
   {
     files: ['**/*.vue'],
     languageOptions: {

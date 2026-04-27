@@ -76,3 +76,41 @@ export const InteractiveHover: Story = {
     `,
   }),
 };
+
+export const Large: Story = {
+  args: {
+    size: 'lg',
+    title: 'Large card',
+    description: '24px padding, --radius-lg corner.',
+  },
+  render: (args) => ({
+    components: { AppCard },
+    setup() {
+      return { args };
+    },
+    template: `
+      <AppCard v-bind="args">
+        <p>Same content surface, more breathing room — matches the bundle's <code>.card-lg</code>.</p>
+      </AppCard>
+    `,
+  }),
+};
+
+export const Hoverable: Story = {
+  args: {
+    hoverable: true,
+    title: 'Hoverable',
+    description: 'Visual lift on hover — not focusable, no click emit.',
+  },
+  render: (args) => ({
+    components: { AppCard },
+    setup() {
+      return { args };
+    },
+    template: `
+      <AppCard v-bind="args">
+        <p>Hover me. Border darkens, background shifts to <code>--surface-raised</code>.</p>
+      </AppCard>
+    `,
+  }),
+};

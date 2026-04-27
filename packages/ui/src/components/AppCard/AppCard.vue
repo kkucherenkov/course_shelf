@@ -1,23 +1,34 @@
 <script setup lang="ts">
   import { computed } from 'vue';
 
+  type Size = 'md' | 'lg';
+
   const props = withDefaults(
     defineProps<{
       title?: string;
       description?: string;
       /**
-       * When true, renders the card as a focusable, clickable surface
-       * (semantic `<button>`) with hover + focus-visible affordances and
-       * keyboard activation via Enter/Space. Emits `click` on activation.
-       *
-       * When false (default) the card renders as a plain `<div>`: no focus
-       * ring, no click emit — purely presentational.
+       * Bundle size: `md` matches `.card` (`--radius-md`, 16px padding);
+       * `lg` matches `.card-lg` (`--radius-lg`, 24px padding).
+       */
+      size?: Size;
+      /**
+       * Visual hover affordance without focusability — matches the bundle's
+       * `.card-hover`. Stays a `<div>`. Ignored when `interactive` is true
+       * (interactive already supplies a richer hover).
+       */
+      hoverable?: boolean;
+      /**
+       * Renders the card as a focusable, clickable `<button>` with
+       * keyboard activation (Enter/Space) and a focus ring. Emits `click`.
        */
       interactive?: boolean;
     }>(),
     {
       title: undefined,
       description: undefined,
+      size: 'md',
+      hoverable: false,
       interactive: false,
     },
   );
@@ -27,7 +38,14 @@
   }>();
 
   const rootTag = computed(() => (props.interactive ? 'button' : 'div'));
-  const rootClasses = computed(() => ['app-card', { 'app-card--interactive': props.interactive }]);
+  const rootClasses = computed(() => [
+    'app-card',
+    `app-card--${props.size}`,
+    {
+      'app-card--interactive': props.interactive,
+      'app-card--hoverable': props.hoverable && !props.interactive,
+    },
+  ]);
 
   function handleClick(event: MouseEvent): void {
     if (!props.interactive) return;
@@ -50,51 +68,35 @@
     @click="handleClick"
     @keydown="handleKeydown"
   >
-    <div
-      v-if="title || description || $slots['header']"
-      class="app-card__header"
-    >
+    <div v-if="title || description || $slots['header']" class="app-card__header">
       <slot name="header">
-        <h3
-          v-if="title"
-          class="app-card__title"
-        >
+        <h3 v-if="title" class="app-card__title">
           {{ title }}
         </h3>
-        <p
-          v-if="description"
-          class="app-card__description"
-        >
+        <p v-if="description" class="app-card__description">
           {{ description }}
         </p>
       </slot>
     </div>
-    <div
-      v-if="$slots['default']"
-      class="app-card__body"
-    >
+    <div v-if="$slots['default']" class="app-card__body">
       <slot />
     </div>
-    <div
-      v-if="$slots['footer']"
-      class="app-card__footer"
-    >
+    <div v-if="$slots['footer']" class="app-card__footer">
       <slot name="footer" />
     </div>
   </component>
 </template>
 
 <style lang="scss" scoped>
+  // Bundle .card / .card-lg / .card-hover parity. Sizes match the bundle's
+  // uniform-padding contract; hoverable is a non-focusable visual lift.
   .app-card {
-    border-radius: var(--radius-lg);
     overflow: hidden;
     background: var(--surface-surface);
     border: 1px solid var(--border-default);
-
-    &__header {
-      padding: var(--space-4) var(--space-6);
-      border-bottom: 1px solid var(--border-default);
-    }
+    transition:
+      border-color var(--dur-fast) var(--ease-default),
+      background-color var(--dur-fast) var(--ease-default);
 
     &__title {
       margin: 0;
@@ -109,21 +111,59 @@
       color: var(--text-fg-muted);
     }
 
-    &__body {
-      padding: var(--space-4) var(--space-6);
+    // size: md (matches .card — 16px uniform, --radius-md)
+    &--md {
+      border-radius: var(--radius-md);
+
+      .app-card__header,
+      .app-card__body,
+      .app-card__footer {
+        padding: var(--space-4);
+      }
+
+      .app-card__header {
+        border-bottom: 1px solid var(--border-default);
+      }
+
+      .app-card__footer {
+        border-top: 1px solid var(--border-default);
+      }
     }
 
-    &__footer {
-      padding: var(--space-4) var(--space-6);
-      border-top: 1px solid var(--border-default);
+    // size: lg (matches .card-lg — 24px uniform, --radius-lg)
+    &--lg {
+      border-radius: var(--radius-lg);
+
+      .app-card__header,
+      .app-card__body,
+      .app-card__footer {
+        padding: var(--space-5);
+      }
+
+      .app-card__header {
+        border-bottom: 1px solid var(--border-default);
+      }
+
+      .app-card__footer {
+        border-top: 1px solid var(--border-default);
+      }
     }
 
-    // Interactive surface — hover lift + focus ring, both token-driven.
+    // .card-hover — visual lift on hover, stays a <div>. Skipped when the
+    // card is interactive (its own hover is richer).
+    &--hoverable:hover {
+      border-color: var(--border-strong);
+      background: var(--surface-raised);
+    }
+
+    // Interactive surface — focusable button + hover lift + focus ring.
     &--interactive {
       cursor: pointer;
       text-align: inherit;
       width: 100%;
       transition:
+        border-color var(--dur-fast) var(--ease-default),
+        background-color var(--dur-fast) var(--ease-default),
         box-shadow var(--dur-fast) var(--ease-default),
         transform var(--dur-fast) var(--ease-default);
 

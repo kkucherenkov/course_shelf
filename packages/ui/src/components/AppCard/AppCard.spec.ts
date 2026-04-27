@@ -111,4 +111,33 @@ describe('AppCard', () => {
     });
     expect(wrapper.find('.app-card--interactive').exists()).toBe(true);
   });
+
+  // --- size + hoverable ---
+
+  it('defaults to size md (.card parity)', () => {
+    const wrapper = mount(AppCard, { slots: { default: 'x' } });
+    expect(wrapper.find('.app-card--md').exists()).toBe(true);
+    expect(wrapper.find('.app-card--lg').exists()).toBe(false);
+  });
+
+  it('renders the lg modifier when size="lg"', () => {
+    const wrapper = mount(AppCard, { props: { size: 'lg' }, slots: { default: 'x' } });
+    expect(wrapper.find('.app-card--lg').exists()).toBe(true);
+    expect(wrapper.find('.app-card--md').exists()).toBe(false);
+  });
+
+  it('applies the hoverable modifier on a non-interactive root', () => {
+    const wrapper = mount(AppCard, { props: { hoverable: true }, slots: { default: 'x' } });
+    expect(wrapper.find('.app-card--hoverable').exists()).toBe(true);
+    expect(wrapper.find('.app-card').element.tagName).toBe('DIV');
+  });
+
+  it('drops the hoverable modifier when interactive is also true', () => {
+    const wrapper = mount(AppCard, {
+      props: { hoverable: true, interactive: true },
+      slots: { default: 'x' },
+    });
+    expect(wrapper.find('.app-card--hoverable').exists()).toBe(false);
+    expect(wrapper.find('.app-card--interactive').exists()).toBe(true);
+  });
 });

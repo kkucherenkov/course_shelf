@@ -2,6 +2,18 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-032 — Admin dashboard aggregator (E21-F01-S01)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: three commits on `feat/admin-dashboard` — `a89fc9c` (spec), `1b3972d` (codegen), `d9bbe11` (impl). Backend tests 664/664; lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E21-F01-S01.md` (PRD FR-OPS-02)
+- Outcome: new `AdminModule` ships `GET /api/v1/admin/dashboard` returning `AdminDashboardDto { generatedAt, counts: { libraries, users, courses, lessons }, latestScan, errorsLast24h }`. Six counts run in parallel via `Promise.all`. Auth chain: global `SessionGuard` → class-level `@UseGuards(AdminGuard)`. Future `/admin/*` routes inherit AdminGuard automatically.
+- Architecture deviation (improvement): rather than injecting `PrismaService` directly into the application handler (which would trip the `no-restricted-syntax` lint rule banning Prisma in `application/**`), the work was structured as `domain/dashboard.port.ts` (interface + Symbol token) + `infra/prisma-dashboard.adapter.ts` (Prisma implementation). Tighter DDD layering than the brief specified.
+- `errorsLast24h` uses `Scan.startedAt > now - 24h` as a proxy timestamp because `ScanErrorRecord` has no own timestamp. The OpenAPI description documents this approximation; works because no scan is expected to outlive a 24-hour window.
+- Tests: `get-admin-dashboard.handler.spec.ts` — 4 cases (populated snapshot, null latestScan when no scans, finishedAt null while running, generatedAt is stamped). The 24h cutoff window check moved to adapter responsibility.
+
 ## T-2026-04-27-031 — Rate limit on Better Auth sign-in (E21-F02-S01)
 
 - Created: 2026-04-27

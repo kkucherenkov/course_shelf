@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `34 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `35 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -169,7 +169,7 @@ Progress: `34 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E21 — Admin & operations
 
-- [ ] [E21-F01-S01](./tasks/E21-F01-S01.md) `A` — GET /admin/dashboard aggregator · ⇐ E10-F01-S01, E07-F01-S01
+- [x] [E21-F01-S01](./tasks/E21-F01-S01.md) `A` — GET /admin/dashboard aggregator · ⇐ E10-F01-S01, E07-F01-S01
 - [ ] [E21-F01-S02](./tasks/E21-F01-S02.md) `A` — POST /admin/backups (DB snapshot archive) · ⇐ E04-F02-S03
 - [x] [E21-F02-S01](./tasks/E21-F02-S01.md) `A` — Rate limit on Better Auth sign-in · ⇐ E04-F02-S03
 - [ ] [E21-F02-S02](./tasks/E21-F02-S02.md) `A` — CSP + secure headers (Helmet) tuned for SPA + bearer · ⇐ E11-F01-S01

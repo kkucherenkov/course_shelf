@@ -34,6 +34,7 @@
     "@app/eslint-config": "workspace:*",
     "@app/tsconfig": "workspace:*",
     "@nuxt/test-utils": "^4.0.2",
+    "@vitejs/plugin-vue": "^6.0.6",
     "@vue/test-utils": "^2.4.6",
     "happy-dom": "^20.9.0",
     "sass": "^1.83.0",

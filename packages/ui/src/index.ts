@@ -38,3 +38,4 @@ export { AppEmptyState } from './components/AppEmptyState';
 export { AppErrorState } from './components/AppErrorState';
 export { AppNoPermission } from './components/AppNoPermission';
 export { AppProgressBadge } from './components/AppProgressBadge';
+export { AppPasswordField } from './components/AppPasswordField';

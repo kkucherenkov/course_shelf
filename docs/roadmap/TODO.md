@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `51 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `52 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -102,7 +102,7 @@ Progress: `51 / 115` complete (update by hand or via a pre-commit hook).
 - [x] [E13-F02-S06](./tasks/E13-F02-S06.md) `A` — ProgressBadge — ring, bar, pill variants · ⇐ E13-F01-S01
 - [ ] [E13-F02-S07](./tasks/E13-F02-S07.md) `A` — ScanProgress — live scan indicator with stats and current file · ⇐ E13-F01-S02, E13-F01-S09
 - [ ] [E13-F02-S08](./tasks/E13-F02-S08.md) `A` — NavigationShell — top bar + sidebar (composes AppRow + IconCS) · ⇐ E13-F01-S01, E13-F01-S05, E13-F01-S11
-- [ ] [E13-F02-S09](./tasks/E13-F02-S09.md) `A` — PasswordField — input with visibility toggle and optional strength meter · ⇐ E13-F01-S01, E13-F01-S03
+- [x] [E13-F02-S09](./tasks/E13-F02-S09.md) `A` — PasswordField — input with visibility toggle and optional strength meter · ⇐ E13-F01-S01, E13-F01-S03
 - [ ] [E13-F02-S10](./tasks/E13-F02-S10.md) `A` — SsoBlock — third-party / SSO provider button row · ⇐ E13-F01-S02, E13-F01-S01
 
 ## E14 — Web pages

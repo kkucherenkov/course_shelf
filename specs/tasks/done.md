@@ -2,6 +2,16 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-035 — IconCS — port the bundle's 61-icon family to Vue (E13-F01-S01)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: three commits on `feat/icon-cs` — `42e8aab` (component + types + barrel), `493dfb4` (66 snapshot tests + 4 a11y/fill assertions), `9617ade` (Storybook stories). UI tests +70; lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F01-S01.md`
+- Outcome: new `IconCS` component in `packages/ui/src/components/IconCS/` renders any of 66 hand-drawn CourseShelf glyphs from `docs/design/shared/icons.jsx`. Single Vue `<svg>` template with `<template v-if="name === '...'>` per glyph; path data byte-identical to the JSX source (including the `pdf` glyph's `<text>` element). `IconName` literal union exported alongside. Storybook stories: default (single icon) + Grid (all 66 in an 8-column layout). Vitest snapshot per glyph (66) + 4 a11y/fill assertions.
+- Deviations: (1) the card's Notes section listed 61 names but the source ships 66 — `sliders`, `arrow-left`, `more-h`, `corner-down-right`, `hard-drive` were extra. All included; the card's "61 names compile" NFR is a strict subset. (2) BEM class is `.app-icon-cs` (not `.icon-cs`) to satisfy the project Stylelint `selector-class-pattern` rule. (3) ESLint filename-case override added for `IconCS/` — the all-caps `CS` acronym doesn't fit kebab-case or strict PascalCase. (4) The `fill` prop honours only `play` and `bookmark` (per the JSX `fill={fill ? stroke : 'none'}` source pattern); other glyphs with intentional inner fills (`pip`, `list`, `more`, etc.) carry `fill="currentColor"` unconditionally as in the source.
+
 ## T-2026-04-27-034 — Wire api-client-ts + auth store (E11-F01-S02)
 
 - Created: 2026-04-27

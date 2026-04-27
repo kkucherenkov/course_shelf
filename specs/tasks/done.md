@@ -2,6 +2,18 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-051 — NoteEditor (E13-F02-S05)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: single feature commit `f41b16c` on `feat/note-editor-clean` (closes #53) → PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/135. UI tests 808/808 (+22); lint + typecheck clean. (#134 was opened first but had stale ancestor commits picked up before the bookmark family merged; closed in favour of #135.)
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F02-S05.md` (source: `docs/design/cs-components/components.jsx` §NoteEditor, CSS `docs/design/cs-components/styles.css`)
+- Outcome: `AppNoteEditor` — markdown note input with toolbar (Bold / Italic / Heading / List / Link), `edit` ↔ `view` toggle (v-modelable), debounced auto-save (`save(value)` after `debounceMs` of quiet, default 600), and an always-inline sync indicator (`syncing` / `saved` / `failed` / `offline`). The "Saved · Ns ago" label re-renders every second via a `setInterval` that auto-starts on `saved` and stops on every other state. `failed` exposes a Retry button that emits `retry`.
+- Markdown renderer: in-house, no extra dep. Pipeline — HTML-escape raw input → inline links (URL routed through `safeUrl` which only allows http(s)/mailto, anything else → `#`) → `**bold**` (greedy first) → `*italic*` (with look-arounds) → block split on blank lines (h1/h2/h3 single-line, `- ` lists, paragraphs with `<br />`). `v-html` guarded with `/* eslint-disable vue/no-v-html */` and a WHY comment listing the sanitisation guarantees.
+- A11y: toolbar `role="toolbar"`, every tool has `aria-label`, the toggle exposes `aria-pressed`, sync indicator is `role="status"` + `aria-live="polite"`.
+- Storybook: 7 stories (Default / Empty / Preview / Syncing / Failed / Offline / Interactive — last one wires `save` → `syncing` → `saved` with a 500 ms fake-network delay and prints the last event).
+
 ## T-2026-04-27-050 — Bookmark family (E13-F02-S04)
 
 - Created: 2026-04-27

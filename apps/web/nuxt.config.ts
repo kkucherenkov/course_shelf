@@ -1,4 +1,10 @@
+import { fileURLToPath } from 'node:url';
+import { resolve, dirname } from 'node:path';
+
 import tailwindcss from '@tailwindcss/vite';
+import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite';
+
+const here = dirname(fileURLToPath(import.meta.url));
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-04-18',
@@ -52,7 +58,21 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   vite: {
-    plugins: [tailwindcss()],
+    // Register @intlify/unplugin-vue-i18n FIRST so it claims locale
+    // JSON files via a stable glob pattern. @nuxtjs/i18n v10 also
+    // registers the unplugin internally but with `include: localePaths`
+    // (absolute path strings used as picomatch patterns) — those don't
+    // reliably match the absolute path Vite passes during transform,
+    // so vite:json (built-in) ends up running on the JS code the
+    // unplugin already produced and chokes with "Failed to parse JSON".
+    // Our manual registration uses a glob and `enforce: 'pre'` so it's
+    // unambiguously first in the chain.
+    plugins: [
+      VueI18nPlugin({
+        include: [resolve(here, './i18n/locales/**')],
+      }),
+      tailwindcss(),
+    ],
     // Pre-bundle libs Vite would otherwise discover at runtime and trigger
     // a full dev-server reload for.
     optimizeDeps: {

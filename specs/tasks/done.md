@@ -2,6 +2,20 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-030 — E02 retroactive flips (E02-F01-S01, E02-F02-S01, E02-F02-S02, E02-F02-S04)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: roadmap-only commit on `chore/e02-flips`. No code changes.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E02-F01-S01.md`, `E02-F02-S01.md`, `E02-F02-S02.md`, `E02-F02-S04.md`
+- Outcome: ticked four cards that had been load-bearing for the entire session (every endpoint shipped this week passed through the spec workspace, the codegen pipeline, and — in CI — the contract test). Each card carries a deviation note documenting why reality looks different from what the card asked for:
+  - **E02-F01-S01**: Redocly CLI instead of Spectral; single inline `openapi.yaml` instead of split `paths/*` + `components/*` files.
+  - **E02-F02-S01**: `@hey-api/openapi-ts` (named operation functions) instead of `openapi-fetch`-style `paths`/`components`/`createClient`.
+  - **E02-F02-S02**: `@app/api-client-ts/server` subpath with class-validator DTOs **not** implemented; runtime validation is delivered by the `express-openapi-validator` middleware (E04-F02-S03) at the HTTP boundary, with backend handlers using type-only imports from `@app/api-client-ts`. Same guarantee from a single source of truth.
+  - **E02-F02-S04**: contract testing uses Schemathesis (Docker, property-based, ~25 hypothesis-generated requests per operation) instead of Dredd/Prism. No `apps/backend/test/contract/` directory — the runner sits in `packages/specs/scripts/contract-test.ts` and exercises a running backend over the wire as a black box.
+- Out of scope: actually implementing the deviated alternatives is not planned — the substitutes are deliberate architectural choices, not gaps to close.
+
 ## T-2026-04-27-029 — Realtime token + channels (E24-F01-S01)
 
 - Created: 2026-04-27

@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `29 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `33 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -20,12 +20,12 @@ Progress: `29 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E02 — API contracts as the spine
 
-- [ ] [E02-F01-S01](./tasks/E02-F01-S01.md) `A` — OpenAPI + AsyncAPI workspace, Spectral lint, bundle scripts · ⇐ E01-F01-S02
+- [x] [E02-F01-S01](./tasks/E02-F01-S01.md) `A` — OpenAPI + AsyncAPI workspace, Spectral lint, bundle scripts · ⇐ E01-F01-S02
 - [x] [E02-F01-S02](./tasks/E02-F01-S02.md) `A` — Reusable error schema, security scheme, version prefix · ⇐ E02-F01-S01
-- [ ] [E02-F02-S01](./tasks/E02-F02-S01.md) `A` — Generate `@app/api-client-ts` from the spec · ⇐ E02-F01-S02
-- [ ] [E02-F02-S02](./tasks/E02-F02-S02.md) `A` — Generate NestJS DTOs as `@app/api-client-ts/server` subpath · ⇐ E02-F01-S02
+- [x] [E02-F02-S01](./tasks/E02-F02-S01.md) `A` — Generate `@app/api-client-ts` from the spec · ⇐ E02-F01-S02
+- [x] [E02-F02-S02](./tasks/E02-F02-S02.md) `A` — Generate NestJS DTOs as `@app/api-client-ts/server` subpath · ⇐ E02-F01-S02
 - [x] [E02-F02-S03](./tasks/E02-F02-S03.md) `A` — Generate Dart Dio client as `@app/api-client-dart` · ⇐ E02-F01-S02
-- [ ] [E02-F02-S04](./tasks/E02-F02-S04.md) `A` — `pnpm spec:codegen` aggregate + contract-test scaffold · ⇐ E02-F02-S01, E02-F02-S02, E02-F02-S03
+- [x] [E02-F02-S04](./tasks/E02-F02-S04.md) `A` — `pnpm spec:codegen` aggregate + contract-test scaffold · ⇐ E02-F02-S01, E02-F02-S02, E02-F02-S03
 
 ## E03 — Design tokens
 

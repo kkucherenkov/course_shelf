@@ -2,6 +2,18 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-045 — CourseCard family (poster / wide / compact) (E13-F02-S01)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: 5 feature commits on `feat/course-card` — `6f72324` (types + helpers + composable), `562f918` (CoursePosterCard), `675aebb` (CourseWideCard), `f85ace6` (CourseCompactRow), `f2a9969` (barrel + Family story). UI tests 662/662 (+71); lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F02-S01.md` (source: `docs/design/cs-components/components.jsx` §CourseCard)
+- Outcome: three CourseCard variants share `Course` type + `COVER` accent map + `initials()` / `fmtTime()` helpers + `useCourseProgress(course, state)` composable. **Poster** (3:4 cover, ✓ badge for completed, lock + scrim for locked, otherwise progress strip; body with title + instructor). **Wide** (square 80×80 thumb + body with title/instructor/meta row; meta shows `Resume <fmtTime>` (with play icon) or `<pct>%` then `<completed>/<lessons>`). **Compact** (single-line list row: 32×32 thumb + title + bar + mono pct). All three are focusable buttons (`tabindex=0`, `role=button`, `aria-label=title`) with click + Enter/Space activation. Loading variants render skeletons matching the layout.
+- Composable: `useCourseProgress(course, state)` accepts `ComputedRef<T> | (() => T)` for both args; returns `{ pct, realState }`. `state="auto"` derives `realState` from `pct` (100 → completed, >0 → in-progress, else not-started); explicit states pass through. 18 dedicated unit tests for the derivation table.
+- Storybook: per-variant stories cover Default / NotStarted / InProgress / Completed / Locked / Loading / Variants (all 6 accents) plus a top-level `CourseCardFamily` story rendering all three side by side and a `FamilyAllAccents` story for COVER spot-checking.
+- Deviations: composable file is `use-course-progress.ts` (kebab-case per project `unicorn/filename-case`). `CoursePosterCard` loading uses an `aspect-ratio: 3/4` SCSS class on top of `AppSkeleton` because the latter doesn't accept `aspect-ratio` as a prop. `course.cover` override test uses `toContain('url(')` since Vue normalises inline `url()` style values.
+
 ## T-2026-04-27-044 — AppPasswordField — visibility toggle + strength meter (E13-F02-S09)
 
 - Created: 2026-04-27

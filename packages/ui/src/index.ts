@@ -39,3 +39,5 @@ export { AppErrorState } from './components/AppErrorState';
 export { AppNoPermission } from './components/AppNoPermission';
 export { AppProgressBadge } from './components/AppProgressBadge';
 export { AppPasswordField } from './components/AppPasswordField';
+export { CoursePosterCard, CourseWideCard, CourseCompactRow } from './components/CourseCard';
+export type { Course, CourseAccent, CourseState, CourseRealState } from './components/CourseCard';

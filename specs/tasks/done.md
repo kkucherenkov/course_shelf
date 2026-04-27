@@ -2,6 +2,17 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-041 — Primitives batch B: dialog + avatar + chip refactor (E13-F01-S08/S11/S12)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: 4 feature commits on `feat/primitives-batch-b` — `ac5e3e4` (AppDialog), `3b2dc4b` (AppCommandPalette), `cf8830b` (AppAvatar), `659c626` (AppChip refactor + barrel). UI tests 552/552 (+39 net); lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F01-S08.md`, `E13-F01-S11.md`, `E13-F01-S12.md`
+- Outcome: 4 components landed. **AppDialog** uses native `<dialog>.showModal()` so focus trap + `inert` are browser-native; backdrop click detection via `event.target === dialogRef`; ESC + close event wired to `update:open`. **AppCommandPalette** composes AppDialog with a search input + filtered/grouped list, arrow-key nav, Enter to select, ESC to close; `Command` type exported alongside. **AppAvatar** has 5 sizes + `image`/`initials`/`name` (computed fallback) + role badges for admin/guest with `aria-label`. **AppChip** refactored from `color × variant × size` to flat `variant: 'default'|'primary'|'success'|'warning'|'error'|'info'` matching the bundle's `.chip-*` classes; icon migrated from AppIcon (Iconify) to IconCS (typed `IconName`); `dismissible` renamed to `removable` to match `.chip-removable`; broken `--status-danger` reference fixed.
+- JSDOM workaround: `<dialog>` not fully implemented in JSDOM. AppDialog.spec.ts patches `HTMLElement.prototype.showModal/close` with no-op functions that toggle `open` and dispatch the `close` event in `beforeAll`/`afterAll`; a `stubDialogElement(el)` utility provides per-test `vi.fn()` spies. Documented inline.
+- Token deviations: `--bg` → `--surface-page` (not `--surface-bg` as previously assumed). All other mappings inherited from prior tasks.
+
 ## T-2026-04-27-040 — Primitives batch A (E13-F01-S05/S06/S09/S10)
 
 - Created: 2026-04-27

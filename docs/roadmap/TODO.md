@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `46 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `49 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -89,11 +89,11 @@ Progress: `46 / 115` complete (update by hand or via a pre-commit hook).
 - [x] [E13-F01-S05](./tasks/E13-F01-S05.md) `A` — AppRow — leading/body/trailing slots, selected + compact states · ⇐ E12-F01-S01, E13-F01-S01
 - [x] [E13-F01-S06](./tasks/E13-F01-S06.md) `A` — AppTabs and AppSegmented controls · ⇐ E12-F01-S01
 - [x] [E13-F01-S07](./tasks/E13-F01-S07.md) `A` — AppBanner (info/success/warning/error), AppToast, inline alerts · ⇐ E12-F01-S01, E13-F01-S01
-- [ ] [E13-F01-S08](./tasks/E13-F01-S08.md) `A` — AppDialog (sm/md), AppCommandPalette (desktop) · ⇐ E12-F01-S01, E13-F01-S02
+- [x] [E13-F01-S08](./tasks/E13-F01-S08.md) `A` — AppDialog (sm/md), AppCommandPalette (desktop) · ⇐ E12-F01-S01, E13-F01-S02
 - [x] [E13-F01-S09](./tasks/E13-F01-S09.md) `A` — AppProgressLinear, AppProgressCircle, AppSpinner, AppSkeleton · ⇐ E12-F01-S01
 - [x] [E13-F01-S10](./tasks/E13-F01-S10.md) `A` — AppEmptyState, AppErrorState, AppNoPermission · ⇐ E12-F01-S01, E13-F01-S01, E13-F01-S02
-- [ ] [E13-F01-S11](./tasks/E13-F01-S11.md) `A` — AppAvatar (xs/sm/default/lg/xl, with role-admin and role-guest badges) · ⇐ E12-F01-S01
-- [ ] [E13-F01-S12](./tasks/E13-F01-S12.md) `A` — AppChip (default/primary/success/warning/error/info; removable variant) · ⇐ E12-F01-S01, E13-F01-S01
+- [x] [E13-F01-S11](./tasks/E13-F01-S11.md) `A` — AppAvatar (xs/sm/default/lg/xl, with role-admin and role-guest badges) · ⇐ E12-F01-S01
+- [x] [E13-F01-S12](./tasks/E13-F01-S12.md) `A` — AppChip (default/primary/success/warning/error/info; removable variant) · ⇐ E12-F01-S01, E13-F01-S01
 - [ ] [E13-F02-S01](./tasks/E13-F02-S01.md) `A` — CourseCard — Poster, Wide, Compact variants · ⇐ E13-F01-S01, E13-F01-S09
 - [ ] [E13-F02-S02](./tasks/E13-F02-S02.md) `A` — LessonRow with state matrix; SectionHeader with collapse · ⇐ E13-F01-S01, E13-F01-S05, E13-F01-S09
 - [ ] [E13-F02-S03](./tasks/E13-F02-S03.md) `A` — PlayerChrome (web) — overlay + minimal modes, full state set · ⇐ E13-F01-S01, E13-F01-S02, E13-F01-S09

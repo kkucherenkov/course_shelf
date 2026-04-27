@@ -2,6 +2,16 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-037 — Form primitives (E13-F01-S03)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: four feature commits on `feat/form-primitives` — `e28d7ec` (audit/fix existing controls), `c8d232d` (AppCheckbox), `3aee420` (AppRadio + AppRadioGroup), `9136d42` (text/number/search field composites + barrel). UI tests 352/352 (+80); web tests 17/17; lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F01-S03.md`
+- Outcome: full 7-component form set landed. `AppCheckbox` with indeterminate + Space/Enter keyboard support. `AppRadio` + `AppRadioGroup` with WCAG-pattern arrow-key navigation (only checked radio is `tabindex=0`). Composite `AppTextField` / `AppNumberField` / `AppSearchField` wrap `AppField` + `AppInput` with the right type/icons (`+`/`−` steppers using `AppIconButton`; leading `IconCS search` + trailing clear button on search). Existing `AppInput` heights pinned to `28/36/44 px` (replacing broken `var(--space-20)`); `[data-density='compact']` drops md to 30 px per the bundle CSS contract. `AppField` error token corrected (`--status-danger` → `--status-error-fg`). `AppSwitch` `$attrs` propagation fixed so AppField's `id`/`aria-*` land on `<button role='switch'>` not the wrapping `<label>`.
+- Architectural calls: arrow-key nav uses DOM traversal (`querySelectorAll('[role=radio]')`) rather than a ref-array registration pattern — matches WCAG radiogroup. ESLint `vue/attribute-hyphenation` ignores `ariaLabel` so AppIconButton's camelCase prop name reconciles with vue-tsc's static type checks (scoped to packages/ui).
+
 ## T-2026-04-27-036 — AppButton + AppIconButton (E13-F01-S02)
 
 - Created: 2026-04-27

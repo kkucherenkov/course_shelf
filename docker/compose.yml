@@ -139,3 +139,27 @@ services:
     ports:
       - "3001:3001"
     networks: ["course-shelf-net"]
+
+  storybook:
+    build:
+      context: ..
+      dockerfile: packages/ui/Dockerfile.dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+    working_dir: /workspace
+    # Same bind-mount + anonymous-volume pattern as backend/web so the host
+    # source is live-edited but the container keeps its own node_modules.
+    volumes:
+      - ..:/workspace
+      - /workspace/node_modules
+      - /workspace/packages/ui/node_modules
+    ports:
+      - "6006:6006"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:6006/iframe.html"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    networks: ["course-shelf-net"]

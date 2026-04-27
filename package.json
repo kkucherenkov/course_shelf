@@ -28,6 +28,10 @@
     "design:audit": "pnpm --filter @app/design-tokens audit:inventory",
     "storybook": "pnpm --filter @app/ui storybook",
     "storybook:build": "pnpm --filter @app/ui storybook:build",
+    "dev:up": "docker compose -f docker/compose.yml up -d --build",
+    "dev:down": "docker compose -f docker/compose.yml down",
+    "dev:logs": "docker compose -f docker/compose.yml logs -f --tail=100",
+    "dev:ps": "docker compose -f docker/compose.yml ps",
     "prepare": "husky && pnpm --filter @app/api-client-ts build",
     "check:i18n": "node --experimental-strip-types scripts/check-i18n-parity.ts",
     "e2e": "playwright test --config=tests/e2e/playwright.config.ts"

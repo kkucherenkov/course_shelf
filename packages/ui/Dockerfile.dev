@@ -1,0 +1,21 @@
+FROM node:24-alpine
+
+RUN apk add --no-cache libc6-compat && corepack enable
+
+WORKDIR /workspace
+
+ENV CI=1 \
+    NODE_ENV=development \
+    PNPM_HOME=/root/.local/share/pnpm \
+    PATH=/root/.local/share/pnpm:$PATH
+
+EXPOSE 6006
+
+# `storybook dev -p 6006 --no-open` is the package's own script. The compose
+# file mounts the full monorepo at /workspace; we install deps on container
+# start so the bind mount + anonymous node_modules layering works the same
+# way as the backend / web dev images.
+CMD ["sh", "-lc", "\
+  pnpm install --frozen-lockfile=false && \
+  pnpm --filter @app/ui storybook --host 0.0.0.0 \
+"]

@@ -18,6 +18,14 @@ export default [
     ],
   },
   {
+    // IconCS uses an all-caps acronym (CS = CourseShelf) — exempt the whole directory
+    // from the filename-case rule rather than silently rename the public API.
+    files: ['src/components/IconCS/**'],
+    rules: {
+      'unicorn/filename-case': 'off',
+    },
+  },
+  {
     files: ['src/**/*.stories.ts', 'src/**/*.story.vue', '.storybook/**/*.{ts,vue}'],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',

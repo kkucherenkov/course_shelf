@@ -9,3 +9,5 @@ export { AppChip } from './components/AppChip';
 export { AppSwitch } from './components/AppSwitch';
 export { AppLabel } from './components/AppLabel';
 export { AppField } from './components/AppField';
+export { IconCS } from './components/IconCS';
+export type { IconName } from './components/IconCS';

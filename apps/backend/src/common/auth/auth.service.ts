@@ -57,6 +57,23 @@ function createInstance(
       }),
     ],
     trustedOrigins: config.runtime.corsOrigins,
+    databaseHooks: {
+      user: {
+        create: {
+          // First user on a fresh install becomes the admin. After that the
+          // additionalFields default ('USER') applies. take:1 short-circuits
+          // at the first row.
+          // Better Auth 1.6 passes (user, context) — context is unused here.
+          before: async (user, _context) => {
+            const existingCount = await prisma.user.count({ take: 1 });
+            if (existingCount === 0) {
+              return { data: { ...user, role: 'ADMIN' } };
+            }
+            return { data: user };
+          },
+        },
+      },
+    },
   });
   return instance as unknown as ReturnType<typeof betterAuth>;
 }

@@ -56,7 +56,7 @@ export default defineNuxtPlugin((nuxtApp) => {
       if (!ok) {
         // Session could not be refreshed — clear state and redirect.
         auth.clear();
-        await nuxtApp.runWithContext(() => navigateTo('/login'));
+        await nuxtApp.runWithContext(() => navigateTo('/sign-in'));
         return res;
       }
 

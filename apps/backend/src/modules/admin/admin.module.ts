@@ -5,6 +5,7 @@ import { AdminGuard } from '../../common/auth/admin.guard';
 import { DASHBOARD_PORT } from './domain/dashboard.port';
 import { PrismaDashboardAdapter } from './infra/prisma-dashboard.adapter';
 import { AdminController } from './admin.controller';
+import { AdminPublicController } from './admin-public.controller';
 import { GetAdminDashboardHandler } from './application/queries/get-admin-dashboard.handler';
 
 // AdminGuard's dependencies (AuthService, I18nService) are provided globally
@@ -12,7 +13,7 @@ import { GetAdminDashboardHandler } from './application/queries/get-admin-dashbo
 
 @Module({
   imports: [CqrsModule],
-  controllers: [AdminController],
+  controllers: [AdminController, AdminPublicController],
   providers: [
     AdminGuard,
     GetAdminDashboardHandler,

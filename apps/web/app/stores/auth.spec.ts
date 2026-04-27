@@ -22,10 +22,12 @@ const mockGetSession = vi.fn().mockResolvedValue({
   error: null,
 });
 const mockSignInEmail = vi.fn();
+const mockSignUpEmail = vi.fn();
 
 vi.mock('better-auth/vue', () => ({
   createAuthClient: vi.fn(() => ({
     signIn: { email: mockSignInEmail },
+    signUp: { email: mockSignUpEmail },
     signOut: mockSignOut,
     getSession: mockGetSession,
   })),
@@ -263,5 +265,47 @@ describe('useAuthStore', () => {
 
     expect(ok).toBe(false);
     expect(store.user).toBeNull();
+  });
+
+  // -------------------------------------------------------------------------
+  // signUp — happy path
+  // -------------------------------------------------------------------------
+
+  it('populates user after a successful signUp', async () => {
+    mockSignUpEmail.mockImplementation(
+      (_creds: unknown, opts?: { onSuccess?: (ctx: OnSuccessCtx) => void }) => {
+        opts?.onSuccess?.({ response: makeResponse({ 'set-auth-token': 'tok-signup-123' }) });
+        return Promise.resolve({ data: { user: DEFAULT_USER_DATA }, error: null });
+      },
+    );
+
+    const store = useAuthStore();
+    const result = await store.signUp('a@b.com', 'password1', 'Alice');
+
+    expect(result.ok).toBe(true);
+    expect(store.user).toMatchObject({ id: 'u1', email: 'a@b.com' });
+    expect(store.token).toBe('tok-signup-123');
+    expect(store.error).toBeNull();
+    expect(store.isPending).toBe(false);
+  });
+
+  // -------------------------------------------------------------------------
+  // signUp — error path
+  // -------------------------------------------------------------------------
+
+  it('sets error and keeps user null when signUp returns an error', async () => {
+    mockSignUpEmail.mockResolvedValue({
+      data: null,
+      error: { message: 'Email taken' },
+    });
+
+    const store = useAuthStore();
+    const result = await store.signUp('taken@b.com', 'password1');
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe('Email taken');
+    expect(store.error).toBe('Email taken');
+    expect(store.user).toBeNull();
+    expect(store.isPending).toBe(false);
   });
 });

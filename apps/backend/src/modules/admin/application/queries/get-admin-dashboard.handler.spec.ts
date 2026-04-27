@@ -18,7 +18,7 @@ function makePort(overrides: Partial<DashboardSnapshot> = {}): DashboardPort {
     latestScan: overrides.latestScan === undefined ? null : overrides.latestScan,
     errorsLast24h: overrides.errorsLast24h ?? 0,
   };
-  return { getSnapshot: vi.fn().mockResolvedValue(snapshot) };
+  return { getSnapshot: vi.fn().mockResolvedValue(snapshot), hasAnyUser: vi.fn() };
 }
 
 function makeHandler(port: DashboardPort): GetAdminDashboardHandler {
@@ -94,7 +94,7 @@ describe('GetAdminDashboardHandler', () => {
       latestScan: null,
       errorsLast24h: 7,
     });
-    const port: DashboardPort = { getSnapshot };
+    const port: DashboardPort = { getSnapshot, hasAnyUser: vi.fn() };
     const handler = makeHandler(port);
 
     const before = Date.now();

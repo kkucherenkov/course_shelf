@@ -160,5 +160,81 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, token, isPending, error, isAuthenticated, signIn, signOut, refresh, clear };
+  /**
+   * Register a new account with email + password.
+   * On success the `set-auth-token` response header is captured and stored
+   * in localStorage (mirrors the same hook used for sign-in).
+   */
+  async function signUp(
+    email: string,
+    password: string,
+    displayName?: string,
+  ): Promise<{ ok: boolean; error?: string }> {
+    error.value = null;
+    isPending.value = true;
+
+    let capturedToken: string | null = null;
+
+    try {
+      const auth = getAuthClient();
+
+      const result = await auth.signUp.email(
+        {
+          email,
+          password,
+          name: displayName ?? email.split('@')[0] ?? email,
+          // Pass additional fields through to Better Auth's schema.
+          ...(displayName ? { displayName } : {}),
+        } as Parameters<typeof auth.signUp.email>[0],
+        {
+          onSuccess(ctx: { response: Response }) {
+            const raw = ctx.response.headers.get('set-auth-token');
+            if (raw) capturedToken = raw;
+          },
+        },
+      );
+
+      if (result.error) {
+        const message = result.error.message ?? 'Sign-up failed';
+        error.value = message;
+        return { ok: false, error: message };
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (capturedToken !== null) {
+        token.value = capturedToken;
+        if (hasStorage()) {
+          localStorage.setItem(TOKEN_STORAGE_KEY, capturedToken);
+        }
+      }
+
+      const sessionData = result.data as { user?: SessionUser } | null;
+      if (sessionData?.user) {
+        user.value = sessionData.user;
+      } else {
+        await refresh();
+      }
+
+      return { ok: true };
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : 'Unexpected error';
+      error.value = message;
+      return { ok: false, error: message };
+    } finally {
+      isPending.value = false;
+    }
+  }
+
+  return {
+    user,
+    token,
+    isPending,
+    error,
+    isAuthenticated,
+    signIn,
+    signUp,
+    signOut,
+    refresh,
+    clear,
+  };
 });

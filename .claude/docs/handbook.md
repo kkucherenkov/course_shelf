@@ -148,6 +148,7 @@ async function submit() {
 - Every schema change is a Prisma migration (`prisma migrate dev`). No ad-hoc SQL on prod data.
 - **Non-destructive default.** Add column is fine; rename/drop requires two-step migration (add → backfill → switch → drop).
 - Migrations must be forward-compatible with the previous code version for at least one deploy cycle.
+- **Baselining a fresh DB.** If the database was bootstrapped with `prisma db push` (no `_prisma_migrations` table), run `pnpm --filter @app/backend prisma:baseline` to mark every existing migration as applied. The script is idempotent and reads the migrations directory directly, so it stays correct as new migrations are added.
 
 ## Web (Nuxt — SPA only)
 

@@ -34,6 +34,9 @@
     "dev:ps": "docker compose -f docker/compose.yml ps",
     "prepare": "husky && pnpm --filter @app/api-client-ts build",
     "check:i18n": "node --experimental-strip-types scripts/check-i18n-parity.ts",
+    "issues:sync": "node --experimental-strip-types scripts/seed-forgejo-issues.ts",
+    "issues:map": "node --experimental-strip-types scripts/seed-forgejo-issues.ts --print-map",
+    "issues:lookup": "node --experimental-strip-types scripts/seed-forgejo-issues.ts --lookup",
     "e2e": "playwright test --config=tests/e2e/playwright.config.ts"
   },
   "devDependencies": {

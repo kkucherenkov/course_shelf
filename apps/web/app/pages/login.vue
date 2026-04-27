@@ -119,11 +119,10 @@
         <AppButton
           :label="t('signInButton')"
           type="submit"
-          variant="solid"
-          color="primary"
+          variant="primary"
           block
           :loading="authStore.isPending"
-          :disabled="authStore.isPending || !formValid"
+          :disabled="!formValid"
         />
       </form>
 

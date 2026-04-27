@@ -1,3 +1,41 @@
 # Active tasks
 
-_No active task. Pull the next story from `docs/roadmap/TODO.md` and push an entry here using the template in `README.md`._
+## T-2026-04-27-040 — Primitives batch A: row + tabs + progress + states (E13-F01-S05/S06/S09/S10)
+
+- Created: 2026-04-27
+- Owner: claude
+- Spec: cards `E13-F01-S05`, `E13-F01-S06`, `E13-F01-S09`, `E13-F01-S10`. Bundle CSS contracts in `docs/design/shared/tokens.css` for `.row`, `.tabs`/`.tab`, `.seg`, `.progress-linear`, `.progress-circle`, `.skel`, plus the implicit empty/error/no-permission states.
+- Goal: 10 small primitives shipped in one branch, each with spec + story, all driving off shipped design tokens.
+- Acceptance:
+  - **S05 — `AppRow`**: flex container with `leading` / default / `trailing` slots; props `selected: boolean`, `compact: boolean`; hover lifts background to `--surface-raised`; `[aria-selected='true']` background → `--brand-accent-soft`; `compact` reduces padding (10/12 → 8/10).
+  - **S06 — `AppTabs`** + **`AppTab`**: tab list with `[role='tablist']`, `[role='tab']`, `[aria-selected]`; arrow-key nav between tabs; selected tab gets a 2px bottom border in `--brand-accent`. Provide/inject `modelValue` from AppTabs to AppTab children. Generic over `T extends string | number`.
+  - **S06 — `AppSegmented`** + **`AppSegmentedItem`**: pill-row single-select (like a radio group but visually a button group). Selected item gets `--surface-surface` background and `--shadow-md`. 2px outer padding inside the rounded container; `--surface-raised` background for the container; 6px border-radius on each item.
+  - **S09 — `AppProgressLinear`**: 4px-tall bar, `--surface-raised` track, `--brand-accent` fill, `value` 0..100 prop, `thin: boolean` (drops to 2px); `aria-valuenow/aria-valuemin/aria-valuemax`, `role='progressbar'`. Indeterminate state when `value === undefined` (animated stripe).
+  - **S09 — `AppProgressCircle`**: 32px SVG circle, `--surface-raised` track, `--brand-accent` fill, `value` 0..100, `aria-valuenow`. Stroke 3px, rounded ends, rotated -90deg so 0% starts at top.
+  - **S09 — `AppSpinner`**: small indeterminate spinner (CSS-only, the same one used inside AppButton's `[data-loading]::after` factored into a reusable component). Sizes `sm` (12px), `md` (16px), `lg` (24px). Uses `currentColor` so it inherits text color.
+  - **S09 — `AppSkeleton`**: gradient-pulse placeholder. Props `width: string` (default `100%`), `height: string` (default `1em`), `radius: 'sm' | 'md' | 'pill'` (default `sm`). Animates the gradient via the bundle's `skel-pulse` keyframe.
+  - **S10 — `AppEmptyState`**: illustration slot (or `icon: IconName` shorthand), title, body, optional action slot. Centered layout, `--text-fg-muted` body color, generous padding. Three preset variants via a `tone` prop: `'neutral'` (default, gray icon), `'info'` (blue icon).
+  - **S10 — `AppErrorState`**: same shape but error palette (`--status-error-fg` icon and title color); icon defaults to `alert`.
+  - **S10 — `AppNoPermission`**: same shape but warning palette (`--status-warning-fg`); icon defaults to `lock`.
+- Token deviations: bundle uses `--text-loud`, `--surface-2`, `--surface-3`, `--primary`, `--primary-soft`, `--bg`, `--border`, `--text-muted`, `--shadow-1`, `--skeleton-base`, `--skeleton-shine`. Shipped equivalents (verify in `tokens.generated.css` first):
+  - `--text-loud` → `--text-fg`
+  - `--surface-2` → `--surface-raised`
+  - `--surface-3` → `--surface-overlay` (or whichever exists)
+  - `--primary` → `--brand-accent`
+  - `--primary-soft` → `--brand-accent-soft`
+  - `--bg` → `--surface-bg`
+  - `--border` → `--border-default`
+  - `--text-muted` → `--text-fg-muted`
+  - `--shadow-1` → `--shadow-sm` (or `--shadow-md`)
+  - `--skeleton-base` / `--skeleton-shine` — likely shipped under those exact names; verify.
+- Spec diff: none. Codegen impact: no. Design impact: yes.
+- Tests: spec per component (mount + a11y attribute assertions + interaction simulation where relevant: arrow-key tab nav, segmented click selection, progress aria values).
+- Sub-steps:
+  - [ ] T-040-A: AppRow + spec + story
+  - [ ] T-040-B: AppTabs + AppTab (provide/inject) + arrow-key nav + spec + story
+  - [ ] T-040-C: AppSegmented + AppSegmentedItem (provide/inject) + spec + story
+  - [ ] T-040-D: AppProgressLinear, AppProgressCircle, AppSpinner, AppSkeleton + specs + stories
+  - [ ] T-040-E: AppEmptyState, AppErrorState, AppNoPermission + specs + stories
+  - [ ] T-040-F: barrel exports; lint, typecheck, test, prettier; flip 4 cards; archive T-040
+- Status: in-progress
+- Blockers: —

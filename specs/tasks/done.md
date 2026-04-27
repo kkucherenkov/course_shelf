@@ -2,6 +2,20 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-033 — Web SPA bootstrap closeout (E11-F01-S01)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: two commits on `feat/web-tokens-page` — `ff0f21c` (dark default), `4f09056` (tokens canvas + test). Tests 6/6; lint 0 errors; typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E11-F01-S01.md`
+- Outcome: `nuxt.config.ts` gains `colorMode: { preference: 'dark', fallback: 'dark' }`. New `pages/__tokens.vue` renders all five token categories (color × 5 sub-groups with `getComputedStyle` live values, spacing bars, radius chips, typography specimens, motion/opacity raw `<dl>`). `UColorModeButton` in the header flips themes in one click. Six vitest assertions cover every category. Also added `@vitejs/plugin-vue` dev dep + `vitest.nuxt-imports-shim.ts` so `#imports` resolves in the plain vitest environment.
+- Sub-steps:
+  - [x] T-033-A: dark default + colorMode block in `nuxt.config.ts`
+  - [x] T-033-B: `pages/__tokens.vue` foundations canvas
+  - [x] T-033-C: component test for the page
+  - [x] T-033-D: lint, typecheck, test, prettier; flip card; archive T-033
+
 ## T-2026-04-27-032 — Admin dashboard aggregator (E21-F01-S01)
 
 - Created: 2026-04-27

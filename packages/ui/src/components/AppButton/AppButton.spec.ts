@@ -3,11 +3,10 @@ import { describe, expect, it } from 'vitest';
 
 import AppButton from './AppButton.vue';
 
-// Stub UIcon — AppIcon (composed by AppButton) renders it, and the real UIcon
-// resolves iconify collections over HTTP / bundled assets which happy-dom can't
-// handle. We intentionally DO NOT stub AppIcon itself so its wrapper contract
-// is exercised.
-const global = { stubs: { UIcon: true } } as const;
+// IconCS renders inline SVG — no external fetches needed. We stub it to
+// keep the test fast and deterministic without losing the "icon rendered"
+// signal (stub produces a named stub element we can query).
+const global = { stubs: { IconCS: true } } as const;
 
 describe('AppButton', () => {
   it('renders the label', () => {
@@ -25,15 +24,18 @@ describe('AppButton', () => {
     expect(wrapper.text()).not.toContain('Ignored');
   });
 
-  it.each([
-    ['solid', 'primary'],
-    ['outline', 'neutral'],
-    ['ghost', 'success'],
-    ['link', 'warning'],
-  ] as const)('accepts variant=%s color=%s', (variant, color) => {
-    const wrapper = mount(AppButton, { global, props: { variant, color, label: 'X' } });
-    expect(wrapper.find('.app-button').exists()).toBe(true);
+  it('applies app-button--primary class by default', () => {
+    const wrapper = mount(AppButton, { global, props: { label: 'X' } });
+    expect(wrapper.find('.app-button--primary').exists()).toBe(true);
   });
+
+  it.each(['primary', 'secondary', 'ghost', 'destructive'] as const)(
+    'applies variant class for variant=%s',
+    (variant) => {
+      const wrapper = mount(AppButton, { global, props: { variant, label: 'X' } });
+      expect(wrapper.find(`.app-button--${variant}`).exists()).toBe(true);
+    },
+  );
 
   it.each(['sm', 'md', 'lg'] as const)('applies size modifier for size=%s', (size) => {
     const wrapper = mount(AppButton, { global, props: { size, label: 'X' } });
@@ -45,6 +47,11 @@ describe('AppButton', () => {
     expect(wrapper.find('.app-button--md').exists()).toBe(true);
   });
 
+  it('adds app-button--block class when block=true', () => {
+    const wrapper = mount(AppButton, { global, props: { label: 'X', block: true } });
+    expect(wrapper.find('.app-button--block').exists()).toBe(true);
+  });
+
   it('emits click with the original MouseEvent', async () => {
     const wrapper = mount(AppButton, { global, props: { label: 'Click' } });
     await wrapper.find('button').trigger('click');
@@ -53,63 +60,75 @@ describe('AppButton', () => {
     expect(events?.[0]?.[0]).toBeInstanceOf(MouseEvent);
   });
 
-  it('blocks clicks when disabled', async () => {
+  it('blocks clicks when disabled=true', async () => {
     const wrapper = mount(AppButton, { global, props: { label: 'Off', disabled: true } });
     const button = wrapper.find('button');
     expect(button.attributes('disabled')).toBeDefined();
+    expect(button.attributes('aria-disabled')).toBe('true');
     await button.trigger('click');
     expect(wrapper.emitted('click')).toBeUndefined();
   });
 
-  it('renders an accessible button element for keyboard users', () => {
+  it('disables button and marks aria-busy while loading=true', () => {
+    const wrapper = mount(AppButton, { global, props: { label: 'Saving', loading: true } });
+    const button = wrapper.find('button');
+    expect(button.attributes('disabled')).toBeDefined();
+    expect(button.attributes('aria-busy')).toBe('true');
+    expect(button.attributes('data-loading')).toBe('true');
+  });
+
+  it('blocks clicks when loading=true', async () => {
+    const wrapper = mount(AppButton, { global, props: { label: 'Saving', loading: true } });
+    await wrapper.find('button').trigger('click');
+    expect(wrapper.emitted('click')).toBeUndefined();
+  });
+
+  it('renders an accessible button element', () => {
     const wrapper = mount(AppButton, { global, props: { label: 'Go' } });
     const button = wrapper.find('button');
     expect(button.exists()).toBe(true);
     expect(button.element.tagName).toBe('BUTTON');
   });
 
-  it('disables the button and marks it aria-busy while loading', () => {
-    const wrapper = mount(AppButton, { global, props: { label: 'Saving', loading: true } });
-    const button = wrapper.find('button');
-    expect(button.attributes('disabled')).toBeDefined();
-    expect(button.attributes('aria-busy')).toBe('true');
-  });
-
-  it('does not render the leading AppIcon while loading (spinner replaces it)', () => {
+  it('renders leading IconCS when iconLeading is provided', () => {
     const wrapper = mount(AppButton, {
       global,
-      props: { label: 'Saving', icon: 'i-lucide-check', loading: true },
+      props: { label: 'Confirm', iconLeading: 'check' },
+    });
+    expect(wrapper.find('.app-button__icon--leading').exists()).toBe(true);
+  });
+
+  it('renders trailing IconCS when iconTrailing is provided', () => {
+    const wrapper = mount(AppButton, {
+      global,
+      props: { label: 'Next', iconTrailing: 'arrow-right' },
+    });
+    expect(wrapper.find('.app-button__icon--trailing').exists()).toBe(true);
+  });
+
+  it('hides leading icon while loading', () => {
+    const wrapper = mount(AppButton, {
+      global,
+      props: { label: 'Saving', iconLeading: 'check', loading: true },
     });
     expect(wrapper.find('.app-button__icon--leading').exists()).toBe(false);
   });
 
-  it('renders a leading AppIcon when `icon` is provided', () => {
+  it('hides trailing icon while loading', () => {
     const wrapper = mount(AppButton, {
       global,
-      props: { label: 'Confirm', icon: 'i-lucide-check' },
+      props: { label: 'Saving', iconTrailing: 'arrow-right', loading: true },
     });
-    const leading = wrapper.find('.app-button__icon--leading');
-    expect(leading.exists()).toBe(true);
-    expect(leading.classes()).toContain('app-icon');
+    expect(wrapper.find('.app-button__icon--trailing').exists()).toBe(false);
   });
 
-  it('renders a trailing AppIcon when `iconTrailing` is provided', () => {
-    const wrapper = mount(AppButton, {
-      global,
-      props: { label: 'Next', iconTrailing: 'i-lucide-arrow-right' },
-    });
-    const trailing = wrapper.find('.app-button__icon--trailing');
-    expect(trailing.exists()).toBe(true);
-    expect(trailing.classes()).toContain('app-icon');
-  });
-
-  it('positions icons on either side of the label when both are provided', () => {
+  it('positions icons on both sides of the label when both are provided', () => {
     const wrapper = mount(AppButton, {
       global,
       props: {
         label: 'Go',
-        icon: 'i-lucide-arrow-left',
-        iconTrailing: 'i-lucide-arrow-right',
+        iconLeading: 'arrow-left',
+        iconTrailing: 'arrow-right',
       },
     });
     expect(wrapper.find('.app-button__icon--leading').exists()).toBe(true);

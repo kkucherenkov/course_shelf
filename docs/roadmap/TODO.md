@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `40 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `41 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -85,7 +85,7 @@ Progress: `40 / 115` complete (update by hand or via a pre-commit hook).
 - [x] [E13-F01-S01](./tasks/E13-F01-S01.md) `A` — IconCS — port the bundle's 61-icon family to Vue · ⇐ E12-F01-S01
 - [x] [E13-F01-S02](./tasks/E13-F01-S02.md) `A` — AppButton + AppIconButton (matches .btn classes) · ⇐ E12-F01-S01, E13-F01-S01
 - [x] [E13-F01-S03](./tasks/E13-F01-S03.md) `A` — AppTextField, AppNumberField, AppSearchField, AppSelect, AppSwitch, AppCheckbox, AppRadio · ⇐ E12-F01-S01, E13-F01-S01
-- [ ] [E13-F01-S04](./tasks/E13-F01-S04.md) `A` — AppCard (.card, .card-lg, .card-hover) · ⇐ E12-F01-S01
+- [x] [E13-F01-S04](./tasks/E13-F01-S04.md) `A` — AppCard (.card, .card-lg, .card-hover) · ⇐ E12-F01-S01
 - [ ] [E13-F01-S05](./tasks/E13-F01-S05.md) `A` — AppRow — leading/body/trailing slots, selected + compact states · ⇐ E12-F01-S01, E13-F01-S01
 - [ ] [E13-F01-S06](./tasks/E13-F01-S06.md) `A` — AppTabs and AppSegmented controls · ⇐ E12-F01-S01
 - [ ] [E13-F01-S07](./tasks/E13-F01-S07.md) `A` — AppBanner (info/success/warning/error), AppToast, inline alerts · ⇐ E12-F01-S01, E13-F01-S01

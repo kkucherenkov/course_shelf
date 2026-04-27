@@ -2,6 +2,15 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-038 — AppCard size + hoverable (E13-F01-S04)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: commit `6f0f481` on `feat/app-card-bundle` (+ a prettier sweep `e7cdbf3`). UI tests 356/356 (+4); lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F01-S04.md`
+- Outcome: AppCard gained `size: 'md' | 'lg'` (matches bundle `.card` and `.card-lg`) and `hoverable: boolean` (matches `.card-hover`). Default size is `md` with `--radius-md` + 16px uniform padding; `lg` is `--radius-lg` + 24px. `hoverable` shifts border to `--border-strong` and background to `--surface-raised` on hover, stays a `<div>`, no focus ring; ignored when `interactive` is also true. Existing `interactive` button mode preserved.
+
 ## T-2026-04-27-037 — Form primitives (E13-F01-S03)
 
 - Created: 2026-04-27

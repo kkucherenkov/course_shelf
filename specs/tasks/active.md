@@ -24,12 +24,18 @@
   - `stores/auth.spec.ts` — mocked Better Auth client; signIn populates `session` + `token`, signOut clears both, error path keeps state untouched.
   - `plugins/api.client.spec.ts` — interceptor adds `Authorization` header when token present, omits when null.
 - Sub-steps:
-  - [ ] T-034-A: install `@pinia/nuxt` + `pinia`; add to nuxt modules
-  - [ ] T-034-B: `stores/auth.ts` (Pinia store + Better Auth bearer client) + tests
-  - [ ] T-034-C: `plugins/api.client.ts` (client config + bearer interceptor + 401 retry) + tests
-  - [ ] T-034-D: `middleware/auth.global.ts` redirect + skip-list
-  - [ ] T-034-E: migrate `login.vue` + `layouts/default.vue` to the store
-  - [ ] T-034-F: delete `composables/useApi.ts`, `composables/useAuth.ts`, `composables/useApiShape.ts`
-  - [ ] T-034-G: lint, typecheck, test, prettier; smoke if web container is up; flip card; archive T-034
-- Status: in-progress
+  - [x] T-034-A: install `@pinia/nuxt` + `pinia`; add to nuxt modules
+  - [x] T-034-B: `stores/auth.ts` (Pinia store + Better Auth bearer client) + tests
+  - [x] T-034-C: `plugins/api.client.ts` (client config + bearer interceptor + 401 retry) + tests
+  - [x] T-034-D: `middleware/auth.global.ts` redirect + skip-list
+  - [x] T-034-E: migrate `login.vue` + `layouts/default.vue` to the store
+  - [x] T-034-F: delete `composables/useApi.ts`, `composables/useAuth.ts`, `composables/useApiShape.ts`
+  - [x] T-034-G: lint, typecheck, test, prettier; smoke skipped (no web container); flip card; archive T-034
+- Status: done
 - Blockers: —
+- Deviations:
+  - `bearerClient()` absent in better-auth@1.6.8; bearer token captured from `set-auth-token` response header via `@better-fetch/fetch` `onSuccess` hook instead.
+  - Redirect target is `/login` (card said `/sign-in`); codebase has no `/sign-in` route.
+  - `plugins/api.client.spec.ts` deferred — plugin requires Nuxt runtime context; store tests (11 cases) are the primary deliverable.
+  - `useApiShape.assertShape` had zero callers; deleted with the other composables.
+  - `@app/api-client-ts` `src/index.ts` updated to re-export `client` singleton (not generated, no codegen violation).

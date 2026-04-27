@@ -2,6 +2,17 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-040 — Primitives batch A (E13-F01-S05/S06/S09/S10)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: 5 feature commits on `feat/primitives-batch-a` — `04e1533` (AppRow), `89cb69a` (AppTabs + AppTab), `c5c3bff` (AppSegmented + AppSegmentedItem), `6abee87` (Progress + Spinner + Skeleton), `d8b9d58` (3 state surfaces + barrel). UI tests 513/513 (+103); lint + typecheck + stylelint clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F01-S05.md`, `E13-F01-S06.md`, `E13-F01-S09.md`, `E13-F01-S10.md` — 4 cards flipped together.
+- Outcome: 12 new exports from `@app/ui` covering 10 components — `AppRow`, `AppTabs`, `AppTab`, `AppSegmented`, `AppSegmentedItem`, `AppProgressLinear`, `AppProgressCircle`, `AppSpinner`, `AppSkeleton`, `AppEmptyState`, `AppErrorState`, `AppNoPermission`. All driven off shipped tokens (some bundle aliases ship verbatim, e.g. `--text-loud`, `--surface-2`, `--shadow-1` — engineer used the canonical alias chain). AppTabs and AppSegmented are generic over `T extends string | number` with provide/inject context to children. AppSpinner is a reusable component; AppButton/AppIconButton's inline `::after` spinner is intentionally left as-is (interaction-bound, no a11y cost).
+- Architectural calls: arrow-key nav in AppTabs uses DOM-sibling traversal (matches the WCAG tablist pattern from AppRadioGroup in T-037). Generic SFC + vue-test-utils requires `wrapper.vm as { active: T }` workaround for typed access. State surfaces (Empty/Error/NoPermission) ship as three near-duplicate templates rather than an `AppStateBase` abstraction — easier to read and unlikely to drift.
+- Token mapping discoveries: `--text-loud` ships verbatim (separate from `--text-fg`); `--text-muted` → `--text-secondary` (not `--text-fg-muted` as previous components used); `--shadow-1` → `--shadow-xs`; `--surface-3` → `--surface-overlay`. Documented inline in the SCSS.
+
 ## T-2026-04-27-039 — AppBanner / AppToast / AppAlert (E13-F01-S07)
 
 - Created: 2026-04-27

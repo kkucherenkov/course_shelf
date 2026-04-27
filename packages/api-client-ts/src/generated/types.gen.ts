@@ -59,6 +59,56 @@ export type AccessGrantListDto = {
     items: Array<AccessGrantDto>;
 };
 
+export type AdminDashboardDto = {
+    /**
+     * ISO-8601 instant when the snapshot was assembled (server clock).
+     */
+    generatedAt: string;
+    counts: {
+        libraries: number;
+        users: number;
+        courses: number;
+        lessons: number;
+    };
+    /**
+     * Most recent scan across all libraries (highest `startedAt`), or
+     * `null` when no scan has ever run.
+     *
+     */
+    latestScan: AdminDashboardLatestScan | null;
+    /**
+     * Count of `ScanErrorRecord` rows whose parent scan started within
+     * the last 24 hours (rolling window from `generatedAt`). Uses the
+     * parent scan's `startedAt` because the error record itself has no
+     * timestamp; works because no scan is expected to outlive a single
+     * 24-hour window.
+     *
+     */
+    errorsLast24h: number;
+};
+
+export type AdminDashboardLatestScan = {
+    /**
+     * cuid identifying the scan.
+     */
+    scanId: string;
+    /**
+     * cuid of the library this scan ran against.
+     */
+    libraryId: string;
+    status: ScanStatus;
+    startedAt: string;
+    /**
+     * null while still `running`.
+     */
+    finishedAt: string | null;
+    filesScanned: number;
+    /**
+     * Number of error records attached to this scan.
+     */
+    errorsCount: number;
+};
+
 /**
  * A single user-owned bookmark pinned to a position within a lesson.
  */
@@ -834,6 +884,35 @@ export type RevokeGrantResponses = {
 };
 
 export type RevokeGrantResponse = RevokeGrantResponses[keyof RevokeGrantResponses];
+
+export type GetAdminDashboardData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/dashboard';
+};
+
+export type GetAdminDashboardErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller is authenticated but not an administrator
+     */
+    403: Problem;
+};
+
+export type GetAdminDashboardError = GetAdminDashboardErrors[keyof GetAdminDashboardErrors];
+
+export type GetAdminDashboardResponses = {
+    /**
+     * Dashboard snapshot
+     */
+    200: AdminDashboardDto;
+};
+
+export type GetAdminDashboardResponse = GetAdminDashboardResponses[keyof GetAdminDashboardResponses];
 
 export type DeleteBookmarkData = {
     body?: never;

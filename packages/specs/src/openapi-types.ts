@@ -50,6 +50,28 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/dashboard': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Operational snapshot for the admin dashboard
+     * @description Returns counts of major entities (libraries, users, courses, lessons),
+     *     a summary of the most recent scan (if any), and the count of scan
+     *     errors collected in the last 24 hours. Read-only — no side effects.
+     */
+    get: operations['getAdminDashboard'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/bookmarks/{id}': {
     parameters: {
       query?: never;
@@ -607,6 +629,46 @@ export interface components {
      */
     AccessGrantListDto: {
       items: components['schemas']['AccessGrantDto'][];
+    };
+    AdminDashboardDto: {
+      /**
+       * Format: date-time
+       * @description ISO-8601 instant when the snapshot was assembled (server clock).
+       */
+      generatedAt: string;
+      counts: {
+        libraries: number;
+        users: number;
+        courses: number;
+        lessons: number;
+      };
+      /**
+       * @description Most recent scan across all libraries (highest `startedAt`), or
+       *     `null` when no scan has ever run.
+       */
+      latestScan: components['schemas']['AdminDashboardLatestScan'] | null;
+      /**
+       * @description Count of `ScanErrorRecord` rows whose parent scan started within
+       *     the last 24 hours (rolling window from `generatedAt`). Uses the
+       *     parent scan's `startedAt` because the error record itself has no
+       *     timestamp; works because no scan is expected to outlive a single
+       *     24-hour window.
+       */
+      errorsLast24h: number;
+    };
+    AdminDashboardLatestScan: {
+      /** @description cuid identifying the scan. */
+      scanId: string;
+      /** @description cuid of the library this scan ran against. */
+      libraryId: string;
+      status: components['schemas']['ScanStatus'];
+      /** Format: date-time */
+      startedAt: string;
+      /** @description null while still `running`. */
+      finishedAt: string | null;
+      filesScanned: number;
+      /** @description Number of error records attached to this scan. */
+      errorsCount: number;
     };
     /**
      * @description A single user-owned bookmark pinned to a position within a lesson.
@@ -1577,6 +1639,44 @@ export interface operations {
       };
       /** @description Grant not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getAdminDashboard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Dashboard snapshot */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminDashboardDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller is authenticated but not an administrator */
+      403: {
         headers: {
           [name: string]: unknown;
         };

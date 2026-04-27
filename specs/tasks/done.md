@@ -2,6 +2,18 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-048 — LessonRow + SectionHeader (E13-F02-S02)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: single feature commit `c30dd40` on `feat/lesson-row` (closes #50) → PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/128. UI tests 732/732 (+19); lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F02-S02.md` (source: `docs/design/cs-components/components.jsx` §LessonRow + SectionHeader, CSS in `docs/design/cs-components/styles.css`)
+- Outcome: two domain components for the course detail outline.
+  - `AppLessonRow` — `num, title, duration, state, materials?, current?, progress?, loading?`. State matrix: `not-started` (circle), `in-progress` (circle + thin underline + `<n>% watched`), `completed` (check-circle / success), `locked` (lock / muted / inert with `aria-disabled` + `tabindex=-1`). `current=true` is orthogonal to state — flips icon to `play`, paints soft-accent background, draws 3px leading bar, sets `aria-current="true"`. Trailing: optional PDF icon when `materials=true`, mono-spaced duration (`H:MM:SS` ≥ 1h, else `M:SS`). Loading variant renders four `AppSkeleton` strips matching the row layout. Activation: click + Enter/Space emit `select`; locked/loading rows are inert.
+  - `AppSectionHeader` — `idx, title, count, duration, open?` (default `open: true`). Title `Section <pad2(idx)> · <title>`; meta `<count> lesson(s) · <Xh Ym | Xh | Ym>` mono-spaced. Chevron rotates `-90deg` when `open=false`. Click + Enter/Space emit `toggle`; `aria-expanded` mirrors `open`.
+- Notes: mobile-only `downloadState` from the JSX bundle deferred to a future Flutter card. `fmtTime` is inlined per-component to avoid coupling AppLessonRow to CourseCard.
+
 ## T-2026-04-27-047 — AppSsoBlock — SSO/OAuth provider button row (E13-F02-S10)
 
 - Created: 2026-04-27

@@ -45,3 +45,6 @@ export { AppNavigationShell } from './components/AppNavigationShell';
 export type { NavItem, ShellUser } from './components/AppNavigationShell';
 export { AppSsoBlock } from './components/AppSsoBlock';
 export type { SsoProvider } from './components/AppSsoBlock';
+export { AppLessonRow } from './components/AppLessonRow';
+export type { LessonState } from './components/AppLessonRow';
+export { AppSectionHeader } from './components/AppSectionHeader';

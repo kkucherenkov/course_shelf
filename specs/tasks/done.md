@@ -2,6 +2,17 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-044 — AppPasswordField — visibility toggle + strength meter (E13-F02-S09)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: single feature commit `1c1b015` on `feat/password-field`. UI tests 591/591 (+18); lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F02-S09.md` (source: `docs/design/shared/auth.jsx` §PasswordField)
+- Outcome: `AppPasswordField` ships a labelled password input with a leading lock icon, a raw `<button>` visibility toggle on the right (aria-pressed + dynamic aria-label), and an optional 3-segment strength meter. Score heuristic copied verbatim from the JSX (empty/<8/<12/≥12-with-symbol-or->16). Three meter colours track the score (error/warning/success). `error` / `hint` / `meter-label` collapse via `v-else-if` so only one footer line ever renders; `error` wins.
+- Toggle uses a plain `<button>` rather than `AppIconButton` so `aria-pressed` and `aria-label` are native HTML attrs without prop-typing gymnastics. Custom CSS matches the bundle's `btn btn-ghost btn-icon btn-sm` look.
+- Tokens: `--brand-accent` (focus ring), `--surface-overlay` (meter track + toggle hover), `--status-{error,warning,success}-fg` (meter fill per score), `--text-secondary` (muted text/icon), `--surface-bg-muted` (disabled background).
+
 ## T-2026-04-27-043 — AppProgressBadge — ring/bar/pill variants (E13-F02-S06)
 
 - Created: 2026-04-27

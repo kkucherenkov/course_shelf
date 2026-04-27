@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.13.0
+  version: 0.14.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -356,6 +356,38 @@ paths:
                     title: Forbidden
                     status: 403
                     detail: Administrator role required.
+
+  /api/v1/admin/has-users:
+    get:
+      operationId: getAdminHasUsers
+      summary: Indicate whether any users exist in the platform
+      description: |
+        First-run probe. Returns `{ hasUsers: false }` when the database has
+        zero users — the SPA uses this to force `/setup` (admin onboarding).
+        Returns `{ hasUsers: true }` once at least one user exists, locking
+        `/setup` and routing fresh visitors to `/sign-in`.
+
+        No authentication is required: the very first request from a clean
+        browser must succeed without credentials, and the response carries
+        no sensitive information beyond a boolean.
+      tags: [admin]
+      security: []
+      responses:
+        "200":
+          description: Boolean signalling whether at least one user exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HasUsersResponse"
+              examples:
+                empty:
+                  summary: Fresh install — setup wizard required
+                  value:
+                    hasUsers: false
+                populated:
+                  summary: At least one user exists — setup is locked
+                  value:
+                    hasUsers: true
 
   /api/v1/bookmarks/{id}:
     patch:
@@ -2664,6 +2696,18 @@ components:
         mapping:
           library: "#/components/schemas/GrantTarget/oneOf/0"
           course: "#/components/schemas/GrantTarget/oneOf/1"
+
+    HasUsersResponse:
+      type: object
+      required: [hasUsers]
+      additionalProperties: false
+      properties:
+        hasUsers:
+          type: boolean
+          description: |
+            True iff `users` table count > 0. The web SPA caches this for the
+            session lifetime and re-checks only when the user explicitly
+            signs out + back in.
 
     HealthStatus:
       type: object

@@ -109,6 +109,24 @@ cd apps/mobile && flutter test test/path/to/file_test.dart
 pnpm e2e -- --grep "smoke"
 ```
 
+## Forgejo issues mirror
+
+Every roadmap card in `docs/roadmap/tasks/` is mirrored as a Forgejo issue with title `[<card-id>] <title>`. The card stays the source of truth; the issue is a stable URL for cross-referencing.
+
+```sh
+pnpm issues:sync                    # reconcile bodies + open/closed state with the cards
+pnpm issues:map                     # print full card-id → #N map
+pnpm issues:lookup -- E13-F02-S07   # print just one issue number (e.g. "55")
+```
+
+When opening a PR for a card, **use Forgejo's auto-close keyword in the body** so the linked issue closes on merge — don't rely on `pnpm issues:sync` running afterwards:
+
+```
+Closes #55
+```
+
+(Look up the number with `pnpm issues:lookup -- <card-id>`.) `Closes #N`, `Fixes #N`, and `Resolves #N` all work; Forgejo only closes the issue when the PR merges to the default branch.
+
 ## Commits
 
 Conventional Commits enforced by `commitlint` (see `commitlint.config.mjs`).

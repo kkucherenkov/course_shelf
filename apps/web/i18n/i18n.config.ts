@@ -1,5 +1,5 @@
-import en from './i18n/locales/en';
-import ru from './i18n/locales/ru';
+import en from './locales/en';
+import ru from './locales/ru';
 
 // Plain TS modules (not JSON) — `@intlify/unplugin-vue-i18n` only claims
 // `.json`/`.yaml` resource files, and `vite:json` only matches `.json`.

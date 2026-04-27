@@ -32,26 +32,26 @@ channels:
     description: Broadcast of service health transitions (ok <-> degraded <-> down).
 
   libraryScan:
-    address: 'library:scan:{libraryId}'
+    address: "library:scan:{libraryId}"
     parameters:
       libraryId:
         description: Library cuid being scanned.
     messages:
       scanEvent:
-        $ref: '#/components/messages/ScanEvent'
+        $ref: "#/components/messages/ScanEvent"
     description: |
       Live scan-progress feed for a single library. Authorised receivers see
       progress events as the scanner walks the filesystem, lesson-discovered
       notifications, and a final finished event with rollup counts.
 
   notesLesson:
-    address: 'notes:lesson:{lessonId}'
+    address: "notes:lesson:{lessonId}"
     parameters:
       lessonId:
         description: Lesson cuid.
     messages:
       noteUpdated:
-        $ref: '#/components/messages/NoteUpdated'
+        $ref: "#/components/messages/NoteUpdated"
     description: |
       Cross-device note synchronisation for a single lesson. Subscribers
       receive the full updated body whenever the note's owner saves an edit
@@ -59,13 +59,13 @@ channels:
       write wins).
 
   progressUser:
-    address: 'progress:user:{userId}'
+    address: "progress:user:{userId}"
     parameters:
       userId:
         description: Better Auth user id (UUID v4).
     messages:
       progressUpdated:
-        $ref: '#/components/messages/ProgressUpdated'
+        $ref: "#/components/messages/ProgressUpdated"
     description: |
       Per-user lesson progress fan-out. The owning user's other connected
       devices receive each progress write so their UI reflects the latest
@@ -83,26 +83,26 @@ operations:
   receiveScanEvent:
     action: receive
     channel:
-      $ref: '#/channels/libraryScan'
+      $ref: "#/channels/libraryScan"
     summary: Listen for scan progress on a specific library
     messages:
-      - $ref: '#/channels/libraryScan/messages/scanEvent'
+      - $ref: "#/channels/libraryScan/messages/scanEvent"
 
   receiveNoteUpdated:
     action: receive
     channel:
-      $ref: '#/channels/notesLesson'
+      $ref: "#/channels/notesLesson"
     summary: Listen for note edits on a specific lesson
     messages:
-      - $ref: '#/channels/notesLesson/messages/noteUpdated'
+      - $ref: "#/channels/notesLesson/messages/noteUpdated"
 
   receiveProgressUpdated:
     action: receive
     channel:
-      $ref: '#/channels/progressUser'
+      $ref: "#/channels/progressUser"
     summary: Listen for own progress updates across devices
     messages:
-      - $ref: '#/channels/progressUser/messages/progressUpdated'
+      - $ref: "#/channels/progressUser/messages/progressUpdated"
 
 components:
   messages:
@@ -116,19 +116,19 @@ components:
       name: ScanEvent
       contentType: application/json
       payload:
-        $ref: '#/components/schemas/ScanEvent'
+        $ref: "#/components/schemas/ScanEvent"
 
     NoteUpdated:
       name: NoteUpdated
       contentType: application/json
       payload:
-        $ref: '#/components/schemas/NoteUpdated'
+        $ref: "#/components/schemas/NoteUpdated"
 
     ProgressUpdated:
       name: ProgressUpdated
       contentType: application/json
       payload:
-        $ref: '#/components/schemas/ProgressUpdated'
+        $ref: "#/components/schemas/ProgressUpdated"
 
   schemas:
     HealthUpdate:
@@ -211,7 +211,7 @@ components:
           type: string
           format: date-time
         status:
-          $ref: '#/components/schemas/ScanStatus'
+          $ref: "#/components/schemas/ScanStatus"
         lessonsTotal:
           type: integer
           minimum: 0

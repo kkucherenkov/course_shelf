@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `28 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `29 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -193,4 +193,4 @@ Progress: `28 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E24 — Realtime / Centrifugo
 
-- [ ] [E24-F01-S01](./tasks/E24-F01-S01.md) `A` — AsyncAPI Centrifugo channels + POST /api/v1/realtime/token · ⇐ E04-F02-S03
+- [x] [E24-F01-S01](./tasks/E24-F01-S01.md) `A` — AsyncAPI Centrifugo channels + POST /api/v1/realtime/token · ⇐ E04-F02-S03

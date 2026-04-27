@@ -11,6 +11,11 @@ const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 export class PrismaDashboardAdapter implements DashboardPort {
   constructor(private readonly prisma: PrismaService) {}
 
+  async hasAnyUser(): Promise<boolean> {
+    const count = await this.prisma.user.count({ take: 1 });
+    return count > 0;
+  }
+
   async getSnapshot(): Promise<DashboardSnapshot> {
     const cutoff = new Date(Date.now() - TWENTY_FOUR_HOURS_MS);
 

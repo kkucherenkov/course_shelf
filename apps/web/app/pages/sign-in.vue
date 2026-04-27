@@ -18,11 +18,11 @@
   async function onSignIn(): Promise<void> {
     errorMsg.value = '';
     if (!emailValid.value) {
-      errorMsg.value = t('pages.login.errorEmailInvalid');
+      errorMsg.value = t('pages.signIn.errorEmailInvalid');
       return;
     }
     if (!passwordValid.value) {
-      errorMsg.value = t('pages.login.errorPasswordTooShort');
+      errorMsg.value = t('pages.signIn.errorPasswordTooShort');
       return;
     }
     const result = await authStore.signIn(email.value, password.value);
@@ -30,8 +30,8 @@
       const msg = (result.error ?? '').toLowerCase();
       errorMsg.value =
         msg.includes('invalid') || msg.includes('credential') || msg.includes('password')
-          ? t('pages.login.errorCredentials')
-          : t('pages.login.errorGeneric');
+          ? t('pages.signIn.errorCredentials')
+          : t('pages.signIn.errorGeneric');
       return;
     }
     await navigateTo('/');
@@ -39,23 +39,27 @@
 </script>
 
 <template>
-  <div class="page-login" data-testid="page-login">
-    <div class="page-login__card">
-      <div class="page-login__header">
-        <h1 class="page-login__title">
-          {{ t('pages.login.title') }}
+  <div class="page-sign-in" data-testid="page-sign-in">
+    <div class="page-sign-in__card">
+      <div class="page-sign-in__header">
+        <h1 class="page-sign-in__title">
+          {{ t('pages.signIn.title') }}
         </h1>
-        <p class="page-login__subtitle">
-          {{ t('pages.login.subtitle') }}
+        <p class="page-sign-in__subtitle">
+          {{ t('pages.signIn.subtitle') }}
         </p>
       </div>
 
-      <p v-if="errorMsg" role="alert" class="page-login__error">
+      <p v-if="errorMsg" role="alert" class="page-sign-in__error">
         {{ errorMsg }}
       </p>
 
-      <form class="page-login__form" novalidate @submit.prevent="onSignIn">
-        <AppField :label="t('pages.login.emailLabel')" :help="t('pages.login.emailHint')" required>
+      <form class="page-sign-in__form" novalidate @submit.prevent="onSignIn">
+        <AppField
+          :label="t('pages.signIn.emailLabel')"
+          :help="t('pages.signIn.emailHint')"
+          required
+        >
           <template #default="slotAttrs">
             <AppInput
               v-bind="slotAttrs"
@@ -69,8 +73,8 @@
         </AppField>
 
         <AppField
-          :label="t('pages.login.passwordLabel')"
-          :help="t('pages.login.passwordHint')"
+          :label="t('pages.signIn.passwordLabel')"
+          :help="t('pages.signIn.passwordHint')"
           required
         >
           <template #default="slotAttrs">
@@ -84,7 +88,7 @@
         </AppField>
 
         <AppButton
-          :label="t('pages.login.signInButton')"
+          :label="t('pages.signIn.signInButton')"
           type="submit"
           variant="primary"
           block
@@ -93,22 +97,22 @@
         />
       </form>
 
-      <p class="page-login__footnote-link">
-        {{ t('pages.login.noAccount') }}
-        <NuxtLink to="/signup" class="page-login__link">
-          {{ t('pages.login.signUpLink') }}
+      <p class="page-sign-in__footnote-link">
+        {{ t('pages.signIn.noAccount') }}
+        <NuxtLink to="/signup" class="page-sign-in__link">
+          {{ t('pages.signIn.signUpLink') }}
         </NuxtLink>
       </p>
 
-      <p class="page-login__legal">
-        {{ t('pages.login.legalFootnote') }}
+      <p class="page-sign-in__legal">
+        {{ t('pages.signIn.legalFootnote') }}
       </p>
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
-  .page-login {
+  .page-sign-in {
     display: flex;
     align-items: center;
     justify-content: center;

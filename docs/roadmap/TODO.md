@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `49 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `50 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -74,7 +74,7 @@ Progress: `49 / 115` complete (update by hand or via a pre-commit hook).
 
 - [x] [E11-F01-S01](./tasks/E11-F01-S01.md) `A` — Bootstrap Nuxt SPA with Nuxt UI v4, Tailwind 4, and tokens · ⇐ E03-F01-S02, E04-F02-S03
 - [x] [E11-F01-S02](./tasks/E11-F01-S02.md) `A` — Wire @app/api-client-ts with bearer interceptor + auth store · ⇐ E11-F01-S01
-- [ ] [E11-F01-S03](./tasks/E11-F01-S03.md) `A` — Auth store + minimal sign-in/setup pages · ⇐ E11-F01-S02
+- [x] [E11-F01-S03](./tasks/E11-F01-S03.md) `A` — Auth store + minimal sign-in/setup pages · ⇐ E11-F01-S02
 
 ## E12 — Storybook for web
 

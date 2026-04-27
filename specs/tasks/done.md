@@ -2,6 +2,16 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-042 — Auth setup wizard + sign-in flow (E11-F01-S03)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: 6 commits on `feat/auth-setup-wizard` — `08b2570` (`/admin/has-users` probe + port + adapter), `d1b977a` (Better Auth admin-promotion hook), `78d8117` (`useAuthStore.signUp`), `2a55ea1` (rename `/login` → `/sign-in`), `6e6bfc7` (`/setup` page + `hasUsers` middleware gate). Backend tests 668/668 (+4); web tests 19/19 (+2); lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E11-F01-S03.md`
+- Outcome: minimal-but-functional first-run flow. Backend exposes `GET /api/v1/admin/has-users` (anonymous, sibling controller to keep `AdminController`'s class-level `AdminGuard` intact); Better Auth `databaseHooks.user.create.before` promotes the first user to `role: 'ADMIN'`. SPA: `useAuthStore.signUp` mirrors the existing `signIn` `set-auth-token` capture; `pages/setup.vue` collects email + password + optional display name and submits via the store; middleware gates `/setup` / `/sign-in` based on a per-session `hasUsers` cache; `pages/login.vue` renamed to `pages/sign-in.vue` with all references and locale keys updated.
+- Architectural calls: `AdminPublicController` is a separate class because `@AllowAnonymous()` only opts out of the global `SessionGuard`, not the existing `AdminController`'s class-level `AdminGuard`. The `hasUsers` cache lives in `app/composables/useHasUsersCache.ts` (ref + `resetHasUsersCache()` helper) so the middleware keeps its single-default-export contract.
+
 ## T-2026-04-27-041 — Primitives batch B: dialog + avatar + chip refactor (E13-F01-S08/S11/S12)
 
 - Created: 2026-04-27

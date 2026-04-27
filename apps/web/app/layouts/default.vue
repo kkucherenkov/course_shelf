@@ -9,12 +9,12 @@
 
   const isAuthenticated = computed(() => authStore.isAuthenticated);
 
-  const NO_PAD_ROUTES = new Set(['/login']);
+  const NO_PAD_ROUTES = new Set(['/sign-in', '/setup']);
   const isNoPad = computed(() => NO_PAD_ROUTES.has(route.path));
 
   async function onSignOut(): Promise<void> {
     await authStore.signOut();
-    await navigateTo('/login');
+    await navigateTo('/sign-in');
   }
 </script>
 
@@ -37,11 +37,11 @@
           </li>
           <li v-if="!isAuthenticated" class="default-layout__nav-item">
             <NuxtLink
-              to="/login"
+              to="/sign-in"
               class="default-layout__nav-link"
-              :class="{ 'default-layout__nav-link--active': route.path === '/login' }"
+              :class="{ 'default-layout__nav-link--active': route.path === '/sign-in' }"
             >
-              {{ t('layouts.default.navLogin') }}
+              {{ t('layouts.default.navSignIn') }}
             </NuxtLink>
           </li>
           <li v-if="isAuthenticated" class="default-layout__nav-item">

@@ -15,4 +15,5 @@ export interface DashboardSnapshot {
 
 export interface DashboardPort {
   getSnapshot(): Promise<DashboardSnapshot>;
+  hasAnyUser(): Promise<boolean>;
 }

@@ -2,6 +2,17 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-047 — AppSsoBlock — SSO/OAuth provider button row (E13-F02-S10)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: single feature commit `203f461` on `feat/sso-block` (closes #58). UI tests 713/713 (+6); lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F02-S10.md` (source: `docs/design/shared/auth.jsx` §SsoBlock)
+- Outcome: `AppSsoBlock` ships a vertical stack of secondary `AppButton`s (one per provider) with leading icons. Empty `providers` array renders nothing so the auth page can skip its surrounding "or" divider via the same `providers.length` check. Provider list is fully configurable per the card — any `{ id, label, iconName }` triple works. Click on a button emits `select` with the provider id; the consumer dispatches the right Better Auth flow.
+- Architecture: thin wrapper around `AppButton` (variant `secondary`, `block: true`). Wrapper carries `role="group"` + `aria-label="Sign in with"` for screen readers.
+- v1 scope: PRD puts OAuth/OIDC/SAML at v2+. The component is in place; the populating data comes from a future `GET /admin/instance` once Better Auth's `genericOAuth` plugins land.
+
 ## T-2026-04-27-045 — CourseCard family (poster / wide / compact) (E13-F02-S01)
 
 - Created: 2026-04-27

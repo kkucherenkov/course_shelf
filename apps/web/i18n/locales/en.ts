@@ -35,7 +35,7 @@ export default {
       passwordLabel: 'Password',
       passwordHint: 'At least 8 characters.',
       displayNameLabel: 'Display name',
-      displayNameHint: 'Optional — defaults to the part of the email before @.',
+      displayNameHint: "Optional — defaults to the part of the email before {'@'}.",
       submitButton: 'Create administrator',
       legalFootnote: 'By continuing, you agree to our Terms and Privacy Policy.',
       errorGeneric: 'Could not create the administrator. Please try again.',

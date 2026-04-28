@@ -83,6 +83,10 @@ export default [
   {
     languageOptions: { globals: { ...nuxtGlobals, ...vueAutoImports } },
     rules: {
+      // ariaLabel is a camelCase prop on @app/ui components (AppIconButton, AppSpinner, …).
+      // vue/attribute-hyphenation 'always' would force aria-label but TS rejects the kebab form
+      // since the prop is declared as `ariaLabel: string` (not as an arbitrary HTML attr).
+      'vue/attribute-hyphenation': ['error', 'always', { ignore: ['ariaLabel'] }],
       'unicorn/filename-case': [
         'error',
         { cases: { camelCase: true, kebabCase: true, pascalCase: true } },

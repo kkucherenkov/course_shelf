@@ -31,6 +31,7 @@ const PUBLIC_ROUTES = new Set([
   '/signup',
   '/setup',
   '/__tokens',
+  '/dev/foundations',
 ]);
 
 async function fetchHasUsers(): Promise<boolean> {

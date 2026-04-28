@@ -9,6 +9,7 @@ import 'package:dio/dio.dart';
 
 import 'package:app_api_client/src/model/admin_dashboard_dto.dart';
 import 'package:app_api_client/src/model/has_users_response.dart';
+import 'package:app_api_client/src/model/instance_config_dto.dart';
 
 class AdminApi {
 
@@ -159,6 +160,79 @@ class AdminApi {
     }
 
     return Response<HasUsersResponse>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Public instance configuration (self-registration, email verification, SSO providers)
+  /// Anonymous endpoint that exposes the three runtime toggles the auth UI needs to draw the right surface:  - &#x60;selfRegistration&#x60; — when &#x60;false&#x60;, the sign-up entry points are   hidden and &#x60;/sign-up&#x60; returns the user to &#x60;/sign-in&#x60;. Admin opts   out via &#x60;AUTH_SELF_REGISTRATION&#x3D;false&#x60;. - &#x60;emailVerificationRequired&#x60; — when &#x60;true&#x60;, the sign-up wizard   renders step 2 (6-digit code). When &#x60;false&#x60;, sign-up jumps from   step 1 (account) directly to step 3 (library setup). Mirrors   Better Auth&#39;s &#x60;emailVerification&#x60; plugin toggle. Admin opts in   via &#x60;AUTH_EMAIL_VERIFICATION&#x3D;true&#x60;. - &#x60;ssoProviders&#x60; — array of OAuth/SSO providers configured for   this instance. v1 ships &#x60;[]&#x60;; v2 lands Better Auth&#39;s   &#x60;genericOAuth&#x60; plugin and the array starts to populate, lighting   up the SsoBlock without UI changes.  No authentication is required — the first GET from a clean browser decides whether the auth pages can even draw a sign-up CTA, and the response carries no sensitive information. 
+  ///
+  /// Parameters:
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [InstanceConfigDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<InstanceConfigDto>> getAdminInstance({ 
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/admin/instance';
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    InstanceConfigDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(InstanceConfigDto),
+      ) as InstanceConfigDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<InstanceConfigDto>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

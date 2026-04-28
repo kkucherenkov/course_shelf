@@ -41,6 +41,7 @@ import 'package:app_api_client/src/model/grant_target.dart';
 import 'package:app_api_client/src/model/has_users_response.dart';
 import 'package:app_api_client/src/model/health_status.dart';
 import 'package:app_api_client/src/model/health_status_dependencies.dart';
+import 'package:app_api_client/src/model/instance_config_dto.dart';
 import 'package:app_api_client/src/model/lesson_dto.dart';
 import 'package:app_api_client/src/model/lesson_progress.dart';
 import 'package:app_api_client/src/model/lesson_progress_dto.dart';
@@ -66,6 +67,7 @@ import 'package:app_api_client/src/model/scan_dto.dart';
 import 'package:app_api_client/src/model/scan_error.dart';
 import 'package:app_api_client/src/model/scan_status.dart';
 import 'package:app_api_client/src/model/section_dto.dart';
+import 'package:app_api_client/src/model/sso_provider_config.dart';
 import 'package:app_api_client/src/model/stream_url_dto.dart';
 import 'package:app_api_client/src/model/subtitle_dto.dart';
 import 'package:app_api_client/src/model/update_bookmark_request.dart';
@@ -103,6 +105,7 @@ part 'serializers.g.dart';
   HasUsersResponse,
   HealthStatus,
   HealthStatusDependencies,
+  InstanceConfigDto,
   LessonDto,
   LessonProgress,
   LessonProgressDto,
@@ -128,6 +131,7 @@ part 'serializers.g.dart';
   ScanError,
   ScanStatus,
   SectionDto,
+  SsoProviderConfig,
   StreamUrlDto,
   SubtitleDto,
   UpdateBookmarkRequest,

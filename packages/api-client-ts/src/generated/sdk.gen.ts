@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseErrors, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses } from './types.gen';
+import type { CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseErrors, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -86,6 +86,32 @@ export const getAdminDashboard = <ThrowOnError extends boolean = false>(options?
  *
  */
 export const getAdminHasUsers = <ThrowOnError extends boolean = false>(options?: Options<GetAdminHasUsersData, ThrowOnError>) => (options?.client ?? client).get<GetAdminHasUsersResponses, unknown, ThrowOnError>({ url: '/api/v1/admin/has-users', ...options });
+
+/**
+ * Public instance configuration (self-registration, email verification, SSO providers)
+ *
+ * Anonymous endpoint that exposes the three runtime toggles the auth
+ * UI needs to draw the right surface:
+ *
+ * - `selfRegistration` — when `false`, the sign-up entry points are
+ * hidden and `/sign-up` returns the user to `/sign-in`. Admin opts
+ * out via `AUTH_SELF_REGISTRATION=false`.
+ * - `emailVerificationRequired` — when `true`, the sign-up wizard
+ * renders step 2 (6-digit code). When `false`, sign-up jumps from
+ * step 1 (account) directly to step 3 (library setup). Mirrors
+ * Better Auth's `emailVerification` plugin toggle. Admin opts in
+ * via `AUTH_EMAIL_VERIFICATION=true`.
+ * - `ssoProviders` — array of OAuth/SSO providers configured for
+ * this instance. v1 ships `[]`; v2 lands Better Auth's
+ * `genericOAuth` plugin and the array starts to populate, lighting
+ * up the SsoBlock without UI changes.
+ *
+ * No authentication is required — the first GET from a clean browser
+ * decides whether the auth pages can even draw a sign-up CTA, and
+ * the response carries no sensitive information.
+ *
+ */
+export const getAdminInstance = <ThrowOnError extends boolean = false>(options?: Options<GetAdminInstanceData, ThrowOnError>) => (options?.client ?? client).get<GetAdminInstanceResponses, unknown, ThrowOnError>({ url: '/api/v1/admin/instance', ...options });
 
 /**
  * Delete a bookmark

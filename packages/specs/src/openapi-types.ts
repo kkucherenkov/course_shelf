@@ -99,6 +99,44 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/instance': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Public instance configuration (self-registration, email verification, SSO providers)
+     * @description Anonymous endpoint that exposes the three runtime toggles the auth
+     *     UI needs to draw the right surface:
+     *
+     *     - `selfRegistration` — when `false`, the sign-up entry points are
+     *       hidden and `/sign-up` returns the user to `/sign-in`. Admin opts
+     *       out via `AUTH_SELF_REGISTRATION=false`.
+     *     - `emailVerificationRequired` — when `true`, the sign-up wizard
+     *       renders step 2 (6-digit code). When `false`, sign-up jumps from
+     *       step 1 (account) directly to step 3 (library setup). Mirrors
+     *       Better Auth's `emailVerification` plugin toggle. Admin opts in
+     *       via `AUTH_EMAIL_VERIFICATION=true`.
+     *     - `ssoProviders` — array of OAuth/SSO providers configured for
+     *       this instance. v1 ships `[]`; v2 lands Better Auth's
+     *       `genericOAuth` plugin and the array starts to populate, lighting
+     *       up the SsoBlock without UI changes.
+     *
+     *     No authentication is required — the first GET from a clean browser
+     *     decides whether the auth pages can even draw a sign-up CTA, and
+     *     the response carries no sensitive information.
+     */
+    get: operations['getAdminInstance'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/bookmarks/{id}': {
     parameters: {
       query?: never;
@@ -1179,6 +1217,24 @@ export interface components {
        */
       hasUsers: boolean;
     };
+    /** @description Public runtime configuration. Read once at app boot; cache for the session. */
+    InstanceConfigDto: {
+      /** @description When false, sign-up CTAs are hidden and /sign-up redirects to /sign-in. */
+      selfRegistration: boolean;
+      /** @description When true, sign-up wizard renders the 6-digit-code step between account creation and library setup. */
+      emailVerificationRequired: boolean;
+      /** @description Configured OAuth / SSO providers. Empty array in v1 — Better Auth's `genericOAuth` plugin lands in v2. */
+      ssoProviders: components['schemas']['SsoProviderConfig'][];
+    };
+    /** @description One configured SSO / OAuth provider, rendered as an SsoBlock button. */
+    SsoProviderConfig: {
+      /** @description Stable identifier (e.g. `google`, `github`, `okta-foo`). Emitted on click. */
+      id: string;
+      /** @description Human-readable label (e.g. `Continue with Google`). */
+      label: string;
+      /** @description IconCS glyph name (e.g. `mail`, `github`, `key`). */
+      iconName: string;
+    };
     HealthStatus: {
       status: components['schemas']['DependencyStatus'];
       /** @description Semantic version of the running backend build */
@@ -1926,6 +1982,26 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['HasUsersResponse'];
+        };
+      };
+    };
+  };
+  getAdminInstance: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Public instance configuration */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InstanceConfigDto'];
         };
       };
     };

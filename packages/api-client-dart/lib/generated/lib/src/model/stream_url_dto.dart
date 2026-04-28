@@ -11,12 +11,12 @@ part 'stream_url_dto.g.dart';
 /// Short-lived signed URL for streaming a lesson video.
 ///
 /// Properties:
-/// * [url] - Full URL the player should request. Carries the signed token as the `token` query parameter so existing video-element implementations work without an Authorization header.
+/// * [url] - URL the player should request. Same-origin relative path (e.g. `/api/v1/stream/lessons/<id>?token=…`) — the browser resolves it against the SPA's API origin so the backend doesn't need to know its public hostname. Carries the signed token as the `token` query parameter so existing video-element implementations work without an Authorization header.
 /// * [token] - Opaque signed token. Format is internal to the backend (currently a JWT-like compact form `header.payload.signature`); clients must round-trip it untouched.
 /// * [expiresAt] - ISO-8601 timestamp at which the token + URL stop being accepted. Clients should request a fresh URL before this moment.
 @BuiltValue()
 abstract class StreamUrlDto implements Built<StreamUrlDto, StreamUrlDtoBuilder> {
-  /// Full URL the player should request. Carries the signed token as the `token` query parameter so existing video-element implementations work without an Authorization header.
+  /// URL the player should request. Same-origin relative path (e.g. `/api/v1/stream/lessons/<id>?token=…`) — the browser resolves it against the SPA's API origin so the backend doesn't need to know its public hostname. Carries the signed token as the `token` query parameter so existing video-element implementations work without an Authorization header.
   @BuiltValueField(wireName: r'url')
   String get url;
 

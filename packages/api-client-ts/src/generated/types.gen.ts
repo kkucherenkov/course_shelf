@@ -929,7 +929,7 @@ export type ScanStatus = 'running' | 'succeeded' | 'failed' | 'cancelled';
  */
 export type StreamUrlDto = {
     /**
-     * Full URL the player should request. Carries the signed token as the `token` query parameter so existing video-element implementations work without an Authorization header.
+     * URL the player should request. Same-origin relative path (e.g. `/api/v1/stream/lessons/<id>?token=…`) — the browser resolves it against the SPA's API origin so the backend doesn't need to know its public hostname. Carries the signed token as the `token` query parameter so existing video-element implementations work without an Authorization header.
      */
     url: string;
     /**

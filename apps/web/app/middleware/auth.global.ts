@@ -3,10 +3,12 @@
  * first-run `hasUsers` probe.
  *
  * Decision matrix:
- *  1. `hasUsers === false` → force /setup (the DB has no users yet).
- *     - /setup itself is allowed to render.
+ *  1. `hasUsers === false` → first-run, the 3-step sign-up wizard IS the
+ *     bootstrap experience (per E14-F02-S01). All auth entry points
+ *     funnel into /sign-up; /sign-up itself passes through. Step 1 of
+ *     the wizard promotes the new account to ADMIN.
  *  2. `hasUsers === true` + target is /setup → redirect /sign-in (locked).
- *  3. Public routes (/sign-in, /signup, /__tokens) → pass through.
+ *  3. Public routes (/sign-in, /sign-up, /forgot, /reset, /signup, /__tokens) → pass through.
  *  4. Not authenticated → redirect /sign-in.
  *  5. Authenticated → pass through.
  *
@@ -21,7 +23,15 @@ import { getAdminHasUsers, client } from '@app/api-client-ts';
 import { useAuthStore } from '~/stores/auth';
 import { hasUsersCache } from '~/composables/useHasUsersCache';
 
-const PUBLIC_ROUTES = new Set(['/sign-in', '/signup', '/setup', '/__tokens']);
+const PUBLIC_ROUTES = new Set([
+  '/sign-in',
+  '/sign-up',
+  '/forgot',
+  '/reset',
+  '/signup',
+  '/setup',
+  '/__tokens',
+]);
 
 async function fetchHasUsers(): Promise<boolean> {
   if (hasUsersCache.value !== null) return hasUsersCache.value;
@@ -47,10 +57,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const hasUsers = await fetchHasUsers();
 
-  // First-run: no users in the DB — force the setup wizard.
+  // First-run: no users in the DB — funnel every auth entry point into the
+  // 3-step sign-up wizard. The wizard's step 1 promotes the first user to
+  // ADMIN; there is no separate /setup screen.
   if (!hasUsers) {
-    if (to.path === '/setup') return;
-    return navigateTo('/setup');
+    if (to.path === '/sign-up') return;
+    return navigateTo('/sign-up');
   }
 
   // Setup is locked once an admin exists.

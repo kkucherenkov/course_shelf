@@ -229,7 +229,11 @@
       step3Error.value = t('pages.signUp.errorLibraryPath');
       return;
     }
-    await navigateTo('/');
+    // Land on /libraries so the user sees the running scan's status chip
+    // tick up filesAdded / coursesDiscovered live, instead of staring at
+    // an empty Home (rows take a few seconds to populate as the projector
+    // catches up).
+    await navigateTo('/libraries');
   }
 
   async function onSkipLibrary(): Promise<void> {

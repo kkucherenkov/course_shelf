@@ -90,17 +90,64 @@ async function mockSignInError(page: Page, status: number): Promise<void> {
 }
 
 async function mockLibrarySuccess(page: Page): Promise<void> {
-  await page.route('**/api/v1/libraries**', (route) => {
+  // The wizard step 3 issues:
+  //   POST /api/v1/libraries          (register)
+  //   POST /api/v1/libraries/:id/scans (kick the first scan, fire-and-forget)
+  // Then the page navigates to /libraries which fetches:
+  //   GET  /api/v1/libraries                 (list)
+  //   GET  /api/v1/libraries/:id/scans/latest (poll)
+  // Mock all four so the post-finish navigation lands cleanly.
+  await page.route('**/api/v1/libraries', (route) => {
     if (route.request().method() === 'POST') {
       void route.fulfill({
         status: 201,
         contentType: 'application/json',
-        body: JSON.stringify({ id: 'lib-1', name: 'Test Library', rootPath: '/srv/courses' }),
+        body: JSON.stringify({
+          id: 'lib-1',
+          name: 'Test Library',
+          rootPath: '/workspace/docs/data/courses',
+          createdAt: '2026-04-28T00:00:00Z',
+          updatedAt: '2026-04-28T00:00:00Z',
+        }),
       });
-    } else {
-      void route.continue();
+      return;
     }
+    void route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [
+          {
+            id: 'lib-1',
+            name: 'Test Library',
+            rootPath: '/workspace/docs/data/courses',
+            createdAt: '2026-04-28T00:00:00Z',
+            updatedAt: '2026-04-28T00:00:00Z',
+          },
+        ],
+      }),
+    });
   });
+  await page.route('**/api/v1/libraries/lib-1/scans', (route) =>
+    route.fulfill({
+      status: 202,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'scan-1',
+        libraryId: 'lib-1',
+        status: 'running',
+        startedAt: '2026-04-28T00:01:00Z',
+        filesScanned: 0,
+        filesAdded: 0,
+        filesUpdated: 0,
+        coursesDiscovered: 0,
+        errors: [],
+      }),
+    }),
+  );
+  await page.route('**/api/v1/libraries/lib-1/scans/latest', (route) =>
+    route.fulfill({ status: 404, contentType: 'application/json', body: '{}' }),
+  );
 }
 
 /** Navigate to the given auth page without seeding a bearer token. */
@@ -160,8 +207,14 @@ test('first-user signup drives full wizard and calls promoteToAdmin stub', async
   // Finish
   await page.locator('button[type="submit"]').last().click();
 
-  // Should navigate to home (mocked away from sign-up)
-  // promoteToAdmin stub should have logged
+  // After Finish the wizard navigates to /libraries (production path).
+  // We don't assert the destination here because the test mocks
+  // `hasUsers: false` statically — the auth middleware would bounce a
+  // post-signup visit to /libraries back to /sign-up. In production the
+  // mock value flips to true once the new user is persisted, breaking
+  // the loop. The /libraries-redirect itself is verified separately via
+  // the libraries.spec.ts e2e. Here we just confirm step 1 fired
+  // promoteToAdmin and the wizard reached its terminal click.
   expect(promoteCalls.length).toBeGreaterThan(0);
 });
 

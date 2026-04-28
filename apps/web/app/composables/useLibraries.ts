@@ -44,6 +44,14 @@ export function useLibraries(): {
   async function register(body: RegisterLibraryRequest): Promise<LibraryDto> {
     const res = await registerLibrary({ client, throwOnError: false, body });
     if (res.error) {
+      // 409 Conflict means a library at the same rootPath already exists.
+      // Refetch the list and surface the existing row to the caller — same
+      // outcome from the user's perspective ("the library is here now").
+      if (res.response.status === 409) {
+        await refresh();
+        const existing = data.value.items.find((l) => l.rootPath === body.rootPath);
+        if (existing) return existing;
+      }
       throw new Error('Failed to register library');
     }
     const created = res.data;

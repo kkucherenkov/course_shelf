@@ -13,7 +13,7 @@
   import type { IconName } from '@app/ui';
   import { ref, computed, watch } from 'vue';
 
-  import { registerLibrary, runLibraryScan } from '@app/api-client-ts';
+  import { listLibraries, registerLibrary, runLibraryScan } from '@app/api-client-ts';
   import { client } from '@app/api-client-ts';
 
   import { useAuthStore } from '~/stores/auth';
@@ -177,24 +177,53 @@
 
   async function onLibrarySubmit(): Promise<void> {
     step3Error.value = '';
+    const rootPath = libraryPath.value.trim();
+    let libraryId: string | null = null;
+
     try {
       const res = await registerLibrary({
         client,
         throwOnError: false,
-        body: { name: libraryName.value, rootPath: libraryPath.value },
+        body: { name: libraryName.value, rootPath },
       });
+
       if (res.error) {
-        step3Error.value = t('pages.signUp.errorLibraryPath');
-        return;
+        // 409 Conflict — a library already exists at this rootPath.
+        // Two flavours:
+        //   a) The same user submitted before (network blip, double-click).
+        //      `listLibraries` returns the row → trigger a scan and continue.
+        //   b) A different user owns it (rootPath is globally unique, so a
+        //      fresh sign-up after a prior dev session hits this). The new
+        //      user has no grant, so the listing is empty. Surface a
+        //      specific message and let them either pick a different path
+        //      or skip step 3 entirely (an admin can wire the library up
+        //      from /libraries later).
+        if (res.response.status === 409) {
+          const list = await listLibraries({ client, throwOnError: false });
+          if (!list.error) {
+            libraryId = list.data.items.find((l) => l.rootPath === rootPath)?.id ?? null;
+          }
+          if (libraryId === null) {
+            step3Error.value = t('pages.signUp.errorLibraryConflict');
+            return;
+          }
+        } else {
+          step3Error.value = t('pages.signUp.errorLibraryPath');
+          return;
+        }
+      } else {
+        libraryId = res.data.id;
       }
+
       // Kick off the first scan in the background — runLibraryScan returns
       // 202 Accepted immediately; the actual walk runs in-process. The
       // Libraries page polls scan status, and the Home page will show
-      // courses as soon as the projector catches up.
+      // courses as soon as the projector catches up. Idempotent for the
+      // 409-recovery path: the existing library just gets a fresh scan.
       void runLibraryScan({
         client,
         throwOnError: false,
-        path: { id: res.data.id },
+        path: { id: libraryId },
       });
     } catch {
       step3Error.value = t('pages.signUp.errorLibraryPath');

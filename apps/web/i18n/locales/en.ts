@@ -108,6 +108,8 @@ export default {
       errorGeneric: 'Something went wrong. Please try again.',
       errorEmailTaken: 'An account with this email already exists.',
       errorLibraryPath: 'Could not register the library. Check the path and try again.',
+      errorLibraryConflict:
+        'A library at this path is already registered to another account. Pick a different path, or skip — an admin can grant you access from the Libraries page later.',
     },
     forgot: {
       title: 'Forgot your password?',

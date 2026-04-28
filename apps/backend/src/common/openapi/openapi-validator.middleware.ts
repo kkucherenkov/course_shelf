@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import { Logger } from '@nestjs/common';
+import express from 'express';
 import * as OpenApiValidator from 'express-openapi-validator';
 
 import type { INestApplication } from '@nestjs/common';
@@ -28,6 +29,17 @@ export function registerOpenApiValidator(app: INestApplication, nodeEnv: string)
     );
     return;
   }
+
+  // Express 5 + NestJS 11 do not auto-mount a JSON body parser before our
+  // app-level `app.use()` middlewares run, so the openapi-validator sees
+  // `req.body === undefined` for every JSON POST/PATCH/PUT and rejects with
+  // "request must have required property 'body'". Mount express.json() at
+  // the same `/api` prefix as the validator so the body is parsed first.
+  // The Better Auth catch-all (`/api/v1/auth/*`) re-stringifies `req.body`
+  // before forwarding to its handler — pre-parsing here is compatible with
+  // that path. The `/v1/stream/lessons/` endpoints stream binary and never
+  // carry a JSON request body.
+  app.use('/api', express.json({ limit: '1mb' }));
 
   app.use(
     '/api',

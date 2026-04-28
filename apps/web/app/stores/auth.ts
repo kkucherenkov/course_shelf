@@ -225,6 +225,50 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Verify an email address with a 6-digit code sent during sign-up.
+   * STUB — Better Auth's email-verification SDK path needs to be wired here.
+   * Flag: requires authClient.emailVerification or equivalent Better Auth call.
+   */
+  // eslint-disable-next-line unicorn/consistent-function-scoping
+  function verifyEmail(_code: string): Promise<{ ok: boolean; error?: string }> {
+    console.warn('[auth] verifyEmail is a stub — wire Better Auth email verification');
+    return Promise.resolve({ ok: true });
+  }
+
+  /**
+   * Initiate a password-reset flow by sending a reset link to the given email.
+   * STUB — requires Better Auth's `requestPasswordReset` or equivalent.
+   */
+  // eslint-disable-next-line unicorn/consistent-function-scoping
+  function forgotPassword(_email: string): Promise<{ ok: boolean; error?: string }> {
+    console.warn('[auth] forgotPassword is a stub — wire Better Auth password reset request');
+    return Promise.resolve({ ok: true });
+  }
+
+  /**
+   * Complete a password reset using a token (from the ?token= URL param) and the new password.
+   * STUB — requires Better Auth's `resetPassword` or equivalent.
+   */
+  // eslint-disable-next-line unicorn/consistent-function-scoping
+  function resetPassword(
+    _newPassword: string,
+    _token: string,
+  ): Promise<{ ok: boolean; error?: string }> {
+    console.warn('[auth] resetPassword is a stub — wire Better Auth password reset completion');
+    return Promise.resolve({ ok: true });
+  }
+
+  /**
+   * Promote the currently signed-in user to the ADMIN role via the Better Auth admin plugin.
+   * STUB — requires Better Auth admin plugin's `setRole` or equivalent.
+   */
+  // eslint-disable-next-line unicorn/consistent-function-scoping
+  function promoteToAdmin(_userId: string): Promise<{ ok: boolean; error?: string }> {
+    console.warn('[auth] promoteToAdmin is a stub — wire Better Auth admin setRole');
+    return Promise.resolve({ ok: true });
+  }
+
   return {
     user,
     token,
@@ -236,5 +280,9 @@ export const useAuthStore = defineStore('auth', () => {
     signOut,
     refresh,
     clear,
+    verifyEmail,
+    forgotPassword,
+    resetPassword,
+    promoteToAdmin,
   };
 });

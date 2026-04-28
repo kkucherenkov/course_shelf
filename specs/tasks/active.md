@@ -1,5 +1,30 @@
 # Active tasks
 
+## T-2026-04-27-055 — Auth surface · web half (E14-F02-S01 part 2 of 2)
+
+- Created: 2026-04-27
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E14-F02-S01.md`
+- Goal: ship the web auth pages (sign-in / sign-up / forgot / reset) + shared auth components + composables + i18n + Playwright e2e.
+- Acceptance:
+  - Four pages: sign-in (split-screen, rate-limit banner, SSO block, instance-conditional CTA), sign-up (3-step wizard with optional email-verify step, first-user admin promotion), forgot (3-step: email → confirmation → new-password), reset (redirect to forgot?token=).
+  - Shared components: AuthLayout, AuthMarketing, AuthBrand, AuthStepper, RateLimitBanner (all in apps/web/app/components/auth/).
+  - Composables: useFirstRun, useInstanceConfig.
+  - Auth store stubs: verifyEmail, forgotPassword, resetPassword, promoteToAdmin.
+  - i18n: full pages.signIn/signUp/forgot/reset namespaces in en.ts + ru.ts.
+  - Playwright e2e: 5 hermetic tests (first-user signup, second-user signup, sign-in error, forgot full flow, sign-up disabled state).
+- Sub-steps:
+  - [x] Push active.md entry
+  - [x] Auth store stubs (verifyEmail, forgotPassword, resetPassword, promoteToAdmin)
+  - [x] Composables: useFirstRun, useInstanceConfig
+  - [x] Shared components: AuthLayout, AuthMarketing, AuthBrand, AuthStepper, RateLimitBanner
+  - [x] Pages: sign-in, sign-up, forgot, reset
+  - [x] i18n keys (en + ru)
+  - [x] Playwright e2e
+  - [x] Lint + typecheck + test pass
+- Status: done (PR pending)
+- Blockers: —
+
 ## T-2026-04-28-054 — Auth surface · spec + backend half (E14-F02-S01 part 1 of 2)
 
 - Created: 2026-04-28

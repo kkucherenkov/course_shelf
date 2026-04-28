@@ -1,6 +1,10 @@
 FROM node:24-alpine
 
-RUN apk add --no-cache openssl libc6-compat && corepack enable
+# `ffmpeg` ships both `ffmpeg` and `ffprobe` binaries — the catalog scanner
+# uses ffprobe to read video duration / codecs. Without it, every .mp4 in a
+# library scan fails with `ffmpeg-probe-failed: spawn ffprobe ENOENT` and
+# the corresponding course/lesson rows are never created.
+RUN apk add --no-cache openssl libc6-compat ffmpeg && corepack enable
 
 WORKDIR /workspace
 

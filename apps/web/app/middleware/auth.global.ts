@@ -60,6 +60,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (PUBLIC_ROUTES.has(to.path)) return;
 
   const auth = useAuthStore();
+
+  // If a bearer token is present but the in-memory user is not yet hydrated
+  // (e.g. after a hard reload), attempt one silent session refresh.  This is
+  // the happy-path for page reloads: the token survives in localStorage but
+  // Pinia state is reset.
+  if (!auth.isAuthenticated && auth.token) {
+    await auth.refresh();
+  }
+
   if (!auth.isAuthenticated) {
     return navigateTo('/sign-in');
   }

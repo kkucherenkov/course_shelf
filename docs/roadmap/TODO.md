@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `59 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `60 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -107,7 +107,7 @@ Progress: `59 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E14 — Web pages
 
-- [ ] [E14-F01-S01](./tasks/E14-F01-S01.md) `A` — Stage A · Home page (cs-web-home) · ⇐ E13-F02-S01, E13-F02-S08, E10-F01-S01, E11-F01-S03
+- [x] [E14-F01-S01](./tasks/E14-F01-S01.md) `A` — Stage A · Home page (cs-web-home) · ⇐ E13-F02-S01, E13-F02-S08, E10-F01-S01, E11-F01-S03
 - [ ] [E14-F01-S02](./tasks/E14-F01-S02.md) `B` — Stage B · Browse + Search (precede with cs-web-browse-search design) · ⇐ E13-F02-S01, E13-F02-S08
 - [ ] [E14-F01-S03](./tasks/E14-F01-S03.md) `A` — Stage A · Course detail (cs-web-course-detail) · ⇐ E13-F02-S01, E13-F02-S02, E13-F02-S08
 - [ ] [E14-F02-S01](./tasks/E14-F02-S01.md) `A` — Stage A · Sign in / sign up / forgot password (cs-web-auth) · ⇐ E11-F01-S03, E13-F02-S09, E13-F02-S10, E13-F01-S07

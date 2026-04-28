@@ -31,12 +31,10 @@ function makeProgressRepo(opts: {
     countCompletedByUserAndCourse: vi.fn(),
     findAllUserCoursePairs: vi.fn(),
     findLatestByUserAndCourse: vi.fn(),
-    aggregateForUserRange: vi
-      .fn()
-      .mockResolvedValue({
-        minutesWatched: opts.minutesWatched ?? 0,
-        lessonsCompleted: opts.lessonsCompleted ?? 0,
-      }),
+    aggregateForUserRange: vi.fn().mockResolvedValue({
+      minutesWatched: opts.minutesWatched ?? 0,
+      lessonsCompleted: opts.lessonsCompleted ?? 0,
+    }),
   };
 }
 

@@ -37,10 +37,7 @@ const MAX_LIMIT = 50;
 /** Parse the ?limit= query param and clamp to [MIN_LIMIT, MAX_LIMIT]. */
 function parseLimit(limitParam: string | undefined): number {
   const parsed = Number(limitParam ?? String(DEFAULT_LIMIT));
-  return Math.min(
-    Math.max(Number.isFinite(parsed) ? parsed : DEFAULT_LIMIT, MIN_LIMIT),
-    MAX_LIMIT,
-  );
+  return Math.min(Math.max(Number.isFinite(parsed) ? parsed : DEFAULT_LIMIT, MIN_LIMIT), MAX_LIMIT);
 }
 
 @Controller({ path: 'home', version: '1' })
@@ -83,8 +80,6 @@ export class HomeController {
   /** GET /api/v1/home/your-week */
   @Get('your-week')
   async getYourWeek(@Session() session: SessionContext): Promise<YourWeekDto> {
-    return this.queryBus.execute<GetYourWeekQuery, YourWeekDto>(
-      new GetYourWeekQuery(session.user),
-    );
+    return this.queryBus.execute<GetYourWeekQuery, YourWeekDto>(new GetYourWeekQuery(session.user));
   }
 }

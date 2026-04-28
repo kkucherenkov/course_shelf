@@ -227,9 +227,27 @@ describe('PrismaCourseProgressReadModelRepository', () => {
     it('slices to the requested limit after in-process filter', async () => {
       // All three are completed — limit=2 should return only two.
       const rows = [
-        makeRow({ id: 'cprm-1', courseId: 'course-1', lessonsCompleted: 5, lessonsTotal: 5, lastSeenAt: NOW }),
-        makeRow({ id: 'cprm-2', courseId: 'course-2', lessonsCompleted: 5, lessonsTotal: 5, lastSeenAt: EARLIER }),
-        makeRow({ id: 'cprm-3', courseId: 'course-3', lessonsCompleted: 5, lessonsTotal: 5, lastSeenAt: EARLIER }),
+        makeRow({
+          id: 'cprm-1',
+          courseId: 'course-1',
+          lessonsCompleted: 5,
+          lessonsTotal: 5,
+          lastSeenAt: NOW,
+        }),
+        makeRow({
+          id: 'cprm-2',
+          courseId: 'course-2',
+          lessonsCompleted: 5,
+          lessonsTotal: 5,
+          lastSeenAt: EARLIER,
+        }),
+        makeRow({
+          id: 'cprm-3',
+          courseId: 'course-3',
+          lessonsCompleted: 5,
+          lessonsTotal: 5,
+          lastSeenAt: EARLIER,
+        }),
       ];
       vi.mocked(prisma.courseProgressReadModel.findMany).mockResolvedValue(rows);
 

@@ -10,6 +10,42 @@ export default {
   pages: {
     home: {
       title: 'Welcome to Course Shelf',
+      greeting: 'Good to see you,',
+      roleUser: 'User',
+      roleAdmin: 'Administrator',
+      roleGuest: 'Guest',
+      continueWatching: {
+        heading: 'Continue watching',
+        empty: 'Nothing in progress yet',
+        emptyBody: 'Start a course and your progress will appear here.',
+        error: 'Could not load your progress',
+        retry: 'Retry',
+      },
+      recentlyAdded: {
+        heading: 'Recently added',
+        empty: 'Your library is empty',
+        emptyBody: 'Add courses to a library and they will appear here.',
+        error: 'Could not load recently added courses',
+        retry: 'Retry',
+      },
+      recentlyCompleted: {
+        heading: 'Recently completed',
+        count: '{n} course | {n} courses',
+        showAll: 'Show all',
+        collapse: 'Collapse',
+        empty: 'No completed courses yet',
+        emptyBody: 'Finish a course and it will appear here.',
+        error: 'Could not load completed courses',
+        retry: 'Retry',
+      },
+      yourWeek: {
+        heading: 'Your week',
+        minutesWatched: '{n} min watched',
+        lessonsCompleted: '{n} lesson completed | {n} lessons completed',
+        range: '{from} – {to}',
+        error: 'Could not load your week stats',
+        retry: 'Retry',
+      },
     },
     signIn: {
       title: 'Sign in',

@@ -22,7 +22,10 @@ interface LessonProgressDelegate {
   findUnique: ReturnType<typeof vi.fn>;
 }
 
-function makePrisma(): { lessonProgress: LessonProgressDelegate; $queryRaw: ReturnType<typeof vi.fn> } {
+function makePrisma(): {
+  lessonProgress: LessonProgressDelegate;
+  $queryRaw: ReturnType<typeof vi.fn>;
+} {
   return {
     lessonProgress: {
       upsert: vi.fn().mockResolvedValue(undefined),
@@ -194,9 +197,7 @@ describe('PrismaLessonProgressRepository', () => {
     });
 
     it('maps completed_count to lessonsCompleted', async () => {
-      vi.mocked(prisma.$queryRaw).mockResolvedValue([
-        { total_position: 0n, completed_count: 4n },
-      ]);
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([{ total_position: 0n, completed_count: 4n }]);
 
       const result = await repo.aggregateForUserRange('user-1', FROM, TO);
 

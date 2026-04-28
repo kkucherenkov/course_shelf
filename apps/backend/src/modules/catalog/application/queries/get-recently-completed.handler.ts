@@ -34,9 +34,10 @@ import type { LibraryId } from '../../../../common/access/authorization.service'
 import type { RecentlyCompletedDto, RecentlyCompletedItem } from '@app/api-client-ts';
 
 @QueryHandler(GetRecentlyCompletedQuery)
-export class GetRecentlyCompletedHandler
-  implements IQueryHandler<GetRecentlyCompletedQuery, RecentlyCompletedDto>
-{
+export class GetRecentlyCompletedHandler implements IQueryHandler<
+  GetRecentlyCompletedQuery,
+  RecentlyCompletedDto
+> {
   constructor(
     @Inject(COURSE_PROGRESS_READ_MODEL_REPOSITORY)
     private readonly progressRepo: CourseProgressReadModelRepository,

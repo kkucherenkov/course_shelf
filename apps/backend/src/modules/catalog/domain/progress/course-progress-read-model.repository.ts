@@ -55,8 +55,5 @@ export interface CourseProgressReadModelRepository {
    * lastSeenAt DESC (which equals completion time for finished courses).
    * Used by the recently-completed home-row query handler (E14-F01-S01).
    */
-  findCompletedByUser(
-    userId: string,
-    limit: number,
-  ): Promise<CourseProgressReadModel[]>;
+  findCompletedByUser(userId: string, limit: number): Promise<CourseProgressReadModel[]>;
 }

@@ -2,6 +2,17 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-28-058 — Foundations canvas (E03-F01-S02)
+
+- Created: 2026-04-28
+- Completed: 2026-04-28
+- Result: commit `a791ecd` on `feat/foundations-canvas` → PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/143 (Closes #12). 14 vitest + 2 Playwright snapshot tests pass; lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E03-F01-S02.md`
+- Outcome: ships `/dev/foundations` — 17-section design-system canvas (Color / Typography / Spacing / Radius / Motion / Buttons / Inputs / Cards / Rows / Tabs+Segmented / Feedback / Overlays / Progress / Empty States / Skeleton / Avatar / Chips). Each section shows `@app/ui` components in their full variant × size × state matrix. `__tokens.vue` replaced with a redirect to `/dev/foundations` (backward-compat). `/dev/foundations` added to `PUBLIC_ROUTES` so visual-regression e2e runs without a token. Playwright full-page baselines at 1440×900 light + dark committed.
+- Notes / deferred:
+  - Mobile (`Tokens.theme.fromMode` + Widgetbook) deferred per user directive; noted in PR description.
+
 ## T-2026-04-27-053 — Home page Stage A · web + Playwright half (E14-F01-S01 part 2 of 2)
 
 - Created: 2026-04-27

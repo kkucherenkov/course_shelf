@@ -176,4 +176,46 @@ export class PrismaLessonProgressRepository implements LessonProgressRepository 
     );
     return rows[0] ?? null;
   }
+
+  /**
+   * Compute your-week stats for a user over the half-open window [from, to).
+   *
+   * minutesWatched: SUM(positionSeconds) for rows whose updatedAt is in [from, to),
+   * divided by 60 and floored. positionSeconds is the player-reported position —
+   * the best proxy for elapsed watch time available in the schema.
+   *
+   * lessonsCompleted: COUNT of rows where completedAt IS NOT NULL and
+   * completedAt is in [from, to).
+   *
+   * Uses $queryRaw for the aggregate because Prisma's typed client does not
+   * support SUM with a conditional filter across nullable columns.
+   */
+  async aggregateForUserRange(
+    userId: string,
+    from: Date,
+    to: Date,
+  ): Promise<{ minutesWatched: number; lessonsCompleted: number }> {
+    const result = await this.prisma.$queryRaw<
+      { total_position: bigint; completed_count: bigint }[]
+    >(
+      Prisma.sql`
+        SELECT
+          COALESCE(SUM(lp."positionSeconds"), 0) AS total_position,
+          COUNT(*) FILTER (WHERE lp."completedAt" >= ${from} AND lp."completedAt" < ${to}) AS completed_count
+        FROM lesson_progress lp
+        WHERE lp."userId" = ${userId}
+          AND lp."updatedAt" >= ${from}
+          AND lp."updatedAt" < ${to}
+      `,
+    );
+
+    const row = result[0];
+    const totalPositionSeconds = Number(row?.total_position ?? 0);
+    const completedCount = Number(row?.completed_count ?? 0);
+
+    return {
+      minutesWatched: Math.floor(totalPositionSeconds / 60),
+      lessonsCompleted: completedCount,
+    };
+  }
 }

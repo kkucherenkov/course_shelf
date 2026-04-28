@@ -142,6 +142,24 @@ export class PrismaCourseRepository implements CourseRepository {
     return rows.map((r: CourseRow) => this.rowToAggregate(r));
   }
 
+  /**
+   * Return the top-(limit * 3) courses ordered by createdAt DESC.
+   * The 3× overhead gives the authz filter in the handler enough candidates
+   * to fill `limit` visible items even if some courses are inaccessible.
+   * Sections are included so the handler can compute lessonCount via a
+   * separate lesson query if needed (sections carry no lesson data themselves,
+   * but the aggregate is ready for any future enrichment).
+   */
+  async findRecentlyAdded(limit: number): Promise<Course[]> {
+    const rows = await this.prisma.course.findMany({
+      select: COURSE_WITH_SECTIONS_SELECT,
+      orderBy: { createdAt: 'desc' },
+      take: limit * 3,
+    });
+
+    return rows.map((r: CourseRow) => this.rowToAggregate(r));
+  }
+
   // ---------------------------------------------------------------------------
   // Private mapper — row shape → domain aggregate
   // ---------------------------------------------------------------------------

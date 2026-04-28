@@ -127,4 +127,30 @@ export class PrismaCourseProgressReadModelRepository implements CourseProgressRe
   async deleteAll(): Promise<void> {
     await this.prisma.courseProgressReadModel.deleteMany();
   }
+
+  async findCompletedByUser(
+    userId: string,
+    limit: number,
+  ): Promise<CourseProgressReadModel[]> {
+    const rows = await this.prisma.courseProgressReadModel.findMany({
+      where: {
+        userId,
+        lessonsTotal: { gt: 0 },
+        // Prisma does not support a column-to-column comparison directly in
+        // the filter DSL; use $queryRaw would require raw SQL. Instead we fetch
+        // rows where lessonsTotal > 0 ordered by lastSeenAt DESC with a
+        // generous take (limit * 3) and filter in-process. The completion
+        // check (lessonsCompleted == lessonsTotal) is a single equality check
+        // that is cheap in JS and avoids a raw query.
+      },
+      select: SELECT,
+      orderBy: { lastSeenAt: 'desc' },
+      take: limit * 3,
+    });
+
+    return rows
+      .filter((r: ProgressRow) => r.lessonsCompleted === r.lessonsTotal)
+      .slice(0, limit)
+      .map((r: ProgressRow) => rowToModel(r));
+  }
 }

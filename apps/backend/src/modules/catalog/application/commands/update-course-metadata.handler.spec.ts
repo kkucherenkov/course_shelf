@@ -21,6 +21,7 @@ function makeRepo(): CourseRepository {
     findManyByLibrary: vi.fn(),
     findAll: vi.fn(),
     findByIds: vi.fn(),
+    findRecentlyAdded: vi.fn(),
   };
 }
 

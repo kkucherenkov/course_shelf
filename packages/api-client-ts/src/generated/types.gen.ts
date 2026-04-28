@@ -206,6 +206,105 @@ export type ContinueWatchingItem = {
 };
 
 /**
+ * Courses added to the requester's libraries, most recent first.
+ */
+export type RecentlyAddedDto = {
+    items: Array<RecentlyAddedItem>;
+};
+
+/**
+ * A course freshly added to one of the requester's libraries.
+ */
+export type RecentlyAddedItem = {
+    /**
+     * Server-generated cuid identifying the course.
+     */
+    courseId: string;
+    /**
+     * Display title of the course.
+     */
+    courseTitle: string;
+    /**
+     * Slug of the parent library, included for the URL builder. Optional because not every layout exposes a per-library slug yet.
+     */
+    librarySlug?: string;
+    /**
+     * Number of lessons in the course at intake time.
+     */
+    lessonCount: number;
+    /**
+     * Sum of `Lesson.duration` across the course, in whole seconds.
+     */
+    totalDurationSeconds: number;
+    /**
+     * Moment the course was added to its library.
+     */
+    createdAt: string;
+};
+
+/**
+ * Courses the requester finished most recently, most-recent first.
+ */
+export type RecentlyCompletedDto = {
+    items: Array<RecentlyCompletedItem>;
+};
+
+/**
+ * A course where the requester completed every lesson. Sourced from the `CourseProgressReadModel` projection (`lessonsCompleted == lessonsTotal`).
+ */
+export type RecentlyCompletedItem = {
+    /**
+     * Server-generated cuid identifying the course.
+     */
+    courseId: string;
+    /**
+     * Display title of the course.
+     */
+    courseTitle: string;
+    /**
+     * Slug of the parent library, included for the URL builder.
+     */
+    librarySlug?: string;
+    /**
+     * Total lessons in the course (== lessons completed for this row).
+     */
+    lessonsTotal: number;
+    /**
+     * Time the requester finished the last lesson — `CourseProgressReadModel.lastSeenAt` at the moment percent hit 100.
+     */
+    completedAt: string;
+};
+
+/**
+ * Roll-up of the requester's activity over the trailing seven days.
+ */
+export type YourWeekDto = {
+    /**
+     * Total whole minutes watched by the requester in the window. Computed by summing duration across `LessonProgress` rows whose `updatedAt` falls inside `range`.
+     */
+    minutesWatched: number;
+    /**
+     * Number of lessons the requester completed during the window. Counted from `LessonProgress.completedAt`.
+     */
+    lessonsCompleted: number;
+    range: DateRange;
+};
+
+/**
+ * Half-open interval `[from, to)`, both ISO-8601 with offset.
+ */
+export type DateRange = {
+    /**
+     * Inclusive lower bound.
+     */
+    from: string;
+    /**
+     * Exclusive upper bound.
+     */
+    to: string;
+};
+
+/**
  * Full representation of a Course aggregate.
  */
 export type CourseDto = {
@@ -1163,6 +1262,91 @@ export type GetContinueWatchingResponses = {
 };
 
 export type GetContinueWatchingResponse = GetContinueWatchingResponses[keyof GetContinueWatchingResponses];
+
+export type GetRecentlyAddedData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * How many items the home row needs.
+         */
+        limit?: number;
+    };
+    url: '/api/v1/home/recently-added';
+};
+
+export type GetRecentlyAddedErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+};
+
+export type GetRecentlyAddedError = GetRecentlyAddedErrors[keyof GetRecentlyAddedErrors];
+
+export type GetRecentlyAddedResponses = {
+    /**
+     * Recently-added list returned
+     */
+    200: RecentlyAddedDto;
+};
+
+export type GetRecentlyAddedResponse = GetRecentlyAddedResponses[keyof GetRecentlyAddedResponses];
+
+export type GetRecentlyCompletedData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * How many items the home row needs.
+         */
+        limit?: number;
+    };
+    url: '/api/v1/home/recently-completed';
+};
+
+export type GetRecentlyCompletedErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+};
+
+export type GetRecentlyCompletedError = GetRecentlyCompletedErrors[keyof GetRecentlyCompletedErrors];
+
+export type GetRecentlyCompletedResponses = {
+    /**
+     * Recently-completed list returned
+     */
+    200: RecentlyCompletedDto;
+};
+
+export type GetRecentlyCompletedResponse = GetRecentlyCompletedResponses[keyof GetRecentlyCompletedResponses];
+
+export type GetYourWeekData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/home/your-week';
+};
+
+export type GetYourWeekErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+};
+
+export type GetYourWeekError = GetYourWeekErrors[keyof GetYourWeekErrors];
+
+export type GetYourWeekResponses = {
+    /**
+     * Weekly roll-up returned
+     */
+    200: YourWeekDto;
+};
+
+export type GetYourWeekResponse = GetYourWeekResponses[keyof GetYourWeekResponses];
 
 export type GetLessonData = {
     body?: never;

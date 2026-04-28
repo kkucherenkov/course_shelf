@@ -48,6 +48,7 @@ function makeProgressRepo(existing: LessonProgress | null = null): LessonProgres
     countCompletedByUserAndCourse: vi.fn().mockResolvedValue(0),
     findAllUserCoursePairs: vi.fn().mockResolvedValue([]),
     findLatestByUserAndCourse: vi.fn().mockResolvedValue(null),
+    aggregateForUserRange: vi.fn(),
   };
 }
 

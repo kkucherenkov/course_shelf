@@ -174,6 +174,35 @@ export class PrismaLessonRepository implements LessonRepository {
     return rows.map((r: LessonRow) => this.rowToAggregate(r));
   }
 
+  /**
+   * Return aggregate lesson stats per course in a single Prisma groupBy query.
+   * Null duration values are treated as 0 (COALESCE-like logic applied in the
+   * mapper). Courses with no lessons are absent from the returned Map — callers
+   * must handle missing entries as { lessonCount: 0, totalDurationSeconds: 0 }.
+   */
+  async getLessonStatsByCourseIds(
+    courseIds: string[],
+  ): Promise<Map<string, { lessonCount: number; totalDurationSeconds: number }>> {
+    if (courseIds.length === 0) return new Map();
+
+    const rows = await this.prisma.lesson.groupBy({
+      by: ['courseId'],
+      where: { courseId: { in: courseIds } },
+      _count: { id: true },
+      _sum: { duration: true },
+    });
+
+    const result = new Map<string, { lessonCount: number; totalDurationSeconds: number }>();
+    for (const row of rows) {
+      result.set(row.courseId, {
+        lessonCount: row._count.id,
+        // null sum (all durations null) is treated as 0
+        totalDurationSeconds: row._sum.duration ?? 0,
+      });
+    }
+    return result;
+  }
+
   // ---------------------------------------------------------------------------
   // Private mapper — row shape → domain aggregate
   // ---------------------------------------------------------------------------

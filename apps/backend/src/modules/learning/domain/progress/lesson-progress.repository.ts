@@ -33,6 +33,28 @@ export interface LessonProgressRepository {
     userId: string,
     courseId: string,
   ): Promise<{ lessonId: string; lastSeenAt: Date } | null>;
+
+  /**
+   * Compute the "your week" stats for a user over a half-open time window [from, to).
+   *
+   * minutesWatched: SUM(positionSeconds) of rows whose updatedAt falls in the
+   * window, divided by 60 and floored. positionSeconds represents elapsed/watched
+   * time (the position the player reported), not lesson duration — this is the
+   * correct signal for "minutes watched". Rows with updatedAt outside the window
+   * are excluded.
+   *
+   * lessonsCompleted: COUNT of rows where completedAt IS NOT NULL and
+   * completedAt falls in the window.
+   *
+   * Both values are 0 for new users with no progress rows.
+   *
+   * Added for the your-week home-row query handler (E14-F01-S01).
+   */
+  aggregateForUserRange(
+    userId: string,
+    from: Date,
+    to: Date,
+  ): Promise<{ minutesWatched: number; lessonsCompleted: number }>;
 }
 
 /** Nest DI injection token — Symbol prevents collisions with class-name strings. */

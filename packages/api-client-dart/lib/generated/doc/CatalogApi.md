@@ -14,6 +14,9 @@ Method | HTTP request | Description
 [**getLatestLibraryScan**](CatalogApi.md#getlatestlibraryscan) | **GET** /api/v1/libraries/{id}/scans/latest | Get the most recent scan for a library
 [**getLesson**](CatalogApi.md#getlesson) | **GET** /api/v1/lessons/{id} | Get a lesson with its materials and subtitles
 [**getLibrary**](CatalogApi.md#getlibrary) | **GET** /api/v1/libraries/{id} | Get a library by id
+[**getRecentlyAdded**](CatalogApi.md#getrecentlyadded) | **GET** /api/v1/home/recently-added | Courses recently added to the requester&#39;s libraries
+[**getRecentlyCompleted**](CatalogApi.md#getrecentlycompleted) | **GET** /api/v1/home/recently-completed | Courses the requester finished most recently
+[**getYourWeek**](CatalogApi.md#getyourweek) | **GET** /api/v1/home/your-week | Roll-up of the requester&#39;s last seven days
 [**listCourses**](CatalogApi.md#listcourses) | **GET** /api/v1/courses | List courses (optionally filtered by library)
 [**listLibraries**](CatalogApi.md#listlibraries) | **GET** /api/v1/libraries | List all registered libraries
 [**registerLibrary**](CatalogApi.md#registerlibrary) | **POST** /api/v1/libraries | Register a new library
@@ -224,6 +227,131 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**LibraryDto**](LibraryDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getRecentlyAdded**
+> RecentlyAddedDto getRecentlyAdded(limit)
+
+Courses recently added to the requester's libraries
+
+Returns courses ordered by `createdAt` (most recent first), capped by `limit`. Sourced from the `Course` table directly — no completion filter is applied (a brand-new user sees their library's recent intake even before any progress events). 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final int limit = 56; // int | How many items the home row needs.
+
+try {
+    final response = api.getRecentlyAdded(limit);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->getRecentlyAdded: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **limit** | **int**| How many items the home row needs. | [optional] [default to 10]
+
+### Return type
+
+[**RecentlyAddedDto**](RecentlyAddedDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getRecentlyCompleted**
+> RecentlyCompletedDto getRecentlyCompleted(limit)
+
+Courses the requester finished most recently
+
+Returns courses where the requester completed the last lesson (`lessonsCompleted == lessonsTotal`), ordered by `lastSeenAt DESC` (which equals completion time for finished courses). Reads from the `CourseProgressReadModel` projection. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final int limit = 56; // int | How many items the home row needs.
+
+try {
+    final response = api.getRecentlyCompleted(limit);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->getRecentlyCompleted: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **limit** | **int**| How many items the home row needs. | [optional] [default to 10]
+
+### Return type
+
+[**RecentlyCompletedDto**](RecentlyCompletedDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getYourWeek**
+> YourWeekDto getYourWeek()
+
+Roll-up of the requester's last seven days
+
+Total minutes watched and lessons completed by the requester over the trailing seven days. `range.from` is `now - 7d`, `range.to` is `now`, both ISO-8601 with offset. Both counters are zero for new users. Sourced from `LessonProgress` (sum of completion-time contributions) and `CourseProgressReadModel.lessonsCompleted`. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+
+try {
+    final response = api.getYourWeek();
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->getYourWeek: $e\n');
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**YourWeekDto**](YourWeekDto.md)
 
 ### Authorization
 

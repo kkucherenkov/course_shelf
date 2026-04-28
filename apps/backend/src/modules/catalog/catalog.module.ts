@@ -44,6 +44,9 @@ import { GetCourseHandler } from './application/queries/get-course.handler';
 import { ListCoursesHandler } from './application/queries/list-courses.handler';
 import { GetLessonHandler } from './application/queries/get-lesson.handler';
 import { GetContinueWatchingHandler } from './application/queries/get-continue-watching.handler';
+import { GetRecentlyAddedHandler } from './application/queries/get-recently-added.handler';
+import { GetRecentlyCompletedHandler } from './application/queries/get-recently-completed.handler';
+import { GetYourWeekHandler } from './application/queries/get-your-week.handler';
 import { LessonCompletedHandler } from './application/event-handlers/lesson-completed.handler';
 import { LessonProgressRecordedHandler } from './application/event-handlers/lesson-progress-recorded.handler';
 import { RebuildProjectionsService } from './application/projections/rebuild-projections.service';
@@ -87,6 +90,9 @@ import { NodeFsAdapter } from './infra/node-fs-adapter';
     ListCoursesHandler,
     GetLessonHandler,
     GetContinueWatchingHandler,
+    GetRecentlyAddedHandler,
+    GetRecentlyCompletedHandler,
+    GetYourWeekHandler,
     LessonCompletedHandler,
     LessonProgressRecordedHandler,
     RebuildProjectionsService,

@@ -24,6 +24,7 @@ function makeRepo(): CourseRepository {
     findManyByLibrary: vi.fn(),
     findAll: vi.fn(),
     findByIds: vi.fn(),
+    findRecentlyAdded: vi.fn(),
   };
 }
 
@@ -43,6 +44,7 @@ function makeProgressRepo(
     findManyByUser: vi.fn(),
     findManyByCourseIdsForUser: vi.fn(),
     deleteAll: vi.fn(),
+    findCompletedByUser: vi.fn(),
   };
 }
 

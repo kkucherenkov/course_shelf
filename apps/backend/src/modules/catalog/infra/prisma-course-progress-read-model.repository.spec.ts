@@ -200,4 +200,52 @@ describe('PrismaCourseProgressReadModelRepository', () => {
       expect(prisma.courseProgressReadModel.deleteMany).toHaveBeenCalledOnce();
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // findCompletedByUser
+  // ---------------------------------------------------------------------------
+  describe('findCompletedByUser', () => {
+    it('returns empty array when no rows found', async () => {
+      vi.mocked(prisma.courseProgressReadModel.findMany).mockResolvedValue([]);
+
+      const result = await repo.findCompletedByUser('user-1', 5);
+      expect(result).toEqual([]);
+    });
+
+    it('filters rows where lessonsCompleted !== lessonsTotal', async () => {
+      const rows = [
+        makeRow({ id: 'cprm-1', courseId: 'course-1', lessonsCompleted: 5, lessonsTotal: 5 }),
+        makeRow({ id: 'cprm-2', courseId: 'course-2', lessonsCompleted: 3, lessonsTotal: 5 }),
+      ];
+      vi.mocked(prisma.courseProgressReadModel.findMany).mockResolvedValue(rows);
+
+      const result = await repo.findCompletedByUser('user-1', 5);
+      expect(result).toHaveLength(1);
+      expect(result[0]?.courseId).toBe('course-1');
+    });
+
+    it('slices to the requested limit after in-process filter', async () => {
+      // All three are completed — limit=2 should return only two.
+      const rows = [
+        makeRow({ id: 'cprm-1', courseId: 'course-1', lessonsCompleted: 5, lessonsTotal: 5, lastSeenAt: NOW }),
+        makeRow({ id: 'cprm-2', courseId: 'course-2', lessonsCompleted: 5, lessonsTotal: 5, lastSeenAt: EARLIER }),
+        makeRow({ id: 'cprm-3', courseId: 'course-3', lessonsCompleted: 5, lessonsTotal: 5, lastSeenAt: EARLIER }),
+      ];
+      vi.mocked(prisma.courseProgressReadModel.findMany).mockResolvedValue(rows);
+
+      const result = await repo.findCompletedByUser('user-1', 2);
+      expect(result).toHaveLength(2);
+    });
+
+    it('queries with lessonsTotal gt 0 and orderBy lastSeenAt desc', async () => {
+      vi.mocked(prisma.courseProgressReadModel.findMany).mockResolvedValue([]);
+
+      await repo.findCompletedByUser('user-1', 5);
+
+      const call = vi.mocked(prisma.courseProgressReadModel.findMany).mock.calls[0]?.[0];
+      expect(call?.where?.userId).toBe('user-1');
+      expect(call?.where?.lessonsTotal).toEqual({ gt: 0 });
+      expect(call?.orderBy).toEqual({ lastSeenAt: 'desc' });
+    });
+  });
 });

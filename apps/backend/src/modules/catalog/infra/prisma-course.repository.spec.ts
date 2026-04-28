@@ -230,4 +230,39 @@ describe('PrismaCourseRepository', () => {
 
     expect(result).toHaveLength(1);
   });
+
+  // -------------------------------------------------------------------------
+  // findRecentlyAdded
+  // -------------------------------------------------------------------------
+  describe('findRecentlyAdded', () => {
+    it('returns empty array when no courses exist', async () => {
+      vi.mocked(prisma.course.findMany).mockResolvedValue([]);
+
+      const result = await repo.findRecentlyAdded(5);
+      expect(result).toEqual([]);
+    });
+
+    it('queries with orderBy createdAt desc and take limit * 3', async () => {
+      vi.mocked(prisma.course.findMany).mockResolvedValue([]);
+
+      await repo.findRecentlyAdded(5);
+
+      const call = vi.mocked(prisma.course.findMany).mock.calls[0]?.[0];
+      expect(call?.orderBy).toEqual({ createdAt: 'desc' });
+      expect(call?.take).toBe(15);
+    });
+
+    it('reconstitutes aggregates from returned rows', async () => {
+      const rows = [
+        makeCourseRow({ id: 'c1', slug: 'course-a', title: 'A' }),
+        makeCourseRow({ id: 'c2', slug: 'course-b', title: 'B' }),
+      ];
+      vi.mocked(prisma.course.findMany).mockResolvedValue(rows);
+
+      const result = await repo.findRecentlyAdded(2);
+      expect(result).toHaveLength(2);
+      expect(result[0]?.id).toBe('c1');
+      expect(result[1]?.id).toBe('c2');
+    });
+  });
 });

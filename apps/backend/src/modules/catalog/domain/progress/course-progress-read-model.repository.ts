@@ -48,4 +48,15 @@ export interface CourseProgressReadModelRepository {
    * Idempotent: safe to call on an empty table.
    */
   deleteAll(): Promise<void>;
+
+  /**
+   * Return up to `limit` rows for a user where the course is fully completed
+   * (lessonsCompleted == lessonsTotal AND lessonsTotal > 0), ordered by
+   * lastSeenAt DESC (which equals completion time for finished courses).
+   * Used by the recently-completed home-row query handler (E14-F01-S01).
+   */
+  findCompletedByUser(
+    userId: string,
+    limit: number,
+  ): Promise<CourseProgressReadModel[]>;
 }

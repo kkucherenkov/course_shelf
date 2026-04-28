@@ -886,6 +886,166 @@ paths:
                     title: Unauthorized
                     status: 401
 
+  /api/v1/home/recently-added:
+    get:
+      operationId: getRecentlyAdded
+      summary: Courses recently added to the requester's libraries
+      description: |
+        Returns courses ordered by `createdAt` (most recent first), capped by
+        `limit`. Sourced from the `Course` table directly — no completion
+        filter is applied (a brand-new user sees their library's recent
+        intake even before any progress events).
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: How many items the home row needs.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        "200":
+          description: Recently-added list returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecentlyAddedDto"
+              examples:
+                twoCourses:
+                  summary: Two courses added recently
+                  value:
+                    items:
+                      - courseId: clxvcrs0000000000000000010
+                        courseTitle: Implementing Domain-Driven Design
+                        librarySlug: conference-recordings
+                        lessonCount: 24
+                        totalDurationSeconds: 14400
+                        createdAt: "2026-04-26T08:14:00Z"
+                      - courseId: clxvcrs0000000000000000011
+                        courseTitle: Streaming Systems Concepts
+                        lessonCount: 12
+                        totalDurationSeconds: 6300
+                        createdAt: "2026-04-25T17:02:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+
+  /api/v1/home/recently-completed:
+    get:
+      operationId: getRecentlyCompleted
+      summary: Courses the requester finished most recently
+      description: |
+        Returns courses where the requester completed the last lesson
+        (`lessonsCompleted == lessonsTotal`), ordered by `lastSeenAt DESC`
+        (which equals completion time for finished courses). Reads from the
+        `CourseProgressReadModel` projection.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: How many items the home row needs.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        "200":
+          description: Recently-completed list returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecentlyCompletedDto"
+              examples:
+                oneCompleted:
+                  summary: One completed course
+                  value:
+                    items:
+                      - courseId: clxvcrs0000000000000000020
+                        courseTitle: Distributed Systems Foundations
+                        librarySlug: conference-recordings
+                        lessonsTotal: 18
+                        completedAt: "2026-04-23T20:45:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+
+  /api/v1/home/your-week:
+    get:
+      operationId: getYourWeek
+      summary: Roll-up of the requester's last seven days
+      description: |
+        Total minutes watched and lessons completed by the requester over
+        the trailing seven days. `range.from` is `now - 7d`, `range.to` is
+        `now`, both ISO-8601 with offset. Both counters are zero for new
+        users. Sourced from `LessonProgress` (sum of completion-time
+        contributions) and `CourseProgressReadModel.lessonsCompleted`.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Weekly roll-up returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/YourWeekDto"
+              examples:
+                activeWeek:
+                  summary: Active week
+                  value:
+                    minutesWatched: 312
+                    lessonsCompleted: 8
+                    range:
+                      from: "2026-04-20T22:00:00Z"
+                      to: "2026-04-27T22:00:00Z"
+                emptyWeek:
+                  summary: New user with no progress yet
+                  value:
+                    minutesWatched: 0
+                    lessonsCompleted: 0
+                    range:
+                      from: "2026-04-20T22:00:00Z"
+                      to: "2026-04-27T22:00:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+
   /api/v1/lessons/{id}:
     get:
       operationId: getLesson
@@ -2515,6 +2675,168 @@ components:
         lessonsTotal: 76
         lastSeenAt: "2026-04-25T14:32:00Z"
         lastSeenLessonId: clxvles0000000000000000042
+
+    RecentlyAddedDto:
+      type: object
+      required: [items]
+      description: >-
+        Courses added to the requester's libraries, most recent first.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecentlyAddedItem"
+      example:
+        items:
+          - courseId: clxvcrs0000000000000000010
+            courseTitle: Implementing Domain-Driven Design
+            librarySlug: conference-recordings
+            lessonCount: 24
+            totalDurationSeconds: 14400
+            createdAt: "2026-04-26T08:14:00Z"
+
+    RecentlyAddedItem:
+      type: object
+      required:
+        - courseId
+        - courseTitle
+        - lessonCount
+        - totalDurationSeconds
+        - createdAt
+      description: A course freshly added to one of the requester's libraries.
+      properties:
+        courseId:
+          type: string
+          description: Server-generated cuid identifying the course.
+        courseTitle:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Display title of the course.
+        librarySlug:
+          type: string
+          description: >-
+            Slug of the parent library, included for the URL builder.
+            Optional because not every layout exposes a per-library slug yet.
+        lessonCount:
+          type: integer
+          minimum: 0
+          description: Number of lessons in the course at intake time.
+        totalDurationSeconds:
+          type: integer
+          minimum: 0
+          description: Sum of `Lesson.duration` across the course, in whole seconds.
+        createdAt:
+          type: string
+          format: date-time
+          description: Moment the course was added to its library.
+      example:
+        courseId: clxvcrs0000000000000000010
+        courseTitle: Implementing Domain-Driven Design
+        librarySlug: conference-recordings
+        lessonCount: 24
+        totalDurationSeconds: 14400
+        createdAt: "2026-04-26T08:14:00Z"
+
+    RecentlyCompletedDto:
+      type: object
+      required: [items]
+      description: >-
+        Courses the requester finished most recently, most-recent first.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecentlyCompletedItem"
+      example:
+        items:
+          - courseId: clxvcrs0000000000000000020
+            courseTitle: Distributed Systems Foundations
+            librarySlug: conference-recordings
+            lessonsTotal: 18
+            completedAt: "2026-04-23T20:45:00Z"
+
+    RecentlyCompletedItem:
+      type: object
+      required:
+        - courseId
+        - courseTitle
+        - lessonsTotal
+        - completedAt
+      description: >-
+        A course where the requester completed every lesson. Sourced from
+        the `CourseProgressReadModel` projection (`lessonsCompleted ==
+        lessonsTotal`).
+      properties:
+        courseId:
+          type: string
+          description: Server-generated cuid identifying the course.
+        courseTitle:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Display title of the course.
+        librarySlug:
+          type: string
+          description: Slug of the parent library, included for the URL builder.
+        lessonsTotal:
+          type: integer
+          minimum: 0
+          description: Total lessons in the course (== lessons completed for this row).
+        completedAt:
+          type: string
+          format: date-time
+          description: >-
+            Time the requester finished the last lesson —
+            `CourseProgressReadModel.lastSeenAt` at the moment percent hit 100.
+      example:
+        courseId: clxvcrs0000000000000000020
+        courseTitle: Distributed Systems Foundations
+        librarySlug: conference-recordings
+        lessonsTotal: 18
+        completedAt: "2026-04-23T20:45:00Z"
+
+    YourWeekDto:
+      type: object
+      required: [minutesWatched, lessonsCompleted, range]
+      description: >-
+        Roll-up of the requester's activity over the trailing seven days.
+      properties:
+        minutesWatched:
+          type: integer
+          minimum: 0
+          description: >-
+            Total whole minutes watched by the requester in the window.
+            Computed by summing duration across `LessonProgress` rows whose
+            `updatedAt` falls inside `range`.
+        lessonsCompleted:
+          type: integer
+          minimum: 0
+          description: >-
+            Number of lessons the requester completed during the window.
+            Counted from `LessonProgress.completedAt`.
+        range:
+          $ref: "#/components/schemas/DateRange"
+      example:
+        minutesWatched: 312
+        lessonsCompleted: 8
+        range:
+          from: "2026-04-20T22:00:00Z"
+          to: "2026-04-27T22:00:00Z"
+
+    DateRange:
+      type: object
+      required: [from, to]
+      description: Half-open interval `[from, to)`, both ISO-8601 with offset.
+      properties:
+        from:
+          type: string
+          format: date-time
+          description: Inclusive lower bound.
+        to:
+          type: string
+          format: date-time
+          description: Exclusive upper bound.
 
     CourseDto:
       type: object

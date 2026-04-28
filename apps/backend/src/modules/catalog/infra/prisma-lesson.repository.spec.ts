@@ -62,6 +62,7 @@ interface LessonDelegate {
   upsert: ReturnType<typeof vi.fn>;
   findUnique: ReturnType<typeof vi.fn>;
   findMany: ReturnType<typeof vi.fn>;
+  groupBy: ReturnType<typeof vi.fn>;
 }
 
 interface MaterialDelegate {
@@ -87,6 +88,7 @@ function makePrisma(): MockPrisma {
       upsert: vi.fn().mockResolvedValue(undefined),
       findUnique: vi.fn().mockResolvedValue(null),
       findMany: vi.fn().mockResolvedValue([]),
+      groupBy: vi.fn().mockResolvedValue([]),
     },
     material: {
       deleteMany: vi.fn().mockResolvedValue(undefined),
@@ -294,5 +296,38 @@ describe('PrismaLessonRepository', () => {
     expect(prisma.lesson.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { sectionId: 'section-1' } }),
     );
+  });
+
+  // -------------------------------------------------------------------------
+  // getLessonStatsByCourseIds
+  // -------------------------------------------------------------------------
+  describe('getLessonStatsByCourseIds', () => {
+    it('returns empty map for empty courseIds', async () => {
+      const result = await repo.getLessonStatsByCourseIds([]);
+      expect(result).toEqual(new Map());
+      expect(prisma.lesson.groupBy).not.toHaveBeenCalled();
+    });
+
+    it('returns stats map from groupBy result', async () => {
+      vi.mocked(prisma.lesson.groupBy).mockResolvedValue([
+        { courseId: 'course-1', _count: { id: 5 }, _sum: { duration: 1800 } },
+        { courseId: 'course-2', _count: { id: 3 }, _sum: { duration: null } },
+      ]);
+
+      const result = await repo.getLessonStatsByCourseIds(['course-1', 'course-2']);
+
+      expect(result.get('course-1')).toEqual({ lessonCount: 5, totalDurationSeconds: 1800 });
+      // null sum → 0
+      expect(result.get('course-2')).toEqual({ lessonCount: 3, totalDurationSeconds: 0 });
+    });
+
+    it('queries with courseId in filter', async () => {
+      vi.mocked(prisma.lesson.groupBy).mockResolvedValue([]);
+
+      await repo.getLessonStatsByCourseIds(['course-1', 'course-2']);
+
+      const call = vi.mocked(prisma.lesson.groupBy).mock.calls[0]?.[0];
+      expect(call?.where?.courseId).toEqual({ in: ['course-1', 'course-2'] });
+    });
   });
 });

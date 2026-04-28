@@ -85,6 +85,9 @@ Class | Method | HTTP request | Description
 [*CatalogApi*](doc/CatalogApi.md) | [**getLatestLibraryScan**](doc/CatalogApi.md#getlatestlibraryscan) | **GET** /api/v1/libraries/{id}/scans/latest | Get the most recent scan for a library
 [*CatalogApi*](doc/CatalogApi.md) | [**getLesson**](doc/CatalogApi.md#getlesson) | **GET** /api/v1/lessons/{id} | Get a lesson with its materials and subtitles
 [*CatalogApi*](doc/CatalogApi.md) | [**getLibrary**](doc/CatalogApi.md#getlibrary) | **GET** /api/v1/libraries/{id} | Get a library by id
+[*CatalogApi*](doc/CatalogApi.md) | [**getRecentlyAdded**](doc/CatalogApi.md#getrecentlyadded) | **GET** /api/v1/home/recently-added | Courses recently added to the requester&#39;s libraries
+[*CatalogApi*](doc/CatalogApi.md) | [**getRecentlyCompleted**](doc/CatalogApi.md#getrecentlycompleted) | **GET** /api/v1/home/recently-completed | Courses the requester finished most recently
+[*CatalogApi*](doc/CatalogApi.md) | [**getYourWeek**](doc/CatalogApi.md#getyourweek) | **GET** /api/v1/home/your-week | Roll-up of the requester&#39;s last seven days
 [*CatalogApi*](doc/CatalogApi.md) | [**listCourses**](doc/CatalogApi.md#listcourses) | **GET** /api/v1/courses | List courses (optionally filtered by library)
 [*CatalogApi*](doc/CatalogApi.md) | [**listLibraries**](doc/CatalogApi.md#listlibraries) | **GET** /api/v1/libraries | List all registered libraries
 [*CatalogApi*](doc/CatalogApi.md) | [**registerLibrary**](doc/CatalogApi.md#registerlibrary) | **POST** /api/v1/libraries | Register a new library
@@ -128,6 +131,7 @@ Class | Method | HTTP request | Description
  - [CourseProgress](doc/CourseProgress.md)
  - [CourseTarget](doc/CourseTarget.md)
  - [CreateBookmarkRequest](doc/CreateBookmarkRequest.md)
+ - [DateRange](doc/DateRange.md)
  - [DependencyStatus](doc/DependencyStatus.md)
  - [GrantLevel](doc/GrantLevel.md)
  - [GrantTarget](doc/GrantTarget.md)
@@ -148,6 +152,10 @@ Class | Method | HTTP request | Description
  - [PingResponse](doc/PingResponse.md)
  - [Problem](doc/Problem.md)
  - [RealtimeToken](doc/RealtimeToken.md)
+ - [RecentlyAddedDto](doc/RecentlyAddedDto.md)
+ - [RecentlyAddedItem](doc/RecentlyAddedItem.md)
+ - [RecentlyCompletedDto](doc/RecentlyCompletedDto.md)
+ - [RecentlyCompletedItem](doc/RecentlyCompletedItem.md)
  - [RecordProgressRequest](doc/RecordProgressRequest.md)
  - [RegisterGrantRequest](doc/RegisterGrantRequest.md)
  - [RegisterLibraryRequest](doc/RegisterLibraryRequest.md)
@@ -160,6 +168,7 @@ Class | Method | HTTP request | Description
  - [UpdateBookmarkRequest](doc/UpdateBookmarkRequest.md)
  - [UpdateCourseRequest](doc/UpdateCourseRequest.md)
  - [UpsertNoteRequest](doc/UpsertNoteRequest.md)
+ - [YourWeekDto](doc/YourWeekDto.md)
 
 
 ## Documentation For Authorization

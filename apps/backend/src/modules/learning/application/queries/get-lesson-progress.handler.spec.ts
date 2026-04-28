@@ -61,6 +61,7 @@ function makeHandler(opts: {
     countCompletedByUserAndCourse: vi.fn(),
     findAllUserCoursePairs: vi.fn(),
     findLatestByUserAndCourse: vi.fn(),
+    aggregateForUserRange: vi.fn(),
   };
 
   const handler = new GetLessonProgressHandler(lessonRepo, courseRepo, authz, progressRepo);

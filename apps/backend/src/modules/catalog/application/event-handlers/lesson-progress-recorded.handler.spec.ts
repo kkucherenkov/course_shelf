@@ -36,6 +36,7 @@ function makeLessonRepo(count = 5): LessonRepository {
         Array.from({ length: count }, (_, i) => ({ id: `lesson-${String(i + 1)}` })),
       ),
     findBySection: vi.fn(),
+    getLessonStatsByCourseIds: vi.fn(),
   };
 }
 
@@ -46,6 +47,7 @@ function makeProgressRepo(completedCount = 0): LessonProgressRepository {
     countCompletedByUserAndCourse: vi.fn().mockResolvedValue(completedCount),
     findAllUserCoursePairs: vi.fn(),
     findLatestByUserAndCourse: vi.fn(),
+    aggregateForUserRange: vi.fn(),
   };
 }
 
@@ -58,6 +60,7 @@ function makeReadModelRepo(
     findManyByUser: vi.fn(),
     findManyByCourseIdsForUser: vi.fn(),
     deleteAll: vi.fn(),
+    findCompletedByUser: vi.fn(),
   };
 }
 

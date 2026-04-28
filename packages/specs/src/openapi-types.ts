@@ -196,6 +196,76 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/home/recently-added': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Courses recently added to the requester's libraries
+     * @description Returns courses ordered by `createdAt` (most recent first), capped by
+     *     `limit`. Sourced from the `Course` table directly — no completion
+     *     filter is applied (a brand-new user sees their library's recent
+     *     intake even before any progress events).
+     */
+    get: operations['getRecentlyAdded'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/home/recently-completed': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Courses the requester finished most recently
+     * @description Returns courses where the requester completed the last lesson
+     *     (`lessonsCompleted == lessonsTotal`), ordered by `lastSeenAt DESC`
+     *     (which equals completion time for finished courses). Reads from the
+     *     `CourseProgressReadModel` projection.
+     */
+    get: operations['getRecentlyCompleted'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/home/your-week': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Roll-up of the requester's last seven days
+     * @description Total minutes watched and lessons completed by the requester over
+     *     the trailing seven days. `range.from` is `now - 7d`, `range.to` is
+     *     `now`, both ISO-8601 with offset. Both counters are zero for new
+     *     users. Sourced from `LessonProgress` (sum of completion-time
+     *     contributions) and `CourseProgressReadModel.lessonsCompleted`.
+     */
+    get: operations['getYourWeek'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/lessons/{id}': {
     parameters: {
       query?: never;
@@ -829,6 +899,125 @@ export interface components {
       lastSeenAt: string;
       /** @description The lesson the player last reported a position on, used to wire the 'Resume' CTA. */
       lastSeenLessonId: string;
+    };
+    /**
+     * @description Courses added to the requester's libraries, most recent first.
+     * @example {
+     *       "items": [
+     *         {
+     *           "courseId": "clxvcrs0000000000000000010",
+     *           "courseTitle": "Implementing Domain-Driven Design",
+     *           "librarySlug": "conference-recordings",
+     *           "lessonCount": 24,
+     *           "totalDurationSeconds": 14400,
+     *           "createdAt": "2026-04-26T08:14:00Z"
+     *         }
+     *       ]
+     *     }
+     */
+    RecentlyAddedDto: {
+      items: components['schemas']['RecentlyAddedItem'][];
+    };
+    /**
+     * @description A course freshly added to one of the requester's libraries.
+     * @example {
+     *       "courseId": "clxvcrs0000000000000000010",
+     *       "courseTitle": "Implementing Domain-Driven Design",
+     *       "librarySlug": "conference-recordings",
+     *       "lessonCount": 24,
+     *       "totalDurationSeconds": 14400,
+     *       "createdAt": "2026-04-26T08:14:00Z"
+     *     }
+     */
+    RecentlyAddedItem: {
+      /** @description Server-generated cuid identifying the course. */
+      courseId: string;
+      /** @description Display title of the course. */
+      courseTitle: string;
+      /** @description Slug of the parent library, included for the URL builder. Optional because not every layout exposes a per-library slug yet. */
+      librarySlug?: string;
+      /** @description Number of lessons in the course at intake time. */
+      lessonCount: number;
+      /** @description Sum of `Lesson.duration` across the course, in whole seconds. */
+      totalDurationSeconds: number;
+      /**
+       * Format: date-time
+       * @description Moment the course was added to its library.
+       */
+      createdAt: string;
+    };
+    /**
+     * @description Courses the requester finished most recently, most-recent first.
+     * @example {
+     *       "items": [
+     *         {
+     *           "courseId": "clxvcrs0000000000000000020",
+     *           "courseTitle": "Distributed Systems Foundations",
+     *           "librarySlug": "conference-recordings",
+     *           "lessonsTotal": 18,
+     *           "completedAt": "2026-04-23T20:45:00Z"
+     *         }
+     *       ]
+     *     }
+     */
+    RecentlyCompletedDto: {
+      items: components['schemas']['RecentlyCompletedItem'][];
+    };
+    /**
+     * @description A course where the requester completed every lesson. Sourced from the `CourseProgressReadModel` projection (`lessonsCompleted == lessonsTotal`).
+     * @example {
+     *       "courseId": "clxvcrs0000000000000000020",
+     *       "courseTitle": "Distributed Systems Foundations",
+     *       "librarySlug": "conference-recordings",
+     *       "lessonsTotal": 18,
+     *       "completedAt": "2026-04-23T20:45:00Z"
+     *     }
+     */
+    RecentlyCompletedItem: {
+      /** @description Server-generated cuid identifying the course. */
+      courseId: string;
+      /** @description Display title of the course. */
+      courseTitle: string;
+      /** @description Slug of the parent library, included for the URL builder. */
+      librarySlug?: string;
+      /** @description Total lessons in the course (== lessons completed for this row). */
+      lessonsTotal: number;
+      /**
+       * Format: date-time
+       * @description Time the requester finished the last lesson — `CourseProgressReadModel.lastSeenAt` at the moment percent hit 100.
+       */
+      completedAt: string;
+    };
+    /**
+     * @description Roll-up of the requester's activity over the trailing seven days.
+     * @example {
+     *       "minutesWatched": 312,
+     *       "lessonsCompleted": 8,
+     *       "range": {
+     *         "from": "2026-04-20T22:00:00Z",
+     *         "to": "2026-04-27T22:00:00Z"
+     *       }
+     *     }
+     */
+    YourWeekDto: {
+      /** @description Total whole minutes watched by the requester in the window. Computed by summing duration across `LessonProgress` rows whose `updatedAt` falls inside `range`. */
+      minutesWatched: number;
+      /** @description Number of lessons the requester completed during the window. Counted from `LessonProgress.completedAt`. */
+      lessonsCompleted: number;
+      range: components['schemas']['DateRange'];
+    };
+    /** @description Half-open interval `[from, to)`, both ISO-8601 with offset. */
+    DateRange: {
+      /**
+       * Format: date-time
+       * @description Inclusive lower bound.
+       */
+      from: string;
+      /**
+       * Format: date-time
+       * @description Exclusive upper bound.
+       */
+      to: string;
     };
     /**
      * @description Full representation of a Course aggregate.
@@ -2025,6 +2214,99 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ContinueWatchingDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getRecentlyAdded: {
+    parameters: {
+      query?: {
+        /** @description How many items the home row needs. */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Recently-added list returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecentlyAddedDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getRecentlyCompleted: {
+    parameters: {
+      query?: {
+        /** @description How many items the home row needs. */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Recently-completed list returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecentlyCompletedDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getYourWeek: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Weekly roll-up returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['YourWeekDto'];
         };
       };
       /** @description Missing or invalid bearer token */

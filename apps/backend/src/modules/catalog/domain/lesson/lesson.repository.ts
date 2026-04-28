@@ -37,4 +37,16 @@ export interface LessonRepository {
    * Ordered by position asc.
    */
   findBySection(sectionId: string): Promise<Lesson[]>;
+
+  /**
+   * Return aggregate lesson stats (count + total duration) for a set of course
+   * ids in a single query. Missing courses (no lessons) are absent from the result
+   * map — callers must handle missing entries as { lessonCount: 0, totalDurationSeconds: 0 }.
+   * Null lesson.duration values are treated as 0.
+   *
+   * Added for the recently-added home-row query handler (E14-F01-S01).
+   */
+  getLessonStatsByCourseIds(
+    courseIds: string[],
+  ): Promise<Map<string, { lessonCount: number; totalDurationSeconds: number }>>;
 }

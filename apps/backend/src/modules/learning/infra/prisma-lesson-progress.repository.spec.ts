@@ -22,12 +22,13 @@ interface LessonProgressDelegate {
   findUnique: ReturnType<typeof vi.fn>;
 }
 
-function makePrisma(): { lessonProgress: LessonProgressDelegate } {
+function makePrisma(): { lessonProgress: LessonProgressDelegate; $queryRaw: ReturnType<typeof vi.fn> } {
   return {
     lessonProgress: {
       upsert: vi.fn().mockResolvedValue(undefined),
       findUnique: vi.fn().mockResolvedValue(null),
     },
+    $queryRaw: vi.fn().mockResolvedValue([]),
   };
 }
 
@@ -162,5 +163,55 @@ describe('PrismaLessonProgressRepository', () => {
 
     expect(result!.positionSeconds).toBe(70);
     expect(result!.percent).toBe(70);
+  });
+
+  // -------------------------------------------------------------------------
+  // aggregateForUserRange
+  // -------------------------------------------------------------------------
+
+  describe('aggregateForUserRange', () => {
+    const FROM = new Date('2026-04-21T00:00:00.000Z');
+    const TO = new Date('2026-04-28T00:00:00.000Z');
+
+    it('returns zeros when $queryRaw returns empty array', async () => {
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([]);
+
+      const result = await repo.aggregateForUserRange('user-1', FROM, TO);
+
+      expect(result.minutesWatched).toBe(0);
+      expect(result.lessonsCompleted).toBe(0);
+    });
+
+    it('computes minutesWatched by flooring totalPositionSeconds / 60', async () => {
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([
+        { total_position: 3700n, completed_count: 0n },
+      ]);
+
+      const result = await repo.aggregateForUserRange('user-1', FROM, TO);
+
+      // 3700 / 60 = 61.66... → floor → 61
+      expect(result.minutesWatched).toBe(61);
+    });
+
+    it('maps completed_count to lessonsCompleted', async () => {
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([
+        { total_position: 0n, completed_count: 4n },
+      ]);
+
+      const result = await repo.aggregateForUserRange('user-1', FROM, TO);
+
+      expect(result.lessonsCompleted).toBe(4);
+    });
+
+    it('handles null row gracefully (all zeros)', async () => {
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([
+        { total_position: null, completed_count: null },
+      ]);
+
+      const result = await repo.aggregateForUserRange('user-1', FROM, TO);
+
+      expect(result.minutesWatched).toBe(0);
+      expect(result.lessonsCompleted).toBe(0);
+    });
   });
 });

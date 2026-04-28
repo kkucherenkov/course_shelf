@@ -75,6 +75,7 @@ function makeLessonRepo(overrides?: Partial<LessonRepository>): LessonRepository
     }),
     findByCourse: vi.fn(),
     findBySection: vi.fn(),
+    getLessonStatsByCourseIds: vi.fn(),
     ...overrides,
   };
 }
@@ -86,6 +87,7 @@ function makeCourseRepo(overrides?: Partial<CourseRepository>): CourseRepository
     findManyByLibrary: vi.fn(),
     findAll: vi.fn(),
     findByIds: vi.fn(),
+    findRecentlyAdded: vi.fn(),
     ...overrides,
   };
 }

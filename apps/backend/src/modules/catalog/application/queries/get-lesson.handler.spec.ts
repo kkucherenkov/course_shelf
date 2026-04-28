@@ -40,6 +40,7 @@ function makeLessonRepo(): LessonRepository {
     findById: vi.fn(),
     findByCourse: vi.fn(),
     findBySection: vi.fn(),
+    getLessonStatsByCourseIds: vi.fn(),
   };
 }
 
@@ -50,6 +51,7 @@ function makeCourseRepo(): CourseRepository {
     findManyByLibrary: vi.fn(),
     findAll: vi.fn(),
     findByIds: vi.fn(),
+    findRecentlyAdded: vi.fn(),
   };
 }
 
@@ -69,6 +71,7 @@ function makeProgressRepo(
     findManyByUser: vi.fn(),
     findManyByCourseIdsForUser: vi.fn(),
     deleteAll: vi.fn(),
+    findCompletedByUser: vi.fn(),
   };
 }
 

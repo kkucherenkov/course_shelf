@@ -50,4 +50,18 @@ export interface CourseRepository {
    * Added for the continue-watching query handler (E10-F01-S01).
    */
   findByIds(ids: string[]): Promise<Course[]>;
+
+  /**
+   * Return the top-N courses across all libraries, ordered by createdAt DESC.
+   * Used by the recently-added home-row query handler (E14-F01-S01).
+   *
+   * The adapter fetches `limit * 3` rows from the DB so that the authz filter
+   * in the handler has enough candidates to fill `limit` visible items even
+   * after dropping inaccessible courses. The `* 3` multiplier is a simple
+   * heuristic — documented here so the next reader understands the intent.
+   *
+   * Sections are eagerly loaded (same select as findByIds) so the handler can
+   * derive lessonCount and totalDurationSeconds via the lesson join.
+   */
+  findRecentlyAdded(limit: number): Promise<Course[]>;
 }

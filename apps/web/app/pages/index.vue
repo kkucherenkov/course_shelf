@@ -157,13 +157,18 @@
           class="page-home__row page-home__row--continue"
           @retry="continueWatching.refetch()"
         >
-          <CourseWideCard
+          <NuxtLink
             v-for="item in continueWatching.data.value?.items"
             :key="item.courseId"
-            :course="continueWatchingToCourse(item)"
-            :resume-at="0"
-            class="page-home__wide-card"
-          />
+            :to="`/courses/${item.courseId}/lessons/${item.lastSeenLessonId}`"
+            class="page-home__card-link"
+          >
+            <CourseWideCard
+              :course="continueWatchingToCourse(item)"
+              :resume-at="0"
+              class="page-home__wide-card"
+            />
+          </NuxtLink>
         </HomeRow>
 
         <!-- Recently added -->
@@ -179,12 +184,17 @@
           class="page-home__row page-home__row--recently-added"
           @retry="recentlyAdded.refetch()"
         >
-          <CoursePosterCard
+          <NuxtLink
             v-for="item in recentlyAdded.data.value?.items"
             :key="item.courseId"
-            :course="recentlyAddedToCourse(item)"
-            class="page-home__poster-card"
-          />
+            :to="`/courses/${item.courseId}`"
+            class="page-home__card-link"
+          >
+            <CoursePosterCard
+              :course="recentlyAddedToCourse(item)"
+              class="page-home__poster-card"
+            />
+          </NuxtLink>
         </HomeRow>
 
         <!-- Recently completed (collapsible) -->
@@ -206,13 +216,18 @@
           @retry="recentlyCompleted.refetch()"
           @update:expanded="completedExpanded = $event"
         >
-          <CoursePosterCard
+          <NuxtLink
             v-for="item in recentlyCompleted.data.value?.items"
             :key="item.courseId"
-            :course="recentlyCompletedToCourse(item)"
-            state="completed"
-            class="page-home__poster-card"
-          />
+            :to="`/courses/${item.courseId}`"
+            class="page-home__card-link"
+          >
+            <CoursePosterCard
+              :course="recentlyCompletedToCourse(item)"
+              state="completed"
+              class="page-home__poster-card"
+            />
+          </NuxtLink>
         </HomeRow>
       </div>
 
@@ -319,6 +334,24 @@
 
       @media (width >= 1440px) {
         width: $card-poster-xl;
+      }
+    }
+
+    // Card wrappers — keep links transparent so the card's own focus / hover
+    // styles still drive the visual feedback.
+    &__card-link {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+
+      &:focus {
+        outline: none;
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--brand-accent);
+        outline-offset: 2px;
+        border-radius: var(--radius-md);
       }
     }
   }

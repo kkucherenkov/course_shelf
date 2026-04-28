@@ -40,7 +40,10 @@
     try {
       const res = await createBookmark({
         body: {
-          positionSeconds: payload.time,
+          // The HTML5 video element gives us a sub-second float, but the spec
+          // declares positionSeconds as an integer. Floor here to match
+          // useProgressReporter and avoid a 400 from openapi-validator.
+          positionSeconds: Math.floor(payload.time),
           label: payload.label || undefined,
         },
         path: { lessonId: props.lessonId },

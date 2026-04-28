@@ -13,7 +13,7 @@
   import type { IconName } from '@app/ui';
   import { ref, computed, watch } from 'vue';
 
-  import { registerLibrary } from '@app/api-client-ts';
+  import { registerLibrary, runLibraryScan } from '@app/api-client-ts';
   import { client } from '@app/api-client-ts';
 
   import { useAuthStore } from '~/stores/auth';
@@ -187,6 +187,15 @@
         step3Error.value = t('pages.signUp.errorLibraryPath');
         return;
       }
+      // Kick off the first scan in the background — runLibraryScan returns
+      // 202 Accepted immediately; the actual walk runs in-process. The
+      // Libraries page polls scan status, and the Home page will show
+      // courses as soon as the projector catches up.
+      void runLibraryScan({
+        client,
+        throwOnError: false,
+        path: { id: res.data.id },
+      });
     } catch {
       step3Error.value = t('pages.signUp.errorLibraryPath');
       return;

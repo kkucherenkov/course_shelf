@@ -56,12 +56,17 @@ Stack is **normally running**. Check first: `docker ps --format '{{.Names}} {{.S
 
 | Service        | Port | URL                          |
 | -------------- | ---- | ---------------------------- |
+| **proxy (canonical SPA)** | **8080** | **http://localhost:8080** |
 | web            | 3001 | http://localhost:3001        |
 | backend        | 3000 | http://localhost:3000/api/v1 |
 | postgres       | 5432 | —                            |
 | redis          | 6379 | —                            |
 | centrifugo     | 8000 | ws://localhost:8000          |
 | grafana (otel) | 3200 | http://localhost:3200        |
+
+The nginx `proxy` service folds web + backend onto a single origin so the
+browser sees same-origin requests (no CORS, no CORP). Use **8080** in the
+browser; 3000/3001 are still published for tooling that bypasses the proxy.
 
 Containers mount the repo as a volume — edits reach the running container automatically. Do NOT start `pnpm dev` if the container is up.
 

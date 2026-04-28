@@ -77,6 +77,24 @@ export interface ProvidersConfig {
   readonly storage: ProviderMode;
 }
 
+export interface SsoProviderConfigEntry {
+  /** Stable identifier emitted on click (e.g. `google`, `okta-foo`). */
+  readonly id: string;
+  /** Visible label on the SsoBlock button. */
+  readonly label: string;
+  /** IconCS glyph name. */
+  readonly iconName: string;
+}
+
+export interface AuthInstanceConfig {
+  /** When false, the SPA hides sign-up entry points and redirects /sign-up → /sign-in. */
+  readonly selfRegistration: boolean;
+  /** When true, the sign-up wizard renders the 6-digit-code step. */
+  readonly emailVerificationRequired: boolean;
+  /** Configured OAuth/SSO providers. v1 ships empty; v2 populates via Better Auth. */
+  readonly ssoProviders: readonly SsoProviderConfigEntry[];
+}
+
 @Injectable()
 export class AppConfig {
   constructor(private readonly config: ConfigService) {}
@@ -212,5 +230,47 @@ export class AppConfig {
       throw new TypeError(`Environment variable ${key} must be numeric, got: ${value}`);
     }
     return parsed;
+  }
+
+  /**
+   * Parse a boolean env var. Truthy values: `1`, `true`, `yes`, `on`
+   * (case-insensitive). Anything else — including empty / unset — falls
+   * back to the default.
+   */
+  private boolOrDefault(key: string, fallback: boolean): boolean {
+    const value = this.config.get<string>(key);
+    if (value === undefined || value === '') return fallback;
+    const normalised = value.trim().toLowerCase();
+    if (
+      normalised === '1' ||
+      normalised === 'true' ||
+      normalised === 'yes' ||
+      normalised === 'on'
+    ) {
+      return true;
+    }
+    if (
+      normalised === '0' ||
+      normalised === 'false' ||
+      normalised === 'no' ||
+      normalised === 'off'
+    ) {
+      return false;
+    }
+    return fallback;
+  }
+
+  /**
+   * Public instance configuration surfaced by `GET /admin/instance`.
+   * Defaults: open self-registration, no email verification, no SSO providers.
+   * v2 will populate `ssoProviders` once Better Auth's `genericOAuth` plugin
+   * lands; for now the array is always empty regardless of env.
+   */
+  get instance(): AuthInstanceConfig {
+    return {
+      selfRegistration: this.boolOrDefault('AUTH_SELF_REGISTRATION', true),
+      emailVerificationRequired: this.boolOrDefault('AUTH_EMAIL_VERIFICATION', false),
+      ssoProviders: [],
+    };
   }
 }

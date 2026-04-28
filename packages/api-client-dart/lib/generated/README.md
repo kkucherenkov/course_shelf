@@ -80,6 +80,7 @@ Class | Method | HTTP request | Description
 [*AccessApi*](doc/AccessApi.md) | [**revokeGrant**](doc/AccessApi.md#revokegrant) | **DELETE** /api/v1/access/grants/{id} | Revoke an access grant
 [*AdminApi*](doc/AdminApi.md) | [**getAdminDashboard**](doc/AdminApi.md#getadmindashboard) | **GET** /api/v1/admin/dashboard | Operational snapshot for the admin dashboard
 [*AdminApi*](doc/AdminApi.md) | [**getAdminHasUsers**](doc/AdminApi.md#getadminhasusers) | **GET** /api/v1/admin/has-users | Indicate whether any users exist in the platform
+[*AdminApi*](doc/AdminApi.md) | [**getAdminInstance**](doc/AdminApi.md#getadmininstance) | **GET** /api/v1/admin/instance | Public instance configuration (self-registration, email verification, SSO providers)
 [*CatalogApi*](doc/CatalogApi.md) | [**getContinueWatching**](doc/CatalogApi.md#getcontinuewatching) | **GET** /api/v1/home/continue-watching | List courses the requester is in the middle of
 [*CatalogApi*](doc/CatalogApi.md) | [**getCourse**](doc/CatalogApi.md#getcourse) | **GET** /api/v1/courses/{id} | Get a single course
 [*CatalogApi*](doc/CatalogApi.md) | [**getLatestLibraryScan**](doc/CatalogApi.md#getlatestlibraryscan) | **GET** /api/v1/libraries/{id}/scans/latest | Get the most recent scan for a library
@@ -138,6 +139,7 @@ Class | Method | HTTP request | Description
  - [HasUsersResponse](doc/HasUsersResponse.md)
  - [HealthStatus](doc/HealthStatus.md)
  - [HealthStatusDependencies](doc/HealthStatusDependencies.md)
+ - [InstanceConfigDto](doc/InstanceConfigDto.md)
  - [LessonDto](doc/LessonDto.md)
  - [LessonProgress](doc/LessonProgress.md)
  - [LessonProgressDto](doc/LessonProgressDto.md)
@@ -163,6 +165,7 @@ Class | Method | HTTP request | Description
  - [ScanError](doc/ScanError.md)
  - [ScanStatus](doc/ScanStatus.md)
  - [SectionDto](doc/SectionDto.md)
+ - [SsoProviderConfig](doc/SsoProviderConfig.md)
  - [StreamUrlDto](doc/StreamUrlDto.md)
  - [SubtitleDto](doc/SubtitleDto.md)
  - [UpdateBookmarkRequest](doc/UpdateBookmarkRequest.md)

@@ -392,6 +392,42 @@ export type HasUsersResponse = {
     hasUsers: boolean;
 };
 
+/**
+ * Public runtime configuration. Read once at app boot; cache for the session.
+ */
+export type InstanceConfigDto = {
+    /**
+     * When false, sign-up CTAs are hidden and /sign-up redirects to /sign-in.
+     */
+    selfRegistration: boolean;
+    /**
+     * When true, sign-up wizard renders the 6-digit-code step between account creation and library setup.
+     */
+    emailVerificationRequired: boolean;
+    /**
+     * Configured OAuth / SSO providers. Empty array in v1 — Better Auth's `genericOAuth` plugin lands in v2.
+     */
+    ssoProviders: Array<SsoProviderConfig>;
+};
+
+/**
+ * One configured SSO / OAuth provider, rendered as an SsoBlock button.
+ */
+export type SsoProviderConfig = {
+    /**
+     * Stable identifier (e.g. `google`, `github`, `okta-foo`). Emitted on click.
+     */
+    id: string;
+    /**
+     * Human-readable label (e.g. `Continue with Google`).
+     */
+    label: string;
+    /**
+     * IconCS glyph name (e.g. `mail`, `github`, `key`).
+     */
+    iconName: string;
+};
+
 export type HealthStatus = {
     status: DependencyStatus;
     /**
@@ -1038,6 +1074,22 @@ export type GetAdminHasUsersResponses = {
 };
 
 export type GetAdminHasUsersResponse = GetAdminHasUsersResponses[keyof GetAdminHasUsersResponses];
+
+export type GetAdminInstanceData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/instance';
+};
+
+export type GetAdminInstanceResponses = {
+    /**
+     * Public instance configuration
+     */
+    200: InstanceConfigDto;
+};
+
+export type GetAdminInstanceResponse = GetAdminInstanceResponses[keyof GetAdminInstanceResponses];
 
 export type DeleteBookmarkData = {
     body?: never;

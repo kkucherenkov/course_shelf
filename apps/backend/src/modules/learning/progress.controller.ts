@@ -7,7 +7,7 @@
  *
  * No business logic, no Prisma, no domain mapping here.
  */
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
 import { Session } from '../../common/auth/decorators';
@@ -32,6 +32,7 @@ export class ProgressController {
 
   /** POST /api/v1/progress/batch */
   @Post('batch')
+  @HttpCode(HttpStatus.OK)
   async recordProgressBatch(
     @Body() body: BatchProgressRequest,
     @Session() session: SessionContext,
@@ -52,6 +53,7 @@ export class ProgressController {
 
   /** POST /api/v1/progress */
   @Post()
+  @HttpCode(HttpStatus.OK)
   async recordProgress(
     @Body() body: RecordProgressRequest,
     @Session() session: SessionContext,

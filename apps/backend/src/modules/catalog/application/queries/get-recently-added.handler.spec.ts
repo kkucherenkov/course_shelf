@@ -104,9 +104,7 @@ describe('GetRecentlyAddedHandler', () => {
   describe('happy path', () => {
     it('returns items enriched with lesson stats', async () => {
       const course = makeCourse('course-1', NOW);
-      const statsMap = new Map([
-        ['course-1', { lessonCount: 5, totalDurationSeconds: 3600 }],
-      ]);
+      const statsMap = new Map([['course-1', { lessonCount: 5, totalDurationSeconds: 3600 }]]);
       const { handler } = makeHandler({ courses: [course], statsMap, allow: true });
       const result = await handler.execute(new GetRecentlyAddedQuery(ADMIN, 10));
 

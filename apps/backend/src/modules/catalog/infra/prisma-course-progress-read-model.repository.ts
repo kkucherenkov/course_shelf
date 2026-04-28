@@ -128,10 +128,7 @@ export class PrismaCourseProgressReadModelRepository implements CourseProgressRe
     await this.prisma.courseProgressReadModel.deleteMany();
   }
 
-  async findCompletedByUser(
-    userId: string,
-    limit: number,
-  ): Promise<CourseProgressReadModel[]> {
+  async findCompletedByUser(userId: string, limit: number): Promise<CourseProgressReadModel[]> {
     const rows = await this.prisma.courseProgressReadModel.findMany({
       where: {
         userId,

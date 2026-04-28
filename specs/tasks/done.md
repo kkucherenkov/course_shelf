@@ -2,6 +2,28 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-27-053 — Home page Stage A · web + Playwright half (E14-F01-S01 part 2 of 2)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: two commits on `feat/web-home-page` (`75e0a7d` style + `65190ea` feat) → PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/138 (closes #59). 3/3 Playwright tests pass; web lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E14-F01-S01.md`
+- Outcome: Stage A Home page composition lands on `apps/web/app/pages/index.vue`. Greeting (`AppAvatar` + role) + three `HomeRow`s (continue-watching, recently-added, recently-completed — collapsed by default) + right-rail `HomeYourWeek`. Two-column grid at viewport `> 1024px`, single column otherwise. Card sizing tuned so 1440 px shows ~5 `CourseWideCard`s and ~6 `CoursePosterCard`s per the card. Four states per row (loading skeleton, error + retry, empty, populated). `useHome.ts` exposes four `useAsyncData` composables wrapping the SDK; auth middleware now does a silent `auth.refresh()` on hard reload when a bearer token survived in localStorage but Pinia state is empty (production fix that also makes the e2e mocks round-trip without sign-in). Playwright e2e at three viewports (`1440x900`, `1024x768`, `375x800`) with `route()`-mocked endpoints — hermetic.
+- Notes / deferred:
+  - Bottom-tab nav at xs: `AppNavigationShell` already has the bar, but `default.vue` doesn't wrap children in the shell — migration deferred (cascades into auth/setup). E2e treats bottom-tab presence as conditional.
+  - `instructor` rendered as empty string until the SDK home-item DTOs grow the field.
+  - Card `accent` derived deterministically from `courseId` (small hash → fixed palette) since the SDK doesn't carry an accent column.
+
+## T-2026-04-27-052 — Home page Stage A · spec + backend half (E14-F01-S01 part 1 of 2)
+
+- Created: 2026-04-27
+- Completed: 2026-04-27
+- Result: two commits on `feat/web-home` (`e29298a` spec, `bb33650` backend) → PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/137 merged. Backend tests 696/698 (+30); lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E14-F01-S01.md`
+- Outcome: three new bearer-auth endpoints — `GET /home/recently-added` (Course ordered by createdAt DESC + authz; bulk lesson stats via `Lesson.groupBy`), `GET /home/recently-completed` (CourseProgressReadModel rows where `lessonsCompleted == lessonsTotal AND lessonsTotal > 0`; Prisma can't express column-to-column equality so the adapter pulls `limit*3` rows and filters in-process), `GET /home/your-week` (`[now - 7d, now)` window; `minutesWatched = SUM(positionSeconds)/60` floored; `$queryRaw` for the conditional aggregate). Schemas: `RecentlyAddedDto`/`Item`, `RecentlyCompletedDto`/`Item`, `YourWeekDto` + new `DateRange`. Generated `@app/api-client-{ts,dart}` re-emitted. Catalog → Learning boundary preserved via the existing `src/common/learning-progress/` shared-kernel re-export. `HomeController` extracted a local `parseLimit` helper.
+
 ## T-2026-04-27-051 — NoteEditor (E13-F02-S05)
 
 - Created: 2026-04-27

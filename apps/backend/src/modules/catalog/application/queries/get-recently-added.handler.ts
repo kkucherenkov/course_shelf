@@ -32,7 +32,10 @@ import type { LibraryId } from '../../../../common/access/authorization.service'
 import type { RecentlyAddedDto, RecentlyAddedItem } from '@app/api-client-ts';
 
 @QueryHandler(GetRecentlyAddedQuery)
-export class GetRecentlyAddedHandler implements IQueryHandler<GetRecentlyAddedQuery, RecentlyAddedDto> {
+export class GetRecentlyAddedHandler implements IQueryHandler<
+  GetRecentlyAddedQuery,
+  RecentlyAddedDto
+> {
   constructor(
     @Inject(COURSE_REPOSITORY) private readonly courseRepo: CourseRepository,
     @Inject(LESSON_REPOSITORY) private readonly lessonRepo: LessonRepository,

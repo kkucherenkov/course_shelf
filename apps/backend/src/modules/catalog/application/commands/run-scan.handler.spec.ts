@@ -40,6 +40,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { Course } from '../../domain/course/course';
+import { Lesson } from '../../domain/lesson/lesson';
 import { Library } from '../../domain/library/library';
 import { LibraryNotFoundError } from '../../domain/library/library.errors';
 import { Scan } from '../../domain/scan/scan';
@@ -47,6 +49,8 @@ import { ScanAlreadyRunningError } from '../../domain/scan/scan.errors';
 import { RunScanCommand } from './run-scan.command';
 import { RunScanHandler } from './run-scan.handler';
 
+import type { CourseRepository } from '../../domain/course/course.repository';
+import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { FfmpegAdapter, VideoMetadata } from '../../domain/scan/ffmpeg-adapter';
 import type { FsAdapter, FsEntry } from '../../domain/scan/fs-adapter';
 import type { LibraryRepository } from '../../domain/library/library.repository';
@@ -84,8 +88,9 @@ function makeScanRepo(): ScanRepository & { store: Map<string, Scan> } {
     }),
     findById: vi.fn(async (id: string) => store.get(id) ?? null),
     findLatestByLibrary: vi.fn(async (libraryId: string) => {
-      const all = [...store.values()].filter((s) => s.libraryId === libraryId);
-      all.sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
+      const all = [...store.values()]
+        .filter((s) => s.libraryId === libraryId)
+        .toSorted((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
       return all[0] ?? null;
     }),
     findRunningByLibrary: vi.fn(async (libraryId: string) => {
@@ -94,6 +99,53 @@ function makeScanRepo(): ScanRepository & { store: Map<string, Scan> } {
       }
       return null;
     }),
+  };
+}
+
+function makeCourseRepo(): CourseRepository & { store: Map<string, Course> } {
+  const store = new Map<string, Course>();
+  return {
+    store,
+    save: vi.fn(async (c: Course) => {
+      store.set(c.id, c);
+    }),
+    findById: vi.fn(async (id: string) => store.get(id) ?? null),
+    findManyByLibrary: vi.fn(async (libraryId: string) =>
+      [...store.values()].filter((c) => c.libraryId === libraryId),
+    ),
+    findAll: vi.fn(async () => [...store.values()]),
+    findByIds: vi.fn(async (ids: string[]) =>
+      ids.flatMap((id) => {
+        const c = store.get(id);
+        return c ? [c] : [];
+      }),
+    ),
+    findRecentlyAdded: vi.fn(async (limit: number) =>
+      [...store.values()]
+        .toSorted((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, limit),
+    ),
+  };
+}
+
+function makeLessonRepo(): LessonRepository & { store: Map<string, Lesson> } {
+  const store = new Map<string, Lesson>();
+  return {
+    store,
+    save: vi.fn(async (l: Lesson) => {
+      store.set(l.id, l);
+    }),
+    findById: vi.fn(async (id: string) => store.get(id) ?? null),
+    findByCourse: vi.fn(async (courseId: string) =>
+      [...store.values()].filter((l) => l.courseId === courseId),
+    ),
+    findBySection: vi.fn(async (sectionId: string) =>
+      [...store.values()].filter((l) => l.sectionId === sectionId),
+    ),
+    getLessonStatsByCourseIds: vi.fn(
+      async (courseIds: string[]) =>
+        new Map(courseIds.map((id) => [id, { lessonCount: 0, totalDurationSeconds: 0 }])),
+    ),
   };
 }
 
@@ -236,6 +288,8 @@ async function drainMicrotasks(): Promise<void> {
 describe('RunScanHandler', () => {
   let libraryRepo: LibraryRepository;
   let scanRepo: ReturnType<typeof makeScanRepo>;
+  let courseRepo: ReturnType<typeof makeCourseRepo>;
+  let lessonRepo: ReturnType<typeof makeLessonRepo>;
   let fs: FakeFsAdapter;
   let handler: RunScanHandler;
 
@@ -244,10 +298,14 @@ describe('RunScanHandler', () => {
     const lib = makeLibrary();
     libraryRepo = makeLibraryRepo(lib);
     scanRepo = makeScanRepo();
+    courseRepo = makeCourseRepo();
+    lessonRepo = makeLessonRepo();
     fs = new FakeFsAdapter(makeFixtureFiles());
     handler = new RunScanHandler(
       libraryRepo,
       scanRepo,
+      courseRepo,
+      lessonRepo,
       fs,
       makePassthroughFfmpeg(),
       makeFakeAppConfig(),
@@ -330,6 +388,8 @@ describe('RunScanHandler', () => {
     handler = new RunScanHandler(
       libraryRepo,
       scanRepo,
+      makeCourseRepo(),
+      makeLessonRepo(),
       badFs,
       makePassthroughFfmpeg(),
       makeFakeAppConfig(),
@@ -351,6 +411,8 @@ describe('RunScanHandler', () => {
     handler = new RunScanHandler(
       makeLibraryRepo(),
       scanRepo,
+      makeCourseRepo(),
+      makeLessonRepo(),
       fs,
       makePassthroughFfmpeg(),
       makeFakeAppConfig(),
@@ -380,6 +442,8 @@ describe('RunScanHandler', () => {
     handler = new RunScanHandler(
       libraryRepo,
       blockedScanRepo,
+      makeCourseRepo(),
+      makeLessonRepo(),
       fs,
       makePassthroughFfmpeg(),
       makeFakeAppConfig(),
@@ -430,6 +494,8 @@ describe('RunScanHandler', () => {
       const neovimHandler = new RunScanHandler(
         libraryRepo,
         neovimScanRepo,
+        makeCourseRepo(),
+        makeLessonRepo(),
         neovimFs,
         makePassthroughFfmpeg(),
         makeFakeAppConfig(),
@@ -494,6 +560,8 @@ describe('RunScanHandler', () => {
       const cacheHandler = new RunScanHandler(
         libraryRepo,
         cacheScanRepo,
+        makeCourseRepo(),
+        makeLessonRepo(),
         cacheFs,
         makePassthroughFfmpeg(),
         makeFakeAppConfig(),
@@ -536,6 +604,8 @@ describe('RunScanHandler', () => {
       const dotHandler = new RunScanHandler(
         libraryRepo,
         dotScanRepo,
+        makeCourseRepo(),
+        makeLessonRepo(),
         dotFs,
         makePassthroughFfmpeg(),
         makeFakeAppConfig(),
@@ -598,6 +668,8 @@ describe('RunScanHandler', () => {
       const ffHandler = new RunScanHandler(
         libraryRepo,
         ffScanRepo,
+        makeCourseRepo(),
+        makeLessonRepo(),
         ffFs,
         ffmpegAdapter,
         makeFakeAppConfig(),
@@ -640,6 +712,90 @@ describe('RunScanHandler', () => {
         (e) => e.code !== 'ffmpeg-thumbnail-failed' && e.code !== 'ffmpeg-probe-failed',
       );
       expect(unexpectedErrors).toHaveLength(0);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Persistence: courseRepo.save / lessonRepo.save are called with the right
+  // slugs and counts (fix/scanner-persists-courses).
+  // -------------------------------------------------------------------------
+  describe('catalog row persistence', () => {
+    it('saves 2 courses and 3 lessons on first scan of the fixture tree', async () => {
+      vi.useRealTimers();
+
+      const scan = await handler.execute(new RunScanCommand('lib-1'));
+      await drainMicrotasks();
+
+      const saved = scanRepo.store.get(scan.id)!;
+      expect(saved.status).toBe('succeeded');
+
+      // Two courses persisted.
+      expect(courseRepo.save).toHaveBeenCalledTimes(2);
+
+      const slugs = [...courseRepo.store.values()].map((c) => c.slug).toSorted();
+      // 'Course A from JSON' → 'course-a-from-json'
+      // '02 - Course B (no json)' → folder title → '02-course-b-no-json'  (parseFolderName strips the ordinal prefix but keeps the rest)
+      // Actually parseFolderName('02 - Course B (no json)') → { ordinal:2, label:'Course B (no json)' }
+      // toSlug('Course B (no json)') → 'course-b-no-json'
+      expect(slugs).toContain('course-a-from-json');
+      expect(slugs).toContain('course-b-no-json');
+
+      // Three lessons persisted (2 in Course A, 1 in Course B).
+      expect(lessonRepo.save).toHaveBeenCalledTimes(3);
+    });
+
+    it('course A sections: no sub-folders → synthetic "Lessons" section created', async () => {
+      vi.useRealTimers();
+
+      await handler.execute(new RunScanCommand('lib-1'));
+      await drainMicrotasks();
+
+      const courseA = [...courseRepo.store.values()].find((c) => c.slug === 'course-a-from-json')!;
+      expect(courseA).toBeDefined();
+      // Course A has no sub-folder sections in the fixture → synthetic 'Lessons' section.
+      expect(courseA.sections).toHaveLength(1);
+      expect(courseA.sections[0]!.title).toBe('Lessons');
+    });
+
+    it('lessons carry durationSeconds when ffprobe succeeded', async () => {
+      vi.useRealTimers();
+
+      await handler.execute(new RunScanCommand('lib-1'));
+      await drainMicrotasks();
+
+      // All lessons in the fixture get the default ffprobe result (60 s).
+      const lessons = [...lessonRepo.store.values()];
+      expect(lessons.every((l) => l.duration === 60)).toBe(true);
+    });
+
+    // -----------------------------------------------------------------------
+    // Idempotency: second scan on the same folder must NOT call courseRepo.save
+    // again for already-known slugs.
+    // -----------------------------------------------------------------------
+    it('second scan skips already-persisted courses (idempotency)', async () => {
+      vi.useRealTimers();
+
+      // First scan — persists both courses.
+      await handler.execute(new RunScanCommand('lib-1'));
+      await drainMicrotasks();
+
+      expect(courseRepo.save).toHaveBeenCalledTimes(2);
+      expect(lessonRepo.save).toHaveBeenCalledTimes(3);
+
+      // Second scan — same FS, same slugs → skip both courses.
+      await handler.execute(new RunScanCommand('lib-1'));
+      await drainMicrotasks();
+
+      // courseRepo.save must NOT have been called again.
+      expect(courseRepo.save).toHaveBeenCalledTimes(2);
+      // lessonRepo.save must NOT have been called again.
+      expect(lessonRepo.save).toHaveBeenCalledTimes(3);
+
+      // Scan aggregate still records coursesDiscovered (counter always bumped).
+      const scans = [...scanRepo.store.values()].toSorted(
+        (a, b) => b.startedAt.getTime() - a.startedAt.getTime(),
+      );
+      expect(scans[0]!.coursesDiscovered).toBe(2);
     });
   });
 });

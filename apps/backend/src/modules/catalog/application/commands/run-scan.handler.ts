@@ -32,12 +32,20 @@ import path from 'node:path';
 import { stat } from 'node:fs/promises';
 
 import { AppConfig } from '../../../../common/config/app-config';
+import { Course } from '../../domain/course/course';
+import { CourseSlugAlreadyTakenError } from '../../domain/course/course.errors';
+import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
+import { Lesson } from '../../domain/lesson/lesson';
+import { MaterialKindUnsupportedError } from '../../domain/lesson/lesson.errors';
+import { Material } from '../../domain/lesson/material';
+import { LESSON_REPOSITORY } from '../../domain/lesson/lesson.repository';
+import { Subtitle } from '../../domain/lesson/subtitle';
 import { LibraryNotFoundError } from '../../domain/library/library.errors';
 import { LIBRARY_REPOSITORY } from '../../domain/library/library.repository';
 import { parseCourseJson } from '../../domain/scan/course-json.schema';
 import { FFMPEG_ADAPTER } from '../../domain/scan/ffmpeg-adapter';
 import { FS_ADAPTER } from '../../domain/scan/fs-adapter';
-import { parseFolderName } from '../../domain/scan/folder-name.parser';
+import { parseFolderName, parseLessonFileName } from '../../domain/scan/folder-name.parser';
 import { stemMatch } from '../../domain/scan/stem-match';
 import { Scan } from '../../domain/scan/scan';
 import { ScanAlreadyRunningError } from '../../domain/scan/scan.errors';
@@ -46,6 +54,8 @@ import { SCAN_REPOSITORY } from '../../domain/scan/scan.repository';
 import { RunScanCommand } from './run-scan.command';
 
 import type { FfmpegAdapter, VideoMetadata } from '../../domain/scan/ffmpeg-adapter';
+import type { CourseRepository } from '../../domain/course/course.repository';
+import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { LibraryRepository } from '../../domain/library/library.repository';
 import type { FsAdapter } from '../../domain/scan/fs-adapter';
 import type { ScanRepository } from '../../domain/scan/scan.repository';
@@ -56,11 +66,42 @@ import type {
   ScannedSubtitle,
 } from '../../domain/scan/scan';
 
+// ---------------------------------------------------------------------------
+// Slug helper
+//
+// Converts a human-readable folder/course title to a URL-safe slug that
+// satisfies the Slug value-object regex: lowercase alphanum + hyphens, no
+// leading/trailing hyphen, max 100 chars.
+//
+// Algorithm:
+//   1. Lower-case the whole string.
+//   2. Replace any run of non-alphanumeric characters (spaces, dots, underscores,
+//      parentheses, etc.) with a single hyphen.
+//   3. Strip leading/trailing hyphens.
+//   4. Truncate to 100 chars, then strip any newly-trailing hyphen.
+//
+// Examples:
+//   'Pragmatic Clean Architecture'  → 'pragmatic-clean-architecture'
+//   '01 - NestJS: Basics & Beyond'  → '01-nestjs-basics-beyond'
+//   '02 - Course B (no json)'       → '02-course-b-no-json'
+// ---------------------------------------------------------------------------
+function toSlug(title: string): string {
+  const raw = title
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, '-')
+    .replaceAll(/^-+|-+$/g, '')
+    .slice(0, 100)
+    .replaceAll(/-+$/g, '');
+  return raw === '' ? 'untitled' : raw;
+}
+
 @CommandHandler(RunScanCommand)
 export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
   constructor(
     @Inject(LIBRARY_REPOSITORY) private readonly libraryRepo: LibraryRepository,
     @Inject(SCAN_REPOSITORY) private readonly scanRepo: ScanRepository,
+    @Inject(COURSE_REPOSITORY) private readonly courseRepo: CourseRepository,
+    @Inject(LESSON_REPOSITORY) private readonly lessonRepo: LessonRepository,
     @Inject(FS_ADAPTER) private readonly fs: FsAdapter,
     @Inject(FFMPEG_ADAPTER) private readonly ffmpeg: FfmpegAdapter,
     private readonly appConfig: AppConfig,
@@ -91,7 +132,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
     // 5. Fire-and-forget the actual walk.
     // NOTE: v2 will move this to a BullMQ background worker.
     Promise.resolve()
-      .then(() => this.runWalk(scan, library.rootPath, prevFileMap))
+      .then(() => this.runWalk(scan, library.id, library.rootPath, prevFileMap))
       .catch(() => {
         // runWalk handles all errors internally and persists the terminal state.
         // This catch is a belt-and-suspenders guard for truly unexpected throws.
@@ -106,6 +147,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
 
   private async runWalk(
     scan: Scan,
+    libraryId: string,
     rootPath: string,
     prevFileMap: Map<string, { mtime: Date; size: number }>,
   ): Promise<void> {
@@ -137,6 +179,12 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           size: entry.size,
         });
       }
+
+      // Load existing courses for this library once, upfront, so the
+      // idempotency check (skip if slug already known) is a Map lookup
+      // rather than a per-course DB round-trip.
+      const existingCourses = await this.courseRepo.findManyByLibrary(libraryId);
+      const existingSlugSet = new Set(existingCourses.map((c) => c.slug));
 
       // Process each course folder.
       for (const [folderName, files] of courseEntries) {
@@ -411,6 +459,144 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
             lessonFiles,
             discoveredLessons,
           });
+
+          // -------------------------------------------------------------------
+          // Persist Course + Section + Lesson rows.
+          //
+          // Idempotency strategy: SKIP on duplicate slug (v1).
+          // WHY skip rather than update: re-importing would clobber user-renamed
+          // metadata (e.g. a user renamed the course title via the API). The
+          // user's edit wins. A future story can add a --force-resync flag.
+          // -------------------------------------------------------------------
+          const slug = toSlug(courseTitle);
+
+          if (existingSlugSet.has(slug)) {
+            // Course already persisted from a previous scan — do not overwrite.
+            continue;
+          }
+
+          try {
+            // Build Course aggregate with sections.
+            // When the course has no sub-folder sections (flat layout: all
+            // videos directly inside the course folder), a synthetic "Lessons"
+            // section is created so every lesson has a valid sectionId.
+            const sectionTitleList = sectionSet.size > 0 ? [...sectionSet] : ['Lessons'];
+            const course = Course.create({
+              id: nanoid(),
+              libraryId,
+              slug,
+              title: courseTitle,
+            });
+            for (const [i, sectionTitle] of sectionTitleList.entries()) {
+              course.addSection({ id: nanoid(), title: sectionTitle, position: i + 1 });
+            }
+            await this.courseRepo.save(course);
+
+            // Mark slug as known so subsequent folders in the same scan with
+            // the same slug are also skipped (edge case — two folders that
+            // normalise to the same slug).
+            existingSlugSet.add(slug);
+
+            // Build a title → sectionId lookup from the freshly-created sections.
+            const sectionIdByTitle = new Map<string, string>(
+              course.sections.map((s) => [s.title, s.id]),
+            );
+
+            // Persist each discovered lesson.
+            for (const entry of discoveredLessons) {
+              const videoBasename = path.basename(entry.videoPath);
+              const relFromCourse = path.relative(courseFolder, entry.videoPath);
+              const relSegments = relFromCourse.split(/[/\\]/);
+
+              // Determine which section this lesson belongs to.
+              let sectionId: string;
+              let lessonPosition: number;
+              let lessonTitle: string;
+
+              if (relSegments.length > 1) {
+                // Lesson is inside a sub-folder (section folder).
+                const sectionFolder = relSegments[0] ?? '';
+                const { label: sectionLabel } = parseFolderName(sectionFolder);
+                sectionId = sectionIdByTitle.get(sectionLabel) ?? '';
+
+                const parsed = parseLessonFileName(videoBasename);
+                lessonPosition = parsed.ordinal ?? 1;
+                lessonTitle = parsed.label;
+              } else {
+                // Flat layout — all videos directly in the course folder.
+                // A synthetic "Lessons" section was added above; it is
+                // always sections[0] in this branch.
+                sectionId = course.sections[0]?.id ?? '';
+
+                const parsed = parseLessonFileName(videoBasename);
+                lessonPosition = parsed.ordinal ?? 1;
+                lessonTitle = parsed.label;
+              }
+
+              if (!sectionId) {
+                // Could not resolve a section — record non-fatal error and skip.
+                scan.recordError({
+                  path: path.relative(rootPath, entry.videoPath),
+                  message: 'Could not resolve a section for this lesson during materialisation.',
+                  code: 'lesson-section-unresolvable',
+                });
+                continue;
+              }
+
+              try {
+                const lesson = Lesson.create({
+                  id: nanoid(),
+                  courseId: course.id,
+                  sectionId,
+                  position: lessonPosition,
+                  title: lessonTitle,
+                  videoPath: entry.videoPath,
+                  mtime: entry.mtime,
+                  sizeBytes: entry.sizeBytes,
+                });
+
+                if (entry.metadata !== undefined) {
+                  lesson.setDuration(entry.metadata.durationSeconds);
+                }
+
+                for (const m of entry.materials) {
+                  try {
+                    lesson.addMaterial(
+                      Material.fromFile({ id: nanoid(), path: m.path, sizeBytes: m.sizeBytes }),
+                    );
+                  } catch (error) {
+                    if (error instanceof MaterialKindUnsupportedError) {
+                      // Already reported as unsupported-extension during scan walk; skip silently.
+                    } else {
+                      throw error;
+                    }
+                  }
+                }
+
+                for (const s of entry.subtitles) {
+                  lesson.addSubtitle(Subtitle.fromFile({ id: nanoid(), path: s.path }));
+                }
+
+                await this.lessonRepo.save(lesson);
+              } catch (error) {
+                scan.recordError({
+                  path: path.relative(rootPath, entry.videoPath),
+                  message: error instanceof Error ? error.message : String(error),
+                  code: 'lesson-persist-failed',
+                });
+              }
+            }
+          } catch (error) {
+            if (error instanceof CourseSlugAlreadyTakenError) {
+              // Race condition between two concurrent scans — treat as idempotent skip.
+            } else {
+              scan.recordError({
+                path: courseFolder,
+                message: error instanceof Error ? error.message : String(error),
+                code: 'course-persist-failed',
+              });
+            }
+          }
         }
       }
 

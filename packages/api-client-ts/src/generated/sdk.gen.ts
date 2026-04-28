@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseErrors, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses } from './types.gen';
+import type { CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -183,6 +183,67 @@ export const updateCourse = <ThrowOnError extends boolean = false>(options: Opti
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Full course outline — sections, lessons (lite), and aggregated materials
+ *
+ * Single round-trip endpoint feeding the Course detail page. Returns
+ * the course summary, every section with its lesson list (lightweight:
+ * title, duration, hasMaterials, per-user progress), and a flat list of
+ * course-level materials aggregated across all lessons. The dedicated
+ * outline avoids N+1 page fetches and never returns full LessonDtos
+ * (which would inflate the payload with subtitle tracks the page
+ * does not render).
+ *
+ * Reads `Course` + `Section` + `Lesson` + `Material` + `LessonProgress`
+ * (filtered to the requester) + `CourseProgressReadModel` (for the
+ * aggregate progress percent).
+ *
+ */
+export const getCourseOutline = <ThrowOnError extends boolean = false>(options: Options<GetCourseOutlineData, ThrowOnError>) => (options.client ?? client).get<GetCourseOutlineResponses, GetCourseOutlineErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/courses/{id}/outline',
+    ...options
+});
+
+/**
+ * Mark every lesson in the course as completed for the requester
+ *
+ * Bulk-marks every lesson in the course as completed for the
+ * requester. Idempotent — a second call is a no-op. Returns the
+ * refreshed `CourseOutlineDto` so the caller does not have to issue
+ * a separate GET.
+ *
+ * Implementation note: the handler upserts `LessonProgress` rows
+ * with `completed: true`, `completedAt: now`, and
+ * `positionSeconds: durationSeconds`. `CourseProgressReadModel` is
+ * kept in sync via the `LessonCompleted` event handler.
+ *
+ */
+export const markCourseComplete = <ThrowOnError extends boolean = false>(options: Options<MarkCourseCompleteData, ThrowOnError>) => (options.client ?? client).post<MarkCourseCompleteResponses, MarkCourseCompleteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/courses/{id}/mark-complete',
+    ...options
+});
+
+/**
+ * Clear every progress row in the course for the requester
+ *
+ * Deletes every `LessonProgress` row for (requester, course).
+ * Idempotent — a second call is a no-op. Returns the refreshed
+ * `CourseOutlineDto` so the caller does not have to issue a
+ * separate GET.
+ *
+ * `CourseProgressReadModel` is kept in sync via the
+ * `LessonProgressReset` event handler (or rebuilt directly when
+ * no events are emitted on delete).
+ *
+ */
+export const resetCourseProgress = <ThrowOnError extends boolean = false>(options: Options<ResetCourseProgressData, ThrowOnError>) => (options.client ?? client).post<ResetCourseProgressResponses, ResetCourseProgressErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/courses/{id}/reset-progress',
+    ...options
 });
 
 /**

@@ -55,6 +55,40 @@ export interface LessonProgressRepository {
     from: Date,
     to: Date,
   ): Promise<{ minutesWatched: number; lessonsCompleted: number }>;
+
+  /**
+   * Return all LessonProgress rows for a (userId, lessonIds[]) combination.
+   * Used by the course-outline query handler to derive per-lesson state without
+   * an N+1 query. Returns only rows that actually exist.
+   *
+   * Added for the course-outline query handler (E14-F01-S03).
+   */
+  findManyByUserAndLessons(userId: string, lessonIds: string[]): Promise<LessonProgress[]>;
+
+  /**
+   * Bulk-upsert completed progress rows for every lesson in the list.
+   *
+   * For each lesson:
+   *   - If a row already exists and completed = true: preserve completedAt
+   *     (progress history is honest), set positionSeconds = lesson.durationSeconds ?? 0, percent = 100.
+   *   - If no row exists or completed = false: insert/update with
+   *     completed = true, completedAt = now, positionSeconds = lesson.durationSeconds ?? 0, percent = 100.
+   *
+   * Idempotent: calling twice produces the same rows.
+   * Added for MarkCourseCompleteCommand (E14-F01-S03).
+   */
+  bulkUpsertCompleted(
+    userId: string,
+    lessons: readonly { id: string; durationSeconds: number | undefined }[],
+    now: Date,
+  ): Promise<void>;
+
+  /**
+   * Delete every LessonProgress row for (userId, courseId).
+   * Idempotent: safe to call when no rows exist.
+   * Added for ResetCourseProgressCommand (E14-F01-S03).
+   */
+  deleteAllByUserAndCourse(userId: string, courseId: string): Promise<void>;
 }
 
 /** Nest DI injection token — Symbol prevents collisions with class-name strings. */

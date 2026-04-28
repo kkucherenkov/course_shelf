@@ -45,6 +45,7 @@ function makeProgressRepo(
     findManyByCourseIdsForUser: vi.fn(),
     deleteAll: vi.fn(),
     findCompletedByUser: vi.fn(),
+    deleteByUserAndCourse: vi.fn(),
   };
 }
 

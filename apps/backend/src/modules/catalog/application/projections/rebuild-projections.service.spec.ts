@@ -57,6 +57,9 @@ function makeProgressRepo(opts: {
       .mockResolvedValue(opts.pairs ?? [{ userId: 'user-1', courseId: 'course-1' }]),
     findLatestByUserAndCourse: vi.fn().mockResolvedValue(latestValue),
     aggregateForUserRange: vi.fn(),
+    findManyByUserAndLessons: vi.fn(),
+    bulkUpsertCompleted: vi.fn(),
+    deleteAllByUserAndCourse: vi.fn(),
   };
 }
 
@@ -68,6 +71,7 @@ function makeReadModelRepo(): CourseProgressReadModelRepository {
     findManyByCourseIdsForUser: vi.fn(),
     deleteAll: vi.fn().mockResolvedValue(undefined),
     findCompletedByUser: vi.fn(),
+    deleteByUserAndCourse: vi.fn(),
   };
 }
 

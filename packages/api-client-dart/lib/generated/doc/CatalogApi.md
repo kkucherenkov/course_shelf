@@ -11,6 +11,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**getContinueWatching**](CatalogApi.md#getcontinuewatching) | **GET** /api/v1/home/continue-watching | List courses the requester is in the middle of
 [**getCourse**](CatalogApi.md#getcourse) | **GET** /api/v1/courses/{id} | Get a single course
+[**getCourseOutline**](CatalogApi.md#getcourseoutline) | **GET** /api/v1/courses/{id}/outline | Full course outline — sections, lessons (lite), and aggregated materials
 [**getLatestLibraryScan**](CatalogApi.md#getlatestlibraryscan) | **GET** /api/v1/libraries/{id}/scans/latest | Get the most recent scan for a library
 [**getLesson**](CatalogApi.md#getlesson) | **GET** /api/v1/lessons/{id} | Get a lesson with its materials and subtitles
 [**getLibrary**](CatalogApi.md#getlibrary) | **GET** /api/v1/libraries/{id} | Get a library by id
@@ -98,6 +99,49 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**CourseDto**](CourseDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getCourseOutline**
+> CourseOutlineDto getCourseOutline(id)
+
+Full course outline — sections, lessons (lite), and aggregated materials
+
+Single round-trip endpoint feeding the Course detail page. Returns the course summary, every section with its lesson list (lightweight: title, duration, hasMaterials, per-user progress), and a flat list of course-level materials aggregated across all lessons. The dedicated outline avoids N+1 page fetches and never returns full LessonDtos (which would inflate the payload with subtitle tracks the page does not render).  Reads `Course` + `Section` + `Lesson` + `Material` + `LessonProgress` (filtered to the requester) + `CourseProgressReadModel` (for the aggregate progress percent). 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String id = id_example; // String | Server-generated cuid identifying the course.
+
+try {
+    final response = api.getCourseOutline(id);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->getCourseOutline: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the course. | 
+
+### Return type
+
+[**CourseOutlineDto**](CourseOutlineDto.md)
 
 ### Authorization
 

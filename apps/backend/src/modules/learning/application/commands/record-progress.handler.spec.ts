@@ -49,6 +49,9 @@ function makeProgressRepo(existing: LessonProgress | null = null): LessonProgres
     findAllUserCoursePairs: vi.fn().mockResolvedValue([]),
     findLatestByUserAndCourse: vi.fn().mockResolvedValue(null),
     aggregateForUserRange: vi.fn(),
+    findManyByUserAndLessons: vi.fn(),
+    bulkUpsertCompleted: vi.fn(),
+    deleteAllByUserAndCourse: vi.fn(),
   };
 }
 

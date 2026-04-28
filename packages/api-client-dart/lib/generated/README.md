@@ -83,6 +83,7 @@ Class | Method | HTTP request | Description
 [*AdminApi*](doc/AdminApi.md) | [**getAdminInstance**](doc/AdminApi.md#getadmininstance) | **GET** /api/v1/admin/instance | Public instance configuration (self-registration, email verification, SSO providers)
 [*CatalogApi*](doc/CatalogApi.md) | [**getContinueWatching**](doc/CatalogApi.md#getcontinuewatching) | **GET** /api/v1/home/continue-watching | List courses the requester is in the middle of
 [*CatalogApi*](doc/CatalogApi.md) | [**getCourse**](doc/CatalogApi.md#getcourse) | **GET** /api/v1/courses/{id} | Get a single course
+[*CatalogApi*](doc/CatalogApi.md) | [**getCourseOutline**](doc/CatalogApi.md#getcourseoutline) | **GET** /api/v1/courses/{id}/outline | Full course outline — sections, lessons (lite), and aggregated materials
 [*CatalogApi*](doc/CatalogApi.md) | [**getLatestLibraryScan**](doc/CatalogApi.md#getlatestlibraryscan) | **GET** /api/v1/libraries/{id}/scans/latest | Get the most recent scan for a library
 [*CatalogApi*](doc/CatalogApi.md) | [**getLesson**](doc/CatalogApi.md#getlesson) | **GET** /api/v1/lessons/{id} | Get a lesson with its materials and subtitles
 [*CatalogApi*](doc/CatalogApi.md) | [**getLibrary**](doc/CatalogApi.md#getlibrary) | **GET** /api/v1/libraries/{id} | Get a library by id
@@ -100,8 +101,10 @@ Class | Method | HTTP request | Description
 [*LearningApi*](doc/LearningApi.md) | [**getLessonProgress**](doc/LearningApi.md#getlessonprogress) | **GET** /api/v1/progress/{lessonId} | Get the requester&#39;s progress on a lesson
 [*LearningApi*](doc/LearningApi.md) | [**getNote**](doc/LearningApi.md#getnote) | **GET** /api/v1/notes/{lessonId} | Get the requester&#39;s note for a lesson
 [*LearningApi*](doc/LearningApi.md) | [**listLessonBookmarks**](doc/LearningApi.md#listlessonbookmarks) | **GET** /api/v1/lessons/{lessonId}/bookmarks | List the requester&#39;s bookmarks for a lesson
+[*LearningApi*](doc/LearningApi.md) | [**markCourseComplete**](doc/LearningApi.md#markcoursecomplete) | **POST** /api/v1/courses/{id}/mark-complete | Mark every lesson in the course as completed for the requester
 [*LearningApi*](doc/LearningApi.md) | [**recordLessonProgress**](doc/LearningApi.md#recordlessonprogress) | **POST** /api/v1/progress | Record (upsert) the requester&#39;s progress on a lesson
 [*LearningApi*](doc/LearningApi.md) | [**recordLessonProgressBatch**](doc/LearningApi.md#recordlessonprogressbatch) | **POST** /api/v1/progress/batch | Record up to 200 progress updates in a single call
+[*LearningApi*](doc/LearningApi.md) | [**resetCourseProgress**](doc/LearningApi.md#resetcourseprogress) | **POST** /api/v1/courses/{id}/reset-progress | Clear every progress row in the course for the requester
 [*LearningApi*](doc/LearningApi.md) | [**updateBookmark**](doc/LearningApi.md#updatebookmark) | **PATCH** /api/v1/bookmarks/{id} | Update a bookmark&#39;s position or label
 [*LearningApi*](doc/LearningApi.md) | [**upsertNote**](doc/LearningApi.md#upsertnote) | **PUT** /api/v1/notes | Upsert the requester&#39;s note for a lesson
 [*OpsApi*](doc/OpsApi.md) | [**ping**](doc/OpsApi.md#ping) | **GET** /api/v1/ping | Verify the bearer token resolves a session
@@ -129,6 +132,9 @@ Class | Method | HTTP request | Description
  - [ContinueWatchingItem](doc/ContinueWatchingItem.md)
  - [CourseDto](doc/CourseDto.md)
  - [CourseListDto](doc/CourseListDto.md)
+ - [CourseMaterialItem](doc/CourseMaterialItem.md)
+ - [CourseOutlineDto](doc/CourseOutlineDto.md)
+ - [CourseOutlineSummary](doc/CourseOutlineSummary.md)
  - [CourseProgress](doc/CourseProgress.md)
  - [CourseTarget](doc/CourseTarget.md)
  - [CreateBookmarkRequest](doc/CreateBookmarkRequest.md)
@@ -141,6 +147,7 @@ Class | Method | HTTP request | Description
  - [HealthStatusDependencies](doc/HealthStatusDependencies.md)
  - [InstanceConfigDto](doc/InstanceConfigDto.md)
  - [LessonDto](doc/LessonDto.md)
+ - [LessonOutlineItem](doc/LessonOutlineItem.md)
  - [LessonProgress](doc/LessonProgress.md)
  - [LessonProgressDto](doc/LessonProgressDto.md)
  - [LibraryDto](doc/LibraryDto.md)
@@ -165,6 +172,7 @@ Class | Method | HTTP request | Description
  - [ScanError](doc/ScanError.md)
  - [ScanStatus](doc/ScanStatus.md)
  - [SectionDto](doc/SectionDto.md)
+ - [SectionOutline](doc/SectionOutline.md)
  - [SsoProviderConfig](doc/SsoProviderConfig.md)
  - [StreamUrlDto](doc/StreamUrlDto.md)
  - [SubtitleDto](doc/SubtitleDto.md)

@@ -20,6 +20,7 @@
   } from '~/composables/useHome';
 
   import { useAuthStore } from '~/stores/auth';
+  import { accentFromId } from '~/utils/course-accent';
 
   definePageMeta({ layout: 'default' });
 
@@ -61,16 +62,6 @@
   const completedExpanded = ref(false);
 
   // ── Course data mapping helpers ─────────────────────────────────────────────
-
-  // SDK items don't carry an `accent` field, so we deterministically derive
-  // one from the courseId hash to keep card colours stable per course.
-  const ACCENTS = ['teal', 'amber', 'indigo', 'warm', 'coral', 'neutral'] as const;
-
-  function accentFromId(id: string): Course['accent'] {
-    let h = 0;
-    for (let i = 0; i < id.length; i++) h = (h * 31 + (id.codePointAt(i) ?? 0)) >>> 0;
-    return ACCENTS[h % ACCENTS.length] ?? 'neutral';
-  }
 
   function continueWatchingToCourse(item: ContinueWatchingItem): Course {
     return {

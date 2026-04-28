@@ -15,8 +15,10 @@ Method | HTTP request | Description
 [**getLessonProgress**](LearningApi.md#getlessonprogress) | **GET** /api/v1/progress/{lessonId} | Get the requester&#39;s progress on a lesson
 [**getNote**](LearningApi.md#getnote) | **GET** /api/v1/notes/{lessonId} | Get the requester&#39;s note for a lesson
 [**listLessonBookmarks**](LearningApi.md#listlessonbookmarks) | **GET** /api/v1/lessons/{lessonId}/bookmarks | List the requester&#39;s bookmarks for a lesson
+[**markCourseComplete**](LearningApi.md#markcoursecomplete) | **POST** /api/v1/courses/{id}/mark-complete | Mark every lesson in the course as completed for the requester
 [**recordLessonProgress**](LearningApi.md#recordlessonprogress) | **POST** /api/v1/progress | Record (upsert) the requester&#39;s progress on a lesson
 [**recordLessonProgressBatch**](LearningApi.md#recordlessonprogressbatch) | **POST** /api/v1/progress/batch | Record up to 200 progress updates in a single call
+[**resetCourseProgress**](LearningApi.md#resetcourseprogress) | **POST** /api/v1/courses/{id}/reset-progress | Clear every progress row in the course for the requester
 [**updateBookmark**](LearningApi.md#updatebookmark) | **PATCH** /api/v1/bookmarks/{id} | Update a bookmark&#39;s position or label
 [**upsertNote**](LearningApi.md#upsertnote) | **PUT** /api/v1/notes | Upsert the requester&#39;s note for a lesson
 
@@ -279,6 +281,49 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **markCourseComplete**
+> CourseOutlineDto markCourseComplete(id)
+
+Mark every lesson in the course as completed for the requester
+
+Bulk-marks every lesson in the course as completed for the requester. Idempotent — a second call is a no-op. Returns the refreshed `CourseOutlineDto` so the caller does not have to issue a separate GET.  Implementation note: the handler upserts `LessonProgress` rows with `completed: true`, `completedAt: now`, and `positionSeconds: durationSeconds`. `CourseProgressReadModel` is kept in sync via the `LessonCompleted` event handler. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String id = id_example; // String | Server-generated cuid identifying the course.
+
+try {
+    final response = api.markCourseComplete(id);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->markCourseComplete: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the course. | 
+
+### Return type
+
+[**CourseOutlineDto**](CourseOutlineDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **recordLessonProgress**
 > LessonProgressDto recordLessonProgress(recordProgressRequest)
 
@@ -361,6 +406,49 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
  - **Content-Type**: application/json
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **resetCourseProgress**
+> CourseOutlineDto resetCourseProgress(id)
+
+Clear every progress row in the course for the requester
+
+Deletes every `LessonProgress` row for (requester, course). Idempotent — a second call is a no-op. Returns the refreshed `CourseOutlineDto` so the caller does not have to issue a separate GET.  `CourseProgressReadModel` is kept in sync via the `LessonProgressReset` event handler (or rebuilt directly when no events are emitted on delete). 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String id = id_example; // String | Server-generated cuid identifying the course.
+
+try {
+    final response = api.resetCourseProgress(id);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->resetCourseProgress: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the course. | 
+
+### Return type
+
+[**CourseOutlineDto**](CourseOutlineDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
  - **Accept**: application/json, application/problem+json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

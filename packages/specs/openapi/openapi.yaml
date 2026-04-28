@@ -877,6 +877,163 @@ paths:
                     status: 409
                     detail: A course with slug 'pragmatic-clean-architecture-2nd-ed' already exists in this library.
 
+  /api/v1/courses/{id}/outline:
+    get:
+      operationId: getCourseOutline
+      summary: Full course outline — sections, lessons (lite), and aggregated materials
+      description: |
+        Single round-trip endpoint feeding the Course detail page. Returns
+        the course summary, every section with its lesson list (lightweight:
+        title, duration, hasMaterials, per-user progress), and a flat list of
+        course-level materials aggregated across all lessons. The dedicated
+        outline avoids N+1 page fetches and never returns full LessonDtos
+        (which would inflate the payload with subtitle tracks the page
+        does not render).
+
+        Reads `Course` + `Section` + `Lesson` + `Material` + `LessonProgress`
+        (filtered to the requester) + `CourseProgressReadModel` (for the
+        aggregate progress percent).
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the course.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Course outline returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CourseOutlineDto"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have a READ grant for the course's library
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Course not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /api/v1/courses/{id}/mark-complete:
+    post:
+      operationId: markCourseComplete
+      summary: Mark every lesson in the course as completed for the requester
+      description: |
+        Bulk-marks every lesson in the course as completed for the
+        requester. Idempotent — a second call is a no-op. Returns the
+        refreshed `CourseOutlineDto` so the caller does not have to issue
+        a separate GET.
+
+        Implementation note: the handler upserts `LessonProgress` rows
+        with `completed: true`, `completedAt: now`, and
+        `positionSeconds: durationSeconds`. `CourseProgressReadModel` is
+        kept in sync via the `LessonCompleted` event handler.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the course.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Every lesson marked complete; refreshed outline returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CourseOutlineDto"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: Caller does not have a READ grant for the course's library
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Course not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /api/v1/courses/{id}/reset-progress:
+    post:
+      operationId: resetCourseProgress
+      summary: Clear every progress row in the course for the requester
+      description: |
+        Deletes every `LessonProgress` row for (requester, course).
+        Idempotent — a second call is a no-op. Returns the refreshed
+        `CourseOutlineDto` so the caller does not have to issue a
+        separate GET.
+
+        `CourseProgressReadModel` is kept in sync via the
+        `LessonProgressReset` event handler (or rebuilt directly when
+        no events are emitted on delete).
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the course.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Progress cleared; refreshed outline returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CourseOutlineDto"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: Caller does not have a READ grant for the course's library
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Course not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
   /api/v1/home/continue-watching:
     get:
       operationId: getContinueWatching
@@ -2990,6 +3147,164 @@ components:
               lessonsTotal: 18
             createdAt: "2026-04-25T09:05:00Z"
             updatedAt: "2026-04-25T09:05:00Z"
+
+    CourseOutlineDto:
+      type: object
+      required: [course, sections, materials]
+      description: >-
+        Page-shaped projection of a course — enough data to render the Course
+        detail screen in one round-trip. Aggregates sections, lessons (lite),
+        and course-level materials with the requester's progress applied.
+      properties:
+        course:
+          $ref: "#/components/schemas/CourseOutlineSummary"
+        sections:
+          type: array
+          description: Sections sorted by position.
+          items:
+            $ref: "#/components/schemas/SectionOutline"
+        materials:
+          type: array
+          description: >-
+            Course-level materials, deduplicated and aggregated across every
+            lesson in the course. Empty array when no lesson carries
+            materials.
+          items:
+            $ref: "#/components/schemas/CourseMaterialItem"
+
+    CourseOutlineSummary:
+      type: object
+      required: [id, title, lessonsTotal, totalDurationSeconds, progress, createdAt, updatedAt]
+      description: Course-level fields surfaced in the page hero.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid identifying the course.
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        slug:
+          type: string
+        description:
+          type: ["string", "null"]
+          description: Long-form description rendered under the title.
+        instructor:
+          type: ["string", "null"]
+          description: >-
+            Visible "by …" label. Optional — may be null until the catalog
+            DTO grows the field.
+        librarySlug:
+          type: string
+          description: >-
+            Slug of the parent library, included for breadcrumbs. Optional
+            because Library has no slug field yet (same caveat as
+            ContinueWatchingItem).
+        lessonsTotal:
+          type: integer
+          minimum: 0
+        totalDurationSeconds:
+          type: integer
+          minimum: 0
+          description: Sum of `Lesson.duration` across the course (whole seconds).
+        progress:
+          $ref: "#/components/schemas/CourseProgress"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SectionOutline:
+      type: object
+      required: [id, position, title, totalDurationSeconds, lessons]
+      description: One section in the outline, with its lesson list inline.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid identifying this section.
+        position:
+          type: integer
+          minimum: 1
+          description: 1-based position within the course.
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        totalDurationSeconds:
+          type: integer
+          minimum: 0
+          description: Sum of `Lesson.duration` across this section's lessons.
+        lessons:
+          type: array
+          description: Lessons sorted by position.
+          items:
+            $ref: "#/components/schemas/LessonOutlineItem"
+
+    LessonOutlineItem:
+      type: object
+      required:
+        - id
+        - position
+        - title
+        - durationSeconds
+        - hasMaterials
+        - state
+        - progressPercent
+      description: >-
+        Lightweight per-lesson row for the Course detail outline. Maps 1:1 to
+        the AppLessonRow component's props.
+      properties:
+        id:
+          type: string
+        position:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        durationSeconds:
+          type: integer
+          minimum: 0
+        hasMaterials:
+          type: boolean
+          description: Whether the lesson has at least one sidecar material.
+        state:
+          type: string
+          enum: [not-started, in-progress, completed, locked]
+          description: >-
+            Per-user lesson state. Derived: `completed` when the
+            `LessonProgress` row has `completed: true`; `in-progress` when
+            it has progress but is not complete; `locked` when the
+            requester does not hold a READ grant on the course's library
+            (defensive — usually the whole course 403s before this);
+            `not-started` otherwise.
+        progressPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: 0..100 — only meaningful when `state === 'in-progress'`.
+
+    CourseMaterialItem:
+      type: object
+      required: [id, lessonId, kind, label, sizeBytes]
+      description: One sidecar material aggregated at the course level.
+      properties:
+        id:
+          type: string
+        lessonId:
+          type: string
+          description: Owning lesson id. Used by the right-rail to link to the lesson.
+        kind:
+          type: string
+          enum: [doc, note, image, slide]
+        label:
+          type: string
+        sizeBytes:
+          type: integer
+          minimum: 0
 
     CourseProgress:
       type: object

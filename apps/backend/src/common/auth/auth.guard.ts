@@ -55,8 +55,13 @@ export class SessionGuard implements CanActivate {
 
     // Build the structured session context attached to `req.session` so
     // the @Session() parameter decorator can read it without re-resolving.
+    // Better Auth's admin plugin stores roles uppercase ('ADMIN' / 'USER'),
+    // but every downstream authz check (LruAuthorizationService, the
+    // bookmark ownership handlers, etc.) compares against lowercase. Normalise
+    // here so the canonical form is `actor.role === 'admin' | 'user' | …`
+    // throughout the application layer.
     const raw = (session.user as unknown as Record<string, unknown>)['role'];
-    const role = typeof raw === 'string' ? raw : 'user';
+    const role = typeof raw === 'string' ? raw.toLowerCase() : 'user';
     const displayNameRaw = (session.user as unknown as Record<string, unknown>)['displayName'];
     const sessionUser: import('./decorators/session.decorator').SessionUser = {
       id: session.user.id,

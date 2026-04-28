@@ -55,7 +55,10 @@ export class AdminGuard implements CanActivate {
     // Better Auth admin plugin stores the role on session.user.role.
     // Cast through unknown because the inferred type is narrowed away in the
     // createInstance wrapper (TS2742 workaround in auth.service.ts).
-    const role = (session.user as unknown as Record<string, unknown>)['role'];
+    // Better Auth stores it uppercase ('ADMIN' / 'USER'); normalise to
+    // lowercase to match every downstream authz comparison.
+    const raw = (session.user as unknown as Record<string, unknown>)['role'];
+    const role = typeof raw === 'string' ? raw.toLowerCase() : null;
 
     if (role !== 'admin') {
       throw new PermissionDenied('Admin role required.');

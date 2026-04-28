@@ -3,6 +3,7 @@ export default {
     default: {
       appName: 'Course Shelf',
       navHome: 'Главная',
+      navBrowse: 'Каталог',
       navLibraries: 'Библиотеки',
       navSignIn: 'Войти',
       navSignOut: 'Выйти',
@@ -195,6 +196,14 @@ export default {
       playNext: 'Следующий',
       courseComplete: 'Курс завершён',
       toastDownloadSoon: 'Скачивание будет доступно позже.',
+    },
+    browse: {
+      title: 'Каталог курсов',
+      subtitle: '{n} курс | {n} курса | {n} курсов',
+      emptyTitle: 'Пока нет курсов',
+      emptyBody: 'Добавьте библиотеку и запустите сканирование, чтобы увидеть курсы здесь.',
+      errorTitle: 'Не удалось загрузить курсы',
+      retry: 'Повторить',
     },
     libraries: {
       title: 'Библиотеки',

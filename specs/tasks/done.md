@@ -2,6 +2,17 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-28-059 — Stage A Lesson player wired to <video> (E14-F03-S01)
+
+- Created: 2026-04-28
+- Completed: 2026-04-28
+- Result: single feature commit `42438cb` on `feat/lesson-player-page` (closes #64) → PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/144. Full e2e suite 26/26 (lesson-player 7 new + foundations 1 + auth 5 + course detail 8 + home 3 + smoke 2); web unit 21/21 (+5 new); UI suite 808/808 unchanged after the AppPlayerChrome z-index tweak. Web lint + typecheck clean.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E14-F03-S01.md` (source: `docs/design/cs-web-lesson-player/`, DESIGN_BRIEF §6.6)
+- Outcome: real lesson playback. `apps/web/app/pages/courses/[id]/lessons/[lessonId].vue` (~210 lines) pulls lesson + course outline + bookmarks + note in parallel. AppPlayerChrome attached to a real `<video>` via `useLessonPlayer`; stream URL fetched via `useStreamUrl` (one-shot 401 retry through `auth.refresh()`); progress reported via `useProgressReporter` (10 s ticks while playing + visibility-change + beforeunload, dedupes in-flight POSTs). Sidebar tabs — `PlayerSidebar` hosts `AppTabs` + four inline body components (Sections / Notes / Bookmarks / Materials). Bookmarks tab `select(id)` emits `seek(time)` so the page seeks the video. Auto-advance: AppPlayerChrome `state="end"` with 5 s countdown → `navigateTo` next lesson; Stay-here clears, Play-next skips. Layouts: 1440 (1fr 360px), 1024 (1fr 280px), 360 (single column, tabs as horizontal scroller). Resume: `currentTime = lesson.progress.lastSeenAtSeconds` on `loadedmetadata`. Course detail Resume button retargeted from `/lessons/{id}` placeholder to `/courses/{id}/lessons/{lessonId}`.
+- Side-effect fixes the e2e shook out: AppPlayerChrome `__overlay` z-index ordering (overlay was intercepting end-banner clicks); chromeState ordering (ended before stream error so stub data URIs show the banner); HTTP status capture via separate ref (useAsyncData strips custom Error properties).
+- Notes / deferred: Real materials download endpoint deferred — clicks emit a "Download coming soon" toast (matches Course detail's pattern).
+
 ## T-2026-04-28-058 — Foundations canvas (E03-F01-S02)
 
 - Created: 2026-04-28

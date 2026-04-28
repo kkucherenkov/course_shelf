@@ -152,9 +152,10 @@ test('first-user signup drives full wizard and calls promoteToAdmin stub', async
     'input[placeholder*="Computer Science"], input[placeholder*="Library"]',
     'My Courses',
   );
-  // Path field (mono font class) — find by placeholder pattern
-  const pathInputs = page.locator('input[placeholder*="/srv"]');
-  await pathInputs.fill('/srv/courses/cs');
+  // Path field — find by placeholder pattern (matches the new
+  // /workspace/docs/data/courses default we ship after wiring the scanner).
+  const pathInputs = page.locator('input[placeholder*="/workspace"]');
+  await pathInputs.fill('/workspace/docs/data/courses');
 
   // Finish
   await page.locator('button[type="submit"]').last().click();

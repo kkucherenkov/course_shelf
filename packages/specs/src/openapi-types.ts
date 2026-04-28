@@ -1811,15 +1811,15 @@ export interface components {
     /**
      * @description Short-lived signed URL for streaming a lesson video.
      * @example {
-     *       "url": "http://localhost:3000/api/v1/stream/lessons/clxvles0000000000000000001?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibGVzc29uSWQiOiJjbHh2bGVzMDAwMDAwMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzQ1NTc0NDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+     *       "url": "/api/v1/stream/lessons/clxvles0000000000000000001?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibGVzc29uSWQiOiJjbHh2bGVzMDAwMDAwMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzQ1NTc0NDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
      *       "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibGVzc29uSWQiOiJjbHh2bGVzMDAwMDAwMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzQ1NTc0NDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
      *       "expiresAt": "2026-04-25T10:15:00Z"
      *     }
      */
     StreamUrlDto: {
       /**
-       * Format: uri
-       * @description Full URL the player should request. Carries the signed token as the `token` query parameter so existing video-element implementations work without an Authorization header.
+       * Format: uri-reference
+       * @description URL the player should request. Same-origin relative path (e.g. `/api/v1/stream/lessons/<id>?token=…`) — the browser resolves it against the SPA's API origin so the backend doesn't need to know its public hostname. Carries the signed token as the `token` query parameter so existing video-element implementations work without an Authorization header.
        */
       url: string;
       /** @description Opaque signed token. Format is internal to the backend (currently a JWT-like compact form `header.payload.signature`); clients must round-trip it untouched. */

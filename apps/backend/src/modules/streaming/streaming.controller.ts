@@ -147,6 +147,15 @@ export class StreamingController {
     // 3. Content-Type from extension.
     const mime = videoMimeType(absolutePath);
 
+    // Helmet's default `Cross-Origin-Resource-Policy: same-origin` would
+    // make the browser refuse to embed this response in a <video> from any
+    // page that isn't on the exact same origin. The stream is auth'd via a
+    // short-lived signed token in the query string, so cross-origin embeds
+    // are intentional. Override CORP to `cross-origin` here so the SPA can
+    // load the video whether it's on the proxy origin (8080), the bare
+    // Nuxt origin (3001), or a future production domain.
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+
     // 4. Parse Range header.
     const range = parseRangeHeader(firstHeader(req.headers.range), sizeBytes);
 
@@ -250,8 +259,11 @@ export class StreamingController {
     // 2. Locate the subtitle file.
     const { absolutePath, extension } = await this.lessonFileLocator.locateSubtitle(id, language);
 
-    // 3. Serve with Content-Type: text/vtt.
+    // 3. Serve with Content-Type: text/vtt and CORP cross-origin so the
+    // <track> tag can load it from any SPA origin (see the video endpoint
+    // above for the rationale).
     res.setHeader('Content-Type', 'text/vtt; charset=utf-8');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 
     if (extension === '.vtt') {
       // Source is already VTT — stream as-is.

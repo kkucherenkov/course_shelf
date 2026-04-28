@@ -3,6 +3,7 @@ export default {
     default: {
       appName: 'Course Shelf',
       navHome: 'Home',
+      navBrowse: 'Browse',
       navLibraries: 'Libraries',
       navSignIn: 'Sign in',
       navSignOut: 'Sign out',
@@ -194,6 +195,14 @@ export default {
       playNext: 'Play next',
       courseComplete: 'Course complete',
       toastDownloadSoon: 'Download coming soon.',
+    },
+    browse: {
+      title: 'Browse courses',
+      subtitle: '{n} course | {n} courses',
+      emptyTitle: 'No courses yet',
+      emptyBody: 'Add a library and trigger a scan to see courses here.',
+      errorTitle: 'Could not load courses',
+      retry: 'Retry',
     },
     libraries: {
       title: 'Libraries',

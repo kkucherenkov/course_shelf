@@ -37,6 +37,17 @@
           </li>
           <li v-if="isAuthenticated" class="default-layout__nav-item">
             <NuxtLink
+              to="/browse"
+              class="default-layout__nav-link"
+              :class="{
+                'default-layout__nav-link--active': route.path === '/browse',
+              }"
+            >
+              {{ t('layouts.default.navBrowse') }}
+            </NuxtLink>
+          </li>
+          <li v-if="isAuthenticated" class="default-layout__nav-item">
+            <NuxtLink
               to="/libraries"
               class="default-layout__nav-link"
               :class="{

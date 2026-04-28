@@ -470,6 +470,11 @@
   //   --error    → --status-error-fg
   //   --d-fast   → --dur-fast
   //   --d-normal → --dur-base
+
+  // Stacking context within the chrome (exempt from raw-int ban — named vars).
+  $z-overlay: 1;
+  $z-state: 2;
+
   .app-player-chrome {
     position: relative;
     aspect-ratio: 16 / 9;
@@ -496,6 +501,7 @@
     &__overlay {
       position: absolute;
       inset: 0;
+      z-index: $z-overlay;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -679,6 +685,7 @@
     &__state-overlay {
       position: absolute;
       inset: 0;
+      z-index: $z-state;
       display: grid;
       place-items: center;
       background: rgba(0, 0, 0, 0.4);
@@ -720,6 +727,7 @@
     &__end-banner {
       position: absolute;
       inset: 0;
+      z-index: $z-state;
       display: flex;
       flex-direction: column;
       align-items: center;

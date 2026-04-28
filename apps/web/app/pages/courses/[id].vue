@@ -16,6 +16,10 @@
 
   const { t } = useI18n();
   const route = useRoute();
+
+  // When a child route is active (e.g. /courses/:id/lessons/:lessonId),
+  // delegate rendering to <NuxtPage /> instead of showing the course detail UI.
+  const hasChildRoute = computed(() => route.name !== 'courses-id');
   const toast = useToast();
 
   const courseId = route.params.id as string;
@@ -91,7 +95,7 @@
 
   const primaryCTAHref = computed<string>(() => {
     const lessonId = resumeLesson.value?.id;
-    if (lessonId) return `/lessons/${lessonId}`;
+    if (lessonId) return `/courses/${courseId}/lessons/${lessonId}`;
     // Fallback — no lesson to jump to (all completed with no "first not-started")
     return '#';
   });
@@ -140,12 +144,15 @@
   }
 
   function onSelectLesson(lessonId: string): void {
-    void navigateTo(`/lessons/${lessonId}`);
+    void navigateTo(`/courses/${courseId}/lessons/${lessonId}`);
   }
 </script>
 
 <template>
-  <div class="page-course-detail">
+  <!-- Delegate to child page (e.g. lesson player) when a nested route is active -->
+  <NuxtPage v-if="hasChildRoute" />
+
+  <div v-else class="page-course-detail">
     <!-- ── Error / no-access state ───────────────────────────────────────────── -->
     <div v-if="status === 'error'" class="page-course-detail__error-wrap">
       <AppNoPermission

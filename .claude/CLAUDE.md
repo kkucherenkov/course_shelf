@@ -54,15 +54,15 @@ Never hand-fix what a fixer can do. Never add `eslint-disable` without a WHY com
 
 Stack is **normally running**. Check first: `docker ps --format '{{.Names}} {{.Status}} {{.Ports}}'`
 
-| Service        | Port | URL                          |
-| -------------- | ---- | ---------------------------- |
-| **proxy (canonical SPA)** | **8080** | **http://localhost:8080** |
-| web            | 3001 | http://localhost:3001        |
-| backend        | 3000 | http://localhost:3000/api/v1 |
-| postgres       | 5432 | —                            |
-| redis          | 6379 | —                            |
-| centrifugo     | 8000 | ws://localhost:8000          |
-| grafana (otel) | 3200 | http://localhost:3200        |
+| Service                   | Port     | URL                          |
+| ------------------------- | -------- | ---------------------------- |
+| **proxy (canonical SPA)** | **8080** | **http://localhost:8080**    |
+| web                       | 3001     | http://localhost:3001        |
+| backend                   | 3000     | http://localhost:3000/api/v1 |
+| postgres                  | 5432     | —                            |
+| redis                     | 6379     | —                            |
+| centrifugo                | 8000     | ws://localhost:8000          |
+| grafana (otel)            | 3200     | http://localhost:3200        |
 
 The nginx `proxy` service folds web + backend onto a single origin so the
 browser sees same-origin requests (no CORS, no CORP). Use **8080** in the

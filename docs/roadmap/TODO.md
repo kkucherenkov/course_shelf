@@ -109,8 +109,8 @@ Progress: `61 / 115` complete (update by hand or via a pre-commit hook).
 
 - [x] [E14-F01-S01](./tasks/E14-F01-S01.md) `A` — Stage A · Home page (cs-web-home) · ⇐ E13-F02-S01, E13-F02-S08, E10-F01-S01, E11-F01-S03
 - [ ] [E14-F01-S02](./tasks/E14-F01-S02.md) `B` — Stage B · Browse + Search (precede with cs-web-browse-search design) · ⇐ E13-F02-S01, E13-F02-S08
-- [ ] [E14-F01-S03](./tasks/E14-F01-S03.md) `A` — Stage A · Course detail (cs-web-course-detail) · ⇐ E13-F02-S01, E13-F02-S02, E13-F02-S08
-- [ ] [E14-F02-S01](./tasks/E14-F02-S01.md) `A` — Stage A · Sign in / sign up / forgot password (cs-web-auth) · ⇐ E11-F01-S03, E13-F02-S09, E13-F02-S10, E13-F01-S07
+- [x] [E14-F01-S03](./tasks/E14-F01-S03.md) `A` — Stage A · Course detail (cs-web-course-detail) · ⇐ E13-F02-S01, E13-F02-S02, E13-F02-S08
+- [x] [E14-F02-S01](./tasks/E14-F02-S01.md) `A` — Stage A · Sign in / sign up / forgot password (cs-web-auth) · ⇐ E11-F01-S03, E13-F02-S09, E13-F02-S10, E13-F01-S07
 - [ ] [E14-F02-S02](./tasks/E14-F02-S02.md) `B` — Stage B · Settings page (precede with cs-web-settings) · ⇐ E13-F02-S08
 - [x] [E14-F03-S01](./tasks/E14-F03-S01.md) `A` — Stage A · Lesson player page wired to <video> (cs-web-lesson-player) · ⇐ E13-F02-S03, E13-F02-S04, E13-F02-S05, E08-F02-S01, E09-F01-S01
 - [ ] [E14-F04-S01](./tasks/E14-F04-S01.md) `B` — Stage B · Admin section (precede with cs-web-admin) · ⇐ E13-F02-S07, E13-F02-S08, E07-F01-S01, E21-F01-S01

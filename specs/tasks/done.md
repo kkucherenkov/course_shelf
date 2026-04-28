@@ -2,6 +2,17 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-29-060 — Stage A Course detail page (E14-F01-S03) — bookkeeping
+
+- Created: 2026-04-29
+- Completed: 2026-04-29
+- Result: code shipped earlier — spec + backend handlers via PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/141 (`fc88c10`, "part 1 of 2"); web page + components + Playwright e2e rolled in with the lesson-player PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/144 (`6e5ca29`) because the player navigates from this page so the two were inseparable. Card was never bookkept; this entry closes the loop.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E14-F01-S03.md` (source: `docs/design/cs-web-course-detail/`, DESIGN_BRIEF §6.5)
+- Outcome: `apps/web/app/pages/courses/[id].vue` (337 lines) composes five colocated components — `CourseHero` (cover left + title/instructor/progress/description right at 1440, stacked at 1024, horizontal strip at 360), `CourseActions` (primary Resume/Start, secondary Mark complete / Reset progress), `CourseSectionsList` (`SectionHeader` + `LessonRow` with current-lesson highlight, collapse), `CourseMaterialsRail` (right-rail at 1440/1024, slides below at 360), `CourseCompletedBanner` (quiet banner — no festival). Four states modelled: Default / InProgress / Completed / Locked-NoAccess (`AppNoPermission`). Backend exposes three endpoints (`GET /courses/:id/outline`, `POST /courses/:id/{mark-complete,reset-progress}`) — outline is a one-round-trip projection (course + sections + lessons + materials + per-lesson progress); mark-complete uses `COALESCE(completedAt, $now)` raw SQL inside a single `$transaction([...])` so already-completed rows preserve their original timestamp; reset-progress deletes the read-model row outright. 8 Playwright tests in `tests/e2e/course-detail.spec.ts`, +27 backend specs (outline 15 / mark-complete 8 / reset-progress 6).
+- Side-effect fix that landed alongside the bookkeeping: `POST /courses/:id/{mark-complete,reset-progress}` were silently 500ing (`no schema defined for status code '201'`) because NestJS defaults POST to 201 but the spec only declared 200 — fixed by adding `@HttpCode(HttpStatus.OK)` in PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/157 along with the same fix on `/progress` and `/progress/batch`.
+- Notes / deferred: stale `feat/course-detail-page` branch (`c860a3c`) on origin is now redundant — its content overlaps with what landed via #144. Safe to delete (not deleted by this task; user's call).
+
 ## T-2026-04-28-059 — Stage A Lesson player wired to <video> (E14-F03-S01)
 
 - Created: 2026-04-28

@@ -59,6 +59,7 @@ function makeProgressRepo(rows: CourseProgressReadModel[]): CourseProgressReadMo
     findManyByCourseIdsForUser: vi.fn(),
     deleteAll: vi.fn(),
     findCompletedByUser: vi.fn().mockResolvedValue(rows),
+    deleteByUserAndCourse: vi.fn(),
   };
 }
 

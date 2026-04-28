@@ -150,4 +150,10 @@ export class PrismaCourseProgressReadModelRepository implements CourseProgressRe
       .slice(0, limit)
       .map((r: ProgressRow) => rowToModel(r));
   }
+
+  async deleteByUserAndCourse(userId: string, courseId: string): Promise<void> {
+    await this.prisma.courseProgressReadModel.deleteMany({
+      where: { userId, courseId },
+    });
+  }
 }

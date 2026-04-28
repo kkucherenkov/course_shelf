@@ -10,3 +10,6 @@
 
 export { LESSON_PROGRESS_REPOSITORY } from '../../modules/learning/domain/progress/lesson-progress.repository';
 export type { LessonProgressRepository } from '../../modules/learning/domain/progress/lesson-progress.repository';
+// Re-export LessonProgress class (not just the type) so the Catalog context can use it
+// in specs without a direct cross-context import from modules/learning/**.
+export { LessonProgress } from '../../modules/learning/domain/progress/lesson-progress';

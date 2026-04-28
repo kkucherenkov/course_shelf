@@ -62,6 +62,9 @@ function makeHandler(opts: {
     findAllUserCoursePairs: vi.fn(),
     findLatestByUserAndCourse: vi.fn(),
     aggregateForUserRange: vi.fn(),
+    findManyByUserAndLessons: vi.fn(),
+    bulkUpsertCompleted: vi.fn(),
+    deleteAllByUserAndCourse: vi.fn(),
   };
 
   const handler = new GetLessonProgressHandler(lessonRepo, courseRepo, authz, progressRepo);

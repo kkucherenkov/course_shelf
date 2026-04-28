@@ -31,6 +31,9 @@ import 'package:app_api_client/src/model/continue_watching_dto.dart';
 import 'package:app_api_client/src/model/continue_watching_item.dart';
 import 'package:app_api_client/src/model/course_dto.dart';
 import 'package:app_api_client/src/model/course_list_dto.dart';
+import 'package:app_api_client/src/model/course_material_item.dart';
+import 'package:app_api_client/src/model/course_outline_dto.dart';
+import 'package:app_api_client/src/model/course_outline_summary.dart';
 import 'package:app_api_client/src/model/course_progress.dart';
 import 'package:app_api_client/src/model/course_target.dart';
 import 'package:app_api_client/src/model/create_bookmark_request.dart';
@@ -43,6 +46,7 @@ import 'package:app_api_client/src/model/health_status.dart';
 import 'package:app_api_client/src/model/health_status_dependencies.dart';
 import 'package:app_api_client/src/model/instance_config_dto.dart';
 import 'package:app_api_client/src/model/lesson_dto.dart';
+import 'package:app_api_client/src/model/lesson_outline_item.dart';
 import 'package:app_api_client/src/model/lesson_progress.dart';
 import 'package:app_api_client/src/model/lesson_progress_dto.dart';
 import 'package:app_api_client/src/model/library_dto.dart';
@@ -67,6 +71,7 @@ import 'package:app_api_client/src/model/scan_dto.dart';
 import 'package:app_api_client/src/model/scan_error.dart';
 import 'package:app_api_client/src/model/scan_status.dart';
 import 'package:app_api_client/src/model/section_dto.dart';
+import 'package:app_api_client/src/model/section_outline.dart';
 import 'package:app_api_client/src/model/sso_provider_config.dart';
 import 'package:app_api_client/src/model/stream_url_dto.dart';
 import 'package:app_api_client/src/model/subtitle_dto.dart';
@@ -95,6 +100,9 @@ part 'serializers.g.dart';
   ContinueWatchingItem,
   CourseDto,
   CourseListDto,
+  CourseMaterialItem,
+  CourseOutlineDto,
+  CourseOutlineSummary,
   CourseProgress,
   CourseTarget,
   CreateBookmarkRequest,
@@ -107,6 +115,7 @@ part 'serializers.g.dart';
   HealthStatusDependencies,
   InstanceConfigDto,
   LessonDto,
+  LessonOutlineItem,
   LessonProgress,
   LessonProgressDto,
   LibraryDto,
@@ -131,6 +140,7 @@ part 'serializers.g.dart';
   ScanError,
   ScanStatus,
   SectionDto,
+  SectionOutline,
   SsoProviderConfig,
   StreamUrlDto,
   SubtitleDto,

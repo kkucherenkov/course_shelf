@@ -35,6 +35,9 @@ function makeProgressRepo(opts: {
       minutesWatched: opts.minutesWatched ?? 0,
       lessonsCompleted: opts.lessonsCompleted ?? 0,
     }),
+    findManyByUserAndLessons: vi.fn(),
+    bulkUpsertCompleted: vi.fn(),
+    deleteAllByUserAndCourse: vi.fn(),
   };
 }
 

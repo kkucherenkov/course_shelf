@@ -37,6 +37,8 @@ import { LearningProgressModule } from '../../common/learning-progress/learning-
 import { RegisterLibraryHandler } from './application/commands/register-library.handler';
 import { RunScanHandler } from './application/commands/run-scan.handler';
 import { UpdateCourseMetadataHandler } from './application/commands/update-course-metadata.handler';
+import { MarkCourseCompleteHandler } from './application/commands/mark-course-complete.handler';
+import { ResetCourseProgressHandler } from './application/commands/reset-course-progress.handler';
 import { GetLibraryHandler } from './application/queries/get-library.handler';
 import { GetLatestScanHandler } from './application/queries/get-latest-scan.handler';
 import { ListLibrariesHandler } from './application/queries/list-libraries.handler';
@@ -44,6 +46,7 @@ import { GetCourseHandler } from './application/queries/get-course.handler';
 import { ListCoursesHandler } from './application/queries/list-courses.handler';
 import { GetLessonHandler } from './application/queries/get-lesson.handler';
 import { GetContinueWatchingHandler } from './application/queries/get-continue-watching.handler';
+import { GetCourseOutlineHandler } from './application/queries/get-course-outline.handler';
 import { GetRecentlyAddedHandler } from './application/queries/get-recently-added.handler';
 import { GetRecentlyCompletedHandler } from './application/queries/get-recently-completed.handler';
 import { GetYourWeekHandler } from './application/queries/get-your-week.handler';
@@ -86,10 +89,13 @@ import { NodeFsAdapter } from './infra/node-fs-adapter';
     RunScanHandler,
     GetLatestScanHandler,
     UpdateCourseMetadataHandler,
+    MarkCourseCompleteHandler,
+    ResetCourseProgressHandler,
     GetCourseHandler,
     ListCoursesHandler,
     GetLessonHandler,
     GetContinueWatchingHandler,
+    GetCourseOutlineHandler,
     GetRecentlyAddedHandler,
     GetRecentlyCompletedHandler,
     GetYourWeekHandler,

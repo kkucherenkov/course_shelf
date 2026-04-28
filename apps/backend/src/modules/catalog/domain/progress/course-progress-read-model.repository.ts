@@ -56,4 +56,13 @@ export interface CourseProgressReadModelRepository {
    * Used by the recently-completed home-row query handler (E14-F01-S01).
    */
   findCompletedByUser(userId: string, limit: number): Promise<CourseProgressReadModel[]>;
+
+  /**
+   * Delete the projection row for (userId, courseId).
+   * Idempotent: safe to call when no row exists.
+   * Used by ResetCourseProgressCommand to wipe the read model after clearing
+   * all LessonProgress rows so the outline returns zero progress.
+   * Added for E14-F01-S03.
+   */
+  deleteByUserAndCourse(userId: string, courseId: string): Promise<void>;
 }

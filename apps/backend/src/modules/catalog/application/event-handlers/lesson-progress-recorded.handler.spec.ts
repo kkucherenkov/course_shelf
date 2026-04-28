@@ -48,6 +48,9 @@ function makeProgressRepo(completedCount = 0): LessonProgressRepository {
     findAllUserCoursePairs: vi.fn(),
     findLatestByUserAndCourse: vi.fn(),
     aggregateForUserRange: vi.fn(),
+    findManyByUserAndLessons: vi.fn(),
+    bulkUpsertCompleted: vi.fn(),
+    deleteAllByUserAndCourse: vi.fn(),
   };
 }
 
@@ -61,6 +64,7 @@ function makeReadModelRepo(
     findManyByCourseIdsForUser: vi.fn(),
     deleteAll: vi.fn(),
     findCompletedByUser: vi.fn(),
+    deleteByUserAndCourse: vi.fn(),
   };
 }
 

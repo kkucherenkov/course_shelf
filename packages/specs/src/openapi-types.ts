@@ -211,6 +211,91 @@ export interface paths {
     patch: operations['updateCourse'];
     trace?: never;
   };
+  '/api/v1/courses/{id}/outline': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Full course outline — sections, lessons (lite), and aggregated materials
+     * @description Single round-trip endpoint feeding the Course detail page. Returns
+     *     the course summary, every section with its lesson list (lightweight:
+     *     title, duration, hasMaterials, per-user progress), and a flat list of
+     *     course-level materials aggregated across all lessons. The dedicated
+     *     outline avoids N+1 page fetches and never returns full LessonDtos
+     *     (which would inflate the payload with subtitle tracks the page
+     *     does not render).
+     *
+     *     Reads `Course` + `Section` + `Lesson` + `Material` + `LessonProgress`
+     *     (filtered to the requester) + `CourseProgressReadModel` (for the
+     *     aggregate progress percent).
+     */
+    get: operations['getCourseOutline'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/courses/{id}/mark-complete': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mark every lesson in the course as completed for the requester
+     * @description Bulk-marks every lesson in the course as completed for the
+     *     requester. Idempotent — a second call is a no-op. Returns the
+     *     refreshed `CourseOutlineDto` so the caller does not have to issue
+     *     a separate GET.
+     *
+     *     Implementation note: the handler upserts `LessonProgress` rows
+     *     with `completed: true`, `completedAt: now`, and
+     *     `positionSeconds: durationSeconds`. `CourseProgressReadModel` is
+     *     kept in sync via the `LessonCompleted` event handler.
+     */
+    post: operations['markCourseComplete'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/courses/{id}/reset-progress': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Clear every progress row in the course for the requester
+     * @description Deletes every `LessonProgress` row for (requester, course).
+     *     Idempotent — a second call is a no-op. Returns the refreshed
+     *     `CourseOutlineDto` so the caller does not have to issue a
+     *     separate GET.
+     *
+     *     `CourseProgressReadModel` is kept in sync via the
+     *     `LessonProgressReset` event handler (or rebuilt directly when
+     *     no events are emitted on delete).
+     */
+    post: operations['resetCourseProgress'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/home/continue-watching': {
     parameters: {
       query?: never;
@@ -1162,6 +1247,73 @@ export interface components {
      */
     CourseListDto: {
       items: components['schemas']['CourseDto'][];
+    };
+    /** @description Page-shaped projection of a course — enough data to render the Course detail screen in one round-trip. Aggregates sections, lessons (lite), and course-level materials with the requester's progress applied. */
+    CourseOutlineDto: {
+      course: components['schemas']['CourseOutlineSummary'];
+      /** @description Sections sorted by position. */
+      sections: components['schemas']['SectionOutline'][];
+      /** @description Course-level materials, deduplicated and aggregated across every lesson in the course. Empty array when no lesson carries materials. */
+      materials: components['schemas']['CourseMaterialItem'][];
+    };
+    /** @description Course-level fields surfaced in the page hero. */
+    CourseOutlineSummary: {
+      /** @description Server-generated cuid identifying the course. */
+      id: string;
+      title: string;
+      slug?: string;
+      /** @description Long-form description rendered under the title. */
+      description?: string | null;
+      /** @description Visible "by …" label. Optional — may be null until the catalog DTO grows the field. */
+      instructor?: string | null;
+      /** @description Slug of the parent library, included for breadcrumbs. Optional because Library has no slug field yet (same caveat as ContinueWatchingItem). */
+      librarySlug?: string;
+      lessonsTotal: number;
+      /** @description Sum of `Lesson.duration` across the course (whole seconds). */
+      totalDurationSeconds: number;
+      progress: components['schemas']['CourseProgress'];
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    /** @description One section in the outline, with its lesson list inline. */
+    SectionOutline: {
+      /** @description Server-generated cuid identifying this section. */
+      id: string;
+      /** @description 1-based position within the course. */
+      position: number;
+      title: string;
+      /** @description Sum of `Lesson.duration` across this section's lessons. */
+      totalDurationSeconds: number;
+      /** @description Lessons sorted by position. */
+      lessons: components['schemas']['LessonOutlineItem'][];
+    };
+    /** @description Lightweight per-lesson row for the Course detail outline. Maps 1:1 to the AppLessonRow component's props. */
+    LessonOutlineItem: {
+      id: string;
+      position: number;
+      title: string;
+      durationSeconds: number;
+      /** @description Whether the lesson has at least one sidecar material. */
+      hasMaterials: boolean;
+      /**
+       * @description Per-user lesson state. Derived: `completed` when the `LessonProgress` row has `completed: true`; `in-progress` when it has progress but is not complete; `locked` when the requester does not hold a READ grant on the course's library (defensive — usually the whole course 403s before this); `not-started` otherwise.
+       * @enum {string}
+       */
+      state: 'not-started' | 'in-progress' | 'completed' | 'locked';
+      /** @description 0..100 — only meaningful when `state === 'in-progress'`. */
+      progressPercent: number;
+    };
+    /** @description One sidecar material aggregated at the course level. */
+    CourseMaterialItem: {
+      id: string;
+      /** @description Owning lesson id. Used by the right-rail to link to the lesson. */
+      lessonId: string;
+      /** @enum {string} */
+      kind: 'doc' | 'note' | 'image' | 'slide';
+      label: string;
+      sizeBytes: number;
     };
     /**
      * @description Progress summary for a course from the requester's perspective.
@@ -2262,6 +2414,156 @@ export interface operations {
       };
       /** @description A course with the same slug already exists in this library */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getCourseOutline: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the course. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Course outline returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CourseOutlineDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have a READ grant for the course's library */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Course not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  markCourseComplete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the course. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Every lesson marked complete; refreshed outline returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CourseOutlineDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have a READ grant for the course's library */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Course not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  resetCourseProgress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the course. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Progress cleared; refreshed outline returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CourseOutlineDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have a READ grant for the course's library */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Course not found */
+      404: {
         headers: {
           [name: string]: unknown;
         };

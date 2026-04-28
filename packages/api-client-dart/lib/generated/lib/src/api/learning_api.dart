@@ -12,6 +12,7 @@ import 'package:app_api_client/src/model/batch_progress_request.dart';
 import 'package:app_api_client/src/model/batch_progress_response.dart';
 import 'package:app_api_client/src/model/bookmark_dto.dart';
 import 'package:app_api_client/src/model/bookmark_list_dto.dart';
+import 'package:app_api_client/src/model/course_outline_dto.dart';
 import 'package:app_api_client/src/model/create_bookmark_request.dart';
 import 'package:app_api_client/src/model/lesson_progress_dto.dart';
 import 'package:app_api_client/src/model/note_dto.dart';
@@ -479,6 +480,87 @@ class LearningApi {
     );
   }
 
+  /// Mark every lesson in the course as completed for the requester
+  /// Bulk-marks every lesson in the course as completed for the requester. Idempotent — a second call is a no-op. Returns the refreshed &#x60;CourseOutlineDto&#x60; so the caller does not have to issue a separate GET.  Implementation note: the handler upserts &#x60;LessonProgress&#x60; rows with &#x60;completed: true&#x60;, &#x60;completedAt: now&#x60;, and &#x60;positionSeconds: durationSeconds&#x60;. &#x60;CourseProgressReadModel&#x60; is kept in sync via the &#x60;LessonCompleted&#x60; event handler. 
+  ///
+  /// Parameters:
+  /// * [id] - Server-generated cuid identifying the course.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [CourseOutlineDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<CourseOutlineDto>> markCourseComplete({ 
+    required String id,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/courses/{id}/mark-complete'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    CourseOutlineDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(CourseOutlineDto),
+      ) as CourseOutlineDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<CourseOutlineDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
   /// Record (upsert) the requester&#39;s progress on a lesson
   /// Last-write-wins on &#x60;clientUpdatedAt&#x60;: out-of-order writes (older timestamp than the current state) are silently accepted with the prior state echoed back. The first write that crosses 90 % completion sets &#x60;completed: true&#x60; and stamps &#x60;completedAt&#x60;; subsequent writes do not re-emit completion. Always returns the post-merge state — clients can use it to detect whether their write was the one that bumped the counter. 
   ///
@@ -670,6 +752,87 @@ class LearningApi {
     }
 
     return Response<BatchProgressResponse>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Clear every progress row in the course for the requester
+  /// Deletes every &#x60;LessonProgress&#x60; row for (requester, course). Idempotent — a second call is a no-op. Returns the refreshed &#x60;CourseOutlineDto&#x60; so the caller does not have to issue a separate GET.  &#x60;CourseProgressReadModel&#x60; is kept in sync via the &#x60;LessonProgressReset&#x60; event handler (or rebuilt directly when no events are emitted on delete). 
+  ///
+  /// Parameters:
+  /// * [id] - Server-generated cuid identifying the course.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [CourseOutlineDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<CourseOutlineDto>> resetCourseProgress({ 
+    required String id,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/courses/{id}/reset-progress'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    CourseOutlineDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(CourseOutlineDto),
+      ) as CourseOutlineDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<CourseOutlineDto>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

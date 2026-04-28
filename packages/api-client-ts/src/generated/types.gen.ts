@@ -336,6 +336,112 @@ export type CourseListDto = {
 };
 
 /**
+ * Page-shaped projection of a course — enough data to render the Course detail screen in one round-trip. Aggregates sections, lessons (lite), and course-level materials with the requester's progress applied.
+ */
+export type CourseOutlineDto = {
+    course: CourseOutlineSummary;
+    /**
+     * Sections sorted by position.
+     */
+    sections: Array<SectionOutline>;
+    /**
+     * Course-level materials, deduplicated and aggregated across every lesson in the course. Empty array when no lesson carries materials.
+     */
+    materials: Array<CourseMaterialItem>;
+};
+
+/**
+ * Course-level fields surfaced in the page hero.
+ */
+export type CourseOutlineSummary = {
+    /**
+     * Server-generated cuid identifying the course.
+     */
+    id: string;
+    title: string;
+    slug?: string;
+    /**
+     * Long-form description rendered under the title.
+     */
+    description?: string | null;
+    /**
+     * Visible "by …" label. Optional — may be null until the catalog DTO grows the field.
+     */
+    instructor?: string | null;
+    /**
+     * Slug of the parent library, included for breadcrumbs. Optional because Library has no slug field yet (same caveat as ContinueWatchingItem).
+     */
+    librarySlug?: string;
+    lessonsTotal: number;
+    /**
+     * Sum of `Lesson.duration` across the course (whole seconds).
+     */
+    totalDurationSeconds: number;
+    progress: CourseProgress;
+    createdAt: string;
+    updatedAt: string;
+};
+
+/**
+ * One section in the outline, with its lesson list inline.
+ */
+export type SectionOutline = {
+    /**
+     * Server-generated cuid identifying this section.
+     */
+    id: string;
+    /**
+     * 1-based position within the course.
+     */
+    position: number;
+    title: string;
+    /**
+     * Sum of `Lesson.duration` across this section's lessons.
+     */
+    totalDurationSeconds: number;
+    /**
+     * Lessons sorted by position.
+     */
+    lessons: Array<LessonOutlineItem>;
+};
+
+/**
+ * Lightweight per-lesson row for the Course detail outline. Maps 1:1 to the AppLessonRow component's props.
+ */
+export type LessonOutlineItem = {
+    id: string;
+    position: number;
+    title: string;
+    durationSeconds: number;
+    /**
+     * Whether the lesson has at least one sidecar material.
+     */
+    hasMaterials: boolean;
+    /**
+     * Per-user lesson state. Derived: `completed` when the `LessonProgress` row has `completed: true`; `in-progress` when it has progress but is not complete; `locked` when the requester does not hold a READ grant on the course's library (defensive — usually the whole course 403s before this); `not-started` otherwise.
+     */
+    state: 'not-started' | 'in-progress' | 'completed' | 'locked';
+    /**
+     * 0..100 — only meaningful when `state === 'in-progress'`.
+     */
+    progressPercent: number;
+};
+
+/**
+ * One sidecar material aggregated at the course level.
+ */
+export type CourseMaterialItem = {
+    id: string;
+    /**
+     * Owning lesson id. Used by the right-rail to link to the lesson.
+     */
+    lessonId: string;
+    kind: 'doc' | 'note' | 'image' | 'slide';
+    label: string;
+    sizeBytes: number;
+};
+
+/**
  * Progress summary for a course from the requester's perspective.
  */
 export type CourseProgress = {
@@ -1284,6 +1390,120 @@ export type UpdateCourseResponses = {
 };
 
 export type UpdateCourseResponse = UpdateCourseResponses[keyof UpdateCourseResponses];
+
+export type GetCourseOutlineData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the course.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/courses/{id}/outline';
+};
+
+export type GetCourseOutlineErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have a READ grant for the course's library
+     */
+    403: Problem;
+    /**
+     * Course not found
+     */
+    404: Problem;
+};
+
+export type GetCourseOutlineError = GetCourseOutlineErrors[keyof GetCourseOutlineErrors];
+
+export type GetCourseOutlineResponses = {
+    /**
+     * Course outline returned
+     */
+    200: CourseOutlineDto;
+};
+
+export type GetCourseOutlineResponse = GetCourseOutlineResponses[keyof GetCourseOutlineResponses];
+
+export type MarkCourseCompleteData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the course.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/courses/{id}/mark-complete';
+};
+
+export type MarkCourseCompleteErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have a READ grant for the course's library
+     */
+    403: Problem;
+    /**
+     * Course not found
+     */
+    404: Problem;
+};
+
+export type MarkCourseCompleteError = MarkCourseCompleteErrors[keyof MarkCourseCompleteErrors];
+
+export type MarkCourseCompleteResponses = {
+    /**
+     * Every lesson marked complete; refreshed outline returned
+     */
+    200: CourseOutlineDto;
+};
+
+export type MarkCourseCompleteResponse = MarkCourseCompleteResponses[keyof MarkCourseCompleteResponses];
+
+export type ResetCourseProgressData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the course.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/courses/{id}/reset-progress';
+};
+
+export type ResetCourseProgressErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have a READ grant for the course's library
+     */
+    403: Problem;
+    /**
+     * Course not found
+     */
+    404: Problem;
+};
+
+export type ResetCourseProgressError = ResetCourseProgressErrors[keyof ResetCourseProgressErrors];
+
+export type ResetCourseProgressResponses = {
+    /**
+     * Progress cleared; refreshed outline returned
+     */
+    200: CourseOutlineDto;
+};
+
+export type ResetCourseProgressResponse = ResetCourseProgressResponses[keyof ResetCourseProgressResponses];
 
 export type GetContinueWatchingData = {
     body?: never;

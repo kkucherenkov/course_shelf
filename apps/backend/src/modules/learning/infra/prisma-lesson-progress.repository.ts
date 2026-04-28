@@ -19,6 +19,7 @@
  * for these two narrow projection-support methods.
  */
 import { Injectable } from '@nestjs/common';
+import { nanoid } from 'nanoid';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../common/prisma/prisma.service';
@@ -217,5 +218,100 @@ export class PrismaLessonProgressRepository implements LessonProgressRepository 
       minutesWatched: Math.floor(totalPositionSeconds / 60),
       lessonsCompleted: completedCount,
     };
+  }
+
+  /**
+   * Return all LessonProgress rows for a user and a set of lesson ids.
+   * Single findMany query — no N+1.
+   * Added for the course-outline query handler (E14-F01-S03).
+   */
+  async findManyByUserAndLessons(userId: string, lessonIds: string[]): Promise<LessonProgress[]> {
+    if (lessonIds.length === 0) return [];
+
+    const rows = await this.prisma.lessonProgress.findMany({
+      where: { userId, lessonId: { in: lessonIds } },
+      select: {
+        id: true,
+        userId: true,
+        lessonId: true,
+        positionSeconds: true,
+        durationSeconds: true,
+        percent: true,
+        completed: true,
+        lastSeenAt: true,
+        completedAt: true,
+        createdAt: true,
+      },
+    });
+
+    return rows.map((r: LessonProgressRow) => rowToAggregate(r));
+  }
+
+  /**
+   * Bulk-upsert completed progress rows for every lesson in the list.
+   *
+   * Strategy: one $queryRaw upsert per lesson inside a transaction so we can
+   * express "DO UPDATE ... WHERE completedAt IS NULL" without loading all rows
+   * first. For large courses (≤ 1 000 lessons), this stays within a single
+   * transaction without exhausting the connection pool.
+   *
+   * The SQL upsert:
+   *   - preserves completedAt when it is already set (idempotent, honest history).
+   *   - sets completedAt = now when not previously completed.
+   * Added for MarkCourseCompleteCommand (E14-F01-S03).
+   */
+  async bulkUpsertCompleted(
+    userId: string,
+    lessons: readonly { id: string; durationSeconds: number | undefined }[],
+    now: Date,
+  ): Promise<void> {
+    if (lessons.length === 0) return;
+
+    await this.prisma.$transaction(
+      lessons.map((lesson) => {
+        const positionSeconds = lesson.durationSeconds ?? 0;
+        const id = nanoid();
+        // Use $queryRaw inside transaction for the conditional completedAt logic.
+        return this.prisma.$queryRaw(
+          Prisma.sql`
+            INSERT INTO lesson_progress (
+              id, "userId", "lessonId",
+              "positionSeconds", "durationSeconds",
+              percent, completed, "lastSeenAt", "completedAt", "createdAt", "updatedAt"
+            ) VALUES (
+              ${id}, ${userId}, ${lesson.id},
+              ${positionSeconds}, ${positionSeconds},
+              100, true, ${now}, ${now}, ${now}, ${now}
+            )
+            ON CONFLICT ("userId", "lessonId") DO UPDATE SET
+              "positionSeconds"  = ${positionSeconds},
+              percent            = 100,
+              completed          = true,
+              "lastSeenAt"       = ${now},
+              "completedAt"      = COALESCE(lesson_progress."completedAt", ${now}),
+              "updatedAt"        = ${now}
+          `,
+        );
+      }),
+    );
+  }
+
+  /**
+   * Delete every LessonProgress row for (userId, courseId).
+   * Joins through the lesson table to resolve courseId.
+   * Uses $executeRaw because Prisma's typed client cannot express a subquery
+   * inside deleteMany without a schema relation on the course side.
+   * Added for ResetCourseProgressCommand (E14-F01-S03).
+   */
+  async deleteAllByUserAndCourse(userId: string, courseId: string): Promise<void> {
+    await this.prisma.$executeRaw(
+      Prisma.sql`
+        DELETE FROM lesson_progress
+        WHERE "userId" = ${userId}
+          AND "lessonId" IN (
+            SELECT id FROM lesson WHERE "courseId" = ${courseId}
+          )
+      `,
+    );
   }
 }

@@ -15,7 +15,18 @@
  * and forward the actor into the query so the handler can apply grant-based
  * filtering.
  */
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
 import { AdminGuard } from '../../common/auth/admin.guard';
@@ -76,6 +87,7 @@ export class CoursesController {
 
   /** POST /api/v1/courses/:id/mark-complete */
   @Post(':id/mark-complete')
+  @HttpCode(HttpStatus.OK)
   async markCourseComplete(
     @Param('id') id: string,
     @Session() session: SessionContext,
@@ -88,6 +100,7 @@ export class CoursesController {
 
   /** POST /api/v1/courses/:id/reset-progress */
   @Post(':id/reset-progress')
+  @HttpCode(HttpStatus.OK)
   async resetCourseProgress(
     @Param('id') id: string,
     @Session() session: SessionContext,

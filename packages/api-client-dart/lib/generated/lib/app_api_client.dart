@@ -24,6 +24,8 @@ export 'package:app_api_client/src/model/access_grant_list_dto.dart';
 export 'package:app_api_client/src/model/admin_dashboard_dto.dart';
 export 'package:app_api_client/src/model/admin_dashboard_dto_counts.dart';
 export 'package:app_api_client/src/model/admin_dashboard_latest_scan.dart';
+export 'package:app_api_client/src/model/admin_scan_list_dto.dart';
+export 'package:app_api_client/src/model/admin_scan_list_item.dart';
 export 'package:app_api_client/src/model/batch_progress_item_accepted.dart';
 export 'package:app_api_client/src/model/batch_progress_item_forbidden.dart';
 export 'package:app_api_client/src/model/batch_progress_item_result.dart';

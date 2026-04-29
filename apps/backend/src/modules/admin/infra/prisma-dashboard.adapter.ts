@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 
 import type { DashboardPort, DashboardSnapshot } from '../domain/dashboard.port';
-import type { AdminDashboardLatestScan } from '@app/api-client-ts';
+import type { AdminDashboardLatestScan, AdminScanListItem } from '@app/api-client-ts';
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
@@ -60,5 +60,61 @@ export class PrismaDashboardAdapter implements DashboardPort {
       latestScan,
       errorsLast24h,
     };
+  }
+
+  async listRecentScans(limit: number): Promise<AdminScanListItem[]> {
+    const scanRows = await this.prisma.scan.findMany({
+      orderBy: { startedAt: 'desc' },
+      take: limit,
+      include: {
+        _count: { select: { errors: true } },
+      },
+    });
+
+    if (scanRows.length === 0) {
+      return [];
+    }
+
+    // Fetch library names in a single batched query.
+    const libraryIds = [...new Set(scanRows.map((s) => s.libraryId))];
+    const libraries = await this.prisma.library.findMany({
+      where: { id: { in: libraryIds } },
+      select: { id: true, name: true },
+    });
+    const libraryNameById = new Map(libraries.map((l) => [l.id, l.name]));
+
+    // Derive coursesAdded: count Course rows for the library whose createdAt
+    // falls within [scan.startedAt, scan.finishedAt] (or now for running scans).
+    // One batched query per scan — limit ≤ 100 so the fan-out is bounded.
+    const now = new Date();
+    const coursesAddedByScanId = new Map<string, number>(
+      await Promise.all(
+        scanRows.map(async (scan) => {
+          const windowEnd = scan.finishedAt ?? now;
+          const count = await this.prisma.course.count({
+            where: {
+              libraryId: scan.libraryId,
+              createdAt: {
+                gte: scan.startedAt,
+                lte: windowEnd,
+              },
+            },
+          });
+          return [scan.id, count] as [string, number];
+        }),
+      ),
+    );
+
+    return scanRows.map((scan) => ({
+      scanId: scan.id,
+      libraryId: scan.libraryId,
+      libraryName: libraryNameById.get(scan.libraryId) ?? '',
+      status: scan.status,
+      startedAt: scan.startedAt.toISOString(),
+      finishedAt: scan.finishedAt ? scan.finishedAt.toISOString() : null,
+      filesScanned: scan.filesScanned,
+      coursesAdded: coursesAddedByScanId.get(scan.id) ?? 0,
+      errorsCount: scan._count.errors,
+    }));
   }
 }

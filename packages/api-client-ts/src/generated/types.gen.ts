@@ -110,6 +110,34 @@ export type AdminDashboardLatestScan = {
 };
 
 /**
+ * Page of recent scans across every library, ordered by `startedAt` descending. The dashboard's "Recent scans" table consumes this.
+ */
+export type AdminScanListDto = {
+    items: Array<AdminScanListItem>;
+};
+
+/**
+ * One row in the dashboard's recent-scans table. Same backbone as `AdminDashboardLatestScan` plus `libraryName` (so the table can render the library label without a second round-trip) and `coursesAdded` (highlighted as a "+N" badge in the design).
+ */
+export type AdminScanListItem = {
+    scanId: string;
+    libraryId: string;
+    libraryName: string;
+    status: ScanStatus;
+    startedAt: string;
+    /**
+     * null while still `running`.
+     */
+    finishedAt: string | null;
+    filesScanned: number;
+    /**
+     * Net new course rows persisted by this scan.
+     */
+    coursesAdded: number;
+    errorsCount: number;
+};
+
+/**
  * A single user-owned bookmark pinned to a position within a lesson.
  */
 export type BookmarkDto = {
@@ -1182,6 +1210,40 @@ export type GetAdminDashboardResponses = {
 };
 
 export type GetAdminDashboardResponse = GetAdminDashboardResponses[keyof GetAdminDashboardResponses];
+
+export type ListAdminScansData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Maximum number of scans to return.
+         */
+        limit?: number;
+    };
+    url: '/api/v1/admin/scans';
+};
+
+export type ListAdminScansErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller is authenticated but not an administrator
+     */
+    403: Problem;
+};
+
+export type ListAdminScansError = ListAdminScansErrors[keyof ListAdminScansErrors];
+
+export type ListAdminScansResponses = {
+    /**
+     * Recent-scans list
+     */
+    200: AdminScanListDto;
+};
+
+export type ListAdminScansResponse = ListAdminScansResponses[keyof ListAdminScansResponses];
 
 export type GetAdminHasUsersData = {
     body?: never;

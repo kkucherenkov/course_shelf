@@ -57,7 +57,7 @@
       labelKey: 'pages.admin.navUsers',
       icon: 'i-heroicons-users',
       to: '/admin/users',
-      disabled: true,
+      disabled: false,
     },
     {
       key: 'permissions',

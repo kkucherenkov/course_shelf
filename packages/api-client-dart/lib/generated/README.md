@@ -83,6 +83,8 @@ Class | Method | HTTP request | Description
 [*AdminApi*](doc/AdminApi.md) | [**getAdminInstance**](doc/AdminApi.md#getadmininstance) | **GET** /api/v1/admin/instance | Public instance configuration (self-registration, email verification, SSO providers)
 [*AdminApi*](doc/AdminApi.md) | [**listAdminLibraries**](doc/AdminApi.md#listadminlibraries) | **GET** /api/v1/admin/libraries | List every library with admin-flavoured counters
 [*AdminApi*](doc/AdminApi.md) | [**listAdminScans**](doc/AdminApi.md#listadminscans) | **GET** /api/v1/admin/scans | List recent scans across every library
+[*AdminApi*](doc/AdminApi.md) | [**listAdminUsers**](doc/AdminApi.md#listadminusers) | **GET** /api/v1/admin/users | List every user in the platform
+[*AdminApi*](doc/AdminApi.md) | [**updateAdminUser**](doc/AdminApi.md#updateadminuser) | **PATCH** /api/v1/admin/users/{id} | Patch role and/or banned flag on a user
 [*CatalogApi*](doc/CatalogApi.md) | [**getContinueWatching**](doc/CatalogApi.md#getcontinuewatching) | **GET** /api/v1/home/continue-watching | List courses the requester is in the middle of
 [*CatalogApi*](doc/CatalogApi.md) | [**getCourse**](doc/CatalogApi.md#getcourse) | **GET** /api/v1/courses/{id} | Get a single course
 [*CatalogApi*](doc/CatalogApi.md) | [**getCourseOutline**](doc/CatalogApi.md#getcourseoutline) | **GET** /api/v1/courses/{id}/outline | Full course outline — sections, lessons (lite), and aggregated materials
@@ -128,6 +130,10 @@ Class | Method | HTTP request | Description
  - [AdminLibraryListItemScan](doc/AdminLibraryListItemScan.md)
  - [AdminScanListDto](doc/AdminScanListDto.md)
  - [AdminScanListItem](doc/AdminScanListItem.md)
+ - [AdminUpdateUserRequest](doc/AdminUpdateUserRequest.md)
+ - [AdminUserListDto](doc/AdminUserListDto.md)
+ - [AdminUserListItem](doc/AdminUserListItem.md)
+ - [AdminUserRole](doc/AdminUserRole.md)
  - [BatchProgressItemAccepted](doc/BatchProgressItemAccepted.md)
  - [BatchProgressItemForbidden](doc/BatchProgressItemForbidden.md)
  - [BatchProgressItemResult](doc/BatchProgressItemResult.md)

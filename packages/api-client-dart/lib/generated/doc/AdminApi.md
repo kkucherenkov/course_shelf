@@ -14,6 +14,8 @@ Method | HTTP request | Description
 [**getAdminInstance**](AdminApi.md#getadmininstance) | **GET** /api/v1/admin/instance | Public instance configuration (self-registration, email verification, SSO providers)
 [**listAdminLibraries**](AdminApi.md#listadminlibraries) | **GET** /api/v1/admin/libraries | List every library with admin-flavoured counters
 [**listAdminScans**](AdminApi.md#listadminscans) | **GET** /api/v1/admin/scans | List recent scans across every library
+[**listAdminUsers**](AdminApi.md#listadminusers) | **GET** /api/v1/admin/users | List every user in the platform
+[**updateAdminUser**](AdminApi.md#updateadminuser) | **PATCH** /api/v1/admin/users/{id} | Patch role and/or banned flag on a user
 
 
 # **getAdminDashboard**
@@ -213,6 +215,96 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
  - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **listAdminUsers**
+> AdminUserListDto listAdminUsers(search, limit)
+
+List every user in the platform
+
+Admin-only listing for the admin users page. Ordered by `createdAt` descending (newest first). The optional `search` filter matches email and `name` substrings (case-insensitive). `role` values are normalised to lowercase (`admin`, `user`, `guest`) regardless of what the auth backend stamps on the row in the database — the SPA only cares about the canonical lowercase form. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getAdminApi();
+final String search = search_example; // String | Case-insensitive substring filter on `email` or `name`.
+final int limit = 56; // int | Maximum number of users to return.
+
+try {
+    final response = api.listAdminUsers(search, limit);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling AdminApi->listAdminUsers: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **search** | **String**| Case-insensitive substring filter on `email` or `name`. | [optional] 
+ **limit** | **int**| Maximum number of users to return. | [optional] [default to 50]
+
+### Return type
+
+[**AdminUserListDto**](AdminUserListDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **updateAdminUser**
+> AdminUserListItem updateAdminUser(id, adminUpdateUserRequest)
+
+Patch role and/or banned flag on a user
+
+Inline mutation used by the admin users page's role chip. At least one of `role` or `banned` must be present. The auth backend stores roles in upper-case; this endpoint translates the lowercase request to the persisted format and back.  Banning is a soft delete from the user's perspective — sessions are invalidated and sign-in fails until the flag is cleared. Removing the user record outright is a separate, deferred operation. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getAdminApi();
+final String id = id_example; // String | User id (uuid).
+final AdminUpdateUserRequest adminUpdateUserRequest = {"role":"admin"}; // AdminUpdateUserRequest | 
+
+try {
+    final response = api.updateAdminUser(id, adminUpdateUserRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling AdminApi->updateAdminUser: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| User id (uuid). | 
+ **adminUpdateUserRequest** | [**AdminUpdateUserRequest**](AdminUpdateUserRequest.md)|  | 
+
+### Return type
+
+[**AdminUserListItem**](AdminUserListItem.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
  - **Accept**: application/json, application/problem+json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

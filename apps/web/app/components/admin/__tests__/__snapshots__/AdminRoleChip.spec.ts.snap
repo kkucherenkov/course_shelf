@@ -1,0 +1,30 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AdminRoleChip > matches snapshot — editable banned (disabled) 1`] = `
+"<span data-v-09ab2d4e="" class="adm-role-chip"><!-- The chip itself --><span data-v-09ab2d4e="" class="adm-role-chip__pill adm-role-chip__pill--disabled" data-role="disabled" role="button" tabindex="0" aria-haspopup="listbox" aria-expanded="false"><!--v-if--> Disabled <span data-v-09ab2d4e="" class="i-heroicons-chevron-down adm-role-chip__caret" aria-hidden="true"></span></span><!-- Dropdown menu -->
+<!--v-if-->
+<!-- Click-away backdrop -->
+<!--v-if--></span>"
+`;
+
+exports[`AdminRoleChip > matches snapshot — editable guest 1`] = `
+"<span data-v-09ab2d4e="" class="adm-role-chip"><!-- The chip itself --><span data-v-09ab2d4e="" class="adm-role-chip__pill adm-role-chip__pill--guest" data-role="guest" role="button" tabindex="0" aria-haspopup="listbox" aria-expanded="false"><!--v-if--> Guest <span data-v-09ab2d4e="" class="i-heroicons-chevron-down adm-role-chip__caret" aria-hidden="true"></span></span><!-- Dropdown menu -->
+<!--v-if-->
+<!-- Click-away backdrop -->
+<!--v-if--></span>"
+`;
+
+exports[`AdminRoleChip > matches snapshot — editable user 1`] = `
+"<span data-v-09ab2d4e="" class="adm-role-chip"><!-- The chip itself --><span data-v-09ab2d4e="" class="adm-role-chip__pill adm-role-chip__pill--user" data-role="user" role="button" tabindex="0" aria-haspopup="listbox" aria-expanded="false"><!--v-if--> User <span data-v-09ab2d4e="" class="i-heroicons-chevron-down adm-role-chip__caret" aria-hidden="true"></span></span><!-- Dropdown menu -->
+<!--v-if-->
+<!-- Click-away backdrop -->
+<!--v-if--></span>"
+`;
+
+exports[`AdminRoleChip > matches snapshot — read-only admin 1`] = `
+"<span data-v-09ab2d4e="" class="adm-role-chip"><!-- The chip itself --><span data-v-09ab2d4e="" class="adm-role-chip__pill adm-role-chip__pill--admin" data-role="admin"><span data-v-09ab2d4e="" class="i-heroicons-shield-check adm-role-chip__icon" aria-hidden="true"></span> Admin
+<!--v-if--></span><!-- Dropdown menu -->
+<!--v-if-->
+<!-- Click-away backdrop -->
+<!--v-if--></span>"
+`;

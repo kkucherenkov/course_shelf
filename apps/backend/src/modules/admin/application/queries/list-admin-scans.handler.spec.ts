@@ -27,6 +27,8 @@ function makePort(items: AdminScanListItem[] = []): DashboardPort {
     hasAnyUser: vi.fn(),
     listRecentScans: vi.fn().mockResolvedValue(items),
     listAllLibrariesWithCounts: vi.fn(),
+    listUsers: vi.fn(),
+    updateUser: vi.fn(),
   };
 }
 
@@ -56,8 +58,8 @@ describe('ListAdminScansHandler', () => {
     const result = await handler.execute(new ListAdminScansQuery(10));
 
     expect(result.items).toHaveLength(2);
-    expect(result.items[0].scanId).toBe('scan-2');
-    expect(result.items[1].scanId).toBe('scan-1');
+    expect(result.items[0]?.scanId).toBe('scan-2');
+    expect(result.items[1]?.scanId).toBe('scan-1');
     expect(port.listRecentScans).toHaveBeenCalledWith(10, undefined);
   });
 
@@ -142,8 +144,8 @@ describe('ListAdminScansHandler', () => {
 
     const result = await handler.execute(new ListAdminScansQuery());
 
-    expect(result.items[0].finishedAt).toBeNull();
-    expect(result.items[0].status).toBe('running');
+    expect(result.items[0]?.finishedAt).toBeNull();
+    expect(result.items[0]?.status).toBe('running');
   });
 
   it('passes libraryId to the port when provided', async () => {
@@ -181,7 +183,7 @@ describe('ListAdminScansHandler', () => {
     const result = await handler.execute(new ListAdminScansQuery(10, 'lib-42'));
 
     expect(result.items).toHaveLength(1);
-    expect(result.items[0].libraryId).toBe('lib-42');
+    expect(result.items[0]?.libraryId).toBe('lib-42');
     expect(port.listRecentScans).toHaveBeenCalledWith(10, 'lib-42');
   });
 });

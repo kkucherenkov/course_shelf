@@ -3,6 +3,7 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
 import { AdminGuard } from '../../common/auth/admin.guard';
 import { GetAdminDashboardQuery } from './application/queries/get-admin-dashboard.query';
+import { GetAdminUserQuery } from './application/queries/get-admin-user.query';
 import { ListAdminLibrariesQuery } from './application/queries/list-admin-libraries.query';
 import { ListAdminScansQuery } from './application/queries/list-admin-scans.query';
 import { ListAdminUsersQuery } from './application/queries/list-admin-users.query';
@@ -59,6 +60,11 @@ export class AdminController {
     return this.queryBus.execute<ListAdminUsersQuery, AdminUserListDto>(
       new ListAdminUsersQuery(search, parsed),
     );
+  }
+
+  @Get('users/:id')
+  getUser(@Param('id') id: string): Promise<AdminUserListItem> {
+    return this.queryBus.execute<GetAdminUserQuery, AdminUserListItem>(new GetAdminUserQuery(id));
   }
 
   @Patch('users/:id')

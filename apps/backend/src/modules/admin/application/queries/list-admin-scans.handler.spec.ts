@@ -28,6 +28,7 @@ function makePort(items: AdminScanListItem[] = []): DashboardPort {
     listRecentScans: vi.fn().mockResolvedValue(items),
     listAllLibrariesWithCounts: vi.fn(),
     listUsers: vi.fn(),
+    findUserById: vi.fn(),
     updateUser: vi.fn(),
   };
 }

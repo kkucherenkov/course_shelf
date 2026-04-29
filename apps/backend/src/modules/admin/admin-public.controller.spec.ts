@@ -12,6 +12,7 @@ function makePort(hasAnyUserResult: boolean): DashboardPort {
     listRecentScans: vi.fn(),
     listAllLibrariesWithCounts: vi.fn(),
     listUsers: vi.fn(),
+    findUserById: vi.fn(),
     updateUser: vi.fn(),
   };
 }

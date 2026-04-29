@@ -157,7 +157,13 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /**
+     * Fetch a single user by id
+     * @description Admin-only single-user fetch — used by the admin permissions page
+     *     to show whose grants are being edited. Returns the same
+     *     `AdminUserListItem` shape as the listing endpoint.
+     */
+    get: operations['getAdminUser'];
     put?: never;
     post?: never;
     delete?: never;
@@ -2461,6 +2467,56 @@ export interface operations {
       };
       /** @description Caller is authenticated but not an administrator */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getAdminUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description User id (uuid). */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description User row */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminUserListItem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller is authenticated but not an administrator */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description User not found */
+      404: {
         headers: {
           [name: string]: unknown;
         };

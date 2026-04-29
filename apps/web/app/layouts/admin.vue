@@ -64,7 +64,7 @@
       labelKey: 'pages.admin.navPermissions',
       icon: 'i-heroicons-lock-closed',
       to: '/admin/permissions',
-      disabled: true,
+      disabled: false,
     },
   ];
 

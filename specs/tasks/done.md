@@ -2,6 +2,15 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-28-001 — AppScanProgress (E13-F02-S07)
+
+- Created: 2026-04-28
+- Completed: 2026-04-28
+- Result: single feat commit on `feat/scan-progress-ui-component`
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F02-S07.md`
+- Outcome: `packages/ui/src/components/ScanProgress/AppScanProgress.vue` — presentational live-scan indicator. Status dot (pulse animation for running, reduced-motion respected), progress bar, 4-stat grid, current-file line with ellipsis truncation and title tooltip. Props-in/events-out, no router/store/i18n calls. Exported as `AppScanProgress` + `ScanStatus` type from `@app/ui`. 25 new tests (5 snapshots + 2 event + 6 conditional + 12 status-class); suite 810 → 835 total.
+
 ## T-2026-04-29-060 — Stage A Course detail page (E14-F01-S03) — bookkeeping
 
 - Created: 2026-04-29

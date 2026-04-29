@@ -379,6 +379,16 @@ paths:
             minimum: 1
             maximum: 100
             default: 20
+        - name: libraryId
+          in: query
+          required: false
+          description: >-
+            When set, only return scans for the given library. Used by the
+            admin library-detail page's scan-history table. Unknown library
+            ids return an empty list (not 404 — the view is a filter, not
+            a fetch).
+          schema:
+            type: string
       responses:
         "200":
           description: Recent-scans list
@@ -420,6 +430,81 @@ paths:
                         errorsCount: 1
                 empty:
                   summary: No scans have ever run
+                  value:
+                    items: []
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller is authenticated but not an administrator
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+
+  /api/v1/admin/libraries:
+    get:
+      operationId: listAdminLibraries
+      summary: List every library with admin-flavoured counters
+      description: |
+        Returns every library in the system enriched with the counts and
+        last-scan summary the admin libraries page renders per row. Admin-
+        only — `listLibraries` is the user-facing endpoint and respects
+        per-library grants; this one bypasses grants because admins see
+        everything.
+
+        Per row:
+          - `coursesCount` / `lessonsCount` are aggregate counts from the
+            catalog (`Course.libraryId == library.id`).
+          - `lastScan` is the most recent scan on the library (any status),
+            or `null` when no scan has ever run.
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Admin library list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLibraryListDto"
+              examples:
+                twoLibraries:
+                  value:
+                    items:
+                      - id: clxvlib0000000000000000001
+                        name: Computer Science
+                        rootPath: /srv/courses/computer-science
+                        coursesCount: 14
+                        lessonsCount: 312
+                        lastScan:
+                          status: succeeded
+                          startedAt: "2026-04-27T09:55:00Z"
+                          finishedAt: "2026-04-27T09:58:12Z"
+                          errorsCount: 2
+                      - id: clxvlib0000000000000000002
+                        name: Mathematics
+                        rootPath: /mnt/storage-2/math
+                        coursesCount: 4
+                        lessonsCount: 89
+                        lastScan: null
+                empty:
                   value:
                     items: []
         "401":
@@ -2887,6 +2972,74 @@ components:
           type: integer
           minimum: 0
           description: Number of error records attached to this scan.
+
+    AdminLibraryListDto:
+      type: object
+      required: [items]
+      additionalProperties: false
+      description: >-
+        Admin-only listing of every library with the counters and last-scan
+        summary the admin libraries page renders per row.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminLibraryListItem"
+
+    AdminLibraryListItem:
+      type: object
+      required: [id, name, rootPath, coursesCount, lessonsCount, lastScan]
+      additionalProperties: false
+      description: >-
+        One row in the admin libraries list. Same backbone as `LibraryDto`
+        plus computed `coursesCount`, `lessonsCount` and an embedded
+        `lastScan` summary (or `null` when no scan has ever run).
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        rootPath:
+          type: string
+          minLength: 1
+        coursesCount:
+          type: integer
+          minimum: 0
+        lessonsCount:
+          type: integer
+          minimum: 0
+        lastScan:
+          oneOf:
+            - $ref: "#/components/schemas/AdminLibraryListItemScan"
+            - type: "null"
+          description: Most recent scan summary, or `null` when no scan has ever run.
+
+    AdminLibraryListItemScan:
+      type: object
+      required: [status, startedAt, finishedAt, errorsCount]
+      additionalProperties: false
+      description: >-
+        Compact scan summary embedded in `AdminLibraryListItem`. Excludes
+        scanId / filesScanned / coursesAdded — the libraries-list row only
+        renders status + age + errors. The detail page fetches the full
+        scan history via `listAdminScans?libraryId=…`.
+      properties:
+        status:
+          $ref: "#/components/schemas/ScanStatus"
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+          description: null while still `running`.
+        errorsCount:
+          type: integer
+          minimum: 0
 
     AdminScanListDto:
       type: object

@@ -95,6 +95,36 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/libraries': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List every library with admin-flavoured counters
+     * @description Returns every library in the system enriched with the counts and
+     *     last-scan summary the admin libraries page renders per row. Admin-
+     *     only — `listLibraries` is the user-facing endpoint and respects
+     *     per-library grants; this one bypasses grants because admins see
+     *     everything.
+     *
+     *     Per row:
+     *       - `coursesCount` / `lessonsCount` are aggregate counts from the
+     *         catalog (`Course.libraryId == library.id`).
+     *       - `lastScan` is the most recent scan on the library (any status),
+     *         or `null` when no scan has ever run.
+     */
+    get: operations['listAdminLibraries'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/has-users': {
     parameters: {
       query?: never;
@@ -940,6 +970,29 @@ export interface components {
       finishedAt: string | null;
       filesScanned: number;
       /** @description Number of error records attached to this scan. */
+      errorsCount: number;
+    };
+    /** @description Admin-only listing of every library with the counters and last-scan summary the admin libraries page renders per row. */
+    AdminLibraryListDto: {
+      items: components['schemas']['AdminLibraryListItem'][];
+    };
+    /** @description One row in the admin libraries list. Same backbone as `LibraryDto` plus computed `coursesCount`, `lessonsCount` and an embedded `lastScan` summary (or `null` when no scan has ever run). */
+    AdminLibraryListItem: {
+      id: string;
+      name: string;
+      rootPath: string;
+      coursesCount: number;
+      lessonsCount: number;
+      /** @description Most recent scan summary, or `null` when no scan has ever run. */
+      lastScan: components['schemas']['AdminLibraryListItemScan'] | null;
+    };
+    /** @description Compact scan summary embedded in `AdminLibraryListItem`. Excludes scanId / filesScanned / coursesAdded — the libraries-list row only renders status + age + errors. The detail page fetches the full scan history via `listAdminScans?libraryId=…`. */
+    AdminLibraryListItemScan: {
+      status: components['schemas']['ScanStatus'];
+      /** Format: date-time */
+      startedAt: string;
+      /** @description null while still `running`. */
+      finishedAt: string | null;
       errorsCount: number;
     };
     /** @description Page of recent scans across every library, ordered by `startedAt` descending. The dashboard's "Recent scans" table consumes this. */
@@ -2216,6 +2269,8 @@ export interface operations {
       query?: {
         /** @description Maximum number of scans to return. */
         limit?: number;
+        /** @description When set, only return scans for the given library. Used by the admin library-detail page's scan-history table. Unknown library ids return an empty list (not 404 — the view is a filter, not a fetch). */
+        libraryId?: string;
       };
       header?: never;
       path?: never;
@@ -2230,6 +2285,44 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['AdminScanListDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller is authenticated but not an administrator */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listAdminLibraries: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Admin library list */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminLibraryListDto'];
         };
       };
       /** @description Missing or invalid bearer token */

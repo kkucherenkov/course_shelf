@@ -1,14 +1,10 @@
 <script setup lang="ts">
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
   import { AppPlayerChrome, AppSkeleton, AppNoPermission } from '@app/ui';
-  import { getLesson, getCourseOutline, listLessonBookmarks } from '@app/api-client-ts';
-  import type {
-    LessonDto,
-    CourseOutlineDto,
-    BookmarkDto,
-    LessonOutlineItem,
-  } from '@app/api-client-ts';
+  import { getLesson, listLessonBookmarks } from '@app/api-client-ts';
+  import type { LessonDto, BookmarkDto, LessonOutlineItem } from '@app/api-client-ts';
 
+  import { useCourseOutline } from '~/composables/useCourseOutline';
   import { useLessonPlayer } from '~/composables/useLessonPlayer';
   import { useProgressReporter } from '~/composables/useProgressReporter';
   import { useStreamUrl } from '~/composables/useStreamUrl';
@@ -40,14 +36,11 @@
     },
   );
 
-  const { data: outlineData, status: outlineStatus } = useAsyncData<CourseOutlineDto>(
-    `course-outline:${courseId}`,
-    async () => {
-      const res = await getCourseOutline({ path: { id: courseId } });
-      if (res.error) throw new Error(`HTTP ${String(res.response.status)}`);
-      return res.data as CourseOutlineDto;
-    },
-  );
+  // Share the outline with the course detail page via the composable —
+  // both pages hit the same `useAsyncData` key, and the composable
+  // memoises its handler at module scope so Nuxt doesn't warn about
+  // handler-identity drift between the two call sites.
+  const { data: outlineData, status: outlineStatus } = useCourseOutline(courseId);
 
   const bookmarks = ref<BookmarkDto[]>([]);
 

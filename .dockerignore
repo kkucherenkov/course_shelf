@@ -1,0 +1,49 @@
+# Keep the build context lean. The production Dockerfiles in apps/*/Dockerfile
+# use the repo root as their context so they can see every workspace package
+# manifest; everything below gets pruned out before the COPY layers run.
+
+# pnpm + node_modules — repopulated by `pnpm install` in the build stage
+**/node_modules
+.pnpm-store
+
+# Nuxt + Vite + Turbo build caches
+.nuxt
+.output
+**/.turbo
+**/.cache
+
+# Test + coverage artefacts
+**/coverage
+**/.vitest
+**/__snapshots__/.tmp
+
+# Mobile + Dart client — not part of the web/backend release images
+apps/mobile
+packages/api-client-dart
+
+# Storybook static output (rebuilt if needed)
+packages/ui/storybook-static
+
+# Local env + git noise
+.env
+.env.*
+!.env.example
+!.env.production.example
+.git
+.github
+.husky
+.idea
+.vscode
+.DS_Store
+**/*.log
+
+# Tests + e2e — not needed in the runtime image
+tests
+playwright-report
+test-results
+
+# Course-content samples checked into the repo for local testing —
+# 9+ GB of mp4 that would balloon the build context. Production
+# deployments mount their own course directory via $COURSES_PATH.
+docs/data
+

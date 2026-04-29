@@ -81,6 +81,7 @@ Class | Method | HTTP request | Description
 [*AdminApi*](doc/AdminApi.md) | [**getAdminDashboard**](doc/AdminApi.md#getadmindashboard) | **GET** /api/v1/admin/dashboard | Operational snapshot for the admin dashboard
 [*AdminApi*](doc/AdminApi.md) | [**getAdminHasUsers**](doc/AdminApi.md#getadminhasusers) | **GET** /api/v1/admin/has-users | Indicate whether any users exist in the platform
 [*AdminApi*](doc/AdminApi.md) | [**getAdminInstance**](doc/AdminApi.md#getadmininstance) | **GET** /api/v1/admin/instance | Public instance configuration (self-registration, email verification, SSO providers)
+[*AdminApi*](doc/AdminApi.md) | [**getAdminUser**](doc/AdminApi.md#getadminuser) | **GET** /api/v1/admin/users/{id} | Fetch a single user by id
 [*AdminApi*](doc/AdminApi.md) | [**listAdminLibraries**](doc/AdminApi.md#listadminlibraries) | **GET** /api/v1/admin/libraries | List every library with admin-flavoured counters
 [*AdminApi*](doc/AdminApi.md) | [**listAdminScans**](doc/AdminApi.md#listadminscans) | **GET** /api/v1/admin/scans | List recent scans across every library
 [*AdminApi*](doc/AdminApi.md) | [**listAdminUsers**](doc/AdminApi.md#listadminusers) | **GET** /api/v1/admin/users | List every user in the platform

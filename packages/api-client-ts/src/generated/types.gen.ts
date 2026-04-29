@@ -1391,6 +1391,44 @@ export type ListAdminUsersResponses = {
 
 export type ListAdminUsersResponse = ListAdminUsersResponses[keyof ListAdminUsersResponses];
 
+export type GetAdminUserData = {
+    body?: never;
+    path: {
+        /**
+         * User id (uuid).
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/users/{id}';
+};
+
+export type GetAdminUserErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller is authenticated but not an administrator
+     */
+    403: Problem;
+    /**
+     * User not found
+     */
+    404: Problem;
+};
+
+export type GetAdminUserError = GetAdminUserErrors[keyof GetAdminUserErrors];
+
+export type GetAdminUserResponses = {
+    /**
+     * User row
+     */
+    200: AdminUserListItem;
+};
+
+export type GetAdminUserResponse = GetAdminUserResponses[keyof GetAdminUserResponses];
+
 export type UpdateAdminUserData = {
     body: AdminUpdateUserRequest;
     path: {

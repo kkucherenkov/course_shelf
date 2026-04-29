@@ -28,6 +28,7 @@ function makePort(updated: AdminUserListItem | null = makeItem()): DashboardPort
     listRecentScans: vi.fn(),
     listAllLibrariesWithCounts: vi.fn(),
     listUsers: vi.fn(),
+    findUserById: vi.fn(),
     updateUser: vi.fn().mockResolvedValue(updated),
   };
 }

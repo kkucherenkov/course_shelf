@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AdminLibraryRow > matches snapshot 1`] = `
+"<div data-v-9ac31328="" class="adm-lib-row" role="button" tabindex="0">
+  <!-- Icon -->
+  <div data-v-9ac31328="" class="adm-lib-row__icon" aria-hidden="true"><span data-v-9ac31328="" class="i-heroicons-building-library"></span></div><!-- Name + sub-line -->
+  <div data-v-9ac31328="" class="adm-lib-row__name-col">
+    <div data-v-9ac31328="" class="adm-lib-row__name">Computer Science</div>
+    <div data-v-9ac31328="" class="adm-lib-row__sub adm-lib-row__sub--xs"><span data-v-9ac31328="">12 courses</span><span data-v-9ac31328="" class="adm-lib-row__sep">·</span><span data-v-9ac31328="">Never scanned</span></div>
+    <div data-v-9ac31328="" class="adm-lib-row__sub adm-lib-row__sub--md-up"><span data-v-9ac31328="">Never scanned</span></div>
+  </div><!-- Copyable path (md+) --><button data-v-9ac31328="" class="stub-copyable-path adm-lib-row__path">/srv/courses/cs</button><!-- Course count (lg) -->
+  <div data-v-9ac31328="" class="adm-lib-row__courses"><span data-v-9ac31328="" class="adm-lib-row__courses-num">12</span> courses</div><!-- Status pill (md+) --><span data-v-9ac31328="" class="adm-lib-row__status-pill adm-lib-row__status-pill--none"></span><!-- Actions -->
+  <div data-v-9ac31328="" class="adm-lib-row__actions">
+    <!-- xs: more-only --><button data-v-9ac31328="" type="button" class="adm-lib-row__btn adm-lib-row__btn--icon adm-lib-row__btn--xs" aria-label="More"><span data-v-9ac31328="" class="i-heroicons-ellipsis-horizontal" aria-hidden="true"></span></button><!-- md+: scan + more --><button data-v-9ac31328="" type="button" class="adm-lib-row__btn adm-lib-row__btn--md-up"><span data-v-9ac31328="" class="i-heroicons-arrow-path" aria-hidden="true"></span> Scan</button><button data-v-9ac31328="" type="button" class="adm-lib-row__btn adm-lib-row__btn--icon adm-lib-row__btn--md-up" aria-label="More"><span data-v-9ac31328="" class="i-heroicons-ellipsis-horizontal" aria-hidden="true"></span></button>
+  </div>
+</div>"
+`;

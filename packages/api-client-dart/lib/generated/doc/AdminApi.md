@@ -12,6 +12,7 @@ Method | HTTP request | Description
 [**getAdminDashboard**](AdminApi.md#getadmindashboard) | **GET** /api/v1/admin/dashboard | Operational snapshot for the admin dashboard
 [**getAdminHasUsers**](AdminApi.md#getadminhasusers) | **GET** /api/v1/admin/has-users | Indicate whether any users exist in the platform
 [**getAdminInstance**](AdminApi.md#getadmininstance) | **GET** /api/v1/admin/instance | Public instance configuration (self-registration, email verification, SSO providers)
+[**listAdminLibraries**](AdminApi.md#listadminlibraries) | **GET** /api/v1/admin/libraries | List every library with admin-flavoured counters
 [**listAdminScans**](AdminApi.md#listadminscans) | **GET** /api/v1/admin/scans | List recent scans across every library
 
 
@@ -132,8 +133,47 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **listAdminLibraries**
+> AdminLibraryListDto listAdminLibraries()
+
+List every library with admin-flavoured counters
+
+Returns every library in the system enriched with the counts and last-scan summary the admin libraries page renders per row. Admin- only — `listLibraries` is the user-facing endpoint and respects per-library grants; this one bypasses grants because admins see everything.  Per row:   - `coursesCount` / `lessonsCount` are aggregate counts from the     catalog (`Course.libraryId == library.id`).   - `lastScan` is the most recent scan on the library (any status),     or `null` when no scan has ever run. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getAdminApi();
+
+try {
+    final response = api.listAdminLibraries();
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling AdminApi->listAdminLibraries: $e\n');
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**AdminLibraryListDto**](AdminLibraryListDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **listAdminScans**
-> AdminScanListDto listAdminScans(limit)
+> AdminScanListDto listAdminScans(limit, libraryId)
 
 List recent scans across every library
 
@@ -145,9 +185,10 @@ import 'package:app_api_client/api.dart';
 
 final api = AppApiClient().getAdminApi();
 final int limit = 56; // int | Maximum number of scans to return.
+final String libraryId = libraryId_example; // String | When set, only return scans for the given library. Used by the admin library-detail page's scan-history table. Unknown library ids return an empty list (not 404 — the view is a filter, not a fetch).
 
 try {
-    final response = api.listAdminScans(limit);
+    final response = api.listAdminScans(limit, libraryId);
     print(response);
 } on DioException catch (e) {
     print('Exception when calling AdminApi->listAdminScans: $e\n');
@@ -159,6 +200,7 @@ try {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **limit** | **int**| Maximum number of scans to return. | [optional] [default to 20]
+ **libraryId** | **String**| When set, only return scans for the given library. Used by the admin library-detail page's scan-history table. Unknown library ids return an empty list (not 404 — the view is a filter, not a fetch). | [optional] 
 
 ### Return type
 

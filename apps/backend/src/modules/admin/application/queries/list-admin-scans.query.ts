@@ -1,3 +1,6 @@
 export class ListAdminScansQuery {
-  constructor(readonly limit?: number) {}
+  constructor(
+    readonly limit?: number,
+    readonly libraryId?: string,
+  ) {}
 }

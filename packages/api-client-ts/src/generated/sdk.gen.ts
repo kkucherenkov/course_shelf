@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueMaterialDownloadUrlData, IssueMaterialDownloadUrlErrors, IssueMaterialDownloadUrlResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListAdminScansData, ListAdminScansErrors, ListAdminScansResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses } from './types.gen';
+import type { CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueMaterialDownloadUrlData, IssueMaterialDownloadUrlErrors, IssueMaterialDownloadUrlResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListAdminLibrariesData, ListAdminLibrariesErrors, ListAdminLibrariesResponses, ListAdminScansData, ListAdminScansErrors, ListAdminScansResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -84,6 +84,28 @@ export const getAdminDashboard = <ThrowOnError extends boolean = false>(options?
 export const listAdminScans = <ThrowOnError extends boolean = false>(options?: Options<ListAdminScansData, ThrowOnError>) => (options?.client ?? client).get<ListAdminScansResponses, ListAdminScansErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/admin/scans',
+    ...options
+});
+
+/**
+ * List every library with admin-flavoured counters
+ *
+ * Returns every library in the system enriched with the counts and
+ * last-scan summary the admin libraries page renders per row. Admin-
+ * only — `listLibraries` is the user-facing endpoint and respects
+ * per-library grants; this one bypasses grants because admins see
+ * everything.
+ *
+ * Per row:
+ * - `coursesCount` / `lessonsCount` are aggregate counts from the
+ * catalog (`Course.libraryId == library.id`).
+ * - `lastScan` is the most recent scan on the library (any status),
+ * or `null` when no scan has ever run.
+ *
+ */
+export const listAdminLibraries = <ThrowOnError extends boolean = false>(options?: Options<ListAdminLibrariesData, ThrowOnError>) => (options?.client ?? client).get<ListAdminLibrariesResponses, ListAdminLibrariesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/libraries',
     ...options
 });
 

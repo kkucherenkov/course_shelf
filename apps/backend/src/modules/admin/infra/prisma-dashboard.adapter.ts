@@ -3,7 +3,12 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 
 import type { DashboardPort, DashboardSnapshot } from '../domain/dashboard.port';
-import type { AdminDashboardLatestScan, AdminScanListItem } from '@app/api-client-ts';
+import type {
+  AdminDashboardLatestScan,
+  AdminLibraryListItem,
+  AdminLibraryListItemScan,
+  AdminScanListItem,
+} from '@app/api-client-ts';
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
@@ -62,8 +67,9 @@ export class PrismaDashboardAdapter implements DashboardPort {
     };
   }
 
-  async listRecentScans(limit: number): Promise<AdminScanListItem[]> {
+  async listRecentScans(limit: number, libraryId?: string): Promise<AdminScanListItem[]> {
     const scanRows = await this.prisma.scan.findMany({
+      ...(libraryId === undefined ? {} : { where: { libraryId } }),
       orderBy: { startedAt: 'desc' },
       take: limit,
       include: {
@@ -116,5 +122,88 @@ export class PrismaDashboardAdapter implements DashboardPort {
       coursesAdded: coursesAddedByScanId.get(scan.id) ?? 0,
       errorsCount: scan._count.errors,
     }));
+  }
+
+  async listAllLibrariesWithCounts(): Promise<AdminLibraryListItem[]> {
+    const libraries = await this.prisma.library.findMany({
+      orderBy: { name: 'asc' },
+    });
+
+    if (libraries.length === 0) {
+      return [];
+    }
+
+    const ids = libraries.map((l) => l.id);
+
+    // Count courses and aggregate lesson counts per library.
+    // Course → Section → Lesson: no direct Course.lessons relation, so we use
+    // course.groupBy for course counts and lesson.groupBy (by courseId) + a
+    // course lookup for lesson counts.
+    const [courseGroups, lessonGroups] = await Promise.all([
+      this.prisma.course.groupBy({
+        by: ['libraryId'],
+        where: { libraryId: { in: ids } },
+        _count: { _all: true },
+      }),
+      this.prisma.lesson.groupBy({
+        by: ['courseId'],
+        where: { section: { course: { libraryId: { in: ids } } } },
+        _count: { _all: true },
+      }),
+    ]);
+
+    // Build a courseId → libraryId map so we can aggregate lessons per library.
+    const lessonCourseIds = lessonGroups.map((g) => g.courseId);
+    const courseIdRows =
+      lessonCourseIds.length > 0
+        ? await this.prisma.course.findMany({
+            where: { id: { in: lessonCourseIds } },
+            select: { id: true, libraryId: true },
+          })
+        : [];
+    const courseIdToLibraryId = new Map(courseIdRows.map((c) => [c.id, c.libraryId]));
+
+    const courseCountByLibrary = new Map<string, number>(
+      courseGroups.map((g) => [g.libraryId, g._count._all]),
+    );
+
+    const lessonCountByLibrary = new Map<string, number>();
+    for (const g of lessonGroups) {
+      const libId = courseIdToLibraryId.get(g.courseId);
+      if (libId !== undefined) {
+        lessonCountByLibrary.set(libId, (lessonCountByLibrary.get(libId) ?? 0) + g._count._all);
+      }
+    }
+
+    // Most recent scan per library — one row per libraryId (distinct).
+    const recentScanRows = await this.prisma.scan.findMany({
+      where: { libraryId: { in: ids } },
+      orderBy: { startedAt: 'desc' },
+      distinct: ['libraryId'],
+      include: { _count: { select: { errors: true } } },
+    });
+
+    const lastScanByLibrary = new Map(recentScanRows.map((s) => [s.libraryId, s]));
+
+    return libraries.map((lib) => {
+      const scanRow = lastScanByLibrary.get(lib.id);
+      const lastScan: AdminLibraryListItemScan | null = scanRow
+        ? {
+            status: scanRow.status,
+            startedAt: scanRow.startedAt.toISOString(),
+            finishedAt: scanRow.finishedAt ? scanRow.finishedAt.toISOString() : null,
+            errorsCount: scanRow._count.errors,
+          }
+        : null;
+
+      return {
+        id: lib.id,
+        name: lib.name,
+        rootPath: lib.rootPath,
+        coursesCount: courseCountByLibrary.get(lib.id) ?? 0,
+        lessonsCount: lessonCountByLibrary.get(lib.id) ?? 0,
+        lastScan,
+      };
+    });
   }
 }

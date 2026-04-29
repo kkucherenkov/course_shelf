@@ -26,6 +26,7 @@ function makePort(items: AdminScanListItem[] = []): DashboardPort {
     getSnapshot: vi.fn(),
     hasAnyUser: vi.fn(),
     listRecentScans: vi.fn().mockResolvedValue(items),
+    listAllLibrariesWithCounts: vi.fn(),
   };
 }
 
@@ -43,7 +44,7 @@ describe('ListAdminScansHandler', () => {
     const result = await handler.execute(new ListAdminScansQuery());
 
     expect(result).toEqual({ items: [] });
-    expect(port.listRecentScans).toHaveBeenCalledWith(20);
+    expect(port.listRecentScans).toHaveBeenCalledWith(20, undefined);
   });
 
   it('returns items ordered as received from the port (startedAt DESC)', async () => {
@@ -57,7 +58,7 @@ describe('ListAdminScansHandler', () => {
     expect(result.items).toHaveLength(2);
     expect(result.items[0].scanId).toBe('scan-2');
     expect(result.items[1].scanId).toBe('scan-1');
-    expect(port.listRecentScans).toHaveBeenCalledWith(10);
+    expect(port.listRecentScans).toHaveBeenCalledWith(10, undefined);
   });
 
   it('uses default limit of 20 when limit is undefined', async () => {
@@ -66,7 +67,7 @@ describe('ListAdminScansHandler', () => {
 
     await handler.execute(new ListAdminScansQuery(undefined));
 
-    expect(port.listRecentScans).toHaveBeenCalledWith(20);
+    expect(port.listRecentScans).toHaveBeenCalledWith(20, undefined);
   });
 
   it('clamps limit 0 to minimum 1', async () => {
@@ -75,7 +76,7 @@ describe('ListAdminScansHandler', () => {
 
     await handler.execute(new ListAdminScansQuery(0));
 
-    expect(port.listRecentScans).toHaveBeenCalledWith(1);
+    expect(port.listRecentScans).toHaveBeenCalledWith(1, undefined);
   });
 
   it('clamps limit 101 to maximum 100', async () => {
@@ -84,7 +85,7 @@ describe('ListAdminScansHandler', () => {
 
     await handler.execute(new ListAdminScansQuery(101));
 
-    expect(port.listRecentScans).toHaveBeenCalledWith(100);
+    expect(port.listRecentScans).toHaveBeenCalledWith(100, undefined);
   });
 
   it('clamps NaN to default 20', async () => {
@@ -93,7 +94,7 @@ describe('ListAdminScansHandler', () => {
 
     await handler.execute(new ListAdminScansQuery(Number.NaN));
 
-    expect(port.listRecentScans).toHaveBeenCalledWith(20);
+    expect(port.listRecentScans).toHaveBeenCalledWith(20, undefined);
   });
 
   it('passes limit 1 through unchanged', async () => {
@@ -102,7 +103,7 @@ describe('ListAdminScansHandler', () => {
 
     await handler.execute(new ListAdminScansQuery(1));
 
-    expect(port.listRecentScans).toHaveBeenCalledWith(1);
+    expect(port.listRecentScans).toHaveBeenCalledWith(1, undefined);
   });
 
   it('passes limit 100 through unchanged', async () => {
@@ -111,7 +112,7 @@ describe('ListAdminScansHandler', () => {
 
     await handler.execute(new ListAdminScansQuery(100));
 
-    expect(port.listRecentScans).toHaveBeenCalledWith(100);
+    expect(port.listRecentScans).toHaveBeenCalledWith(100, undefined);
   });
 
   it('maps all fields from port items into the dto', async () => {
@@ -143,5 +144,44 @@ describe('ListAdminScansHandler', () => {
 
     expect(result.items[0].finishedAt).toBeNull();
     expect(result.items[0].status).toBe('running');
+  });
+
+  it('passes libraryId to the port when provided', async () => {
+    const port = makePort([]);
+    const handler = makeHandler(port);
+
+    await handler.execute(new ListAdminScansQuery(10, 'lib-42'));
+
+    expect(port.listRecentScans).toHaveBeenCalledWith(10, 'lib-42');
+  });
+
+  it('passes undefined libraryId to the port when not provided', async () => {
+    const port = makePort([]);
+    const handler = makeHandler(port);
+
+    await handler.execute(new ListAdminScansQuery(10));
+
+    expect(port.listRecentScans).toHaveBeenCalledWith(10, undefined);
+  });
+
+  it('returns empty items for unknown libraryId without throwing', async () => {
+    const port = makePort([]);
+    const handler = makeHandler(port);
+
+    const result = await handler.execute(new ListAdminScansQuery(20, 'nonexistent-lib'));
+
+    expect(result).toEqual({ items: [] });
+  });
+
+  it('filters result when libraryId matches', async () => {
+    const matchingItem = makeItem({ libraryId: 'lib-42' });
+    const port = makePort([matchingItem]);
+    const handler = makeHandler(port);
+
+    const result = await handler.execute(new ListAdminScansQuery(10, 'lib-42'));
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].libraryId).toBe('lib-42');
+    expect(port.listRecentScans).toHaveBeenCalledWith(10, 'lib-42');
   });
 });

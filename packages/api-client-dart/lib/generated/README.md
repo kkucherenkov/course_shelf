@@ -81,6 +81,7 @@ Class | Method | HTTP request | Description
 [*AdminApi*](doc/AdminApi.md) | [**getAdminDashboard**](doc/AdminApi.md#getadmindashboard) | **GET** /api/v1/admin/dashboard | Operational snapshot for the admin dashboard
 [*AdminApi*](doc/AdminApi.md) | [**getAdminHasUsers**](doc/AdminApi.md#getadminhasusers) | **GET** /api/v1/admin/has-users | Indicate whether any users exist in the platform
 [*AdminApi*](doc/AdminApi.md) | [**getAdminInstance**](doc/AdminApi.md#getadmininstance) | **GET** /api/v1/admin/instance | Public instance configuration (self-registration, email verification, SSO providers)
+[*AdminApi*](doc/AdminApi.md) | [**listAdminLibraries**](doc/AdminApi.md#listadminlibraries) | **GET** /api/v1/admin/libraries | List every library with admin-flavoured counters
 [*AdminApi*](doc/AdminApi.md) | [**listAdminScans**](doc/AdminApi.md#listadminscans) | **GET** /api/v1/admin/scans | List recent scans across every library
 [*CatalogApi*](doc/CatalogApi.md) | [**getContinueWatching**](doc/CatalogApi.md#getcontinuewatching) | **GET** /api/v1/home/continue-watching | List courses the requester is in the middle of
 [*CatalogApi*](doc/CatalogApi.md) | [**getCourse**](doc/CatalogApi.md#getcourse) | **GET** /api/v1/courses/{id} | Get a single course
@@ -122,6 +123,9 @@ Class | Method | HTTP request | Description
  - [AdminDashboardDto](doc/AdminDashboardDto.md)
  - [AdminDashboardDtoCounts](doc/AdminDashboardDtoCounts.md)
  - [AdminDashboardLatestScan](doc/AdminDashboardLatestScan.md)
+ - [AdminLibraryListDto](doc/AdminLibraryListDto.md)
+ - [AdminLibraryListItem](doc/AdminLibraryListItem.md)
+ - [AdminLibraryListItemScan](doc/AdminLibraryListItemScan.md)
  - [AdminScanListDto](doc/AdminScanListDto.md)
  - [AdminScanListItem](doc/AdminScanListItem.md)
  - [BatchProgressItemAccepted](doc/BatchProgressItemAccepted.md)

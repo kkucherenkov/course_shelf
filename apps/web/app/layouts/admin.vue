@@ -38,10 +38,34 @@
   }
 
   const navItems: NavItem[] = [
-    { key: 'dashboard', labelKey: 'pages.admin.navDashboard', icon: 'i-heroicons-home', to: '/admin', disabled: false },
-    { key: 'libraries', labelKey: 'pages.admin.navLibraries', icon: 'i-heroicons-building-library', to: '/admin/libraries', disabled: true },
-    { key: 'users', labelKey: 'pages.admin.navUsers', icon: 'i-heroicons-users', to: '/admin/users', disabled: true },
-    { key: 'permissions', labelKey: 'pages.admin.navPermissions', icon: 'i-heroicons-lock-closed', to: '/admin/permissions', disabled: true },
+    {
+      key: 'dashboard',
+      labelKey: 'pages.admin.navDashboard',
+      icon: 'i-heroicons-home',
+      to: '/admin',
+      disabled: false,
+    },
+    {
+      key: 'libraries',
+      labelKey: 'pages.admin.navLibraries',
+      icon: 'i-heroicons-building-library',
+      to: '/admin/libraries',
+      disabled: false,
+    },
+    {
+      key: 'users',
+      labelKey: 'pages.admin.navUsers',
+      icon: 'i-heroicons-users',
+      to: '/admin/users',
+      disabled: true,
+    },
+    {
+      key: 'permissions',
+      labelKey: 'pages.admin.navPermissions',
+      icon: 'i-heroicons-lock-closed',
+      to: '/admin/permissions',
+      disabled: true,
+    },
   ];
 
   function isActive(item: NavItem): boolean {

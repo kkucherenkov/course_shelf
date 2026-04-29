@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AdminCopyablePath > matches snapshot 1`] = `"<button data-v-be91c586="" type="button" class="adm-copyable-path" aria-label="Copy path"><span data-v-be91c586="" class="i-heroicons-clipboard-document adm-copyable-path__icon" aria-hidden="true"></span><span data-v-be91c586="" class="adm-copyable-path__text">/srv/courses/cs</span></button>"`;

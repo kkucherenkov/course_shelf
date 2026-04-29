@@ -20,7 +20,12 @@ describe('AdminStatCard', () => {
 
   it('renders optional meta text', () => {
     const wrapper = mount(AdminStatCard, {
-      props: { icon: 'i-heroicons-building-library', label: 'Libraries', value: '6', meta: '1.32 TB total' },
+      props: {
+        icon: 'i-heroicons-building-library',
+        label: 'Libraries',
+        value: '6',
+        meta: '1.32 TB total',
+      },
     });
     expect(wrapper.text()).toContain('1.32 TB total');
   });

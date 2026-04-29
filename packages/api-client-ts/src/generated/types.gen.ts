@@ -110,6 +110,41 @@ export type AdminDashboardLatestScan = {
 };
 
 /**
+ * Admin-only listing of every library with the counters and last-scan summary the admin libraries page renders per row.
+ */
+export type AdminLibraryListDto = {
+    items: Array<AdminLibraryListItem>;
+};
+
+/**
+ * One row in the admin libraries list. Same backbone as `LibraryDto` plus computed `coursesCount`, `lessonsCount` and an embedded `lastScan` summary (or `null` when no scan has ever run).
+ */
+export type AdminLibraryListItem = {
+    id: string;
+    name: string;
+    rootPath: string;
+    coursesCount: number;
+    lessonsCount: number;
+    /**
+     * Most recent scan summary, or `null` when no scan has ever run.
+     */
+    lastScan: AdminLibraryListItemScan | null;
+};
+
+/**
+ * Compact scan summary embedded in `AdminLibraryListItem`. Excludes scanId / filesScanned / coursesAdded — the libraries-list row only renders status + age + errors. The detail page fetches the full scan history via `listAdminScans?libraryId=…`.
+ */
+export type AdminLibraryListItemScan = {
+    status: ScanStatus;
+    startedAt: string;
+    /**
+     * null while still `running`.
+     */
+    finishedAt: string | null;
+    errorsCount: number;
+};
+
+/**
  * Page of recent scans across every library, ordered by `startedAt` descending. The dashboard's "Recent scans" table consumes this.
  */
 export type AdminScanListDto = {
@@ -1219,6 +1254,10 @@ export type ListAdminScansData = {
          * Maximum number of scans to return.
          */
         limit?: number;
+        /**
+         * When set, only return scans for the given library. Used by the admin library-detail page's scan-history table. Unknown library ids return an empty list (not 404 — the view is a filter, not a fetch).
+         */
+        libraryId?: string;
     };
     url: '/api/v1/admin/scans';
 };
@@ -1244,6 +1283,35 @@ export type ListAdminScansResponses = {
 };
 
 export type ListAdminScansResponse = ListAdminScansResponses[keyof ListAdminScansResponses];
+
+export type ListAdminLibrariesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/libraries';
+};
+
+export type ListAdminLibrariesErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller is authenticated but not an administrator
+     */
+    403: Problem;
+};
+
+export type ListAdminLibrariesError = ListAdminLibrariesErrors[keyof ListAdminLibrariesErrors];
+
+export type ListAdminLibrariesResponses = {
+    /**
+     * Admin library list
+     */
+    200: AdminLibraryListDto;
+};
+
+export type ListAdminLibrariesResponse = ListAdminLibrariesResponses[keyof ListAdminLibrariesResponses];
 
 export type GetAdminHasUsersData = {
     body?: never;

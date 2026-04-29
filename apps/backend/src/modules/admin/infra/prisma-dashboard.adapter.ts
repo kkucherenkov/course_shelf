@@ -269,6 +269,37 @@ export class PrismaDashboardAdapter implements DashboardPort {
     }));
   }
 
+  async findUserById(id: string): Promise<AdminUserListItem | null> {
+    const row = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        displayName: true,
+        role: true,
+        banned: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (row === null) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      displayName: row.displayName ?? null,
+      role: normaliseRole(row.role, this.logger, row.id),
+      banned: row.banned,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
   async updateUser(
     id: string,
     patch: { role?: AdminUserRole; banned?: boolean },

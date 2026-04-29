@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 import { AdminController } from './admin.controller';
 import { GetAdminDashboardQuery } from './application/queries/get-admin-dashboard.query';
+import { GetAdminUserQuery } from './application/queries/get-admin-user.query';
 import { ListAdminLibrariesQuery } from './application/queries/list-admin-libraries.query';
 import { ListAdminScansQuery } from './application/queries/list-admin-scans.query';
 import { ListAdminUsersQuery } from './application/queries/list-admin-users.query';
@@ -176,6 +177,42 @@ describe('AdminController', () => {
       const result = await controller.listUsers(undefined, '10');
 
       expect(result).toBe(expectedDto);
+    });
+  });
+
+  describe('GET /admin/users/:id', () => {
+    it('dispatches GetAdminUserQuery with the route id', async () => {
+      const queryBus = makeQueryBus();
+      const controller = makeController(queryBus);
+
+      await controller.getUser('user-42');
+
+      expect(queryBus.execute).toHaveBeenCalledOnce();
+      const query = (queryBus.execute as ReturnType<typeof vi.fn>).mock
+        .calls[0]?.[0] as GetAdminUserQuery;
+      expect(query).toBeInstanceOf(GetAdminUserQuery);
+      expect(query.id).toBe('user-42');
+    });
+
+    it('returns the value resolved by the QueryBus', async () => {
+      const item = {
+        id: 'user-42',
+        email: 'alice@example.com',
+        name: 'Alice',
+        displayName: null,
+        role: 'admin',
+        banned: false,
+        createdAt: '2026-04-27T09:55:00.000Z',
+        updatedAt: '2026-04-28T10:00:00.000Z',
+      };
+      const queryBus = {
+        execute: vi.fn().mockResolvedValue(item),
+      } as unknown as QueryBus;
+      const controller = makeController(queryBus);
+
+      const result = await controller.getUser('user-42');
+
+      expect(result).toBe(item);
     });
   });
 

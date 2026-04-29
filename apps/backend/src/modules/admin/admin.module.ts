@@ -7,6 +7,7 @@ import { PrismaDashboardAdapter } from './infra/prisma-dashboard.adapter';
 import { AdminController } from './admin.controller';
 import { AdminPublicController } from './admin-public.controller';
 import { GetAdminDashboardHandler } from './application/queries/get-admin-dashboard.handler';
+import { GetAdminUserHandler } from './application/queries/get-admin-user.handler';
 import { ListAdminLibrariesHandler } from './application/queries/list-admin-libraries.handler';
 import { ListAdminScansHandler } from './application/queries/list-admin-scans.handler';
 import { ListAdminUsersHandler } from './application/queries/list-admin-users.handler';
@@ -21,6 +22,7 @@ import { UpdateAdminUserHandler } from './application/commands/update-admin-user
   providers: [
     AdminGuard,
     GetAdminDashboardHandler,
+    GetAdminUserHandler,
     ListAdminLibrariesHandler,
     ListAdminScansHandler,
     ListAdminUsersHandler,

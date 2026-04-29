@@ -768,3 +768,105 @@ describe('PrismaDashboardAdapter.updateUser', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// findUserById
+// ---------------------------------------------------------------------------
+
+describe('PrismaDashboardAdapter.findUserById', () => {
+  it('returns null when user does not exist', async () => {
+    const userFindUnique = vi.fn().mockResolvedValue(null);
+    const prisma = {
+      user: { findUnique: userFindUnique },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.findUserById('nonexistent-id');
+
+    expect(result).toBeNull();
+    expect(userFindUnique).toHaveBeenCalledWith({
+      where: { id: 'nonexistent-id' },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        displayName: true,
+        role: true,
+        banned: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  });
+
+  it('returns mapped AdminUserListItem with lowercased role', async () => {
+    const createdAt = new Date('2026-04-27T09:55:00.000Z');
+    const updatedAt = new Date('2026-04-28T10:00:00.000Z');
+    const row = makeUserRow({ id: 'user-42', role: 'ADMIN', createdAt, updatedAt });
+    const prisma = {
+      user: { findUnique: vi.fn().mockResolvedValue(row) },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.findUserById('user-42');
+
+    expect(result).not.toBeNull();
+    expect(result).toEqual({
+      id: 'user-42',
+      email: 'alice@example.com',
+      name: 'Alice',
+      displayName: null,
+      role: 'admin',
+      banned: false,
+      createdAt: createdAt.toISOString(),
+      updatedAt: updatedAt.toISOString(),
+    });
+  });
+
+  it('lowercases USER role to "user"', async () => {
+    const prisma = {
+      user: { findUnique: vi.fn().mockResolvedValue(makeUserRow({ role: 'USER' })) },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.findUserById('user-1');
+
+    expect(result!.role).toBe('user');
+  });
+
+  it('lowercases GUEST role to "guest"', async () => {
+    const prisma = {
+      user: { findUnique: vi.fn().mockResolvedValue(makeUserRow({ role: 'GUEST' })) },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.findUserById('user-1');
+
+    expect(result!.role).toBe('guest');
+  });
+
+  it('falls back to "user" for an unknown DB role', async () => {
+    const prisma = {
+      user: { findUnique: vi.fn().mockResolvedValue(makeUserRow({ role: 'SUPERADMIN' })) },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.findUserById('user-1');
+
+    expect(result!.role).toBe('user');
+  });
+
+  it('passes the id to the where clause', async () => {
+    const userFindUnique = vi.fn().mockResolvedValue(makeUserRow({ id: 'user-7' }));
+    const prisma = {
+      user: { findUnique: userFindUnique },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    await adapter.findUserById('user-7');
+
+    expect(userFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'user-7' } }),
+    );
+  });
+});

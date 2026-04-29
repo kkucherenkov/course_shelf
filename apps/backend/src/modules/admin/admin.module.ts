@@ -9,6 +9,8 @@ import { AdminPublicController } from './admin-public.controller';
 import { GetAdminDashboardHandler } from './application/queries/get-admin-dashboard.handler';
 import { ListAdminLibrariesHandler } from './application/queries/list-admin-libraries.handler';
 import { ListAdminScansHandler } from './application/queries/list-admin-scans.handler';
+import { ListAdminUsersHandler } from './application/queries/list-admin-users.handler';
+import { UpdateAdminUserHandler } from './application/commands/update-admin-user.handler';
 
 // AdminGuard's dependencies (AuthService, I18nService) are provided globally
 // by AuthModule (@Global) and I18nModule — no extra imports needed here.
@@ -21,6 +23,8 @@ import { ListAdminScansHandler } from './application/queries/list-admin-scans.ha
     GetAdminDashboardHandler,
     ListAdminLibrariesHandler,
     ListAdminScansHandler,
+    ListAdminUsersHandler,
+    UpdateAdminUserHandler,
     { provide: DASHBOARD_PORT, useClass: PrismaDashboardAdapter },
   ],
 })

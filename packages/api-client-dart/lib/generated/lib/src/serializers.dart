@@ -24,6 +24,10 @@ import 'package:app_api_client/src/model/admin_library_list_item.dart';
 import 'package:app_api_client/src/model/admin_library_list_item_scan.dart';
 import 'package:app_api_client/src/model/admin_scan_list_dto.dart';
 import 'package:app_api_client/src/model/admin_scan_list_item.dart';
+import 'package:app_api_client/src/model/admin_update_user_request.dart';
+import 'package:app_api_client/src/model/admin_user_list_dto.dart';
+import 'package:app_api_client/src/model/admin_user_list_item.dart';
+import 'package:app_api_client/src/model/admin_user_role.dart';
 import 'package:app_api_client/src/model/batch_progress_item_accepted.dart';
 import 'package:app_api_client/src/model/batch_progress_item_forbidden.dart';
 import 'package:app_api_client/src/model/batch_progress_item_result.dart';
@@ -99,6 +103,10 @@ part 'serializers.g.dart';
   AdminLibraryListItemScan,
   AdminScanListDto,
   AdminScanListItem,
+  AdminUpdateUserRequest,
+  AdminUserListDto,
+  AdminUserListItem,
+  AdminUserRole,
   BatchProgressItemAccepted,
   BatchProgressItemForbidden,
   BatchProgressItemResult,

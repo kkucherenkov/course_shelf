@@ -145,6 +145,46 @@ export type AdminLibraryListItemScan = {
 };
 
 /**
+ * Admin-only listing of every user in the platform. The admin users page renders one `AdminUserListItem` per row.
+ */
+export type AdminUserListDto = {
+    items: Array<AdminUserListItem>;
+};
+
+/**
+ * One row in the admin users list.
+ */
+export type AdminUserListItem = {
+    id: string;
+    email: string;
+    name: string;
+    /**
+     * Optional user-facing handle separate from the auth name.
+     */
+    displayName: string | null;
+    role: AdminUserRole;
+    /**
+     * Soft-delete flag. When `true`, sign-in fails and existing sessions are invalidated by Better Auth's admin plugin.
+     */
+    banned: boolean;
+    createdAt: string;
+    updatedAt: string;
+};
+
+/**
+ * Canonical lowercase role used by the SPA. The auth backend stamps upper-case values (`'ADMIN'`, `'USER'`) in the database; this DTO normalises to lowercase at the boundary.
+ */
+export type AdminUserRole = 'admin' | 'user' | 'guest';
+
+/**
+ * Patch body for `PATCH /admin/users/{id}`. At least one field must be set — the handler returns 400 on an empty body.
+ */
+export type AdminUpdateUserRequest = {
+    role?: AdminUserRole;
+    banned?: boolean;
+};
+
+/**
  * Page of recent scans across every library, ordered by `startedAt` descending. The dashboard's "Recent scans" table consumes this.
  */
 export type AdminScanListDto = {
@@ -1312,6 +1352,86 @@ export type ListAdminLibrariesResponses = {
 };
 
 export type ListAdminLibrariesResponse = ListAdminLibrariesResponses[keyof ListAdminLibrariesResponses];
+
+export type ListAdminUsersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Case-insensitive substring filter on `email` or `name`.
+         */
+        search?: string;
+        /**
+         * Maximum number of users to return.
+         */
+        limit?: number;
+    };
+    url: '/api/v1/admin/users';
+};
+
+export type ListAdminUsersErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller is authenticated but not an administrator
+     */
+    403: Problem;
+};
+
+export type ListAdminUsersError = ListAdminUsersErrors[keyof ListAdminUsersErrors];
+
+export type ListAdminUsersResponses = {
+    /**
+     * User list
+     */
+    200: AdminUserListDto;
+};
+
+export type ListAdminUsersResponse = ListAdminUsersResponses[keyof ListAdminUsersResponses];
+
+export type UpdateAdminUserData = {
+    body: AdminUpdateUserRequest;
+    path: {
+        /**
+         * User id (uuid).
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/users/{id}';
+};
+
+export type UpdateAdminUserErrors = {
+    /**
+     * Validation error — empty body or unknown role
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller is authenticated but not an administrator
+     */
+    403: Problem;
+    /**
+     * User not found
+     */
+    404: Problem;
+};
+
+export type UpdateAdminUserError = UpdateAdminUserErrors[keyof UpdateAdminUserErrors];
+
+export type UpdateAdminUserResponses = {
+    /**
+     * Updated user row
+     */
+    200: AdminUserListItem;
+};
+
+export type UpdateAdminUserResponse = UpdateAdminUserResponses[keyof UpdateAdminUserResponses];
 
 export type GetAdminHasUsersData = {
     body?: never;

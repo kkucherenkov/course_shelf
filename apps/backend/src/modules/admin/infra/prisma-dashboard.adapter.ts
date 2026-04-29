@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../common/prisma/prisma.service';
 
@@ -8,12 +9,32 @@ import type {
   AdminLibraryListItem,
   AdminLibraryListItemScan,
   AdminScanListItem,
+  AdminUserListItem,
+  AdminUserRole,
 } from '@app/api-client-ts';
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
+/** Known DB role values (uppercase). Anything else is treated defensively. */
+const KNOWN_DB_ROLES = new Set(['ADMIN', 'USER', 'GUEST']);
+
+/**
+ * Normalise a DB role string to the lowercase `AdminUserRole` expected by the
+ * API. Unknown values fall back to `'user'` with a warning so future DB values
+ * do not hard-crash the endpoint.
+ */
+function normaliseRole(dbRole: string, logger: Logger, userId: string): AdminUserRole {
+  const lower = dbRole.toLowerCase() as AdminUserRole;
+  if (KNOWN_DB_ROLES.has(dbRole.toUpperCase())) {
+    return lower;
+  }
+  logger.warn(`Unknown role value "${dbRole}" for user ${userId} — falling back to "user"`);
+  return 'user';
+}
+
 @Injectable()
 export class PrismaDashboardAdapter implements DashboardPort {
+  private readonly logger = new Logger(PrismaDashboardAdapter.name);
   constructor(private readonly prisma: PrismaService) {}
 
   async hasAnyUser(): Promise<boolean> {
@@ -205,5 +226,94 @@ export class PrismaDashboardAdapter implements DashboardPort {
         lastScan,
       };
     });
+  }
+
+  async listUsers(filter: { search?: string; limit: number }): Promise<AdminUserListItem[]> {
+    const { search, limit } = filter;
+
+    const hasSearch = search !== undefined && search.length > 0;
+    const rows = await this.prisma.user.findMany({
+      ...(hasSearch
+        ? {
+            where: {
+              OR: [
+                { email: { contains: search, mode: 'insensitive' } },
+                { name: { contains: search, mode: 'insensitive' } },
+              ],
+            },
+          }
+        : {}),
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        displayName: true,
+        role: true,
+        banned: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      displayName: row.displayName ?? null,
+      role: normaliseRole(row.role, this.logger, row.id),
+      banned: row.banned,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    }));
+  }
+
+  async updateUser(
+    id: string,
+    patch: { role?: AdminUserRole; banned?: boolean },
+  ): Promise<AdminUserListItem | null> {
+    try {
+      const updated = await this.prisma.user.update({
+        where: { id },
+        data: {
+          ...(patch.role === undefined ? {} : { role: patch.role.toUpperCase() }),
+          ...(patch.banned === undefined ? {} : { banned: patch.banned }),
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          displayName: true,
+          role: true,
+          banned: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      // When banning a user, invalidate all existing sessions immediately so
+      // the ban takes effect without waiting for token expiry (mirrors the
+      // behaviour of Better Auth's admin plugin setBanned).
+      if (patch.banned === true) {
+        await this.prisma.session.deleteMany({ where: { userId: id } });
+      }
+
+      return {
+        id: updated.id,
+        email: updated.email,
+        name: updated.name,
+        displayName: updated.displayName ?? null,
+        role: normaliseRole(updated.role, this.logger, updated.id),
+        banned: updated.banned,
+        createdAt: updated.createdAt.toISOString(),
+        updatedAt: updated.updatedAt.toISOString(),
+      };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        return null;
+      }
+      throw error;
+    }
   }
 }

@@ -11,6 +11,8 @@ function makePort(hasAnyUserResult: boolean): DashboardPort {
     hasAnyUser: vi.fn().mockResolvedValue(hasAnyUserResult),
     listRecentScans: vi.fn(),
     listAllLibrariesWithCounts: vi.fn(),
+    listUsers: vi.fn(),
+    updateUser: vi.fn(),
   };
 }
 

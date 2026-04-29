@@ -11,6 +11,9 @@ import 'package:app_api_client/src/api_util.dart';
 import 'package:app_api_client/src/model/admin_dashboard_dto.dart';
 import 'package:app_api_client/src/model/admin_library_list_dto.dart';
 import 'package:app_api_client/src/model/admin_scan_list_dto.dart';
+import 'package:app_api_client/src/model/admin_update_user_request.dart';
+import 'package:app_api_client/src/model/admin_user_list_dto.dart';
+import 'package:app_api_client/src/model/admin_user_list_item.dart';
 import 'package:app_api_client/src/model/has_users_response.dart';
 import 'package:app_api_client/src/model/instance_config_dto.dart';
 
@@ -404,6 +407,198 @@ class AdminApi {
     }
 
     return Response<AdminScanListDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// List every user in the platform
+  /// Admin-only listing for the admin users page. Ordered by &#x60;createdAt&#x60; descending (newest first). The optional &#x60;search&#x60; filter matches email and &#x60;name&#x60; substrings (case-insensitive). &#x60;role&#x60; values are normalised to lowercase (&#x60;admin&#x60;, &#x60;user&#x60;, &#x60;guest&#x60;) regardless of what the auth backend stamps on the row in the database — the SPA only cares about the canonical lowercase form. 
+  ///
+  /// Parameters:
+  /// * [search] - Case-insensitive substring filter on `email` or `name`.
+  /// * [limit] - Maximum number of users to return.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [AdminUserListDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<AdminUserListDto>> listAdminUsers({ 
+    String? search,
+    int? limit = 50,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/admin/users';
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      if (search != null) r'search': encodeQueryParameter(_serializers, search, const FullType(String)),
+      if (limit != null) r'limit': encodeQueryParameter(_serializers, limit, const FullType(int)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    AdminUserListDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(AdminUserListDto),
+      ) as AdminUserListDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<AdminUserListDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Patch role and/or banned flag on a user
+  /// Inline mutation used by the admin users page&#39;s role chip. At least one of &#x60;role&#x60; or &#x60;banned&#x60; must be present. The auth backend stores roles in upper-case; this endpoint translates the lowercase request to the persisted format and back.  Banning is a soft delete from the user&#39;s perspective — sessions are invalidated and sign-in fails until the flag is cleared. Removing the user record outright is a separate, deferred operation. 
+  ///
+  /// Parameters:
+  /// * [id] - User id (uuid).
+  /// * [adminUpdateUserRequest] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [AdminUserListItem] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<AdminUserListItem>> updateAdminUser({ 
+    required String id,
+    required AdminUpdateUserRequest adminUpdateUserRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/admin/users/{id}'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'PATCH',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(AdminUpdateUserRequest);
+      _bodyData = _serializers.serialize(adminUpdateUserRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    AdminUserListItem? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(AdminUserListItem),
+      ) as AdminUserListItem;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<AdminUserListItem>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

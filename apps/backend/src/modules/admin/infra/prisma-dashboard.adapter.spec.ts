@@ -139,9 +139,9 @@ describe('PrismaDashboardAdapter.listRecentScans', () => {
 
     const result = await adapter.listRecentScans(5);
 
-    expect(result[0].finishedAt).toBeNull();
-    expect(result[0].status).toBe('running');
-    expect(result[0].libraryName).toBe('Computer Science');
+    expect(result[0]?.finishedAt).toBeNull();
+    expect(result[0]?.status).toBe('running');
+    expect(result[0]?.libraryName).toBe('Computer Science');
   });
 
   it('fetches library names in a single batched query using distinct ids', async () => {
@@ -224,7 +224,7 @@ describe('PrismaDashboardAdapter.listRecentScans', () => {
         createdAt: { gte: startedAt, lte: finishedAt },
       },
     });
-    expect(result[0].coursesAdded).toBe(3);
+    expect(result[0]?.coursesAdded).toBe(3);
   });
 
   it('filters by libraryId when provided', async () => {
@@ -511,5 +511,260 @@ describe('PrismaDashboardAdapter.listAllLibrariesWithCounts', () => {
     expect(algebra.lessonsCount).toBe(10);
     expect(biology.coursesCount).toBe(2);
     expect(biology.lessonsCount).toBe(8);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// listUsers
+// ---------------------------------------------------------------------------
+
+interface UserRow {
+  id: string;
+  email: string;
+  name: string;
+  displayName: string | null;
+  role: string;
+  banned: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+function makeUserRow(overrides: Partial<UserRow> = {}): UserRow {
+  return {
+    id: 'user-1',
+    email: 'alice@example.com',
+    name: 'Alice',
+    displayName: null,
+    role: 'USER',
+    banned: false,
+    createdAt: new Date('2026-04-27T09:55:00.000Z'),
+    updatedAt: new Date('2026-04-27T09:55:00.000Z'),
+    ...overrides,
+  };
+}
+
+function makeUsersPrisma(userRows: UserRow[]): PrismaService {
+  return {
+    user: {
+      findMany: vi.fn().mockResolvedValue(userRows),
+      update: vi.fn(),
+    },
+    session: {
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+  } as unknown as PrismaService;
+}
+
+describe('PrismaDashboardAdapter.listUsers', () => {
+  it('returns empty array when no users exist', async () => {
+    const prisma = makeUsersPrisma([]);
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.listUsers({ limit: 50 });
+
+    expect(result).toEqual([]);
+  });
+
+  it('maps user row to AdminUserListItem with lowercased role', async () => {
+    const createdAt = new Date('2026-04-27T09:55:00.000Z');
+    const updatedAt = new Date('2026-04-27T09:56:00.000Z');
+    const prisma = makeUsersPrisma([
+      makeUserRow({ id: 'user-1', role: 'ADMIN', createdAt, updatedAt }),
+    ]);
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.listUsers({ limit: 10 });
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      id: 'user-1',
+      email: 'alice@example.com',
+      name: 'Alice',
+      displayName: null,
+      role: 'admin',
+      banned: false,
+      createdAt: createdAt.toISOString(),
+      updatedAt: updatedAt.toISOString(),
+    });
+  });
+
+  it('lowercases USER role to "user"', async () => {
+    const prisma = makeUsersPrisma([makeUserRow({ role: 'USER' })]);
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.listUsers({ limit: 10 });
+
+    expect(result[0]!.role).toBe('user');
+  });
+
+  it('lowercases GUEST role to "guest"', async () => {
+    const prisma = makeUsersPrisma([makeUserRow({ role: 'GUEST' })]);
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.listUsers({ limit: 10 });
+
+    expect(result[0]!.role).toBe('guest');
+  });
+
+  it('applies search filter when provided', async () => {
+    const userFindMany = vi.fn().mockResolvedValue([]);
+    const prisma = {
+      user: { findMany: userFindMany },
+      session: { deleteMany: vi.fn() },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    await adapter.listUsers({ search: 'alice', limit: 20 });
+
+    expect(userFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          OR: [
+            { email: { contains: 'alice', mode: 'insensitive' } },
+            { name: { contains: 'alice', mode: 'insensitive' } },
+          ],
+        },
+      }),
+    );
+  });
+
+  it('passes no where clause when search is undefined', async () => {
+    const userFindMany = vi.fn().mockResolvedValue([]);
+    const prisma = {
+      user: { findMany: userFindMany },
+      session: { deleteMany: vi.fn() },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    await adapter.listUsers({ limit: 20 });
+
+    const callArg = (userFindMany as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<
+      string,
+      unknown
+    >;
+    expect(callArg['where']).toBeUndefined();
+  });
+
+  it('orders by createdAt desc and respects take', async () => {
+    const userFindMany = vi.fn().mockResolvedValue([]);
+    const prisma = {
+      user: { findMany: userFindMany },
+      session: { deleteMany: vi.fn() },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    await adapter.listUsers({ limit: 15 });
+
+    expect(userFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { createdAt: 'desc' }, take: 15 }),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateUser
+// ---------------------------------------------------------------------------
+
+describe('PrismaDashboardAdapter.updateUser', () => {
+  it('returns updated item with lowercased role on success', async () => {
+    const now = new Date('2026-04-28T10:00:00.000Z');
+    const updatedRow: UserRow = makeUserRow({
+      id: 'user-1',
+      role: 'ADMIN',
+      banned: false,
+      updatedAt: now,
+    });
+    const userUpdate = vi.fn().mockResolvedValue(updatedRow);
+    const sessionDeleteMany = vi.fn().mockResolvedValue({ count: 0 });
+    const prisma = {
+      user: { update: userUpdate },
+      session: { deleteMany: sessionDeleteMany },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.updateUser('user-1', { role: 'admin' });
+
+    expect(result).not.toBeNull();
+    expect(result!.role).toBe('admin');
+    expect(result!.id).toBe('user-1');
+    // No ban — sessions must not be deleted
+    expect(sessionDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it('calls session.deleteMany when banned=true', async () => {
+    const updatedRow: UserRow = makeUserRow({ id: 'user-2', banned: true });
+    const userUpdate = vi.fn().mockResolvedValue(updatedRow);
+    const sessionDeleteMany = vi.fn().mockResolvedValue({ count: 3 });
+    const prisma = {
+      user: { update: userUpdate },
+      session: { deleteMany: sessionDeleteMany },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    await adapter.updateUser('user-2', { banned: true });
+
+    expect(sessionDeleteMany).toHaveBeenCalledWith({ where: { userId: 'user-2' } });
+  });
+
+  it('does NOT call session.deleteMany when banned=false', async () => {
+    const updatedRow: UserRow = makeUserRow({ banned: false });
+    const userUpdate = vi.fn().mockResolvedValue(updatedRow);
+    const sessionDeleteMany = vi.fn().mockResolvedValue({ count: 0 });
+    const prisma = {
+      user: { update: userUpdate },
+      session: { deleteMany: sessionDeleteMany },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    await adapter.updateUser('user-1', { banned: false });
+
+    expect(sessionDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it('returns null when Prisma throws P2025 (record not found)', async () => {
+    const { Prisma: PrismaNamespace } = await import('@prisma/client');
+    const p2025 = new PrismaNamespace.PrismaClientKnownRequestError('Record not found', {
+      code: 'P2025',
+      clientVersion: '0.0.0',
+    });
+    const prisma = {
+      user: { update: vi.fn().mockRejectedValue(p2025) },
+      session: { deleteMany: vi.fn() },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.updateUser('missing-id', { role: 'user' });
+
+    expect(result).toBeNull();
+  });
+
+  it('re-throws unexpected Prisma errors', async () => {
+    const unexpectedError = new Error('Connection reset');
+    const prisma = {
+      user: { update: vi.fn().mockRejectedValue(unexpectedError) },
+      session: { deleteMany: vi.fn() },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    await expect(adapter.updateUser('user-1', { role: 'user' })).rejects.toThrow(
+      'Connection reset',
+    );
+  });
+
+  it('sends role as uppercase to Prisma', async () => {
+    const userUpdate = vi.fn().mockResolvedValue(makeUserRow());
+    const prisma = {
+      user: { update: userUpdate },
+      session: { deleteMany: vi.fn() },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    await adapter.updateUser('user-1', { role: 'admin' });
+
+    expect(userUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ role: 'ADMIN' }),
+      }),
+    );
   });
 });

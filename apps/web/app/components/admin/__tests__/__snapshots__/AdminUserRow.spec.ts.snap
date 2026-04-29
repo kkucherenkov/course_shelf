@@ -1,0 +1,15 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AdminUserRow > matches snapshot 1`] = `
+"<div data-v-222c1c3d="" class="adm-user-row" role="row">
+  <!-- Avatar -->
+  <div data-v-222c1c3d="" class="adm-user-row__avatar" aria-hidden="true" style="background: #b04040;">A</div><!-- Name + email -->
+  <div data-v-222c1c3d="" class="adm-user-row__name-col">
+    <div data-v-222c1c3d="" class="adm-user-row__name">Alice</div>
+    <div data-v-222c1c3d="" class="adm-user-row__email">alice@example.com</div>
+  </div><!-- Role chip (md+) -->
+  <div data-v-222c1c3d="" class="adm-user-row__role"><span data-v-222c1c3d="" class="stub-role-chip" tooltip-self="You can't change your own role.">user</span></div><!-- Joined date (md+) -->
+  <div data-v-222c1c3d="" class="adm-user-row__joined">Jan 15</div><!-- Actions -->
+  <div data-v-222c1c3d="" class="adm-user-row__actions"><button data-v-222c1c3d="" type="button" class="adm-user-row__btn adm-user-row__btn--icon" aria-label="Edit user — coming soon"><span data-v-222c1c3d="" class="i-heroicons-pencil-square" aria-hidden="true"></span></button><button data-v-222c1c3d="" type="button" class="adm-user-row__btn adm-user-row__btn--icon" aria-label="More options — coming soon"><span data-v-222c1c3d="" class="i-heroicons-ellipsis-horizontal" aria-hidden="true"></span></button></div>
+</div>"
+`;

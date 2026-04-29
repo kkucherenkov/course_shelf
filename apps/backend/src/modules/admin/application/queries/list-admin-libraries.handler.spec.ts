@@ -29,6 +29,8 @@ function makePort(items: AdminLibraryListItem[] = []): DashboardPort {
     hasAnyUser: vi.fn(),
     listRecentScans: vi.fn(),
     listAllLibrariesWithCounts: vi.fn().mockResolvedValue(items),
+    listUsers: vi.fn(),
+    updateUser: vi.fn(),
   };
 }
 
@@ -86,9 +88,9 @@ describe('ListAdminLibrariesHandler', () => {
 
     const result = await handler.execute(new ListAdminLibrariesQuery());
 
-    expect(result.items[0].coursesCount).toBe(0);
-    expect(result.items[0].lessonsCount).toBe(0);
-    expect(result.items[0].lastScan).toBeNull();
+    expect(result.items[0]?.coursesCount).toBe(0);
+    expect(result.items[0]?.lessonsCount).toBe(0);
+    expect(result.items[0]?.lastScan).toBeNull();
   });
 
   it('handles library with a running scan (finishedAt null)', async () => {
@@ -105,8 +107,8 @@ describe('ListAdminLibrariesHandler', () => {
 
     const result = await handler.execute(new ListAdminLibrariesQuery());
 
-    expect(result.items[0].lastScan?.status).toBe('running');
-    expect(result.items[0].lastScan?.finishedAt).toBeNull();
+    expect(result.items[0]?.lastScan?.status).toBe('running');
+    expect(result.items[0]?.lastScan?.finishedAt).toBeNull();
   });
 
   it('handles library with a failed scan and errorsCount > 0', async () => {
@@ -123,8 +125,8 @@ describe('ListAdminLibrariesHandler', () => {
 
     const result = await handler.execute(new ListAdminLibrariesQuery());
 
-    expect(result.items[0].lastScan?.status).toBe('failed');
-    expect(result.items[0].lastScan?.errorsCount).toBe(5);
+    expect(result.items[0]?.lastScan?.status).toBe('failed');
+    expect(result.items[0]?.lastScan?.errorsCount).toBe(5);
   });
 
   it('handles a mixed list: one with scan, one without', async () => {
@@ -147,7 +149,7 @@ describe('ListAdminLibrariesHandler', () => {
     const result = await handler.execute(new ListAdminLibrariesQuery());
 
     expect(result.items).toHaveLength(2);
-    expect(result.items[0].lastScan).toBeNull();
-    expect(result.items[1].lastScan?.status).toBe('succeeded');
+    expect(result.items[0]?.lastScan).toBeNull();
+    expect(result.items[1]?.lastScan?.status).toBe('succeeded');
   });
 });

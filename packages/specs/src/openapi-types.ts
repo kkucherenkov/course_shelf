@@ -125,6 +125,58 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/users': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List every user in the platform
+     * @description Admin-only listing for the admin users page. Ordered by `createdAt`
+     *     descending (newest first). The optional `search` filter matches
+     *     email and `name` substrings (case-insensitive). `role` values are
+     *     normalised to lowercase (`admin`, `user`, `guest`) regardless of
+     *     what the auth backend stamps on the row in the database — the SPA
+     *     only cares about the canonical lowercase form.
+     */
+    get: operations['listAdminUsers'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/users/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Patch role and/or banned flag on a user
+     * @description Inline mutation used by the admin users page's role chip. At least
+     *     one of `role` or `banned` must be present. The auth backend stores
+     *     roles in upper-case; this endpoint translates the lowercase request
+     *     to the persisted format and back.
+     *
+     *     Banning is a soft delete from the user's perspective — sessions are
+     *     invalidated and sign-in fails until the flag is cleared. Removing
+     *     the user record outright is a separate, deferred operation.
+     */
+    patch: operations['updateAdminUser'];
+    trace?: never;
+  };
   '/api/v1/admin/has-users': {
     parameters: {
       query?: never;
@@ -994,6 +1046,36 @@ export interface components {
       /** @description null while still `running`. */
       finishedAt: string | null;
       errorsCount: number;
+    };
+    /** @description Admin-only listing of every user in the platform. The admin users page renders one `AdminUserListItem` per row. */
+    AdminUserListDto: {
+      items: components['schemas']['AdminUserListItem'][];
+    };
+    /** @description One row in the admin users list. */
+    AdminUserListItem: {
+      id: string;
+      /** Format: email */
+      email: string;
+      name: string;
+      /** @description Optional user-facing handle separate from the auth name. */
+      displayName: string | null;
+      role: components['schemas']['AdminUserRole'];
+      /** @description Soft-delete flag. When `true`, sign-in fails and existing sessions are invalidated by Better Auth's admin plugin. */
+      banned: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    /**
+     * @description Canonical lowercase role used by the SPA. The auth backend stamps upper-case values (`'ADMIN'`, `'USER'`) in the database; this DTO normalises to lowercase at the boundary.
+     * @enum {string}
+     */
+    AdminUserRole: 'admin' | 'user' | 'guest';
+    /** @description Patch body for `PATCH /admin/users/{id}`. At least one field must be set — the handler returns 400 on an empty body. */
+    AdminUpdateUserRequest: {
+      role?: components['schemas']['AdminUserRole'];
+      banned?: boolean;
     };
     /** @description Page of recent scans across every library, ordered by `startedAt` descending. The dashboard's "Recent scans" table consumes this. */
     AdminScanListDto: {
@@ -2336,6 +2418,112 @@ export interface operations {
       };
       /** @description Caller is authenticated but not an administrator */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listAdminUsers: {
+    parameters: {
+      query?: {
+        /** @description Case-insensitive substring filter on `email` or `name`. */
+        search?: string;
+        /** @description Maximum number of users to return. */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description User list */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminUserListDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller is authenticated but not an administrator */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  updateAdminUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description User id (uuid). */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AdminUpdateUserRequest'];
+      };
+    };
+    responses: {
+      /** @description Updated user row */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminUserListItem'];
+        };
+      };
+      /** @description Validation error — empty body or unknown role */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller is authenticated but not an administrator */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description User not found */
+      404: {
         headers: {
           [name: string]: unknown;
         };

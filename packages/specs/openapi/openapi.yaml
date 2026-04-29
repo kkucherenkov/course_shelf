@@ -1416,6 +1416,89 @@ paths:
                     status: 404
                     detail: No lesson with that id exists.
 
+  /api/v1/lessons/{lessonId}/materials/{materialId}/download-url:
+    get:
+      operationId: issueMaterialDownloadUrl
+      summary: Mint a short-lived signed URL to download a lesson material
+      description: |
+        Returns a URL pointing at `/api/v1/stream/materials/{materialId}` with a
+        signed query-param token bound to `(userId, materialId, expiresAt)`.
+        The token is HMAC-signed with a different scope than the video stream
+        token so a video token cannot be re-used to fetch a material (and vice
+        versa). The streaming endpoint verifies the token without a database
+        lookup. Default TTL is 5 minutes — short because clicking a download
+        link should resolve immediately.
+
+        Authorization mirrors `issueStreamUrl`: the requester must have a READ
+        grant on the parent library or course, or be an admin.
+      tags: [Streaming]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          description: Server-generated cuid identifying the parent lesson.
+          schema:
+            type: string
+        - name: materialId
+          in: path
+          required: true
+          description: Server-generated cuid identifying the material.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Signed download URL issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaterialDownloadUrlDto"
+              examples:
+                issued:
+                  value:
+                    url: "/api/v1/stream/materials/clxvmat0000000000000000001?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IlNUSyIsInYiOjF9.eyJzdWIiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibWlkIjoiY2x4dm1hdDAwMDAwMDAwMDAwMDAwMDAwMSIsInNjcCI6Im1hdGVyaWFsIiwiZXhwIjoxNzQ1NTc0NDAwLCJpYXQiOjE3NDU1NzQxMDB9.k9sQfxCq8wL2pT4N3LKzr8B5jM0hVzG4Yf9X2N1tQp8"
+                    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IlNUSyIsInYiOjF9.eyJzdWIiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibWlkIjoiY2x4dm1hdDAwMDAwMDAwMDAwMDAwMDAwMSIsInNjcCI6Im1hdGVyaWFsIiwiZXhwIjoxNzQ1NTc0NDAwLCJpYXQiOjE3NDU1NzQxMDB9.k9sQfxCq8wL2pT4N3LKzr8B5jM0hVzG4Yf9X2N1tQp8"
+                    expiresAt: "2026-04-25T10:05:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Requester has no READ grant on the parent library or course
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not have access to this material.
+        "404":
+          description: Material or parent lesson not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No material with that id exists on this lesson.
+
   /api/v1/lessons/{lessonId}/bookmarks:
     get:
       operationId: listLessonBookmarks
@@ -4066,6 +4149,44 @@ components:
         url: "/api/v1/stream/lessons/clxvles0000000000000000001?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibGVzc29uSWQiOiJjbHh2bGVzMDAwMDAwMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzQ1NTc0NDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
         token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibGVzc29uSWQiOiJjbHh2bGVzMDAwMDAwMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzQ1NTc0NDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
         expiresAt: "2026-04-25T10:15:00Z"
+
+    MaterialDownloadUrlDto:
+      type: object
+      required: [url, token, expiresAt]
+      description: >-
+        Short-lived signed URL for downloading a lesson material (PDF, MD,
+        image). Same shape as `StreamUrlDto` — the only difference is the
+        token's internal scope claim. Issued by `issueMaterialDownloadUrl`
+        and consumed by the browser via a transient `<a href download>`.
+      properties:
+        url:
+          type: string
+          format: uri-reference
+          description: >-
+            URL the browser should fetch. Same-origin relative path (e.g.
+            `/api/v1/stream/materials/<id>?token=…`). Carries the signed
+            token as the `token` query parameter so a direct
+            `<a href download>` works without an Authorization header.
+        token:
+          type: string
+          minLength: 1
+          description: >-
+            Opaque signed token. Internal format is the same compact
+            `header.payload.signature` shape as the video stream token, but
+            the payload's scope claim differs so a video token can never be
+            re-used to fetch a material (and vice versa). Round-trip
+            untouched.
+        expiresAt:
+          type: string
+          format: date-time
+          description: >-
+            ISO-8601 timestamp at which the token + URL stop being accepted.
+            Default TTL is 5 minutes — clicking a download link should
+            resolve immediately, so a long TTL is unnecessary.
+      example:
+        url: "/api/v1/stream/materials/clxvmat0000000000000000001?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IlNUSyIsInYiOjF9.eyJzdWIiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibWlkIjoiY2x4dm1hdDAwMDAwMDAwMDAwMDAwMDAwMSIsInNjcCI6Im1hdGVyaWFsIiwiZXhwIjoxNzQ1NTc0NDAwLCJpYXQiOjE3NDU1NzQxMDB9.k9sQfxCq8wL2pT4N3LKzr8B5jM0hVzG4Yf9X2N1tQp8"
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IlNUSyIsInYiOjF9.eyJzdWIiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibWlkIjoiY2x4dm1hdDAwMDAwMDAwMDAwMDAwMDAwMSIsInNjcCI6Im1hdGVyaWFsIiwiZXhwIjoxNzQ1NTc0NDAwLCJpYXQiOjE3NDU1NzQxMDB9.k9sQfxCq8wL2pT4N3LKzr8B5jM0hVzG4Yf9X2N1tQp8"
+        expiresAt: "2026-04-25T10:05:00Z"
 
     SubtitleDto:
       type: object

@@ -29,7 +29,7 @@
   const emit = defineEmits<{
     seek: [time: number];
     'update:bookmarks': [bookmarks: BookmarkDto[]];
-    downloadAttempt: [];
+    downloadAttempt: [material: MaterialDto];
   }>();
 
   const activeTab = ref<'sections' | 'notes' | 'bookmarks' | 'materials'>('sections');
@@ -66,7 +66,7 @@
         v-else-if="activeTab === 'materials'"
         :materials="props.materials"
         :empty-label="props.materialsEmptyLabel"
-        @download-attempt="emit('downloadAttempt')"
+        @download-attempt="(m) => emit('downloadAttempt', m)"
       />
     </div>
   </aside>

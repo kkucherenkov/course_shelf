@@ -7,12 +7,12 @@
     materials: CourseMaterialItem[];
     heading: string;
     emptyLabel: string;
-    /** Toast message emitted when user tries to download. */
-    downloadSoonLabel: string;
+    /** aria-label for the download button. */
+    downloadAriaLabel: string;
   }>();
 
   const emit = defineEmits<{
-    downloadAttempt: [materialId: string];
+    downloadAttempt: [material: CourseMaterialItem];
   }>();
 
   function kindIcon(kind: CourseMaterialItem['kind']): IconName {
@@ -53,8 +53,8 @@
         <button
           type="button"
           class="course-materials-rail__item-download"
-          :aria-label="downloadSoonLabel"
-          @click="emit('downloadAttempt', item.id)"
+          :aria-label="downloadAriaLabel"
+          @click="emit('downloadAttempt', item)"
         >
           <IconCS name="download" :size="16" aria-hidden="true" />
         </button>

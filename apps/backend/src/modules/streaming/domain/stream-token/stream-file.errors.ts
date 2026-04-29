@@ -60,3 +60,24 @@ export class SubtitleNotFoundError extends NotFound {
     this.name = 'SubtitleNotFoundError';
   }
 }
+
+/**
+ * Thrown when no material with the given id exists on the lesson. Status 404.
+ */
+export class MaterialNotFoundError extends NotFound {
+  constructor(lessonId: string, materialId: string) {
+    super(`No material "${materialId}" found on lesson "${lessonId}".`, 'material-not-found');
+    this.name = 'MaterialNotFoundError';
+  }
+}
+
+/**
+ * Thrown when the material entity exists but the backing file is absent on
+ * disk. Status 404 — library re-scan would repopulate it.
+ */
+export class MaterialFileNotFoundError extends NotFound {
+  constructor(materialId: string) {
+    super(`File for material "${materialId}" was not found on disk.`, 'material-file-not-found');
+    this.name = 'MaterialFileNotFoundError';
+  }
+}

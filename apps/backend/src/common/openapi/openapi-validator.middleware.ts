@@ -76,7 +76,9 @@ export function registerOpenApiValidator(app: INestApplication, nodeEnv: string)
       // `express-openapi-validator`'s ignorePaths matcher includes the `/api`
       // mount prefix, while older Express versions stripped it — handling
       // both keeps this resilient.
-      ignorePaths: /\/v1\/(?:auth(?:\/|$)|stream\/lessons\/)/,
+      // `/v1/stream/materials/` is also exempt: same rationale as the video
+      // stream endpoint — raw binary response with no OpenAPI JSON schema.
+      ignorePaths: /\/v1\/(?:auth(?:\/|$)|stream\/lessons\/|stream\/materials\/)/,
     }),
   );
 

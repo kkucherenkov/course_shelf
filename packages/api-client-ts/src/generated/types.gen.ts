@@ -943,6 +943,24 @@ export type StreamUrlDto = {
 };
 
 /**
+ * Short-lived signed URL for downloading a lesson material (PDF, MD, image). Same shape as `StreamUrlDto` — the only difference is the token's internal scope claim. Issued by `issueMaterialDownloadUrl` and consumed by the browser via a transient `<a href download>`.
+ */
+export type MaterialDownloadUrlDto = {
+    /**
+     * URL the browser should fetch. Same-origin relative path (e.g. `/api/v1/stream/materials/<id>?token=…`). Carries the signed token as the `token` query parameter so a direct `<a href download>` works without an Authorization header.
+     */
+    url: string;
+    /**
+     * Opaque signed token. Internal format is the same compact `header.payload.signature` shape as the video stream token, but the payload's scope claim differs so a video token can never be re-used to fetch a material (and vice versa). Round-trip untouched.
+     */
+    token: string;
+    /**
+     * ISO-8601 timestamp at which the token + URL stop being accepted. Default TTL is 5 minutes — clicking a download link should resolve immediately, so a long TTL is unnecessary.
+     */
+    expiresAt: string;
+};
+
+/**
  * A subtitle track available for a lesson.
  */
 export type SubtitleDto = {
@@ -1695,6 +1713,48 @@ export type IssueStreamUrlResponses = {
 };
 
 export type IssueStreamUrlResponse = IssueStreamUrlResponses[keyof IssueStreamUrlResponses];
+
+export type IssueMaterialDownloadUrlData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the parent lesson.
+         */
+        lessonId: string;
+        /**
+         * Server-generated cuid identifying the material.
+         */
+        materialId: string;
+    };
+    query?: never;
+    url: '/api/v1/lessons/{lessonId}/materials/{materialId}/download-url';
+};
+
+export type IssueMaterialDownloadUrlErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Requester has no READ grant on the parent library or course
+     */
+    403: Problem;
+    /**
+     * Material or parent lesson not found
+     */
+    404: Problem;
+};
+
+export type IssueMaterialDownloadUrlError = IssueMaterialDownloadUrlErrors[keyof IssueMaterialDownloadUrlErrors];
+
+export type IssueMaterialDownloadUrlResponses = {
+    /**
+     * Signed download URL issued
+     */
+    200: MaterialDownloadUrlDto;
+};
+
+export type IssueMaterialDownloadUrlResponse = IssueMaterialDownloadUrlResponses[keyof IssueMaterialDownloadUrlResponses];
 
 export type ListLessonBookmarksData = {
     body?: never;

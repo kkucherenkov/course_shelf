@@ -173,8 +173,9 @@ export default {
       toastMarkCompleteError: 'Could not mark course complete. Please try again.',
       toastResetSuccess: 'Progress has been reset.',
       toastResetError: 'Could not reset progress. Please try again.',
-      toastDownloadSoon: 'Download coming soon.',
+      toastDownloadError: 'Could not download material. Please try again.',
       materialsHeading: 'Course materials',
+      materialDownloadAria: 'Download material',
       materialsEmpty: 'No materials for this course.',
     },
     lessonPlayer: {
@@ -194,7 +195,7 @@ export default {
       stayHere: 'Stay here',
       playNext: 'Play next',
       courseComplete: 'Course complete',
-      toastDownloadSoon: 'Download coming soon.',
+      toastDownloadError: 'Could not download material. Please try again.',
     },
     browse: {
       title: 'Browse courses',

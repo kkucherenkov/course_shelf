@@ -52,6 +52,7 @@ import 'package:app_api_client/src/model/lesson_progress_dto.dart';
 import 'package:app_api_client/src/model/library_dto.dart';
 import 'package:app_api_client/src/model/library_list_dto.dart';
 import 'package:app_api_client/src/model/library_target.dart';
+import 'package:app_api_client/src/model/material_download_url_dto.dart';
 import 'package:app_api_client/src/model/material_dto.dart';
 import 'package:app_api_client/src/model/material_kind.dart';
 import 'package:app_api_client/src/model/model0.dart';
@@ -121,6 +122,7 @@ part 'serializers.g.dart';
   LibraryDto,
   LibraryListDto,
   LibraryTarget,
+  MaterialDownloadUrlDto,
   MaterialDto,
   MaterialKind,
   Model0,

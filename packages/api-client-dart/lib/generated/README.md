@@ -109,6 +109,7 @@ Class | Method | HTTP request | Description
 [*LearningApi*](doc/LearningApi.md) | [**upsertNote**](doc/LearningApi.md#upsertnote) | **PUT** /api/v1/notes | Upsert the requester&#39;s note for a lesson
 [*OpsApi*](doc/OpsApi.md) | [**ping**](doc/OpsApi.md#ping) | **GET** /api/v1/ping | Verify the bearer token resolves a session
 [*RealtimeApi*](doc/RealtimeApi.md) | [**issueRealtimeToken**](doc/RealtimeApi.md#issuerealtimetoken) | **POST** /api/v1/realtime/token | Issue a short-lived Centrifugo connection token
+[*StreamingApi*](doc/StreamingApi.md) | [**issueMaterialDownloadUrl**](doc/StreamingApi.md#issuematerialdownloadurl) | **GET** /api/v1/lessons/{lessonId}/materials/{materialId}/download-url | Mint a short-lived signed URL to download a lesson material
 [*StreamingApi*](doc/StreamingApi.md) | [**issueStreamUrl**](doc/StreamingApi.md#issuestreamurl) | **GET** /api/v1/lessons/{id}/stream-url | Mint a short-lived signed URL for a lesson video
 [*SystemApi*](doc/SystemApi.md) | [**getHealth**](doc/SystemApi.md#gethealth) | **GET** /api/v1/health | Service health probe
 
@@ -153,6 +154,7 @@ Class | Method | HTTP request | Description
  - [LibraryDto](doc/LibraryDto.md)
  - [LibraryListDto](doc/LibraryListDto.md)
  - [LibraryTarget](doc/LibraryTarget.md)
+ - [MaterialDownloadUrlDto](doc/MaterialDownloadUrlDto.md)
  - [MaterialDto](doc/MaterialDto.md)
  - [MaterialKind](doc/MaterialKind.md)
  - [Model0](doc/Model0.md)

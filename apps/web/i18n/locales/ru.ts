@@ -174,8 +174,9 @@ export default {
       toastMarkCompleteError: 'Не удалось отметить курс пройденным. Попробуйте ещё раз.',
       toastResetSuccess: 'Прогресс сброшен.',
       toastResetError: 'Не удалось сбросить прогресс. Попробуйте ещё раз.',
-      toastDownloadSoon: 'Скачивание будет доступно позже.',
+      toastDownloadError: 'Не удалось скачать материал. Попробуйте ещё раз.',
       materialsHeading: 'Материалы курса',
+      materialDownloadAria: 'Скачать материал',
       materialsEmpty: 'У этого курса нет материалов.',
     },
     lessonPlayer: {
@@ -195,7 +196,7 @@ export default {
       stayHere: 'Остаться здесь',
       playNext: 'Следующий',
       courseComplete: 'Курс завершён',
-      toastDownloadSoon: 'Скачивание будет доступно позже.',
+      toastDownloadError: 'Не удалось скачать материал. Попробуйте ещё раз.',
     },
     browse: {
       title: 'Каталог курсов',

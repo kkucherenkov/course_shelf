@@ -24,6 +24,7 @@ function makePort(overrides: Partial<DashboardSnapshot> = {}): DashboardPort {
     listRecentScans: vi.fn(),
     listAllLibrariesWithCounts: vi.fn(),
     listUsers: vi.fn(),
+    findUserById: vi.fn(),
     updateUser: vi.fn(),
   };
 }
@@ -106,8 +107,9 @@ describe('GetAdminDashboardHandler', () => {
       hasAnyUser: vi.fn(),
       listRecentScans: vi.fn(),
       listAllLibrariesWithCounts: vi.fn(),
-    listUsers: vi.fn(),
-    updateUser: vi.fn(),
+      listUsers: vi.fn(),
+      findUserById: vi.fn(),
+      updateUser: vi.fn(),
     };
     const handler = makeHandler(port);
 

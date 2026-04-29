@@ -25,6 +25,7 @@ export interface DashboardPort {
   listRecentScans(limit: number, libraryId?: string): Promise<AdminScanListItem[]>;
   listAllLibrariesWithCounts(): Promise<AdminLibraryListItem[]>;
   listUsers(filter: { search?: string; limit: number }): Promise<AdminUserListItem[]>;
+  findUserById(id: string): Promise<AdminUserListItem | null>;
   updateUser(
     id: string,
     patch: { role?: AdminUserRole; banned?: boolean },

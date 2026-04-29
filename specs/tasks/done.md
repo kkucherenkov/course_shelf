@@ -2,6 +2,24 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-29-061 — Stage B Admin section (E14-F04-S01)
+
+- Created: 2026-04-29
+- Completed: 2026-04-29
+- Result: shipped in four chunked PRs (each = spec + backend + web), plus a missing-dep prep PR and one rescue PR.
+  - PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/163 — `feat(ui): AppScanProgress` (closes E13-F02-S07; the only missing dep before chunk 1).
+  - PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/164 — **chunk 1 Dashboard**: admin layout shell + middleware + `/admin` page (4 stat cards + recent-scans table).
+  - PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/165 — **chunk 2 Libraries**: list with counters + detail page with live `AppScanProgress` (2 s polling) + Add CTA + scan history.
+  - PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/166 — rescue: restored spec source files Forgejo's squash-merge of #165 silently dropped (the SDK had the new types but `openapi.yaml` did not, which would break the validator on the next codegen run).
+  - PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/167 — **chunk 3 Users**: list with debounced search + `AdminRoleChip` inline mutation + ban-via-disabled with optimistic update + self-protect read-only on the signed-in admin's own row.
+  - merge commit `d2ddc11` on `main` — **chunk 4 Permissions**: `/admin/permissions/<userId>` with per-library Read/None toggle + lazy-expanded per-course overrides; user-picker landing at `/admin/permissions`. Origin was offline at merge time so this one is a local merge rather than a Forgejo PR — the three feature commits (`fc02d82` spec, `ee4c2fd` backend, `0e93a8f` web) are still discoverable on `main`.
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E14-F04-S01.md` (source: `docs/design/cs-web-admin/`)
+- Outcome: full admin surface — Dashboard / Libraries / Users / Permissions — gated by `middleware: 'admin'` (route-level, opt-in via `definePageMeta`), surfaced behind a separate `layouts/admin.vue` shell with responsive sidebar (xs single column, md icons-only, lg full labels). Backend port surface grew from a single `getSnapshot()` to a 7-method `DashboardPort` (`getSnapshot`, `hasAnyUser`, `listRecentScans`, `listAllLibrariesWithCounts`, `listUsers`, `updateUser`, `findUserById`). Web grew nine new composables along the way (`useAdminDashboard`, `useAdminScans`, `useAdminLibraries`, `useAdminLibraryScans`, `useScanProgress`, `useAdminUsers`, `useUpdateAdminUser`, `useAdminUser`, `useAccessGrants`). All grant operations reuse the existing `POST/GET/DELETE /access/grants` endpoints from E07-F01-S01 — no new spec for them.
+- Test totals at end: backend 853 / 855 (+50 across the chunks); web 101 / 101 (+58 across the chunks); UI 835 / 835 (chunk 0 only); 333 i18n keys × 2 web locales (was 195).
+- Side-effect fixes that landed alongside this card: PR #163 also delivered the dependency E13-F02-S07. PR #166 fixed Forgejo's squash-merge dropping spec source. Backend `exactOptionalPropertyTypes` strict-mode patches across multiple admin specs (chunk 3) — conditional spread instead of `undefined`-passthrough; defensive `[0]?.x` array indexing in unit tests. Backend `prisma.session.deleteMany` on `banned: true` so kicked users lose authentication immediately (chunk 3).
+- Notes / deferred: PATCH /libraries/{id}, DELETE /libraries/{id}, and removing users (vs banning) are all "Coming soon" toasts in the UI; the underlying endpoints aren't specced yet. Dashboard "Last scan" stat card shows `Library {libraryId.slice(0,8)}…` because `latestScan` from `/admin/dashboard` doesn't carry a library name (the recent-scans table below it covers the human-readable label). Activity column ("X libraries · Y min watched") on the Users page is dropped — we don't yet aggregate per-user grant counts and minutes-watched on the API.
+
 ## T-2026-04-28-001 — AppScanProgress (E13-F02-S07)
 
 - Created: 2026-04-28

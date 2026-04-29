@@ -1,23 +1,63 @@
 /**
- * Composable for the Course detail page.
+ * Composable for the Course detail page (and the lesson player, which needs
+ * the same outline to render its sidebar).
  *
  * Wraps `getCourseOutline` and exposes the outline data plus mutation helpers
  * for `markCourseComplete` and `resetCourseProgress`.
  *
  * Mutations do NOT use `useAsyncData` — they are imperative calls that update
  * the outline ref directly from the response.
+ *
+ * The handler passed to `useAsyncData` is memoised at module scope per
+ * `courseId` so multiple call sites (course detail page + lesson player)
+ * share the SAME function reference. Without this, Nuxt warns:
+ *
+ *   [useAsyncData] Incompatible options detected for "course-outline:<id>":
+ *     - different handler
+ *
+ * `errorStatus` is exposed as a computed derived from the thrown error rather
+ * than a ref the handler closes over — so the handler closure stays free of
+ * per-instance state and remains identity-stable.
  */
 
+import { computed } from 'vue';
 import { getCourseOutline, markCourseComplete, resetCourseProgress } from '@app/api-client-ts';
 import type { CourseOutlineDto, Problem } from '@app/api-client-ts';
 
 export type OutlineStatus = 'idle' | 'pending' | 'success' | 'error';
 
-function toError(raw: unknown): Error {
+class HttpStatusError extends Error {
+  constructor(
+    public readonly httpStatus: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'HttpStatusError';
+  }
+}
+
+function toError(raw: unknown, httpStatus: number): Error {
   if (raw instanceof Error) return raw;
   const p = raw as Problem;
   const msg = p.detail ?? p.title ?? 'Request failed';
-  return new Error(msg);
+  return new HttpStatusError(httpStatus, msg);
+}
+
+const handlerCache = new Map<string, () => Promise<CourseOutlineDto>>();
+
+function getOutlineHandler(courseId: string): () => Promise<CourseOutlineDto> {
+  let cached = handlerCache.get(courseId);
+  if (!cached) {
+    cached = async () => {
+      const res = await getCourseOutline({ path: { id: courseId } });
+      if (res.error) {
+        throw toError(res.error, res.response.status);
+      }
+      return res.data as CourseOutlineDto;
+    };
+    handlerCache.set(courseId, cached);
+  }
+  return cached;
 }
 
 export interface UseCourseOutlineReturn {
@@ -36,28 +76,25 @@ export interface UseCourseOutlineReturn {
 }
 
 export function useCourseOutline(courseId: string): UseCourseOutlineReturn {
-  const errorStatus = ref<number | null>(null);
   const mutating = ref(false);
 
   const { data, status, error, refresh } = useAsyncData<CourseOutlineDto>(
     `course-outline:${courseId}`,
-    async () => {
-      const res = await getCourseOutline({ path: { id: courseId } });
-      if (res.error) {
-        errorStatus.value = res.response.status;
-        throw toError(res.error);
-      }
-      errorStatus.value = null;
-      return res.data as CourseOutlineDto;
-    },
+    getOutlineHandler(courseId),
     { lazy: true },
   );
+
+  const errorStatus = computed<number | null>(() => {
+    const e = error.value;
+    if (e instanceof HttpStatusError) return e.httpStatus;
+    return null;
+  });
 
   async function markComplete(): Promise<Error | null> {
     mutating.value = true;
     try {
       const res = await markCourseComplete({ path: { id: courseId } });
-      if (res.error) return toError(res.error);
+      if (res.error) return toError(res.error, res.response.status);
       data.value = res.data as CourseOutlineDto;
       return null;
     } finally {
@@ -69,7 +106,7 @@ export function useCourseOutline(courseId: string): UseCourseOutlineReturn {
     mutating.value = true;
     try {
       const res = await resetCourseProgress({ path: { id: courseId } });
-      if (res.error) return toError(res.error);
+      if (res.error) return toError(res.error, res.response.status);
       data.value = res.data as CourseOutlineDto;
       return null;
     } finally {

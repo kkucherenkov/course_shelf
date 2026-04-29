@@ -620,6 +620,68 @@ paths:
                     detail: Administrator role required.
 
   /api/v1/admin/users/{id}:
+    get:
+      operationId: getAdminUser
+      summary: Fetch a single user by id
+      description: |
+        Admin-only single-user fetch — used by the admin permissions page
+        to show whose grants are being edited. Returns the same
+        `AdminUserListItem` shape as the listing endpoint.
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User id (uuid).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User row
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserListItem"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller is authenticated but not an administrator
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "404":
+          description: User not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No user with that id exists.
     patch:
       operationId: updateAdminUser
       summary: Patch role and/or banned flag on a user

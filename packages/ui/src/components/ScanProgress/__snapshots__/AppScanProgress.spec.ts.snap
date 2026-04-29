@@ -1,0 +1,95 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AppScanProgress snapshots > Failed (errors=5) 1`] = `
+"<div data-v-040f2d69="" class="app-scan-progress app-scan-progress--failed" role="region" aria-label="Scan failed">
+  <!-- Header row -->
+  <div data-v-040f2d69="" class="app-scan-progress__header"><span data-v-040f2d69="" class="app-scan-progress__dot app-scan-progress__dot--failed" aria-hidden="true"></span><span data-v-040f2d69="" class="app-scan-progress__title">Scan failed&nbsp;·&nbsp;Computer Science</span><span data-v-040f2d69="" class="app-scan-progress__spacer" aria-hidden="true"></span><span data-v-040f2d69="" class="app-scan-progress__meta">37%&nbsp;·&nbsp;00:03:11</span>
+    <!--v-if--><button data-v-040f2d69="" type="button" class="app-scan-progress__btn app-scan-progress__btn--errors">2 errors</button>
+  </div><!-- Progress bar -->
+  <div data-v-040f2d69="" class="app-scan-progress__bar" role="progressbar" aria-valuenow="37" aria-valuemin="0" aria-valuemax="100">
+    <div data-v-040f2d69="" class="app-scan-progress__bar-fill app-scan-progress__bar-fill--failed" style="width: 100%;"></div>
+  </div><!-- Stats row -->
+  <div data-v-040f2d69="" class="app-scan-progress__stats">
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">780</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Scanned</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">20</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Added</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">4</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Updated</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num app-scan-progress__stat-num--error">5</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Errors</span></div>
+  </div><!-- Current file -->
+  <!--v-if-->
+</div>"
+`;
+
+exports[`AppScanProgress snapshots > Running (with current file, errors=2) 1`] = `
+"<div data-v-040f2d69="" class="app-scan-progress app-scan-progress--running" role="region" aria-label="Scanning">
+  <!-- Header row -->
+  <div data-v-040f2d69="" class="app-scan-progress__header"><span data-v-040f2d69="" class="app-scan-progress__dot app-scan-progress__dot--running" aria-hidden="true"></span><span data-v-040f2d69="" class="app-scan-progress__title">Scanning&nbsp;·&nbsp;Computer Science</span><span data-v-040f2d69="" class="app-scan-progress__spacer" aria-hidden="true"></span><span data-v-040f2d69="" class="app-scan-progress__meta">59%&nbsp;·&nbsp;00:04:18</span><button data-v-040f2d69="" type="button" class="app-scan-progress__btn app-scan-progress__btn--ghost">Cancel</button><button data-v-040f2d69="" type="button" class="app-scan-progress__btn app-scan-progress__btn--errors">2 errors</button></div><!-- Progress bar -->
+  <div data-v-040f2d69="" class="app-scan-progress__bar" role="progressbar" aria-valuenow="59" aria-valuemin="0" aria-valuemax="100">
+    <div data-v-040f2d69="" class="app-scan-progress__bar-fill" style="width: 59%;"></div>
+  </div><!-- Stats row -->
+  <div data-v-040f2d69="" class="app-scan-progress__stats">
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">1247</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Scanned</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">38</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Added</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">7</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Updated</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num app-scan-progress__stat-num--error">2</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Errors</span></div>
+  </div><!-- Current file -->
+  <div data-v-040f2d69="" class="app-scan-progress__current-file" title="/srv/courses/cs/distributed-systems/04-consensus/12-quorum-reads.mp4">/srv/courses/cs/distributed-systems/04-consensus/12-quorum-reads.mp4</div>
+</div>"
+`;
+
+exports[`AppScanProgress snapshots > RunningNoErrors (with current file, errors=0) 1`] = `
+"<div data-v-040f2d69="" class="app-scan-progress app-scan-progress--running" role="region" aria-label="Scanning">
+  <!-- Header row -->
+  <div data-v-040f2d69="" class="app-scan-progress__header"><span data-v-040f2d69="" class="app-scan-progress__dot app-scan-progress__dot--running" aria-hidden="true"></span><span data-v-040f2d69="" class="app-scan-progress__title">Scanning&nbsp;·&nbsp;Computer Science</span><span data-v-040f2d69="" class="app-scan-progress__spacer" aria-hidden="true"></span><span data-v-040f2d69="" class="app-scan-progress__meta">59%&nbsp;·&nbsp;00:04:18</span><button data-v-040f2d69="" type="button" class="app-scan-progress__btn app-scan-progress__btn--ghost">Cancel</button>
+    <!--v-if-->
+  </div><!-- Progress bar -->
+  <div data-v-040f2d69="" class="app-scan-progress__bar" role="progressbar" aria-valuenow="59" aria-valuemin="0" aria-valuemax="100">
+    <div data-v-040f2d69="" class="app-scan-progress__bar-fill" style="width: 59%;"></div>
+  </div><!-- Stats row -->
+  <div data-v-040f2d69="" class="app-scan-progress__stats">
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">1247</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Scanned</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">38</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Added</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">7</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Updated</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">0</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Errors</span></div>
+  </div><!-- Current file -->
+  <div data-v-040f2d69="" class="app-scan-progress__current-file" title="/srv/courses/cs/distributed-systems/04-consensus/12-quorum-reads.mp4">/srv/courses/cs/distributed-systems/04-consensus/12-quorum-reads.mp4</div>
+</div>"
+`;
+
+exports[`AppScanProgress snapshots > Success (errors=0) 1`] = `
+"<div data-v-040f2d69="" class="app-scan-progress app-scan-progress--success" role="region" aria-label="Scan complete">
+  <!-- Header row -->
+  <div data-v-040f2d69="" class="app-scan-progress__header"><span data-v-040f2d69="" class="app-scan-progress__dot app-scan-progress__dot--success" aria-hidden="true"></span><span data-v-040f2d69="" class="app-scan-progress__title">Scan complete&nbsp;·&nbsp;Computer Science</span><span data-v-040f2d69="" class="app-scan-progress__spacer" aria-hidden="true"></span><span data-v-040f2d69="" class="app-scan-progress__meta">100%&nbsp;·&nbsp;00:08:42</span>
+    <!--v-if-->
+    <!--v-if-->
+  </div><!-- Progress bar -->
+  <div data-v-040f2d69="" class="app-scan-progress__bar" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+    <div data-v-040f2d69="" class="app-scan-progress__bar-fill" style="width: 100%;"></div>
+  </div><!-- Stats row -->
+  <div data-v-040f2d69="" class="app-scan-progress__stats">
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">2104</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Scanned</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">45</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Added</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">12</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Updated</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">0</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Errors</span></div>
+  </div><!-- Current file -->
+  <!--v-if-->
+</div>"
+`;
+
+exports[`AppScanProgress snapshots > SuccessWithErrors (errors=3) 1`] = `
+"<div data-v-040f2d69="" class="app-scan-progress app-scan-progress--success" role="region" aria-label="Scan complete">
+  <!-- Header row -->
+  <div data-v-040f2d69="" class="app-scan-progress__header"><span data-v-040f2d69="" class="app-scan-progress__dot app-scan-progress__dot--success" aria-hidden="true"></span><span data-v-040f2d69="" class="app-scan-progress__title">Scan complete&nbsp;·&nbsp;Computer Science</span><span data-v-040f2d69="" class="app-scan-progress__spacer" aria-hidden="true"></span><span data-v-040f2d69="" class="app-scan-progress__meta">100%&nbsp;·&nbsp;00:08:42</span>
+    <!--v-if--><button data-v-040f2d69="" type="button" class="app-scan-progress__btn app-scan-progress__btn--errors">3 errors</button>
+  </div><!-- Progress bar -->
+  <div data-v-040f2d69="" class="app-scan-progress__bar" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+    <div data-v-040f2d69="" class="app-scan-progress__bar-fill" style="width: 100%;"></div>
+  </div><!-- Stats row -->
+  <div data-v-040f2d69="" class="app-scan-progress__stats">
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">2104</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Scanned</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">45</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Added</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num">12</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Updated</span></div>
+    <div data-v-040f2d69="" class="app-scan-progress__stat"><span data-v-040f2d69="" class="app-scan-progress__stat-num app-scan-progress__stat-num--error">3</span><span data-v-040f2d69="" class="app-scan-progress__stat-label">Errors</span></div>
+  </div><!-- Current file -->
+  <!--v-if-->
+</div>"
+`;

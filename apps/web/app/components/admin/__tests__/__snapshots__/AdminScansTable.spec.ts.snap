@@ -1,0 +1,74 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AdminScansTable > matches snapshot (empty state) 1`] = `
+"<!-- Skeleton -->
+<!-- Table -->
+<div data-v-164d419a="" class="adm-scans-tbl__wrap">
+  <table data-v-164d419a="" class="adm-scans-tbl" role="table">
+    <thead data-v-164d419a="">
+      <tr data-v-164d419a="">
+        <!--v-if-->
+        <th data-v-164d419a="">Status</th>
+        <th data-v-164d419a="" class="adm-scans-tbl__col--md-up">Started</th>
+        <th data-v-164d419a="">Duration</th>
+        <th data-v-164d419a="" class="adm-scans-tbl__col--lg">Files</th>
+        <th data-v-164d419a="" class="adm-scans-tbl__col--lg">Added</th>
+        <th data-v-164d419a="" class="adm-scans-tbl__col--lg">Errors</th>
+        <th data-v-164d419a="" class="adm-scans-tbl__col--md-combined"></th>
+        <th data-v-164d419a="" aria-label=""></th>
+      </tr>
+    </thead>
+    <tbody data-v-164d419a=""></tbody>
+  </table>
+</div>"
+`;
+
+exports[`AdminScansTable > matches snapshot (with items) 1`] = `
+"<!-- Skeleton -->
+<!-- Table -->
+<div data-v-164d419a="" class="adm-scans-tbl__wrap">
+  <table data-v-164d419a="" class="adm-scans-tbl" role="table">
+    <thead data-v-164d419a="">
+      <tr data-v-164d419a="">
+        <!--v-if-->
+        <th data-v-164d419a="">Status</th>
+        <th data-v-164d419a="" class="adm-scans-tbl__col--md-up">Started</th>
+        <th data-v-164d419a="">Duration</th>
+        <th data-v-164d419a="" class="adm-scans-tbl__col--lg">Files</th>
+        <th data-v-164d419a="" class="adm-scans-tbl__col--lg">Added</th>
+        <th data-v-164d419a="" class="adm-scans-tbl__col--lg">Errors</th>
+        <th data-v-164d419a="" class="adm-scans-tbl__col--md-combined"></th>
+        <th data-v-164d419a="" aria-label=""></th>
+      </tr>
+    </thead>
+    <tbody data-v-164d419a="">
+      <tr data-v-164d419a="" tabindex="0" class="adm-scans-tbl__row">
+        <!-- Library name (dashboard only) -->
+        <!--v-if-->
+        <!-- Status pill -->
+        <td data-v-164d419a=""><span data-v-164d419a="" class="adm-scans-tbl__status-pill" data-status="succeeded"><span data-v-164d419a="" class="adm-scans-tbl__status-dot" aria-hidden="true"></span> Succeeded</span></td><!-- Started (md+) -->
+        <td data-v-164d419a="" class="adm-scans-tbl__col--md-up adm-scans-tbl__mute">1h ago</td><!-- Duration -->
+        <td data-v-164d419a="" class="adm-scans-tbl__num-cell">1m</td><!-- Files (lg) -->
+        <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell">200</td><!-- Added (lg) -->
+        <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell adm-scans-tbl__added"> +5</td><!-- Errors (lg) -->
+        <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell">0</td><!-- Files+Added combined (md) -->
+        <td data-v-164d419a="" class="adm-scans-tbl__col--md-combined adm-scans-tbl__num-cell">200 <span data-v-164d419a="" class="adm-scans-tbl__added">+5</span></td><!-- Chevron -->
+        <td data-v-164d419a="" class="adm-scans-tbl__chevron-cell"><span data-v-164d419a="" class="i-heroicons-chevron-right adm-scans-tbl__chevron" aria-hidden="true"></span></td>
+      </tr>
+      <tr data-v-164d419a="" tabindex="0" class="adm-scans-tbl__row">
+        <!-- Library name (dashboard only) -->
+        <!--v-if-->
+        <!-- Status pill -->
+        <td data-v-164d419a=""><span data-v-164d419a="" class="adm-scans-tbl__status-pill" data-status="failed"><span data-v-164d419a="" class="adm-scans-tbl__status-dot" aria-hidden="true"></span> Failed</span></td><!-- Started (md+) -->
+        <td data-v-164d419a="" class="adm-scans-tbl__col--md-up adm-scans-tbl__mute">2h ago</td><!-- Duration -->
+        <td data-v-164d419a="" class="adm-scans-tbl__num-cell">1m</td><!-- Files (lg) -->
+        <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell">50</td><!-- Added (lg) -->
+        <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell adm-scans-tbl__added"> +0</td><!-- Errors (lg) -->
+        <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell adm-scans-tbl__errors--nonzero">3</td><!-- Files+Added combined (md) -->
+        <td data-v-164d419a="" class="adm-scans-tbl__col--md-combined adm-scans-tbl__num-cell">50 <span data-v-164d419a="" class="adm-scans-tbl__added">+0</span></td><!-- Chevron -->
+        <td data-v-164d419a="" class="adm-scans-tbl__chevron-cell"><span data-v-164d419a="" class="i-heroicons-chevron-right adm-scans-tbl__chevron" aria-hidden="true"></span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>"
+`;

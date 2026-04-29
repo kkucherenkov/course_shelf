@@ -7,6 +7,7 @@ import { PrismaDashboardAdapter } from './infra/prisma-dashboard.adapter';
 import { AdminController } from './admin.controller';
 import { AdminPublicController } from './admin-public.controller';
 import { GetAdminDashboardHandler } from './application/queries/get-admin-dashboard.handler';
+import { ListAdminLibrariesHandler } from './application/queries/list-admin-libraries.handler';
 import { ListAdminScansHandler } from './application/queries/list-admin-scans.handler';
 
 // AdminGuard's dependencies (AuthService, I18nService) are provided globally
@@ -18,6 +19,7 @@ import { ListAdminScansHandler } from './application/queries/list-admin-scans.ha
   providers: [
     AdminGuard,
     GetAdminDashboardHandler,
+    ListAdminLibrariesHandler,
     ListAdminScansHandler,
     { provide: DASHBOARD_PORT, useClass: PrismaDashboardAdapter },
   ],

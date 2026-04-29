@@ -1,4 +1,8 @@
-import type { AdminDashboardLatestScan, AdminScanListItem } from '@app/api-client-ts';
+import type {
+  AdminDashboardLatestScan,
+  AdminLibraryListItem,
+  AdminScanListItem,
+} from '@app/api-client-ts';
 
 export const DASHBOARD_PORT = Symbol('DASHBOARD_PORT');
 
@@ -16,5 +20,6 @@ export interface DashboardSnapshot {
 export interface DashboardPort {
   getSnapshot(): Promise<DashboardSnapshot>;
   hasAnyUser(): Promise<boolean>;
-  listRecentScans(limit: number): Promise<AdminScanListItem[]>;
+  listRecentScans(limit: number, libraryId?: string): Promise<AdminScanListItem[]>;
+  listAllLibrariesWithCounts(): Promise<AdminLibraryListItem[]>;
 }

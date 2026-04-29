@@ -1,9 +1,10 @@
 <script setup lang="ts">
   import { computed, provide } from 'vue';
   import { AppBanner } from '@app/ui';
-  import type { ScanStatus, AdminScanListItem } from '@app/api-client-ts';
+  import type { ScanStatus } from '@app/api-client-ts';
 
   import AdminStatCard from '~/components/admin/AdminStatCard.vue';
+  import AdminScansTable from '~/components/admin/AdminScansTable.vue';
   import { useAdminDashboard } from '~/composables/useAdminDashboard';
   import { useAdminScans } from '~/composables/useAdminScans';
 
@@ -15,17 +16,25 @@
   const pageTitle = computed(() => t('pages.admin.dashboard.title'));
   provide('adminPageTitle', pageTitle);
 
-  const { data: dashData, status: dashStatus, error: dashError, refetch: refetchDash } = useAdminDashboard();
-  const { data: scansData, status: scansStatus, error: scansError, refetch: refetchScans } = useAdminScans();
+  const {
+    data: dashData,
+    status: dashStatus,
+    error: dashError,
+    refetch: refetchDash,
+  } = useAdminDashboard();
+  const {
+    data: scansData,
+    status: scansStatus,
+    error: scansError,
+    refetch: refetchScans,
+  } = useAdminScans();
 
   // Combined loading and error states
-  const isLoading = computed(() =>
-    dashStatus.value === 'pending' || scansStatus.value === 'pending',
+  const isLoading = computed(
+    () => dashStatus.value === 'pending' || scansStatus.value === 'pending',
   );
 
-  const hasError = computed(
-    () => dashStatus.value === 'error' || scansStatus.value === 'error',
-  );
+  const hasError = computed(() => dashStatus.value === 'error' || scansStatus.value === 'error');
 
   const errorMessage = computed(() => {
     return dashError.value?.message ?? scansError.value?.message ?? '';
@@ -64,7 +73,10 @@
     if (!dashData.value?.latestScan) return '';
     const scan = dashData.value.latestScan;
     const shortId = `${scan.libraryId.slice(0, 8)}…`;
-    return t('pages.admin.dashboard.statLastScanMeta', { libraryId: shortId, n: scan.filesScanned });
+    return t('pages.admin.dashboard.statLastScanMeta', {
+      libraryId: shortId,
+      n: scan.filesScanned,
+    });
   });
 
   const statErrors24hValue = computed(() => {
@@ -72,13 +84,12 @@
     return String(dashData.value.errorsLast24h);
   });
 
-  const statErrors24hIsError = computed(
-    () => (dashData.value?.errorsLast24h ?? 0) > 0,
-  );
+  const statErrors24hIsError = computed(() => (dashData.value?.errorsLast24h ?? 0) > 0);
 
   // ── Scan table ───────────────────────────────────────────────────────────────
 
-  const scanRows = computed<AdminScanListItem[]>(() => scansData.value?.items ?? []);
+  const scanRows = computed(() => scansData.value?.items ?? []);
+  const scansLoading = computed(() => scansStatus.value === 'pending');
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -96,20 +107,8 @@
     return `${String(diffD)}d ago`;
   }
 
-  function formatDuration(startedAt: string, finishedAt: string | null): string {
-    if (!finishedAt) return '—';
-    const ms = new Date(finishedAt).getTime() - new Date(startedAt).getTime();
-    const totalSec = Math.floor(ms / 1000);
-    const h = Math.floor(totalSec / 3600);
-    const m = Math.floor((totalSec % 3600) / 60);
-    const s = totalSec % 60;
-    const parts: string[] = [];
-    if (h > 0) parts.push(`${String(h)}h`);
-    if (m > 0) parts.push(`${m.toString().padStart(h > 0 ? 2 : 1, '0')}m`);
-    if (s > 0 || parts.length === 0) parts.push(`${String(s)}s`);
-    return parts.join(' ');
-  }
-
+  // statusLabel is no longer needed in the template — AdminScansTable handles it.
+  // Keeping a minimal version for the stat card meta.
   function statusLabel(status: ScanStatus): string {
     const map: Record<ScanStatus, string> = {
       running: t('pages.admin.dashboard.scanRunning'),
@@ -119,6 +118,8 @@
     };
     return map[status];
   }
+
+  void statusLabel; // referenced by statLastScanMeta indirectly; keep for future use
 </script>
 
 <template>
@@ -186,107 +187,30 @@
       <h3 class="adm-dashboard__tbl-title">{{ t('pages.admin.dashboard.recentScansHeading') }}</h3>
     </div>
 
-    <!-- Skeleton for table -->
-    <div v-if="isLoading" class="adm-dashboard__card">
-      <div
-        v-for="i in 3"
-        :key="i"
-        class="adm-dashboard__skel-row"
-      >
-        <div class="adm-dashboard__skel adm-dashboard__skel--circle" />
-        <div class="adm-dashboard__skel adm-dashboard__skel--flex" />
-        <div class="adm-dashboard__skel adm-dashboard__skel--pill" />
-      </div>
-    </div>
-
-    <!-- Actual table -->
-    <div v-else-if="!hasError" class="adm-dashboard__tbl-wrap">
-      <table class="adm-dashboard__tbl" role="table">
-        <thead>
-          <tr>
-            <th>{{ t('pages.admin.dashboard.tableLibrary') }}</th>
-            <th>{{ t('pages.admin.dashboard.tableStatus') }}</th>
-            <th class="adm-dashboard__col--md-up">{{ t('pages.admin.dashboard.tableStarted') }}</th>
-            <th>{{ t('pages.admin.dashboard.tableDuration') }}</th>
-            <th class="adm-dashboard__col--lg">{{ t('pages.admin.dashboard.tableFiles') }}</th>
-            <th class="adm-dashboard__col--lg">{{ t('pages.admin.dashboard.tableAdded') }}</th>
-            <th class="adm-dashboard__col--lg adm-dashboard__col--num">{{ t('pages.admin.dashboard.tableErrors') }}</th>
-            <th class="adm-dashboard__col--md-combined" />
-            <th aria-label="" />
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="row in scanRows"
-            :key="row.scanId"
-            tabindex="0"
-            class="adm-dashboard__tbl-row"
-          >
-            <!-- Library -->
-            <td>
-              <div class="adm-dashboard__lib-name">{{ row.libraryName }}</div>
-              <div class="adm-dashboard__lib-sub adm-dashboard__col--xs-only">
-                {{ formatRelative(row.startedAt) }}
-              </div>
-            </td>
-            <!-- Status pill -->
-            <td>
-              <span
-                class="adm-dashboard__status-pill"
-                :data-status="row.status"
-              >
-                <span class="adm-dashboard__status-dot" aria-hidden="true" />
-                {{ statusLabel(row.status) }}
-              </span>
-            </td>
-            <!-- Started (md+) -->
-            <td class="adm-dashboard__col--md-up adm-dashboard__mute">
-              {{ formatRelative(row.startedAt) }}
-            </td>
-            <!-- Duration -->
-            <td class="adm-dashboard__num-cell">
-              {{ formatDuration(row.startedAt, row.finishedAt) }}
-            </td>
-            <!-- Files (lg) -->
-            <td class="adm-dashboard__col--lg adm-dashboard__num-cell">
-              {{ row.filesScanned.toLocaleString() }}
-            </td>
-            <!-- Added (lg) -->
-            <td class="adm-dashboard__col--lg adm-dashboard__num-cell adm-dashboard__added">
-              +{{ row.coursesAdded }}
-            </td>
-            <!-- Errors (lg) -->
-            <td
-              class="adm-dashboard__col--lg adm-dashboard__num-cell"
-              :class="{ 'adm-dashboard__errors--nonzero': row.errorsCount > 0 }"
-            >
-              {{ row.errorsCount }}
-            </td>
-            <!-- Files+Added combined (md) -->
-            <td class="adm-dashboard__col--md-combined adm-dashboard__num-cell">
-              {{ row.filesScanned.toLocaleString() }}
-              <span class="adm-dashboard__added">+{{ row.coursesAdded }}</span>
-            </td>
-            <!-- Chevron -->
-            <td class="adm-dashboard__chevron-cell">
-              <span class="i-heroicons-chevron-right adm-dashboard__chevron" aria-hidden="true" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- Scans table (uses shared AdminScansTable) -->
+    <AdminScansTable
+      v-if="!hasError"
+      :items="scanRows"
+      :loading="scansLoading"
+      show-library
+      :col-library="t('pages.admin.dashboard.tableLibrary')"
+      :col-status="t('pages.admin.dashboard.tableStatus')"
+      :col-started="t('pages.admin.dashboard.tableStarted')"
+      :col-duration="t('pages.admin.dashboard.tableDuration')"
+      :col-files="t('pages.admin.dashboard.tableFiles')"
+      :col-added="t('pages.admin.dashboard.tableAdded')"
+      :col-errors="t('pages.admin.dashboard.tableErrors')"
+      :label-running="t('pages.admin.dashboard.scanRunning')"
+      :label-succeeded="t('pages.libraries.statusSucceeded')"
+      :label-failed="t('pages.libraries.statusFailed')"
+      :label-cancelled="t('pages.libraries.statusCancelled')"
+    />
   </div>
 </template>
 
 <style lang="scss" scoped>
   // Named SCSS variables for fixed UI chrome dimensions
-  $skel-circle: 24px;
-  $skel-pill-w: 80px;
-  $skel-pill-h: 18px;
-  $dot-size: 6px;
-  $chevron-size: 14px;
   $dur-skel: var(--dur-slow, 1400ms);
-  $dur-dot: var(--dur-slower, 1600ms);
 
   .adm-dashboard {
     // ── Page header ─────────────────────────────────────────────────────────
@@ -333,7 +257,7 @@
       }
     }
 
-    // ── Table header ────────────────────────────────────────────────────────
+    // ── Table heading ────────────────────────────────────────────────────────
     &__tbl-h {
       display: flex;
       align-items: center;
@@ -347,244 +271,9 @@
       font-weight: 600;
       color: var(--text-loud);
     }
-
-    // ── Skeleton card ────────────────────────────────────────────────────────
-    &__card {
-      background: var(--surface-surface);
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-md);
-      padding: var(--space-4);
-    }
-
-    &__skel-row {
-      display: flex;
-      gap: var(--space-3);
-      padding: var(--space-2) 0;
-      align-items: center;
-
-      & + & {
-        border-top: 1px solid var(--border-default);
-      }
-    }
-
-    &__skel {
-      background: var(--surface-skeleton-base);
-      border-radius: var(--radius-sm);
-      animation: adm-skel-pulse $dur-skel ease-in-out infinite;
-
-      &--circle {
-        width: $skel-circle;
-        height: $skel-circle;
-        border-radius: 50%;
-        flex-shrink: 0;
-      }
-
-      &--flex {
-        flex: 1;
-        height: var(--text-xs);
-      }
-
-      &--pill {
-        width: $skel-pill-w;
-        height: $skel-pill-h;
-        border-radius: var(--radius-pill);
-        flex-shrink: 0;
-      }
-    }
-
-    // ── Table ────────────────────────────────────────────────────────────────
-    &__tbl-wrap {
-      overflow-x: auto;
-    }
-
-    &__tbl {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      background: var(--surface-surface);
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-md);
-      overflow: hidden;
-
-      thead th {
-        text-align: left;
-        font-size: var(--text-xs);
-        font-weight: 600;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        padding: var(--space-3);
-        background: var(--surface-raised);
-        border-bottom: 1px solid var(--border-default);
-        white-space: nowrap;
-      }
-
-      tbody td {
-        padding: var(--space-3);
-        border-bottom: 1px solid var(--border-default);
-        font-size: var(--text-sm);
-        color: var(--text-fg);
-        vertical-align: middle;
-      }
-
-      tbody tr:last-child td {
-        border-bottom: 0;
-      }
-    }
-
-    &__tbl-row {
-      cursor: pointer;
-
-      &:hover {
-        background: var(--surface-raised);
-      }
-
-      &:focus-within {
-        outline: 2px solid var(--brand-accent);
-        outline-offset: -2px;
-      }
-    }
-
-    &__lib-name {
-      font-weight: 500;
-      color: var(--text-loud);
-    }
-
-    &__lib-sub {
-      font-size: var(--text-xs);
-      color: var(--text-muted);
-      margin-top: var(--space-1);
-    }
-
-    &__mute {
-      color: var(--text-muted);
-    }
-
-    &__num-cell {
-      font-family: var(--font-mono);
-      font-variant-numeric: tabular-nums;
-      color: var(--text-loud);
-    }
-
-    &__added {
-      color: var(--status-success-fg);
-    }
-
-    &__errors--nonzero {
-      color: var(--status-error-fg);
-    }
-
-    &__chevron-cell {
-      text-align: right;
-    }
-
-    &__chevron {
-      width: $chevron-size;
-      height: $chevron-size;
-      color: var(--text-muted);
-    }
-
-    // ── Status pill ──────────────────────────────────────────────────────────
-    &__status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-1);
-      padding: var(--space-1) var(--space-2);
-      border-radius: var(--radius-pill);
-      font-size: var(--text-xs);
-      font-weight: 500;
-
-      &[data-status='running'] {
-        background: var(--status-info-soft);
-        color: var(--status-info-fg);
-
-        .adm-dashboard__status-dot {
-          background: var(--status-info-fg);
-          animation: adm-dot-pulse $dur-dot ease-in-out infinite;
-        }
-      }
-
-      &[data-status='succeeded'] {
-        background: var(--status-success-soft);
-        color: var(--status-success-fg);
-
-        .adm-dashboard__status-dot {
-          background: var(--status-success-fg);
-        }
-      }
-
-      &[data-status='failed'] {
-        background: var(--status-error-soft);
-        color: var(--status-error-fg);
-
-        .adm-dashboard__status-dot {
-          background: var(--status-error-fg);
-        }
-      }
-
-      &[data-status='cancelled'] {
-        background: var(--surface-raised);
-        color: var(--text-muted);
-
-        .adm-dashboard__status-dot {
-          background: var(--text-muted);
-        }
-      }
-    }
-
-    &__status-dot {
-      width: $dot-size;
-      height: $dot-size;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    // ── Responsive column visibility ─────────────────────────────────────────
-    // lg-only columns
-    &__col--lg {
-      @media (max-width: 1023px) {
-        display: none;
-      }
-    }
-
-    // md+ columns (hidden on xs)
-    &__col--md-up {
-      @media (max-width: 767px) {
-        display: none;
-      }
-    }
-
-    // Combined files+added cell for md only (hidden on xs and lg)
-    &__col--md-combined {
-      @media (max-width: 767px) {
-        display: none;
-      }
-
-      @media (min-width: 1024px) {
-        display: none;
-      }
-    }
-
-    // xs-only subtitles (hidden on md+)
-    &__col--xs-only {
-      @media (min-width: 768px) {
-        display: none;
-      }
-    }
   }
 
   @keyframes adm-skel-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-
-    50% {
-      opacity: 0.4;
-    }
-  }
-
-  @keyframes adm-dot-pulse {
     0%,
     100% {
       opacity: 1;

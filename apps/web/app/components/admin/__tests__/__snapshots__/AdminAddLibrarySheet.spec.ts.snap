@@ -1,0 +1,21 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AdminAddLibrarySheet > matches snapshot 1`] = `
+"<div data-v-ad7033c1="" class="adm-add-library-sheet">
+  <div data-v-ad7033c1="" class="adm-add-library-sheet__header">
+    <h3 data-v-ad7033c1="" class="adm-add-library-sheet__title">Add library</h3><button data-v-ad7033c1="" type="button" class="adm-add-library-sheet__close" aria-label="Cancel"><span data-v-ad7033c1="" class="i-heroicons-x-mark" aria-hidden="true"></span></button>
+  </div>
+  <div data-v-ad7033c1="" class="adm-add-library-sheet__body">
+    <!--v-if-->
+    <form data-v-ad7033c1="" novalidate="">
+      <div data-v-ad7033c1="" class="adm-add-library-sheet__fields">
+        <div data-v-ad7033c1=""><input data-v-ad7033c1="" value=""></div>
+        <div data-v-ad7033c1=""><input data-v-ad7033c1="" value=""></div>
+      </div>
+      <div data-v-ad7033c1="" class="adm-add-library-sheet__foot"><button data-v-ad7033c1="" type="button">Cancel</button><button data-v-ad7033c1="" type="submit">Register</button></div>
+    </form>
+  </div>
+</div>
+<!-- Backdrop -->
+<div data-v-ad7033c1="" class="adm-add-library-sheet__backdrop" aria-hidden="true"></div>"
+`;

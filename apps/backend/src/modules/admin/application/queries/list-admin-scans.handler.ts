@@ -23,7 +23,7 @@ export class ListAdminScansHandler implements IQueryHandler<ListAdminScansQuery,
         ? DEFAULT_LIMIT
         : Math.min(Math.max(rawLimit, MIN_LIMIT), MAX_LIMIT);
 
-    const items = await this.dashboard.listRecentScans(limit);
+    const items = await this.dashboard.listRecentScans(limit, query.libraryId);
 
     return { items };
   }

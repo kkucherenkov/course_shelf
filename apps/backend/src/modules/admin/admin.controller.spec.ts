@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 import { AdminController } from './admin.controller';
 import { GetAdminDashboardQuery } from './application/queries/get-admin-dashboard.query';
+import { ListAdminLibrariesQuery } from './application/queries/list-admin-libraries.query';
 import { ListAdminScansQuery } from './application/queries/list-admin-scans.query';
 
 import type { QueryBus } from '@nestjs/cqrs';
@@ -74,6 +75,53 @@ describe('AdminController', () => {
       const controller = makeController(queryBus);
 
       const result = await controller.listScans('10');
+
+      expect(result).toBe(expectedDto);
+    });
+
+    it('threads libraryId into ListAdminScansQuery', async () => {
+      const queryBus = makeQueryBus();
+      const controller = makeController(queryBus);
+
+      await controller.listScans('10', 'lib-99');
+
+      const query = (queryBus.execute as ReturnType<typeof vi.fn>).mock
+        .calls[0][0] as ListAdminScansQuery;
+      expect(query).toBeInstanceOf(ListAdminScansQuery);
+      expect(query.libraryId).toBe('lib-99');
+    });
+
+    it('passes undefined libraryId when not provided', async () => {
+      const queryBus = makeQueryBus();
+      const controller = makeController(queryBus);
+
+      await controller.listScans('10', undefined);
+
+      const query = (queryBus.execute as ReturnType<typeof vi.fn>).mock
+        .calls[0][0] as ListAdminScansQuery;
+      expect(query.libraryId).toBeUndefined();
+    });
+  });
+
+  describe('GET /admin/libraries', () => {
+    it('dispatches ListAdminLibrariesQuery to the QueryBus', async () => {
+      const queryBus = makeQueryBus();
+      const controller = makeController(queryBus);
+
+      await controller.listLibraries();
+
+      expect(queryBus.execute).toHaveBeenCalledOnce();
+      expect(queryBus.execute).toHaveBeenCalledWith(expect.any(ListAdminLibrariesQuery));
+    });
+
+    it('returns the value resolved by the QueryBus', async () => {
+      const expectedDto = { items: [] };
+      const queryBus = {
+        execute: vi.fn().mockResolvedValue(expectedDto),
+      } as unknown as QueryBus;
+      const controller = makeController(queryBus);
+
+      const result = await controller.listLibraries();
 
       expect(result).toBe(expectedDto);
     });

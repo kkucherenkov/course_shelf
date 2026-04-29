@@ -79,9 +79,9 @@
     }
   }
 
-  // ── Coming-soon actions ───────────────────────────────────────────────────────
-  function handleEditClick(): void {
-    toast.add({ title: t('pages.admin.users.editComingSoon') });
+  // ── Actions ───────────────────────────────────────────────────────────────────
+  function handleEditClick(userId: string): void {
+    void navigateTo(`/admin/permissions/${userId}`);
   }
 
   function handleMoreClick(): void {
@@ -191,10 +191,10 @@
         :label-guest="t('pages.admin.users.roleGuest')"
         :label-disabled="t('pages.admin.users.roleDisabled')"
         :role-change-yourself-tooltip="t('pages.admin.users.roleChangeYourselfTooltip')"
-        :edit-aria-label="t('pages.admin.users.editComingSoon')"
+        :edit-aria-label="t('pages.admin.users.editPermissions')"
         :more-aria-label="t('pages.admin.users.moreComingSoon')"
         @role-change="(patch) => handleRoleChange(user.id, patch)"
-        @edit="handleEditClick"
+        @edit="handleEditClick(user.id)"
         @more="handleMoreClick"
       />
     </div>

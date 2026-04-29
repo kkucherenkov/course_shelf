@@ -20,6 +20,7 @@ import 'package:app_api_client/src/model/recently_completed_dto.dart';
 import 'package:app_api_client/src/model/register_library_request.dart';
 import 'package:app_api_client/src/model/scan_dto.dart';
 import 'package:app_api_client/src/model/update_course_request.dart';
+import 'package:app_api_client/src/model/update_library_request.dart';
 import 'package:app_api_client/src/model/your_week_dto.dart';
 
 class CatalogApi {
@@ -1038,6 +1039,59 @@ class CatalogApi {
     );
   }
 
+  /// Hard-delete a library and every dependent row
+  /// Admin-only destructive operation. Cascades through scans, courses (with sections/lessons/materials/subtitles), per-user progress, bookmarks, notes, and access grants. Files on disk are NOT touched — the library only exists in the DB; deletion just unlinks the folder from CourseShelf.  The cascade lives in a single Prisma &#x60;$transaction&#x60; so partial failures roll back. Idempotent: deleting an already-deleted id returns 404. 
+  ///
+  /// Parameters:
+  /// * [id] - Server-generated cuid identifying the library.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future]
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<void>> removeLibrary({ 
+    required String id,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/libraries/{id}'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'DELETE',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    return _response;
+  }
+
   /// Trigger a scan of a library
   /// Walks the library tree, recognises Course / Section / Lesson layout, and records discoveries on a Scan aggregate. Returns 202 immediately with &#x60;status: running&#x60;; clients poll &#x60;GET /libraries/{id}/scans/latest&#x60;. A second scan with no filesystem changes is observably a no-op (&#x60;filesAdded&#x60; and &#x60;filesUpdated&#x60; are zero). 
   ///
@@ -1211,6 +1265,109 @@ class CatalogApi {
     }
 
     return Response<CourseDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Rename a library
+  /// Admin-only mutation. Currently only the &#x60;name&#x60; field is mutable — changing &#x60;rootPath&#x60; would invalidate every scan and break stream URLs minted before the change, so it is intentionally not exposed here. Re-create the library if the disk path needs to change. 
+  ///
+  /// Parameters:
+  /// * [id] - Server-generated cuid identifying the library.
+  /// * [updateLibraryRequest] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [LibraryDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<LibraryDto>> updateLibrary({ 
+    required String id,
+    required UpdateLibraryRequest updateLibraryRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/libraries/{id}'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'PATCH',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(UpdateLibraryRequest);
+      _bodyData = _serializers.serialize(updateLibraryRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    LibraryDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(LibraryDto),
+      ) as LibraryDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<LibraryDto>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

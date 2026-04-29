@@ -67,3 +67,20 @@ export class LibraryNotFoundError extends DomainError {
     this.name = 'LibraryNotFoundError';
   }
 }
+
+/**
+ * WHY: A PATCH with an empty body has no observable effect. Rejecting it
+ * early avoids a pointless DB round-trip and provides a clear signal to
+ * the caller that the request is malformed (400 Bad Request).
+ */
+export class LibraryUpdateEmptyError extends DomainError {
+  constructor() {
+    super({
+      code: 'library-update-empty',
+      status: 400,
+      title: 'Bad Request',
+      detail: 'At least one of `name` must be provided.',
+    });
+    this.name = 'LibraryUpdateEmptyError';
+  }
+}

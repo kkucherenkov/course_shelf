@@ -14,6 +14,8 @@ function makeRepo(): LibraryRepository {
     findById: vi.fn(),
     findAll: vi.fn(),
     findByIds: vi.fn(),
+    update: vi.fn(),
+    removeWithCascade: vi.fn(),
   };
 }
 

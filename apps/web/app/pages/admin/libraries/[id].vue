@@ -1,10 +1,13 @@
 <script setup lang="ts">
   import { computed, provide, ref } from 'vue';
   import { AppBanner, AppScanProgress } from '@app/ui';
+  import type { LibraryDto } from '@app/api-client-ts';
   import { runLibraryScan, client } from '@app/api-client-ts';
 
   import AdminCopyablePath from '~/components/admin/AdminCopyablePath.vue';
   import AdminScansTable from '~/components/admin/AdminScansTable.vue';
+  import AdminEditLibrarySheet from '~/components/admin/AdminEditLibrarySheet.vue';
+  import AdminRemoveLibraryDialog from '~/components/admin/AdminRemoveLibraryDialog.vue';
   import { useAdminLibraries } from '~/composables/useAdminLibraries';
   import { useAdminLibraryScans } from '~/composables/useAdminLibraryScans';
   import { useScanProgress } from '~/composables/useScanProgress';
@@ -24,9 +27,23 @@
     refetch: refetchLibraries,
   } = useAdminLibraries();
 
-  const library = computed(
+  const libraryBase = computed(
     () => librariesData.value?.items.find((l) => l.id === libraryId.value) ?? null,
   );
+
+  // Local name override applied after a successful rename (avoids full refetch)
+  const localName = ref<string | null>(null);
+
+  const library = computed(() => {
+    const base = libraryBase.value;
+    if (!base) return null;
+    if (localName.value !== null) return { ...base, name: localName.value };
+    return base;
+  });
+
+  function onLibrarySaved(updated: LibraryDto): void {
+    localName.value = updated.name;
+  }
 
   const isLoadingLibrary = computed(() => librariesStatus.value === 'pending');
   const hasLibraryError = computed(
@@ -98,12 +115,16 @@
     }
   }
 
+  // Edit + Remove dialogs (sheet visibility refs)
+  const editOpen = ref(false);
+  const removeOpen = ref(false);
+
   function onEditClick(): void {
-    toast.add({ title: t('pages.admin.libraryDetail.editComingSoon'), color: 'info' });
+    editOpen.value = true;
   }
 
   function onRemoveClick(): void {
-    toast.add({ title: t('pages.admin.libraryDetail.removeComingSoon'), color: 'info' });
+    removeOpen.value = true;
   }
 
   async function onRetryFailedScan(): Promise<void> {
@@ -336,6 +357,30 @@
           </div>
         </aside>
       </div>
+    </template>
+
+    <!-- Edit + Remove dialogs (mounted only when a library has loaded) -->
+    <template v-if="library">
+      <AdminEditLibrarySheet
+        v-model:open="editOpen"
+        :library="library"
+        :title="t('pages.admin.libraryDetail.editTitle')"
+        :label-name="t('pages.admin.libraryDetail.editLabelName')"
+        :placeholder="library.name"
+        :error-empty="t('pages.admin.libraryDetail.editErrorEmpty')"
+        :save-label="t('pages.admin.libraryDetail.editSave')"
+        :cancel-label="t('pages.admin.libraryDetail.editCancel')"
+        @saved="onLibrarySaved"
+      />
+      <AdminRemoveLibraryDialog
+        v-model:open="removeOpen"
+        :library="library"
+        :dialog-title="t('pages.admin.libraryDetail.removeDialogTitle', { name: library.name })"
+        :dialog-body="t('pages.admin.libraryDetail.removeDialogBody')"
+        :confirm-prompt="t('pages.admin.libraryDetail.removeConfirmPrompt')"
+        :confirm-cta="t('pages.admin.libraryDetail.removeConfirmCta')"
+        :cancel-cta="t('pages.admin.libraryDetail.removeCancelCta')"
+      />
     </template>
   </div>
 </template>

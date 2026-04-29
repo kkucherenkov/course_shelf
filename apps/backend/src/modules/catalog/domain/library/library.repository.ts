@@ -35,4 +35,19 @@ export interface LibraryRepository {
    * Added for the continue-watching query handler (E10-F01-S01).
    */
   findByIds(ids: string[]): Promise<Library[]>;
+
+  /**
+   * Apply a partial update to the library row.
+   * Returns the updated aggregate, or null when no library with that id exists.
+   * Only mutates the fields that are present in patch (currently only `name`).
+   */
+  update(id: string, patch: { name?: string }): Promise<Library | null>;
+
+  /**
+   * Delete the library and all dependent rows in a single transaction.
+   * Returns true on success, or false when no library with that id exists.
+   * Cascade order: lessonProgress → bookmark → note → courseProgressReadModel
+   *   → accessGrant → scan → course → library.
+   */
+  removeWithCascade(id: string): Promise<boolean>;
 }

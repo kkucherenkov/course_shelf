@@ -125,6 +125,8 @@ function makeLibraryRepo(overrides?: Partial<LibraryRepository>): LibraryReposit
     findById: vi.fn().mockResolvedValue({ id: LIBRARY_ID, rootPath: ROOT }),
     findAll: vi.fn(),
     findByIds: vi.fn(),
+    update: vi.fn(),
+    removeWithCascade: vi.fn(),
     ...overrides,
   };
 }

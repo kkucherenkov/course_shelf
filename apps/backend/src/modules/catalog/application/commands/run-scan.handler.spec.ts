@@ -76,6 +76,24 @@ function makeLibraryRepo(lib?: Library): LibraryRepository {
         return lib ? [lib] : [];
       }),
     ),
+    update: vi.fn(async (id: string, patch: { name?: string }) => {
+      const existing = store.get(id);
+      if (!existing) return null;
+      const updated = Library.reconstitute({
+        id: existing.id,
+        name: patch.name ?? existing.name,
+        rootPath: existing.rootPath,
+        createdAt: existing.createdAt,
+        updatedAt: new Date(),
+      });
+      store.set(id, updated);
+      return updated;
+    }),
+    removeWithCascade: vi.fn(async (id: string) => {
+      if (!store.has(id)) return false;
+      store.delete(id);
+      return true;
+    }),
   };
 }
 

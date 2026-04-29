@@ -69,6 +69,17 @@ RUN pnpm deploy --filter=@app/backend --prod --legacy /app
 # them into /app/prisma but be defensive and re-copy the schema dir.
 RUN cp -r apps/backend/prisma /app/prisma
 
+# Regenerate the Prisma client INSIDE the deploy tree. The earlier
+# `prisma generate` ran against the workspace's content-addressed
+# pnpm store; pnpm deploy copies node_modules but the generated
+# `.prisma/client/default.js` artifact lives inside the store and
+# doesn't always survive the copy. Re-running `generate` in the
+# deploy tree writes the artifact to the right `node_modules/.prisma/`
+# so `require('.prisma/client/default')` resolves at runtime.
+WORKDIR /app
+RUN node ./node_modules/prisma/build/index.js generate --schema=./prisma/schema.prisma
+WORKDIR /workspace
+
 # ─── Stage 3 — runtime ────────────────────────────────────────────────────
 FROM node:24-alpine AS runtime
 

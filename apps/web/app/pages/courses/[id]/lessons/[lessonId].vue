@@ -2,10 +2,16 @@
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
   import { AppPlayerChrome, AppSkeleton, AppNoPermission } from '@app/ui';
   import { getLesson, listLessonBookmarks } from '@app/api-client-ts';
-  import type { LessonDto, BookmarkDto, LessonOutlineItem } from '@app/api-client-ts';
+  import type {
+    LessonDto,
+    BookmarkDto,
+    LessonOutlineItem,
+    MaterialDto,
+  } from '@app/api-client-ts';
 
   import { useCourseOutline } from '~/composables/useCourseOutline';
   import { useLessonPlayer } from '~/composables/useLessonPlayer';
+  import { useMaterialDownload } from '~/composables/useMaterialDownload';
   import { useProgressReporter } from '~/composables/useProgressReporter';
   import { useStreamUrl } from '~/composables/useStreamUrl';
 
@@ -213,8 +219,17 @@
     onSeek(time);
   }
 
-  function onDownloadAttempt(): void {
-    toast.add({ title: t('pages.lessonPlayer.toastDownloadSoon'), color: 'info' });
+  const { download: downloadMaterial } = useMaterialDownload();
+
+  async function onDownloadAttempt(material: MaterialDto): Promise<void> {
+    const err = await downloadMaterial({
+      lessonId,
+      materialId: material.id,
+      filename: material.label,
+    });
+    if (err) {
+      toast.add({ title: t('pages.lessonPlayer.toastDownloadError'), color: 'error' });
+    }
   }
 
   // ── Derived states ────────────────────────────────────────────────────────────

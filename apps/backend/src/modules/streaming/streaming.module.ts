@@ -23,6 +23,7 @@ import { CqrsModule } from '@nestjs/cqrs';
 
 import { CommonAccessModule } from '../../common/access/access.module';
 import { CatalogRepositoriesModule } from '../../common/catalog-tokens/catalog-repositories.module';
+import { IssueMaterialDownloadHandler } from './application/queries/issue-material-download.handler';
 import { IssueStreamTokenHandler } from './application/queries/issue-stream-token.handler';
 import { LessonFileLocator } from './domain/lesson-file-locator';
 import { StreamTokenSigner } from './domain/stream-token/stream-token-signer';
@@ -31,6 +32,11 @@ import { StreamingController } from './streaming.controller';
 @Module({
   imports: [CqrsModule, CommonAccessModule, CatalogRepositoriesModule],
   controllers: [StreamingController],
-  providers: [IssueStreamTokenHandler, StreamTokenSigner, LessonFileLocator],
+  providers: [
+    IssueStreamTokenHandler,
+    IssueMaterialDownloadHandler,
+    StreamTokenSigner,
+    LessonFileLocator,
+  ],
 })
 export class StreamingModule {}

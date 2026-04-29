@@ -57,6 +57,7 @@ export 'package:app_api_client/src/model/lesson_progress_dto.dart';
 export 'package:app_api_client/src/model/library_dto.dart';
 export 'package:app_api_client/src/model/library_list_dto.dart';
 export 'package:app_api_client/src/model/library_target.dart';
+export 'package:app_api_client/src/model/material_download_url_dto.dart';
 export 'package:app_api_client/src/model/material_dto.dart';
 export 'package:app_api_client/src/model/material_kind.dart';
 export 'package:app_api_client/src/model/model0.dart';

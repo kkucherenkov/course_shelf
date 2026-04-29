@@ -7,7 +7,7 @@
   }>();
 
   const emit = defineEmits<{
-    downloadAttempt: [];
+    downloadAttempt: [material: MaterialDto];
   }>();
 
   function formatSize(bytes: number): string {
@@ -24,7 +24,11 @@
     </div>
     <ul v-else class="player-materials-tab__list">
       <li v-for="material in props.materials" :key="material.id" class="player-materials-tab__item">
-        <button type="button" class="player-materials-tab__btn" @click="emit('downloadAttempt')">
+        <button
+          type="button"
+          class="player-materials-tab__btn"
+          @click="emit('downloadAttempt', material)"
+        >
           <span class="player-materials-tab__kind" :data-kind="material.kind">
             {{ material.kind.toUpperCase() }}
           </span>

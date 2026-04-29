@@ -1,10 +1,11 @@
 <script setup lang="ts">
   import { computed } from 'vue';
   import { AppNoPermission, AppSkeleton } from '@app/ui';
-  import type { LessonOutlineItem } from '@app/api-client-ts';
+  import type { CourseMaterialItem, LessonOutlineItem } from '@app/api-client-ts';
 
   import { accentFromId } from '~/utils/course-accent';
   import { useCourseOutline } from '~/composables/useCourseOutline';
+  import { useMaterialDownload } from '~/composables/useMaterialDownload';
 
   import CourseHero from '~/components/course-detail/CourseHero.vue';
   import CourseActions from '~/components/course-detail/CourseActions.vue';
@@ -139,8 +140,17 @@
     }
   }
 
-  function onDownloadAttempt(): void {
-    toast.add({ title: t('pages.courseDetail.toastDownloadSoon'), color: 'info' });
+  const { download: downloadMaterial } = useMaterialDownload();
+
+  async function onDownloadAttempt(material: CourseMaterialItem): Promise<void> {
+    const err = await downloadMaterial({
+      lessonId: material.lessonId,
+      materialId: material.id,
+      filename: material.label,
+    });
+    if (err) {
+      toast.add({ title: t('pages.courseDetail.toastDownloadError'), color: 'error' });
+    }
   }
 
   function onSelectLesson(lessonId: string): void {
@@ -231,7 +241,7 @@
             :materials="data.materials"
             :heading="t('pages.courseDetail.materialsHeading')"
             :empty-label="t('pages.courseDetail.materialsEmpty')"
-            :download-soon-label="t('pages.courseDetail.toastDownloadSoon')"
+            :download-aria-label="t('pages.courseDetail.materialDownloadAria')"
             @download-attempt="onDownloadAttempt"
           />
         </div>

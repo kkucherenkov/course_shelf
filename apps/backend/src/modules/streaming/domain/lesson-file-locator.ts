@@ -21,6 +21,13 @@
  *   - Returns { absolutePath, extension, courseId, libraryId }.
  *   - Missing language or unrecognised extension → SubtitleNotFoundError (404).
  *
+ * locateMaterial adds a parallel path for material sidecar files (PDF / MD / image):
+ *   - Same lesson/course/library load + traversal guard.
+ *   - Finds the material on lesson.materials by id → MaterialNotFoundError (404).
+ *   - Resolves path.resolve(library.rootPath, material.path) + traversal guard.
+ *   - Stats the file → MaterialFileNotFoundError (404) if absent.
+ *   - Returns { absolutePath, sizeBytes, label, kind, courseId, libraryId }.
+ *
  * Symlink handling (v1): we trust that the library.rootPath and videoPath are
  * not symlinks pointing outside the root. path.relative-based traversal check
  * is sufficient for the common case (NFS / bind mounts stay under the root).
@@ -40,6 +47,8 @@ import {
 import {
   LessonFileNotFoundError,
   LessonFilePathEscapedError,
+  MaterialFileNotFoundError,
+  MaterialNotFoundError,
   SubtitleNotFoundError,
 } from './stream-token/stream-file.errors';
 
@@ -47,6 +56,7 @@ import type {
   CourseRepository,
   LessonRepository,
   LibraryRepository,
+  MaterialKindValue,
 } from '../../../common/catalog-tokens';
 
 export interface LocatedFile {
@@ -59,6 +69,15 @@ export interface LocatedFile {
 export interface LocatedSubtitle {
   readonly absolutePath: string;
   readonly extension: '.srt' | '.vtt';
+  readonly courseId: string;
+  readonly libraryId: string;
+}
+
+export interface LocatedMaterial {
+  readonly absolutePath: string;
+  readonly sizeBytes: number;
+  readonly label: string;
+  readonly kind: MaterialKindValue;
   readonly courseId: string;
   readonly libraryId: string;
 }
@@ -143,6 +162,56 @@ export class LessonFileLocator {
     return {
       absolutePath,
       extension,
+      courseId: lesson.courseId,
+      libraryId: course.libraryId,
+    };
+  }
+
+  /**
+   * Resolve the absolute path of a material sidecar file.
+   *
+   * - Loads lesson / course / library (same path as locate()).
+   * - Finds the material by id on lesson.materials → MaterialNotFoundError (404).
+   * - Applies the traversal-protection guard to the material path.
+   * - Stats the file → MaterialFileNotFoundError (404) if absent.
+   * - Returns { absolutePath, sizeBytes, label, kind, courseId, libraryId }.
+   *
+   * Throws:
+   *   MaterialNotFoundError     — no material with given id on this lesson.
+   *   LessonNotFoundError       — lesson/course/library missing.
+   *   LessonFilePathEscapedError — path escapes library root (500, fail-closed).
+   *   MaterialFileNotFoundError — material row exists but file absent on disk.
+   */
+  async locateMaterial(lessonId: string, materialId: string): Promise<LocatedMaterial> {
+    const { lesson, course, library } = await this.loadLessonContext(lessonId);
+
+    const material = lesson.materials.find((m) => m.id === materialId);
+    if (!material) {
+      throw new MaterialNotFoundError(lessonId, materialId);
+    }
+
+    // Resolve absolute path and apply the same traversal guard as the video path.
+    const canonicalRoot = path.resolve(library.rootPath);
+    const absolutePath = path.resolve(library.rootPath, material.path);
+
+    const rel = path.relative(canonicalRoot, absolutePath);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
+      throw new LessonFilePathEscapedError(lessonId);
+    }
+
+    // Stat to confirm the file exists and to get its current size.
+    let stat: Awaited<ReturnType<typeof fs.stat>>;
+    try {
+      stat = await fs.stat(absolutePath);
+    } catch {
+      throw new MaterialFileNotFoundError(materialId);
+    }
+
+    return {
+      absolutePath,
+      sizeBytes: stat.size,
+      label: material.label,
+      kind: material.kind,
       courseId: lesson.courseId,
       libraryId: course.libraryId,
     };

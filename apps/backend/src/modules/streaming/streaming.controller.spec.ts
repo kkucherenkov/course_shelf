@@ -1,15 +1,17 @@
 /**
  * Controller-level tests for GET /api/v1/stream/lessons/:id
  *                         and GET /api/v1/stream/lessons/:id/subtitles/:language
+ *                         and GET /api/v1/lessons/:lessonId/materials/:materialId/download-url
+ *                         and GET /api/v1/stream/materials/:materialId
  *
  * Approach: boot a minimal NestJS test module that mounts only
  * StreamingController. All domain dependencies (StreamTokenSigner,
  * LessonFileLocator) are replaced with vi.fn() stubs. The HttpExceptionFilter
  * is registered so we can assert on RFC 9457 problem+json bodies.
- * SessionGuard is overridden with a pass-through stub so we don't need I18nModule.
+ * PassThroughGuard is registered as APP_GUARD so @Session() receives a fake user session.
  *
  * Fixture: a 1 024-byte deterministic file written to os.tmpdir() in beforeAll,
- * cleaned up in afterAll.
+ * cleaned up in afterAll. A separate PDF fixture for material download tests.
  *
  * Video scenarios:
  *   1.  200 full file — no Range; Content-Type, Content-Length, Accept-Ranges.
@@ -29,6 +31,17 @@
  *   13. Cache hit on second request — file is served from .cache.vtt sibling.
  *   14. 404 unknown language — SubtitleNotFoundError.
  *   15. 401 bad token on subtitle route.
+ *
+ * Material download-url scenarios:
+ *   16. 200 issueMaterialDownloadUrl — returns MaterialDownloadUrlDto from QueryBus.
+ *
+ * Material stream scenarios:
+ *   17. 200 getMaterialStream — Content-Type application/pdf, Content-Disposition attachment.
+ *   18. 200 getMaterialStream — CORP cross-origin header is set.
+ *   19. 200 getMaterialStream — Content-Disposition filename includes the label.
+ *   20. 401 no token on material stream.
+ *   21. 401 tampered token on material stream.
+ *   22. 404 missing material (MaterialNotFoundError) on stream.
  */
 import { unlinkSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
@@ -44,7 +57,7 @@ import {
   Injectable,
   VersioningType,
 } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { CqrsModule, QueryBus } from '@nestjs/cqrs';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -52,11 +65,11 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { HttpExceptionFilter } from '../../common/filters/http-exception.filter';
 import { AuthService } from '../../common/auth/auth.service';
-import { SessionGuard } from '../../common/auth/auth.guard';
 import { LessonNotFoundError } from '../../common/catalog-tokens';
 import { LessonFileLocator } from './domain/lesson-file-locator';
 import {
   LessonFilePathEscapedError,
+  MaterialNotFoundError,
   SubtitleNotFoundError,
 } from './domain/stream-token/stream-file.errors';
 import { StreamTokenSigner } from './domain/stream-token/stream-token-signer';
@@ -66,12 +79,15 @@ import {
 } from './domain/stream-token/stream-token.errors';
 import { StreamingController } from './streaming.controller';
 
+import type { MaterialDownloadUrlDto } from '@app/api-client-ts';
+
 // ---------------------------------------------------------------------------
 // Fixture
 // ---------------------------------------------------------------------------
 
 const FIXTURE_SIZE = 1024;
 let FIXTURE_PATH: string;
+let PDF_FIXTURE_PATH: string;
 
 // Subtitle fixtures
 let VTT_FIXTURE_PATH: string;
@@ -91,12 +107,15 @@ function makeFixtureBuffer(): Buffer {
 let fixtureBytes: Buffer;
 
 // ---------------------------------------------------------------------------
-// Pass-through guard stub
+// Pass-through guard stub — also injects a fake session so @Session() works.
 // ---------------------------------------------------------------------------
 
 @Injectable()
 class PassThroughGuard implements CanActivate {
-  canActivate(_ctx: ExecutionContext): boolean {
+  canActivate(ctx: ExecutionContext): boolean {
+    const req = ctx.switchToHttp().getRequest<Record<string, unknown>>();
+    // Inject a fake session so the @Session() param decorator does not throw.
+    req['session'] = { user: { id: 'user-1', role: 'user' } };
     return true;
   }
 }
@@ -109,6 +128,12 @@ function makeSignerStub(): StreamTokenSigner {
   return {
     sign: vi.fn(),
     verify: vi.fn().mockReturnValue({ userId: 'user-1', expiresAt: new Date(Date.now() + 60_000) }),
+    signMaterial: vi.fn(),
+    verifyMaterial: vi.fn().mockReturnValue({
+      userId: 'user-1',
+      lessonId: 'lesson-1',
+      expiresAt: new Date(Date.now() + 60_000),
+    }),
   } as unknown as StreamTokenSigner;
 }
 
@@ -127,6 +152,14 @@ function makeLocatorStub(): LessonFileLocator {
       courseId: 'course-1',
       libraryId: 'lib-1',
     }),
+    locateMaterial: vi.fn().mockResolvedValue({
+      absolutePath: '', // overridden per-test
+      sizeBytes: 512,
+      label: 'Lesson Notes',
+      kind: 'doc',
+      courseId: 'course-1',
+      libraryId: 'lib-1',
+    }),
   } as unknown as LessonFileLocator;
 }
 
@@ -137,21 +170,23 @@ function makeLocatorStub(): LessonFileLocator {
 async function buildApp(
   signerStub: StreamTokenSigner,
   locatorStub: LessonFileLocator,
+  queryBusExecute?: ReturnType<typeof vi.fn>,
 ): Promise<INestApplication> {
+  // SessionGuard is registered as APP_GUARD in the real app (not @UseGuards),
+  // so overrideGuard() has no effect on it. Register PassThroughGuard as
+  // APP_GUARD to inject req.session for @Session()-decorated routes.
   const moduleRef = await Test.createTestingModule({
     imports: [CqrsModule],
     controllers: [StreamingController],
     providers: [
       { provide: APP_FILTER, useClass: HttpExceptionFilter },
+      { provide: APP_GUARD, useClass: PassThroughGuard },
       { provide: StreamTokenSigner, useValue: signerStub },
       { provide: LessonFileLocator, useValue: locatorStub },
       { provide: AuthService, useValue: { getSession: vi.fn() } },
-      { provide: QueryBus, useValue: { execute: vi.fn() } },
+      { provide: QueryBus, useValue: { execute: queryBusExecute ?? vi.fn() } },
     ],
-  })
-    .overrideGuard(SessionGuard)
-    .useClass(PassThroughGuard)
-    .compile();
+  }).compile();
 
   const app = moduleRef.createNestApplication();
   app.setGlobalPrefix('api');
@@ -177,6 +212,15 @@ function subtitleUrl(id = 'lesson-1', lang = 'en', token: string | null = VALID_
   return token === null ? base : `${base}?token=${encodeURIComponent(token)}`;
 }
 
+function materialDownloadUrl(lessonId = 'lesson-1', materialId = 'mat-1'): string {
+  return `/api/v1/lessons/${lessonId}/materials/${materialId}/download-url`;
+}
+
+function materialStreamUrl(materialId = 'mat-1', token: string | null = VALID_TOKEN): string {
+  const base = `/api/v1/stream/materials/${materialId}`;
+  return token === null ? base : `${base}?token=${encodeURIComponent(token)}`;
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -187,6 +231,9 @@ describe('StreamingController — GET /api/v1/stream/lessons/:id', () => {
     fixtureBytes = makeFixtureBuffer();
     writeFileSync(FIXTURE_PATH, fixtureBytes);
 
+    PDF_FIXTURE_PATH = path.join(os.tmpdir(), `material-fixture-${process.pid}.pdf`);
+    writeFileSync(PDF_FIXTURE_PATH, Buffer.from('%PDF-1.4 fixture content'));
+
     VTT_FIXTURE_PATH = path.join(os.tmpdir(), `subtitle-fixture-${process.pid}.vtt`);
     SRT_FIXTURE_PATH = path.join(os.tmpdir(), `subtitle-fixture-${process.pid}.srt`);
     writeFileSync(VTT_FIXTURE_PATH, VTT_CONTENT, 'utf8');
@@ -196,6 +243,7 @@ describe('StreamingController — GET /api/v1/stream/lessons/:id', () => {
   afterAll(() => {
     for (const p of [
       FIXTURE_PATH,
+      PDF_FIXTURE_PATH,
       VTT_FIXTURE_PATH,
       SRT_FIXTURE_PATH,
       `${SRT_FIXTURE_PATH.slice(0, -4)}.cache.vtt`,
@@ -565,6 +613,114 @@ describe('StreamingController — GET /api/v1/stream/lessons/:id', () => {
     const res = await request(app.getHttpServer()).get(subtitleUrl('lesson-1', 'en', 'bad.tok.en'));
 
     expect(res.status).toBe(401);
+
+    await app.close();
+  });
+
+  // =========================================================================
+  // Material download-url route
+  // =========================================================================
+
+  it('issueMaterialDownloadUrl 200 — returns MaterialDownloadUrlDto from QueryBus', async () => {
+    const signer = makeSignerStub();
+    const locator = makeLocatorStub();
+    const dto: MaterialDownloadUrlDto = {
+      url: '/api/v1/stream/materials/mat-1?token=tok',
+      token: 'tok',
+      expiresAt: new Date(Date.now() + 300_000).toISOString(),
+    };
+    const queryBusExecute = vi.fn().mockResolvedValue(dto);
+    const app = await buildApp(signer, locator, queryBusExecute);
+
+    const res = await request(app.getHttpServer()).get(materialDownloadUrl());
+
+    expect(res.status).toBe(200);
+    expect((res.body as MaterialDownloadUrlDto).url).toBe(dto.url);
+    expect((res.body as MaterialDownloadUrlDto).token).toBe(dto.token);
+
+    await app.close();
+  });
+
+  // =========================================================================
+  // Material stream route
+  // =========================================================================
+
+  it('getMaterialStream 200 — Content-Type application/pdf, CORP cross-origin, Content-Disposition with label', async () => {
+    const signer = makeSignerStub();
+    const locator = makeLocatorStub();
+    const PDF_CONTENT = Buffer.from('%PDF-1.4 fixture content');
+    vi.mocked(locator.locateMaterial).mockResolvedValue({
+      absolutePath: PDF_FIXTURE_PATH,
+      sizeBytes: PDF_CONTENT.length, // must match actual file size for Content-Length to be correct
+      label: 'Lesson Notes',
+      kind: 'doc',
+      courseId: 'course-1',
+      libraryId: 'lib-1',
+    });
+
+    const app = await buildApp(signer, locator);
+
+    // Use .buffer(true).parse(binaryParser) so supertest fully consumes the
+    // binary (application/pdf) response before resolving. Without buffering,
+    // supertest closes the socket after reading headers, which causes
+    // pipeline() on the server side to see "aborted" and reject.
+    const res = await request(app.getHttpServer())
+      .get(materialStreamUrl())
+      .buffer(true)
+      .parse(binaryParser);
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('application/pdf');
+    expect(res.headers['cross-origin-resource-policy']).toBe('cross-origin');
+    expect(res.headers['content-disposition']).toContain('attachment');
+    expect(res.headers['content-disposition']).toContain('Lesson Notes');
+
+    await app.close();
+  });
+
+  it('getMaterialStream 401 when token is absent', async () => {
+    const signer = makeSignerStub();
+    const locator = makeLocatorStub();
+    const app = await buildApp(signer, locator);
+
+    const res = await request(app.getHttpServer()).get(materialStreamUrl('mat-1', null));
+
+    expect(res.status).toBe(401);
+
+    await app.close();
+  });
+
+  it('getMaterialStream 401 when token is tampered', async () => {
+    const signer = makeSignerStub();
+    vi.mocked(signer.verifyMaterial).mockImplementation(() => {
+      throw new StreamTokenTamperedError();
+    });
+    const locator = makeLocatorStub();
+    const app = await buildApp(signer, locator);
+
+    const res = await request(app.getHttpServer()).get(
+      materialStreamUrl('mat-1', 'tampered.tok.en'),
+    );
+
+    expect(res.status).toBe(401);
+
+    await app.close();
+  });
+
+  it('getMaterialStream 404 when MaterialNotFoundError is thrown', async () => {
+    const signer = makeSignerStub();
+    const locator = makeLocatorStub();
+    vi.mocked(locator.locateMaterial).mockRejectedValue(
+      new MaterialNotFoundError('lesson-1', 'mat-missing'),
+    );
+
+    const app = await buildApp(signer, locator);
+
+    const res = await request(app.getHttpServer()).get(materialStreamUrl('mat-missing'));
+
+    expect(res.status).toBe(404);
+    expect(res.headers['content-type']).toContain('application/problem+json');
+    expect((res.body as Record<string, unknown>)['code']).toBe('material-not-found');
 
     await app.close();
   });

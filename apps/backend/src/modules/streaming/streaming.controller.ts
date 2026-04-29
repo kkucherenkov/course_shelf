@@ -17,6 +17,8 @@
  *     - `@Get('lessons/:id/stream-url')` — unchanged URL for clients.
  *     - `@Get('stream/lessons/:id')` — new binary-response streaming endpoint.
  *     - `@Get('stream/lessons/:id/subtitles/:language')` — subtitle (E08-F02-S02).
+ *     - `@Get('lessons/:lessonId/materials/:materialId/download-url')` — material URL.
+ *     - `@Get('stream/materials/:materialId')` — material binary download endpoint.
  *   The empty-string base path is idiomatic NestJS when routes in one controller
  *   span multiple URL segments.
  *
@@ -38,6 +40,17 @@
  *   cache write is best-effort — a read-only mount must not break the request.
  *   The route stays outside OpenAPI (same rationale as the video endpoint).
  *   The player builds the subtitle URL from LessonDto.subtitles[].language.
+ *
+ * getMaterialStream:
+ *   Material sidecar files (PDF / Markdown / image) are downloaded whole — no
+ *   Range support. The token is a material-scoped token minted by
+ *   issueMaterialDownloadUrl (scope "material"). A lesson-scoped token is
+ *   rejected by StreamTokenSigner.verifyMaterial (scope mismatch → 401).
+ *   The material token embeds `lid` (lessonId) so locateMaterial can be called
+ *   without an extra DB query.
+ *   Content-Disposition: attachment forces a download rather than inline display.
+ *   CORP: cross-origin mirrors the video endpoint for the same reasons.
+ *   This route is exempt from OpenAPI validation (binary response, no JSON schema).
  */
 import { createReadStream } from 'node:fs';
 import { readFile, stat, writeFile } from 'node:fs/promises';
@@ -50,6 +63,7 @@ import { QueryBus } from '@nestjs/cqrs';
 
 import { AllowAnonymous, Session } from '../../common/auth/decorators';
 import { IssueStreamTokenQuery } from './application/queries/issue-stream-token.query';
+import { IssueMaterialDownloadQuery } from './application/queries/issue-material-download.query';
 import { LessonFileLocator } from './domain/lesson-file-locator';
 import { parseRangeHeader } from './domain/range-request-parser';
 import { convertSrtToVtt } from './domain/subtitle-converter';
@@ -58,28 +72,53 @@ import { StreamTokenInvalidError } from './domain/stream-token/stream-token.erro
 
 import type { SessionContext } from '../../common/auth/decorators';
 import type { Request, Response } from 'express';
-import type { StreamUrlDto } from '@app/api-client-ts';
+import type { MaterialDownloadUrlDto, StreamUrlDto } from '@app/api-client-ts';
 
 // ---------------------------------------------------------------------------
-// Content-Type map (extension → MIME)
+// Content-Type maps (extension → MIME)
 // ---------------------------------------------------------------------------
 
-const MIME_MAP: Record<string, string> = {
+const VIDEO_MIME_MAP: Record<string, string> = {
   '.mp4': 'video/mp4',
   '.mkv': 'video/x-matroska',
   '.m4v': 'video/x-m4v',
   '.webm': 'video/webm',
 };
 
+const MATERIAL_MIME_MAP: Record<string, string> = {
+  '.pdf': 'application/pdf',
+  '.md': 'text/markdown; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+};
+
 function videoMimeType(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
-  return MIME_MAP[ext] ?? 'application/octet-stream';
+  return VIDEO_MIME_MAP[ext] ?? 'application/octet-stream';
+}
+
+function materialMimeType(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase();
+  return MATERIAL_MIME_MAP[ext] ?? 'application/octet-stream';
 }
 
 /** Extract a single string value from a header that may be string | string[] | undefined. */
 function firstHeader(h: string | string[] | undefined): string | undefined {
   if (h === undefined) return undefined;
   return Array.isArray(h) ? h[0] : h;
+}
+
+/**
+ * Produce a safe filename for Content-Disposition by stripping characters that
+ * are problematic inside a quoted-string (RFC 6266 / RFC 5987).
+ * We keep letters, digits, spaces, hyphens, underscores, and dots — everything
+ * else is replaced with an underscore.
+ */
+function safeFilename(label: string, ext: string): string {
+  const sanitized = label.replaceAll(/[^a-zA-Z0-9 .\-_]/g, '_');
+  return `${sanitized}${ext}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,6 +142,19 @@ export class StreamingController {
     const actor = session.user;
     return this.queryBus.execute<IssueStreamTokenQuery, StreamUrlDto>(
       new IssueStreamTokenQuery(id, actor),
+    );
+  }
+
+  /** GET /api/v1/lessons/:lessonId/materials/:materialId/download-url */
+  @Get('lessons/:lessonId/materials/:materialId/download-url')
+  async issueMaterialDownloadUrl(
+    @Param('lessonId') lessonId: string,
+    @Param('materialId') materialId: string,
+    @Session() session: SessionContext,
+  ): Promise<MaterialDownloadUrlDto> {
+    const actor = session.user;
+    return this.queryBus.execute<IssueMaterialDownloadQuery, MaterialDownloadUrlDto>(
+      new IssueMaterialDownloadQuery(lessonId, materialId, actor),
     );
   }
 
@@ -304,6 +356,69 @@ export class StreamingController {
 
     res.status(200);
     res.end(vttContent, 'utf8');
+  }
+
+  /**
+   * GET /api/v1/stream/materials/:materialId?token=…
+   *
+   * Downloads a material sidecar file (PDF, Markdown, image) as an attachment.
+   * No Range support — materials are downloaded whole (no progressive streaming).
+   *
+   *   200  — full file with Content-Disposition: attachment
+   *   401  — missing / expired / tampered / wrong-scope token
+   *   404  — lesson or material not found, or file absent on disk
+   *   500  — path-traversal guard triggered
+   *
+   * WHY @AllowAnonymous(): same rationale as getLessonStream — the material
+   * token in the query string is the sole auth mechanism. verifyMaterial()
+   * rejects any token whose scope is not "material" (lesson tokens, etc.).
+   *
+   * WHY @Res(): same reason as getLessonStream — binary body + custom headers.
+   *
+   * The material token embeds `lid` (lessonId) so locateMaterial(lessonId,
+   * materialId) can be called without an extra DB query.
+   *
+   * This route is exempt from the OpenAPI validator — the response is raw bytes,
+   * not JSON. See openapi-validator.middleware.ts ignorePaths.
+   */
+  @AllowAnonymous()
+  @Get('stream/materials/:materialId')
+  async getMaterialStream(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Param('materialId') materialId: string,
+    @Query('token') token: string,
+  ): Promise<void> {
+    // 1. Verify material-scoped token. Returns embedded lessonId.
+    if (!token) {
+      throw new StreamTokenInvalidError('Stream token is required.');
+    }
+    const { lessonId } = this.streamTokenSigner.verifyMaterial(token, materialId);
+
+    // 2. Locate the material file — also re-validates that materialId exists
+    //    on this lesson (defence in depth: token binding + DB check).
+    const { absolutePath, sizeBytes, label } = await this.lessonFileLocator.locateMaterial(
+      lessonId,
+      materialId,
+    );
+
+    // 3. Set headers.
+    const mime = materialMimeType(absolutePath);
+    const ext = path.extname(absolutePath).toLowerCase();
+    const filename = safeFilename(label, ext);
+
+    // Same CORP override as the video endpoint — the download link is embedded
+    // via a transient <a href> that may be on a different origin.
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Content-Length', sizeBytes);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    // 4. Pipe the file.
+    res.status(200);
+    const stream = createReadStream(absolutePath);
+    req.on('close', () => stream.destroy());
+    await pipeline(stream, res);
   }
 }
 

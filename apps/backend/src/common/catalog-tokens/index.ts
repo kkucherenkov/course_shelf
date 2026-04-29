@@ -25,3 +25,6 @@ export { LessonNotFoundError } from '../../modules/catalog/domain/lesson/lesson.
 // the video file's absolute path for range-based streaming.
 export { LIBRARY_REPOSITORY } from '../../modules/catalog/domain/library/library.repository';
 export type { LibraryRepository } from '../../modules/catalog/domain/library/library.repository';
+// Added for material download: LessonFileLocator.locateMaterial returns kind so
+// the controller can derive the Content-Type without importing catalog sources.
+export type { MaterialKindValue } from '../../modules/catalog/domain/lesson/material';

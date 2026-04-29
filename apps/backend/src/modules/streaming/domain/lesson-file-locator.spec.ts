@@ -21,6 +21,13 @@
  *   9.  Happy path SRT — returns extension='.srt'.
  *   10. Language not found → SubtitleNotFoundError.
  *   11. Path traversal on subtitle path → LessonFilePathEscapedError.
+ *
+ * Scenarios — locateMaterial():
+ *   12. Happy path — returns absolutePath, sizeBytes, label, kind, courseId, libraryId.
+ *   13. Material id not found on lesson → MaterialNotFoundError.
+ *   14. Path traversal on material path → LessonFilePathEscapedError.
+ *   15. File absent on disk → MaterialFileNotFoundError.
+ *   16. Missing lesson → LessonNotFoundError.
  */
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -31,6 +38,8 @@ import { LessonNotFoundError } from '../../../common/catalog-tokens';
 import {
   LessonFileNotFoundError,
   LessonFilePathEscapedError,
+  MaterialFileNotFoundError,
+  MaterialNotFoundError,
   SubtitleNotFoundError,
 } from './stream-token/stream-file.errors';
 import { LessonFileLocator } from './lesson-file-locator';
@@ -55,12 +64,29 @@ const EXPECTED_ABS = path.resolve(ROOT, VIDEO_RELATIVE);
 const SUBTITLE_VTT_RELATIVE = 'intro/lesson.en.vtt';
 const SUBTITLE_SRT_RELATIVE = 'intro/lesson.ru.srt';
 
+const MATERIAL_ID = 'mat-1';
+const MATERIAL_RELATIVE = 'intro/notes.pdf';
+const EXPECTED_MATERIAL_ABS = path.resolve(ROOT, MATERIAL_RELATIVE);
+
 function makeLessonWithSubtitles(subtitles: { language: string; path: string }[] = []): object {
   return {
     id: LESSON_ID,
     courseId: COURSE_ID,
     videoPath: VIDEO_RELATIVE,
     subtitles,
+    materials: [],
+  };
+}
+
+function makeLessonWithMaterials(
+  materials: { id: string; path: string; kind: string; label: string; sizeBytes: number }[] = [],
+): object {
+  return {
+    id: LESSON_ID,
+    courseId: COURSE_ID,
+    videoPath: VIDEO_RELATIVE,
+    subtitles: [],
+    materials,
   };
 }
 
@@ -72,6 +98,7 @@ function makeLessonRepo(overrides?: Partial<LessonRepository>): LessonRepository
       courseId: COURSE_ID,
       videoPath: VIDEO_RELATIVE,
       subtitles: [],
+      materials: [],
     }),
     findByCourse: vi.fn(),
     findBySection: vi.fn(),
@@ -173,7 +200,13 @@ describe('LessonFileLocator', () => {
 
   // -------------------------------------------------------------------------
   it('throws LessonFilePathEscapedError for traversal via relative videoPath (../../etc/passwd)', async () => {
-    const traversalLesson = { id: LESSON_ID, courseId: COURSE_ID, videoPath: '../../etc/passwd' };
+    const traversalLesson = {
+      id: LESSON_ID,
+      courseId: COURSE_ID,
+      videoPath: '../../etc/passwd',
+      subtitles: [],
+      materials: [],
+    };
     const locator = makeLocator(
       makeLessonRepo({ findById: vi.fn().mockResolvedValue(traversalLesson) }),
       makeCourseRepo(),
@@ -185,7 +218,13 @@ describe('LessonFileLocator', () => {
 
   // -------------------------------------------------------------------------
   it('throws LessonFilePathEscapedError for absolute videoPath that escapes root (/etc/passwd)', async () => {
-    const escapedLesson = { id: LESSON_ID, courseId: COURSE_ID, videoPath: '/etc/passwd' };
+    const escapedLesson = {
+      id: LESSON_ID,
+      courseId: COURSE_ID,
+      videoPath: '/etc/passwd',
+      subtitles: [],
+      materials: [],
+    };
     const locator = makeLocator(
       makeLessonRepo({ findById: vi.fn().mockResolvedValue(escapedLesson) }),
       makeCourseRepo(),
@@ -281,6 +320,95 @@ describe('LessonFileLocator', () => {
 
     await expect(locator.locateSubtitle(LESSON_ID, 'en')).rejects.toBeInstanceOf(
       LessonFilePathEscapedError,
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // locateMaterial
+  // ---------------------------------------------------------------------------
+
+  it('locateMaterial happy path — returns absolutePath, sizeBytes, label, kind', async () => {
+    statSpy.mockResolvedValue({ size: 8192 } as Awaited<ReturnType<typeof fs.stat>>);
+
+    const lessonWithMaterial = makeLessonWithMaterials([
+      { id: MATERIAL_ID, path: MATERIAL_RELATIVE, kind: 'doc', label: 'Notes', sizeBytes: 8192 },
+    ]);
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithMaterial) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+    );
+
+    const result = await locator.locateMaterial(LESSON_ID, MATERIAL_ID);
+
+    expect(result.absolutePath).toBe(EXPECTED_MATERIAL_ABS);
+    expect(result.sizeBytes).toBe(8192);
+    expect(result.label).toBe('Notes');
+    expect(result.kind).toBe('doc');
+    expect(result.courseId).toBe(COURSE_ID);
+    expect(result.libraryId).toBe(LIBRARY_ID);
+  });
+
+  it('locateMaterial throws MaterialNotFoundError when material id is absent', async () => {
+    const lessonNoMaterials = makeLessonWithMaterials([]);
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonNoMaterials) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+    );
+
+    await expect(locator.locateMaterial(LESSON_ID, 'mat-missing')).rejects.toBeInstanceOf(
+      MaterialNotFoundError,
+    );
+  });
+
+  it('locateMaterial throws LessonFilePathEscapedError for traversal on material path', async () => {
+    const lessonWithEvilMaterial = makeLessonWithMaterials([
+      {
+        id: MATERIAL_ID,
+        path: '../../etc/passwd',
+        kind: 'doc',
+        label: 'Evil',
+        sizeBytes: 1,
+      },
+    ]);
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithEvilMaterial) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+    );
+
+    await expect(locator.locateMaterial(LESSON_ID, MATERIAL_ID)).rejects.toBeInstanceOf(
+      LessonFilePathEscapedError,
+    );
+  });
+
+  it('locateMaterial throws MaterialFileNotFoundError when file is absent on disk', async () => {
+    statSpy.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+
+    const lessonWithMaterial = makeLessonWithMaterials([
+      { id: MATERIAL_ID, path: MATERIAL_RELATIVE, kind: 'doc', label: 'Notes', sizeBytes: 100 },
+    ]);
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithMaterial) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+    );
+
+    await expect(locator.locateMaterial(LESSON_ID, MATERIAL_ID)).rejects.toBeInstanceOf(
+      MaterialFileNotFoundError,
+    );
+  });
+
+  it('locateMaterial throws LessonNotFoundError when lesson is absent', async () => {
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(null) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+    );
+
+    await expect(locator.locateMaterial('missing-lesson', MATERIAL_ID)).rejects.toBeInstanceOf(
+      LessonNotFoundError,
     );
   });
 });

@@ -437,6 +437,35 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/lessons/{lessonId}/materials/{materialId}/download-url': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mint a short-lived signed URL to download a lesson material
+     * @description Returns a URL pointing at `/api/v1/stream/materials/{materialId}` with a
+     *     signed query-param token bound to `(userId, materialId, expiresAt)`.
+     *     The token is HMAC-signed with a different scope than the video stream
+     *     token so a video token cannot be re-used to fetch a material (and vice
+     *     versa). The streaming endpoint verifies the token without a database
+     *     lookup. Default TTL is 5 minutes — short because clicking a download
+     *     link should resolve immediately.
+     *
+     *     Authorization mirrors `issueStreamUrl`: the requester must have a READ
+     *     grant on the parent library or course, or be an admin.
+     */
+    get: operations['issueMaterialDownloadUrl'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/lessons/{lessonId}/bookmarks': {
     parameters: {
       query?: never;
@@ -1831,6 +1860,28 @@ export interface components {
       expiresAt: string;
     };
     /**
+     * @description Short-lived signed URL for downloading a lesson material (PDF, MD, image). Same shape as `StreamUrlDto` — the only difference is the token's internal scope claim. Issued by `issueMaterialDownloadUrl` and consumed by the browser via a transient `<a href download>`.
+     * @example {
+     *       "url": "/api/v1/stream/materials/clxvmat0000000000000000001?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IlNUSyIsInYiOjF9.eyJzdWIiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibWlkIjoiY2x4dm1hdDAwMDAwMDAwMDAwMDAwMDAwMSIsInNjcCI6Im1hdGVyaWFsIiwiZXhwIjoxNzQ1NTc0NDAwLCJpYXQiOjE3NDU1NzQxMDB9.k9sQfxCq8wL2pT4N3LKzr8B5jM0hVzG4Yf9X2N1tQp8",
+     *       "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IlNUSyIsInYiOjF9.eyJzdWIiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibWlkIjoiY2x4dm1hdDAwMDAwMDAwMDAwMDAwMDAwMSIsInNjcCI6Im1hdGVyaWFsIiwiZXhwIjoxNzQ1NTc0NDAwLCJpYXQiOjE3NDU1NzQxMDB9.k9sQfxCq8wL2pT4N3LKzr8B5jM0hVzG4Yf9X2N1tQp8",
+     *       "expiresAt": "2026-04-25T10:05:00Z"
+     *     }
+     */
+    MaterialDownloadUrlDto: {
+      /**
+       * Format: uri-reference
+       * @description URL the browser should fetch. Same-origin relative path (e.g. `/api/v1/stream/materials/<id>?token=…`). Carries the signed token as the `token` query parameter so a direct `<a href download>` works without an Authorization header.
+       */
+      url: string;
+      /** @description Opaque signed token. Internal format is the same compact `header.payload.signature` shape as the video stream token, but the payload's scope claim differs so a video token can never be re-used to fetch a material (and vice versa). Round-trip untouched. */
+      token: string;
+      /**
+       * Format: date-time
+       * @description ISO-8601 timestamp at which the token + URL stop being accepted. Default TTL is 5 minutes — clicking a download link should resolve immediately, so a long TTL is unnecessary.
+       */
+      expiresAt: string;
+    };
+    /**
      * @description A subtitle track available for a lesson.
      * @example {
      *       "id": "clxvsub0000000000000000001",
@@ -2788,6 +2839,58 @@ export interface operations {
         };
       };
       /** @description Lesson not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  issueMaterialDownloadUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the parent lesson. */
+        lessonId: string;
+        /** @description Server-generated cuid identifying the material. */
+        materialId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Signed download URL issued */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MaterialDownloadUrlDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Requester has no READ grant on the parent library or course */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Material or parent lesson not found */
       404: {
         headers: {
           [name: string]: unknown;

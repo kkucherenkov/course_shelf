@@ -42,6 +42,25 @@ export class StreamTokenLessonMismatchError extends StreamTokenInvalidError {
   }
 }
 
+/** The token was issued for a different material than the one being accessed. */
+export class StreamTokenMaterialMismatchError extends StreamTokenInvalidError {
+  constructor() {
+    super('Token was issued for a different material.', 'stream-token-material-mismatch');
+    this.name = 'StreamTokenMaterialMismatchError';
+  }
+}
+
+/**
+ * A lesson-scoped token was presented on a material endpoint (or vice-versa).
+ * Fail-closed: scope mismatch is treated as an invalid token.
+ */
+export class StreamTokenScopeMismatchError extends StreamTokenInvalidError {
+  constructor() {
+    super('Token scope does not match the requested resource type.', 'stream-token-scope-mismatch');
+    this.name = 'StreamTokenScopeMismatchError';
+  }
+}
+
 /** The token string is structurally invalid (wrong part count, bad base64, etc.). */
 export class StreamTokenMalformedError extends StreamTokenInvalidError {
   constructor() {

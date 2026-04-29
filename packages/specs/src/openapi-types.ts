@@ -644,10 +644,29 @@ export interface paths {
     get: operations['getLibrary'];
     put?: never;
     post?: never;
-    delete?: never;
+    /**
+     * Hard-delete a library and every dependent row
+     * @description Admin-only destructive operation. Cascades through scans, courses
+     *     (with sections/lessons/materials/subtitles), per-user progress,
+     *     bookmarks, notes, and access grants. Files on disk are NOT touched
+     *     — the library only exists in the DB; deletion just unlinks the
+     *     folder from CourseShelf.
+     *
+     *     The cascade lives in a single Prisma `$transaction` so partial
+     *     failures roll back. Idempotent: deleting an already-deleted id
+     *     returns 404.
+     */
+    delete: operations['removeLibrary'];
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Rename a library
+     * @description Admin-only mutation. Currently only the `name` field is mutable —
+     *     changing `rootPath` would invalidate every scan and break stream
+     *     URLs minted before the change, so it is intentionally not exposed
+     *     here. Re-create the library if the disk path needs to change.
+     */
+    patch: operations['updateLibrary'];
     trace?: never;
   };
   '/api/v1/libraries/{id}/scans': {
@@ -1631,6 +1650,10 @@ export interface components {
       createdAt: string;
       /** Format: date-time */
       updatedAt: string;
+    };
+    /** @description Patch body for `PATCH /libraries/{id}`. Currently only `name` is mutable; changing `rootPath` is intentionally unsupported. */
+    UpdateLibraryRequest: {
+      name?: string;
     };
     /**
      * @example {
@@ -3554,6 +3577,117 @@ export interface operations {
         };
       };
       /** @description Caller does not have access to this library */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Library not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  removeLibrary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the library. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Library deleted */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller is authenticated but not an administrator */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Library not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  updateLibrary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the library. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateLibraryRequest'];
+      };
+    };
+    responses: {
+      /** @description Updated library */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LibraryDto'];
+        };
+      };
+      /** @description Validation error — empty body or invalid name */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller is authenticated but not an administrator */
       403: {
         headers: {
           [name: string]: unknown;

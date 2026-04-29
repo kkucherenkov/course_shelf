@@ -24,7 +24,7 @@ export class ListAdminUsersHandler implements IQueryHandler<ListAdminUsersQuery,
         : Math.min(Math.max(rawLimit, MIN_LIMIT), MAX_LIMIT);
 
     const items = await this.dashboard.listUsers({
-      ...(query.search !== undefined ? { search: query.search } : {}),
+      ...(query.search === undefined ? {} : { search: query.search }),
       limit,
     });
 

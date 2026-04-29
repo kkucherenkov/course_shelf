@@ -21,8 +21,10 @@ Method | HTTP request | Description
 [**listCourses**](CatalogApi.md#listcourses) | **GET** /api/v1/courses | List courses (optionally filtered by library)
 [**listLibraries**](CatalogApi.md#listlibraries) | **GET** /api/v1/libraries | List all registered libraries
 [**registerLibrary**](CatalogApi.md#registerlibrary) | **POST** /api/v1/libraries | Register a new library
+[**removeLibrary**](CatalogApi.md#removelibrary) | **DELETE** /api/v1/libraries/{id} | Hard-delete a library and every dependent row
 [**runLibraryScan**](CatalogApi.md#runlibraryscan) | **POST** /api/v1/libraries/{id}/scans | Trigger a scan of a library
 [**updateCourse**](CatalogApi.md#updatecourse) | **PATCH** /api/v1/courses/{id} | Update course metadata
+[**updateLibrary**](CatalogApi.md#updatelibrary) | **PATCH** /api/v1/libraries/{id} | Rename a library
 
 
 # **getContinueWatching**
@@ -533,6 +535,48 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **removeLibrary**
+> removeLibrary(id)
+
+Hard-delete a library and every dependent row
+
+Admin-only destructive operation. Cascades through scans, courses (with sections/lessons/materials/subtitles), per-user progress, bookmarks, notes, and access grants. Files on disk are NOT touched — the library only exists in the DB; deletion just unlinks the folder from CourseShelf.  The cascade lives in a single Prisma `$transaction` so partial failures roll back. Idempotent: deleting an already-deleted id returns 404. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String id = id_example; // String | Server-generated cuid identifying the library.
+
+try {
+    api.removeLibrary(id);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->removeLibrary: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the library. | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **runLibraryScan**
 > ScanDto runLibraryScan(id)
 
@@ -609,6 +653,51 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**CourseDto**](CourseDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **updateLibrary**
+> LibraryDto updateLibrary(id, updateLibraryRequest)
+
+Rename a library
+
+Admin-only mutation. Currently only the `name` field is mutable — changing `rootPath` would invalidate every scan and break stream URLs minted before the change, so it is intentionally not exposed here. Re-create the library if the disk path needs to change. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String id = id_example; // String | Server-generated cuid identifying the library.
+final UpdateLibraryRequest updateLibraryRequest = {"name":"Conference Recordings (2026)"}; // UpdateLibraryRequest | 
+
+try {
+    final response = api.updateLibrary(id, updateLibraryRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->updateLibrary: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the library. | 
+ **updateLibraryRequest** | [**UpdateLibraryRequest**](UpdateLibraryRequest.md)|  | 
+
+### Return type
+
+[**LibraryDto**](LibraryDto.md)
 
 ### Authorization
 

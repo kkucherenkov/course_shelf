@@ -35,6 +35,8 @@ import { AdminGuard } from '../../common/auth/admin.guard';
 import { CommonAccessModule } from '../../common/access/access.module';
 import { LearningProgressModule } from '../../common/learning-progress/learning-progress.module';
 import { RegisterLibraryHandler } from './application/commands/register-library.handler';
+import { UpdateLibraryHandler } from './application/commands/update-library.handler';
+import { RemoveLibraryHandler } from './application/commands/remove-library.handler';
 import { RunScanHandler } from './application/commands/run-scan.handler';
 import { UpdateCourseMetadataHandler } from './application/commands/update-course-metadata.handler';
 import { MarkCourseCompleteHandler } from './application/commands/mark-course-complete.handler';
@@ -84,6 +86,8 @@ import { NodeFsAdapter } from './infra/node-fs-adapter';
   ],
   providers: [
     RegisterLibraryHandler,
+    UpdateLibraryHandler,
+    RemoveLibraryHandler,
     GetLibraryHandler,
     ListLibrariesHandler,
     RunScanHandler,

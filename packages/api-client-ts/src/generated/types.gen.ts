@@ -671,6 +671,13 @@ export type LibraryDto = {
     updatedAt: string;
 };
 
+/**
+ * Patch body for `PATCH /libraries/{id}`. Currently only `name` is mutable; changing `rootPath` is intentionally unsupported.
+ */
+export type UpdateLibraryRequest = {
+    name?: string;
+};
+
 export type LibraryListDto = {
     items: Array<LibraryDto>;
 };
@@ -2186,6 +2193,44 @@ export type RegisterLibraryResponses = {
 
 export type RegisterLibraryResponse = RegisterLibraryResponses[keyof RegisterLibraryResponses];
 
+export type RemoveLibraryData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the library.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/libraries/{id}';
+};
+
+export type RemoveLibraryErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller is authenticated but not an administrator
+     */
+    403: Problem;
+    /**
+     * Library not found
+     */
+    404: Problem;
+};
+
+export type RemoveLibraryError = RemoveLibraryErrors[keyof RemoveLibraryErrors];
+
+export type RemoveLibraryResponses = {
+    /**
+     * Library deleted
+     */
+    204: void;
+};
+
+export type RemoveLibraryResponse = RemoveLibraryResponses[keyof RemoveLibraryResponses];
+
 export type GetLibraryData = {
     body?: never;
     path: {
@@ -2223,6 +2268,48 @@ export type GetLibraryResponses = {
 };
 
 export type GetLibraryResponse = GetLibraryResponses[keyof GetLibraryResponses];
+
+export type UpdateLibraryData = {
+    body: UpdateLibraryRequest;
+    path: {
+        /**
+         * Server-generated cuid identifying the library.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/libraries/{id}';
+};
+
+export type UpdateLibraryErrors = {
+    /**
+     * Validation error — empty body or invalid name
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller is authenticated but not an administrator
+     */
+    403: Problem;
+    /**
+     * Library not found
+     */
+    404: Problem;
+};
+
+export type UpdateLibraryError = UpdateLibraryErrors[keyof UpdateLibraryErrors];
+
+export type UpdateLibraryResponses = {
+    /**
+     * Updated library
+     */
+    200: LibraryDto;
+};
+
+export type UpdateLibraryResponse = UpdateLibraryResponses[keyof UpdateLibraryResponses];
 
 export type RunLibraryScanData = {
     body?: never;

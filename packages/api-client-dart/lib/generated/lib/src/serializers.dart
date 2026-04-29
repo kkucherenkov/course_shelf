@@ -87,6 +87,7 @@ import 'package:app_api_client/src/model/stream_url_dto.dart';
 import 'package:app_api_client/src/model/subtitle_dto.dart';
 import 'package:app_api_client/src/model/update_bookmark_request.dart';
 import 'package:app_api_client/src/model/update_course_request.dart';
+import 'package:app_api_client/src/model/update_library_request.dart';
 import 'package:app_api_client/src/model/upsert_note_request.dart';
 import 'package:app_api_client/src/model/your_week_dto.dart';
 
@@ -166,6 +167,7 @@ part 'serializers.g.dart';
   SubtitleDto,
   UpdateBookmarkRequest,
   UpdateCourseRequest,
+  UpdateLibraryRequest,
   UpsertNoteRequest,
   YourWeekDto,
 ])

@@ -15,16 +15,35 @@
  * Session pattern: the global SessionGuard resolves the session and attaches
  * req.session before the handler runs. Use @Session() to extract the actor.
  */
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
+import { AdminGuard } from '../../common/auth/admin.guard';
 import { Session } from '../../common/auth/decorators';
 import { RegisterLibraryCommand } from './application/commands/register-library.command';
+import { UpdateLibraryCommand } from './application/commands/update-library.command';
+import { RemoveLibraryCommand } from './application/commands/remove-library.command';
 import { GetLibraryQuery } from './application/queries/get-library.query';
 import { ListLibrariesQuery } from './application/queries/list-libraries.query';
 
 import type { SessionContext } from '../../common/auth/decorators';
-import type { LibraryDto, LibraryListDto, RegisterLibraryRequest } from '@app/api-client-ts';
+import type {
+  LibraryDto,
+  LibraryListDto,
+  RegisterLibraryRequest,
+  UpdateLibraryRequest,
+} from '@app/api-client-ts';
 
 @Controller({ path: 'libraries', version: '1' })
 export class CatalogController {
@@ -69,5 +88,27 @@ export class CatalogController {
   ): Promise<LibraryDto> {
     const actor = session.user;
     return this.queryBus.execute<GetLibraryQuery, LibraryDto>(new GetLibraryQuery(id, actor));
+  }
+
+  /** PATCH /api/v1/libraries/:id — admin only */
+  @UseGuards(AdminGuard)
+  @Patch(':id')
+  async updateLibrary(
+    @Param('id') id: string,
+    @Body() body: UpdateLibraryRequest,
+  ): Promise<LibraryDto> {
+    const patch: { name?: string } = {};
+    if (body.name !== undefined) patch.name = body.name;
+    return this.commandBus.execute<UpdateLibraryCommand, LibraryDto>(
+      new UpdateLibraryCommand(id, patch),
+    );
+  }
+
+  /** DELETE /api/v1/libraries/:id — admin only */
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(':id')
+  async removeLibrary(@Param('id') id: string): Promise<void> {
+    await this.commandBus.execute(new RemoveLibraryCommand(id));
   }
 }

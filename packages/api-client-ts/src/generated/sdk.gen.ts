@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceResponses, GetAdminUserData, GetAdminUserErrors, GetAdminUserResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueMaterialDownloadUrlData, IssueMaterialDownloadUrlErrors, IssueMaterialDownloadUrlResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListAdminLibrariesData, ListAdminLibrariesErrors, ListAdminLibrariesResponses, ListAdminScansData, ListAdminScansErrors, ListAdminScansResponses, ListAdminUsersData, ListAdminUsersErrors, ListAdminUsersResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, UpdateAdminUserData, UpdateAdminUserErrors, UpdateAdminUserResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses } from './types.gen';
+import type { CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceResponses, GetAdminUserData, GetAdminUserErrors, GetAdminUserResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueMaterialDownloadUrlData, IssueMaterialDownloadUrlErrors, IssueMaterialDownloadUrlResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListAdminLibrariesData, ListAdminLibrariesErrors, ListAdminLibrariesResponses, ListAdminScansData, ListAdminScansErrors, ListAdminScansResponses, ListAdminUsersData, ListAdminUsersErrors, ListAdminUsersResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RemoveLibraryData, RemoveLibraryErrors, RemoveLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, UpdateAdminUserData, UpdateAdminUserErrors, UpdateAdminUserResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpdateLibraryData, UpdateLibraryErrors, UpdateLibraryResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -512,6 +512,26 @@ export const registerLibrary = <ThrowOnError extends boolean = false>(options: O
 });
 
 /**
+ * Hard-delete a library and every dependent row
+ *
+ * Admin-only destructive operation. Cascades through scans, courses
+ * (with sections/lessons/materials/subtitles), per-user progress,
+ * bookmarks, notes, and access grants. Files on disk are NOT touched
+ * — the library only exists in the DB; deletion just unlinks the
+ * folder from CourseShelf.
+ *
+ * The cascade lives in a single Prisma `$transaction` so partial
+ * failures roll back. Idempotent: deleting an already-deleted id
+ * returns 404.
+ *
+ */
+export const removeLibrary = <ThrowOnError extends boolean = false>(options: Options<RemoveLibraryData, ThrowOnError>) => (options.client ?? client).delete<RemoveLibraryResponses, RemoveLibraryErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/libraries/{id}',
+    ...options
+});
+
+/**
  * Get a library by id
  *
  * Returns a single library by its server-generated identifier.
@@ -520,6 +540,25 @@ export const getLibrary = <ThrowOnError extends boolean = false>(options: Option
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/libraries/{id}',
     ...options
+});
+
+/**
+ * Rename a library
+ *
+ * Admin-only mutation. Currently only the `name` field is mutable —
+ * changing `rootPath` would invalidate every scan and break stream
+ * URLs minted before the change, so it is intentionally not exposed
+ * here. Re-create the library if the disk path needs to change.
+ *
+ */
+export const updateLibrary = <ThrowOnError extends boolean = false>(options: Options<UpdateLibraryData, ThrowOnError>) => (options.client ?? client).patch<UpdateLibraryResponses, UpdateLibraryErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/libraries/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

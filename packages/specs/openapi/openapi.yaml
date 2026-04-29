@@ -357,6 +357,97 @@ paths:
                     status: 403
                     detail: Administrator role required.
 
+  /api/v1/admin/scans:
+    get:
+      operationId: listAdminScans
+      summary: List recent scans across every library
+      description: |
+        Ordered by `startedAt` descending (newest first). Used by the admin
+        dashboard's "Recent scans" table. Cross-library — admin-only;
+        non-admin actors see 403 even if they have READ grants on individual
+        libraries. Capped at `limit` (default 20, max 100).
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of scans to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Recent-scans list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminScanListDto"
+              examples:
+                threeScans:
+                  summary: Three scans from two libraries, one still running
+                  value:
+                    items:
+                      - scanId: clxvscn0000000000000000003
+                        libraryId: clxvlib0000000000000000001
+                        libraryName: Computer Science
+                        status: running
+                        startedAt: "2026-04-27T10:25:00Z"
+                        finishedAt: null
+                        filesScanned: 412
+                        coursesAdded: 2
+                        errorsCount: 0
+                      - scanId: clxvscn0000000000000000002
+                        libraryId: clxvlib0000000000000000002
+                        libraryName: Mathematics
+                        status: succeeded
+                        startedAt: "2026-04-27T09:55:00Z"
+                        finishedAt: "2026-04-27T09:58:12Z"
+                        filesScanned: 312
+                        coursesAdded: 4
+                        errorsCount: 2
+                      - scanId: clxvscn0000000000000000001
+                        libraryId: clxvlib0000000000000000001
+                        libraryName: Computer Science
+                        status: failed
+                        startedAt: "2026-04-26T18:01:00Z"
+                        finishedAt: "2026-04-26T18:01:05Z"
+                        filesScanned: 0
+                        coursesAdded: 0
+                        errorsCount: 1
+                empty:
+                  summary: No scans have ever run
+                  value:
+                    items: []
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller is authenticated but not an administrator
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+
   /api/v1/admin/has-users:
     get:
       operationId: getAdminHasUsers
@@ -2796,6 +2887,67 @@ components:
           type: integer
           minimum: 0
           description: Number of error records attached to this scan.
+
+    AdminScanListDto:
+      type: object
+      required: [items]
+      additionalProperties: false
+      description: >-
+        Page of recent scans across every library, ordered by `startedAt`
+        descending. The dashboard's "Recent scans" table consumes this.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminScanListItem"
+
+    AdminScanListItem:
+      type: object
+      required:
+        - scanId
+        - libraryId
+        - libraryName
+        - status
+        - startedAt
+        - finishedAt
+        - filesScanned
+        - coursesAdded
+        - errorsCount
+      additionalProperties: false
+      description: >-
+        One row in the dashboard's recent-scans table. Same backbone as
+        `AdminDashboardLatestScan` plus `libraryName` (so the table can
+        render the library label without a second round-trip) and
+        `coursesAdded` (highlighted as a "+N" badge in the design).
+      properties:
+        scanId:
+          type: string
+        libraryId:
+          type: string
+        libraryName:
+          type: string
+          minLength: 1
+        status:
+          $ref: "#/components/schemas/ScanStatus"
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+          description: null while still `running`.
+        filesScanned:
+          type: integer
+          minimum: 0
+        coursesAdded:
+          type: integer
+          minimum: 0
+          description: Net new course rows persisted by this scan.
+        errorsCount:
+          type: integer
+          minimum: 0
 
     BookmarkDto:
       type: object

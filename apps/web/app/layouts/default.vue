@@ -8,6 +8,10 @@
   const authStore = useAuthStore();
 
   const isAuthenticated = computed(() => authStore.isAuthenticated);
+  const isAdmin = computed(() => {
+    const role = authStore.user?.role?.toLowerCase();
+    return role === 'admin';
+  });
 
   const NO_PAD_ROUTES = new Set(['/sign-in', '/setup']);
   const isNoPad = computed(() => NO_PAD_ROUTES.has(route.path));
@@ -55,6 +59,17 @@
               }"
             >
               {{ t('layouts.default.navLibraries') }}
+            </NuxtLink>
+          </li>
+          <li v-if="isAdmin" class="default-layout__nav-item">
+            <NuxtLink
+              to="/admin"
+              class="default-layout__nav-link default-layout__nav-link--admin"
+              :class="{
+                'default-layout__nav-link--active': route.path.startsWith('/admin'),
+              }"
+            >
+              {{ t('pages.admin.navAdmin') }}
             </NuxtLink>
           </li>
           <li v-if="!isAuthenticated" class="default-layout__nav-item">

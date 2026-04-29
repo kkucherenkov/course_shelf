@@ -72,6 +72,29 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/scans': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List recent scans across every library
+     * @description Ordered by `startedAt` descending (newest first). Used by the admin
+     *     dashboard's "Recent scans" table. Cross-library — admin-only;
+     *     non-admin actors see 403 even if they have READ grants on individual
+     *     libraries. Capped at `limit` (default 20, max 100).
+     */
+    get: operations['listAdminScans'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/has-users': {
     parameters: {
       query?: never;
@@ -917,6 +940,25 @@ export interface components {
       finishedAt: string | null;
       filesScanned: number;
       /** @description Number of error records attached to this scan. */
+      errorsCount: number;
+    };
+    /** @description Page of recent scans across every library, ordered by `startedAt` descending. The dashboard's "Recent scans" table consumes this. */
+    AdminScanListDto: {
+      items: components['schemas']['AdminScanListItem'][];
+    };
+    /** @description One row in the dashboard's recent-scans table. Same backbone as `AdminDashboardLatestScan` plus `libraryName` (so the table can render the library label without a second round-trip) and `coursesAdded` (highlighted as a "+N" badge in the design). */
+    AdminScanListItem: {
+      scanId: string;
+      libraryId: string;
+      libraryName: string;
+      status: components['schemas']['ScanStatus'];
+      /** Format: date-time */
+      startedAt: string;
+      /** @description null while still `running`. */
+      finishedAt: string | null;
+      filesScanned: number;
+      /** @description Net new course rows persisted by this scan. */
+      coursesAdded: number;
       errorsCount: number;
     };
     /**
@@ -2147,6 +2189,47 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['AdminDashboardDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller is authenticated but not an administrator */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listAdminScans: {
+    parameters: {
+      query?: {
+        /** @description Maximum number of scans to return. */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Recent-scans list */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminScanListDto'];
         };
       };
       /** @description Missing or invalid bearer token */

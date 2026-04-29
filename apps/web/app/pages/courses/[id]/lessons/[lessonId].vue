@@ -2,12 +2,7 @@
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
   import { AppPlayerChrome, AppSkeleton, AppNoPermission } from '@app/ui';
   import { getLesson, listLessonBookmarks } from '@app/api-client-ts';
-  import type {
-    LessonDto,
-    BookmarkDto,
-    LessonOutlineItem,
-    MaterialDto,
-  } from '@app/api-client-ts';
+  import type { LessonDto, BookmarkDto, LessonOutlineItem, MaterialDto } from '@app/api-client-ts';
 
   import { useCourseOutline } from '~/composables/useCourseOutline';
   import { useLessonPlayer } from '~/composables/useLessonPlayer';

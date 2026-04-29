@@ -19,6 +19,8 @@ import 'package:app_api_client/src/model/access_grant_list_dto.dart';
 import 'package:app_api_client/src/model/admin_dashboard_dto.dart';
 import 'package:app_api_client/src/model/admin_dashboard_dto_counts.dart';
 import 'package:app_api_client/src/model/admin_dashboard_latest_scan.dart';
+import 'package:app_api_client/src/model/admin_scan_list_dto.dart';
+import 'package:app_api_client/src/model/admin_scan_list_item.dart';
 import 'package:app_api_client/src/model/batch_progress_item_accepted.dart';
 import 'package:app_api_client/src/model/batch_progress_item_forbidden.dart';
 import 'package:app_api_client/src/model/batch_progress_item_result.dart';
@@ -89,6 +91,8 @@ part 'serializers.g.dart';
   AdminDashboardDto,
   AdminDashboardDtoCounts,
   AdminDashboardLatestScan,
+  AdminScanListDto,
+  AdminScanListItem,
   BatchProgressItemAccepted,
   BatchProgressItemForbidden,
   BatchProgressItemResult,

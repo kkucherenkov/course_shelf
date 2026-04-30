@@ -81,6 +81,9 @@ import 'package:app_api_client/src/model/register_library_request.dart';
 import 'package:app_api_client/src/model/scan_dto.dart';
 import 'package:app_api_client/src/model/scan_error.dart';
 import 'package:app_api_client/src/model/scan_status.dart';
+import 'package:app_api_client/src/model/search_course_hit.dart';
+import 'package:app_api_client/src/model/search_lesson_hit.dart';
+import 'package:app_api_client/src/model/search_result_dto.dart';
 import 'package:app_api_client/src/model/section_dto.dart';
 import 'package:app_api_client/src/model/section_outline.dart';
 import 'package:app_api_client/src/model/sso_provider_config.dart';
@@ -163,6 +166,9 @@ part 'serializers.g.dart';
   ScanDto,
   ScanError,
   ScanStatus,
+  SearchCourseHit,
+  SearchLessonHit,
+  SearchResultDto,
   SectionDto,
   SectionOutline,
   SsoProviderConfig,

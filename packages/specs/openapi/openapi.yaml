@@ -3268,6 +3268,85 @@ paths:
                     title: Unauthorized
                     status: 401
 
+  /api/v1/search:
+    get:
+      operationId: searchCatalogue
+      summary: Search the catalogue (courses + lessons)
+      description: |
+        Case-insensitive substring search across course titles, section
+        titles (matched into their courses), and lesson titles. Returns
+        two result lists: courses and lessons. Each list is capped at
+        `limit` (default 20, max 100). Results are sorted by best match
+        (exact-prefix > word-prefix > substring) within each list.
+
+        Authorisation mirrors the listing endpoints — non-admin actors
+        only see courses / lessons they have a READ grant on (via the
+        course's library); admins see everything.
+
+        Empty `q` returns empty lists (no expensive full-table scan).
+        Trimmed length must be ≥ 2 to avoid pathologically broad
+        substring matches; shorter queries return empty lists too.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Substring to match. Trimmed; case-insensitive.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results PER kind (courses + lessons).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Search hits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResultDto"
+              examples:
+                hits:
+                  value:
+                    query: archi
+                    courses:
+                      - id: clxvcrs0000000000000000001
+                        libraryId: clxvlib0000000000000000001
+                        title: Pragmatic Clean Architecture
+                        slug: pragmatic-clean-architecture
+                        lessonsTotal: 18
+                    lessons:
+                      - id: clxvles0000000000000000001
+                        courseId: clxvcrs0000000000000000001
+                        courseTitle: Pragmatic Clean Architecture
+                        sectionTitle: Domain Layer
+                        title: Architectural drivers
+                        position: 3
+                empty:
+                  value:
+                    query: zzz
+                    courses: []
+                    lessons: []
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+
   /api/v1/realtime/token:
     post:
       operationId: issueRealtimeToken
@@ -4479,6 +4558,67 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+
+    SearchResultDto:
+      type: object
+      required: [query, courses, lessons]
+      additionalProperties: false
+      description: >-
+        Two result lists for a single search query — one of course hits
+        and one of lesson hits. The shape is intentionally not unified
+        because each kind needs different context fields (lesson hits
+        carry their parent course/section so the SPA can show breadcrumb-
+        style context).
+      properties:
+        query:
+          type: string
+          description: The trimmed query string the server matched against.
+        courses:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchCourseHit"
+        lessons:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchLessonHit"
+
+    SearchCourseHit:
+      type: object
+      required: [id, libraryId, title, slug, lessonsTotal]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        libraryId:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        lessonsTotal:
+          type: integer
+          minimum: 0
+
+    SearchLessonHit:
+      type: object
+      required: [id, courseId, courseTitle, sectionTitle, title, position]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        courseId:
+          type: string
+        courseTitle:
+          type: string
+          description: Title of the parent course — included so the SPA can show breadcrumb context.
+        sectionTitle:
+          type: string
+          description: Title of the parent section.
+        title:
+          type: string
+        position:
+          type: integer
+          minimum: 1
 
     LibraryListDto:
       type: object

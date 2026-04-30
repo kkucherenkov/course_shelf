@@ -52,6 +52,7 @@ import { GetCourseOutlineHandler } from './application/queries/get-course-outlin
 import { GetRecentlyAddedHandler } from './application/queries/get-recently-added.handler';
 import { GetRecentlyCompletedHandler } from './application/queries/get-recently-completed.handler';
 import { GetYourWeekHandler } from './application/queries/get-your-week.handler';
+import { SearchCatalogueHandler } from './application/queries/search-catalogue.handler';
 import { LessonCompletedHandler } from './application/event-handlers/lesson-completed.handler';
 import { LessonProgressRecordedHandler } from './application/event-handlers/lesson-progress-recorded.handler';
 import { RebuildProjectionsService } from './application/projections/rebuild-projections.service';
@@ -60,6 +61,7 @@ import { CoursesController } from './courses.controller';
 import { HomeController } from './home.controller';
 import { LessonsController } from './lessons.controller';
 import { ScansController } from './scans.controller';
+import { SearchController } from './search.controller';
 import { LIBRARY_REPOSITORY } from './domain/library/library.repository';
 import { SCAN_REPOSITORY } from './domain/scan/scan.repository';
 import { COURSE_REPOSITORY } from './domain/course/course.repository';
@@ -67,11 +69,13 @@ import { LESSON_REPOSITORY } from './domain/lesson/lesson.repository';
 import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from './domain/progress/course-progress-read-model.repository';
 import { FFMPEG_ADAPTER } from './domain/scan/ffmpeg-adapter';
 import { FS_ADAPTER } from './domain/scan/fs-adapter';
+import { SEARCH_PORT } from './domain/search.port';
 import { PrismaLibraryRepository } from './infra/prisma-library.repository';
 import { PrismaScanRepository } from './infra/prisma-scan.repository';
 import { PrismaCourseRepository } from './infra/prisma-course.repository';
 import { PrismaLessonRepository } from './infra/prisma-lesson.repository';
 import { PrismaCourseProgressReadModelRepository } from './infra/prisma-course-progress-read-model.repository';
+import { PrismaSearchAdapter } from './infra/prisma-search.adapter';
 import { LocalFfmpegAdapter } from './infra/local-ffmpeg.adapter';
 import { NodeFsAdapter } from './infra/node-fs-adapter';
 
@@ -83,6 +87,7 @@ import { NodeFsAdapter } from './infra/node-fs-adapter';
     CoursesController,
     LessonsController,
     HomeController,
+    SearchController,
   ],
   providers: [
     RegisterLibraryHandler,
@@ -103,6 +108,7 @@ import { NodeFsAdapter } from './infra/node-fs-adapter';
     GetRecentlyAddedHandler,
     GetRecentlyCompletedHandler,
     GetYourWeekHandler,
+    SearchCatalogueHandler,
     LessonCompletedHandler,
     LessonProgressRecordedHandler,
     RebuildProjectionsService,
@@ -117,6 +123,7 @@ import { NodeFsAdapter } from './infra/node-fs-adapter';
     },
     { provide: FS_ADAPTER, useClass: NodeFsAdapter },
     { provide: FFMPEG_ADAPTER, useClass: LocalFfmpegAdapter },
+    { provide: SEARCH_PORT, useClass: PrismaSearchAdapter },
   ],
 })
 export class CatalogModule {}

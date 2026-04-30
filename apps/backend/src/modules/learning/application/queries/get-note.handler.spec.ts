@@ -34,7 +34,11 @@ function makeCourseRepo(course: unknown = COURSE): CourseRepository {
 }
 
 function makeAuthz(allowed = true): AuthorizationService {
-  return { canSee: vi.fn().mockResolvedValue(allowed), invalidate: vi.fn() };
+  return {
+    canSee: vi.fn().mockResolvedValue(allowed),
+    invalidate: vi.fn(),
+    listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
+  };
 }
 
 function makeNoteRepo(existing: Note | null): NoteRepository {

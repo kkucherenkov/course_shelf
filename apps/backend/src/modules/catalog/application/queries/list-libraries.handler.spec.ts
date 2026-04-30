@@ -23,6 +23,7 @@ function makeAuthz(allow: boolean): AuthorizationService {
   return {
     canSee: vi.fn().mockResolvedValue(allow),
     invalidate: vi.fn(),
+    listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
   };
 }
 
@@ -127,6 +128,7 @@ describe('ListLibrariesHandler', () => {
       const authz: AuthorizationService = {
         canSee: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
         invalidate: vi.fn(),
+        listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
       };
       handler = new ListLibrariesHandler(repo, authz);
       const lib1 = makeLibrary({ name: 'Books', rootPath: '/media/books' });

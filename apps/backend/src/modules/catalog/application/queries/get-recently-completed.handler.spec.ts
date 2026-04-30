@@ -78,6 +78,7 @@ function makeAuthz(allow: boolean): AuthorizationService {
   return {
     canSee: vi.fn().mockResolvedValue(allow),
     invalidate: vi.fn(),
+    listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
   };
 }
 
@@ -151,6 +152,7 @@ describe('GetRecentlyCompletedHandler', () => {
       const authz: AuthorizationService = {
         canSee: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
         invalidate: vi.fn(),
+        listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
       };
       const handler = new GetRecentlyCompletedHandler(progressRepo, courseRepo, authz);
       const result = await handler.execute(new GetRecentlyCompletedQuery(USER, 10));

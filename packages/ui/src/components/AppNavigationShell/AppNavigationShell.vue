@@ -62,6 +62,8 @@
     'update:colorMode': [mode: 'light' | 'dark'];
     /** Fired on every nav-item click with the item's key. */
     nav: [key: string];
+    /** Fired when Enter is pressed in the search input. */
+    searchSubmit: [value: string];
     profile: [];
     settings: [];
     signOut: [];
@@ -261,6 +263,7 @@
             :placeholder="searchPlaceholder"
             :value="searchValue"
             @input="emit('update:searchValue', ($event.target as HTMLInputElement).value)"
+            @keydown.enter="emit('searchSubmit', ($event.target as HTMLInputElement).value)"
           />
         </div>
 

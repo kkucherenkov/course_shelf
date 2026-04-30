@@ -53,6 +53,7 @@ function makeHandler(opts: {
   const authz: AuthorizationService = {
     canSee: vi.fn().mockResolvedValue(opts.allowed ?? true),
     invalidate: vi.fn(),
+    listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
   };
 
   const progressRepo: LessonProgressRepository = {

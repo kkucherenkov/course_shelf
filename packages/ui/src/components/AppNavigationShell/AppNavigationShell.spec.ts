@@ -155,6 +155,22 @@ describe('AppNavigationShell', () => {
     expect(emitted.at(-1)).toEqual(['vue']);
   });
 
+  it('emits searchSubmit with current value when Enter is pressed in search input', async () => {
+    const w = factory({ props: { searchValue: 'postgres' } });
+    const input = w.find<HTMLInputElement>('.app-navigation-shell__search-input');
+    await input.trigger('keydown', { key: 'Enter' });
+    const emitted = w.emitted('searchSubmit') as string[][];
+    expect(emitted).toBeTruthy();
+    expect(emitted).toHaveLength(1);
+  });
+
+  it('does not emit searchSubmit when a non-Enter key is pressed', async () => {
+    const w = factory({ props: { searchValue: 'postgres' } });
+    const input = w.find<HTMLInputElement>('.app-navigation-shell__search-input');
+    await input.trigger('keydown', { key: 'a' });
+    expect(w.emitted('searchSubmit')).toBeUndefined();
+  });
+
   // ── Theme toggle ─────────────────────────────────────────────────────────
 
   it('emits update:colorMode with "light" when colorMode is "dark"', async () => {

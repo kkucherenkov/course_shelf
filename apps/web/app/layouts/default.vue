@@ -14,7 +14,7 @@
    * auth middleware redirects), the layout falls back to a plain `<slot/>`
    * to avoid flashing the shell with an empty avatar.
    */
-  import { computed } from 'vue';
+  import { computed, watch } from 'vue';
   import { AppNavigationShell } from '@app/ui';
   import type { IconName } from '@app/ui';
 
@@ -98,6 +98,7 @@
     if (p.startsWith('/admin/libraries')) return 'admin-libraries';
     if (p.startsWith('/admin')) return 'admin-dashboard';
     if (p.startsWith('/libraries')) return 'libraries';
+    if (p.startsWith('/search')) return 'browse'; // search is scoped under browse conceptually
     if (p.startsWith('/browse')) return 'browse';
     if (p.startsWith('/courses')) return 'browse'; // course pages live under /browse conceptually
     return 'home';
@@ -129,9 +130,26 @@
     colorMode.preference = mode;
   }
 
-  // ── Search (placeholder until cs-web-browse-search ships) ───────────────
+  // ── Search ───────────────────────────────────────────────────────────────
 
   const searchValue = ref('');
+
+  // One-way bind: when route navigates to /search?q=..., reflect in the shell.
+  watch(
+    () => route.query.q,
+    (q) => {
+      if (route.path === '/search') {
+        searchValue.value = typeof q === 'string' ? q : '';
+      }
+    },
+    { immediate: true },
+  );
+
+  function onSearchSubmit(): void {
+    const q = searchValue.value.trim();
+    if (q.length < 2) return;
+    void navigateTo({ path: '/search', query: { q } });
+  }
 
   // ── Event handlers ──────────────────────────────────────────────────────
 
@@ -170,6 +188,7 @@
     :brand-name="t('layouts.default.appName')"
     @nav="onNav"
     @update:color-mode="onColorMode"
+    @search-submit="onSearchSubmit"
     @profile="onProfile"
     @settings="onSettings"
     @sign-out="onSignOut"

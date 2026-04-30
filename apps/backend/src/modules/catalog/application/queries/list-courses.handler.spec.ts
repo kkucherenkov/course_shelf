@@ -30,6 +30,7 @@ function makeAuthz(allow: boolean): AuthorizationService {
   return {
     canSee: vi.fn().mockResolvedValue(allow),
     invalidate: vi.fn(),
+    listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
   };
 }
 
@@ -176,6 +177,7 @@ describe('ListCoursesHandler', () => {
       const authz: AuthorizationService = {
         canSee: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
         invalidate: vi.fn(),
+        listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
       };
       handler = new ListCoursesHandler(repo, authz, makeProgressRepo());
 

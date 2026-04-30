@@ -940,6 +940,38 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/search': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Search the catalogue (courses + lessons)
+     * @description Case-insensitive substring search across course titles, section
+     *     titles (matched into their courses), and lesson titles. Returns
+     *     two result lists: courses and lessons. Each list is capped at
+     *     `limit` (default 20, max 100). Results are sorted by best match
+     *     (exact-prefix > word-prefix > substring) within each list.
+     *
+     *     Authorisation mirrors the listing endpoints — non-admin actors
+     *     only see courses / lessons they have a READ grant on (via the
+     *     course's library); admins see everything.
+     *
+     *     Empty `q` returns empty lists (no expensive full-table scan).
+     *     Trimmed length must be ≥ 2 to avoid pathologically broad
+     *     substring matches; shorter queries return empty lists too.
+     */
+    get: operations['searchCatalogue'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/realtime/token': {
     parameters: {
       query?: never;
@@ -1723,6 +1755,30 @@ export interface components {
     /** @description Patch body for `PATCH /libraries/{id}`. Currently only `name` is mutable; changing `rootPath` is intentionally unsupported. */
     UpdateLibraryRequest: {
       name?: string;
+    };
+    /** @description Two result lists for a single search query — one of course hits and one of lesson hits. The shape is intentionally not unified because each kind needs different context fields (lesson hits carry their parent course/section so the SPA can show breadcrumb- style context). */
+    SearchResultDto: {
+      /** @description The trimmed query string the server matched against. */
+      query: string;
+      courses: components['schemas']['SearchCourseHit'][];
+      lessons: components['schemas']['SearchLessonHit'][];
+    };
+    SearchCourseHit: {
+      id: string;
+      libraryId: string;
+      title: string;
+      slug: string;
+      lessonsTotal: number;
+    };
+    SearchLessonHit: {
+      id: string;
+      courseId: string;
+      /** @description Title of the parent course — included so the SPA can show breadcrumb context. */
+      courseTitle: string;
+      /** @description Title of the parent section. */
+      sectionTitle: string;
+      title: string;
+      position: number;
     };
     /**
      * @example {
@@ -4301,6 +4357,40 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  searchCatalogue: {
+    parameters: {
+      query: {
+        /** @description Substring to match. Trimmed; case-insensitive. */
+        q: string;
+        /** @description Maximum number of results PER kind (courses + lessons). */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Search hits */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SearchResultDto'];
+        };
       };
       /** @description Missing or invalid bearer token */
       401: {

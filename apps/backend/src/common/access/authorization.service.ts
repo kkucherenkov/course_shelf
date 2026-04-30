@@ -46,6 +46,17 @@ export interface AuthorizationService {
   canSee(actor: AuthorizationActor, resource: AuthorizationResource): Promise<boolean>;
 
   /**
+   * Return the set of library ids the actor has READ access to, or null if the
+   * actor is an admin (meaning no filter should be applied — all libraries are
+   * accessible). An empty array means the actor has no grants at all.
+   *
+   * Designed for bulk pre-filtering: callers pass the returned value as
+   * `libraryIds` to repository search methods so the DB query itself is
+   * already scoped to the accessible library set.
+   */
+  listAccessibleLibraryIds(actor: AuthorizationActor): Promise<string[] | null>;
+
+  /**
    * Drop all cached decisions for the given userId. Call after any grant
    * register or revoke so the next canSee() reflects the new state.
    */

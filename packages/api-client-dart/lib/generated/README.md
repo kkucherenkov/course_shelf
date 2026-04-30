@@ -102,6 +102,7 @@ Class | Method | HTTP request | Description
 [*CatalogApi*](doc/CatalogApi.md) | [**registerLibrary**](doc/CatalogApi.md#registerlibrary) | **POST** /api/v1/libraries | Register a new library (or share an existing path)
 [*CatalogApi*](doc/CatalogApi.md) | [**removeLibrary**](doc/CatalogApi.md#removelibrary) | **DELETE** /api/v1/libraries/{id} | Hard-delete a library and every dependent row
 [*CatalogApi*](doc/CatalogApi.md) | [**runLibraryScan**](doc/CatalogApi.md#runlibraryscan) | **POST** /api/v1/libraries/{id}/scans | Trigger a scan of a library
+[*CatalogApi*](doc/CatalogApi.md) | [**searchCatalogue**](doc/CatalogApi.md#searchcatalogue) | **GET** /api/v1/search | Search the catalogue (courses + lessons)
 [*CatalogApi*](doc/CatalogApi.md) | [**updateCourse**](doc/CatalogApi.md#updatecourse) | **PATCH** /api/v1/courses/{id} | Update course metadata
 [*CatalogApi*](doc/CatalogApi.md) | [**updateLibrary**](doc/CatalogApi.md#updatelibrary) | **PATCH** /api/v1/libraries/{id} | Rename a library
 [*LearningApi*](doc/LearningApi.md) | [**createBookmark**](doc/LearningApi.md#createbookmark) | **POST** /api/v1/lessons/{lessonId}/bookmarks | Create a bookmark on a lesson
@@ -192,6 +193,9 @@ Class | Method | HTTP request | Description
  - [ScanDto](doc/ScanDto.md)
  - [ScanError](doc/ScanError.md)
  - [ScanStatus](doc/ScanStatus.md)
+ - [SearchCourseHit](doc/SearchCourseHit.md)
+ - [SearchLessonHit](doc/SearchLessonHit.md)
+ - [SearchResultDto](doc/SearchResultDto.md)
  - [SectionDto](doc/SectionDto.md)
  - [SectionOutline](doc/SectionOutline.md)
  - [SsoProviderConfig](doc/SsoProviderConfig.md)

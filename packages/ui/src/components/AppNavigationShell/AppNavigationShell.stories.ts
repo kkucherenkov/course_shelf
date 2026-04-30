@@ -67,7 +67,8 @@ export const Default: Story = {
       const search = ref(args.searchValue ?? '');
       const colorMode = ref<'light' | 'dark'>(args.colorMode ?? 'dark');
       const active = ref(args.activeRoute);
-      return { args, search, colorMode, active };
+      const lastSubmit = ref('');
+      return { args, search, colorMode, active, lastSubmit };
     },
     template: `
       <AppNavigationShell
@@ -78,10 +79,12 @@ export const Default: Story = {
         @update:searchValue="search = $event"
         @update:colorMode="colorMode = $event"
         @nav="active = $event"
+        @search-submit="lastSubmit = $event"
       >
         <div style="padding: var(--space-5);">
           <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-2xl); color: var(--text-fg);">Home</h1>
           <p style="color: var(--text-secondary); margin: 0;">Welcome back, {{ args.user.name }}.</p>
+          <p v-if="lastSubmit" style="color: var(--text-secondary); margin: var(--space-2) 0 0; font-size: var(--text-sm);">Last search submit: <strong>{{ lastSubmit }}</strong></p>
         </div>
       </AppNavigationShell>
     `,

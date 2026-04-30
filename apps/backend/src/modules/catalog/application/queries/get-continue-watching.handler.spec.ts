@@ -79,6 +79,7 @@ function makeAuthz(allow: boolean): AuthorizationService {
   return {
     canSee: vi.fn().mockResolvedValue(allow),
     invalidate: vi.fn(),
+    listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
   };
 }
 
@@ -153,6 +154,7 @@ describe('GetContinueWatchingHandler', () => {
       const authz: AuthorizationService = {
         canSee: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
         invalidate: vi.fn(),
+        listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
       };
       const handler = new GetContinueWatchingHandler(progressRepo, courseRepo, authz);
       const result = await handler.execute(new GetContinueWatchingQuery(USER, 10));

@@ -19,6 +19,7 @@ import 'package:app_api_client/src/model/recently_added_dto.dart';
 import 'package:app_api_client/src/model/recently_completed_dto.dart';
 import 'package:app_api_client/src/model/register_library_request.dart';
 import 'package:app_api_client/src/model/scan_dto.dart';
+import 'package:app_api_client/src/model/search_result_dto.dart';
 import 'package:app_api_client/src/model/update_course_request.dart';
 import 'package:app_api_client/src/model/update_library_request.dart';
 import 'package:app_api_client/src/model/your_week_dto.dart';
@@ -1162,6 +1163,95 @@ class CatalogApi {
     }
 
     return Response<ScanDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Search the catalogue (courses + lessons)
+  /// Case-insensitive substring search across course titles, section titles (matched into their courses), and lesson titles. Returns two result lists: courses and lessons. Each list is capped at &#x60;limit&#x60; (default 20, max 100). Results are sorted by best match (exact-prefix &gt; word-prefix &gt; substring) within each list.  Authorisation mirrors the listing endpoints — non-admin actors only see courses / lessons they have a READ grant on (via the course&#39;s library); admins see everything.  Empty &#x60;q&#x60; returns empty lists (no expensive full-table scan). Trimmed length must be ≥ 2 to avoid pathologically broad substring matches; shorter queries return empty lists too. 
+  ///
+  /// Parameters:
+  /// * [q] - Substring to match. Trimmed; case-insensitive.
+  /// * [limit] - Maximum number of results PER kind (courses + lessons).
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [SearchResultDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<SearchResultDto>> searchCatalogue({ 
+    required String q,
+    int? limit = 20,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/search';
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      r'q': encodeQueryParameter(_serializers, q, const FullType(String)),
+      if (limit != null) r'limit': encodeQueryParameter(_serializers, limit, const FullType(int)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    SearchResultDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(SearchResultDto),
+      ) as SearchResultDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<SearchResultDto>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

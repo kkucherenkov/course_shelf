@@ -22,6 +22,7 @@ function makeAuthz(): AuthorizationService {
   return {
     canSee: vi.fn().mockResolvedValue(true),
     invalidate: vi.fn(),
+    listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
   };
 }
 

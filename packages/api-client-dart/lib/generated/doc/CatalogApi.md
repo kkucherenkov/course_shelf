@@ -23,6 +23,7 @@ Method | HTTP request | Description
 [**registerLibrary**](CatalogApi.md#registerlibrary) | **POST** /api/v1/libraries | Register a new library (or share an existing path)
 [**removeLibrary**](CatalogApi.md#removelibrary) | **DELETE** /api/v1/libraries/{id} | Hard-delete a library and every dependent row
 [**runLibraryScan**](CatalogApi.md#runlibraryscan) | **POST** /api/v1/libraries/{id}/scans | Trigger a scan of a library
+[**searchCatalogue**](CatalogApi.md#searchcatalogue) | **GET** /api/v1/search | Search the catalogue (courses + lessons)
 [**updateCourse**](CatalogApi.md#updatecourse) | **PATCH** /api/v1/courses/{id} | Update course metadata
 [**updateLibrary**](CatalogApi.md#updatelibrary) | **PATCH** /api/v1/libraries/{id} | Rename a library
 
@@ -608,6 +609,51 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**ScanDto**](ScanDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **searchCatalogue**
+> SearchResultDto searchCatalogue(q, limit)
+
+Search the catalogue (courses + lessons)
+
+Case-insensitive substring search across course titles, section titles (matched into their courses), and lesson titles. Returns two result lists: courses and lessons. Each list is capped at `limit` (default 20, max 100). Results are sorted by best match (exact-prefix > word-prefix > substring) within each list.  Authorisation mirrors the listing endpoints — non-admin actors only see courses / lessons they have a READ grant on (via the course's library); admins see everything.  Empty `q` returns empty lists (no expensive full-table scan). Trimmed length must be ≥ 2 to avoid pathologically broad substring matches; shorter queries return empty lists too. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String q = q_example; // String | Substring to match. Trimmed; case-insensitive.
+final int limit = 56; // int | Maximum number of results PER kind (courses + lessons).
+
+try {
+    final response = api.searchCatalogue(q, limit);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->searchCatalogue: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **q** | **String**| Substring to match. Trimmed; case-insensitive. | 
+ **limit** | **int**| Maximum number of results PER kind (courses + lessons). | [optional] [default to 20]
+
+### Return type
+
+[**SearchResultDto**](SearchResultDto.md)
 
 ### Authorization
 

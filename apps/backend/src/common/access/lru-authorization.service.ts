@@ -77,6 +77,25 @@ export class LruAuthorizationService implements AuthorizationService {
     return result;
   }
 
+  async listAccessibleLibraryIds(actor: AuthorizationActor): Promise<string[] | null> {
+    // Admins see everything — no filter needed.
+    if (actor.role === 'admin') {
+      return null;
+    }
+
+    const grants = await this.grantRepo.findManyByUser(actor.id);
+    const libraryIds = grants
+      .filter((g) => g.target.kind === 'library')
+      .map((g) => {
+        // target.kind === 'library' guarantees libraryId is present — the grant
+        // aggregate enforces this invariant at creation time.
+        const target = g.target as { kind: 'library'; libraryId: string };
+        return target.libraryId;
+      });
+
+    return libraryIds;
+  }
+
   invalidate(userId: string): void {
     const prefix = `${userId}|`;
     // LRUCache v10 exposes keys() as an iterator — collect then evict.

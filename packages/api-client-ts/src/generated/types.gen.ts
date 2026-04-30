@@ -699,6 +699,41 @@ export type UpdateLibraryRequest = {
     name?: string;
 };
 
+/**
+ * Two result lists for a single search query — one of course hits and one of lesson hits. The shape is intentionally not unified because each kind needs different context fields (lesson hits carry their parent course/section so the SPA can show breadcrumb- style context).
+ */
+export type SearchResultDto = {
+    /**
+     * The trimmed query string the server matched against.
+     */
+    query: string;
+    courses: Array<SearchCourseHit>;
+    lessons: Array<SearchLessonHit>;
+};
+
+export type SearchCourseHit = {
+    id: string;
+    libraryId: string;
+    title: string;
+    slug: string;
+    lessonsTotal: number;
+};
+
+export type SearchLessonHit = {
+    id: string;
+    courseId: string;
+    /**
+     * Title of the parent course — included so the SPA can show breadcrumb context.
+     */
+    courseTitle: string;
+    /**
+     * Title of the parent section.
+     */
+    sectionTitle: string;
+    title: string;
+    position: number;
+};
+
 export type LibraryListDto = {
     items: Array<LibraryDto>;
 };
@@ -2728,6 +2763,40 @@ export type SignOutOtherSessionsResponses = {
 };
 
 export type SignOutOtherSessionsResponse = SignOutOtherSessionsResponses[keyof SignOutOtherSessionsResponses];
+
+export type SearchCatalogueData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Substring to match. Trimmed; case-insensitive.
+         */
+        q: string;
+        /**
+         * Maximum number of results PER kind (courses + lessons).
+         */
+        limit?: number;
+    };
+    url: '/api/v1/search';
+};
+
+export type SearchCatalogueErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+};
+
+export type SearchCatalogueError = SearchCatalogueErrors[keyof SearchCatalogueErrors];
+
+export type SearchCatalogueResponses = {
+    /**
+     * Search hits
+     */
+    200: SearchResultDto;
+};
+
+export type SearchCatalogueResponse = SearchCatalogueResponses[keyof SearchCatalogueResponses];
 
 export type IssueRealtimeTokenData = {
     body?: never;

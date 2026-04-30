@@ -9,7 +9,7 @@
   import { useAdminLibraries } from '~/composables/useAdminLibraries';
   import { useAccessGrants } from '~/composables/useAccessGrants';
 
-  definePageMeta({ layout: 'admin', middleware: 'admin' });
+  definePageMeta({ middleware: 'admin' });
 
   const { t } = useI18n();
   const toast = useToast();

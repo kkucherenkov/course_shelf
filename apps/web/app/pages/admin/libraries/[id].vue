@@ -12,7 +12,7 @@
   import { useAdminLibraryScans } from '~/composables/useAdminLibraryScans';
   import { useScanProgress } from '~/composables/useScanProgress';
 
-  definePageMeta({ layout: 'admin', middleware: 'admin' });
+  definePageMeta({ middleware: 'admin' });
 
   const { t } = useI18n();
   const route = useRoute();

@@ -8,7 +8,7 @@
   import { useAdminDashboard } from '~/composables/useAdminDashboard';
   import { useAdminScans } from '~/composables/useAdminScans';
 
-  definePageMeta({ layout: 'admin', middleware: 'admin' });
+  definePageMeta({ middleware: 'admin' });
 
   const { t } = useI18n();
 

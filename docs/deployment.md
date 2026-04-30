@@ -60,7 +60,7 @@ Browse to `http://<your-host>:${PROXY_PORT}` (default `:8080`).
 default for secrets. Generate them with `openssl rand -hex 32` unless noted.
 
 | Variable                       | Why                                                     |
-|--------------------------------|---------------------------------------------------------|
+| ------------------------------ | ------------------------------------------------------- |
 | `PUBLIC_BASE_URL`              | The single origin browsers hit (proxy URL).             |
 | `PROXY_PORT`                   | Host port for the nginx proxy (default `8080`).         |
 | `COURSES_PATH`                 | Host directory holding your course folders, mounted RO. |
@@ -109,7 +109,7 @@ container generates at boot from `APP_API_BASE_URL` / `APP_AUTH_BASE_URL`.
 Both are derived from `PUBLIC_BASE_URL` in `compose.prod.yml`:
 
 ```yaml
-APP_API_BASE_URL:  ${PUBLIC_BASE_URL}/api/v1
+APP_API_BASE_URL: ${PUBLIC_BASE_URL}/api/v1
 APP_AUTH_BASE_URL: ${PUBLIC_BASE_URL}
 ```
 

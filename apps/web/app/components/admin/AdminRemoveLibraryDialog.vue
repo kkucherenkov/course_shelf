@@ -60,22 +60,34 @@
       if (res.error) {
         const status = res.response.status;
         if (status === 403) {
-          useToast().add({ title: useI18n().t('pages.admin.libraryDetail.editToast403'), color: 'error' });
+          useToast().add({
+            title: useI18n().t('pages.admin.libraryDetail.editToast403'),
+            color: 'error',
+          });
           close();
           return;
         }
         if (status === 404) {
-          useToast().add({ title: useI18n().t('pages.admin.libraryDetail.editToastGone'), color: 'warning' });
+          useToast().add({
+            title: useI18n().t('pages.admin.libraryDetail.editToastGone'),
+            color: 'warning',
+          });
           close();
           await navigateTo('/admin/libraries');
           return;
         }
-        useToast().add({ title: useI18n().t('pages.admin.libraryDetail.editToastGone'), color: 'error' });
+        useToast().add({
+          title: useI18n().t('pages.admin.libraryDetail.editToastGone'),
+          color: 'error',
+        });
         close();
         return;
       }
 
-      useToast().add({ title: useI18n().t('pages.admin.libraryDetail.removeToastDone'), color: 'success' });
+      useToast().add({
+        title: useI18n().t('pages.admin.libraryDetail.removeToastDone'),
+        color: 'success',
+      });
       emit('removed');
       close();
       await navigateTo('/admin/libraries');
@@ -92,11 +104,7 @@
 <template>
   <template v-if="props.open">
     <!-- Backdrop -->
-    <div
-      class="adm-remove-lib-dialog__backdrop"
-      aria-hidden="true"
-      @click="close"
-    />
+    <div class="adm-remove-lib-dialog__backdrop" aria-hidden="true" @click="close" />
 
     <!-- Dialog -->
     <div
@@ -287,7 +295,10 @@
       font-family: inherit;
       cursor: pointer;
       border: 1px solid transparent;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      transition:
+        background 0.15s,
+        color 0.15s,
+        border-color 0.15s;
 
       &:disabled {
         opacity: 0.45;

@@ -79,36 +79,36 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 
 ### Apps
 
-| App | Stack | Key libraries |
-|-----|-------|---------------|
-| **`apps/backend`** | NestJS 11, Prisma 7, CQRS | Better Auth, express-openapi-validator, nestjs-i18n, Sentry, OpenTelemetry |
-| **`apps/web`** | Nuxt 4 (SPA), Nuxt UI v4, Tailwind v4 | @nuxtjs/i18n, generated api-client-ts, SCSS + BEM |
-| **`apps/mobile`** | Flutter 3.41 | flutter_bloc, get_it, Dio, slang (i18n), Firebase Messaging, Sentry |
+| App                | Stack                                 | Key libraries                                                              |
+| ------------------ | ------------------------------------- | -------------------------------------------------------------------------- |
+| **`apps/backend`** | NestJS 11, Prisma 7, CQRS             | Better Auth, express-openapi-validator, nestjs-i18n, Sentry, OpenTelemetry |
+| **`apps/web`**     | Nuxt 4 (SPA), Nuxt UI v4, Tailwind v4 | @nuxtjs/i18n, generated api-client-ts, SCSS + BEM                          |
+| **`apps/mobile`**  | Flutter 3.41                          | flutter_bloc, get_it, Dio, slang (i18n), Firebase Messaging, Sentry        |
 
 ### Shared Packages
 
-| Package | Purpose |
-|---------|---------|
-| **`packages/specs`** | OpenAPI 3.1 + AsyncAPI 3.0 -- single source of truth for every wire contract |
-| **`packages/api-client-ts`** | Generated TypeScript client via `@hey-api/openapi-ts` (read-only) |
-| **`packages/api-client-dart`** | Generated Dart client via `openapi-generator-cli` (read-only) |
-| **`packages/ui`** | `@app/ui` Vue brand components with colocated Storybook stories and Vitest specs |
-| **`packages/ui_flutter`** | Shared Flutter widgets and theme binding |
-| **`packages/design-tokens`** | W3C Design Tokens pipeline: JSON to CSS custom properties, TypeScript constants, Dart theme |
-| **`packages/eslint-config`** | Shared ESLint flat config |
-| **`packages/tsconfig`** | Shared TypeScript configs |
+| Package                        | Purpose                                                                                     |
+| ------------------------------ | ------------------------------------------------------------------------------------------- |
+| **`packages/specs`**           | OpenAPI 3.1 + AsyncAPI 3.0 -- single source of truth for every wire contract                |
+| **`packages/api-client-ts`**   | Generated TypeScript client via `@hey-api/openapi-ts` (read-only)                           |
+| **`packages/api-client-dart`** | Generated Dart client via `openapi-generator-cli` (read-only)                               |
+| **`packages/ui`**              | `@app/ui` Vue brand components with colocated Storybook stories and Vitest specs            |
+| **`packages/ui_flutter`**      | Shared Flutter widgets and theme binding                                                    |
+| **`packages/design-tokens`**   | W3C Design Tokens pipeline: JSON to CSS custom properties, TypeScript constants, Dart theme |
+| **`packages/eslint-config`**   | Shared ESLint flat config                                                                   |
+| **`packages/tsconfig`**        | Shared TypeScript configs                                                                   |
 
 ### Local Infrastructure
 
-| Service | Version | Port | Notes |
-|---------|---------|------|-------|
-| postgres | 18.1-alpine | 5432 | Init SQL in `docker/postgres/init.sql` |
-| redis | 8.6-alpine | 6379 | Append-only persistence |
-| centrifugo | v6 | 8000 | Realtime websocket, config in `docker/centrifugo/` |
-| backend | Dockerfile | 3000 | Waits on postgres, redis, centrifugo |
-| web | Dockerfile | 3001 | Nuxt dev server |
-| nginx | -- | 8080 | Reverse proxy: same-origin SPA + API |
-| otel-lgtm | Grafana | 3200 | Local Grafana + LGTM observability stack |
+| Service    | Version     | Port | Notes                                              |
+| ---------- | ----------- | ---- | -------------------------------------------------- |
+| postgres   | 18.1-alpine | 5432 | Init SQL in `docker/postgres/init.sql`             |
+| redis      | 8.6-alpine  | 6379 | Append-only persistence                            |
+| centrifugo | v6          | 8000 | Realtime websocket, config in `docker/centrifugo/` |
+| backend    | Dockerfile  | 3000 | Waits on postgres, redis, centrifugo               |
+| web        | Dockerfile  | 3001 | Nuxt dev server                                    |
+| nginx      | --          | 8080 | Reverse proxy: same-origin SPA + API               |
+| otel-lgtm  | Grafana     | 3200 | Local Grafana + LGTM observability stack           |
 
 Containers mount the repository as a volume, so edits reach the running container without a rebuild. Do not run `pnpm dev` alongside `docker compose up` -- they share the same host ports.
 
@@ -143,12 +143,12 @@ curl http://localhost:3000/api/v1/health
 
 Then open the app:
 
-| URL | What you get |
-|-----|-------------|
-| `http://localhost:8080` | Canonical SPA entry (nginx proxy, same-origin) |
-| `http://localhost:3001` | Web app directly (bypasses proxy) |
-| `http://localhost:3000/api/v1` | Backend API |
-| `http://localhost:3200` | Grafana dashboards |
+| URL                            | What you get                                   |
+| ------------------------------ | ---------------------------------------------- |
+| `http://localhost:8080`        | Canonical SPA entry (nginx proxy, same-origin) |
+| `http://localhost:3001`        | Web app directly (bypasses proxy)              |
+| `http://localhost:3000/api/v1` | Backend API                                    |
+| `http://localhost:3200`        | Grafana dashboards                             |
 
 ## Repository Layout
 
@@ -177,60 +177,60 @@ scripts/            setup.sh + cross-repo helpers
 
 ## Scripts Reference
 
-| Command | What it does |
-|---------|-------------|
-| `pnpm spec:validate` | Redocly + AsyncAPI lint |
-| `pnpm spec:bundle` | Bundle OpenAPI to a single `dist/openapi.json` |
-| `pnpm spec:codegen` | Regenerate every API client from the spec |
-| `pnpm spec:contract-test` | Run contract tests against the spec |
-| `pnpm design:build` | Regenerate CSS, TypeScript, and Dart design tokens |
-| `pnpm design:audit` | Cross-check design inventory against actual components |
-| `pnpm lint` | ESLint across every workspace (Turbo) |
-| `pnpm typecheck` | TypeScript check across every workspace (Turbo) |
-| `pnpm test` | Vitest across every workspace (Turbo) |
-| `pnpm build` | Production build across every workspace (Turbo) |
-| `pnpm storybook` | `@app/ui` Storybook on `:6006` |
-| `pnpm check:i18n` | Locale key-parity check across backend, web, and mobile |
-| `pnpm format` | Prettier |
-| `pnpm stylelint` | Stylelint for SCSS and Vue files |
-| `pnpm e2e` | Playwright end-to-end tests |
+| Command                   | What it does                                            |
+| ------------------------- | ------------------------------------------------------- |
+| `pnpm spec:validate`      | Redocly + AsyncAPI lint                                 |
+| `pnpm spec:bundle`        | Bundle OpenAPI to a single `dist/openapi.json`          |
+| `pnpm spec:codegen`       | Regenerate every API client from the spec               |
+| `pnpm spec:contract-test` | Run contract tests against the spec                     |
+| `pnpm design:build`       | Regenerate CSS, TypeScript, and Dart design tokens      |
+| `pnpm design:audit`       | Cross-check design inventory against actual components  |
+| `pnpm lint`               | ESLint across every workspace (Turbo)                   |
+| `pnpm typecheck`          | TypeScript check across every workspace (Turbo)         |
+| `pnpm test`               | Vitest across every workspace (Turbo)                   |
+| `pnpm build`              | Production build across every workspace (Turbo)         |
+| `pnpm storybook`          | `@app/ui` Storybook on `:6006`                          |
+| `pnpm check:i18n`         | Locale key-parity check across backend, web, and mobile |
+| `pnpm format`             | Prettier                                                |
+| `pnpm stylelint`          | Stylelint for SCSS and Vue files                        |
+| `pnpm e2e`                | Playwright end-to-end tests                             |
 
 ## Drift Protections
 
-| What could drift | What stops it |
-|-----------------|---------------|
-| API route not in spec | `express-openapi-validator` rejects at runtime |
-| Generated TS or Dart client out of sync | `codegen-drift` CI job runs `spec:codegen` and diffs |
-| Hex color in a component | Stylelint `color-no-hex: true` |
-| Inline `style=""` or `!important` | Stylelint rules |
-| Component without Storybook story or Vitest spec | `pnpm --filter @app/ui audit:components` in CI |
-| Design token used but not documented | `pnpm design:audit` cross-checks inventory |
-| Missing translations in a locale | `pnpm check:i18n` key-parity check |
-| Secret committed to the repo | TruffleHog on every PR |
-| Unapproved dependency license | `license-checker` OSI-permissive allowlist |
+| What could drift                                 | What stops it                                        |
+| ------------------------------------------------ | ---------------------------------------------------- |
+| API route not in spec                            | `express-openapi-validator` rejects at runtime       |
+| Generated TS or Dart client out of sync          | `codegen-drift` CI job runs `spec:codegen` and diffs |
+| Hex color in a component                         | Stylelint `color-no-hex: true`                       |
+| Inline `style=""` or `!important`                | Stylelint rules                                      |
+| Component without Storybook story or Vitest spec | `pnpm --filter @app/ui audit:components` in CI       |
+| Design token used but not documented             | `pnpm design:audit` cross-checks inventory           |
+| Missing translations in a locale                 | `pnpm check:i18n` key-parity check                   |
+| Secret committed to the repo                     | TruffleHog on every PR                               |
+| Unapproved dependency license                    | `license-checker` OSI-permissive allowlist           |
 
 ## Requirements
 
-| Requirement | Version |
-|-------------|---------|
-| Node.js | >= 24 |
-| pnpm | >= 10 |
-| Docker + Docker Compose | any recent version |
-| Flutter + Dart | 3.41 + 3.8 (optional, mobile only) |
+| Requirement             | Version                            |
+| ----------------------- | ---------------------------------- |
+| Node.js                 | >= 24                              |
+| pnpm                    | >= 10                              |
+| Docker + Docker Compose | any recent version                 |
+| Flutter + Dart          | 3.41 + 3.8 (optional, mobile only) |
 
 ## Documentation
 
-| Topic | File |
-|-------|------|
-| Backend, CQRS, Prisma, API conventions | [`.claude/docs/handbook.md`](.claude/docs/handbook.md) |
-| Design system, @app/ui, tokens, BEM | [`.claude/docs/design-system.md`](.claude/docs/design-system.md) |
-| i18n across web, mobile, and backend | [`.claude/docs/i18n.md`](.claude/docs/i18n.md) |
-| Testing pyramid, definition of done, PR checklist | [`.claude/docs/testing.md`](.claude/docs/testing.md) |
-| Security, observability, a11y, performance | [`.claude/docs/security.md`](.claude/docs/security.md) |
-| Feature migration from another project | [`.claude/docs/migration.md`](.claude/docs/migration.md) |
-| Project rules (canonical, superset of this README) | [`.claude/CLAUDE.md`](.claude/CLAUDE.md) |
-| Design workflow and component inventory | [`specs/design/README.md`](specs/design/README.md) |
-| Docker stack details | [`docker/README.md`](docker/README.md) |
+| Topic                                              | File                                                             |
+| -------------------------------------------------- | ---------------------------------------------------------------- |
+| Backend, CQRS, Prisma, API conventions             | [`.claude/docs/handbook.md`](.claude/docs/handbook.md)           |
+| Design system, @app/ui, tokens, BEM                | [`.claude/docs/design-system.md`](.claude/docs/design-system.md) |
+| i18n across web, mobile, and backend               | [`.claude/docs/i18n.md`](.claude/docs/i18n.md)                   |
+| Testing pyramid, definition of done, PR checklist  | [`.claude/docs/testing.md`](.claude/docs/testing.md)             |
+| Security, observability, a11y, performance         | [`.claude/docs/security.md`](.claude/docs/security.md)           |
+| Feature migration from another project             | [`.claude/docs/migration.md`](.claude/docs/migration.md)         |
+| Project rules (canonical, superset of this README) | [`.claude/CLAUDE.md`](.claude/CLAUDE.md)                         |
+| Design workflow and component inventory            | [`specs/design/README.md`](specs/design/README.md)               |
+| Docker stack details                               | [`docker/README.md`](docker/README.md)                           |
 
 ## Contributing
 

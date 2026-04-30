@@ -661,11 +661,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       // to the terminal state. Fire-and-forget — Centrifugo failure must not
       // block or corrupt the scan's persistent terminal state.
       const finishedStatus =
-        scan.status === 'failed'
-          ? 'failed'
-          : scan.errors.length > 0
-            ? 'partial'
-            : 'succeeded';
+        scan.status === 'failed' ? 'failed' : scan.errors.length > 0 ? 'partial' : 'succeeded';
       void this.centrifugo.publish(channel, {
         kind: 'finished',
         scanId: scan.id,

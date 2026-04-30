@@ -71,7 +71,15 @@ export class SessionGuard implements CanActivate {
       sessionUser.displayName = displayNameRaw;
     }
 
-    req.session = { user: sessionUser };
+    // `session.session` is the Better Auth session row; its `id` is the stable
+    // DB row id used by sign-out-others to exclude the current session from deletion.
+    const sessionRowId = (session as unknown as Record<string, unknown>)['session'];
+    const sessionId =
+      sessionRowId !== null && typeof sessionRowId === 'object' && 'id' in sessionRowId
+        ? String((sessionRowId as Record<string, unknown>)['id'])
+        : '';
+
+    req.session = { user: sessionUser, sessionId };
 
     return true;
   }

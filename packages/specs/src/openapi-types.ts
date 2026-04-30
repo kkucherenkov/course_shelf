@@ -895,6 +895,51 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Patch the calling user's own profile
+     * @description Currently only `displayName` is mutable through this endpoint. Email
+     *     change and avatar upload are handled separately (and are not yet
+     *     wired). At least one field must be present in the body.
+     */
+    patch: operations['updateMe'];
+    trace?: never;
+  };
+  '/api/v1/me/sign-out-others': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Sign out from every device EXCEPT the current session
+     * @description Revokes every session row for the calling user other than the one
+     *     attached to the request. Useful from the settings page's "Sign out
+     *     from all devices" affordance — the user stays signed in on the
+     *     device they just clicked from. Returns 204.
+     */
+    post: operations['signOutOtherSessions'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/realtime/token': {
     parameters: {
       query?: never;
@@ -1660,6 +1705,20 @@ export interface components {
       createdAt: string;
       /** Format: date-time */
       updatedAt: string;
+    };
+    /** @description The calling user's own profile. Returned by `GET /me` (not yet implemented — for now read from `GET /auth/get-session`) and by `PATCH /me`. */
+    MeDto: {
+      id: string;
+      /** Format: email */
+      email: string;
+      name: string;
+      displayName: string | null;
+      role: components['schemas']['AdminUserRole'];
+    };
+    /** @description Patch body for `PATCH /me`. At least one field must be set; the handler returns 400 on an empty body. Currently only `displayName` is exposed for self-edit. */
+    UpdateMeRequest: {
+      /** @description Optional user-facing name separate from the Better Auth `name` field. Pass `null` to clear it (the topbar avatar then falls back to `name`). */
+      displayName?: string | null;
     };
     /** @description Patch body for `PATCH /libraries/{id}`. Currently only `name` is mutable; changing `rootPath` is intentionally unsupported. */
     UpdateLibraryRequest: {
@@ -4173,6 +4232,75 @@ export interface operations {
         content: {
           'application/problem+json': components['schemas']['Problem'];
         };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  updateMe: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateMeRequest'];
+      };
+    };
+    responses: {
+      /** @description Updated profile */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MeDto'];
+        };
+      };
+      /** @description Validation error — empty body or invalid field */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  signOutOtherSessions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Other sessions revoked */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Missing or invalid bearer token */
       401: {

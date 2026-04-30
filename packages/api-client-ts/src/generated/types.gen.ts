@@ -672,6 +672,27 @@ export type LibraryDto = {
 };
 
 /**
+ * The calling user's own profile. Returned by `GET /me` (not yet implemented — for now read from `GET /auth/get-session`) and by `PATCH /me`.
+ */
+export type MeDto = {
+    id: string;
+    email: string;
+    name: string;
+    displayName: string | null;
+    role: AdminUserRole;
+};
+
+/**
+ * Patch body for `PATCH /me`. At least one field must be set; the handler returns 400 on an empty body. Currently only `displayName` is exposed for self-edit.
+ */
+export type UpdateMeRequest = {
+    /**
+     * Optional user-facing name separate from the Better Auth `name` field. Pass `null` to clear it (the topbar avatar then falls back to `name`).
+     */
+    displayName?: string | null;
+};
+
+/**
  * Patch body for `PATCH /libraries/{id}`. Currently only `name` is mutable; changing `rootPath` is intentionally unsupported.
  */
 export type UpdateLibraryRequest = {
@@ -2653,6 +2674,60 @@ export type RecordLessonProgressBatchResponses = {
 };
 
 export type RecordLessonProgressBatchResponse = RecordLessonProgressBatchResponses[keyof RecordLessonProgressBatchResponses];
+
+export type UpdateMeData = {
+    body: UpdateMeRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me';
+};
+
+export type UpdateMeErrors = {
+    /**
+     * Validation error — empty body or invalid field
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+};
+
+export type UpdateMeError = UpdateMeErrors[keyof UpdateMeErrors];
+
+export type UpdateMeResponses = {
+    /**
+     * Updated profile
+     */
+    200: MeDto;
+};
+
+export type UpdateMeResponse = UpdateMeResponses[keyof UpdateMeResponses];
+
+export type SignOutOtherSessionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/sign-out-others';
+};
+
+export type SignOutOtherSessionsErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+};
+
+export type SignOutOtherSessionsError = SignOutOtherSessionsErrors[keyof SignOutOtherSessionsErrors];
+
+export type SignOutOtherSessionsResponses = {
+    /**
+     * Other sessions revoked
+     */
+    204: void;
+};
+
+export type SignOutOtherSessionsResponse = SignOutOtherSessionsResponses[keyof SignOutOtherSessionsResponses];
 
 export type IssueRealtimeTokenData = {
     body?: never;

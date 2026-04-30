@@ -78,6 +78,8 @@ Class | Method | HTTP request | Description
 [*AccessApi*](doc/AccessApi.md) | [**listGrantsByUser**](doc/AccessApi.md#listgrantsbyuser) | **GET** /api/v1/access/grants | List a user&#39;s access grants
 [*AccessApi*](doc/AccessApi.md) | [**registerGrant**](doc/AccessApi.md#registergrant) | **POST** /api/v1/access/grants | Grant a user READ access to a library or course
 [*AccessApi*](doc/AccessApi.md) | [**revokeGrant**](doc/AccessApi.md#revokegrant) | **DELETE** /api/v1/access/grants/{id} | Revoke an access grant
+[*AccountApi*](doc/AccountApi.md) | [**signOutOtherSessions**](doc/AccountApi.md#signoutothersessions) | **POST** /api/v1/me/sign-out-others | Sign out from every device EXCEPT the current session
+[*AccountApi*](doc/AccountApi.md) | [**updateMe**](doc/AccountApi.md#updateme) | **PATCH** /api/v1/me | Patch the calling user&#39;s own profile
 [*AdminApi*](doc/AdminApi.md) | [**getAdminDashboard**](doc/AdminApi.md#getadmindashboard) | **GET** /api/v1/admin/dashboard | Operational snapshot for the admin dashboard
 [*AdminApi*](doc/AdminApi.md) | [**getAdminHasUsers**](doc/AdminApi.md#getadminhasusers) | **GET** /api/v1/admin/has-users | Indicate whether any users exist in the platform
 [*AdminApi*](doc/AdminApi.md) | [**getAdminInstance**](doc/AdminApi.md#getadmininstance) | **GET** /api/v1/admin/instance | Public instance configuration (self-registration, email verification, SSO providers)
@@ -173,6 +175,7 @@ Class | Method | HTTP request | Description
  - [MaterialDownloadUrlDto](doc/MaterialDownloadUrlDto.md)
  - [MaterialDto](doc/MaterialDto.md)
  - [MaterialKind](doc/MaterialKind.md)
+ - [MeDto](doc/MeDto.md)
  - [Model0](doc/Model0.md)
  - [Model1](doc/Model1.md)
  - [NoteDto](doc/NoteDto.md)
@@ -197,6 +200,7 @@ Class | Method | HTTP request | Description
  - [UpdateBookmarkRequest](doc/UpdateBookmarkRequest.md)
  - [UpdateCourseRequest](doc/UpdateCourseRequest.md)
  - [UpdateLibraryRequest](doc/UpdateLibraryRequest.md)
+ - [UpdateMeRequest](doc/UpdateMeRequest.md)
  - [UpsertNoteRequest](doc/UpsertNoteRequest.md)
  - [YourWeekDto](doc/YourWeekDto.md)
 

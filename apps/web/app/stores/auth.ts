@@ -269,6 +269,41 @@ export const useAuthStore = defineStore('auth', () => {
     return Promise.resolve({ ok: true });
   }
 
+  /**
+   * Change the current user's password via Better Auth's `changePassword` method.
+   * Returns `{ ok: true }` on success or `{ ok: false, error }` on failure.
+   */
+  async function changePassword(
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ ok: boolean; error?: string }> {
+    const auth = getAuthClient();
+    try {
+      const result = await (
+        auth as unknown as {
+          changePassword: (opts: {
+            currentPassword: string;
+            newPassword: string;
+            revokeOtherSessions: boolean;
+          }) => Promise<{ error?: { message?: string } | null }>;
+        }
+      ).changePassword({
+        currentPassword,
+        newPassword,
+        revokeOtherSessions: false,
+      });
+
+      if (result.error) {
+        const message = result.error.message ?? 'Password change failed';
+        return { ok: false, error: message };
+      }
+      return { ok: true };
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : 'Unexpected error';
+      return { ok: false, error: message };
+    }
+  }
+
   return {
     user,
     token,
@@ -284,5 +319,6 @@ export const useAuthStore = defineStore('auth', () => {
     forgotPassword,
     resetPassword,
     promoteToAdmin,
+    changePassword,
   };
 });

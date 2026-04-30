@@ -148,7 +148,7 @@
   }
 
   function onSettings(): void {
-    toast.add({ title: t('layouts.default.settingsComingSoon'), color: 'info' });
+    void navigateTo('/settings');
   }
 
   async function onSignOut(): Promise<void> {

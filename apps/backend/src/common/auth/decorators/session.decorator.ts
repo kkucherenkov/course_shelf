@@ -8,6 +8,8 @@ export interface SessionUser {
 
 export interface SessionContext {
   user: SessionUser;
+  /** Better Auth session row id — stable for the lifetime of the token. */
+  sessionId: string;
 }
 
 export const Session = createParamDecorator<unknown, SessionContext>(

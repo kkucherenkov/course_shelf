@@ -11,6 +11,7 @@ export 'package:app_api_client/src/serializers.dart';
 export 'package:app_api_client/src/model/date.dart';
 
 export 'package:app_api_client/src/api/access_api.dart';
+export 'package:app_api_client/src/api/account_api.dart';
 export 'package:app_api_client/src/api/admin_api.dart';
 export 'package:app_api_client/src/api/catalog_api.dart';
 export 'package:app_api_client/src/api/learning_api.dart';
@@ -69,6 +70,7 @@ export 'package:app_api_client/src/model/library_target.dart';
 export 'package:app_api_client/src/model/material_download_url_dto.dart';
 export 'package:app_api_client/src/model/material_dto.dart';
 export 'package:app_api_client/src/model/material_kind.dart';
+export 'package:app_api_client/src/model/me_dto.dart';
 export 'package:app_api_client/src/model/model0.dart';
 export 'package:app_api_client/src/model/model1.dart';
 export 'package:app_api_client/src/model/note_dto.dart';
@@ -93,6 +95,7 @@ export 'package:app_api_client/src/model/subtitle_dto.dart';
 export 'package:app_api_client/src/model/update_bookmark_request.dart';
 export 'package:app_api_client/src/model/update_course_request.dart';
 export 'package:app_api_client/src/model/update_library_request.dart';
+export 'package:app_api_client/src/model/update_me_request.dart';
 export 'package:app_api_client/src/model/upsert_note_request.dart';
 export 'package:app_api_client/src/model/your_week_dto.dart';
 

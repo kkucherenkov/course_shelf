@@ -69,6 +69,10 @@ function makeLibraryRepo(lib?: Library): LibraryRepository {
       store.set(l.id, l);
     }),
     findById: vi.fn(async (id: string) => store.get(id) ?? null),
+    findByRootPath: vi.fn(
+      async (rootPath: string) =>
+        [...store.values()].find((existing) => existing.rootPath === rootPath) ?? null,
+    ),
     findAll: vi.fn(async () => [...store.values()]),
     findByIds: vi.fn(async (ids: string[]) =>
       ids.flatMap((id) => {

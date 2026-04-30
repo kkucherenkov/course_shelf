@@ -69,6 +69,20 @@ export class PrismaLibraryRepository implements LibraryRepository {
     });
   }
 
+  async findByRootPath(rootPath: string): Promise<Library | null> {
+    const row = await this.prisma.library.findUnique({ where: { rootPath } });
+
+    if (!row) return null;
+
+    return Library.reconstitute({
+      id: row.id as LibraryId,
+      name: row.name,
+      rootPath: row.rootPath,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    });
+  }
+
   async findAll(): Promise<Library[]> {
     const rows = await this.prisma.library.findMany({
       select: {

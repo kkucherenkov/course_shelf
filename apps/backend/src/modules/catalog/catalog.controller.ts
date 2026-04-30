@@ -29,9 +29,12 @@ import {
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
+import { LibraryGrantService } from '../../common/access/library-grant.service';
 import { AdminGuard } from '../../common/auth/admin.guard';
 import { Session } from '../../common/auth/decorators';
+import { RunScanCommand } from './application/commands/run-scan.command';
 import { RegisterLibraryCommand } from './application/commands/register-library.command';
+import type { RegisterLibraryResult } from './application/commands/register-library.handler';
 import { UpdateLibraryCommand } from './application/commands/update-library.command';
 import { RemoveLibraryCommand } from './application/commands/remove-library.command';
 import { GetLibraryQuery } from './application/queries/get-library.query';
@@ -50,6 +53,7 @@ export class CatalogController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly libraryGrants: LibraryGrantService,
   ) {}
 
   /** GET /api/v1/libraries */
@@ -64,8 +68,22 @@ export class CatalogController {
 
   /**
    * POST /api/v1/libraries
-   * Command returns { id }; controller fetches the full record via GetLibraryQuery.
-   * This keeps the write path free of read-model concerns (CQRS).
+   *
+   * Idempotent on `rootPath`. The handler upserts the library; the
+   * controller then chains:
+   *   1. A READ AccessGrant on the library for the calling user — so a
+   *      non-admin who registered the library actually sees it via
+   *      `listLibraries` (admins bypass the grant filter so the grant is
+   *      redundant for them but harmless).
+   *   2. An initial `RunScan` for fresh libraries — by the time the
+   *      response is back the scan is already in `running` state. For
+   *      already-existing libraries we don't re-trigger a scan; the
+   *      admin can do that explicitly from /admin/libraries/<id>.
+   *
+   * `GrantAlreadyExistsError` is silently swallowed: when the same user
+   * registers the same path twice (or a different user races a duplicate
+   * registration), the grant unique constraint trips and we don't want
+   * that to surface as a 409 to the SPA.
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -74,9 +92,23 @@ export class CatalogController {
     @Session() session: SessionContext,
   ): Promise<LibraryDto> {
     const actor = session.user;
-    const { id } = await this.commandBus.execute<RegisterLibraryCommand, { id: string }>(
-      new RegisterLibraryCommand(body.name, body.rootPath),
-    );
+    const { id, alreadyExisted } = await this.commandBus.execute<
+      RegisterLibraryCommand,
+      RegisterLibraryResult
+    >(new RegisterLibraryCommand(body.name, body.rootPath));
+
+    // Auto-grant READ to the registrant so non-admins see the library on
+    // their list. Idempotent — bridge service swallows GrantAlreadyExistsError.
+    await this.libraryGrants.grantRead(actor.id, id);
+
+    if (!alreadyExisted) {
+      // Fresh library — kick off the first scan so the user sees courses
+      // shortly after the redirect. The handler returns once the scan
+      // record is persisted as `running`; the file walk continues fire-
+      // and-forget after the response.
+      await this.commandBus.execute<RunScanCommand, unknown>(new RunScanCommand(id));
+    }
+
     return this.queryBus.execute<GetLibraryQuery, LibraryDto>(new GetLibraryQuery(id, actor));
   }
 

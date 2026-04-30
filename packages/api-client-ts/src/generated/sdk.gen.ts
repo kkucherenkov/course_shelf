@@ -494,11 +494,21 @@ export const listLibraries = <ThrowOnError extends boolean = false>(options?: Op
 });
 
 /**
- * Register a new library
+ * Register a new library (or share an existing path)
  *
- * Persists a new library pointing at an absolute filesystem path.
- * Idempotent on rootPath: a 409 is returned if a library with the same
- * rootPath already exists.
+ * Persists a library pointing at an absolute filesystem path.
+ *
+ * **Idempotent on `rootPath`.** When a library with the same path
+ * already exists, the call returns the existing library and grants
+ * the calling user READ access to it instead of creating a duplicate
+ * row. The response body matches what `GET /libraries/{id}` would
+ * return for that library — the original `name`/`createdAt` are
+ * preserved (the new `name` you submitted is ignored).
+ *
+ * For brand-new libraries the controller chains an initial
+ * `runLibraryScan` so courses become visible shortly after the
+ * response. No initial scan is fired when the path already existed
+ * (the existing library is presumed already scanned).
  *
  */
 export const registerLibrary = <ThrowOnError extends boolean = false>(options: Options<RegisterLibraryData, ThrowOnError>) => (options.client ?? client).post<RegisterLibraryResponses, RegisterLibraryErrors, ThrowOnError>({

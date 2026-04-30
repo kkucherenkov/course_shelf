@@ -10,6 +10,8 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **String** |  | 
 **lessonId** | **String** | Owning lesson id. Used by the right-rail to link to the lesson. | 
+**sectionId** | **String** | Owning section id. Used by the rail to group items. | 
+**sectionTitle** | **String** | Title of the owning section, denormalised so the rail can render its grouping caption without resolving via `sections[]`. | 
 **kind** | **String** |  | 
 **label** | **String** |  | 
 **sizeBytes** | **int** |  | 

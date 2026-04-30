@@ -144,23 +144,44 @@ export class GetCourseOutlineHandler implements IQueryHandler<
       };
     });
 
-    // 7. Build flat materials list ordered by (lesson.position, material.id).
-    // Use toSorted to avoid mutating the array (lessons is readonly from findByCourse).
-    const materials: CourseMaterialItem[] = lessons
-      .toSorted((a, b) => a.position - b.position)
-      .flatMap((lesson) =>
-        [...lesson.materials]
+    // 7. Build flat materials list ordered by (section.position, lesson.position,
+    // material.id) so consecutive items belong to the same section. The web
+    // rail groups visually by sectionId; the SPA still renders a flat list,
+    // it just relies on this ordering. Each item is decorated with its
+    // owning section's id + title so the rail doesn't need to look them up
+    // in `sections[]`.
+    //
+    // Lessons whose sectionId doesn't appear in `course.sections` (data
+    // anomaly — should be impossible because Section is a child aggregate
+    // of Course) are placed at the end with section.position = +∞ so they
+    // still surface rather than vanish.
+    const sectionIndex = new Map(course.sections.map((s) => [s.id, s]));
+
+    const materials: CourseMaterialItem[] = [...lessons]
+      .toSorted((a, b) => {
+        const aPos = sectionIndex.get(a.sectionId)?.position ?? Number.POSITIVE_INFINITY;
+        const bPos = sectionIndex.get(b.sectionId)?.position ?? Number.POSITIVE_INFINITY;
+        if (aPos !== bPos) return aPos - bPos;
+        return a.position - b.position;
+      })
+      .flatMap((lesson) => {
+        const section = sectionIndex.get(lesson.sectionId);
+        const sectionId = section?.id ?? lesson.sectionId;
+        const sectionTitle = section?.title ?? '';
+        return [...lesson.materials]
           .toSorted((a, b) => a.id.localeCompare(b.id))
           .map(
             (m): CourseMaterialItem => ({
               id: m.id,
               lessonId: String(lesson.id),
+              sectionId,
+              sectionTitle,
               kind: m.kind,
               label: m.label,
               sizeBytes: m.sizeBytes,
             }),
-          ),
-      );
+          );
+      });
 
     // 8. Build CourseOutlineSummary.
     const lessonsTotal = lessons.length;

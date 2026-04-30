@@ -9,11 +9,13 @@ import 'package:built_value/serializer.dart';
 
 part 'course_material_item.g.dart';
 
-/// One sidecar material aggregated at the course level.
+/// One sidecar material aggregated at the course level. The `materials[]` list returned by `getCourseOutline` is sorted by `(section.position, lesson.position, material.id)` so consecutive items belong to the same section — the right-rail groups them by `sectionId` and renders a small caption per cluster.  `sectionTitle` is included so the rail can render the caption without a per-item lookup against the outline's `sections[]`. 
 ///
 /// Properties:
 /// * [id] 
 /// * [lessonId] - Owning lesson id. Used by the right-rail to link to the lesson.
+/// * [sectionId] - Owning section id. Used by the rail to group items.
+/// * [sectionTitle] - Title of the owning section, denormalised so the rail can render its grouping caption without resolving via `sections[]`.
 /// * [kind] 
 /// * [label] 
 /// * [sizeBytes] 
@@ -25,6 +27,14 @@ abstract class CourseMaterialItem implements Built<CourseMaterialItem, CourseMat
   /// Owning lesson id. Used by the right-rail to link to the lesson.
   @BuiltValueField(wireName: r'lessonId')
   String get lessonId;
+
+  /// Owning section id. Used by the rail to group items.
+  @BuiltValueField(wireName: r'sectionId')
+  String get sectionId;
+
+  /// Title of the owning section, denormalised so the rail can render its grouping caption without resolving via `sections[]`.
+  @BuiltValueField(wireName: r'sectionTitle')
+  String get sectionTitle;
 
   @BuiltValueField(wireName: r'kind')
   CourseMaterialItemKindEnum get kind;
@@ -67,6 +77,16 @@ class _$CourseMaterialItemSerializer implements PrimitiveSerializer<CourseMateri
     yield r'lessonId';
     yield serializers.serialize(
       object.lessonId,
+      specifiedType: const FullType(String),
+    );
+    yield r'sectionId';
+    yield serializers.serialize(
+      object.sectionId,
+      specifiedType: const FullType(String),
+    );
+    yield r'sectionTitle';
+    yield serializers.serialize(
+      object.sectionTitle,
       specifiedType: const FullType(String),
     );
     yield r'kind';
@@ -120,6 +140,20 @@ class _$CourseMaterialItemSerializer implements PrimitiveSerializer<CourseMateri
             specifiedType: const FullType(String),
           ) as String;
           result.lessonId = valueDes;
+          break;
+        case r'sectionId':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.sectionId = valueDes;
+          break;
+        case r'sectionTitle':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.sectionTitle = valueDes;
           break;
         case r'kind':
           final valueDes = serializers.deserialize(

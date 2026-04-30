@@ -1623,11 +1623,24 @@ export interface components {
       /** @description 0..100 — only meaningful when `state === 'in-progress'`. */
       progressPercent: number;
     };
-    /** @description One sidecar material aggregated at the course level. */
+    /**
+     * @description One sidecar material aggregated at the course level. The
+     *     `materials[]` list returned by `getCourseOutline` is sorted by
+     *     `(section.position, lesson.position, material.id)` so consecutive
+     *     items belong to the same section — the right-rail groups them by
+     *     `sectionId` and renders a small caption per cluster.
+     *
+     *     `sectionTitle` is included so the rail can render the caption
+     *     without a per-item lookup against the outline's `sections[]`.
+     */
     CourseMaterialItem: {
       id: string;
       /** @description Owning lesson id. Used by the right-rail to link to the lesson. */
       lessonId: string;
+      /** @description Owning section id. Used by the rail to group items. */
+      sectionId: string;
+      /** @description Title of the owning section, denormalised so the rail can render its grouping caption without resolving via `sections[]`. */
+      sectionTitle: string;
       /** @enum {string} */
       kind: 'doc' | 'note' | 'image' | 'slide';
       label: string;

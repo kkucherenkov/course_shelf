@@ -407,4 +407,23 @@ export default {
       statusCancelled: 'Отменено',
     },
   },
+  notifiers: {
+    scan: {
+      statusScanning: 'Сканирование',
+      statusComplete: 'Сканирование завершено',
+      statusFailed: 'Сканирование завершилось с ошибкой',
+      statusPartial: 'Сканирование частично завершено',
+      cancel: 'Отмена',
+      errorsButton: '{n} ошибка | {n} ошибки | {n} ошибок',
+      statScanned: 'Проверено',
+      statAdded: 'Добавлено',
+      statUpdated: 'Обновлено',
+      statErrors: 'Ошибки',
+      toastDoneTitle: '{name} просканировано',
+      toastDoneSummary: '{courses} курсов · {lessons} уроков',
+      toastFailedTitle: 'Ошибка сканирования {name}',
+      toastFailedSummary: '{errors} ошибка | {errors} ошибки | {errors} ошибок',
+      dismissAria: 'Закрыть уведомление о сканировании',
+    },
+  },
 } as const;

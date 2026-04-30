@@ -124,6 +124,12 @@ services:
       # origin (no CORS, no CORP).
       APP_API_BASE_URL: "${PUBLIC_BASE_URL}/api/v1"
       APP_AUTH_BASE_URL: "${PUBLIC_BASE_URL}"
+      # Centrifugo WebSocket URL for the browser. The proxy must expose a
+      # /centrifugo/ upstream before this is reachable — see
+      # docs/deployment.md#centrifugo-proxy for the required nginx snippet.
+      # That nginx entry is NOT included in the default proxy config; this
+      # value is documented here but production deployments must add it manually.
+      APP_CENTRIFUGO_URL: "${PUBLIC_BASE_URL}/centrifugo/connection/websocket"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1/_app-config.js"]
       interval: 10s

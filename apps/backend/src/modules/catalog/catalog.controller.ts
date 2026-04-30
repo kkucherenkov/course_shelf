@@ -106,7 +106,7 @@ export class CatalogController {
       // shortly after the redirect. The handler returns once the scan
       // record is persisted as `running`; the file walk continues fire-
       // and-forget after the response.
-      await this.commandBus.execute<RunScanCommand, unknown>(new RunScanCommand(id));
+      await this.commandBus.execute<RunScanCommand, unknown>(new RunScanCommand(id, actor.id));
     }
 
     return this.queryBus.execute<GetLibraryQuery, LibraryDto>(new GetLibraryQuery(id, actor));

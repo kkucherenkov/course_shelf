@@ -81,6 +81,8 @@ export default defineNuxtConfig({
     public: {
       apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000/api/v1',
       authBaseUrl: process.env.NUXT_PUBLIC_AUTH_BASE_URL ?? 'http://localhost:3000',
+      centrifugoUrl:
+        process.env.NUXT_PUBLIC_CENTRIFUGO_URL ?? 'ws://localhost:8000/connection/websocket',
     },
   },
 

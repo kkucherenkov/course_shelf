@@ -25,3 +25,5 @@ export const useRoute = () => ({ path: '/' });
 export const useRouter = () => ({});
 export const navigateTo = () => Promise.resolve();
 export const useRuntimeConfig = () => ({ public: {} });
+export const useI18n = () => ({ t: (k: string) => k, n: (v: number) => String(v) });
+export const useToast = () => ({ add: () => undefined });

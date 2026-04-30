@@ -32,6 +32,7 @@ import path from 'node:path';
 import { stat } from 'node:fs/promises';
 
 import { AppConfig } from '../../../../common/config/app-config';
+import { CentrifugoService } from '../../../../common/centrifugo/centrifugo.service';
 import { Course } from '../../domain/course/course';
 import { CourseSlugAlreadyTakenError } from '../../domain/course/course.errors';
 import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
@@ -105,6 +106,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
     @Inject(FS_ADAPTER) private readonly fs: FsAdapter,
     @Inject(FFMPEG_ADAPTER) private readonly ffmpeg: FfmpegAdapter,
     private readonly appConfig: AppConfig,
+    private readonly centrifugo: CentrifugoService,
   ) {}
 
   async execute(command: RunScanCommand): Promise<Scan> {
@@ -129,10 +131,29 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
     const scan = Scan.start({ id: nanoid(), libraryId: command.libraryId });
     await this.scanRepo.save(scan);
 
+    // Publish 'started' event — fire-and-forget; Centrifugo being down must
+    // not block the scan or prevent the 202 from going out.
+    void this.centrifugo.publish(`scans:user:${command.actorUserId}`, {
+      kind: 'started',
+      scanId: scan.id,
+      libraryId: library.id,
+      libraryName: library.name,
+      at: new Date().toISOString(),
+    });
+
     // 5. Fire-and-forget the actual walk.
     // NOTE: v2 will move this to a BullMQ background worker.
     Promise.resolve()
-      .then(() => this.runWalk(scan, library.id, library.rootPath, prevFileMap))
+      .then(() =>
+        this.runWalk(
+          scan,
+          library.id,
+          library.name,
+          library.rootPath,
+          prevFileMap,
+          command.actorUserId,
+        ),
+      )
       .catch(() => {
         // runWalk handles all errors internally and persists the terminal state.
         // This catch is a belt-and-suspenders guard for truly unexpected throws.
@@ -148,9 +169,29 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
   private async runWalk(
     scan: Scan,
     libraryId: string,
+    libraryName: string,
     rootPath: string,
     prevFileMap: Map<string, { mtime: Date; size: number }>,
+    actorUserId: string,
   ): Promise<void> {
+    const channel = `scans:user:${actorUserId}`;
+    let lastProgressPublishedAt = 0;
+
+    const publishProgress = (): void => {
+      void this.centrifugo.publish(channel, {
+        kind: 'progress',
+        scanId: scan.id,
+        libraryId,
+        libraryName,
+        at: new Date().toISOString(),
+        filesScanned: scan.filesScanned,
+        filesAdded: scan.filesAdded,
+        coursesDiscovered: scan.coursesDiscovered,
+        errorsCount: scan.errors.length,
+      });
+      lastProgressPublishedAt = Date.now();
+    };
+
     try {
       // Collect all entries grouped by top-level course folder.
       // key = absolute path of the immediate child directory of rootPath
@@ -598,6 +639,13 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
             }
           }
         }
+
+        // Throttled progress publish: at most once per second per course folder.
+        // Always fires after the last folder so the SPA gets at least one progress
+        // event per scan (even for single-course libraries).
+        if (Date.now() - lastProgressPublishedAt >= 1000) {
+          publishProgress();
+        }
       }
 
       scan.complete();
@@ -609,6 +657,28 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
         // scan is already terminal (should not happen, but be safe).
       }
     } finally {
+      // Publish 'finished' event before persisting so the SPA can react
+      // to the terminal state. Fire-and-forget — Centrifugo failure must not
+      // block or corrupt the scan's persistent terminal state.
+      const finishedStatus =
+        scan.status === 'failed'
+          ? 'failed'
+          : scan.errors.length > 0
+            ? 'partial'
+            : 'succeeded';
+      void this.centrifugo.publish(channel, {
+        kind: 'finished',
+        scanId: scan.id,
+        libraryId,
+        libraryName,
+        at: new Date().toISOString(),
+        status: finishedStatus,
+        filesScanned: scan.filesScanned,
+        filesAdded: scan.filesAdded,
+        coursesDiscovered: scan.coursesDiscovered,
+        errorsCount: scan.errors.length,
+      });
+
       // Always persist the terminal state.
       await this.scanRepo.save(scan).catch(() => {
         // Best-effort — nothing else we can do if the DB write fails here.

@@ -19,6 +19,7 @@
   import type { IconName } from '@app/ui';
 
   import { useAuthStore } from '~/stores/auth';
+  import { useScanLifecycle } from '~/composables/useScanLifecycle';
 
   // The AppNavigationShell types live alongside its `.vue` file; ESLint's
   // typescript-parser does not resolve types re-exported through `.vue`
@@ -46,6 +47,9 @@
   const colorMode = useColorMode();
   const toast = useToast();
 
+  // Subscribe to Centrifugo scan lifecycle events for the authenticated user.
+  useScanLifecycle();
+
   const isAuthenticated = computed(() => authStore.isAuthenticated);
   const isAdmin = computed(() => authStore.user?.role?.toLowerCase() === 'admin');
 
@@ -54,16 +58,31 @@
   const nav = computed<NavItem[]>(() => [
     { key: 'home', label: t('layouts.default.navHome'), icon: 'home', to: '/' },
     { key: 'browse', label: t('layouts.default.navBrowse'), icon: 'search', to: '/browse' },
-    { key: 'libraries', label: t('layouts.default.navLibraries'), icon: 'library', to: '/libraries' },
+    {
+      key: 'libraries',
+      label: t('layouts.default.navLibraries'),
+      icon: 'library',
+      to: '/libraries',
+    },
   ]);
 
   const adminNav = computed<NavItem[]>(() => {
     if (!isAdmin.value) return [];
     return [
       { key: 'admin-dashboard', label: t('pages.admin.navDashboard'), icon: 'home', to: '/admin' },
-      { key: 'admin-libraries', label: t('pages.admin.navLibraries'), icon: 'library', to: '/admin/libraries' },
+      {
+        key: 'admin-libraries',
+        label: t('pages.admin.navLibraries'),
+        icon: 'library',
+        to: '/admin/libraries',
+      },
       { key: 'admin-users', label: t('pages.admin.navUsers'), icon: 'users', to: '/admin/users' },
-      { key: 'admin-permissions', label: t('pages.admin.navPermissions'), icon: 'lock', to: '/admin/permissions' },
+      {
+        key: 'admin-permissions',
+        label: t('pages.admin.navPermissions'),
+        icon: 'lock',
+        to: '/admin/permissions',
+      },
     ];
   });
 
@@ -157,6 +176,9 @@
   >
     <slot />
   </AppNavigationShell>
+
+  <!-- Floating scan lifecycle notifier — fixed position, sits above everything. -->
+  <ScanLifecycleNotifier v-if="isAuthenticated" />
 
   <!-- Pre-auth transient: middleware will redirect to /sign-in shortly. -->
   <div v-else class="default-layout-bare">

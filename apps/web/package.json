@@ -24,6 +24,7 @@
     "@pinia/nuxt": "^0.11.3",
     "@tailwindcss/vite": "^4.2.4",
     "better-auth": "^1.6.8",
+    "centrifuge": "^5.5.3",
     "nuxt": "^4.4.0",
     "pinia": "^3.0.4",
     "tailwindcss": "^4.2.0",

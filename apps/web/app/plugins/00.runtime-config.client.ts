@@ -18,6 +18,7 @@
 interface AppRuntimeConfig {
   apiBaseUrl?: string;
   authBaseUrl?: string;
+  centrifugoUrl?: string;
 }
 
 declare global {
@@ -39,5 +40,8 @@ export default defineNuxtPlugin(() => {
   }
   if (typeof overrides.authBaseUrl === 'string' && overrides.authBaseUrl.length > 0) {
     config.public.authBaseUrl = overrides.authBaseUrl;
+  }
+  if (typeof overrides.centrifugoUrl === 'string' && overrides.centrifugoUrl.length > 0) {
+    config.public.centrifugoUrl = overrides.centrifugoUrl;
   }
 });

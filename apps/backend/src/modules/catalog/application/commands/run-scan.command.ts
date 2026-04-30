@@ -5,5 +5,8 @@
  * request shape at the middleware layer.
  */
 export class RunScanCommand {
-  constructor(readonly libraryId: string) {}
+  constructor(
+    readonly libraryId: string,
+    readonly actorUserId: string,
+  ) {}
 }

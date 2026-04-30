@@ -31,8 +31,17 @@ export class RealtimeService {
    * NOTE: notes:lesson:* and library:scan:* channels are intentionally omitted
    * here. They require subscribe-time per-channel authorisation (future story)
    * and must not be pre-authorised in the connection token.
+   *
+   * `scans:user:<id>` is per-user-scoped — only the user themselves can
+   * subscribe to their own scan lifecycle feed, so it's safe to include
+   * in the token (no per-channel auth needed).
    */
   private allowedChannelsFor(user: SessionUser): string[] {
-    return ['system:health', `progress:user:${user.id}`, `notifications:user:${user.id}`];
+    return [
+      'system:health',
+      `progress:user:${user.id}`,
+      `notifications:user:${user.id}`,
+      `scans:user:${user.id}`,
+    ];
   }
 }

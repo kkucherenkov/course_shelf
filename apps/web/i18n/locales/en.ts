@@ -404,4 +404,23 @@ export default {
       statusCancelled: 'Cancelled',
     },
   },
+  notifiers: {
+    scan: {
+      statusScanning: 'Scanning',
+      statusComplete: 'Scan complete',
+      statusFailed: 'Scan failed',
+      statusPartial: 'Scan partial',
+      cancel: 'Cancel',
+      errorsButton: '{n} error | {n} errors',
+      statScanned: 'Scanned',
+      statAdded: 'Added',
+      statUpdated: 'Updated',
+      statErrors: 'Errors',
+      toastDoneTitle: '{name} scanned',
+      toastDoneSummary: '{courses} courses · {lessons} lessons',
+      toastFailedTitle: '{name} scan failed',
+      toastFailedSummary: '{errors} error | {errors} errors',
+      dismissAria: 'Dismiss scan notification',
+    },
+  },
 } as const;

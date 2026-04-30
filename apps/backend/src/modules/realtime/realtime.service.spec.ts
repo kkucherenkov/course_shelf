@@ -46,7 +46,12 @@ describe('RealtimeService', () => {
     const { token } = service.issueToken(user);
     const payload = jwt.verify(token, SECRET) as jwt.JwtPayload;
     const channels: string[] = payload['channels'];
-    const expected = ['system:health', `progress:user:${user.id}`, `notifications:user:${user.id}`];
+    const expected = [
+      'system:health',
+      `progress:user:${user.id}`,
+      `notifications:user:${user.id}`,
+      `scans:user:${user.id}`,
+    ];
     expect(channels).toHaveLength(expected.length);
     for (const ch of expected) {
       expect(channels).toContain(ch);

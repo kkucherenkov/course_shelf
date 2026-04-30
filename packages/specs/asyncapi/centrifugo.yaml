@@ -71,6 +71,22 @@ channels:
       devices receive each progress write so their UI reflects the latest
       position without polling.
 
+  scansUser:
+    address: "scans:user:{userId}"
+    parameters:
+      userId:
+        description: Better Auth user id (UUID v4).
+    messages:
+      scanLifecycle:
+        $ref: "#/components/messages/ScanLifecycleEvent"
+    description: |
+      Per-user scan lifecycle fan-out. The user who triggered a library
+      scan receives `started`, throttled `progress`, and a final
+      `finished` event so the SPA's floating notifier can render live
+      counters without polling. Pre-authorised in the connection token
+      (no per-channel subscribe-time auth needed) — only the user's own
+      scans are fanned out here.
+
 operations:
   receiveHealthUpdate:
     action: receive
@@ -104,6 +120,14 @@ operations:
     messages:
       - $ref: "#/channels/progressUser/messages/progressUpdated"
 
+  receiveScanLifecycleEvent:
+    action: receive
+    channel:
+      $ref: "#/channels/scansUser"
+    summary: Listen for own library-scan lifecycle events
+    messages:
+      - $ref: "#/channels/scansUser/messages/scanLifecycle"
+
 components:
   messages:
     HealthUpdate:
@@ -129,6 +153,12 @@ components:
       contentType: application/json
       payload:
         $ref: "#/components/schemas/ProgressUpdated"
+
+    ScanLifecycleEvent:
+      name: ScanLifecycleEvent
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/ScanLifecycleEvent"
 
   schemas:
     HealthUpdate:
@@ -223,6 +253,113 @@ components:
       type: string
       enum: [succeeded, failed, partial]
       description: Terminal status of a library scan.
+
+    ScanLifecycleEvent:
+      description: |
+        Discriminated union of per-user scan lifecycle events delivered on
+        `scans:user:{userId}`. The `kind` field identifies the concrete
+        type: `started`, `progress` (throttled to no more than ~1 per
+        second per scan), or `finished`.
+      oneOf:
+        - $ref: "#/components/schemas/ScanLifecycleStarted"
+        - $ref: "#/components/schemas/ScanLifecycleProgress"
+        - $ref: "#/components/schemas/ScanLifecycleFinished"
+
+    ScanLifecycleStarted:
+      type: object
+      required: [kind, scanId, libraryId, libraryName, at]
+      properties:
+        kind:
+          type: string
+          enum: [started]
+        scanId:
+          type: string
+        libraryId:
+          type: string
+        libraryName:
+          type: string
+        at:
+          type: string
+          format: date-time
+
+    ScanLifecycleProgress:
+      type: object
+      required:
+        - kind
+        - scanId
+        - libraryId
+        - libraryName
+        - at
+        - filesScanned
+        - filesAdded
+        - coursesDiscovered
+        - errorsCount
+      properties:
+        kind:
+          type: string
+          enum: [progress]
+        scanId:
+          type: string
+        libraryId:
+          type: string
+        libraryName:
+          type: string
+        at:
+          type: string
+          format: date-time
+        filesScanned:
+          type: integer
+          minimum: 0
+        filesAdded:
+          type: integer
+          minimum: 0
+        coursesDiscovered:
+          type: integer
+          minimum: 0
+        errorsCount:
+          type: integer
+          minimum: 0
+
+    ScanLifecycleFinished:
+      type: object
+      required:
+        - kind
+        - scanId
+        - libraryId
+        - libraryName
+        - at
+        - status
+        - filesScanned
+        - filesAdded
+        - coursesDiscovered
+        - errorsCount
+      properties:
+        kind:
+          type: string
+          enum: [finished]
+        scanId:
+          type: string
+        libraryId:
+          type: string
+        libraryName:
+          type: string
+        at:
+          type: string
+          format: date-time
+        status:
+          $ref: "#/components/schemas/ScanStatus"
+        filesScanned:
+          type: integer
+          minimum: 0
+        filesAdded:
+          type: integer
+          minimum: 0
+        coursesDiscovered:
+          type: integer
+          minimum: 0
+        errorsCount:
+          type: integer
+          minimum: 0
 
     NoteUpdated:
       type: object

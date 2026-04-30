@@ -6,6 +6,7 @@
  *   - FakeFfmpegAdapter (no real child_process calls).
  *   - In-memory ScanRepository backed by a plain Map.
  *   - In-memory LibraryRepository backed by a plain Map.
+ *   - Mock CentrifugoService to assert lifecycle event publishing.
  *
  * Fixture tree:
  *   /lib/01 - Course A/01 - Intro.mp4
@@ -37,6 +38,13 @@
  *     - discoveredLessons[1].metadata is undefined (probe failed)
  *     - exactly two ScanErrors: one 'ffmpeg-thumbnail-failed' (first video) and
  *       one 'ffmpeg-probe-failed' (second video)
+ *
+ * Realtime publishing (scan-progress-realtime):
+ *   - 'started' event fires once on the actor's channel after scanRepo.save.
+ *   - At least one 'progress' event fires during the walk (multi-folder fixture).
+ *   - 'finished' event fires in the finally block with correct status on both
+ *     success and failure paths.
+ *   - All three event kinds use the channel 'scans:user:<actorUserId>'.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -56,6 +64,7 @@ import type { FsAdapter, FsEntry } from '../../domain/scan/fs-adapter';
 import type { LibraryRepository } from '../../domain/library/library.repository';
 import type { ScanRepository } from '../../domain/scan/scan.repository';
 import type { AppConfig } from '../../../../common/config/app-config';
+import type { CentrifugoService } from '../../../../common/centrifugo/centrifugo.service';
 
 // ---------------------------------------------------------------------------
 // In-memory repositories
@@ -247,10 +256,21 @@ function makeFakeAppConfig(): AppConfig {
 }
 
 // ---------------------------------------------------------------------------
+// Mock CentrifugoService
+// ---------------------------------------------------------------------------
+
+function makeCentrifugoService(): CentrifugoService {
+  return {
+    publish: vi.fn().mockResolvedValue(undefined),
+  } as unknown as CentrifugoService;
+}
+
+// ---------------------------------------------------------------------------
 // Fixture helpers
 // ---------------------------------------------------------------------------
 
 const BASE_TIME = new Date('2026-01-01T00:00:00.000Z');
+const ACTOR_USER_ID = 'user-actor-1';
 
 function makeFixtureFiles(): FileRecord[] {
   return [
@@ -313,6 +333,7 @@ describe('RunScanHandler', () => {
   let courseRepo: ReturnType<typeof makeCourseRepo>;
   let lessonRepo: ReturnType<typeof makeLessonRepo>;
   let fs: FakeFsAdapter;
+  let centrifugo: CentrifugoService;
   let handler: RunScanHandler;
 
   beforeEach(() => {
@@ -322,6 +343,7 @@ describe('RunScanHandler', () => {
     scanRepo = makeScanRepo();
     courseRepo = makeCourseRepo();
     lessonRepo = makeLessonRepo();
+    centrifugo = makeCentrifugoService();
     fs = new FakeFsAdapter(makeFixtureFiles());
     handler = new RunScanHandler(
       libraryRepo,
@@ -331,6 +353,7 @@ describe('RunScanHandler', () => {
       fs,
       makePassthroughFfmpeg(),
       makeFakeAppConfig(),
+      centrifugo,
     );
   });
 
@@ -344,7 +367,7 @@ describe('RunScanHandler', () => {
   it('first scan: filesAdded=3, filesScanned=4, coursesDiscovered=2, errors.length=1', async () => {
     vi.useRealTimers();
 
-    const scan = await handler.execute(new RunScanCommand('lib-1'));
+    const scan = await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
     expect(scan.status).toBe('running');
 
     await drainMicrotasks();
@@ -366,7 +389,7 @@ describe('RunScanHandler', () => {
   it('course.json title overrides folder-derived title for Course A', async () => {
     vi.useRealTimers();
 
-    const scan = await handler.execute(new RunScanCommand('lib-1'));
+    const scan = await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
     await drainMicrotasks();
 
     const saved = scanRepo.store.get(scan.id)!;
@@ -381,11 +404,11 @@ describe('RunScanHandler', () => {
     vi.useRealTimers();
 
     // First scan (result discarded — we only care about the second scan's state).
-    await handler.execute(new RunScanCommand('lib-1'));
+    await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
     await drainMicrotasks();
 
     // Second scan — same FsAdapter with identical files.
-    const scan2 = await handler.execute(new RunScanCommand('lib-1'));
+    const scan2 = await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
     await drainMicrotasks();
 
     const saved2 = scanRepo.store.get(scan2.id)!;
@@ -415,9 +438,10 @@ describe('RunScanHandler', () => {
       badFs,
       makePassthroughFfmpeg(),
       makeFakeAppConfig(),
+      centrifugo,
     );
 
-    const scan = await handler.execute(new RunScanCommand('lib-1'));
+    const scan = await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
     await drainMicrotasks();
 
     const saved = scanRepo.store.get(scan.id)!;
@@ -438,11 +462,12 @@ describe('RunScanHandler', () => {
       fs,
       makePassthroughFfmpeg(),
       makeFakeAppConfig(),
+      centrifugo,
     );
 
-    await expect(handler.execute(new RunScanCommand('nonexistent'))).rejects.toBeInstanceOf(
-      LibraryNotFoundError,
-    );
+    await expect(
+      handler.execute(new RunScanCommand('nonexistent', ACTOR_USER_ID)),
+    ).rejects.toBeInstanceOf(LibraryNotFoundError);
   });
 
   // -------------------------------------------------------------------------
@@ -452,7 +477,7 @@ describe('RunScanHandler', () => {
     vi.useRealTimers();
 
     // Start first scan (leaves it in running state momentarily).
-    await handler.execute(new RunScanCommand('lib-1'));
+    await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
 
     // Manually insert a running scan into the repo to simulate concurrent state.
     const runningScan = Scan.start({ id: 'running-1', libraryId: 'lib-1' });
@@ -469,11 +494,12 @@ describe('RunScanHandler', () => {
       fs,
       makePassthroughFfmpeg(),
       makeFakeAppConfig(),
+      centrifugo,
     );
 
-    await expect(handler.execute(new RunScanCommand('lib-1'))).rejects.toBeInstanceOf(
-      ScanAlreadyRunningError,
-    );
+    await expect(
+      handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID)),
+    ).rejects.toBeInstanceOf(ScanAlreadyRunningError);
   });
 
   // -------------------------------------------------------------------------
@@ -521,9 +547,10 @@ describe('RunScanHandler', () => {
         neovimFs,
         makePassthroughFfmpeg(),
         makeFakeAppConfig(),
+        centrifugo,
       );
 
-      const scan = await neovimHandler.execute(new RunScanCommand('lib-1'));
+      const scan = await neovimHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
       const saved = neovimScanRepo.store.get(scan.id)!;
@@ -587,9 +614,10 @@ describe('RunScanHandler', () => {
         cacheFs,
         makePassthroughFfmpeg(),
         makeFakeAppConfig(),
+        centrifugo,
       );
 
-      const scan = await cacheHandler.execute(new RunScanCommand('lib-1'));
+      const scan = await cacheHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
       const saved = cacheScanRepo.store.get(scan.id)!;
@@ -631,9 +659,10 @@ describe('RunScanHandler', () => {
         dotFs,
         makePassthroughFfmpeg(),
         makeFakeAppConfig(),
+        centrifugo,
       );
 
-      const scan = await dotHandler.execute(new RunScanCommand('lib-1'));
+      const scan = await dotHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
       const saved = dotScanRepo.store.get(scan.id)!;
@@ -695,9 +724,10 @@ describe('RunScanHandler', () => {
         ffFs,
         ffmpegAdapter,
         makeFakeAppConfig(),
+        centrifugo,
       );
 
-      const scan = await ffHandler.execute(new RunScanCommand('lib-1'));
+      const scan = await ffHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
       const saved = ffScanRepo.store.get(scan.id)!;
@@ -745,7 +775,7 @@ describe('RunScanHandler', () => {
     it('saves 2 courses and 3 lessons on first scan of the fixture tree', async () => {
       vi.useRealTimers();
 
-      const scan = await handler.execute(new RunScanCommand('lib-1'));
+      const scan = await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
       const saved = scanRepo.store.get(scan.id)!;
@@ -769,7 +799,7 @@ describe('RunScanHandler', () => {
     it('course A sections: no sub-folders → synthetic "Lessons" section created', async () => {
       vi.useRealTimers();
 
-      await handler.execute(new RunScanCommand('lib-1'));
+      await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
       const courseA = [...courseRepo.store.values()].find((c) => c.slug === 'course-a-from-json')!;
@@ -782,7 +812,7 @@ describe('RunScanHandler', () => {
     it('lessons carry durationSeconds when ffprobe succeeded', async () => {
       vi.useRealTimers();
 
-      await handler.execute(new RunScanCommand('lib-1'));
+      await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
       // All lessons in the fixture get the default ffprobe result (60 s).
@@ -798,14 +828,14 @@ describe('RunScanHandler', () => {
       vi.useRealTimers();
 
       // First scan — persists both courses.
-      await handler.execute(new RunScanCommand('lib-1'));
+      await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
       expect(courseRepo.save).toHaveBeenCalledTimes(2);
       expect(lessonRepo.save).toHaveBeenCalledTimes(3);
 
       // Second scan — same FS, same slugs → skip both courses.
-      await handler.execute(new RunScanCommand('lib-1'));
+      await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
       // courseRepo.save must NOT have been called again.
@@ -818,6 +848,180 @@ describe('RunScanHandler', () => {
         (a, b) => b.startedAt.getTime() - a.startedAt.getTime(),
       );
       expect(scans[0]!.coursesDiscovered).toBe(2);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Realtime publishing (scan-progress-realtime)
+  //
+  // Verifies that CentrifugoService.publish is called with the correct
+  // lifecycle events on the actor's channel. The failure path asserts that
+  // the 'finished' event carries status='failed' — this is what lets the
+  // SPA's floating notifier dismiss properly on scan failure.
+  // -------------------------------------------------------------------------
+  describe('realtime publishing', () => {
+    it('publishes started event on the actor channel after scan persist', async () => {
+      vi.useRealTimers();
+
+      const scan = await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      // 'started' must be published before the walk begins (synchronously in execute()).
+      expect(centrifugo.publish).toHaveBeenCalledWith(`scans:user:${ACTOR_USER_ID}`, {
+        kind: 'started',
+        scanId: scan.id,
+        libraryId: 'lib-1',
+        libraryName: 'Test Library',
+        at: expect.any(String),
+      });
+    });
+
+    it('publishes at least one progress event during a multi-folder walk', async () => {
+      vi.useRealTimers();
+
+      const scan = await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      // The fixture has 2 course folders. In real-time tests the throttle check
+      // (Date.now() - lastPublishedAt >= 1000) evaluates against the actual clock,
+      // so at least one progress publish will fire after the first folder iteration.
+      const progressCalls = vi
+        .mocked(centrifugo.publish)
+        .mock.calls.filter(([, data]) => (data as { kind: string }).kind === 'progress');
+      expect(progressCalls.length).toBeGreaterThanOrEqual(1);
+
+      // All progress events go to the actor's channel.
+      for (const [channel] of progressCalls) {
+        expect(channel).toBe(`scans:user:${ACTOR_USER_ID}`);
+      }
+
+      // Progress payload has the expected shape.
+      const [, firstProgress] = progressCalls[0]!;
+      const p = firstProgress as {
+        kind: string;
+        scanId: string;
+        libraryId: string;
+        libraryName: string;
+        at: string;
+        filesScanned: number;
+        filesAdded: number;
+        coursesDiscovered: number;
+        errorsCount: number;
+      };
+      expect(p.kind).toBe('progress');
+      expect(p.scanId).toBe(scan.id);
+      expect(p.libraryId).toBe('lib-1');
+      expect(p.libraryName).toBe('Test Library');
+    });
+
+    it('publishes finished event with status=succeeded on successful walk', async () => {
+      vi.useRealTimers();
+
+      const scan = await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const finishedCalls = vi
+        .mocked(centrifugo.publish)
+        .mock.calls.filter(([, data]) => (data as { kind: string }).kind === 'finished');
+      expect(finishedCalls).toHaveLength(1);
+
+      const [channel, payload] = finishedCalls[0]!;
+      expect(channel).toBe(`scans:user:${ACTOR_USER_ID}`);
+      const f = payload as {
+        kind: string;
+        scanId: string;
+        libraryId: string;
+        libraryName: string;
+        at: string;
+        status: string;
+        filesScanned: number;
+        filesAdded: number;
+        coursesDiscovered: number;
+        errorsCount: number;
+      };
+      expect(f.kind).toBe('finished');
+      expect(f.scanId).toBe(scan.id);
+      // Has scan errors (broken.txt) → status='partial', not 'succeeded'.
+      expect(f.status).toBe('partial');
+      expect(f.filesAdded).toBe(3);
+      expect(f.coursesDiscovered).toBe(2);
+      expect(f.errorsCount).toBe(1);
+    });
+
+    it('publishes finished event with status=succeeded when there are no errors', async () => {
+      vi.useRealTimers();
+
+      // Use a clean fixture with no unsupported files.
+      const cleanFiles: FileRecord[] = [
+        { path: '/lib/Clean Course/01 - Intro.mp4', mtime: BASE_TIME, size: 100 },
+      ];
+      const cleanFs = new FakeFsAdapter(cleanFiles);
+      const cleanScanRepo = makeScanRepo();
+      const cleanCentrifugo = makeCentrifugoService();
+      const cleanHandler = new RunScanHandler(
+        libraryRepo,
+        cleanScanRepo,
+        makeCourseRepo(),
+        makeLessonRepo(),
+        cleanFs,
+        makePassthroughFfmpeg(),
+        makeFakeAppConfig(),
+        cleanCentrifugo,
+      );
+
+      const scan = await cleanHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const finishedCalls = vi
+        .mocked(cleanCentrifugo.publish)
+        .mock.calls.filter(([, data]) => (data as { kind: string }).kind === 'finished');
+      expect(finishedCalls).toHaveLength(1);
+
+      const [, payload] = finishedCalls[0]!;
+      expect((payload as { status: string }).status).toBe('succeeded');
+      expect((payload as { scanId: string }).scanId).toBe(scan.id);
+    });
+
+    it('publishes finished event with status=failed when the walk throws', async () => {
+      vi.useRealTimers();
+
+      // An FsAdapter whose walk() throws unexpectedly (simulates unhandled error).
+      const throwingFs: FsAdapter = {
+        // eslint-disable-next-line require-yield -- intentional: async generator that throws
+        async *walk(): AsyncIterable<FsEntry> {
+          throw new Error('unexpected walk failure');
+        },
+        readUtf8: vi.fn(),
+      };
+
+      const failScanRepo = makeScanRepo();
+      const failCentrifugo = makeCentrifugoService();
+      const failHandler = new RunScanHandler(
+        libraryRepo,
+        failScanRepo,
+        makeCourseRepo(),
+        makeLessonRepo(),
+        throwingFs,
+        makePassthroughFfmpeg(),
+        makeFakeAppConfig(),
+        failCentrifugo,
+      );
+
+      const scan = await failHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      // Scan must be in terminal 'failed' state.
+      const saved = failScanRepo.store.get(scan.id)!;
+      expect(saved.status).toBe('failed');
+
+      // The 'finished' event must carry status='failed'.
+      const finishedCalls = vi
+        .mocked(failCentrifugo.publish)
+        .mock.calls.filter(([, data]) => (data as { kind: string }).kind === 'finished');
+      expect(finishedCalls).toHaveLength(1);
+
+      const [channel, payload] = finishedCalls[0]!;
+      expect(channel).toBe(`scans:user:${ACTOR_USER_ID}`);
+      expect((payload as { status: string }).status).toBe('failed');
+      expect((payload as { scanId: string }).scanId).toBe(scan.id);
     });
   });
 });

@@ -16,10 +16,12 @@ import { Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
 import { AdminGuard } from '../../common/auth/admin.guard';
+import { Session } from '../../common/auth/decorators';
 import { RunScanCommand } from './application/commands/run-scan.command';
 import { GetLatestScanQuery } from './application/queries/get-latest-scan.query';
 import { toScanDto } from './scans.dto';
 
+import type { SessionContext } from '../../common/auth/decorators';
 import type { Scan } from './domain/scan/scan';
 import type { ScanDto } from '@app/api-client-ts';
 
@@ -38,8 +40,13 @@ export class ScansController {
    */
   @Post()
   @HttpCode(HttpStatus.ACCEPTED)
-  async runLibraryScan(@Param('id') id: string): Promise<ScanDto> {
-    const scan = await this.commandBus.execute<RunScanCommand, Scan>(new RunScanCommand(id));
+  async runLibraryScan(
+    @Param('id') id: string,
+    @Session() session: SessionContext,
+  ): Promise<ScanDto> {
+    const scan = await this.commandBus.execute<RunScanCommand, Scan>(
+      new RunScanCommand(id, session.user.id),
+    );
     return toScanDto(scan);
   }
 

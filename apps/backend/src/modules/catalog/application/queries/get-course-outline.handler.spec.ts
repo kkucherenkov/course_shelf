@@ -256,13 +256,15 @@ describe('GetCourseOutlineHandler', () => {
       expect(l3?.progressPercent).toBe(0);
     });
 
-    it('aggregates materials flat, ordered by (lesson.position, material.id)', async () => {
+    it('aggregates materials flat with section-aware decoration', async () => {
       const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
 
       expect(result.materials).toHaveLength(1);
       expect(result.materials[0]).toMatchObject({
         id: 'mat-1',
         lessonId: 'l1',
+        sectionId: 'sec-1',
+        sectionTitle: 'Section 1',
         kind: 'doc',
         label: 'Notes',
         sizeBytes: 512,
@@ -381,6 +383,54 @@ describe('GetCourseOutlineHandler', () => {
       const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
 
       expect(result.materials.map((m) => m.id)).toEqual(['mat-aaa', 'mat-zzz', 'mat-bbb']);
+    });
+
+    it('orders materials by (section.position, lesson.position, material.id) across sections', async () => {
+      courseRepo = makeCourseRepo();
+      lessonRepo = makeLessonRepo();
+
+      const course = makeCourse({
+        sections: [
+          { id: 'sec-1', position: 1, title: 'First' },
+          { id: 'sec-2', position: 2, title: 'Second' },
+        ],
+      });
+
+      const matSec1L1 = makeMaterial('mat-sec1-l1');
+      const matSec2L1 = makeMaterial('mat-sec2-l1');
+      const matSec1L2 = makeMaterial('mat-sec1-l2');
+
+      const lessons = [
+        // section 2 first to prove the handler doesn't rely on input order
+        makeLesson({ id: 'l-sec2-1', sectionId: 'sec-2', position: 1, materials: [matSec2L1] }),
+        // section 1 lesson 2 (position 2 within its section)
+        makeLesson({ id: 'l-sec1-2', sectionId: 'sec-1', position: 2, materials: [matSec1L2] }),
+        // section 1 lesson 1 (should appear first in the materials list)
+        makeLesson({ id: 'l-sec1-1', sectionId: 'sec-1', position: 1, materials: [matSec1L1] }),
+      ];
+
+      vi.mocked(courseRepo.findById).mockResolvedValue(course);
+      vi.mocked(lessonRepo.findByCourse).mockResolvedValue(lessons);
+
+      handler = new GetCourseOutlineHandler(
+        courseRepo,
+        lessonRepo,
+        makeAuthz(true),
+        makeProgressRepo(null),
+        makeLessonProgressRepo([]),
+      );
+
+      const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
+
+      // Expect: section 1 lesson 1 → section 1 lesson 2 → section 2 lesson 1
+      expect(result.materials.map((m) => m.id)).toEqual([
+        'mat-sec1-l1',
+        'mat-sec1-l2',
+        'mat-sec2-l1',
+      ]);
+      // Each item carries its owning section's id + title for the rail.
+      expect(result.materials[0]).toMatchObject({ sectionId: 'sec-1', sectionTitle: 'First' });
+      expect(result.materials[2]).toMatchObject({ sectionId: 'sec-2', sectionTitle: 'Second' });
     });
   });
 

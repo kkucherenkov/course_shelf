@@ -1,9 +1,10 @@
 <script setup lang="ts">
+  import { computed } from 'vue';
   import { IconCS } from '@app/ui';
   import type { IconName } from '@app/ui';
   import type { CourseMaterialItem } from '@app/api-client-ts';
 
-  defineProps<{
+  const props = defineProps<{
     materials: CourseMaterialItem[];
     heading: string;
     emptyLabel: string;
@@ -14,6 +15,39 @@
   const emit = defineEmits<{
     downloadAttempt: [material: CourseMaterialItem];
   }>();
+
+  // The backend now sorts the flat materials list by
+  // (section.position, lesson.position, material.id) and decorates each
+  // item with sectionId + sectionTitle. Group consecutive items by
+  // sectionId to render a small caption above each cluster — preserves
+  // the input order, no resort.
+  interface MaterialGroup {
+    sectionId: string;
+    sectionTitle: string;
+    items: CourseMaterialItem[];
+  }
+
+  const groups = computed<MaterialGroup[]>(() => {
+    const out: MaterialGroup[] = [];
+    for (const item of props.materials) {
+      const last = out.at(-1);
+      if (last?.sectionId === item.sectionId) {
+        last.items.push(item);
+      } else {
+        out.push({
+          sectionId: item.sectionId,
+          sectionTitle: item.sectionTitle,
+          items: [item],
+        });
+      }
+    }
+    return out;
+  });
+
+  // Single-section courses skip the grouping caption — the list visual is
+  // already obvious without the extra hierarchy. Only show captions when
+  // there are 2+ distinct sections in the rail.
+  const showCaptions = computed(() => groups.value.length > 1);
 
   function kindIcon(kind: CourseMaterialItem['kind']): IconName {
     if (kind === 'doc') return 'pdf';
@@ -38,28 +72,39 @@
       {{ emptyLabel }}
     </p>
 
-    <ul v-else class="course-materials-rail__list">
-      <li v-for="item in materials" :key="item.id" class="course-materials-rail__item">
-        <IconCS
-          :name="kindIcon(item.kind)"
-          :size="18"
-          class="course-materials-rail__item-icon"
-          aria-hidden="true"
-        />
-        <div class="course-materials-rail__item-info">
-          <span class="course-materials-rail__item-label">{{ item.label }}</span>
-          <span class="course-materials-rail__item-size">{{ fmtSize(item.sizeBytes) }}</span>
-        </div>
-        <button
-          type="button"
-          class="course-materials-rail__item-download"
-          :aria-label="downloadAriaLabel"
-          @click="emit('downloadAttempt', item)"
+    <div v-else class="course-materials-rail__groups">
+      <section v-for="group in groups" :key="group.sectionId" class="course-materials-rail__group">
+        <p
+          v-if="showCaptions"
+          class="course-materials-rail__caption"
+          :aria-label="group.sectionTitle"
         >
-          <IconCS name="download" :size="16" aria-hidden="true" />
-        </button>
-      </li>
-    </ul>
+          {{ group.sectionTitle }}
+        </p>
+        <ul class="course-materials-rail__list">
+          <li v-for="item in group.items" :key="item.id" class="course-materials-rail__item">
+            <IconCS
+              :name="kindIcon(item.kind)"
+              :size="18"
+              class="course-materials-rail__item-icon"
+              aria-hidden="true"
+            />
+            <div class="course-materials-rail__item-info">
+              <span class="course-materials-rail__item-label">{{ item.label }}</span>
+              <span class="course-materials-rail__item-size">{{ fmtSize(item.sizeBytes) }}</span>
+            </div>
+            <button
+              type="button"
+              class="course-materials-rail__item-download"
+              :aria-label="downloadAriaLabel"
+              @click="emit('downloadAttempt', item)"
+            >
+              <IconCS name="download" :size="16" aria-hidden="true" />
+            </button>
+          </li>
+        </ul>
+      </section>
+    </div>
   </aside>
 </template>
 
@@ -83,6 +128,31 @@
       margin: 0;
       font-size: var(--text-sm);
       color: var(--text-secondary);
+    }
+
+    &__groups {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    &__group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    &__caption {
+      margin: 0;
+      padding: 0 var(--space-2);
+      font-size: var(--text-xs);
+      font-weight: var(--fw-semibold);
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wide);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     &__list {

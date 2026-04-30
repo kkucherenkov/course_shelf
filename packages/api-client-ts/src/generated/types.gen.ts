@@ -531,7 +531,15 @@ export type LessonOutlineItem = {
 };
 
 /**
- * One sidecar material aggregated at the course level.
+ * One sidecar material aggregated at the course level. The
+ * `materials[]` list returned by `getCourseOutline` is sorted by
+ * `(section.position, lesson.position, material.id)` so consecutive
+ * items belong to the same section — the right-rail groups them by
+ * `sectionId` and renders a small caption per cluster.
+ *
+ * `sectionTitle` is included so the rail can render the caption
+ * without a per-item lookup against the outline's `sections[]`.
+ *
  */
 export type CourseMaterialItem = {
     id: string;
@@ -539,6 +547,14 @@ export type CourseMaterialItem = {
      * Owning lesson id. Used by the right-rail to link to the lesson.
      */
     lessonId: string;
+    /**
+     * Owning section id. Used by the rail to group items.
+     */
+    sectionId: string;
+    /**
+     * Title of the owning section, denormalised so the rail can render its grouping caption without resolving via `sections[]`.
+     */
+    sectionTitle: string;
     kind: 'doc' | 'note' | 'image' | 'slide';
     label: string;
     sizeBytes: number;

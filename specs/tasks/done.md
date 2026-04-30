@@ -2,6 +2,15 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-04-28-002 — Group course materials by section in the right-rail
+
+- Created: 2026-04-28
+- Completed: 2026-04-28
+- Result: PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/178 — three commits (spec codegen, backend, web).
+- Owner: claude
+- Spec: ad-hoc UX polish on top of E14-F01-S03 — no roadmap card.
+- Outcome: `CourseMaterialItem` gained required `sectionId` + `sectionTitle` and a documented sort contract — `getCourseOutline` returns the flat materials list ordered by `(section.position, lesson.position, material.id)` so consecutive items belong to the same section. `GetCourseOutlineHandler` does the cross-section sort + decoration in step 7; lessons with an unknown `sectionId` (data anomaly — Section is a child aggregate of Course so it should be unreachable) sort to the end with `+∞`. `CourseMaterialsRail.vue` groups consecutive items by `sectionId` and renders a small uppercase caption per cluster, but only when the rail spans 2+ sections so single-section courses stay visually quiet. +1 backend handler test (cross-section ordering with mixed-input fixture); web tests 153/153.
+
 ## T-2026-04-29-061 — Stage B Admin section (E14-F04-S01)
 
 - Created: 2026-04-29

@@ -26,6 +26,14 @@ export interface LibraryRepository {
   /** Return the aggregate by id, or null when not found. */
   findById(id: string): Promise<Library | null>;
 
+  /**
+   * Return the aggregate by its rootPath, or null when not found. Used by
+   * the idempotent registerLibrary handler — when a user tries to register
+   * a path that already exists, the handler short-circuits to the existing
+   * library row instead of throwing a 409.
+   */
+  findByRootPath(rootPath: string): Promise<Library | null>;
+
   /** Return all libraries, ordered by name. */
   findAll(): Promise<Library[]>;
 

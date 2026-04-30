@@ -938,8 +938,8 @@ class CatalogApi {
     );
   }
 
-  /// Register a new library
-  /// Persists a new library pointing at an absolute filesystem path. Idempotent on rootPath: a 409 is returned if a library with the same rootPath already exists. 
+  /// Register a new library (or share an existing path)
+  /// Persists a library pointing at an absolute filesystem path.  **Idempotent on &#x60;rootPath&#x60;.** When a library with the same path already exists, the call returns the existing library and grants the calling user READ access to it instead of creating a duplicate row. The response body matches what &#x60;GET /libraries/{id}&#x60; would return for that library — the original &#x60;name&#x60;/&#x60;createdAt&#x60; are preserved (the new &#x60;name&#x60; you submitted is ignored).  For brand-new libraries the controller chains an initial &#x60;runLibraryScan&#x60; so courses become visible shortly after the response. No initial scan is fired when the path already existed (the existing library is presumed already scanned). 
   ///
   /// Parameters:
   /// * [registerLibraryRequest] 

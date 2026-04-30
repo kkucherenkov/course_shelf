@@ -2099,11 +2099,21 @@ paths:
   /api/v1/libraries:
     post:
       operationId: registerLibrary
-      summary: Register a new library
+      summary: Register a new library (or share an existing path)
       description: |
-        Persists a new library pointing at an absolute filesystem path.
-        Idempotent on rootPath: a 409 is returned if a library with the same
-        rootPath already exists.
+        Persists a library pointing at an absolute filesystem path.
+
+        **Idempotent on `rootPath`.** When a library with the same path
+        already exists, the call returns the existing library and grants
+        the calling user READ access to it instead of creating a duplicate
+        row. The response body matches what `GET /libraries/{id}` would
+        return for that library — the original `name`/`createdAt` are
+        preserved (the new `name` you submitted is ignored).
+
+        For brand-new libraries the controller chains an initial
+        `runLibraryScan` so courses become visible shortly after the
+        response. No initial scan is fired when the path already existed
+        (the existing library is presumed already scanned).
       tags: [Catalog]
       security:
         - bearerAuth: []
@@ -2171,20 +2181,6 @@ paths:
                     title: Forbidden
                     status: 403
                     detail: Only Owner-Admins may register libraries.
-        "409":
-          description: A library with the same rootPath already exists
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/Problem"
-              examples:
-                conflict:
-                  value:
-                    type: about:blank
-                    title: Conflict
-                    status: 409
-                    detail: "A library at /srv/courses/conference is already registered."
-
     get:
       operationId: listLibraries
       summary: List all registered libraries

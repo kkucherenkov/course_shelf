@@ -20,7 +20,7 @@ Method | HTTP request | Description
 [**getYourWeek**](CatalogApi.md#getyourweek) | **GET** /api/v1/home/your-week | Roll-up of the requester&#39;s last seven days
 [**listCourses**](CatalogApi.md#listcourses) | **GET** /api/v1/courses | List courses (optionally filtered by library)
 [**listLibraries**](CatalogApi.md#listlibraries) | **GET** /api/v1/libraries | List all registered libraries
-[**registerLibrary**](CatalogApi.md#registerlibrary) | **POST** /api/v1/libraries | Register a new library
+[**registerLibrary**](CatalogApi.md#registerlibrary) | **POST** /api/v1/libraries | Register a new library (or share an existing path)
 [**removeLibrary**](CatalogApi.md#removelibrary) | **DELETE** /api/v1/libraries/{id} | Hard-delete a library and every dependent row
 [**runLibraryScan**](CatalogApi.md#runlibraryscan) | **POST** /api/v1/libraries/{id}/scans | Trigger a scan of a library
 [**updateCourse**](CatalogApi.md#updatecourse) | **PATCH** /api/v1/courses/{id} | Update course metadata
@@ -495,9 +495,9 @@ This endpoint does not need any parameter.
 # **registerLibrary**
 > LibraryDto registerLibrary(registerLibraryRequest)
 
-Register a new library
+Register a new library (or share an existing path)
 
-Persists a new library pointing at an absolute filesystem path. Idempotent on rootPath: a 409 is returned if a library with the same rootPath already exists. 
+Persists a library pointing at an absolute filesystem path.  **Idempotent on `rootPath`.** When a library with the same path already exists, the call returns the existing library and grants the calling user READ access to it instead of creating a duplicate row. The response body matches what `GET /libraries/{id}` would return for that library — the original `name`/`createdAt` are preserved (the new `name` you submitted is ignored).  For brand-new libraries the controller chains an initial `runLibraryScan` so courses become visible shortly after the response. No initial scan is fired when the path already existed (the existing library is presumed already scanned). 
 
 ### Example
 ```dart

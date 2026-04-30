@@ -12,14 +12,19 @@
  *   modules are fully constructed, breaking the circular dependency at runtime.
  */
 import { Module, forwardRef } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
 
 import { AccessModule } from '../../modules/access/access.module';
+import { LibraryGrantService } from './library-grant.service';
 import { LruAuthorizationService } from './lru-authorization.service';
 import { AUTHORIZATION_SERVICE } from './authorization.service';
 
 @Module({
-  imports: [forwardRef(() => AccessModule)],
-  providers: [{ provide: AUTHORIZATION_SERVICE, useClass: LruAuthorizationService }],
-  exports: [AUTHORIZATION_SERVICE],
+  imports: [CqrsModule, forwardRef(() => AccessModule)],
+  providers: [
+    { provide: AUTHORIZATION_SERVICE, useClass: LruAuthorizationService },
+    LibraryGrantService,
+  ],
+  exports: [AUTHORIZATION_SERVICE, LibraryGrantService],
 })
 export class CommonAccessModule {}

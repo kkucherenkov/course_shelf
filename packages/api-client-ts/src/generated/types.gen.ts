@@ -2176,10 +2176,6 @@ export type RegisterLibraryErrors = {
      * Caller does not have the Owner-Admin role
      */
     403: Problem;
-    /**
-     * A library with the same rootPath already exists
-     */
-    409: Problem;
 };
 
 export type RegisterLibraryError = RegisterLibraryErrors[keyof RegisterLibraryErrors];

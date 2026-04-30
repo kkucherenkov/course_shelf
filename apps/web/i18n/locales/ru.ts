@@ -7,6 +7,9 @@ export default {
       navLibraries: 'Библиотеки',
       navSignIn: 'Войти',
       navSignOut: 'Выйти',
+      searchPlaceholder: 'Поиск курсов и уроков…',
+      profileComingSoon: 'Страница профиля скоро будет доступна.',
+      settingsComingSoon: 'Страница настроек скоро будет доступна.',
     },
   },
   pages: {

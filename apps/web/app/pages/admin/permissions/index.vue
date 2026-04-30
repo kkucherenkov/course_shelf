@@ -4,7 +4,7 @@
   import AdminUserRow from '~/components/admin/AdminUserRow.vue';
   import { useAdminUsers } from '~/composables/useAdminUsers';
 
-  definePageMeta({ layout: 'admin', middleware: 'admin' });
+  definePageMeta({ middleware: 'admin' });
 
   const { t } = useI18n();
 

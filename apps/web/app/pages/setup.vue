@@ -4,6 +4,9 @@
 
   import { useAuthStore } from '~/stores/auth';
 
+  // First-run admin onboarding — pre-auth, no shell.
+  definePageMeta({ layout: false });
+
   const { t } = useI18n();
   const authStore = useAuthStore();
 

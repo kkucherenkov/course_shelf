@@ -7,6 +7,9 @@ export default {
       navLibraries: 'Libraries',
       navSignIn: 'Sign in',
       navSignOut: 'Sign out',
+      searchPlaceholder: 'Search courses, lessons…',
+      profileComingSoon: 'Profile page coming soon.',
+      settingsComingSoon: 'Settings page coming soon.',
     },
   },
   pages: {

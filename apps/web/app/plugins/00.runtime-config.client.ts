@@ -27,7 +27,10 @@ declare global {
 }
 
 export default defineNuxtPlugin(() => {
-  const overrides = typeof window !== 'undefined' ? window.__APP_CONFIG__ : undefined;
+  // The `.client.ts` filename suffix means Nuxt only runs this in the
+  // browser, so `window` is defined. Cast through globalThis to keep the
+  // typed `Window['__APP_CONFIG__']` augmentation visible to callers.
+  const overrides = (globalThis as unknown as Window).__APP_CONFIG__;
   if (!overrides) return;
 
   const config = useRuntimeConfig();

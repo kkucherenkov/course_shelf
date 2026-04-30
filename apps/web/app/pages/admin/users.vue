@@ -8,7 +8,7 @@
   import { useUpdateAdminUser } from '~/composables/useUpdateAdminUser';
   import { useAuthStore } from '~/stores/auth';
 
-  definePageMeta({ layout: 'admin', middleware: 'admin' });
+  definePageMeta({ middleware: 'admin' });
 
   const { t } = useI18n();
   const toast = useToast();

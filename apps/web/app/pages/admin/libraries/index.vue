@@ -7,7 +7,7 @@
   import AdminAddLibrarySheet from '~/components/admin/AdminAddLibrarySheet.vue';
   import { useAdminLibraries } from '~/composables/useAdminLibraries';
 
-  definePageMeta({ layout: 'admin', middleware: 'admin' });
+  definePageMeta({ middleware: 'admin' });
 
   const { t } = useI18n();
   const router = useRouter();

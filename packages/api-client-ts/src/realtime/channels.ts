@@ -92,17 +92,61 @@ export interface ProgressUpdated {
   completedAt?: string;
 }
 
+/**
+ * Discriminated union of per-user scan lifecycle events delivered on
+ * `scans:user:{userId}`. The `kind` field identifies the concrete
+ * type: `started`, `progress` (throttled to no more than ~1 per
+ * second per scan), or `finished`.
+ *
+ */
+export type ScanLifecycleEvent =
+  | {
+      kind: 'started';
+      scanId: string;
+      libraryId: string;
+      libraryName: string;
+      at: string;
+    }
+  | {
+      kind: 'progress';
+      scanId: string;
+      libraryId: string;
+      libraryName: string;
+      at: string;
+      filesScanned: number;
+      filesAdded: number;
+      coursesDiscovered: number;
+      errorsCount: number;
+    }
+  | {
+      kind: 'finished';
+      scanId: string;
+      libraryId: string;
+      libraryName: string;
+      at: string;
+      /**
+       * Terminal status of a library scan.
+       */
+      status: 'succeeded' | 'failed' | 'partial';
+      filesScanned: number;
+      filesAdded: number;
+      coursesDiscovered: number;
+      errorsCount: number;
+    };
+
 export type RealtimeChannel =
   | 'system:health'
   | 'library:scan:{libraryId}'
   | 'notes:lesson:{lessonId}'
-  | 'progress:user:{userId}';
+  | 'progress:user:{userId}'
+  | 'scans:user:{userId}';
 
 export interface RealtimeChannelPayloadMap {
   'system:health': HealthUpdate;
   'library:scan:{libraryId}': ScanEvent;
   'notes:lesson:{lessonId}': NoteUpdated;
   'progress:user:{userId}': ProgressUpdated;
+  'scans:user:{userId}': ScanLifecycleEvent;
 }
 
 export type RealtimeChannelPayload<C extends RealtimeChannel> = RealtimeChannelPayloadMap[C];

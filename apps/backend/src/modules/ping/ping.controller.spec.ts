@@ -13,6 +13,7 @@ describe('PingController', () => {
   it('returns id, role, and displayName when all fields present', () => {
     const session: SessionContext = {
       user: { id: 'uuid-1234', role: 'USER', displayName: 'Alice' },
+      sessionId: 'sess-test',
     };
 
     const result = controller.ping(session);
@@ -23,6 +24,7 @@ describe('PingController', () => {
   it('omits displayName key when displayName is undefined', () => {
     const session: SessionContext = {
       user: { id: 'uuid-5678', role: 'ADMIN' },
+      sessionId: 'sess-test',
     };
 
     const result = controller.ping(session);

@@ -25,6 +25,7 @@ import { RedisModule } from './common/redis/redis.module';
 import { SmsModule } from './common/sms/sms.module';
 import { AccessModule } from './modules/access/access.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { MeModule } from './modules/me/me.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { LearningModule } from './modules/learning/learning.module';
 import { OpsModule } from './modules/ops/ops.module';
@@ -77,6 +78,7 @@ const devOnlyModules: ImportableModule[] = [];
     LearningModule,
     AccessModule,
     AdminModule,
+    MeModule,
     ...devOnlyModules,
   ],
   providers: [

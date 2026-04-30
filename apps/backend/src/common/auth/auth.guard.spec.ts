@@ -15,9 +15,16 @@ function makeI18n() {
   return { t: vi.fn().mockReturnValue('Session required') };
 }
 
-function makeAuth(user: { id: string; role?: string; displayName?: string } | null) {
+function makeAuth(
+  user: { id: string; role?: string; displayName?: string } | null,
+  sessionId?: string,
+) {
   return {
-    getSession: vi.fn().mockResolvedValue(user === null ? null : { user }),
+    getSession: vi
+      .fn()
+      .mockResolvedValue(
+        user === null ? null : { user, session: sessionId ? { id: sessionId } : undefined },
+      ),
   };
 }
 
@@ -60,7 +67,7 @@ describe('SessionGuard', () => {
   describe('when session resolves successfully', () => {
     it('attaches req.userId and req.session, returns true', async () => {
       const req: Record<string, unknown> = {};
-      const auth = makeAuth({ id: 'user-42', role: 'admin', displayName: 'Alice' });
+      const auth = makeAuth({ id: 'user-42', role: 'admin', displayName: 'Alice' }, 'sess-abc');
       const reflector = makeReflector(false);
 
       const guard = new SessionGuard(auth as never, makeI18n() as never, reflector as never);
@@ -70,10 +77,24 @@ describe('SessionGuard', () => {
       expect(req['userId']).toBe('user-42');
       const session = req['session'] as {
         user: { id: string; role: string; displayName?: string };
+        sessionId: string;
       };
       expect(session.user.id).toBe('user-42');
       expect(session.user.role).toBe('admin');
       expect(session.user.displayName).toBe('Alice');
+      expect(session.sessionId).toBe('sess-abc');
+    });
+
+    it('populates sessionId as empty string when session row is absent', async () => {
+      const req: Record<string, unknown> = {};
+      const auth = makeAuth({ id: 'user-42', role: 'user' });
+      const reflector = makeReflector(false);
+
+      const guard = new SessionGuard(auth as never, makeI18n() as never, reflector as never);
+      await guard.canActivate(makeContext(req));
+
+      const session = req['session'] as { sessionId: string };
+      expect(session.sessionId).toBe('');
     });
 
     it('falls back role to "user" when role is missing from session', async () => {

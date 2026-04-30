@@ -9,6 +9,7 @@
   import { useMaterialDownload } from '~/composables/useMaterialDownload';
   import { useProgressReporter } from '~/composables/useProgressReporter';
   import { useStreamUrl } from '~/composables/useStreamUrl';
+  import { usePreferencesStore } from '~/stores/preferences';
 
   import PlayerSidebar from '~/components/lesson-player/PlayerSidebar.vue';
 
@@ -105,8 +106,12 @@
   const videoRef = ref<HTMLVideoElement | null>(null);
   let hasSetResumeTime = false;
 
+  const preferencesStore = usePreferencesStore();
+
   function onVideoLoadedMetadata(): void {
     if (!videoRef.value) return;
+    // Skip resume seek when the user has turned off "Resume where I left off".
+    if (!preferencesStore.resumeWhereLeftOff) return;
     const lastSeen = lessonData.value?.progress.lastSeenAtSeconds ?? 0;
     if (!hasSetResumeTime && lastSeen > 0) {
       videoRef.value.currentTime = lastSeen;

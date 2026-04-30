@@ -3186,6 +3186,88 @@ paths:
                     title: Unauthorized
                     status: 401
 
+  /api/v1/me:
+    patch:
+      operationId: updateMe
+      summary: Patch the calling user's own profile
+      description: |
+        Currently only `displayName` is mutable through this endpoint. Email
+        change and avatar upload are handled separately (and are not yet
+        wired). At least one field must be present in the body.
+      tags: [Account]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeRequest"
+            examples:
+              renameDisplay:
+                value:
+                  displayName: Elena
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeDto"
+        "400":
+          description: Validation error — empty body or invalid field
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                emptyBody:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: At least one of `displayName` must be set.
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+
+  /api/v1/me/sign-out-others:
+    post:
+      operationId: signOutOtherSessions
+      summary: Sign out from every device EXCEPT the current session
+      description: |
+        Revokes every session row for the calling user other than the one
+        attached to the request. Useful from the settings page's "Sign out
+        from all devices" affordance — the user stays signed in on the
+        device they just clicked from. Returns 204.
+      tags: [Account]
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Other sessions revoked
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+
   /api/v1/realtime/token:
     post:
       operationId: issueRealtimeToken
@@ -4341,6 +4423,50 @@ components:
         rootPath: /srv/courses/conference
         createdAt: "2026-04-25T09:00:00Z"
         updatedAt: "2026-04-25T09:00:00Z"
+
+    MeDto:
+      type: object
+      required: [id, email, name, displayName, role]
+      additionalProperties: false
+      description: >-
+        The calling user's own profile. Returned by `GET /me` (not yet
+        implemented — for now read from `GET /auth/get-session`) and by
+        `PATCH /me`.
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+          minLength: 1
+        displayName:
+          oneOf:
+            - type: string
+              minLength: 1
+            - type: "null"
+        role:
+          $ref: "#/components/schemas/AdminUserRole"
+
+    UpdateMeRequest:
+      type: object
+      additionalProperties: false
+      description: >-
+        Patch body for `PATCH /me`. At least one field must be set; the
+        handler returns 400 on an empty body. Currently only
+        `displayName` is exposed for self-edit.
+      properties:
+        displayName:
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 64
+            - type: "null"
+          description: >-
+            Optional user-facing name separate from the Better Auth `name`
+            field. Pass `null` to clear it (the topbar avatar then falls
+            back to `name`).
 
     UpdateLibraryRequest:
       type: object

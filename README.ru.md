@@ -79,36 +79,36 @@ flowchart LR
 
 ### Приложения
 
-| Приложение | Стек | Основные библиотеки |
-|------------|------|---------------------|
-| **`apps/backend`** | NestJS 11, Prisma 7, CQRS | Better Auth, express-openapi-validator, nestjs-i18n, Sentry, OpenTelemetry |
-| **`apps/web`** | Nuxt 4 (SPA), Nuxt UI v4, Tailwind v4 | @nuxtjs/i18n, сгенерированный api-client-ts, SCSS + BEM |
-| **`apps/mobile`** | Flutter 3.41 | flutter_bloc, get_it, Dio, slang (i18n), Firebase Messaging, Sentry |
+| Приложение         | Стек                                  | Основные библиотеки                                                        |
+| ------------------ | ------------------------------------- | -------------------------------------------------------------------------- |
+| **`apps/backend`** | NestJS 11, Prisma 7, CQRS             | Better Auth, express-openapi-validator, nestjs-i18n, Sentry, OpenTelemetry |
+| **`apps/web`**     | Nuxt 4 (SPA), Nuxt UI v4, Tailwind v4 | @nuxtjs/i18n, сгенерированный api-client-ts, SCSS + BEM                    |
+| **`apps/mobile`**  | Flutter 3.41                          | flutter_bloc, get_it, Dio, slang (i18n), Firebase Messaging, Sentry        |
 
 ### Общие пакеты
 
-| Пакет | Назначение |
-|-------|------------|
-| **`packages/specs`** | OpenAPI 3.1 + AsyncAPI 3.0 -- единый источник истины для всех контрактов передачи данных |
-| **`packages/api-client-ts`** | Сгенерированный TypeScript-клиент через `@hey-api/openapi-ts` (только для чтения) |
-| **`packages/api-client-dart`** | Сгенерированный Dart-клиент через `openapi-generator-cli` (только для чтения) |
-| **`packages/ui`** | `@app/ui` -- фирменные Vue-компоненты с colocated-историями Storybook и спецификациями Vitest |
-| **`packages/ui_flutter`** | Общие Flutter-виджеты и привязка темы |
-| **`packages/design-tokens`** | Цепочка W3C Design Tokens: JSON -> CSS custom properties, константы TypeScript, Dart-тема |
-| **`packages/eslint-config`** | Общая ESLint flat config |
-| **`packages/tsconfig`** | Общие конфигурации TypeScript |
+| Пакет                          | Назначение                                                                                    |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| **`packages/specs`**           | OpenAPI 3.1 + AsyncAPI 3.0 -- единый источник истины для всех контрактов передачи данных      |
+| **`packages/api-client-ts`**   | Сгенерированный TypeScript-клиент через `@hey-api/openapi-ts` (только для чтения)             |
+| **`packages/api-client-dart`** | Сгенерированный Dart-клиент через `openapi-generator-cli` (только для чтения)                 |
+| **`packages/ui`**              | `@app/ui` -- фирменные Vue-компоненты с colocated-историями Storybook и спецификациями Vitest |
+| **`packages/ui_flutter`**      | Общие Flutter-виджеты и привязка темы                                                         |
+| **`packages/design-tokens`**   | Цепочка W3C Design Tokens: JSON -> CSS custom properties, константы TypeScript, Dart-тема     |
+| **`packages/eslint-config`**   | Общая ESLint flat config                                                                      |
+| **`packages/tsconfig`**        | Общие конфигурации TypeScript                                                                 |
 
 ### Локальная инфраструктура
 
-| Сервис | Версия | Порт | Примечания |
-|--------|--------|------|------------|
-| postgres | 18.1-alpine | 5432 | Инициализация SQL в `docker/postgres/init.sql` |
-| redis | 8.6-alpine | 6379 | Append-only persistence |
-| centrifugo | v6 | 8000 | Веб-сокеты реального времени, конфигурация в `docker/centrifugo/` |
-| backend | Dockerfile | 3000 | Ожидает готовности postgres, redis, centrifugo |
-| web | Dockerfile | 3001 | Nuxt dev server |
-| nginx | -- | 8080 | Обратный прокси: единый origin для SPA и API |
-| otel-lgtm | Grafana | 3200 | Локальный стек наблюдаемости Grafana + LGTM |
+| Сервис     | Версия      | Порт | Примечания                                                        |
+| ---------- | ----------- | ---- | ----------------------------------------------------------------- |
+| postgres   | 18.1-alpine | 5432 | Инициализация SQL в `docker/postgres/init.sql`                    |
+| redis      | 8.6-alpine  | 6379 | Append-only persistence                                           |
+| centrifugo | v6          | 8000 | Веб-сокеты реального времени, конфигурация в `docker/centrifugo/` |
+| backend    | Dockerfile  | 3000 | Ожидает готовности postgres, redis, centrifugo                    |
+| web        | Dockerfile  | 3001 | Nuxt dev server                                                   |
+| nginx      | --          | 8080 | Обратный прокси: единый origin для SPA и API                      |
+| otel-lgtm  | Grafana     | 3200 | Локальный стек наблюдаемости Grafana + LGTM                       |
 
 Контейнеры монтируют репозиторий как том, поэтому изменения попадают в работающий контейнер без пересборки. Не запускайте `pnpm dev` одновременно с `docker compose up` -- они используют одни и те же порты на хосте.
 
@@ -143,12 +143,12 @@ curl http://localhost:3000/api/v1/health
 
 Затем откройте приложение:
 
-| URL | Описание |
-|-----|----------|
-| `http://localhost:8080` | Каноническая точка входа SPA (прокси nginx, единый origin) |
-| `http://localhost:3001` | Веб-приложение напрямую (в обход прокси) |
-| `http://localhost:3000/api/v1` | API бэкенда |
-| `http://localhost:3200` | Дашборды Grafana |
+| URL                            | Описание                                                   |
+| ------------------------------ | ---------------------------------------------------------- |
+| `http://localhost:8080`        | Каноническая точка входа SPA (прокси nginx, единый origin) |
+| `http://localhost:3001`        | Веб-приложение напрямую (в обход прокси)                   |
+| `http://localhost:3000/api/v1` | API бэкенда                                                |
+| `http://localhost:3200`        | Дашборды Grafana                                           |
 
 ## Структура репозитория
 
@@ -177,60 +177,60 @@ scripts/            setup.sh + вспомогательные скрипты
 
 ## Справочник скриптов
 
-| Команда | Описание |
-|---------|----------|
-| `pnpm spec:validate` | Линтинг через Redocly + AsyncAPI |
-| `pnpm spec:bundle` | Сборка OpenAPI в единый `dist/openapi.json` |
-| `pnpm spec:codegen` | Регенерация всех API-клиентов из спецификации |
-| `pnpm spec:contract-test` | Запуск контрактных тестов по спецификации |
-| `pnpm design:build` | Регенерация CSS-, TypeScript- и Dart-дизайн-токенов |
-| `pnpm design:audit` | Перекрёстная проверка реестра дизайна и существующих компонентов |
-| `pnpm lint` | ESLint по всем рабочим пространствам (Turbo) |
-| `pnpm typecheck` | Проверка TypeScript по всем рабочим пространствам (Turbo) |
-| `pnpm test` | Vitest по всем рабочим пространствам (Turbo) |
-| `pnpm build` | Сборка production по всем рабочим пространствам (Turbo) |
-| `pnpm storybook` | Storybook для `@app/ui` на порту `:6006` |
-| `pnpm check:i18n` | Проверка полноты ключей локализации в backend, web и mobile |
-| `pnpm format` | Форматирование через Prettier |
-| `pnpm stylelint` | Stylelint для SCSS и Vue-файлов |
-| `pnpm e2e` | Сквозные тесты через Playwright |
+| Команда                   | Описание                                                         |
+| ------------------------- | ---------------------------------------------------------------- |
+| `pnpm spec:validate`      | Линтинг через Redocly + AsyncAPI                                 |
+| `pnpm spec:bundle`        | Сборка OpenAPI в единый `dist/openapi.json`                      |
+| `pnpm spec:codegen`       | Регенерация всех API-клиентов из спецификации                    |
+| `pnpm spec:contract-test` | Запуск контрактных тестов по спецификации                        |
+| `pnpm design:build`       | Регенерация CSS-, TypeScript- и Dart-дизайн-токенов              |
+| `pnpm design:audit`       | Перекрёстная проверка реестра дизайна и существующих компонентов |
+| `pnpm lint`               | ESLint по всем рабочим пространствам (Turbo)                     |
+| `pnpm typecheck`          | Проверка TypeScript по всем рабочим пространствам (Turbo)        |
+| `pnpm test`               | Vitest по всем рабочим пространствам (Turbo)                     |
+| `pnpm build`              | Сборка production по всем рабочим пространствам (Turbo)          |
+| `pnpm storybook`          | Storybook для `@app/ui` на порту `:6006`                         |
+| `pnpm check:i18n`         | Проверка полноты ключей локализации в backend, web и mobile      |
+| `pnpm format`             | Форматирование через Prettier                                    |
+| `pnpm stylelint`          | Stylelint для SCSS и Vue-файлов                                  |
+| `pnpm e2e`                | Сквозные тесты через Playwright                                  |
 
 ## Защита от рассинхронизации
 
-| Что может разойтись | Что это предотвращает |
-|----------------------|----------------------|
-| Маршрут API не описан в спецификации | `express-openapi-validator` отклоняет запрос при выполнении |
-| Сгенерированный TS- или Dart-клиент устарел | CI-задача `codegen-drift` запускает `spec:codegen` и сверяет diff |
-| Шестнадцатеричный цвет в компоненте | Stylelint `color-no-hex: true` |
-| Инлайн `style=""` или `!important` | Правила Stylelint |
-| Компонент без истории Storybook или спецификации Vitest | `pnpm --filter @app/ui audit:components` в CI |
-| Дизайн-токен используется, но не документирован | `pnpm design:audit` проверяет реестр |
-| Пропущенные переводы в локализации | `pnpm check:i18n` -- проверка полноты ключей |
-| Секрет зафиксирован в репозитории | TruffleHog на каждый PR |
-| Нелицензионно-чистая зависимость | `license-checker` с разрешительным OSI-списком |
+| Что может разойтись                                     | Что это предотвращает                                             |
+| ------------------------------------------------------- | ----------------------------------------------------------------- |
+| Маршрут API не описан в спецификации                    | `express-openapi-validator` отклоняет запрос при выполнении       |
+| Сгенерированный TS- или Dart-клиент устарел             | CI-задача `codegen-drift` запускает `spec:codegen` и сверяет diff |
+| Шестнадцатеричный цвет в компоненте                     | Stylelint `color-no-hex: true`                                    |
+| Инлайн `style=""` или `!important`                      | Правила Stylelint                                                 |
+| Компонент без истории Storybook или спецификации Vitest | `pnpm --filter @app/ui audit:components` в CI                     |
+| Дизайн-токен используется, но не документирован         | `pnpm design:audit` проверяет реестр                              |
+| Пропущенные переводы в локализации                      | `pnpm check:i18n` -- проверка полноты ключей                      |
+| Секрет зафиксирован в репозитории                       | TruffleHog на каждый PR                                           |
+| Нелицензионно-чистая зависимость                        | `license-checker` с разрешительным OSI-списком                    |
 
 ## Системные требования
 
-| Требование | Версия |
-|-------------|--------|
-| Node.js | >= 24 |
-| pnpm | >= 10 |
-| Docker + Docker Compose | любая актуальная версия |
-| Flutter + Dart | 3.41 + 3.8 (опционально, только для мобильной разработки) |
+| Требование              | Версия                                                    |
+| ----------------------- | --------------------------------------------------------- |
+| Node.js                 | >= 24                                                     |
+| pnpm                    | >= 10                                                     |
+| Docker + Docker Compose | любая актуальная версия                                   |
+| Flutter + Dart          | 3.41 + 3.8 (опционально, только для мобильной разработки) |
 
 ## Документация
 
-| Тема | Файл |
-|------|------|
-| Бэкенд, CQRS, Prisma, соглашения API | [`.claude/docs/handbook.md`](.claude/docs/handbook.md) |
-| Система дизайна, @app/ui, токены, BEM | [`.claude/docs/design-system.md`](.claude/docs/design-system.md) |
-| i18n в вебе, мобильном приложении и бэкенде | [`.claude/docs/i18n.md`](.claude/docs/i18n.md) |
-| Пирамида тестирования, критерии готовности, чеклист PR | [`.claude/docs/testing.md`](.claude/docs/testing.md) |
-| Безопасность, наблюдаемость, доступность, производительность | [`.claude/docs/security.md`](.claude/docs/security.md) |
-| Миграция функционала из другого проекта | [`.claude/docs/migration.md`](.claude/docs/migration.md) |
-| Правила проекта (канонические, расширение данного README) | [`.claude/CLAUDE.md`](.claude/CLAUDE.md) |
-| Рабочий процесс дизайна и реестр компонентов | [`specs/design/README.md`](specs/design/README.md) |
-| Подробности о Docker-стеке | [`docker/README.md`](docker/README.md) |
+| Тема                                                         | Файл                                                             |
+| ------------------------------------------------------------ | ---------------------------------------------------------------- |
+| Бэкенд, CQRS, Prisma, соглашения API                         | [`.claude/docs/handbook.md`](.claude/docs/handbook.md)           |
+| Система дизайна, @app/ui, токены, BEM                        | [`.claude/docs/design-system.md`](.claude/docs/design-system.md) |
+| i18n в вебе, мобильном приложении и бэкенде                  | [`.claude/docs/i18n.md`](.claude/docs/i18n.md)                   |
+| Пирамида тестирования, критерии готовности, чеклист PR       | [`.claude/docs/testing.md`](.claude/docs/testing.md)             |
+| Безопасность, наблюдаемость, доступность, производительность | [`.claude/docs/security.md`](.claude/docs/security.md)           |
+| Миграция функционала из другого проекта                      | [`.claude/docs/migration.md`](.claude/docs/migration.md)         |
+| Правила проекта (канонические, расширение данного README)    | [`.claude/CLAUDE.md`](.claude/CLAUDE.md)                         |
+| Рабочий процесс дизайна и реестр компонентов                 | [`specs/design/README.md`](specs/design/README.md)               |
+| Подробности о Docker-стеке                                   | [`docker/README.md`](docker/README.md)                           |
 
 ## Участие в проекте
 

@@ -80,12 +80,18 @@
       if (res.error) {
         const status = res.response.status;
         if (status === 403) {
-          useToast().add({ title: useI18n().t('pages.admin.libraryDetail.editToast403'), color: 'error' });
+          useToast().add({
+            title: useI18n().t('pages.admin.libraryDetail.editToast403'),
+            color: 'error',
+          });
           close();
           return;
         }
         if (status === 404) {
-          useToast().add({ title: useI18n().t('pages.admin.libraryDetail.editToastGone'), color: 'warning' });
+          useToast().add({
+            title: useI18n().t('pages.admin.libraryDetail.editToastGone'),
+            color: 'warning',
+          });
           close();
           await navigateTo('/admin/libraries');
           return;
@@ -98,7 +104,10 @@
         return;
       }
 
-      useToast().add({ title: useI18n().t('pages.admin.libraryDetail.editToastSaved'), color: 'success' });
+      useToast().add({
+        title: useI18n().t('pages.admin.libraryDetail.editToastSaved'),
+        color: 'success',
+      });
       emit('saved', res.data as LibraryDto);
       close();
     } finally {

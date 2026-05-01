@@ -1,0 +1,81 @@
+name: E2E smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Nightly at 03:00 UTC — gives us a daily signal without slowing PRs.
+    - cron: "0 3 * * *"
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24"
+
+jobs:
+  smoke:
+    name: Playwright smoke (web + backend health)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Prisma generate
+        run: pnpm --filter @app/backend prisma:generate
+
+      - name: Bring up docker stack
+        run: docker compose -f docker/compose.yml up -d --build
+
+      - name: Wait for backend health
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:3000/api/v1/health >/dev/null; then
+              echo "backend ready"; exit 0
+            fi
+            sleep 2
+          done
+          echo "backend failed to become healthy"; exit 1
+
+      - name: Wait for web
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:3001/ >/dev/null; then
+              echo "web ready"; exit 0
+            fi
+            sleep 2
+          done
+          echo "web failed to become healthy"; exit 1
+
+      - name: Run Playwright smoke
+        run: pnpm e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report
+          path: tests/e2e/playwright-report
+          retention-days: 7
+
+      - name: Dump backend logs on failure
+        if: failure()
+        run: docker compose -f docker/compose.yml logs --tail=200 backend
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker/compose.yml down -v

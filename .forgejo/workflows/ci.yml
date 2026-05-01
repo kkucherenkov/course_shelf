@@ -1,104 +1,193 @@
-name: ci
+name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  REGISTRY: code.homelab.local
-  IMAGE_OWNER: ${{ github.repository_owner }}
+  NODE_VERSION: "24"
+  FLUTTER_VERSION: "3.41.0"
 
 jobs:
-  quality:
+  # ── Backend ────────────────────────────────────────────────────────────────
+  backend:
+    name: Backend (lint · typecheck · test)
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/catthehacker/ubuntu:act-22.04
+    defaults:
+      run:
+        working-directory: apps/backend
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Enable corepack & pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@9 --activate
+      - uses: pnpm/action-setup@v6
 
-      - name: Cache pnpm store
-        uses: actions/cache@v4
+      - uses: actions/setup-node@v6
         with:
-          path: ~/.local/share/pnpm/store
-          key: pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: pnpm-
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: .
 
-      - name: Validate & bundle OpenAPI
-        run: pnpm contracts:lint && pnpm contracts:bundle
+      - name: Prisma generate
+        run: pnpm prisma:generate
 
-      - name: Generate clients/DTOs
-        run: pnpm gen:all
+      - name: Lint
+        run: pnpm lint
 
-      - name: Fail if generated artifacts drifted from committed ones
-        run: |
-          if ! git diff --exit-code; then
-            echo "Generated artifacts are out of date. Run pnpm gen:all and commit."
-            exit 1
-          fi
+      - name: Typecheck
+        run: pnpm typecheck
 
-      - run: pnpm typecheck
-      - run: pnpm lint
-      - run: pnpm test
-      - run: pnpm test:contract
+      - name: Test (with coverage enforcement)
+        run: pnpm test:coverage
 
-  build-and-push:
-    needs: quality
-    if: github.ref == 'refs/heads/main'
+  # ── Web ────────────────────────────────────────────────────────────────────
+  web:
+    name: Web (lint · typecheck · test)
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/catthehacker/ubuntu:act-22.04
-    permissions:
-      contents: read
-      packages: write
+    defaults:
+      run:
+        working-directory: apps/web
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: network=host
-          buildkitd-config-inline: |
-            [registry."code.homelab.local"]
-              http = true
-              insecure = true
+      - uses: pnpm/action-setup@v6
 
-      - name: Login to Forgejo registry
-        uses: docker/login-action@v3
+      - uses: actions/setup-node@v6
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.REGISTRY_TOKEN }}
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
 
-      - name: Build & push API image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/api/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/courseshelf-api:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/courseshelf-api:latest
-          labels: |
-            org.opencontainers.image.source=http://code.homelab.local/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: .
 
-      - name: Build & push web image
-        uses: docker/build-push-action@v6
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+  # ── Spec validation ────────────────────────────────────────────────────────
+  specs:
+    name: OpenAPI / AsyncAPI spec validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
         with:
-          context: .
-          file: apps/web/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/courseshelf-web:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/courseshelf-web:latest
-          labels: |
-            org.opencontainers.image.source=http://code.homelab.local/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate specs
+        run: pnpm spec:validate
+
+      - name: Bundle specs
+        run: pnpm spec:bundle
+
+  # ── Codegen drift guard ────────────────────────────────────────────────────
+  codegen-drift:
+    name: Codegen drift guard
+    runs-on: ubuntu-latest
+    needs: specs
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Regenerate clients
+        run: pnpm spec:codegen
+
+      - name: Fail if generated clients drifted from committed sources
+        run: |
+          git diff --exit-code -- packages/api-client-ts packages/api-client-dart \
+            || (echo '::error::Generated clients are out of date. Run `pnpm spec:codegen` locally and commit the diff.' && exit 1)
+
+  # ── UI quality (component audit) ──────────────────────────────────────────
+  ui-quality:
+    name: UI component audit (story + spec parity)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit components (story + spec completeness)
+        run: pnpm --filter @app/ui audit:components
+
+  # ── Security audit ─────────────────────────────────────────────────────────
+  security-audit:
+    name: Security audit (deps + secrets + licenses)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Dependency vulnerability scan
+        run: pnpm audit --audit-level=critical
+
+      - name: Secret scanning
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          # On PR: diff PR base → HEAD. On push: diff previous commit → HEAD.
+          # Avoid BASE==HEAD which trufflehog rejects with exit 1.
+          base: ${{ github.event.pull_request.base.sha || github.event.before }}
+          head: ${{ github.event.pull_request.head.sha || github.sha }}
+          extra_args: --only-verified
+
+      - name: License compliance check
+        run: pnpm dlx license-checker --excludePrivatePackages --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;Python-2.0;CC-BY-3.0;CC-BY-4.0'

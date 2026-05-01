@@ -189,7 +189,7 @@ Progress: `61 / 115` complete (update by hand or via a pre-commit hook).
 - [ ] [E23-F01-S02](./tasks/E23-F01-S02.md) `A` — docker-compose.yml (sqlite default) + docker-compose.postgres.yml · ⇐ E23-F01-S01
 - [ ] [E23-F02-S01](./tasks/E23-F02-S01.md) `A` — Top-level README + quickstart + screenshots · ⇐ E14-F03-S01, E18-F02-S01
 - [ ] [E23-F02-S02](./tasks/E23-F02-S02.md) `A` — Seed ADRs (10 entries) · ⇐ E04-F02-S03
-- [ ] [E23-F02-S03](./tasks/E23-F02-S03.md) `A` — Contributor docs covering the spec-first and design-first workflows · ⇐ E14-F01-S01
+- [x] [E23-F02-S03](./tasks/E23-F02-S03.md) `A` — Contributor docs covering the spec-first and design-first workflows · ⇐ E14-F01-S01
 
 ## E24 — Realtime / Centrifugo
 

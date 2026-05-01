@@ -2,6 +2,17 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-01-003 — Contributor runbooks (E23-F02-S03)
+
+- Created: 2026-05-01
+- Completed: 2026-05-01
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E23-F02-S03.md`
+- Outcome:
+  - `docs/contributing/spec-first.md` — copy-pasteable runbook. Worked example (`GET /libraries/{id}/recent-scans`) walks edit YAML → `pnpm spec:codegen` → CQRS handler + controller + tests → SPA composable → commit pattern (codegen as its own commit).
+  - `docs/contributing/design-first.md` — parallel runbook for UI. Walks bundle layout (`docs/design/<area>/`) → tokens (`pnpm design:build`) → catalog component Storybook-first → page composition with `@app/ui` primitives + `@app/api-client-ts` composables.
+  - Both include a before-you-merge checklist and a pitfalls section calling out things that have actually broken in this repo (editing generated files, hex colors in scss, `<UButton>` direct imports, skipping bundle step).
+
 ## T-2026-05-01-001 — Storybook test-runner CI job (E22-F01-S03)
 
 - Created: 2026-05-01

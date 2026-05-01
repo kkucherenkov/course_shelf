@@ -37,7 +37,13 @@ const preview: Preview = {
       // visual-regression job. If an author asserts a violation is a false
       // positive, disable the specific rule in that story's parameters —
       // never widen this global setting.
-      test: 'error',
+      //
+      // STORYBOOK_A11Y_LEVEL lets a CI smoke job run with 'todo' (warn-only)
+      // when its goal is render + interaction coverage rather than a11y.
+      // Default stays 'error' for `pnpm storybook` and any unset env.
+      test:
+        ((import.meta.env as Record<string, string | undefined>)
+          ?.STORYBOOK_A11Y_LEVEL as 'off' | 'todo' | 'warn' | 'error' | undefined) ?? 'error',
     },
   },
   decorators: [

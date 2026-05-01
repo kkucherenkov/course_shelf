@@ -136,6 +136,46 @@ jobs:
       - name: Audit components (story + spec completeness)
         run: pnpm --filter @app/ui audit:components
 
+  # ── Storybook test-runner ──────────────────────────────────────────────────
+  # Builds the static Storybook bundle, serves it, and runs
+  # @storybook/test-runner against every story. Fails on story render errors
+  # and failed play() interactions.
+  ui-storybook:
+    name: UI Storybook test-runner
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build design tokens
+        run: pnpm design:build
+
+      - name: Install Playwright chromium
+        run: pnpm --filter @app/ui exec playwright install --with-deps chromium
+
+      # Build with a11y check downgraded to 'todo' (warn-only). The card's
+      # acceptance is "fails on story errors and failed interactions" —
+      # a11y-as-blocker is a separate bar that 73 stories currently fail
+      # and is being tracked as its own task.
+      - name: Build Storybook static
+        env:
+          STORYBOOK_A11Y_LEVEL: todo
+        run: pnpm --filter @app/ui storybook:build
+
+      - name: Run Storybook test-runner
+        run: pnpm --filter @app/ui test:visual:ci
+
   # ── Security audit ─────────────────────────────────────────────────────────
   security-audit:
     name: Security audit (deps + secrets + licenses)

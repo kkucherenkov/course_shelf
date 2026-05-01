@@ -9,6 +9,9 @@
  * - Labels per epic (`epic:E04`), per feature (`feature:E04-F02`), and per
  *   stage (`stage:A` | `stage:B`) are created up front and attached to each
  *   issue.
+ * - Project sync: ensures a kanban-style project exists (default title
+ *   "Roadmap") with three columns (To Do / In Progress / Done) and assigns
+ *   each issue to the right column based on the card's Status emoji.
  *
  * Token discovery (in priority order):
  *   1. `FORGEJO_TOKEN` env var
@@ -24,6 +27,8 @@
  *   --repo=<repo>     default course_shelf
  *   --url=<url>       default http://code.homelab.local
  *   --tea-login=<n>   tea config entry name (default: first matching the URL)
+ *   --project=<title> kanban project title (default "Roadmap")
+ *   --no-project      skip the project sync entirely
  */
 
 import { readFileSync, readdirSync } from 'node:fs';
@@ -137,11 +142,14 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..');
 const tasksDir = path.join(repoRoot, 'docs', 'roadmap', 'tasks');
 
+type CardStatus = 'not-started' | 'in-progress' | 'blocked' | 'paused' | 'done';
+
 interface Card {
   id: string;
   title: string;
   body: string;
   done: boolean;
+  status: CardStatus;
   epic: string;
   feature: string;
   stage: 'A' | 'B' | null;
@@ -151,13 +159,31 @@ interface Card {
 const CARD_ID_RE = /\b(E\d{2}-F\d{2}-S\d{2})\b/g;
 const FILE_LINK_RE = /\[(E\d{2}-F\d{2}-S\d{2})\]\(\.\/E\d{2}-F\d{2}-S\d{2}\.md\)/g;
 
+function parseStatus(text: string): CardStatus {
+  // Match the Status field, ignore the Status legend line which lists every emoji.
+  const m = /^\s*\*\*Status:\*\*\s+(⬜|🔄|🚫|⏸|✅)/m.exec(text);
+  switch (m?.[1]) {
+    case '✅':
+      return 'done';
+    case '🔄':
+      return 'in-progress';
+    case '🚫':
+      return 'blocked';
+    case '⏸':
+      return 'paused';
+    default:
+      return 'not-started';
+  }
+}
+
 function parseCard(file: string): Card {
   const id = path.basename(file, '.md');
   const text = readFileSync(file, 'utf8');
   const lines = text.split('\n');
   const h1 = lines.find((l) => l.startsWith('# ')) ?? `# ${id}`;
   const title = h1.replace(/^#\s*/, '');
-  const done = /\*\*Status:\*\*\s+✅\s+Done/i.test(text);
+  const status = parseStatus(text);
+  const done = status === 'done';
   const stageMatch = /\*\*Stage:\*\*\s+([AB])/i.exec(text);
   const stage = (stageMatch?.[1] as 'A' | 'B' | undefined) ?? null;
   const [epic, feature] = id.split('-') as [string, string, string];
@@ -165,7 +191,17 @@ function parseCard(file: string): Card {
   const deps = [...new Set([...depsBlock.matchAll(CARD_ID_RE)].map((m) => m[1]!))].filter(
     (d) => d !== id,
   );
-  return { id, title, body: text, done, epic, feature: `${epic}-${feature}`, stage, deps };
+  return {
+    id,
+    title,
+    body: text,
+    done,
+    status,
+    epic,
+    feature: `${epic}-${feature}`,
+    stage,
+    deps,
+  };
 }
 
 const cardFiles = readdirSync(tasksDir)
@@ -292,6 +328,178 @@ async function reconcileIssues(idToIssue: Map<string, number>): Promise<void> {
   console.warn(`[seed] pass 2 done: ${String(updated)} updated`);
 }
 
+// ---------------------------------------------------------------------------
+// Project (kanban board) sync
+//
+// Forgejo 15 (gitea-1.22 lineage) exposes a Projects API at
+//   /repos/{owner}/{repo}/projects                (list / create)
+//   /projects/{id}                                (get / update / delete)
+//   /projects/{id}/columns                        (list / create columns)
+//   /projects/columns/{id}/issues/{index}/move    (move an issue to a column)
+//
+// We ensure one project exists (default title "Roadmap") with three columns
+// — To Do, In Progress, Done — and assign each issue to the column matching
+// its card status. Endpoints that 404 on this Forgejo instance log a warning
+// and the script continues; the issue body / state sync isn't affected.
+// ---------------------------------------------------------------------------
+
+interface Project {
+  id: number;
+  title: string;
+}
+
+interface ProjectColumn {
+  id: number;
+  title: string;
+}
+
+const COLUMN_TODO = 'To Do';
+const COLUMN_IN_PROGRESS = 'In Progress';
+const COLUMN_DONE = 'Done';
+const KANBAN_COLUMNS: { title: string; color: string }[] = [
+  { title: COLUMN_TODO, color: '#cccccc' },
+  { title: COLUMN_IN_PROGRESS, color: '#1f6feb' },
+  { title: COLUMN_DONE, color: '#3fb950' },
+];
+
+function statusToColumn(status: CardStatus): string {
+  switch (status) {
+    case 'done':
+      return COLUMN_DONE;
+    case 'in-progress':
+    case 'blocked':
+    case 'paused':
+      return COLUMN_IN_PROGRESS;
+    default:
+      return COLUMN_TODO;
+  }
+}
+
+async function safeCall<T>(method: string, p: string, body?: unknown): Promise<T | null> {
+  try {
+    return await call<T>(method, p, body);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[seed] ${method} ${p} failed: ${msg.split('\n')[0] ?? ''}`);
+    return null;
+  }
+}
+
+async function ensureProject(title: string): Promise<Project | null> {
+  console.warn(`[seed] ensuring project "${title}"`);
+  const projects = await safeCall<Project[]>(
+    'GET',
+    `/repos/${owner}/${repo}/projects?state=open`,
+  );
+  if (projects === null) {
+    console.warn('[seed] projects API not reachable on this Forgejo — skipping project sync.');
+    return null;
+  }
+  const found = projects.find((p) => p.title === title);
+  if (found) return found;
+
+  // Create with `basic_kanban` board_type so Forgejo seeds a default column
+  // set; we then reconcile the column titles against KANBAN_COLUMNS.
+  const created = await safeCall<Project>('POST', `/repos/${owner}/${repo}/projects`, {
+    title,
+    content: 'Mirror of the in-repo roadmap (docs/roadmap/TODO.md).',
+    board_type: 'basic_kanban',
+    card_type: 'plain',
+  });
+  return created;
+}
+
+async function ensureColumns(projectId: number): Promise<Map<string, number>> {
+  const existing =
+    (await safeCall<ProjectColumn[]>('GET', `/projects/${String(projectId)}/columns`)) ?? [];
+  const byTitle = new Map(existing.map((c) => [c.title, c.id]));
+
+  for (const { title, color } of KANBAN_COLUMNS) {
+    if (byTitle.has(title)) continue;
+    const created = await safeCall<ProjectColumn>(
+      'POST',
+      `/projects/${String(projectId)}/columns`,
+      { title, color },
+    );
+    if (created) byTitle.set(created.title, created.id);
+  }
+  return byTitle;
+}
+
+interface ProjectColumnWithIssues {
+  id: number;
+  title: string;
+  issues?: { number: number }[];
+}
+
+async function loadIssueColumnMap(
+  projectId: number,
+): Promise<Map<number, number>> {
+  // Forgejo's `/projects/{id}/columns` includes issues per column on some
+  // versions. Fall back to per-column issue listing when not.
+  const cols = await safeCall<ProjectColumnWithIssues[]>(
+    'GET',
+    `/projects/${String(projectId)}/columns`,
+  );
+  const map = new Map<number, number>();
+  if (!cols) return map;
+  for (const col of cols) {
+    if (!col.issues) continue;
+    for (const issue of col.issues) map.set(issue.number, col.id);
+  }
+  return map;
+}
+
+async function moveIssueToColumn(
+  projectId: number,
+  issueIndex: number,
+  columnId: number,
+): Promise<boolean> {
+  // Two endpoint shapes are documented across Gitea/Forgejo versions; try
+  // the gitea-1.22 form first, fall back to the older form on 404.
+  const primary = `/projects/columns/${String(columnId)}/issues/${String(issueIndex)}/move`;
+  const fallback = `/repos/${owner}/${repo}/issues/${String(issueIndex)}/projects/${String(projectId)}/columns/${String(columnId)}`;
+  for (const p of [primary, fallback]) {
+    const ok = await safeCall<unknown>('POST', p);
+    if (ok !== null) return true;
+  }
+  return false;
+}
+
+async function syncProject(
+  projectTitle: string,
+  idToIssue: Map<string, number>,
+): Promise<void> {
+  const project = await ensureProject(projectTitle);
+  if (!project) return;
+
+  const columnByTitle = await ensureColumns(project.id);
+  if (columnByTitle.size === 0) {
+    console.warn('[seed] no project columns available — skipping issue→column placement.');
+    return;
+  }
+
+  const currentByIssue = await loadIssueColumnMap(project.id);
+
+  let placed = 0;
+  let skipped = 0;
+  for (const card of cards) {
+    const issueNumber = idToIssue.get(card.id);
+    if (!issueNumber) continue;
+    const desiredCol = columnByTitle.get(statusToColumn(card.status));
+    if (!desiredCol) continue;
+    if (currentByIssue.get(issueNumber) === desiredCol) {
+      skipped++;
+      continue;
+    }
+    const moved = await moveIssueToColumn(project.id, issueNumber, desiredCol);
+    if (moved) placed++;
+  }
+  console.warn(
+    `[seed] project "${projectTitle}": ${String(placed)} moved, ${String(skipped)} already in place.`,
+  );
+}
+
 async function loadIssueMap(): Promise<Map<string, number>> {
   const existing = await listAll<Issue>(`/repos/${owner}/${repo}/issues?state=all&type=issues`);
   const titlePrefixRe = /^\[(E\d{2}-F\d{2}-S\d{2})\]/;
@@ -331,6 +539,13 @@ async function loadIssueMap(): Promise<Map<string, number>> {
   const labelIds = await ensureLabels();
   const idToIssue = await ensureIssues(labelIds);
   await reconcileIssues(idToIssue);
+
+  // Project (kanban) sync — opt-out via --no-project.
+  if (!argv.has('no-project')) {
+    const projectTitle = argv.get('project') ?? 'Roadmap';
+    await syncProject(projectTitle, idToIssue);
+  }
+
   console.warn(`[seed] all done. ${String(idToIssue.size)} issues mapped.`);
 })().catch((err: unknown) => {
   console.error('[seed] failed:', err);

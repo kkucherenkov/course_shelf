@@ -774,11 +774,13 @@ class CatalogApi {
     );
   }
 
-  /// List courses (optionally filtered by library)
-  /// Returns courses the requester can see. Non-admins see only courses inside libraries they have a READ AccessGrant for; admins see all. 
+  /// List courses (with filtering and sort)
+  /// Returns courses the requester can see. Non-admins see only courses inside libraries they have a READ AccessGrant for; admins see all.  The &#x60;status&#x60; and &#x60;sort&#x60; query params back the Browse page (E14-F01-S02). &#x60;status&#x60; filters by per-user progress derived from the CourseProgressReadModel projection. &#x60;sort&#x60; is server-applied so the SPA never needs to re-sort the response. 
   ///
   /// Parameters:
   /// * [libraryId] - Filter to a single library; omit for everything visible.
+  /// * [status] - Filter by per-user progress state.   - `all` (default) — no filter.   - `not-started` — `progress.percent == 0` and no `lessonsCompleted`.   - `in-progress` — `0 < progress.percent < 100`.   - `completed`   — `progress.percent == 100`. 
+  /// * [sort] - Server-side sort. `recently-watched` (default) uses `updatedAt` as a proxy for last activity until a dedicated `lastViewedAt` field is added. `newest` is `createdAt` desc. `alphabetical` is title asc, locale-insensitive. 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -790,6 +792,8 @@ class CatalogApi {
   /// Throws [DioException] if API call or serialization fails
   Future<Response<CourseListDto>> listCourses({ 
     String? libraryId,
+    String? status = 'all',
+    String? sort = 'recently-watched',
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
@@ -818,6 +822,8 @@ class CatalogApi {
 
     final _queryParameters = <String, dynamic>{
       if (libraryId != null) r'libraryId': encodeQueryParameter(_serializers, libraryId, const FullType(String)),
+      if (status != null) r'status': encodeQueryParameter(_serializers, status, const FullType(String)),
+      if (sort != null) r'sort': encodeQueryParameter(_serializers, sort, const FullType(String)),
     };
 
     final _response = await _dio.request<Object>(

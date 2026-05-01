@@ -1670,6 +1670,23 @@ export type ListCoursesData = {
          * Filter to a single library; omit for everything visible.
          */
         libraryId?: string;
+        /**
+         * Filter by per-user progress state.
+         * - `all` (default) — no filter.
+         * - `not-started` — `progress.percent == 0` and no `lessonsCompleted`.
+         * - `in-progress` — `0 < progress.percent < 100`.
+         * - `completed`   — `progress.percent == 100`.
+         *
+         */
+        status?: 'all' | 'not-started' | 'in-progress' | 'completed';
+        /**
+         * Server-side sort. `recently-watched` (default) uses
+         * `updatedAt` as a proxy for last activity until a dedicated
+         * `lastViewedAt` field is added. `newest` is `createdAt` desc.
+         * `alphabetical` is title asc, locale-insensitive.
+         *
+         */
+        sort?: 'recently-watched' | 'newest' | 'alphabetical';
     };
     url: '/api/v1/courses';
 };

@@ -18,7 +18,7 @@ Method | HTTP request | Description
 [**getRecentlyAdded**](CatalogApi.md#getrecentlyadded) | **GET** /api/v1/home/recently-added | Courses recently added to the requester&#39;s libraries
 [**getRecentlyCompleted**](CatalogApi.md#getrecentlycompleted) | **GET** /api/v1/home/recently-completed | Courses the requester finished most recently
 [**getYourWeek**](CatalogApi.md#getyourweek) | **GET** /api/v1/home/your-week | Roll-up of the requester&#39;s last seven days
-[**listCourses**](CatalogApi.md#listcourses) | **GET** /api/v1/courses | List courses (optionally filtered by library)
+[**listCourses**](CatalogApi.md#listcourses) | **GET** /api/v1/courses | List courses (with filtering and sort)
 [**listLibraries**](CatalogApi.md#listlibraries) | **GET** /api/v1/libraries | List all registered libraries
 [**registerLibrary**](CatalogApi.md#registerlibrary) | **POST** /api/v1/libraries | Register a new library (or share an existing path)
 [**removeLibrary**](CatalogApi.md#removelibrary) | **DELETE** /api/v1/libraries/{id} | Hard-delete a library and every dependent row
@@ -412,11 +412,11 @@ This endpoint does not need any parameter.
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **listCourses**
-> CourseListDto listCourses(libraryId)
+> CourseListDto listCourses(libraryId, status, sort)
 
-List courses (optionally filtered by library)
+List courses (with filtering and sort)
 
-Returns courses the requester can see. Non-admins see only courses inside libraries they have a READ AccessGrant for; admins see all. 
+Returns courses the requester can see. Non-admins see only courses inside libraries they have a READ AccessGrant for; admins see all.  The `status` and `sort` query params back the Browse page (E14-F01-S02). `status` filters by per-user progress derived from the CourseProgressReadModel projection. `sort` is server-applied so the SPA never needs to re-sort the response. 
 
 ### Example
 ```dart
@@ -424,9 +424,11 @@ import 'package:app_api_client/api.dart';
 
 final api = AppApiClient().getCatalogApi();
 final String libraryId = libraryId_example; // String | Filter to a single library; omit for everything visible.
+final String status = status_example; // String | Filter by per-user progress state.   - `all` (default) — no filter.   - `not-started` — `progress.percent == 0` and no `lessonsCompleted`.   - `in-progress` — `0 < progress.percent < 100`.   - `completed`   — `progress.percent == 100`. 
+final String sort = sort_example; // String | Server-side sort. `recently-watched` (default) uses `updatedAt` as a proxy for last activity until a dedicated `lastViewedAt` field is added. `newest` is `createdAt` desc. `alphabetical` is title asc, locale-insensitive. 
 
 try {
-    final response = api.listCourses(libraryId);
+    final response = api.listCourses(libraryId, status, sort);
     print(response);
 } on DioException catch (e) {
     print('Exception when calling CatalogApi->listCourses: $e\n');
@@ -438,6 +440,8 @@ try {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **libraryId** | **String**| Filter to a single library; omit for everything visible. | [optional] 
+ **status** | **String**| Filter by per-user progress state.   - `all` (default) — no filter.   - `not-started` — `progress.percent == 0` and no `lessonsCompleted`.   - `in-progress` — `0 < progress.percent < 100`.   - `completed`   — `progress.percent == 100`.  | [optional] [default to 'all']
+ **sort** | **String**| Server-side sort. `recently-watched` (default) uses `updatedAt` as a proxy for last activity until a dedicated `lastViewedAt` field is added. `newest` is `createdAt` desc. `alphabetical` is title asc, locale-insensitive.  | [optional] [default to 'recently-watched']
 
 ### Return type
 

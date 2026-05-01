@@ -1018,10 +1018,15 @@ paths:
   /api/v1/courses:
     get:
       operationId: listCourses
-      summary: List courses (optionally filtered by library)
+      summary: List courses (with filtering and sort)
       description: |
         Returns courses the requester can see. Non-admins see only courses inside
         libraries they have a READ AccessGrant for; admins see all.
+
+        The `status` and `sort` query params back the Browse page (E14-F01-S02).
+        `status` filters by per-user progress derived from the
+        CourseProgressReadModel projection. `sort` is server-applied so the
+        SPA never needs to re-sort the response.
       tags: [Catalog]
       security:
         - bearerAuth: []
@@ -1032,6 +1037,31 @@ paths:
           description: Filter to a single library; omit for everything visible.
           schema:
             type: string
+        - name: status
+          in: query
+          required: false
+          description: |
+            Filter by per-user progress state.
+              - `all` (default) — no filter.
+              - `not-started` — `progress.percent == 0` and no `lessonsCompleted`.
+              - `in-progress` — `0 < progress.percent < 100`.
+              - `completed`   — `progress.percent == 100`.
+          schema:
+            type: string
+            enum: [all, not-started, in-progress, completed]
+            default: all
+        - name: sort
+          in: query
+          required: false
+          description: |
+            Server-side sort. `recently-watched` (default) uses
+            `updatedAt` as a proxy for last activity until a dedicated
+            `lastViewedAt` field is added. `newest` is `createdAt` desc.
+            `alphabetical` is title asc, locale-insensitive.
+          schema:
+            type: string
+            enum: [recently-watched, newest, alphabetical]
+            default: recently-watched
       responses:
         "200":
           description: Course list returned

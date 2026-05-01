@@ -282,9 +282,14 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List courses (optionally filtered by library)
+     * List courses (with filtering and sort)
      * @description Returns courses the requester can see. Non-admins see only courses inside
      *     libraries they have a READ AccessGrant for; admins see all.
+     *
+     *     The `status` and `sort` query params back the Browse page (E14-F01-S02).
+     *     `status` filters by per-user progress derived from the
+     *     CourseProgressReadModel projection. `sort` is server-applied so the
+     *     SPA never needs to re-sort the response.
      */
     get: operations['listCourses'];
     put?: never;
@@ -2906,6 +2911,21 @@ export interface operations {
       query?: {
         /** @description Filter to a single library; omit for everything visible. */
         libraryId?: string;
+        /**
+         * @description Filter by per-user progress state.
+         *       - `all` (default) — no filter.
+         *       - `not-started` — `progress.percent == 0` and no `lessonsCompleted`.
+         *       - `in-progress` — `0 < progress.percent < 100`.
+         *       - `completed`   — `progress.percent == 100`.
+         */
+        status?: 'all' | 'not-started' | 'in-progress' | 'completed';
+        /**
+         * @description Server-side sort. `recently-watched` (default) uses
+         *     `updatedAt` as a proxy for last activity until a dedicated
+         *     `lastViewedAt` field is added. `newest` is `createdAt` desc.
+         *     `alphabetical` is title asc, locale-insensitive.
+         */
+        sort?: 'recently-watched' | 'newest' | 'alphabetical';
       };
       header?: never;
       path?: never;

@@ -97,7 +97,7 @@ Class | Method | HTTP request | Description
 [*CatalogApi*](doc/CatalogApi.md) | [**getRecentlyAdded**](doc/CatalogApi.md#getrecentlyadded) | **GET** /api/v1/home/recently-added | Courses recently added to the requester&#39;s libraries
 [*CatalogApi*](doc/CatalogApi.md) | [**getRecentlyCompleted**](doc/CatalogApi.md#getrecentlycompleted) | **GET** /api/v1/home/recently-completed | Courses the requester finished most recently
 [*CatalogApi*](doc/CatalogApi.md) | [**getYourWeek**](doc/CatalogApi.md#getyourweek) | **GET** /api/v1/home/your-week | Roll-up of the requester&#39;s last seven days
-[*CatalogApi*](doc/CatalogApi.md) | [**listCourses**](doc/CatalogApi.md#listcourses) | **GET** /api/v1/courses | List courses (optionally filtered by library)
+[*CatalogApi*](doc/CatalogApi.md) | [**listCourses**](doc/CatalogApi.md#listcourses) | **GET** /api/v1/courses | List courses (with filtering and sort)
 [*CatalogApi*](doc/CatalogApi.md) | [**listLibraries**](doc/CatalogApi.md#listlibraries) | **GET** /api/v1/libraries | List all registered libraries
 [*CatalogApi*](doc/CatalogApi.md) | [**registerLibrary**](doc/CatalogApi.md#registerlibrary) | **POST** /api/v1/libraries | Register a new library (or share an existing path)
 [*CatalogApi*](doc/CatalogApi.md) | [**removeLibrary**](doc/CatalogApi.md#removelibrary) | **DELETE** /api/v1/libraries/{id} | Hard-delete a library and every dependent row

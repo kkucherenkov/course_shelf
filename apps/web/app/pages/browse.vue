@@ -1,18 +1,46 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
-  import { AppBanner, AppEmptyState, AppSkeleton, CoursePosterCard } from '@app/ui';
+  import { computed, ref } from 'vue';
+  import { AppBanner, AppChip, AppEmptyState, AppSelect, AppSkeleton, CoursePosterCard } from '@app/ui';
   import type { Course } from '@app/ui';
   import type { CourseDto } from '@app/api-client-ts';
 
-  import { useCoursesList } from '~/composables/useCoursesList';
+  import {
+    useCoursesList,
+    type CourseListSort,
+    type CourseListStatusFilter,
+  } from '~/composables/useCoursesList';
   import { accentFromId } from '~/utils/course-accent';
 
   definePageMeta({ layout: 'default' });
 
   const { t } = useI18n();
-  const { data, status, error, refetch } = useCoursesList();
+
+  const status = ref<CourseListStatusFilter>('all');
+  const sort = ref<CourseListSort>('recently-watched');
+
+  const { data, status: fetchStatus, error, refetch } = useCoursesList({ status, sort });
 
   const items = computed(() => data.value?.items ?? []);
+
+  // Filter chip groups — each chip toggles `status` to its value (or back
+  // to 'all' when re-clicked). The active chip is rendered with the
+  // 'primary' AppChip variant.
+  const statusOptions: { value: CourseListStatusFilter; label: string }[] = [
+    { value: 'all', label: t('pages.browse.filters.all') },
+    { value: 'in-progress', label: t('pages.browse.filters.inProgress') },
+    { value: 'completed', label: t('pages.browse.filters.completed') },
+    { value: 'not-started', label: t('pages.browse.filters.notStarted') },
+  ];
+
+  const sortOptions: { value: CourseListSort; label: string }[] = [
+    { value: 'recently-watched', label: t('pages.browse.sort.recentlyWatched') },
+    { value: 'newest', label: t('pages.browse.sort.newest') },
+    { value: 'alphabetical', label: t('pages.browse.sort.alphabetical') },
+  ];
+
+  function selectStatus(value: CourseListStatusFilter): void {
+    status.value = value;
+  }
 
   function toCourse(item: CourseDto): Course {
     return {
@@ -35,8 +63,28 @@
       </p>
     </header>
 
+    <!-- Filters + sort row. Wraps under tight viewports; no dedicated
+         bottom-sheet UX yet (deferred to design polish follow-up). -->
+    <div class="page-browse__controls" role="region" :aria-label="t('pages.browse.filters.regionLabel')">
+      <div class="page-browse__chips" role="group" :aria-label="t('pages.browse.filters.statusLabel')">
+        <AppChip
+          v-for="option in statusOptions"
+          :key="option.value"
+          :variant="status === option.value ? 'primary' : 'default'"
+          :label="option.label"
+          :data-testid="`browse-filter-${option.value}`"
+          @click="selectStatus(option.value)"
+        />
+      </div>
+
+      <label class="page-browse__sort">
+        <span class="page-browse__sort-label">{{ t('pages.browse.sort.label') }}</span>
+        <AppSelect v-model="sort" :options="sortOptions" data-testid="browse-sort" />
+      </label>
+    </div>
+
     <!-- Loading: skeleton grid -->
-    <div v-if="status === 'pending'" class="page-browse__grid">
+    <div v-if="fetchStatus === 'pending'" class="page-browse__grid">
       <div v-for="n in 8" :key="`skel-${n}`" class="page-browse__skeleton-cell">
         <AppSkeleton width="100%" height="220px" radius="md" />
       </div>
@@ -44,7 +92,7 @@
 
     <!-- Error -->
     <AppBanner
-      v-else-if="status === 'error'"
+      v-else-if="fetchStatus === 'error'"
       variant="error"
       :title="t('pages.browse.errorTitle')"
       :body="error?.message ?? ''"
@@ -62,7 +110,9 @@
       v-else-if="items.length === 0"
       icon="folder"
       :title="t('pages.browse.emptyTitle')"
-      :body="t('pages.browse.emptyBody')"
+      :body="status === 'all'
+        ? t('pages.browse.emptyBody')
+        : t('pages.browse.emptyFilteredBody')"
     />
 
     <!-- Populated grid -->
@@ -86,7 +136,7 @@
     padding: 0 var(--space-4) var(--space-8);
 
     &__header {
-      margin-bottom: var(--space-6);
+      margin-bottom: var(--space-4);
     }
 
     &__title {
@@ -98,6 +148,32 @@
 
     &__subtitle {
       margin: var(--space-1) 0 0;
+      font-size: var(--text-sm);
+      color: var(--text-fg-muted);
+    }
+
+    &__controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
+    }
+
+    &__chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+
+    &__sort {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    &__sort-label {
       font-size: var(--text-sm);
       color: var(--text-fg-muted);
     }

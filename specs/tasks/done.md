@@ -2,6 +2,22 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-01-005 — Browse half: filters + sort (E14-F01-S02 partial)
+
+- Created: 2026-05-01
+- Completed: 2026-05-01
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E14-F01-S02.md` (partial — search half shipped earlier in #177)
+- Outcome:
+  - **Spec**: `GET /api/v1/courses` gained `status: all | not-started | in-progress | completed` (default `all`) and `sort: recently-watched | newest | alphabetical` (default `recently-watched`).
+  - **Backend**: `ListCoursesQuery` carries the new fields with defaults; `ListCoursesHandler` applies the status filter on `progress.percent` and sorts via `toSorted` (newest=createdAt desc, alphabetical=title asc, recently-watched=updatedAt desc as a proxy until a dedicated `lastViewedAt` lands). Controller parses + clamps both query params. +7 handler tests, 944 total.
+  - **Web** (`apps/web/app/pages/browse.vue`): chip row (status) + `AppSelect` sort dropdown above the grid. `useCoursesList` accepts `Ref<status>` and `Ref<sort>` and refetches on change with a per-combination cache key. New empty-state copy for filtered-no-match.
+  - **i18n**: added `pages.browse.filters.*` and `pages.browse.sort.*` in en + ru. 434 → 445 keys × 2 locales, parity green.
+- Out of scope (explicit follow-ups for the card to be fully closed):
+  - **Duration buckets** filter — needs `totalDurationSeconds` on `CourseDto` (today only on the outline summary). Either per-course lesson stats lookup at list time, or a denormalised column.
+  - **Instructor** filter — `Course` aggregate has no `instructor` field yet.
+  - **Bottom-sheet UX** at xs/sm — chip row wraps but doesn't morph into a sheet; deferred to design polish once `cs-web-browse-search` is signed off.
+
 ## T-2026-05-01-003 — Contributor runbooks (E23-F02-S03)
 
 - Created: 2026-05-01

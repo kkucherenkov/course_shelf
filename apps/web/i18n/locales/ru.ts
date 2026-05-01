@@ -216,8 +216,23 @@ export default {
       subtitle: '{n} курс | {n} курса | {n} курсов',
       emptyTitle: 'Пока нет курсов',
       emptyBody: 'Добавьте библиотеку и запустите сканирование, чтобы увидеть курсы здесь.',
+      emptyFilteredBody: 'Нет курсов под выбранный фильтр.',
       errorTitle: 'Не удалось загрузить курсы',
       retry: 'Повторить',
+      filters: {
+        regionLabel: 'Фильтры и сортировка курсов',
+        statusLabel: 'Фильтр по статусу',
+        all: 'Все',
+        inProgress: 'В процессе',
+        completed: 'Завершённые',
+        notStarted: 'Не начаты',
+      },
+      sort: {
+        label: 'Сортировка',
+        recentlyWatched: 'Недавние',
+        newest: 'Новые',
+        alphabetical: 'А → Я',
+      },
     },
     admin: {
       navDashboard: 'Дашборд',

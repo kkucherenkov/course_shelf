@@ -123,21 +123,42 @@ Containers mount the repository as a volume, so edits reach the running containe
 
 ## Quick Start
 
-Clone the repository, install dependencies, generate the API clients and design tokens, then boot the local stack:
+Goal: a fresh clone to all three apps running locally **in under 15 minutes**.
+
+### Prerequisites
+
+| Tool | Minimum | Check |
+|---|---|---|
+| Node.js | 24 | `node -v` |
+| pnpm | 10 | `pnpm -v` |
+| Docker + Docker Compose | recent | `docker --version && docker compose version` |
+| Flutter (mobile only) | 3.41 | `flutter --version` |
+
+### 1 — Clone, install, generate
 
 ```sh
 git clone <this-repo> course-shelf
 cd course-shelf
-pnpm install
+pnpm install                     # ~2 min cold, ~10 s warm
 pnpm spec:codegen                # generate TS + Dart API clients from the spec
 pnpm design:build                # generate CSS / TS / Dart design tokens
-docker compose -f docker/compose.yml up -d
 ```
 
-Verify the stack is healthy:
+Both generators emit gitignored output — every clone needs them before lint, typecheck, or any IDE will resolve types.
+
+### 2 — Boot the local stack
 
 ```sh
-curl http://localhost:3000/api/v1/health
+docker compose -f docker/compose.yml up -d
+docker compose -f docker/compose.yml logs -f backend --tail=50    # follow until "Backend listening on …"
+```
+
+Containers mount the repository as a volume, so subsequent edits reach the running container without a rebuild. **Do not** run `pnpm dev` alongside `docker compose up` — they share the same host ports.
+
+### 3 — Verify
+
+```sh
+curl http://localhost:8080/api/v1/health
 # {"status":"ok","dependencies":{"db":"ok","redis":"ok","centrifugo":"ok"}}
 ```
 
@@ -146,9 +167,36 @@ Then open the app:
 | URL                            | What you get                                   |
 | ------------------------------ | ---------------------------------------------- |
 | `http://localhost:8080`        | Canonical SPA entry (nginx proxy, same-origin) |
-| `http://localhost:3001`        | Web app directly (bypasses proxy)              |
-| `http://localhost:3000/api/v1` | Backend API                                    |
-| `http://localhost:3200`        | Grafana dashboards                             |
+| `http://localhost:3001`        | Web app directly (bypasses the proxy)          |
+| `http://localhost:3000/api/v1` | Backend API directly                           |
+| `http://localhost:6006`        | `@app/ui` Storybook                            |
+| `http://localhost:3200`        | Grafana + LGTM dashboards                      |
+
+### 4 — First sign-in
+
+The first user to call `POST /api/v1/setup/owner` becomes the owner; subsequent attempts return 409. The SPA routes a fresh install through `/setup` automatically — visit `http://localhost:8080`, fill in email + password, and the wizard hands off to the dashboard.
+
+### 5 — Mobile (optional)
+
+```sh
+cd apps/mobile
+flutter pub get
+flutter run                     # picks up the API base URL from --dart-define args
+```
+
+By default the simulator points at `http://10.0.2.2:8080/api/v1` (Android) or `http://localhost:8080/api/v1` (iOS).
+
+## Screenshots
+
+Stage A captures live under [`docs/screenshots/`](docs/screenshots/) — see [`docs/screenshots/README.md`](docs/screenshots/README.md) for the capture flow, conventions (1440 × 900 web, default device frame for mobile, light theme by default), and the file index. Once a capture is added to that folder, embed it inline here using a relative `![alt](docs/screenshots/<file>.png)` reference.
+
+Captures planned for the README:
+
+- **Home** — browse / continue-watching / recently-added shelves
+- **Course detail** — hero, sections list, materials right-rail
+- **Lesson player** — `<video>` + chrome overlay + bookmarks
+- **Admin dashboard** — stat cards + recent-scans table
+- **Mobile home** — apps/mobile Stage A
 
 ## Repository Layout
 

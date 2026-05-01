@@ -2,6 +2,18 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-01-004 — README quickstart + screenshots scaffold (E23-F02-S01)
+
+- Created: 2026-05-01
+- Completed: 2026-05-01
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E23-F02-S01.md`
+- Outcome:
+  - Top-level `README.md` + `README.ru.md` Quick Start rewritten as five concrete steps (prereqs → clone/install/generate → docker → verify → first sign-in → mobile) tuned for the under-15-minute target. Health-check uses `:8080` (proxy origin) instead of bypassing to `:3000`. Storybook URL added to the at-a-glance table.
+  - New `docs/screenshots/` directory with a colocated `README.md` documenting the capture flow, conventions (1440×900 web, default device frame mobile, light theme default, PNG), and a file index.
+  - README's Screenshots section lists the planned captures and points readers at the directory README. Image embeds are intentionally deferred — they'll be dropped in by the user once their stack reseeds (during this work the proxy was returning 502 because the backend container was reinstalling deps, so live captures weren't possible).
+- Verified: `pnpm spec:validate` ✅, `pnpm design:build` ✅ (web TS + ui TS + mobile Dart emitted).
+
 ## T-2026-05-01-005 — Browse half: filters + sort (E14-F01-S02 partial)
 
 - Created: 2026-05-01

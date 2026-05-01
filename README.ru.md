@@ -123,21 +123,42 @@ flowchart LR
 
 ## Быстрый старт
 
-Склонируйте репозиторий, установите зависимости, сгенерируйте API-клиенты и дизайн-токены, затем запустите локальный стек:
+Цель: от свежего клона до трёх запущенных приложений локально **менее чем за 15 минут**.
+
+### Требования
+
+| Инструмент | Минимум | Проверка |
+|---|---|---|
+| Node.js | 24 | `node -v` |
+| pnpm | 10 | `pnpm -v` |
+| Docker + Docker Compose | свежая версия | `docker --version && docker compose version` |
+| Flutter (только мобильное) | 3.41 | `flutter --version` |
+
+### 1 — Клонирование, установка, генерация
 
 ```sh
 git clone <this-repo> course-shelf
 cd course-shelf
-pnpm install
+pnpm install                     # ~2 мин с нуля, ~10 с при кеше
 pnpm spec:codegen                # генерация TS + Dart API-клиентов из спецификации
 pnpm design:build                # генерация CSS / TS / Dart дизайн-токенов
-docker compose -f docker/compose.yml up -d
 ```
 
-Проверьте работоспособность стека:
+Оба генератора создают файлы, которые лежат в `.gitignore` — каждый клон должен запустить их до lint, typecheck и до того, как IDE сможет распознать типы.
+
+### 2 — Запуск локального стека
 
 ```sh
-curl http://localhost:3000/api/v1/health
+docker compose -f docker/compose.yml up -d
+docker compose -f docker/compose.yml logs -f backend --tail=50    # ждём "Backend listening on …"
+```
+
+Контейнеры монтируют репозиторий как volume, так что последующие правки попадают внутрь без пересборки. **Не запускайте** `pnpm dev` параллельно с `docker compose up` — они конкурируют за одни и те же порты.
+
+### 3 — Проверка
+
+```sh
+curl http://localhost:8080/api/v1/health
 # {"status":"ok","dependencies":{"db":"ok","redis":"ok","centrifugo":"ok"}}
 ```
 
@@ -147,8 +168,35 @@ curl http://localhost:3000/api/v1/health
 | ------------------------------ | ---------------------------------------------------------- |
 | `http://localhost:8080`        | Каноническая точка входа SPA (прокси nginx, единый origin) |
 | `http://localhost:3001`        | Веб-приложение напрямую (в обход прокси)                   |
-| `http://localhost:3000/api/v1` | API бэкенда                                                |
-| `http://localhost:3200`        | Дашборды Grafana                                           |
+| `http://localhost:3000/api/v1` | API бэкенда напрямую                                       |
+| `http://localhost:6006`        | Storybook `@app/ui`                                        |
+| `http://localhost:3200`        | Дашборды Grafana + LGTM                                    |
+
+### 4 — Первый вход
+
+Первый пользователь, который вызывает `POST /api/v1/setup/owner`, становится владельцем; последующие попытки возвращают 409. SPA автоматически перенаправляет свежую установку на `/setup` — откройте `http://localhost:8080`, введите email и пароль, мастер передаст управление дашборду.
+
+### 5 — Мобильное (опционально)
+
+```sh
+cd apps/mobile
+flutter pub get
+flutter run                     # подхватывает API base URL через --dart-define
+```
+
+По умолчанию симулятор смотрит на `http://10.0.2.2:8080/api/v1` (Android) или `http://localhost:8080/api/v1` (iOS).
+
+## Скриншоты
+
+Снимки Stage A — в каталоге [`docs/screenshots/`](docs/screenshots/); соглашения по съёмке (1440 × 900 для web, дефолтный фрейм симулятора для мобильного, светлая тема по умолчанию) и индекс файлов — в [`docs/screenshots/README.md`](docs/screenshots/README.md). После добавления изображения в папку подставьте его сюда через `![alt](docs/screenshots/<file>.png)`.
+
+Запланированные снимки:
+
+- **Главная** — полки browse / continue-watching / recently-added
+- **Курс** — hero, список разделов, правый рельс материалов
+- **Плеер урока** — `<video>` + overlay + закладки
+- **Админ-дашборд** — карточки метрик + таблица недавних сканов
+- **Главная (мобильное)** — Stage A apps/mobile
 
 ## Структура репозитория
 

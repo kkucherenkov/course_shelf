@@ -27,7 +27,50 @@ async function bootstrap(): Promise<void> {
   const { port, nodeEnv, corsOrigins } = config.runtime;
 
   app.set('trust proxy', 'loopback');
-  app.use(nodeEnv === 'production' ? helmet() : helmet({ contentSecurityPolicy: false }));
+
+  // Helmet — secure-headers tuned for an SPA that talks bearer to /api/v1/* and
+  // a Centrifugo WebSocket on the same origin (in prod, all folded behind one
+  // proxy). The CSP below intentionally covers the API responses Helmet
+  // attaches it to; the SPA's HTML response gets a parallel set of headers
+  // from `apps/web/nginx.conf` so both `/` and `/api/v1/*` carry CSP — the
+  // bar set by the E21-F02-S02 card.
+  //
+  //  - default-src 'self'         no third-party origins
+  //  - script-src 'self'          no inline scripts (the runtime _app-config.js
+  //                               is a separate file on the same origin)
+  //  - style-src 'unsafe-inline'  Vue scoped styles inject <style> at runtime;
+  //                               there is no static hash list we can enumerate
+  //  - connect-src 'self' ws: wss: API + Centrifugo WS upstream
+  //  - frame-ancestors 'none'     clickjacking guard
+  //  - object-src 'none'          legacy plugins forbidden
+  //
+  // CSP stays disabled in dev so hot-reload, Vite eval'd modules, and
+  // Storybook iframes work without per-tool exemptions.
+  app.use(
+    nodeEnv === 'production'
+      ? helmet({
+          contentSecurityPolicy: {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'"],
+              styleSrc: ["'self'", "'unsafe-inline'"],
+              imgSrc: ["'self'", 'data:', 'blob:'],
+              fontSrc: ["'self'", 'data:'],
+              connectSrc: ["'self'", 'ws:', 'wss:'],
+              mediaSrc: ["'self'", 'blob:'],
+              objectSrc: ["'none'"],
+              frameAncestors: ["'none'"],
+              formAction: ["'self'"],
+              baseUri: ["'self'"],
+              upgradeInsecureRequests: [],
+            },
+          },
+          crossOriginEmbedderPolicy: false,
+          crossOriginResourcePolicy: { policy: 'same-origin' },
+          referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+        })
+      : helmet({ contentSecurityPolicy: false }),
+  );
 
   app.setGlobalPrefix('api', {
     exclude: [

@@ -2,6 +2,18 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-01-002 — CSP + Helmet hardening (E21-F02-S02)
+
+- Created: 2026-05-01
+- Completed: 2026-05-01
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E21-F02-S02.md`
+- Outcome:
+  - **Backend** (`apps/backend/src/main.ts`) — Helmet now ships an explicit `contentSecurityPolicy.directives` block tuned for the SPA + bearer + Centrifugo. `default-src 'self'`, `script-src 'self'` (no inline), `style-src 'unsafe-inline'` (Vue scoped styles inject `<style>` at runtime), `connect-src 'self' ws: wss:`, `frame-ancestors 'none'`, `object-src 'none'`. Plus `Cross-Origin-Resource-Policy: same-origin` and `Referrer-Policy: strict-origin-when-cross-origin`. Disabled in dev so Vite/Storybook hot-reload still works.
+  - **Web nginx** (`apps/web/nginx.conf`) — same CSP plus `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` on every SPA HTML response. Two parallel CSPs because the directive is per-document and the SPA is the document host.
+  - **e2e** (`tests/e2e/csp.spec.ts`) — Playwright spec asserts the secure-header set on `/` (always) and `/api/v1/*` (when backend runs in production mode; skipped otherwise) — the card's stated test acceptance.
+  - **`vue/no-v-html`** — already at level 2 via the recommended Vue ESLint preset; the existing AppNoteEditor v-html carries an explicit eslint-disable. No new rule needed.
+
 ## T-2026-04-28-002 — Group course materials by section in the right-rail
 
 - Created: 2026-04-28

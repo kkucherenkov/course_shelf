@@ -80,4 +80,13 @@ export class NodeFsAdapter implements FsAdapter {
   async readUtf8(path: string): Promise<string> {
     return readFile(path, 'utf8');
   }
+
+  async statMtime(path: string): Promise<Date | null> {
+    try {
+      const info = await stat(path);
+      return info.mtime;
+    } catch {
+      return null;
+    }
+  }
 }

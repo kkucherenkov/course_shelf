@@ -39,4 +39,11 @@ export interface FsAdapter {
 
   /** Read the UTF-8 content of a file. Throws on I/O error. */
   readUtf8(path: string): Promise<string>;
+
+  /**
+   * Return the mtime of `path`, or null if the path does not exist (or any
+   * other stat error). Used for the thumbnail freshness check during scan;
+   * routing it through the port keeps unit tests off the real filesystem.
+   */
+  statMtime(path: string): Promise<Date | null>;
 }

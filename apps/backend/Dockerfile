@@ -96,10 +96,16 @@ ENV NODE_ENV=production \
 COPY --from=deploy /app/ ./
 
 # Default mount point for course data. Admins point libraries here from
-# the SPA. Override via the `COURSES_PATH` host bind in compose.
-RUN mkdir -p /data/courses
+# the SPA. Override via the `COURSES_PATH` host bind in compose. The
+# chown lets the non-root `node` user write thumbnails next to videos
+# when the host bind doesn't override ownership.
+RUN mkdir -p /data/courses && chown -R node:node /app /data/courses
 
 EXPOSE 3000
+
+# Drop privileges before the app boots. The `node` user (uid 1000) ships
+# with the official node:24-alpine image — no useradd needed.
+USER node
 
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["sh", "-c", "node ./node_modules/prisma/build/index.js migrate deploy --schema=./prisma/schema.prisma && exec node ./dist/main.js"]

@@ -55,7 +55,15 @@ RUN pnpm --filter @app/specs bundle \
        pnpm --filter @app/web generate
 
 # ─── Stage 2 — serve ─────────────────────────────────────────────────────
-FROM nginx:1.27-alpine AS runtime
+# nginx-unprivileged ships with the `nginx` user pre-configured, the pid
+# file in /tmp, and a default listen on 8080 — no privileged port to
+# bind, no root needed at runtime. The proxy upstream points at :8080
+# (see docker/nginx/prod.conf).
+FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
+
+# Root needed only for the install + COPY layers; we drop back to nginx
+# (the image's default) before CMD runs.
+USER root
 
 # `gettext` provides envsubst (used by the entrypoint to expand env vars
 # into the static config script).
@@ -67,9 +75,12 @@ COPY --from=build /workspace/apps/web/.output/public /usr/share/nginx/html
 # nginx site config + entrypoint that templates _app-config.js from env.
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY apps/web/docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh \
+    && chown -R nginx:nginx /usr/share/nginx/html
 
-EXPOSE 80
+USER nginx
+
+EXPOSE 8080
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]

@@ -1,0 +1,14 @@
+# Trivy ignore rules — applied via --ignorefile in .forgejo/workflows/trivy.yml.
+#
+# Inline `# trivy:ignore:<ID>` comments are NOT honoured for Dockerfiles, so
+# path-scoped exemptions live here instead.
+
+misconfigurations:
+  # DS-0002: Dockerfile USER directive missing.
+  # Dev images run as root so bind-mounted host directories don't fight
+  # with the container's uid; they're never deployed.
+  - id: DS-0002
+    paths:
+      - "apps/backend/Dockerfile.dev"
+      - "apps/web/Dockerfile.dev"
+      - "packages/ui/Dockerfile.dev"

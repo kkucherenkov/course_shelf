@@ -74,6 +74,56 @@ function makeProgressRow(courseId: string): CourseProgressReadModel {
 const adminActor = { id: 'admin-1', role: 'admin' };
 const userActor = { id: 'user-1', role: 'user' };
 
+// Browse-page filter/sort helpers (E14-F01-S02).
+function statusProgressRow(courseId: string, percent: number): CourseProgressReadModel {
+  return CourseProgressReadModel.create({
+    id: `cprm-${courseId}`,
+    userId: 'user-1',
+    courseId,
+    lessonsCompleted: percent === 100 ? 5 : Math.round((percent / 100) * 5),
+    lessonsTotal: 5,
+    percent,
+    lastSeenAt: NOW,
+    lastSeenLessonId: 'lesson-1',
+  });
+}
+
+function buildStatusHandler(progressRows: CourseProgressReadModel[]): ListCoursesHandler {
+  const r = makeRepo();
+  vi.mocked(r.findAll).mockResolvedValue([
+    makeCourse({ id: 'c-not', slug: 'not-started' }),
+    makeCourse({ id: 'c-mid', slug: 'in-progress' }),
+    makeCourse({ id: 'c-done', slug: 'completed' }),
+  ]);
+  return new ListCoursesHandler(r, makeAuthz(true), makeProgressRepo(progressRows));
+}
+
+function makeCourseWithDates(
+  id: string,
+  title: string,
+  createdOffsetDays: number,
+  updatedOffsetDays: number,
+): Course {
+  const created = new Date(NOW.getTime() + createdOffsetDays * 24 * 3600 * 1000);
+  const updated = new Date(NOW.getTime() + updatedOffsetDays * 24 * 3600 * 1000);
+  const c = Course.create({
+    id,
+    libraryId: 'lib-1',
+    slug: id,
+    title,
+    now: created,
+  });
+  // Force updatedAt for sort coverage. Course.create sets both to `now`.
+  Object.defineProperty(c, 'updatedAt', { value: updated, configurable: true });
+  return c;
+}
+
+function buildSortHandler(courses: Course[]): ListCoursesHandler {
+  const r = makeRepo();
+  vi.mocked(r.findAll).mockResolvedValue(courses);
+  return new ListCoursesHandler(r, makeAuthz(true), makeProgressRepo());
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -214,6 +264,84 @@ describe('ListCoursesHandler', () => {
       await handler.execute(new ListCoursesQuery(userActor));
 
       expect(authz.canSee).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Browse-page filters + sort (E14-F01-S02)
+  // ---------------------------------------------------------------------------
+
+  describe('status filter', () => {
+    it('returns all when status=all', async () => {
+      const h = buildStatusHandler([
+        statusProgressRow('c-mid', 50),
+        statusProgressRow('c-done', 100),
+      ]);
+      const result = await h.execute(new ListCoursesQuery(adminActor, undefined, 'all'));
+      expect(result.map((d) => d.id).toSorted()).toEqual(['c-done', 'c-mid', 'c-not']);
+    });
+
+    it('keeps only courses with percent === 100 when status=completed', async () => {
+      const h = buildStatusHandler([
+        statusProgressRow('c-mid', 50),
+        statusProgressRow('c-done', 100),
+      ]);
+      const result = await h.execute(new ListCoursesQuery(adminActor, undefined, 'completed'));
+      expect(result.map((d) => d.id)).toEqual(['c-done']);
+    });
+
+    it('keeps only courses with 0 < percent < 100 when status=in-progress', async () => {
+      const h = buildStatusHandler([
+        statusProgressRow('c-mid', 50),
+        statusProgressRow('c-done', 100),
+      ]);
+      const result = await h.execute(new ListCoursesQuery(adminActor, undefined, 'in-progress'));
+      expect(result.map((d) => d.id)).toEqual(['c-mid']);
+    });
+
+    it('keeps only courses with percent === 0 when status=not-started', async () => {
+      const h = buildStatusHandler([
+        statusProgressRow('c-mid', 50),
+        statusProgressRow('c-done', 100),
+      ]);
+      const result = await h.execute(new ListCoursesQuery(adminActor, undefined, 'not-started'));
+      expect(result.map((d) => d.id)).toEqual(['c-not']);
+    });
+  });
+
+  describe('sort', () => {
+    it('recently-watched sorts by updatedAt desc (default)', async () => {
+      const h = buildSortHandler([
+        makeCourseWithDates('a', 'Apples', 0, 1),
+        makeCourseWithDates('b', 'Bananas', 0, 5),
+        makeCourseWithDates('c', 'Cherries', 0, 3),
+      ]);
+      const result = await h.execute(new ListCoursesQuery(adminActor));
+      expect(result.map((d) => d.id)).toEqual(['b', 'c', 'a']);
+    });
+
+    it('newest sorts by createdAt desc', async () => {
+      const h = buildSortHandler([
+        makeCourseWithDates('a', 'Apples', 0, 0),
+        makeCourseWithDates('b', 'Bananas', 5, 0),
+        makeCourseWithDates('c', 'Cherries', 3, 0),
+      ]);
+      const result = await h.execute(
+        new ListCoursesQuery(adminActor, undefined, 'all', 'newest'),
+      );
+      expect(result.map((d) => d.id)).toEqual(['b', 'c', 'a']);
+    });
+
+    it('alphabetical sorts by title asc', async () => {
+      const h = buildSortHandler([
+        makeCourseWithDates('a', 'Cherries', 0, 0),
+        makeCourseWithDates('b', 'Apples', 0, 0),
+        makeCourseWithDates('c', 'Bananas', 0, 0),
+      ]);
+      const result = await h.execute(
+        new ListCoursesQuery(adminActor, undefined, 'all', 'alphabetical'),
+      );
+      expect(result.map((d) => d.title)).toEqual(['Apples', 'Bananas', 'Cherries']);
     });
   });
 });

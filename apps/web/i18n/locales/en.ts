@@ -215,8 +215,23 @@ export default {
       subtitle: '{n} course | {n} courses',
       emptyTitle: 'No courses yet',
       emptyBody: 'Add a library and trigger a scan to see courses here.',
+      emptyFilteredBody: 'No courses match the active filter.',
       errorTitle: 'Could not load courses',
       retry: 'Retry',
+      filters: {
+        regionLabel: 'Course filters and sort',
+        statusLabel: 'Filter by status',
+        all: 'All',
+        inProgress: 'In progress',
+        completed: 'Completed',
+        notStarted: 'Not started',
+      },
+      sort: {
+        label: 'Sort',
+        recentlyWatched: 'Recently watched',
+        newest: 'Newest',
+        alphabetical: 'A → Z',
+      },
     },
     admin: {
       navDashboard: 'Dashboard',

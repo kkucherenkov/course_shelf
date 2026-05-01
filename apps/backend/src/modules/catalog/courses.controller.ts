@@ -34,7 +34,11 @@ import { Session } from '../../common/auth/decorators';
 import { UpdateCourseMetadataCommand } from './application/commands/update-course-metadata.command';
 import { MarkCourseCompleteCommand } from './application/commands/mark-course-complete.command';
 import { ResetCourseProgressCommand } from './application/commands/reset-course-progress.command';
-import { ListCoursesQuery } from './application/queries/list-courses.query';
+import {
+  ListCoursesQuery,
+  type CourseListSort,
+  type CourseListStatus,
+} from './application/queries/list-courses.query';
 import { GetCourseQuery } from './application/queries/get-course.query';
 import { GetCourseOutlineQuery } from './application/queries/get-course-outline.query';
 
@@ -46,6 +50,30 @@ import type {
   UpdateCourseRequest,
 } from '@app/api-client-ts';
 
+const VALID_STATUSES: ReadonlySet<CourseListStatus> = new Set([
+  'all',
+  'not-started',
+  'in-progress',
+  'completed',
+]);
+const VALID_SORTS: ReadonlySet<CourseListSort> = new Set([
+  'recently-watched',
+  'newest',
+  'alphabetical',
+]);
+
+function parseStatus(raw: string | undefined): CourseListStatus {
+  return raw && VALID_STATUSES.has(raw as CourseListStatus)
+    ? (raw as CourseListStatus)
+    : 'all';
+}
+
+function parseSort(raw: string | undefined): CourseListSort {
+  return raw && VALID_SORTS.has(raw as CourseListSort)
+    ? (raw as CourseListSort)
+    : 'recently-watched';
+}
+
 @Controller({ path: 'courses', version: '1' })
 export class CoursesController {
   constructor(
@@ -53,15 +81,17 @@ export class CoursesController {
     private readonly queryBus: QueryBus,
   ) {}
 
-  /** GET /api/v1/courses?libraryId=… */
+  /** GET /api/v1/courses?libraryId=…&status=…&sort=… */
   @Get()
   async listCourses(
     @Session() session: SessionContext,
     @Query('libraryId') libraryId?: string,
+    @Query('status') status?: string,
+    @Query('sort') sort?: string,
   ): Promise<CourseListDto> {
     const actor = session.user;
     const items = await this.queryBus.execute<ListCoursesQuery, CourseDto[]>(
-      new ListCoursesQuery(actor, libraryId),
+      new ListCoursesQuery(actor, libraryId, parseStatus(status), parseSort(sort)),
     );
     return { items };
   }

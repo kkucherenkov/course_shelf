@@ -61,6 +61,49 @@ export class ListCoursesHandler implements IQueryHandler<ListCoursesQuery, Cours
     );
     const progressMap = new Map(progressRows.map((p) => [p.courseId, p]));
 
-    return visibleCourses.map((c) => toCourseDto(c, progressMap.get(c.id)));
+    const dtos = visibleCourses.map((c) => toCourseDto(c, progressMap.get(c.id)));
+
+    // Status filter — operates on the projected percent so a course with
+    // no progress row falls into 'not-started' (toCourseDto returns the
+    // zero placeholder when progressMap.get is undefined).
+    const filtered =
+      query.status === 'all'
+        ? dtos
+        : dtos.filter((d) => {
+            const p = d.progress.percent;
+            switch (query.status) {
+              case 'completed': {
+                return p === 100;
+              }
+              case 'in-progress': {
+                return p > 0 && p < 100;
+              }
+              case 'not-started': {
+                return p === 0;
+              }
+              default: {
+                return true;
+              }
+            }
+          });
+
+    // Server-side sort. `recently-watched` uses updatedAt as a proxy for
+    // last activity until a dedicated lastViewedAt lands.
+    const sorted = [...filtered].toSorted((a, b) => {
+      switch (query.sort) {
+        case 'newest': {
+          return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+        }
+        case 'alphabetical': {
+          return a.title.localeCompare(b.title);
+        }
+        default: {
+          // 'recently-watched' (default).
+          return Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
+        }
+      }
+    });
+
+    return sorted;
   }
 }

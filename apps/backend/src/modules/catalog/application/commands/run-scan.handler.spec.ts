@@ -215,6 +215,11 @@ class FakeFsAdapter implements FsAdapter {
     if (!f?.content) throw new Error(`File not found in fake: ${path}`);
     return f.content;
   }
+
+  async statMtime(path: string): Promise<Date | null> {
+    const f = this.files.find((x) => x.path === path);
+    return f ? f.mtime : null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -315,9 +320,10 @@ function makeLibrary(): Library {
 // ---------------------------------------------------------------------------
 async function drainMicrotasks(): Promise<void> {
   // Pump the event loop enough times to flush the fire-and-forget walk chain.
-  // The walk now contains additional async hops (ffprobe, stat, writeThumbnail)
-  // so we need more rounds than the original three. Ten rounds is conservative
-  // but still much faster than a real sleep.
+  // Every async hop in the walk goes through an injected port (FsAdapter /
+  // FfmpegAdapter / repos), all of which are fakes that resolve via plain
+  // Promise.resolve in this spec — no real I/O — so a handful of rounds
+  // is enough on any machine.
   for (let i = 0; i < 10; i++) {
     await new Promise<void>((resolve) => setImmediate(resolve));
   }
@@ -990,6 +996,7 @@ describe('RunScanHandler', () => {
           throw new Error('unexpected walk failure');
         },
         readUtf8: vi.fn(),
+        statMtime: vi.fn().mockResolvedValue(null),
       };
 
       const failScanRepo = makeScanRepo();

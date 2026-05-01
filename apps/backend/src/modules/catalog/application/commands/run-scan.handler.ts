@@ -29,7 +29,6 @@ import { Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { nanoid } from 'nanoid';
 import path from 'node:path';
-import { stat } from 'node:fs/promises';
 
 import { AppConfig } from '../../../../common/config/app-config';
 import { CentrifugoService } from '../../../../common/centrifugo/centrifugo.service';
@@ -416,20 +415,14 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               );
               const thumbPath = `${stemWithoutExt}.thumb.jpg`;
 
-              // Idempotency: skip write if thumbnail is already up-to-date.
-              let shouldWriteThumb = true;
-              try {
-                const [videoStat, thumbStat] = await Promise.all([
-                  stat(videoFile.path),
-                  stat(thumbPath),
-                ]);
-                if (thumbStat.mtime.getTime() > videoStat.mtime.getTime()) {
-                  shouldWriteThumb = false;
-                }
-              } catch {
-                // Either stat call failed (thumbnail likely does not exist) — proceed.
-                shouldWriteThumb = true;
-              }
+              // Idempotency: skip write if the thumbnail is newer than the
+              // source video. videoFile.mtime is already known from the walk,
+              // so we only need to stat the thumbnail. Routed through the
+              // FsAdapter port (returns null on ENOENT) so unit tests stay
+              // off the real filesystem.
+              const thumbMtime = await this.fs.statMtime(thumbPath);
+              const shouldWriteThumb =
+                thumbMtime === null || thumbMtime.getTime() <= videoFile.mtime.getTime();
 
               if (shouldWriteThumb) {
                 const atSecond = Math.max(metadata.durationSeconds / 4, 1);

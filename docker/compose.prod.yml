@@ -129,7 +129,7 @@ services:
       # `centrifugo:8000`) so no separate hostname is needed.
       APP_CENTRIFUGO_URL: "${PUBLIC_BASE_URL}/centrifugo/connection/websocket"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/_app-config.js"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/_app-config.js"]
       interval: 10s
       timeout: 3s
       retries: 12

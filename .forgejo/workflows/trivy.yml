@@ -1,0 +1,77 @@
+name: Trivy
+
+# Trivy replaces CodeQL on the self-hosted Forgejo runner — CodeQL's
+# GitHub-hosted action requires a GitHub server for SARIF upload. Trivy
+# runs as a standalone scanner and reports findings in the runner log.
+#
+# We install the binary directly via the official install script rather
+# than using aquasecurity/trivy-action — the action ships a Docker-based
+# entrypoint that doesn't survive Forgejo's `act`-based runner (the
+# entrypoint runs on the host where `trivy` is not on PATH).
+#
+# Two scan jobs:
+#   - fs:      vulnerabilities in dependencies (npm, pnpm lockfile, etc.)
+#   - config:  Dockerfile + compose + IaC misconfigurations
+#
+# Both gate on CRITICAL+HIGH severity and ignore unfixable findings
+# (no upgrade path → noise, not signal).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Mondays 06:00 UTC — catches advisories that landed on shipped code.
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  fs:
+    name: Trivy (filesystem · deps)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sh -s -- -b /usr/local/bin
+
+      - name: Run Trivy filesystem scan
+        run: |
+          trivy fs . \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --exit-code 1 \
+            --format table \
+            --ignorefile .trivyignore.yaml \
+            --skip-dirs node_modules \
+            --skip-dirs packages/api-client-ts/src/generated \
+            --skip-dirs packages/api-client-dart/lib/generated
+
+  config:
+    name: Trivy (Dockerfile · IaC misconfig)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sh -s -- -b /usr/local/bin
+
+      - name: Run Trivy config scan
+        run: |
+          trivy config . \
+            --severity CRITICAL,HIGH \
+            --exit-code 1 \
+            --format table \
+            --ignorefile .trivyignore.yaml \
+            --skip-dirs node_modules

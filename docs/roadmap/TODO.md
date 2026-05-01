@@ -178,7 +178,7 @@ Progress: `61 / 115` complete (update by hand or via a pre-commit hook).
 
 - [ ] [E22-F01-S01](./tasks/E22-F01-S01.md) `A` — Reusable setup action (Node + pnpm + Flutter cache) · ⇐ E01-F02-S01
 - [x] [E22-F01-S02](./tasks/E22-F01-S02.md) `A` — ci.yml with parallel jobs per app/package · ⇐ E22-F01-S01
-- [ ] [E22-F01-S03](./tasks/E22-F01-S03.md) `A` — Storybook test-runner job · ⇐ E22-F01-S01, E12-F01-S01
+- [x] [E22-F01-S03](./tasks/E22-F01-S03.md) `A` — Storybook test-runner job · ⇐ E22-F01-S01, E12-F01-S01
 - [ ] [E22-F01-S04](./tasks/E22-F01-S04.md) `A` — Visual regression (Storybook test-runner snapshots) + manual approval label · ⇐ E22-F01-S03
 - [ ] [E22-F01-S05](./tasks/E22-F01-S05.md) `A` — Flutter golden test job · ⇐ E22-F01-S01, E16-F01-S01
 - [ ] [E22-F01-S06](./tasks/E22-F01-S06.md) `A` — release.yml — build + publish API+web Docker image to GHCR · ⇐ E22-F01-S02

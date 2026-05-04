@@ -14,3 +14,7 @@ apps/mobile/build
 apps/mobile/ios
 apps/mobile/android
 pnpm-lock.yaml
+
+# Centrifugo config template carries `${VAR}` placeholders that envsubst
+# expands at boot — Prettier's JSON parser rejects them.
+docker/centrifugo/config.template.json

@@ -37,7 +37,8 @@
     "issues:sync": "node --experimental-strip-types scripts/seed-forgejo-issues.ts",
     "issues:map": "node --experimental-strip-types scripts/seed-forgejo-issues.ts --print-map",
     "issues:lookup": "node --experimental-strip-types scripts/seed-forgejo-issues.ts --lookup",
-    "e2e": "playwright test --config=tests/e2e/playwright.config.ts"
+    "e2e": "playwright test --config=tests/e2e/playwright.config.ts",
+    "release:notes": "git-cliff --config cliff.toml --unreleased --strip header"
   },
   "devDependencies": {
     "@app/eslint-config": "workspace:*",

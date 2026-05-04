@@ -55,16 +55,19 @@ jobs:
           STORYBOOK_A11Y_LEVEL: todo
         run: pnpm --filter @app/ui storybook:build
 
-      # jest-image-snapshot creates a fresh PNG and the test passes when
-      # no baseline exists. Drop everything so the next run captures
-      # baselines against the runner's exact font/Chromium combo.
-      - name: Drop existing baselines
-        run: |
-          set -euo pipefail
-          rm -rf packages/ui/test/__snapshots__/__diff_output__ || true
-          rm -f packages/ui/test/__snapshots__/*.png || true
+      # Clear stale diff artefacts from any prior local run; baselines
+      # will be overwritten in capture-only mode below.
+      - name: Clear diff artefacts
+        run: rm -rf packages/ui/test/__snapshots__/__diff_output__ || true
 
+      # `STORYBOOK_REGEN=1` flips packages/ui/.storybook/test-runner.ts
+      # into capture-only mode: every story's screenshot is written as the
+      # new baseline and the diff step is skipped. This sidesteps
+      # jest-image-snapshot's CI guard (which fails on missing baselines
+      # instead of creating them).
       - name: Capture fresh baselines
+        env:
+          STORYBOOK_REGEN: "1"
         run: pnpm --filter @app/ui test:visual:ci
 
       - name: Commit and push regenerated baselines

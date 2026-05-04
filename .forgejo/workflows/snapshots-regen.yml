@@ -20,6 +20,13 @@ on:
 permissions:
   contents: write
 
+# At most one regen on a given branch at a time. `cancel-in-progress: false`
+# means a queued trigger waits for the current run to finish — never two
+# in-flight, no commit-race.
+concurrency:
+  group: snapshots-regen-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   regen:
     name: Capture fresh baselines in CI environment
@@ -95,4 +102,12 @@ jobs:
           ui-storybook job in ci.yml.
           EOF
           )"
-          git push
+
+          # Rebase on top of any commits that landed on the branch while
+          # we were busy capturing. Without this, a developer who pushes
+          # to the same branch mid-regen makes our `git push` fail with
+          # non-fast-forward — and the only thing in our commit is
+          # `__snapshots__/*.png`, so a rebase always applies cleanly.
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          git pull --rebase origin "$BRANCH"
+          git push origin "HEAD:$BRANCH"

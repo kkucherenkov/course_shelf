@@ -17,3 +17,9 @@ FROM nginxinc/nginx-unprivileged:1.27-alpine
 # port-maps `${PROXY_PORT}:8080` so the public-facing port stays
 # whatever operators configured.
 COPY docker/nginx/prod.conf /etc/nginx/conf.d/default.conf
+
+# Explicit USER directive — the nginx-unprivileged base sets `nginx` as
+# its default user, but Trivy DS-0002 does a static analysis of THIS
+# Dockerfile and won't follow the FROM chain. Re-asserting it here
+# keeps the IaC scan green.
+USER nginx

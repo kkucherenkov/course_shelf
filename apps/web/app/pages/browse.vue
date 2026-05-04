@@ -1,6 +1,13 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
-  import { AppBanner, AppChip, AppEmptyState, AppSelect, AppSkeleton, CoursePosterCard } from '@app/ui';
+  import {
+    AppBanner,
+    AppChip,
+    AppEmptyState,
+    AppSelect,
+    AppSkeleton,
+    CoursePosterCard,
+  } from '@app/ui';
   import type { Course } from '@app/ui';
   import type { CourseDto } from '@app/api-client-ts';
 
@@ -32,10 +39,13 @@
     { value: 'not-started', label: t('pages.browse.filters.notStarted') },
   ];
 
-  const sortOptions: { value: CourseListSort; label: string }[] = [
-    { value: 'recently-watched', label: t('pages.browse.sort.recentlyWatched') },
-    { value: 'newest', label: t('pages.browse.sort.newest') },
-    { value: 'alphabetical', label: t('pages.browse.sort.alphabetical') },
+  // AppSelect's option contract is `{ id, label, disabled? }`. We use the
+  // sort key as the id directly — it's a stable string union — so v-model
+  // remains a `Ref<CourseListSort>` end-to-end.
+  const sortOptions: { id: CourseListSort; label: string }[] = [
+    { id: 'recently-watched', label: t('pages.browse.sort.recentlyWatched') },
+    { id: 'newest', label: t('pages.browse.sort.newest') },
+    { id: 'alphabetical', label: t('pages.browse.sort.alphabetical') },
   ];
 
   function selectStatus(value: CourseListStatusFilter): void {
@@ -65,8 +75,16 @@
 
     <!-- Filters + sort row. Wraps under tight viewports; no dedicated
          bottom-sheet UX yet (deferred to design polish follow-up). -->
-    <div class="page-browse__controls" role="region" :aria-label="t('pages.browse.filters.regionLabel')">
-      <div class="page-browse__chips" role="group" :aria-label="t('pages.browse.filters.statusLabel')">
+    <div
+      class="page-browse__controls"
+      role="region"
+      :aria-label="t('pages.browse.filters.regionLabel')"
+    >
+      <div
+        class="page-browse__chips"
+        role="group"
+        :aria-label="t('pages.browse.filters.statusLabel')"
+      >
         <AppChip
           v-for="option in statusOptions"
           :key="option.value"
@@ -110,9 +128,7 @@
       v-else-if="items.length === 0"
       icon="folder"
       :title="t('pages.browse.emptyTitle')"
-      :body="status === 'all'
-        ? t('pages.browse.emptyBody')
-        : t('pages.browse.emptyFilteredBody')"
+      :body="status === 'all' ? t('pages.browse.emptyBody') : t('pages.browse.emptyFilteredBody')"
     />
 
     <!-- Populated grid -->

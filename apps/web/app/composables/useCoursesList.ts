@@ -40,6 +40,14 @@ export function useCoursesList(options: UseCoursesListOptions = {}): {
     () => `courses:list:${statusRef?.value ?? 'all'}:${sortRef?.value ?? 'recently-watched'}`,
   );
 
+  // `useAsyncData`'s `watch` option is `MultiWatchSources` — Refs of any
+  // value type qualify. Build the list with explicit `Ref<unknown>` so the
+  // string-literal-union types of each individual ref don't pollute the
+  // array element type and break the overload match.
+  const watchSources: Ref<unknown>[] = [];
+  if (statusRef !== undefined) watchSources.push(statusRef);
+  if (sortRef !== undefined) watchSources.push(sortRef);
+
   const { data, status, error, refresh } = useAsyncData<CourseListDto>(
     cacheKey,
     async () => {
@@ -59,13 +67,16 @@ export function useCoursesList(options: UseCoursesListOptions = {}): {
     },
     {
       server: false,
-      default: () => ({ items: [] }),
-      watch: [statusRef, sortRef].filter((r): r is Ref<string> => r !== undefined),
+      default: (): CourseListDto => ({ items: [] }),
+      watch: watchSources,
     },
   );
 
   return {
-    data,
+    // useAsyncData's data ref is `Ref<PickFrom<ResT, KeysOf<DataT>> | undefined>`
+    // — a Nuxt typing artefact that doesn't preserve the explicit `<CourseListDto>`
+    // generic for callers. Cast back so consumers get the DTO they asked for.
+    data: data as unknown as Ref<CourseListDto | undefined>,
     status: status as Ref<RowStatus>,
     error: error as Ref<Error | null>,
     refetch: async () => {

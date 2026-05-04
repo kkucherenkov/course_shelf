@@ -1,8 +1,17 @@
 # Self-hosted deployment
 
-This guide covers the **production deployment path** — building the bundled
-Docker images, wiring them up with `docker/compose.prod.yml`, and pointing the
-backend at a host directory full of course folders.
+Two deployment paths are supported:
+
+1. **Pull a tagged release** (recommended). Download the artefact bundle
+   from the Forgejo Releases page, fill in `.env`, run
+   `docker compose pull && up -d`. No clone, no build — you only need a
+   host with Docker.
+2. **Build from source**. Clone the repo, build images locally with
+   `docker/compose.prod.yml`. Useful when the registry is unreachable or
+   when you want a fork to ship its own images.
+
+If you're cutting a new release rather than deploying an existing one,
+see [`release.md`](./release.md) for the runbook.
 
 For the dev stack (where the repo is mounted read-write into the containers
 and watch-mode rebuilds on save) see `docker/compose.yml` and the local-dev
@@ -38,7 +47,30 @@ table in `.claude/CLAUDE.md`.
               (named volume)       (named volume)
 ```
 
-## Quick start
+## Path 1 — pull a tagged release
+
+Open `http://code.homelab.local/<owner>/course_shelf/releases`, pick the
+release you want, and grab `courseshelf-release-vX.Y.Z.tar.gz`.
+
+```sh
+curl -LO http://code.homelab.local/<owner>/course_shelf/releases/download/vX.Y.Z-release/courseshelf-release-vX.Y.Z.tar.gz
+tar xzf courseshelf-release-vX.Y.Z.tar.gz
+cd courseshelf-release-vX.Y.Z
+
+cp .env.example .env
+$EDITOR .env    # fill in the secrets
+
+docker compose --env-file .env -f compose.yml pull
+docker compose --env-file .env -f compose.yml up -d
+```
+
+Browse to `http://<your-host>:${PROXY_PORT}` (default `:8080`).
+
+Upgrades: download the next release's tarball, point your existing `.env`
+at it, run `pull && up -d`. Migrations apply on backend boot — see the
+"Database migrations" section below.
+
+## Path 2 — build from source
 
 ```sh
 git clone …            # whatever your origin is
@@ -129,6 +161,12 @@ docker/compose.prod.yml exec postgres pg_dump -Fc -U courseshelf >
 backup.dump`).
 
 ## Upgrading
+
+**Path 1 (release bundle):** download the new release's tarball, swap
+the compose file (or override `RELEASE_TAG` in `.env`), then
+`docker compose pull && up -d`.
+
+**Path 2 (source build):**
 
 1. `git pull` the new release.
 2. `docker compose --env-file .env.production -f docker/compose.prod.yml build`.

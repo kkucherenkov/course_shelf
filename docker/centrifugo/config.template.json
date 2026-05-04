@@ -1,0 +1,29 @@
+{
+  "client": {
+    "allowed_origins": ${CENTRIFUGO_ALLOWED_ORIGINS},
+    "token": {
+      "hmac_secret_key": "${CENTRIFUGO_TOKEN_HMAC_SECRET}"
+    }
+  },
+  "http_api": {
+    "key": "${CENTRIFUGO_API_KEY}"
+  },
+  "admin": {
+    "enabled": false
+  },
+  "health": {
+    "enabled": true
+  },
+  "channel": {
+    "namespaces": [
+      { "name": "system", "presence": true, "history_size": 10, "history_ttl": "60s" },
+      { "name": "library", "presence": false, "history_size": 0 },
+      { "name": "notes", "presence": false, "history_size": 0 },
+      { "name": "progress", "presence": false, "history_size": 0 },
+      { "name": "notifications", "presence": false, "history_size": 0 }
+    ]
+  },
+  "log": {
+    "level": "${CENTRIFUGO_LOG_LEVEL:-info}"
+  }
+}

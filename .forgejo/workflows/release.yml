@@ -1,0 +1,263 @@
+name: Release
+
+# Triggered by pushing a release tag.
+#
+# Tag pattern (literal): vMAJOR.MINOR.PATCH-release   e.g. v0.2.0-release
+#
+# What it does:
+#   1. Parse the tag → semver triple.
+#   2. Build the four release images:
+#        courseshelf-backend, courseshelf-web, courseshelf-proxy, courseshelf-centrifugo
+#      with `--build-arg APP_VERSION=<semver>` (the first two carry it; the
+#      others ignore it).
+#   3. Push to the Forgejo OCI registry under four tags each:
+#        :MAJOR.MINOR.PATCH, :MAJOR.MINOR, :MAJOR, :latest
+#   4. Generate release notes from Conventional Commits via git-cliff.
+#   5. Render `compose-release-v<semver>.yml` with RELEASE_TAG pinned.
+#   6. Bundle the release artefacts into a tarball.
+#   7. Create a Forgejo Release (draft=false, prerelease=false) with the
+#      changelog as body and the tarball + standalone compose file as assets.
+#
+# Notes:
+#   - amd64 only for v1; multi-arch can be added later via `setup-buildx`.
+#   - Forgejo issues `${{ secrets.GITEA_TOKEN }}` automatically for actions
+#     in the same repo; that's all we need for both the registry login and
+#     the release-creation API call.
+#   - Re-pushing the same tag will fail at `docker push` (the registry
+#     should reject overwriting an immutable tag); to re-cut a release,
+#     bump the patch and push a new tag.
+
+on:
+  push:
+    tags:
+      - "v*.*.*-release"
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  NODE_VERSION: "24"
+  REGISTRY: code.homelab.local
+  REGISTRY_NAMESPACE: kkucherenkov
+  REGISTRY_USER: kkucherenkov
+
+jobs:
+  release:
+    name: Build, push, and create Forgejo release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full history for git-cliff
+
+      # ─── Tag → semver ────────────────────────────────────────────────────
+      - name: Parse release tag
+        id: version
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF#refs/tags/}"
+          if ! echo "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+-release$'; then
+            echo "tag '$TAG' does not match vMAJOR.MINOR.PATCH-release" >&2
+            exit 1
+          fi
+          SEMVER="${TAG#v}"
+          SEMVER="${SEMVER%-release}"
+          MAJOR="${SEMVER%%.*}"
+          MINOR="${SEMVER#*.}"; MINOR="${MINOR%%.*}"
+          PATCH="${SEMVER##*.}"
+          {
+            echo "tag=$TAG"
+            echo "semver=$SEMVER"
+            echo "major=$MAJOR"
+            echo "minor=$MINOR"
+            echo "patch=$PATCH"
+          } >> "$GITHUB_OUTPUT"
+
+      # ─── Toolchain ───────────────────────────────────────────────────────
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Spec validate · bundle · codegen
+        run: |
+          pnpm spec:validate
+          pnpm spec:bundle
+          pnpm spec:codegen
+
+      - name: Build design tokens
+        run: pnpm design:build
+
+      # ─── Registry login ──────────────────────────────────────────────────
+      - name: Log in to Forgejo OCI registry
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITEA_TOKEN }}
+        run: |
+          set -euo pipefail
+          echo "$REGISTRY_TOKEN" | docker login "$REGISTRY" \
+            --username "$REGISTRY_USER" \
+            --password-stdin
+
+      # ─── Build + push images ─────────────────────────────────────────────
+      # Helper inlined as a shell function: build once, tag four times,
+      # push four times. Saves duplicating the logic per-image.
+      - name: Build and push release images
+        env:
+          SEMVER: ${{ steps.version.outputs.semver }}
+          MAJOR: ${{ steps.version.outputs.major }}
+          MINOR: ${{ steps.version.outputs.minor }}
+        run: |
+          set -euo pipefail
+
+          publish() {
+            local name="$1"
+            local dockerfile="$2"
+            local image="$REGISTRY/$REGISTRY_NAMESPACE/$name"
+
+            echo "::group::build $name"
+            docker build \
+              --build-arg "APP_VERSION=$SEMVER" \
+              --label "org.opencontainers.image.source=https://${REGISTRY}/${REGISTRY_NAMESPACE}/course_shelf" \
+              --label "org.opencontainers.image.version=$SEMVER" \
+              --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+              -f "$dockerfile" \
+              -t "$image:$SEMVER" \
+              -t "$image:$MAJOR.$MINOR" \
+              -t "$image:$MAJOR" \
+              -t "$image:latest" \
+              .
+            echo "::endgroup::"
+
+            echo "::group::push $name"
+            docker push "$image:$SEMVER"
+            docker push "$image:$MAJOR.$MINOR"
+            docker push "$image:$MAJOR"
+            docker push "$image:latest"
+            echo "::endgroup::"
+          }
+
+          publish courseshelf-backend     apps/backend/Dockerfile
+          publish courseshelf-web         apps/web/Dockerfile
+          publish courseshelf-proxy       docker/nginx/Dockerfile
+          publish courseshelf-centrifugo  docker/centrifugo/Dockerfile
+
+      # ─── Changelog (git-cliff) ───────────────────────────────────────────
+      - name: Install git-cliff
+        run: |
+          set -euo pipefail
+          VERSION="2.6.1"
+          curl -sSfL \
+            "https://github.com/orhun/git-cliff/releases/download/v${VERSION}/git-cliff-${VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+            -o /tmp/git-cliff.tgz
+          tar -xzf /tmp/git-cliff.tgz -C /tmp
+          install -m 0755 "/tmp/git-cliff-${VERSION}/git-cliff" /usr/local/bin/git-cliff
+          git-cliff --version
+
+      - name: Generate release notes
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # `--unreleased` collects everything since the previous matching
+          # tag; `--tag` labels the section with the new release.
+          git-cliff \
+            --config cliff.toml \
+            --unreleased \
+            --tag "$TAG" \
+            --strip header \
+            > release-notes.md
+          cat release-notes.md
+
+      # ─── Render artefacts (compose + tarball) ────────────────────────────
+      - name: Render compose-release file with pinned tag
+        env:
+          SEMVER: ${{ steps.version.outputs.semver }}
+        run: |
+          set -euo pipefail
+          OUT="compose-release-v${SEMVER}.yml"
+          # Replace the default `${RELEASE_TAG:-latest}` substitutions with
+          # the literal version so the file works without an env file.
+          sed \
+            -e "s|\${RELEASE_TAG:-latest}|${SEMVER}|g" \
+            -e "s|\${REGISTRY:-code.homelab.local}|${REGISTRY}|g" \
+            -e "s|\${REGISTRY_NAMESPACE:-kkucherenkov}|${REGISTRY_NAMESPACE}|g" \
+            docker/compose.release.yml > "$OUT"
+          # Sanity: the rendered file must still parse.
+          docker compose -f "$OUT" config --quiet
+          echo "rendered=$OUT" >> "$GITHUB_OUTPUT"
+        id: render
+
+      - name: Bundle release artefacts
+        env:
+          SEMVER: ${{ steps.version.outputs.semver }}
+        run: |
+          set -euo pipefail
+          STAGE="courseshelf-release-v${SEMVER}"
+          mkdir -p "$STAGE"
+          cp "compose-release-v${SEMVER}.yml" "$STAGE/compose.yml"
+          cp .env.release.example "$STAGE/.env.example"
+          cp release-notes.md "$STAGE/CHANGELOG.md"
+          # README pointing operators at the right next steps.
+          cat > "$STAGE/README.md" <<EOF
+          # CourseShelf $SEMVER — release bundle
+
+          1. Copy \`.env.example\` to \`.env\` and fill in the secrets.
+          2. \`docker compose --env-file .env -f compose.yml pull\`
+          3. \`docker compose --env-file .env -f compose.yml up -d\`
+          4. Browse to http://<your-host>:\${PROXY_PORT:-8080}
+
+          See CHANGELOG.md for what changed in this release.
+          EOF
+          tar czf "${STAGE}.tar.gz" "$STAGE"
+          ls -la "${STAGE}.tar.gz"
+
+      # ─── Forgejo release ─────────────────────────────────────────────────
+      - name: Create Forgejo release with assets
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          SEMVER: ${{ steps.version.outputs.semver }}
+          FORGEJO_TOKEN: ${{ secrets.GITEA_TOKEN }}
+          FORGEJO_HOST: ${{ env.REGISTRY }}
+        run: |
+          set -euo pipefail
+
+          OWNER="${REGISTRY_NAMESPACE}"
+          REPO="course_shelf"
+          BASE="http://${FORGEJO_HOST}/api/v1/repos/${OWNER}/${REPO}"
+
+          BODY="$(jq -Rs . < release-notes.md)"
+          PAYLOAD="$(jq -n \
+            --arg tag "$TAG" \
+            --arg name "CourseShelf $SEMVER" \
+            --argjson body "$BODY" \
+            '{tag_name:$tag, name:$name, body:$body, draft:false, prerelease:false}')"
+
+          RELEASE_JSON="$(curl -sSfL -X POST \
+            -H "Authorization: token ${FORGEJO_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            "${BASE}/releases")"
+
+          RELEASE_ID="$(echo "$RELEASE_JSON" | jq -r .id)"
+          echo "Created release id=$RELEASE_ID"
+
+          upload_asset() {
+            local f="$1"
+            curl -sSfL -X POST \
+              -H "Authorization: token ${FORGEJO_TOKEN}" \
+              -F "attachment=@${f}" \
+              "${BASE}/releases/${RELEASE_ID}/assets?name=$(basename "$f")"
+          }
+
+          upload_asset "courseshelf-release-v${SEMVER}.tar.gz"
+          upload_asset "compose-release-v${SEMVER}.yml"
+          upload_asset .env.release.example
+          upload_asset release-notes.md

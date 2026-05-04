@@ -90,8 +90,15 @@ RUN apk add --no-cache ffmpeg openssl libc6-compat tini
 
 WORKDIR /app
 
+# APP_VERSION is baked at build time so AppConfig (apps/backend/src/common/
+# config/app-config.ts) reports the correct version on /api/v1/health and
+# in observability metadata. Default keeps `0.0.0-dev` for local builds;
+# the release workflow overrides via `--build-arg APP_VERSION=<semver>`.
+ARG APP_VERSION=0.0.0-dev
+
 ENV NODE_ENV=production \
-    PORT=3000
+    PORT=3000 \
+    APP_VERSION=${APP_VERSION}
 
 COPY --from=deploy /app/ ./
 

@@ -1,23 +1,26 @@
-# Production deployment for self-hosted CourseShelf.
+# Release deployment — pulls pre-built images from the Forgejo OCI registry.
 #
 # Usage:
-#   1. Copy `.env.production.example` to `.env.production` at the repo root.
-#   2. Fill in secrets (BETTER_AUTH_SECRET, CENTRIFUGO_*, COURSES_PATH).
-#   3. From the repo root:
-#        docker compose --env-file .env.production -f docker/compose.prod.yml up -d --build
-#   4. Browse to http://localhost:${PROXY_PORT:-8080}.
+#   1. Download the artefacts attached to the GitHub/Forgejo release:
+#        compose-release-vX.Y.Z.yml  (this file, with RELEASE_TAG pinned)
+#        .env.release.example
+#   2. Copy the env example to `.env` and fill the required values.
+#   3. Pull + start:
+#        docker compose --env-file .env -f compose-release-vX.Y.Z.yml pull
+#        docker compose --env-file .env -f compose-release-vX.Y.Z.yml up -d
 #
-# Layout:
-#   - postgres / redis / centrifugo: stateful services, named volumes.
-#   - backend / web: built from this repo (multi-stage Dockerfiles).
-#   - proxy: nginx folding web + backend onto a single origin (PROXY_PORT).
+# RELEASE_TAG defaults to `latest` when this file is committed; the release
+# workflow renders a per-tag copy where it points at the exact semver
+# (e.g. 0.2.0) and uploads that as a release asset.
+#
+# Layout mirrors compose.prod.yml — only the build sources are swapped for
+# pre-built images, and Centrifugo gains a wrapper entrypoint that
+# templates its config from env vars instead of mounting a hardcoded JSON.
 #
 # Course content lives on the host at $COURSES_PATH and is bind-mounted
-# read-only into the backend at /data/courses. Admins point libraries
-# inside that path from the SPA. Re-mount with a different host folder
-# to swap content without rebuilding any image.
+# read-only into the backend at /data/courses.
 
-name: "courseshelf"
+name: "courseshelf-release"
 
 networks:
   cs-net:
@@ -60,14 +63,12 @@ services:
     networks: [cs-net]
 
   centrifugo:
-    build:
-      context: ..
-      dockerfile: docker/centrifugo/Dockerfile
+    image: "${REGISTRY:-code.homelab.local}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-centrifugo:${RELEASE_TAG:-latest}"
     restart: unless-stopped
     environment:
       CENTRIFUGO_ALLOWED_ORIGINS: '${CENTRIFUGO_ALLOWED_ORIGINS:-["${PUBLIC_BASE_URL}"]}'
-      CENTRIFUGO_API_KEY: "${CENTRIFUGO_API_KEY}"
-      CENTRIFUGO_TOKEN_HMAC_SECRET: "${CENTRIFUGO_TOKEN_HMAC_SECRET}"
+      CENTRIFUGO_API_KEY: "${CENTRIFUGO_API_KEY:?CENTRIFUGO_API_KEY is required}"
+      CENTRIFUGO_TOKEN_HMAC_SECRET: "${CENTRIFUGO_TOKEN_HMAC_SECRET:?CENTRIFUGO_TOKEN_HMAC_SECRET is required}"
       CENTRIFUGO_LOG_LEVEL: "${CENTRIFUGO_LOG_LEVEL:-info}"
     ulimits:
       nofile: { soft: 65536, hard: 65536 }
@@ -79,9 +80,7 @@ services:
     networks: [cs-net]
 
   backend:
-    build:
-      context: ..
-      dockerfile: apps/backend/Dockerfile
+    image: "${REGISTRY:-code.homelab.local}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-backend:${RELEASE_TAG:-latest}"
     restart: unless-stopped
     depends_on:
       postgres: { condition: service_healthy }
@@ -98,13 +97,11 @@ services:
       AUTH_SELF_REGISTRATION: "${AUTH_SELF_REGISTRATION:-false}"
       AUTH_EMAIL_VERIFICATION: "${AUTH_EMAIL_VERIFICATION:-false}"
       CENTRIFUGO_API_URL: http://centrifugo:8000/api
-      CENTRIFUGO_API_KEY: "${CENTRIFUGO_API_KEY:?CENTRIFUGO_API_KEY is required}"
-      CENTRIFUGO_TOKEN_HMAC_SECRET: "${CENTRIFUGO_TOKEN_HMAC_SECRET:?CENTRIFUGO_TOKEN_HMAC_SECRET is required}"
+      CENTRIFUGO_API_KEY: "${CENTRIFUGO_API_KEY}"
+      CENTRIFUGO_TOKEN_HMAC_SECRET: "${CENTRIFUGO_TOKEN_HMAC_SECRET}"
       CENTRIFUGO_TOKEN_TTL_SECONDS: "${CENTRIFUGO_TOKEN_TTL_SECONDS:-300}"
       CORS_ORIGINS: "${PUBLIC_BASE_URL}"
     volumes:
-      # Course content lives on the host. Mount read-only — the backend
-      # only ever reads files from libraries; writes go to the DB.
       - "${COURSES_PATH:?COURSES_PATH is required (host directory holding your courses)}:/data/courses:ro"
     healthcheck:
       test:
@@ -117,20 +114,13 @@ services:
     networks: [cs-net]
 
   web:
-    build:
-      context: ..
-      dockerfile: apps/web/Dockerfile
+    image: "${REGISTRY:-code.homelab.local}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-web:${RELEASE_TAG:-latest}"
     restart: unless-stopped
     depends_on:
       backend: { condition: service_started }
     environment:
-      # Both URLs share the proxy origin so the browser sees a single
-      # origin (no CORS, no CORP).
       APP_API_BASE_URL: "${PUBLIC_BASE_URL}/api/v1"
       APP_AUTH_BASE_URL: "${PUBLIC_BASE_URL}"
-      # Centrifugo WebSocket URL for the browser. The proxy folds it onto
-      # the same origin (`docker/nginx/prod.conf` routes `/centrifugo/` →
-      # `centrifugo:8000`) so no separate hostname is needed.
       APP_CENTRIFUGO_URL: "${PUBLIC_BASE_URL}/centrifugo/connection/websocket"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/_app-config.js"]
@@ -141,9 +131,7 @@ services:
     networks: [cs-net]
 
   proxy:
-    build:
-      context: ..
-      dockerfile: docker/nginx/Dockerfile
+    image: "${REGISTRY:-code.homelab.local}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-proxy:${RELEASE_TAG:-latest}"
     restart: unless-stopped
     depends_on:
       backend: { condition: service_started }

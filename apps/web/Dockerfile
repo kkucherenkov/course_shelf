@@ -61,6 +61,13 @@ RUN pnpm --filter @app/specs bundle \
 # (see docker/nginx/prod.conf).
 FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
 
+# Informational only — the SPA is built once and configured per-deployment
+# via /_app-config.js, so APP_VERSION never affects the bundle. The release
+# workflow still passes `--build-arg APP_VERSION=<semver>` so `docker
+# inspect` exposes the released version.
+ARG APP_VERSION=0.0.0-dev
+ENV APP_VERSION=${APP_VERSION}
+
 # Root needed only for the install + COPY layers; we drop back to nginx
 # (the image's default) before CMD runs.
 USER root

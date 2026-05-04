@@ -1,0 +1,113 @@
+name: Regenerate Storybook visual snapshots
+
+# Manual-only — these are baseline PNGs for the Storybook visual regression
+# job in ci.yml. Capturing them outside the Linux runner environment
+# (e.g. on macOS) leads to a few-pixel size deltas in font glyph metrics,
+# and the ui-storybook job then fails for every component on every PR.
+#
+# Run this workflow from the branch you want the regenerated baselines
+# committed to:
+#   1. Forgejo UI → Actions → "Regenerate Storybook visual snapshots"
+#      → Run workflow → pick branch.
+#   2. Wait ~5 min. The job pushes a single
+#      `chore(ui): regenerate Storybook visual snapshots from CI` commit
+#      back to the same branch.
+#   3. CI re-runs on that commit; ui-storybook should be green.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# At most one regen on a given branch at a time. `cancel-in-progress: false`
+# means a queued trigger waits for the current run to finish — never two
+# in-flight, no commit-race.
+concurrency:
+  group: snapshots-regen-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  regen:
+    name: Capture fresh baselines in CI environment
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITEA_TOKEN }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # @app/ui imports tokens.generated.css from packages/ui/src — gitignored
+      # output of `pnpm design:build`. Build it before lint/typecheck/visual.
+      - name: Build design tokens
+        run: pnpm design:build
+
+      - name: Install Playwright chromium (with system deps)
+        run: pnpm --filter @app/ui exec playwright install --with-deps chromium
+
+      - name: Build Storybook static
+        env:
+          STORYBOOK_A11Y_LEVEL: todo
+        run: pnpm --filter @app/ui storybook:build
+
+      # Clear stale diff artefacts from any prior local run; baselines
+      # will be overwritten in capture-only mode below.
+      - name: Clear diff artefacts
+        run: rm -rf packages/ui/test/__snapshots__/__diff_output__ || true
+
+      # `STORYBOOK_REGEN=1` flips packages/ui/.storybook/test-runner.ts
+      # into capture-only mode: every story's screenshot is written as the
+      # new baseline and the diff step is skipped. This sidesteps
+      # jest-image-snapshot's CI guard (which fails on missing baselines
+      # instead of creating them).
+      - name: Capture fresh baselines
+        env:
+          STORYBOOK_REGEN: "1"
+        run: pnpm --filter @app/ui test:visual:ci
+
+      - name: Commit and push regenerated baselines
+        run: |
+          set -euo pipefail
+
+          git config user.email "actions@code.homelab.local"
+          git config user.name "Forgejo Actions"
+
+          # Diff outputs are runtime byproducts; never commit them.
+          rm -rf packages/ui/test/__snapshots__/__diff_output__ || true
+
+          git add packages/ui/test/__snapshots__
+          if git diff --cached --quiet; then
+            echo "No baseline changes — nothing to commit."
+            exit 0
+          fi
+
+          git commit -m "$(cat <<'EOF'
+          chore(ui): regenerate Storybook visual snapshots from CI
+
+          Auto-captured by .forgejo/workflows/snapshots-regen.yml so the
+          committed baselines match the Linux runner environment (font
+          metrics, headless Chromium glyph rendering) that gates the
+          ui-storybook job in ci.yml.
+          EOF
+          )"
+
+          # Rebase on top of any commits that landed on the branch while
+          # we were busy capturing. Without this, a developer who pushes
+          # to the same branch mid-regen makes our `git push` fail with
+          # non-fast-forward — and the only thing in our commit is
+          # `__snapshots__/*.png`, so a rebase always applies cleanly.
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          git pull --rebase origin "$BRANCH"
+          git push origin "HEAD:$BRANCH"

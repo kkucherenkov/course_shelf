@@ -92,8 +92,11 @@ describe('StreamTokenSigner', () => {
       const { token } = signer.sign({ userId: 'u', lessonId: 'l', ttlSeconds: 300 });
 
       const parts = token.split('.');
-      // Flip the last char of the payload segment
-      const flipped = parts[1]!.slice(0, -1) + (parts[1]!.at(-1) === 'a' ? 'b' : 'a');
+      // Flip the FIRST char, not the last — base64url's last char encodes
+      // only some of its 6 bits into the source bytes (the rest are
+      // padding) so flipping it can leave the decoded payload identical
+      // ~6% of the time, which flakes the tamper-detection test.
+      const flipped = (parts[1]![0] === 'a' ? 'b' : 'a') + parts[1]!.slice(1);
       const tampered = [parts[0], flipped, parts[2]].join('.');
 
       expect(() => signer.verify(tampered, 'l')).toThrow(StreamTokenTamperedError);
@@ -104,7 +107,9 @@ describe('StreamTokenSigner', () => {
       const { token } = signer.sign({ userId: 'u', lessonId: 'l', ttlSeconds: 300 });
 
       const parts = token.split('.');
-      const flippedSig = parts[2]!.slice(0, -1) + (parts[2]!.at(-1) === 'a' ? 'b' : 'a');
+      // Same base64url-padding caveat as above — flipping the first char
+      // guarantees the decoded HMAC bytes change.
+      const flippedSig = (parts[2]![0] === 'a' ? 'b' : 'a') + parts[2]!.slice(1);
       const tampered = [parts[0], parts[1], flippedSig].join('.');
 
       expect(() => signer.verify(tampered, 'l')).toThrow(StreamTokenTamperedError);
@@ -322,7 +327,9 @@ describe('StreamTokenSigner', () => {
       });
 
       const parts = token.split('.');
-      const flipped = parts[1]!.slice(0, -1) + (parts[1]!.at(-1) === 'a' ? 'b' : 'a');
+      // First-char flip; see the lesson-token equivalent above for why
+      // the previous last-char flip flaked.
+      const flipped = (parts[1]![0] === 'a' ? 'b' : 'a') + parts[1]!.slice(1);
       const tampered = [parts[0], flipped, parts[2]].join('.');
 
       expect(() => signer.verifyMaterial(tampered, 'm')).toThrow(StreamTokenTamperedError);

@@ -23,6 +23,10 @@ coverage
 !.env.example
 !.env.production.example
 
+# jest-image-snapshot writes diff PNGs here on local runs; they're
+# byproducts, not baselines.
+**/__snapshots__/__diff_output__/
+
 # tooling
 .DS_Store
 .vscode/*

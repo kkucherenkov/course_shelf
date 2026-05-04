@@ -1,4 +1,4 @@
-# Release deployment — pulls pre-built images from the Forgejo OCI registry.
+# Release deployment — pulls pre-built images from GitHub Container Registry.
 #
 # Usage:
 #   1. Download the artefacts attached to the GitHub/Forgejo release:
@@ -63,7 +63,7 @@ services:
     networks: [cs-net]
 
   centrifugo:
-    image: "${REGISTRY:-code.homelab.local}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-centrifugo:${RELEASE_TAG:-latest}"
+    image: "${REGISTRY:-ghcr.io}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-centrifugo:${RELEASE_TAG:-latest}"
     restart: unless-stopped
     environment:
       CENTRIFUGO_ALLOWED_ORIGINS: '${CENTRIFUGO_ALLOWED_ORIGINS:-["${PUBLIC_BASE_URL}"]}'
@@ -80,7 +80,7 @@ services:
     networks: [cs-net]
 
   backend:
-    image: "${REGISTRY:-code.homelab.local}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-backend:${RELEASE_TAG:-latest}"
+    image: "${REGISTRY:-ghcr.io}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-backend:${RELEASE_TAG:-latest}"
     restart: unless-stopped
     depends_on:
       postgres: { condition: service_healthy }
@@ -114,7 +114,7 @@ services:
     networks: [cs-net]
 
   web:
-    image: "${REGISTRY:-code.homelab.local}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-web:${RELEASE_TAG:-latest}"
+    image: "${REGISTRY:-ghcr.io}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-web:${RELEASE_TAG:-latest}"
     restart: unless-stopped
     depends_on:
       backend: { condition: service_started }
@@ -131,7 +131,7 @@ services:
     networks: [cs-net]
 
   proxy:
-    image: "${REGISTRY:-code.homelab.local}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-proxy:${RELEASE_TAG:-latest}"
+    image: "${REGISTRY:-ghcr.io}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-proxy:${RELEASE_TAG:-latest}"
     restart: unless-stopped
     depends_on:
       backend: { condition: service_started }

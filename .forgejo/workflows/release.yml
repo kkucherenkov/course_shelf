@@ -200,16 +200,16 @@ jobs:
           git-cliff --version
 
       - name: Generate release notes
-        env:
-          TAG: ${{ steps.version.outputs.tag }}
         run: |
           set -euo pipefail
-          # `--unreleased` collects everything since the previous matching
-          # tag; `--tag` labels the section with the new release.
+          # `--current` collects commits belonging to the tag at HEAD —
+          # that's the v*.*.*-release tag we just pushed. `--unreleased`
+          # would be empty because the tag already exists in the
+          # checkout (release workflow reads the tag's commit, so all
+          # history is "released" from git-cliff's POV).
           git-cliff \
             --config cliff.toml \
-            --unreleased \
-            --tag "$TAG" \
+            --current \
             --strip header \
             > release-notes.md
           cat release-notes.md

@@ -3,8 +3,13 @@
  * Parses folder and file names in the conventional library tree layout. Three
  * priority tiers are tried in order; the first match wins:
  *
- *   1. Numeric prefix:        `01 - Title` / `01. Title`         (Udemy-style)
- *   2. Word-prefixed numeric: `Модуль 2 - Title` / `Глава 2. Title`
+ *   1. Numeric prefix:        `01 - Title` / `01. Title` / `01_Title` /
+ *                             `01 Title` / `07`                   (Udemy-style
+ *                             plus Russian / Skillbox / Stepik conventions
+ *                             where the separator is a space, underscore, or
+ *                             absent altogether).
+ *   2. Word-prefixed numeric: `Модуль 2 - Title` / `Глава 2. Title` /
+ *                             `Module 1 Setup` (separator may be absent).
  *      (Russian / "Module N – …" exports — the leading word is dropped, the
  *      numeric ordinal is preserved.)
  *   3. Composite lesson:      `2.5 Title` / `2.6` (no title)
@@ -12,6 +17,11 @@
  *      `(sectionOrdinal, ordinal)`. When no title follows, the label falls
  *      back to the original basename so the file remains identifiable.)
  *   4. Bare title:            anything that did not match above.
+ *
+ * When a numeric prefix matches but no descriptive label follows (e.g. a folder
+ * literally named `07` or a file like `07.mp4`), the label falls back to the
+ * trimmed basename so we never produce an empty string — section/lesson titles
+ * downstream are required to be non-empty.
  *
  * Returns `unsupportedExtension: true` for lesson files whose extension is
  * not in `SUPPORTED_EXTENSIONS`. Callers record a ScanError and skip; nothing
@@ -36,26 +46,38 @@ export interface ParsedLessonFileName {
 }
 
 /** Extensions recognised as lesson video files. Lower-case only. */
-const SUPPORTED_EXTENSIONS = new Set(['.mp4', '.m4v', '.mkv', '.webm']);
+const SUPPORTED_EXTENSIONS = new Set(['.mp4', '.m4v', '.mkv', '.webm', '.wmv']);
 
 /**
- * Tier 1 — `01 - Title` / `01. Title` prefix. The ordinal is at the very
- * start of the string.
+ * Tier 1 — leading numeric prefix. Separator after the digits is any non-empty
+ * mix of whitespace, `-`, `.`, `_` — or absent entirely (bare numeric).
+ *   `01 - Title` / `01-Title` / `01.Title` / `01_Title` / `01 Title` → ordinal+label
+ *   `07`                                                              → ordinal=7,
+ *                                                                       label falls back
+ *                                                                       to the trimmed
+ *                                                                       input so the
+ *                                                                       title is never
+ *                                                                       empty.
  */
-const PREFIX_RE = /^(\d+)\s*[-.]\s*(.+)$/;
+const PREFIX_RE = /^(\d+)(?:[\s\-._]+(.+))?$/;
 
 /**
  * Tier 2 — leading word(s) before the ordinal. The leading word is dropped;
- * the ordinal and the post-separator label are kept.
+ * the ordinal is preserved. Separator between the ordinal and the post-label
+ * is the same flexible set as Tier 1, so `Module 1 Setup` (no separator
+ * character) also matches. When the ordinal is bare (`Часть 1`), the label
+ * falls back to the trimmed input so it stays unique across siblings.
  *   "Модуль 2 - Настройки окружения" → ordinal=2, label="Настройки окружения"
  *   "Глава 2. Продвинутые техники"   → ordinal=2, label="Продвинутые техники"
  *   "Module 1 - Setup"               → ordinal=1, label="Setup"
+ *   "Module 1 Setup"                 → ordinal=1, label="Setup"
+ *   "Часть 1"                         → ordinal=1, label="Часть 1"
  *
  * `\p{L}+` (with the `u` flag) matches any Unicode letter, so Russian / Greek
  * / Latin words all qualify. Without an explicit anchor for digits inside the
  * word, this safely declines to match Tier-1 inputs (`01 - Foo`).
  */
-const WORD_PREFIXED_RE = /^(\p{L}+(?:\s+\p{L}+)*)\s+(\d+)\s*[-.]\s*(.+)$/u;
+const WORD_PREFIXED_RE = /^(\p{L}+(?:\s+\p{L}+)*)\s+(\d+)(?:[\s\-._]+(.+))?$/u;
 
 /**
  * Tier 3 — composite `N.M` lesson pattern. Used for *file* names only, not
@@ -65,10 +87,14 @@ const WORD_PREFIXED_RE = /^(\p{L}+(?:\s+\p{L}+)*)\s+(\d+)\s*[-.]\s*(.+)$/u;
  */
 const COMPOSITE_LESSON_RE = /^(\d+)\.(\d+)(?:\s+(.+))?$/;
 
-function applyPrefix(match: RegExpExecArray): { ordinal: number; label: string } {
+function applyPrefix(
+  match: RegExpExecArray,
+  fallbackLabel: string,
+): { ordinal: number; label: string } {
+  const label = (match[2] ?? '').trim();
   return {
     ordinal: Number.parseInt(match[1] ?? '', 10),
-    label: (match[2] ?? '').trim(),
+    label: label === '' ? fallbackLabel : label,
   };
 }
 
@@ -77,13 +103,14 @@ export function parseFolderName(name: string): ParsedFolderName {
   const trimmed = name.trim();
 
   const direct = PREFIX_RE.exec(trimmed);
-  if (direct) return applyPrefix(direct);
+  if (direct) return applyPrefix(direct, trimmed);
 
   const word = WORD_PREFIXED_RE.exec(trimmed);
   if (word) {
+    const restLabel = (word[3] ?? '').trim();
     return {
       ordinal: Number.parseInt(word[2] ?? '', 10),
-      label: (word[3] ?? '').trim(),
+      label: restLabel === '' ? trimmed : restLabel,
     };
   }
 
@@ -124,8 +151,9 @@ export function parseLessonFileName(name: string): ParsedLessonFileName {
   // Tier 1 — numeric prefix.
   const prefixed = PREFIX_RE.exec(fileBasename);
   if (prefixed) {
-    if (supported) return { ...applyPrefix(prefixed), extension };
-    return { ...applyPrefix(prefixed), extension, unsupportedExtension: true };
+    const fallback = fileBasename.trim();
+    if (supported) return { ...applyPrefix(prefixed, fallback), extension };
+    return { ...applyPrefix(prefixed, fallback), extension, unsupportedExtension: true };
   }
 
   // Tier 4 — bare title.

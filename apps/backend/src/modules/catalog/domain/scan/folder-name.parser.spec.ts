@@ -68,6 +68,76 @@ describe('parseFolderName', () => {
     expect(result.ordinal).toBe(1);
     expect(result.label).toBe('Module 7 Real');
   });
+
+  // -------------------------------------------------------------------------
+  // Extended Tier-1 separators (Russian / Skillbox / Stepik conventions):
+  // space-only, underscore, and bare numeric.
+  // -------------------------------------------------------------------------
+
+  it('parses "01 Title" (space-only separator)', () => {
+    const result = parseFolderName('01 Введение');
+    expect(result.ordinal).toBe(1);
+    expect(result.label).toBe('Введение');
+  });
+
+  it('parses "1 Title" (single digit, space separator)', () => {
+    const result = parseFolderName('3 Обработка Ошибок');
+    expect(result.ordinal).toBe(3);
+    expect(result.label).toBe('Обработка Ошибок');
+  });
+
+  it('parses "01_Title" (underscore separator)', () => {
+    const result = parseFolderName('01_Ready, Set, Code');
+    expect(result.ordinal).toBe(1);
+    expect(result.label).toBe('Ready, Set, Code');
+  });
+
+  it('parses bare numeric "07" — keeps the digits as the label fallback', () => {
+    const result = parseFolderName('07');
+    expect(result.ordinal).toBe(7);
+    expect(result.label).toBe('07');
+  });
+
+  it('parses bare numeric "1" — keeps the single digit as the label', () => {
+    const result = parseFolderName('1');
+    expect(result.ordinal).toBe(1);
+    expect(result.label).toBe('1');
+  });
+
+  it('siblings "1 Урок" / "2 Урок" collapse to the same generic label (acknowledged trade-off)', () => {
+    // Both folders extract the same descriptive word as the label. Downstream
+    // (RunScanHandler) deduplicates these into a single section — the cost of
+    // making space-only separators work for the common Russian convention
+    // `01 Введение` is that two folders sharing a single descriptive word lose
+    // their distinction. This test pins the parser behaviour so we notice
+    // accidental drift in handler logic that depends on it.
+    const a = parseFolderName('1 Урок');
+    const b = parseFolderName('2 Урок');
+    expect(a.ordinal).toBe(1);
+    expect(b.ordinal).toBe(2);
+    expect(a.label).toBe(b.label);
+    expect(a.label).toBe('Урок');
+  });
+
+  it('"Часть 1" (word-prefixed, no rest) keeps the original as label fallback', () => {
+    const result = parseFolderName('Часть 1');
+    expect(result.ordinal).toBe(1);
+    expect(result.label).toBe('Часть 1');
+  });
+
+  it('"Module 1 Setup" (word-prefixed, space-only separator after ordinal)', () => {
+    const result = parseFolderName('Module 1 Setup');
+    expect(result.ordinal).toBe(1);
+    expect(result.label).toBe('Setup');
+  });
+
+  it('plain numeric-looking input with trailing letters does not match ("01a")', () => {
+    // `01a` is neither a valid prefix nor a bare ordinal — the trailing `a`
+    // is not a recognised separator. Falls through to bare-title handling.
+    const result = parseFolderName('01a');
+    expect(result.ordinal).toBeUndefined();
+    expect(result.label).toBe('01a');
+  });
 });
 
 describe('parseLessonFileName', () => {
@@ -158,5 +228,33 @@ describe('parseLessonFileName', () => {
     expect(result.ordinal).toBe(3);
     expect(result.label).toBe('Notes');
     expect(result.unsupportedExtension).toBe(true);
+  });
+
+  it('accepts .wmv as a supported video extension', () => {
+    const result = parseLessonFileName('1 Лекция.wmv');
+    expect(result.ordinal).toBe(1);
+    expect(result.label).toBe('Лекция');
+    expect(result.extension).toBe('.wmv');
+    expect(result.unsupportedExtension).toBeUndefined();
+  });
+
+  it('parses "01 Title.mp4" (space-only separator)', () => {
+    const result = parseLessonFileName('01 Введение.mp4');
+    expect(result.ordinal).toBe(1);
+    expect(result.label).toBe('Введение');
+    expect(result.extension).toBe('.mp4');
+  });
+
+  it('parses "01_Title.mp4" (underscore separator)', () => {
+    const result = parseLessonFileName('01_Intro.mp4');
+    expect(result.ordinal).toBe(1);
+    expect(result.label).toBe('Intro');
+  });
+
+  it('parses bare numeric "07.mp4" — label falls back to the digits', () => {
+    const result = parseLessonFileName('07.mp4');
+    expect(result.ordinal).toBe(7);
+    expect(result.label).toBe('07');
+    expect(result.extension).toBe('.mp4');
   });
 });

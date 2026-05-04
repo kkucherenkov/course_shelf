@@ -24,6 +24,7 @@ describe('stemMatch', () => {
     ['/lib/01 - Intro.m4v', 'video'],
     ['/lib/01 - Intro.mkv', 'video'],
     ['/lib/01 - Intro.webm', 'video'],
+    ['/lib/01 - Intro.wmv', 'video'],
   ])('%s → kind=video', (path, expectedKind) => {
     expect(stemMatch(path).kind).toBe(expectedKind);
   });
@@ -135,6 +136,24 @@ describe('stemMatch', () => {
     const dotForm = stemMatch('/lib/01. Intro.mp4');
     const dashForm = stemMatch('/lib/01 - Intro.mp4');
     expect(dotForm.canonicalStem).toBe(dashForm.canonicalStem);
+  });
+
+  it('"01 Intro.mp4" (space-only separator) and "01 Intro.pdf" share canonical stem', () => {
+    const video = stemMatch('/lib/01 Intro.mp4');
+    const material = stemMatch('/lib/01 Intro.pdf');
+    expect(video.canonicalStem).toBe(material.canonicalStem);
+  });
+
+  it('"01_Intro.mp4" (underscore separator) and "01_Intro.pdf" share canonical stem', () => {
+    const video = stemMatch('/lib/01_Intro.mp4');
+    const material = stemMatch('/lib/01_Intro.pdf');
+    expect(video.canonicalStem).toBe(material.canonicalStem);
+  });
+
+  it('bare numeric stem "07.mp4" preserves the digits', () => {
+    const { canonicalStem, kind } = stemMatch('/lib/07.mp4');
+    expect(canonicalStem).toBe('07');
+    expect(kind).toBe('video');
   });
 
   // -------------------------------------------------------------------------

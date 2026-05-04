@@ -2,6 +2,22 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-04-001 — Scan parser hardening on a real library (#188)
+
+- Created: 2026-05-04
+- Completed: 2026-05-04
+- Owner: claude
+- Spec: Forgejo #188 (no roadmap card — ad-hoc hardening of the already-shipped E06 scan pipeline)
+- Outcome:
+  - Ran a fresh offline diagnostic against a real ~17 600-file library at `/Volumes/Shared2/Courses` and patched the gaps it surfaced:
+    - **Parsers** (`folder-name.parser.ts`, `stem-match.ts`): `PREFIX_RE` and `SINGLE_PREFIX_RE` now accept any non-empty mix of `[\s\-._]` between the digits and the title — or no separator at all, so `01 Введение`, `01_Ready, Set, Code`, and a bare folder named `07` all parse with an ordinal. The Tier-2 word-prefixed regex was widened symmetrically (`Module 1 Setup`, `Часть 1`). `applyPrefix` gained a `fallbackLabel` parameter so the label is never empty (a folder literally named `7` keeps `'7'` as its label so siblings stay unique).
+    - **Extensions**: `.wmv` added to `VIDEO_EXTS` and `SUPPORTED_EXTENSIONS` (40 videos in one Russian chemistry course were previously ScanError-ed).
+    - **Handler** (`run-scan.handler.ts`): `sectionSet: Set<string>` → `sectionMap: Map<string, number | undefined>`. Sections are sorted by parsed ordinal (numbered first, unordered alphabetically after) before being persisted, so on-disk `1, 2, 3, …, 10` numbering is preserved on the Course aggregate instead of file-walk insertion order.
+    - **Tests** (944 → 963): 8 new on `parseFolderName`, 4 on `parseLessonFileName`, 4 on `stemMatch`, 2 on `RunScanHandler` (section ordering by ordinal + unordered-after fallback).
+  - Acknowledged trade-off pinned by a regression test: siblings like `1 Урок`, `2 Урок`, … now collapse to a single section `Урок` (one course in the corpus). The win on space-as-separator everywhere else outweighs the collision; documented in `parseFolderName`'s spec.
+  - Repeatable harness: `scripts/diagnose-scan-parsers.ts` (no DB / no HTTP / no ffmpeg) — `node --experimental-strip-types scripts/diagnose-scan-parsers.ts [path]` produces a structured before/after report. Surfaced longer-tail items left as separate stories: `.url` / `.ac3` / Udemy `.zip|.html|.cs|.js` source archives still emit `unsupported-extension` ScanErrors.
+- Verified: backend `pnpm test` 963 ✅, ESLint clean on touched files, Prettier ✅, diagnostic re-run on the live library shows 1 238 ordinaled sections (was 790) and 5 906 recognised videos (was 5 866).
+
 ## T-2026-05-01-004 — README quickstart + screenshots scaffold (E23-F02-S01)
 
 - Created: 2026-05-01

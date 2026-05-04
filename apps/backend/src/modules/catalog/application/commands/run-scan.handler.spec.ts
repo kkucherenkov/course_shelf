@@ -1031,4 +1031,81 @@ describe('RunScanHandler', () => {
       expect((payload as { scanId: string }).scanId).toBe(scan.id);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Section ordering — sections must be persisted in numeric ordinal order
+  // rather than file-walk insertion order. This pins the natural `1, 2, 3,
+  // …, 10` order so the materialised Course aggregate matches the on-disk
+  // numbering even when the FS adapter yields files in a different order
+  // (e.g. lexicographic, which would otherwise produce `1, 10, 2, …`).
+  // -------------------------------------------------------------------------
+  describe('section ordering by ordinal', () => {
+    it('sorts sections by parsed ordinal, not file-walk insertion order', async () => {
+      vi.useRealTimers();
+
+      // Fixture deliberately yields `10`, then `2`, then `1` (lexicographic
+      // walk order on the FsAdapter). The handler must reorder them to
+      // `1, 2, 10` because each folder carries an ordinal in its name.
+      const orderingFiles: FileRecord[] = [
+        { path: '/lib/Course Z/10 - Final/lesson.mp4', mtime: BASE_TIME, size: 100 },
+        { path: '/lib/Course Z/02 - Middle/lesson.mp4', mtime: BASE_TIME, size: 100 },
+        { path: '/lib/Course Z/01 - Intro/lesson.mp4', mtime: BASE_TIME, size: 100 },
+      ];
+
+      const orderingHandler = new RunScanHandler(
+        makeLibraryRepo(Library.register({ id: 'lib-x', name: 'Lib X', rootPath: '/lib' })),
+        makeScanRepo(),
+        courseRepo,
+        lessonRepo,
+        new FakeFsAdapter(orderingFiles),
+        makePassthroughFfmpeg(),
+        makeFakeAppConfig(),
+        makeCentrifugoService(),
+      );
+
+      await orderingHandler.execute(new RunScanCommand('lib-x', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const course = [...courseRepo.store.values()].find((c) => c.slug === 'course-z')!;
+      expect(course).toBeDefined();
+      expect(course.sections.map((s) => s.title)).toEqual(['Intro', 'Middle', 'Final']);
+      expect(course.sections.map((s) => s.position)).toEqual([1, 2, 3]);
+    });
+
+    it('places sections without an ordinal after numbered sections, alphabetically', async () => {
+      vi.useRealTimers();
+
+      const orderingFiles: FileRecord[] = [
+        { path: '/lib/Course Z/Bonus Material/extra.mp4', mtime: BASE_TIME, size: 100 },
+        { path: '/lib/Course Z/02 - Middle/lesson.mp4', mtime: BASE_TIME, size: 100 },
+        { path: '/lib/Course Z/01 - Intro/lesson.mp4', mtime: BASE_TIME, size: 100 },
+        { path: '/lib/Course Z/Appendix/extra.mp4', mtime: BASE_TIME, size: 100 },
+      ];
+
+      const orderingHandler = new RunScanHandler(
+        makeLibraryRepo(Library.register({ id: 'lib-y', name: 'Lib Y', rootPath: '/lib' })),
+        makeScanRepo(),
+        courseRepo,
+        lessonRepo,
+        new FakeFsAdapter(orderingFiles),
+        makePassthroughFfmpeg(),
+        makeFakeAppConfig(),
+        makeCentrifugoService(),
+      );
+
+      await orderingHandler.execute(new RunScanCommand('lib-y', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const course = [...courseRepo.store.values()].find((c) => c.slug === 'course-z')!;
+      expect(course).toBeDefined();
+      // Numbered sections first (in numeric order), then unordered ones
+      // (alphabetical fallback): Appendix before Bonus Material.
+      expect(course.sections.map((s) => s.title)).toEqual([
+        'Intro',
+        'Middle',
+        'Appendix',
+        'Bonus Material',
+      ]);
+    });
+  });
 });

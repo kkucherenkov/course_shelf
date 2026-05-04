@@ -272,7 +272,12 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           }
         >();
 
-        const sectionSet = new Set<string>();
+        // section label → smallest ordinal seen for that label (or undefined
+        // when none of the sibling folders carry one). Persisted as a Map so
+        // section order downstream is the natural ordinal order rather than
+        // file-walk insertion order — `1, 2, 3, …, 10` instead of the
+        // lexicographic `1, 10, 2, …` that a Set would produce.
+        const sectionMap = new Map<string, number | undefined>();
 
         for (const file of files) {
           const fileBasename = path.basename(file.path);
@@ -325,10 +330,31 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           const relSegments = relFromCourse.split(/[/\\]/);
           if (relSegments.length > 1) {
             const sectionFolder = relSegments[0] ?? '';
-            const { label } = parseFolderName(sectionFolder);
-            sectionSet.add(label);
+            const { label, ordinal } = parseFolderName(sectionFolder);
+            // Keep the smallest ordinal seen for this label so two sibling
+            // folders that collapse to the same label (e.g. "1 Урок" and
+            // "2 Урок" both producing label="Урок") do not overwrite the
+            // first ordinal recorded.
+            const prev = sectionMap.get(label);
+            if (!sectionMap.has(label)) {
+              sectionMap.set(label, ordinal);
+            } else if (ordinal !== undefined && (prev === undefined || ordinal < prev)) {
+              sectionMap.set(label, ordinal);
+            }
           }
         }
+
+        // Sort sections by their parsed ordinal; labels without an ordinal go
+        // last in alphabetical order (so a course mixing "01 - Intro" with
+        // "Bonus Material" lands the bonus folder after the numbered sections).
+        const sortedSectionEntries = [...sectionMap.entries()].toSorted(
+          ([labelA, ordA], [labelB, ordB]) => {
+            if (ordA !== undefined && ordB !== undefined) return ordA - ordB;
+            if (ordA !== undefined) return -1;
+            if (ordB !== undefined) return 1;
+            return labelA.localeCompare(labelB);
+          },
+        );
 
         // -----------------------------------------------------------------------
         // Step 2: Process each stem group.
@@ -486,10 +512,11 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
 
         // Record the course if it has at least one lesson file.
         if (lessonFiles.length > 0) {
+          const sortedSectionTitles = sortedSectionEntries.map(([title]) => title);
           scan.incrementCoursesDiscovered({
             path: courseFolder,
             title: courseTitle,
-            sectionTitles: [...sectionSet],
+            sectionTitles: sortedSectionTitles,
             lessonFiles,
             discoveredLessons,
           });
@@ -514,7 +541,10 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
             // When the course has no sub-folder sections (flat layout: all
             // videos directly inside the course folder), a synthetic "Lessons"
             // section is created so every lesson has a valid sectionId.
-            const sectionTitleList = sectionSet.size > 0 ? [...sectionSet] : ['Lessons'];
+            const sectionTitleList =
+              sortedSectionEntries.length > 0
+                ? sortedSectionEntries.map(([title]) => title)
+                : ['Lessons'];
             const course = Course.create({
               id: nanoid(),
               libraryId,

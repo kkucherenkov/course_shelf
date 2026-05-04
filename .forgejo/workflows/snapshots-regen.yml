@@ -1,0 +1,95 @@
+name: Regenerate Storybook visual snapshots
+
+# Manual-only — these are baseline PNGs for the Storybook visual regression
+# job in ci.yml. Capturing them outside the Linux runner environment
+# (e.g. on macOS) leads to a few-pixel size deltas in font glyph metrics,
+# and the ui-storybook job then fails for every component on every PR.
+#
+# Run this workflow from the branch you want the regenerated baselines
+# committed to:
+#   1. Forgejo UI → Actions → "Regenerate Storybook visual snapshots"
+#      → Run workflow → pick branch.
+#   2. Wait ~5 min. The job pushes a single
+#      `chore(ui): regenerate Storybook visual snapshots from CI` commit
+#      back to the same branch.
+#   3. CI re-runs on that commit; ui-storybook should be green.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  regen:
+    name: Capture fresh baselines in CI environment
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITEA_TOKEN }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # @app/ui imports tokens.generated.css from packages/ui/src — gitignored
+      # output of `pnpm design:build`. Build it before lint/typecheck/visual.
+      - name: Build design tokens
+        run: pnpm design:build
+
+      - name: Install Playwright chromium (with system deps)
+        run: pnpm --filter @app/ui exec playwright install --with-deps chromium
+
+      - name: Build Storybook static
+        env:
+          STORYBOOK_A11Y_LEVEL: todo
+        run: pnpm --filter @app/ui storybook:build
+
+      # jest-image-snapshot creates a fresh PNG and the test passes when
+      # no baseline exists. Drop everything so the next run captures
+      # baselines against the runner's exact font/Chromium combo.
+      - name: Drop existing baselines
+        run: |
+          set -euo pipefail
+          rm -rf packages/ui/test/__snapshots__/__diff_output__ || true
+          rm -f packages/ui/test/__snapshots__/*.png || true
+
+      - name: Capture fresh baselines
+        run: pnpm --filter @app/ui test:visual:ci
+
+      - name: Commit and push regenerated baselines
+        run: |
+          set -euo pipefail
+
+          git config user.email "actions@code.homelab.local"
+          git config user.name "Forgejo Actions"
+
+          # Diff outputs are runtime byproducts; never commit them.
+          rm -rf packages/ui/test/__snapshots__/__diff_output__ || true
+
+          git add packages/ui/test/__snapshots__
+          if git diff --cached --quiet; then
+            echo "No baseline changes — nothing to commit."
+            exit 0
+          fi
+
+          git commit -m "$(cat <<'EOF'
+          chore(ui): regenerate Storybook visual snapshots from CI
+
+          Auto-captured by .forgejo/workflows/snapshots-regen.yml so the
+          committed baselines match the Linux runner environment (font
+          metrics, headless Chromium glyph rendering) that gates the
+          ui-storybook job in ci.yml.
+          EOF
+          )"
+          git push

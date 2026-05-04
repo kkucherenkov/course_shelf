@@ -33,13 +33,13 @@ pnpm --filter @app/web typecheck && pnpm --filter @app/web test
 
 Bundles live under `docs/design/<area>/`. A bundle for a single screen contains:
 
-| File | What |
-|---|---|
-| `app.jsx` | Top-level layout + global providers |
-| `screens.jsx` | One JSX function per screen state (default / loading / empty / error / no-permission) |
-| `components.jsx` | Bundle-local primitives that haven't reached `@app/ui` yet |
-| `styles.css` | Bundle-scoped CSS — design tokens read from `var(--…)` |
-| `index.html` | `<script type="module" src="./app.jsx">` so designers can load it standalone |
+| File             | What                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------- |
+| `app.jsx`        | Top-level layout + global providers                                                   |
+| `screens.jsx`    | One JSX function per screen state (default / loading / empty / error / no-permission) |
+| `components.jsx` | Bundle-local primitives that haven't reached `@app/ui` yet                            |
+| `styles.css`     | Bundle-scoped CSS — design tokens read from `var(--…)`                                |
+| `index.html`     | `<script type="module" src="./app.jsx">` so designers can load it standalone          |
 
 If you're producing a new bundle, follow the [DESIGN_BRIEF](../design/DESIGN_BRIEF.md) section index — each card in the roadmap (e.g. `cs-web-browse-search`) maps to one folder.
 
@@ -57,17 +57,17 @@ pnpm design:build
 
 Reads `docs/design/shared/tokens.json` (single source of truth) and emits:
 
-| Output | Consumer |
-|---|---|
-| `packages/ui/src/tokens.generated.css` | every `@app/ui` component |
-| `packages/ui/src/design-tokens.generated.ts` | `designTokens.color.brand.light.accent` etc. |
-| `apps/web/app/assets/css/tokens.generated.css` | the SPA |
-| `apps/web/app/design-tokens.generated.ts` | `/dev/foundations` canvas |
-| `apps/mobile/lib/foundations/tokens.dart` | Flutter |
+| Output                                         | Consumer                                     |
+| ---------------------------------------------- | -------------------------------------------- |
+| `packages/ui/src/tokens.generated.css`         | every `@app/ui` component                    |
+| `packages/ui/src/design-tokens.generated.ts`   | `designTokens.color.brand.light.accent` etc. |
+| `apps/web/app/assets/css/tokens.generated.css` | the SPA                                      |
+| `apps/web/app/design-tokens.generated.ts`      | `/dev/foundations` canvas                    |
+| `apps/mobile/lib/foundations/tokens.dart`      | Flutter                                      |
 
 Generated tokens are **gitignored** — every CI job that lints or types code runs `pnpm design:build` first. Local rebuild is automatic via Turbo when you run a downstream task; force a rebuild only if you've just edited `tokens.json`.
 
-If a token is missing for the new screen, add it to `tokens.json` and rerun `pnpm design:build`. If a token *value* needs to change, that's a separate design discussion — the `pnpm design:audit` script reports drift.
+If a token is missing for the new screen, add it to `tokens.json` and rerun `pnpm design:build`. If a token _value_ needs to change, that's a separate design discussion — the `pnpm design:audit` script reports drift.
 
 ### 3 — Catalog new components
 
@@ -106,6 +106,26 @@ Component must satisfy:
 - **Props in / events out**, no router or store calls. Pages compose; primitives stay portable.
 - **A11y**: keyboard nav, ARIA roles where applicable, focus-visible rings, reduced-motion respected. The Storybook test-runner runs axe (warn-only in CI for now; an error in dev).
 
+#### Visual regression baselines
+
+The `ui-storybook` CI job screenshots every story and diffs it against a PNG
+baseline under `packages/ui/test/__snapshots__/`. **Capture baselines from
+the CI runner, never from a developer machine** — font metrics differ
+between macOS/Linux/Windows and a few-pixel size delta will fail every
+story. To regenerate after intentional design changes (or after env drift):
+
+1. Push your branch.
+2. Forgejo UI → **Actions** → "**Regenerate Storybook visual snapshots**" →
+   _Run workflow_ → pick the branch.
+3. The workflow drops the existing PNGs, captures fresh ones inside the
+   Linux runner, and pushes a `chore(ui): regenerate Storybook visual
+snapshots from CI` commit back to the branch. CI re-runs and the
+   `ui-storybook` job goes green.
+
+`docker-entrypoint.sh`, fonts on the runner, headless Chromium version —
+all of those are the contract. Don't try to capture locally and commit; CI
+will reject the size deltas.
+
 ### 4 — Compose the page
 
 Pages live in `apps/web/app/pages/`. They:
@@ -116,10 +136,10 @@ Pages live in `apps/web/app/pages/`. They:
 
 ```vue
 <script setup lang="ts">
-import { RecentScansBlock } from '@app/ui';
-import { useRecentScans } from '~/composables/useRecentScans';
+  import { RecentScansBlock } from '@app/ui';
+  import { useRecentScans } from '~/composables/useRecentScans';
 
-const { data, pending, error } = useRecentScans(libraryId);
+  const { data, pending, error } = useRecentScans(libraryId);
 </script>
 
 <template>

@@ -230,8 +230,18 @@ jobs:
             -e "s|\${REGISTRY:-ghcr.io}|${REGISTRY}|g" \
             -e "s|\${REGISTRY_NAMESPACE:-kkucherenkov}|${NS}|g" \
             docker/compose.release.yml > "$OUT"
-          # Sanity: the rendered file must still parse.
-          docker compose -f "$OUT" config --quiet
+          # Sanity-validate the rendered file via `docker compose config`.
+          # Compose interpolates ALL `${VAR:?...}` placeholders during
+          # validation, so we feed it dummy values — this only checks
+          # YAML/syntax correctness; real values come from operator's
+          # `.env` at deploy time.
+          PUBLIC_BASE_URL=http://placeholder.local \
+          POSTGRES_PASSWORD=placeholder \
+          BETTER_AUTH_SECRET=placeholder \
+          CENTRIFUGO_API_KEY=placeholder \
+          CENTRIFUGO_TOKEN_HMAC_SECRET=placeholder \
+          COURSES_PATH=/tmp \
+            docker compose -f "$OUT" config --quiet
           echo "rendered=$OUT" >> "$GITHUB_OUTPUT"
         id: render
 

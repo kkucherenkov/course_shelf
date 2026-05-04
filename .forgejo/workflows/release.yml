@@ -87,13 +87,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Spec validate · bundle · codegen
-        run: |
-          pnpm spec:validate
-          pnpm spec:bundle
-          pnpm spec:codegen
+      - name: Spec validate
+        # Fast YAML-shape sanity check; no codegen runs at the workflow
+        # level. The backend + web Dockerfiles bundle their own copy of
+        # the spec and (re-)build the TS client internally; the Dart
+        # client (the only generator that requires Java via
+        # openapi-generator-cli) is never loaded into a release image,
+        # so we deliberately don't install JDK on the release runner.
+        run: pnpm spec:validate
 
       - name: Build design tokens
+        # Tokens are gitignored — both `apps/web/Dockerfile` and the
+        # `@app/ui` consumers would otherwise fail to resolve
+        # `tokens.generated.css`/`design-tokens.generated.ts` during
+        # the docker build's `nuxt generate` step. Building on the host
+        # before `docker build` lands the generated files in the build
+        # context via `COPY . .`.
         run: pnpm design:build
 
       # ─── Registry login ──────────────────────────────────────────────────

@@ -30,9 +30,26 @@ type Story = StoryObj<typeof AppAvatar>;
 
 export const Default: Story = {};
 
+// Deterministic inline data URL — visual regression snapshots compare
+// byte-for-byte, and an external CDN like i.pravatar.cc returns slightly
+// different bytes between requests (CDN cache, recompression) which
+// flakes the AppAvatar/WithImage smoke test on every CI run.
+const SAMPLE_AVATAR_SVG =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150">` +
+      `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">` +
+      `<stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#22d3ee"/>` +
+      `</linearGradient></defs>` +
+      `<rect width="150" height="150" fill="url(#g)"/>` +
+      `<circle cx="75" cy="58" r="24" fill="rgba(255,255,255,0.85)"/>` +
+      `<path d="M30 130 Q75 80 120 130 Z" fill="rgba(255,255,255,0.85)"/>` +
+      `</svg>`,
+  );
+
 export const WithImage: Story = {
   args: {
-    image: 'https://i.pravatar.cc/150?img=3',
+    image: SAMPLE_AVATAR_SVG,
     name: 'Jane Smith',
   },
 };

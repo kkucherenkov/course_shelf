@@ -50,7 +50,7 @@ export interface StemMatchResult {
 // Extension classification
 // ---------------------------------------------------------------------------
 
-const VIDEO_EXTS = new Set(['.mp4', '.m4v', '.mkv', '.webm']);
+const VIDEO_EXTS = new Set(['.mp4', '.m4v', '.mkv', '.webm', '.wmv']);
 const MATERIAL_EXTS = new Set(['.pdf', '.md', '.txt', '.png', '.jpg', '.jpeg']);
 const SUBTITLE_EXTS = new Set(['.srt', '.vtt']);
 
@@ -73,10 +73,13 @@ function classifyExt(ext: string): StemKind {
 const COMPOSITE_PREFIX_RE = /^(\d+)\.(\d+)\.?\s*/;
 
 /**
- * Single ordinal prefix: `01 - `, `01. `, `1 - `.
- * Captures ordinal; separator is optional dash/dot + whitespace.
+ * Single ordinal prefix: `01 - `, `01. `, `01_`, `01 `, `01-`, or just `01`.
+ * Captures the ordinal; the separator after the digits is any non-empty mix
+ * of whitespace, `-`, `.`, `_` — or the end of the basename (bare numeric,
+ * e.g. a folder literally named `07`). The bare-numeric form preserves the
+ * digits as their own canonical stem.
  */
-const SINGLE_PREFIX_RE = /^(\d+)\s*[-.]?\s+/;
+const SINGLE_PREFIX_RE = /^(\d+)(?:[\s\-._]+|$)/;
 
 /**
  * Language suffix for subtitle files: `.en`, `.ru`, `.eng`, etc.

@@ -55,6 +55,9 @@ release you want, and grab `courseshelf-release-vX.Y.Z.tar.gz`.
 ```sh
 curl -LO http://code.homelab.local/<owner>/course_shelf/releases/download/vX.Y.Z-release/courseshelf-release-vX.Y.Z.tar.gz
 tar xzf courseshelf-release-vX.Y.Z.tar.gz
+# The bundle contains compose.yml + nginx-prod.conf (bind-mounted by the
+# proxy service) + .env.example + CHANGELOG.md + README.md. Don't move
+# compose.yml out of the directory — the bind-mount uses ./nginx-prod.conf.
 cd courseshelf-release-vX.Y.Z
 
 cp .env.example .env

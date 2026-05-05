@@ -1,11 +1,13 @@
 # Cutting a release
 
 Pushing a tag matching `vMAJOR.MINOR.PATCH-release` triggers
-`.forgejo/workflows/release.yml`. The workflow builds and pushes four
-release images (backend, web, proxy, centrifugo) to **GitHub Container
-Registry** (ghcr.io), generates a Conventional-Commits-derived
-changelog, and creates a **Forgejo Release** (on `code.homelab.local`)
-with the changelog and a deploy-ready artefact bundle.
+`.forgejo/workflows/release.yml`. The workflow builds and pushes two
+release images (backend, web) to **GitHub Container Registry**
+(ghcr.io), generates a Conventional-Commits-derived changelog, and
+creates a **Forgejo Release** (on `code.homelab.local`) with the
+changelog and a deploy-ready artefact bundle. The proxy and centrifugo
+services run upstream images directly and are not built by this
+pipeline.
 
 > **Why GHCR, not the homelab Forgejo registry**: the homelab Forgejo
 > doesn't terminate TLS on its registry endpoint. Docker requires HTTPS
@@ -69,25 +71,29 @@ git push origin v0.2.0-release
 
 The push to `v0.2.0-release` triggers the workflow. Watch the run at
 `http://code.homelab.local/<owner>/course_shelf/actions`. End-to-end
-takes ~10–15 min for amd64-only builds (the GHCR push of four images
-is the long part).
+takes ~10–15 min for amd64-only builds (the GHCR push of the two
+images is the long part).
 
 ## What gets published
 
 ### Images on GHCR
 
-For every release tag, four images are pushed under four tags each:
+For every release tag, two images are pushed under four tags each:
 
-| Image                                   | Source                         |
-| --------------------------------------- | ------------------------------ |
-| `ghcr.io/<user>/courseshelf-backend`    | `apps/backend/Dockerfile`      |
-| `ghcr.io/<user>/courseshelf-web`        | `apps/web/Dockerfile`          |
-| `ghcr.io/<user>/courseshelf-proxy`      | `docker/nginx/Dockerfile`      |
-| `ghcr.io/<user>/courseshelf-centrifugo` | `docker/centrifugo/Dockerfile` |
+| Image                                | Source                    |
+| ------------------------------------ | ------------------------- |
+| `ghcr.io/<user>/courseshelf-backend` | `apps/backend/Dockerfile` |
+| `ghcr.io/<user>/courseshelf-web`     | `apps/web/Dockerfile`     |
 
 Each image is tagged `:0.2.0`, `:0.2`, `:0`, and `:latest` — pin to the
 exact patch in production, use the floating tags for dev/staging if you
 want to follow a major or minor lane.
+
+The proxy and centrifugo services in `compose.release.yml` run upstream
+images directly (`nginxinc/nginx-unprivileged:1.27-alpine` and
+`centrifugo/centrifugo:v6`) and are not part of the release-pipeline
+artefacts. They are pulled by `docker compose pull` like any other
+upstream image.
 
 ### Release page on Forgejo
 
@@ -95,11 +101,29 @@ want to follow a major or minor lane.
 gets:
 
 - `courseshelf-release-v0.2.0.tar.gz` — bundle with `compose.yml`,
-  `.env.example`, `CHANGELOG.md`, and a one-page README.
+  `nginx-prod.conf` (bind-mounted by the proxy service), `.env.example`,
+  `CHANGELOG.md`, and a one-page README.
 - `compose-release-v0.2.0.yml` — standalone compose file with
   `RELEASE_TAG`, `REGISTRY`, and `REGISTRY_NAMESPACE` already pinned.
 - `.env.release.example` — env contract template.
 - `release-notes.md` — the changelog as a standalone file.
+
+## Upgrade note for the release that drops wrapper images
+
+The release that introduces this change removes two images from GHCR:
+
+- `ghcr.io/<user>/courseshelf-proxy`
+- `ghcr.io/<user>/courseshelf-centrifugo`
+
+Operators upgrading across this version must extract the new bundle
+**fully** — `compose.yml` now bind-mounts `nginx-prod.conf` from the
+bundle, so `tar xzf courseshelf-release-vX.Y.Z.tar.gz` is mandatory. A
+partial extraction (or copying just `compose.yml` out of the tarball)
+will fail at proxy start with `no such file or directory`.
+
+Existing GHCR packages for the two retired images can be left in place
+or deleted via the package settings page. They will not be referenced
+by any future release.
 
 ## Re-running a failed release
 
@@ -116,7 +140,7 @@ git push origin v0.2.0-release
 
 **Don't** reuse a tag whose images are already published: GHCR rejects
 overwrites for immutable tags, and the workflow will fail at push. If
-the run partially pushed (some of the four images), delete those
+the run partially pushed (only one of the two images), delete those
 versions from GHCR via the package settings page, or bump the patch
 number.
 

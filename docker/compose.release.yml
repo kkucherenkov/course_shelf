@@ -14,8 +14,10 @@
 # (e.g. 0.2.0) and uploads that as a release asset.
 #
 # Layout mirrors compose.prod.yml — only the build sources are swapped for
-# pre-built images, and Centrifugo gains a wrapper entrypoint that
-# templates its config from env vars instead of mounting a hardcoded JSON.
+# pre-built images. centrifugo and proxy services run upstream images
+# (centrifugo/centrifugo:v6 and nginxinc/nginx-unprivileged) directly:
+# centrifugo is configured entirely via CENTRIFUGO_* env vars; proxy
+# bind-mounts ./nginx-prod.conf from the release bundle.
 #
 # Course content lives on the host at $COURSES_PATH and is bind-mounted
 # read-only into the backend at /data/courses.
@@ -63,13 +65,17 @@ services:
     networks: [cs-net]
 
   centrifugo:
-    image: "${REGISTRY:-ghcr.io}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-centrifugo:${RELEASE_TAG:-latest}"
+    image: centrifugo/centrifugo:v6
     restart: unless-stopped
     environment:
-      CENTRIFUGO_ALLOWED_ORIGINS: '${CENTRIFUGO_ALLOWED_ORIGINS:-["${PUBLIC_BASE_URL}"]}'
-      CENTRIFUGO_API_KEY: "${CENTRIFUGO_API_KEY:?CENTRIFUGO_API_KEY is required}"
-      CENTRIFUGO_TOKEN_HMAC_SECRET: "${CENTRIFUGO_TOKEN_HMAC_SECRET:?CENTRIFUGO_TOKEN_HMAC_SECRET is required}"
+      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: "${PUBLIC_BASE_URL}"
+      CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY: "${CENTRIFUGO_TOKEN_HMAC_SECRET:?CENTRIFUGO_TOKEN_HMAC_SECRET is required}"
+      CENTRIFUGO_HTTP_API_KEY: "${CENTRIFUGO_API_KEY:?CENTRIFUGO_API_KEY is required}"
+      CENTRIFUGO_ADMIN_ENABLED: "false"
+      CENTRIFUGO_HEALTH_ENABLED: "true"
       CENTRIFUGO_LOG_LEVEL: "${CENTRIFUGO_LOG_LEVEL:-info}"
+      # Application contract: hardcoded namespaces, NOT in operator's .env.
+      CENTRIFUGO_CHANNEL_NAMESPACES: '[{"name":"system","presence":true,"history_size":10,"history_ttl":"60s"},{"name":"library","presence":false,"history_size":0},{"name":"notes","presence":false,"history_size":0},{"name":"progress","presence":false,"history_size":0},{"name":"notifications","presence":false,"history_size":0}]'
     ulimits:
       nofile: { soft: 65536, hard: 65536 }
     healthcheck:
@@ -131,14 +137,19 @@ services:
     networks: [cs-net]
 
   proxy:
-    image: "${REGISTRY:-ghcr.io}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-proxy:${RELEASE_TAG:-latest}"
+    image: nginxinc/nginx-unprivileged:1.27-alpine
     restart: unless-stopped
     depends_on:
       backend: { condition: service_started }
       web: { condition: service_started }
+    volumes:
+      # Bind-mount the prod nginx config from the release bundle.
+      # The release workflow stages compose.yml + nginx-prod.conf side
+      # by side in STAGE/, so this relative path resolves whether you
+      # run the rendered compose from the workflow or from an extracted
+      # release bundle.
+      - ./nginx-prod.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
-      # Container listens on 8080 (nginx-unprivileged); the host-side
-      # PROXY_PORT controls what operators expose externally.
       - "${PROXY_PORT:-8080}:8080"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/v1/health"]

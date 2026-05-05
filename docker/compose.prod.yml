@@ -60,15 +60,23 @@ services:
     networks: [cs-net]
 
   centrifugo:
-    build:
-      context: ..
-      dockerfile: docker/centrifugo/Dockerfile
+    image: centrifugo/centrifugo:v6
     restart: unless-stopped
     environment:
-      CENTRIFUGO_ALLOWED_ORIGINS: '${CENTRIFUGO_ALLOWED_ORIGINS:-["${PUBLIC_BASE_URL}"]}'
-      CENTRIFUGO_API_KEY: "${CENTRIFUGO_API_KEY}"
-      CENTRIFUGO_TOKEN_HMAC_SECRET: "${CENTRIFUGO_TOKEN_HMAC_SECRET}"
+      # client.allowed_origins — space-separated list (centrifugo v6 native)
+      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: "${PUBLIC_BASE_URL}"
+      # client.token.hmac_secret_key — used to verify connection tokens issued by the backend
+      CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY: "${CENTRIFUGO_TOKEN_HMAC_SECRET}"
+      # http_api.key — backend → centrifugo publish authorization
+      CENTRIFUGO_HTTP_API_KEY: "${CENTRIFUGO_API_KEY}"
+      CENTRIFUGO_ADMIN_ENABLED: "false"
+      CENTRIFUGO_HEALTH_ENABLED: "true"
       CENTRIFUGO_LOG_LEVEL: "${CENTRIFUGO_LOG_LEVEL:-info}"
+      # channel.namespaces — JSON array of objects. Hardcoded here, not in
+      # .env: namespaces are part of the application contract (backend
+      # publishes to these names), so they live with the compose file, not
+      # with operator-facing secrets.
+      CENTRIFUGO_CHANNEL_NAMESPACES: '[{"name":"system","presence":true,"history_size":10,"history_ttl":"60s"},{"name":"library","presence":false,"history_size":0},{"name":"notes","presence":false,"history_size":0},{"name":"progress","presence":false,"history_size":0},{"name":"notifications","presence":false,"history_size":0}]'
     ulimits:
       nofile: { soft: 65536, hard: 65536 }
     healthcheck:

@@ -9,13 +9,14 @@
 - Spec diff: none (no public API change)
 - Codegen impact: none
 - Sub-steps:
-  - [ ] Phase 1 — centrifugo wrapper removal (compose.prod.yml + compose.release.yml: image + full `CENTRIFUGO_*` env set; smoke-test locally)
-  - [ ] Phase 2 — proxy wrapper removal (compose.{prod,release}.yml: image + `nginx-prod.conf` bind-mount; smoke-test locally)
-  - [ ] Phase 3 — release.yml cleanup (drop two `publish` calls; merge render+bundle steps; cp `nginx-prod.conf` into STAGE; validate from STAGE)
-  - [ ] Phase 3 — delete `docker/centrifugo/{Dockerfile, entrypoint.sh, config.template.json}` and `docker/nginx/Dockerfile`
-  - [ ] Phase 4 — update `docs/release.md` + `docs/deployment.md`; add UPGRADE NOTE
+  - [x] Phase 1 — centrifugo wrapper removal (compose.prod.yml + compose.release.yml: image + full `CENTRIFUGO_*` env set; smoke-test locally)
+  - [x] Phase 2 — proxy wrapper removal (compose.{prod,release}.yml: image + `nginx-prod.conf` bind-mount; smoke-test locally)
+  - [x] Phase 3 — release.yml cleanup (drop two `publish` calls; merge render+bundle steps; cp `nginx-prod.conf` into STAGE; validate from STAGE)
+  - [x] Phase 3 — delete `docker/centrifugo/{Dockerfile, entrypoint.sh, config.template.json}` and `docker/nginx/Dockerfile`
+  - [x] Phase 4 — update `docs/release.md` + `docs/deployment.md`; add UPGRADE NOTE
 - Status: in-progress
 - Blockers: —
+- Notes: end-to-end prod-stack smoke (Plan Task 4) deferred — covered by Task 1 centrifugo smoke + per-file `docker compose config` validation; full e2e runs in Forgejo CI on PR open.
 
 ## T-2026-05-04-002 — Release pipeline + image-pulling compose (E22-F01-S06, #109)
 

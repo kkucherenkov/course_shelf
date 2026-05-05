@@ -214,48 +214,36 @@ jobs:
             > release-notes.md
           cat release-notes.md
 
-      # ─── Render artefacts (compose + tarball) ────────────────────────────
-      - name: Render compose-release file with pinned tag
+      # ─── Stage release bundle (render + validate + assemble) ────────────
+      # All bundle inputs land in STAGE/ before validation. Validating
+      # from inside STAGE ensures relative paths in compose.yml — like
+      # ./nginx-prod.conf — resolve at workflow time, not at operator
+      # deploy time.
+      - name: Stage release bundle
         env:
           SEMVER: ${{ steps.version.outputs.semver }}
           GHCR_USER: ${{ secrets.GHCR_USER }}
         run: |
           set -euo pipefail
-          OUT="compose-release-v${SEMVER}.yml"
+          STAGE="courseshelf-release-v${SEMVER}"
           NS="$(echo "$GHCR_USER" | tr '[:upper:]' '[:lower:]')"
-          # Replace the default `${VAR:-DEFAULT}` substitutions with the
-          # exact values so the file works without an env file override.
+          mkdir -p "$STAGE"
+
+          # Render compose with RELEASE_TAG / REGISTRY / REGISTRY_NAMESPACE pinned.
           sed \
             -e "s|\${RELEASE_TAG:-latest}|${SEMVER}|g" \
             -e "s|\${REGISTRY:-ghcr.io}|${REGISTRY}|g" \
             -e "s|\${REGISTRY_NAMESPACE:-kkucherenkov}|${NS}|g" \
-            docker/compose.release.yml > "$OUT"
-          # Sanity-validate the rendered file via `docker compose config`.
-          # Compose interpolates ALL `${VAR:?...}` placeholders during
-          # validation, so we feed it dummy values — this only checks
-          # YAML/syntax correctness; real values come from operator's
-          # `.env` at deploy time.
-          PUBLIC_BASE_URL=http://placeholder.local \
-          POSTGRES_PASSWORD=placeholder \
-          BETTER_AUTH_SECRET=placeholder \
-          CENTRIFUGO_API_KEY=placeholder \
-          CENTRIFUGO_TOKEN_HMAC_SECRET=placeholder \
-          COURSES_PATH=/tmp \
-            docker compose -f "$OUT" config --quiet
-          echo "rendered=$OUT" >> "$GITHUB_OUTPUT"
-        id: render
+            docker/compose.release.yml > "$STAGE/compose.yml"
 
-      - name: Bundle release artefacts
-        env:
-          SEMVER: ${{ steps.version.outputs.semver }}
-        run: |
-          set -euo pipefail
-          STAGE="courseshelf-release-v${SEMVER}"
-          mkdir -p "$STAGE"
-          cp "compose-release-v${SEMVER}.yml" "$STAGE/compose.yml"
+          # nginx-prod.conf is bind-mounted by the proxy service. Stage it
+          # next to compose.yml so the relative path ./nginx-prod.conf
+          # resolves both during validation and at operator deploy time.
+          cp docker/nginx/prod.conf "$STAGE/nginx-prod.conf"
+
+          # Operator-facing artefacts.
           cp .env.release.example "$STAGE/.env.example"
           cp release-notes.md "$STAGE/CHANGELOG.md"
-          # README pointing operators at the right next steps.
           cat > "$STAGE/README.md" <<EOF
           # CourseShelf $SEMVER — release bundle
 
@@ -266,8 +254,28 @@ jobs:
 
           See CHANGELOG.md for what changed in this release.
           EOF
+
+          # Validate the rendered compose from inside STAGE so relative
+          # paths (./nginx-prod.conf) resolve. compose interpolates ALL
+          # \`\${VAR:?...}\` placeholders during validation, so we feed
+          # dummy values — this only checks YAML/syntax + that referenced
+          # files exist, not that any secret is real.
+          ( cd "$STAGE" && \
+            PUBLIC_BASE_URL=http://placeholder.local \
+            POSTGRES_PASSWORD=placeholder \
+            BETTER_AUTH_SECRET=placeholder \
+            CENTRIFUGO_API_KEY=placeholder \
+            CENTRIFUGO_TOKEN_HMAC_SECRET=placeholder \
+            COURSES_PATH=/tmp \
+              docker compose -f compose.yml config --quiet )
+
+          # Standalone compose file uploaded as a release asset (also
+          # available inside the tarball as compose.yml).
+          cp "$STAGE/compose.yml" "compose-release-v${SEMVER}.yml"
+
+          # Bundle the staged tree.
           tar czf "${STAGE}.tar.gz" "$STAGE"
-          ls -la "${STAGE}.tar.gz"
+          ls -la "${STAGE}.tar.gz" "compose-release-v${SEMVER}.yml"
 
       # ─── Forgejo release ─────────────────────────────────────────────────
       # The release page lives on Forgejo (where the source repo is); the

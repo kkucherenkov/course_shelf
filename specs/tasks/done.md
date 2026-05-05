@@ -2,6 +2,25 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-05-001 — Remove thin docker wrappers (proxy + centrifugo) (#197)
+
+- Created: 2026-05-05
+- Completed: 2026-05-05
+- Owner: claude
+- Spec: [docs/superpowers/specs/2026-05-05-thin-docker-wrappers-removal-design.md](../../docs/superpowers/specs/2026-05-05-thin-docker-wrappers-removal-design.md)
+- Plan: [docs/superpowers/plans/2026-05-05-thin-docker-wrappers-removal.md](../../docs/superpowers/plans/2026-05-05-thin-docker-wrappers-removal.md)
+- Result: merged via PR #197 (squash) — `1ca6473 refactor(docker): remove thin wrappers (proxy + centrifugo)`
+- Outcome:
+  - `compose.prod.yml` + `compose.release.yml`: centrifugo runs upstream `centrifugo/centrifugo:v6` driven entirely by `CENTRIFUGO_*` env vars (verified via context7 + live smoke: `/health` 200, all 5 namespaces register, presence/history honor per-namespace flags, undeclared channels rejected with `code: 102`, container runs as non-root `uid=1000(centrifugo)`).
+  - proxy runs upstream `nginxinc/nginx-unprivileged:1.27-alpine` with `nginx-prod.conf` bind-mount (`./nginx/prod.conf` in compose.prod.yml; `./nginx-prod.conf` in compose.release.yml — release bundle is flat).
+  - `.forgejo/workflows/release.yml`: dropped `publish courseshelf-proxy` + `publish courseshelf-centrifugo`; merged previous `Render compose-release file` + `Bundle release artefacts` steps into a single `Stage release bundle` step that prepares STAGE/ first (compose render → cp nginx-prod.conf → cp .env.example/CHANGELOG.md/README.md) then validates `docker compose config --quiet` from inside STAGE so `./nginx-prod.conf` resolves at workflow time, not at operator deploy time.
+  - Deleted: `docker/centrifugo/{Dockerfile, entrypoint.sh, config.template.json}`, `docker/nginx/Dockerfile`. Preserved: `docker/centrifugo/config.json` (dev bind-mount), `docker/nginx/{default.conf, prod.conf}`.
+  - Docs: `docs/release.md` (image table 4 → 2 rows + UPGRADE NOTE for the bind-mount), `docs/deployment.md` (extraction-snippet note), `.env.release.example` (centrifugo origin/namespace handling clarified).
+  - Net effect: 2 fewer image builds + 2 × 4 fewer image pushes per release tag → ~5 min release wall-time saved; 4 fewer Dockerfiles/entrypoints/templates to maintain; dev (compose.yml) and prod (compose.{prod,release}.yml) compose patterns now aligned (both use upstream images with bind-mounts/env).
+- Verified: Task 1 centrifugo smoke test (live container, env-only config); per-file `docker compose config --quiet` for both compose variants; `:?...` failure path triggers loud-fail when secrets missing; YAML parse via yaml.safe_load; heredoc terminator semantics validated locally (false-alarm flagged by code reviewer was based on raw indent, not YAML literal-block stripping).
+- Deferred: full prod-stack `compose.prod.yml up -d --build` e2e — local subagent hit token/time limits during nuxt+nest build; covered by per-service smoke + `compose config` validation; full e2e exercises in Forgejo CI on PR open + the next real release tag.
+- Follow-ups (out of scope): `.env.release.example` line 18 still has `REGISTRY=code.homelab.local` (pre-existing stale value from before the GHCR migration); `docs/release.md` "End-to-end takes ~10–15 min" timing estimate would be ~5–10 min after this change (cosmetic).
+
 ## T-2026-05-04-001 — Scan parser hardening on a real library (#188)
 
 - Created: 2026-05-04

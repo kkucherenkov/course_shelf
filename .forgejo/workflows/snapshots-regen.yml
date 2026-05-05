@@ -31,6 +31,8 @@ jobs:
   regen:
     name: Capture fresh baselines in CI environment
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     timeout-minutes: 25
 
     steps:
@@ -53,9 +55,6 @@ jobs:
       # output of `pnpm design:build`. Build it before lint/typecheck/visual.
       - name: Build design tokens
         run: pnpm design:build
-
-      - name: Install Playwright chromium (with system deps)
-        run: pnpm --filter @app/ui exec playwright install --with-deps chromium
 
       - name: Build Storybook static
         env:

@@ -6,10 +6,12 @@ name: Release
 #
 # What it does:
 #   1. Parse the tag → semver triple.
-#   2. Build the four release images:
-#        courseshelf-backend, courseshelf-web, courseshelf-proxy, courseshelf-centrifugo
-#      with `--build-arg APP_VERSION=<semver>` (the first two carry it; the
-#      others ignore it).
+#   2. Build the two release images:
+#        courseshelf-backend, courseshelf-web
+#      with `--build-arg APP_VERSION=<semver>`. The proxy and centrifugo
+#      services in compose.release.yml run upstream images directly
+#      (nginxinc/nginx-unprivileged and centrifugo/centrifugo:v6) and
+#      need no per-release rebuilds.
 #   3. Push to GitHub Container Registry under four tags each:
 #        :MAJOR.MINOR.PATCH, :MAJOR.MINOR, :MAJOR, :latest
 #   4. Generate release notes from Conventional Commits via git-cliff.
@@ -184,8 +186,6 @@ jobs:
 
           publish courseshelf-backend     apps/backend/Dockerfile
           publish courseshelf-web         apps/web/Dockerfile
-          publish courseshelf-proxy       docker/nginx/Dockerfile
-          publish courseshelf-centrifugo  docker/centrifugo/Dockerfile
 
       # ─── Changelog (git-cliff) ───────────────────────────────────────────
       - name: Install git-cliff

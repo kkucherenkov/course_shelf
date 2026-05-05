@@ -2,6 +2,32 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-05-002 — CI cache: Playwright + design tokens (#198, cancelled)
+
+- Created: 2026-05-05
+- Completed: 2026-05-05
+- Owner: claude
+- Spec: [docs/superpowers/specs/2026-05-05-ci-cache-playwright-tokens-design.md](../../docs/superpowers/specs/2026-05-05-ci-cache-playwright-tokens-design.md)
+- Plan: [docs/superpowers/plans/2026-05-05-ci-cache-playwright-tokens.md](../../docs/superpowers/plans/2026-05-05-ci-cache-playwright-tokens.md)
+- Result: cancelled — PR #198 closed without merge. The cache approach was a net regression on this Forgejo runner, despite the spec's premise being valid in principle.
+- What we tried, in order:
+  1. Playwright Chromium cache + `actions/cache@v4`. Cache restored fine (255 MB tarball), but split-out `playwright install chromium` + `playwright install-deps` serialized work that the original `playwright install --with-deps` did in parallel internally. Net wall-time slightly worse on cache hit.
+  2. Design-tokens cache (5 small generated files). Near-zero overhead but no measurable win.
+  3. Explicit pnpm store cache (NPM_CONFIG_STORE_DIR=/root/.pnpm-store + actions/cache@v4 around 2.3 GB). Diagnostic confirmed cache restore worked, but the restore step itself took ~100s per job — slower than running `pnpm install --frozen-lockfile` from scratch. Reverted.
+- Empirical numbers (UI Storybook job duration as a sample):
+  - Baseline (run 436, no caches): 285s
+  - With Playwright cache (cache MISS, save fresh): 242s
+  - With Playwright cache (cache HIT): 317s
+  - With Playwright + tokens + pnpm cache (MISS): 398s
+  - With Playwright + tokens + pnpm cache (HIT): 351s
+  - After full pnpm-cache revert (just Playwright + tokens, cache HIT): 427s
+  - Variance per-run: 242-427s for nominally identical configs. Runner is too noisy for the modest per-job savings to show through.
+- Lessons:
+  - **Forgejo's act_runner cache backend handles small caches (≤300 MB) fine but degrades sharply on multi-GB tarballs.** Possibly a per-archive size limit, slow disk, or compression cost.
+  - The `--with-deps` flag of `playwright install` is more parallel internally than running `install` and `install-deps` separately. Splitting them broke that.
+  - Variance on this self-hosted runner (multiple jobs share host resources) is too high to validate sub-minute optimizations empirically. Need either a stabler runner or bigger interventions to tell signal from noise.
+- Pivot: the same epic continues as **T-2026-05-05-003 — CI consolidation + Playwright Docker image** — a structurally different approach (one job for backend+web+specs+ui-quality, Microsoft's preinstalled Playwright image for ui-storybook), where the wins are large enough to overwhelm runner noise.
+
 ## T-2026-05-05-001 — Remove thin docker wrappers (proxy + centrifugo) (#197)
 
 - Created: 2026-05-05

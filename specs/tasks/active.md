@@ -1,20 +1,5 @@
 # Active tasks
 
-## T-2026-05-05-002 — CI cache: Playwright + design tokens
-
-- Created: 2026-05-05
-- Owner: claude
-- Spec: [docs/superpowers/specs/2026-05-05-ci-cache-playwright-tokens-design.md](../../docs/superpowers/specs/2026-05-05-ci-cache-playwright-tokens-design.md)
-- Goal: cut ~45s off CI wall-time per push (~9%) by caching the Playwright Chromium binary across runs and sharing `design:build` outputs across the three jobs that need them. Diagnostic of run #436 showed `ui-storybook` (4:45) dominates wall-time and act_runner enforces concurrency 2 — so the original "consolidate 6 parallel installs" framing was wrong; this is the narrowed scope.
-- Spec diff: none (no public API change)
-- Codegen impact: none
-- Sub-steps:
-  - [ ] Phase 1 — Playwright cache in `.forgejo/workflows/ci.yml` (`ui-storybook` job)
-  - [ ] Phase 2 — design-tokens cache in `.forgejo/workflows/ci.yml` (`web`, `ui-quality`, `ui-storybook` jobs)
-  - [ ] Phase 3 — Playwright cache in `.forgejo/workflows/snapshots-regen.yml` and `.forgejo/workflows/e2e.yml`
-- Status: in-progress
-- Blockers: —
-
 ## T-2026-05-04-002 — Release pipeline + image-pulling compose (E22-F01-S06, #109)
 
 - Created: 2026-05-04

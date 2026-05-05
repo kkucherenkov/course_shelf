@@ -10,10 +10,10 @@
 - Spec diff: none (no public API change)
 - Codegen impact: none
 - Sub-steps:
-  - [ ] Phase 1 — replace `backend` + `web` + `specs` + `ui-quality` jobs in `.forgejo/workflows/ci.yml` with one `checks` job
-  - [ ] Phase 2 — `container: mcr.microsoft.com/playwright:v1.49.1-jammy` on `ui-storybook` + drop `playwright install --with-deps`
-  - [ ] Phase 3 — mirror Playwright container into `.forgejo/workflows/{e2e.yml, snapshots-regen.yml}`
-  - [ ] Phase 4 — open PR; verify wall-time on first run; flip sub-step boxes
+  - [x] Phase 1 — replace `backend` + `web` + `specs` + `ui-quality` jobs in `.forgejo/workflows/ci.yml` with one `checks` job
+  - [x] Phase 2 — `container: mcr.microsoft.com/playwright:v1.49.1-jammy` on `ui-storybook` + drop `playwright install --with-deps`
+  - [x] Phase 3 — mirror Playwright container into `.forgejo/workflows/{e2e.yml, snapshots-regen.yml}`
+  - [x] Phase 4 — open PR; verify wall-time on first run; flip sub-step boxes
 - Status: in-progress
 - Blockers: —
 

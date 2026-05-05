@@ -17,6 +17,8 @@ jobs:
   smoke:
     name: Playwright smoke (web + backend health)
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     timeout-minutes: 25
 
     steps:
@@ -31,9 +33,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
 
       - name: Prisma generate
         run: pnpm --filter @app/backend prisma:generate

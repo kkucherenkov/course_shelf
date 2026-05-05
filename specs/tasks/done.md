@@ -2,6 +2,29 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-05-003 — CI consolidation + Playwright Docker image (#199)
+
+- Created: 2026-05-05
+- Completed: 2026-05-05
+- Owner: claude
+- Spec: [docs/superpowers/specs/2026-05-05-ci-consolidation-playwright-image-design.md](../../docs/superpowers/specs/2026-05-05-ci-consolidation-playwright-image-design.md)
+- Plan: [docs/superpowers/plans/2026-05-05-ci-consolidation-playwright-image.md](../../docs/superpowers/plans/2026-05-05-ci-consolidation-playwright-image.md)
+- Predecessor: T-2026-05-05-002 (cancelled — cache approach was a net regression on this runner)
+- Result: merged via PR #199 (squash) — `93f34eb ci: consolidate 4 jobs into one + Playwright Docker image`
+- Outcome:
+  - **CI wall-time: 8:35 → 3:38 (-57%, -297s per push)** — exceeded the spec's -40% target.
+  - `.forgejo/workflows/ci.yml`: replaced four jobs (`backend`, `web`, `specs`, `ui-quality`) with one `checks` job that runs `pnpm install` + `prisma generate` + `design:build` + `spec:validate/bundle` once, then per-package pnpm filter scripts for backend+web lint/typecheck/test, then `pnpm --filter @app/ui audit:components`.
+  - `ui-storybook` and `security-audit` jobs collapsed into one `quality` job running inside `mcr.microsoft.com/playwright:v1.59.1-jammy` — Chromium + apt deps preinstalled, no `playwright install --with-deps` step required (saves ~2-3 min). The combined job fills the slot-2 idle time that previously sat empty between ui-storybook finishing and security-audit starting.
+  - Same Playwright container applied to `e2e.yml` (nightly smoke) and `snapshots-regen.yml` (manual baseline regen).
+  - Final job count: **2 (`checks` + `quality`) + Trivy** (was 6).
+  - `turbo.json`: dropped `@app/specs#codegen` from `build`/`dev`/`lint`/`test`/`typecheck` deps. Generated TypeScript and Dart client sources are committed to git, so codegen becomes purely explicit (`pnpm spec:codegen` when contracts change). This unblocked the consolidated `checks` job which would otherwise have invoked `openapi-generator-cli` for the dart-dio target — and the runner doesn't (deliberately) have Java.
+- Verified empirically:
+  - Final run wall-time: 218s = 3:38 (Quality 153s + Checks 218s in parallel slots, baseline 8:35).
+  - Storybook visual baselines regenerated via `snapshots-regen.yml` workflow_dispatch on the branch (Linux runner env was already correct; the move into the Playwright container shifted glibc/freetype font-width rendering by 10-50px so all snapshots needed re-capture).
+- Lessons / follow-ups:
+  - Forgejo doesn't auto-trigger CI for runner-bot pushes (cancel-in-progress + GITEA_TOKEN-based commits are silently skipped). Empty trigger-commits are the workaround for now.
+  - Pre-existing latent bugs surfaced when expanding turbo coverage (e.g. `@app/ui`'s `vue-tsc` finds duplicate `errorsLabel` keys in `AppScanProgress.spec.ts`); restoring the per-package filter scope kept the PR focused. Worth a small cleanup later.
+
 ## T-2026-05-05-002 — CI cache: Playwright + design tokens (#198, cancelled)
 
 - Created: 2026-05-05

@@ -1,23 +1,5 @@
 # Active tasks
 
-## T-2026-05-05-001 — Remove thin docker wrappers (proxy + centrifugo)
-
-- Created: 2026-05-05
-- Owner: claude
-- Spec: [docs/superpowers/specs/2026-05-05-thin-docker-wrappers-removal-design.md](../../docs/superpowers/specs/2026-05-05-thin-docker-wrappers-removal-design.md)
-- Goal: drop `courseshelf-proxy` and `courseshelf-centrifugo` from the release pipeline; run upstream `nginxinc/nginx-unprivileged:1.27-alpine` and `centrifugo/centrifugo:v6` directly via bind-mount (proxy) and env-driven config (centrifugo). Release wall-time falls ~5 min; surface area shrinks by 4 files.
-- Spec diff: none (no public API change)
-- Codegen impact: none
-- Sub-steps:
-  - [x] Phase 1 — centrifugo wrapper removal (compose.prod.yml + compose.release.yml: image + full `CENTRIFUGO_*` env set; smoke-test locally)
-  - [x] Phase 2 — proxy wrapper removal (compose.{prod,release}.yml: image + `nginx-prod.conf` bind-mount; smoke-test locally)
-  - [x] Phase 3 — release.yml cleanup (drop two `publish` calls; merge render+bundle steps; cp `nginx-prod.conf` into STAGE; validate from STAGE)
-  - [x] Phase 3 — delete `docker/centrifugo/{Dockerfile, entrypoint.sh, config.template.json}` and `docker/nginx/Dockerfile`
-  - [x] Phase 4 — update `docs/release.md` + `docs/deployment.md`; add UPGRADE NOTE
-- Status: in-progress
-- Blockers: —
-- Notes: end-to-end prod-stack smoke (Plan Task 4) deferred — covered by Task 1 centrifugo smoke + per-file `docker compose config` validation; full e2e runs in Forgejo CI on PR open.
-
 ## T-2026-05-04-002 — Release pipeline + image-pulling compose (E22-F01-S06, #109)
 
 - Created: 2026-05-04

@@ -127,12 +127,12 @@ flowchart LR
 
 ### Требования
 
-| Инструмент | Минимум | Проверка |
-|---|---|---|
-| Node.js | 24 | `node -v` |
-| pnpm | 10 | `pnpm -v` |
-| Docker + Docker Compose | свежая версия | `docker --version && docker compose version` |
-| Flutter (только мобильное) | 3.41 | `flutter --version` |
+| Инструмент                 | Минимум       | Проверка                                     |
+| -------------------------- | ------------- | -------------------------------------------- |
+| Node.js                    | 24            | `node -v`                                    |
+| pnpm                       | 10            | `pnpm -v`                                    |
+| Docker + Docker Compose    | свежая версия | `docker --version && docker compose version` |
+| Flutter (только мобильное) | 3.41          | `flutter --version`                          |
 
 ### 1 — Клонирование, установка, генерация
 
@@ -188,15 +188,33 @@ flutter run                     # подхватывает API base URL чере
 
 ## Скриншоты
 
-Снимки Stage A — в каталоге [`docs/screenshots/`](docs/screenshots/); соглашения по съёмке (1440 × 900 для web, дефолтный фрейм симулятора для мобильного, светлая тема по умолчанию) и индекс файлов — в [`docs/screenshots/README.md`](docs/screenshots/README.md). После добавления изображения в папку подставьте его сюда через `![alt](docs/screenshots/<file>.png)`.
+Сняты с работающего Stage A web-прототипа, 1440 × 900, тёмная тема. Все четыре кадра делаются воспроизводимо командой `pnpm screenshots` (Playwright headless по `apps/web` с моками всех API-вызовов — см. [`docs/screenshots/README.md`](docs/screenshots/README.md) и [`scripts/screenshots.ts`](scripts/screenshots.ts)).
 
-Запланированные снимки:
+### Главная
 
-- **Главная** — полки browse / continue-watching / recently-added
-- **Курс** — hero, список разделов, правый рельс материалов
-- **Плеер урока** — `<video>` + overlay + закладки
-- **Админ-дашборд** — карточки метрик + таблица недавних сканов
-- **Главная (мобильное)** — Stage A apps/mobile
+Полка «Continue watching», «Recently added» и сайдбар «Your week» со статистикой за неделю.
+
+![Главная](docs/screenshots/home.png)
+
+### Карточка курса
+
+Hero с прогрессом, две колонки: список разделов слева и правый рельс материалов, сгруппированных по секциям.
+
+![Карточка курса](docs/screenshots/course-detail.png)
+
+### Плеер урока
+
+Chrome-оверлей, скраббер и боковая панель с вкладками Sections / Notes / Bookmarks / Materials.
+
+![Плеер урока](docs/screenshots/lesson-player.png)
+
+### Админ-дашборд
+
+Stat-карточки (библиотеки, пользователи, последний скан, ошибки за 24 ч) и таблица недавних сканов.
+
+![Админ-дашборд](docs/screenshots/admin-dashboard.png)
+
+Снимок Stage A для `apps/mobile` пока не автоматизирован — когда мобильная главная будет готова, добавьте `docs/screenshots/mobile-home.png` и подставьте его в эту же секцию.
 
 ## Структура репозитория
 

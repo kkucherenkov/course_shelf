@@ -127,12 +127,12 @@ Goal: a fresh clone to all three apps running locally **in under 15 minutes**.
 
 ### Prerequisites
 
-| Tool | Minimum | Check |
-|---|---|---|
-| Node.js | 24 | `node -v` |
-| pnpm | 10 | `pnpm -v` |
-| Docker + Docker Compose | recent | `docker --version && docker compose version` |
-| Flutter (mobile only) | 3.41 | `flutter --version` |
+| Tool                    | Minimum | Check                                        |
+| ----------------------- | ------- | -------------------------------------------- |
+| Node.js                 | 24      | `node -v`                                    |
+| pnpm                    | 10      | `pnpm -v`                                    |
+| Docker + Docker Compose | recent  | `docker --version && docker compose version` |
+| Flutter (mobile only)   | 3.41    | `flutter --version`                          |
 
 ### 1 — Clone, install, generate
 
@@ -188,15 +188,33 @@ By default the simulator points at `http://10.0.2.2:8080/api/v1` (Android) or `h
 
 ## Screenshots
 
-Stage A captures live under [`docs/screenshots/`](docs/screenshots/) — see [`docs/screenshots/README.md`](docs/screenshots/README.md) for the capture flow, conventions (1440 × 900 web, default device frame for mobile, light theme by default), and the file index. Once a capture is added to that folder, embed it inline here using a relative `![alt](docs/screenshots/<file>.png)` reference.
+Captured against the running Stage A web prototype at 1440 × 900, dark theme. All four shots are produced reproducibly by `pnpm screenshots` (Playwright headless against `apps/web` with hermetic API mocks — see [`docs/screenshots/README.md`](docs/screenshots/README.md) and [`scripts/screenshots.ts`](scripts/screenshots.ts)).
 
-Captures planned for the README:
+### Home
 
-- **Home** — browse / continue-watching / recently-added shelves
-- **Course detail** — hero, sections list, materials right-rail
-- **Lesson player** — `<video>` + chrome overlay + bookmarks
-- **Admin dashboard** — stat cards + recent-scans table
-- **Mobile home** — apps/mobile Stage A
+Continue-watching shelf, recently-added shelf and the "Your week" stats rail.
+
+![Home](docs/screenshots/home.png)
+
+### Course detail
+
+Hero with progress bar, two-column layout with the sections list on the left and the materials right-rail grouped by section.
+
+![Course detail](docs/screenshots/course-detail.png)
+
+### Lesson player
+
+Chrome overlay, scrubber and sidebar with the Sections / Notes / Bookmarks / Materials tabs.
+
+![Lesson player](docs/screenshots/lesson-player.png)
+
+### Admin dashboard
+
+Stat cards (libraries, users, last scan, errors-in-24h) and the recent-scans table.
+
+![Admin dashboard](docs/screenshots/admin-dashboard.png)
+
+The `apps/mobile` Stage A capture is not yet automated — when the mobile home is ready, add `docs/screenshots/mobile-home.png` and embed it alongside.
 
 ## Repository Layout
 

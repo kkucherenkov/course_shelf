@@ -1,36 +1,47 @@
 # Screenshots
 
-Captures from the running Stage A prototypes — referenced by the top-level README and the deployment doc.
+Captures from the running Stage A web prototype — referenced by the top-level README and the deployment doc. Generated reproducibly by `pnpm screenshots` (see [`scripts/screenshots.ts`](../../scripts/screenshots.ts)).
 
 ## Files
 
-| File | Source | Notes |
-|---|---|---|
-| `home.png` | `http://localhost:8080/` (signed in) | Browse + recent + continue-watching shelves. |
-| `course-detail.png` | `http://localhost:8080/courses/<slug>` | Hero + sections list + materials right-rail. |
-| `lesson-player.png` | `http://localhost:8080/lessons/<id>` | `<video>` + chrome overlay + bookmarks panel. |
-| `admin-dashboard.png` | `http://localhost:8080/admin` | Stat cards + recent-scans table. |
-| `mobile-home.png` | iOS / Android simulator | Home tab — apps/mobile Stage A. |
+| File                  | Source                                                  | Notes                                                          |
+| --------------------- | ------------------------------------------------------- | -------------------------------------------------------------- |
+| `home.png`            | `http://localhost:3001/`                                | Continue-watching + Recently-added shelves + "Your week" rail. |
+| `course-detail.png`   | `http://localhost:3001/courses/<id>`                    | Hero + sections list + Course materials right-rail.            |
+| `lesson-player.png`   | `http://localhost:3001/courses/<id>/lessons/<lessonId>` | `<video>` + chrome overlay + sections sidebar tabs.            |
+| `admin-dashboard.png` | `http://localhost:3001/admin`                           | Stat cards + recent-scans table.                               |
+
+Mobile captures are not yet automated — when the `apps/mobile` Stage A surface is ready, add `mobile-home.png` (default device frame) and wire a Flutter integration-test capture step.
 
 ## Capture conventions
 
-- 1440 × 900 viewport for web; default device frame for mobile.
-- Light theme by default; capture dark counterparts as `<name>-dark.png` only when the surface looks materially different.
-- PNG, lossless. Aim for under 600 KB per file — run through `pngcrush` or `oxipng` if needed.
-- Reproducible content: seed the local stack via `pnpm seed:demo` (when available) so the same fixtures appear across captures.
+- **1440 × 900 viewport** for the web shots.
+- **Dark theme by default** (matches the app's `colorMode.preference = 'dark'` in `apps/web/nuxt.config.ts`). Capture light counterparts as `<name>-light.png` only when the surface looks materially different.
+- **PNG, lossless.** Aim for under 600 KB per file — run through `pngcrush` or `oxipng` if needed.
+- **Reproducible content:** the capture script mocks every API endpoint with deterministic fixtures, so the same data appears across captures regardless of what's in your local Postgres.
 
 ## Quick capture flow
 
+The capture script is hermetic — it intercepts every API call with Playwright `route()` and feeds in deterministic fixtures. The only prerequisite is a running SPA dev server (no backend, no database, no seed needed).
+
 ```sh
-docker compose -f docker/compose.yml up -d
-# wait until http://localhost:8080/api/v1/health responds 200
-pnpm seed:demo               # optional — fills the catalog with deterministic fixtures
-open http://localhost:8080
-# Cmd+Shift+4 (macOS) → window mode → save as docs/screenshots/<name>.png
+# 1. Start the web dev server (or `docker compose up -d` if you prefer the proxy).
+pnpm --filter @app/web dev          # serves http://localhost:3001
+
+# 2. Run the capture script in another terminal.
+pnpm screenshots                    # WEB_URL=http://localhost:3001 by default
 ```
 
-For automated captures, the Playwright config in `tests/e2e/` can drive a headless Chromium against the running stack — extend `playwright.config.ts` with a `screenshot` project once the seed fixtures land.
+Output lands in this directory. To target the nginx proxy port instead (e.g. when running the full stack via Docker), override the base URL:
+
+```sh
+WEB_URL=http://localhost:8080 pnpm screenshots
+```
 
 ## Updating the README references
 
-The README's **Screenshots** section embeds these images via relative paths (`docs/screenshots/<file>.png`). When you add a new capture, also add a row to the table above and a thumbnail to the README so the section stays in sync with what's on disk.
+The English and Russian READMEs both embed these images via relative `docs/screenshots/<file>.png` paths. When you add or rename a capture, update:
+
+1. The file table above.
+2. The capture loop in `scripts/screenshots.ts`.
+3. The `![…]` references in `README.md` and `README.ru.md`.

@@ -38,6 +38,7 @@
     "issues:map": "node --experimental-strip-types scripts/seed-forgejo-issues.ts --print-map",
     "issues:lookup": "node --experimental-strip-types scripts/seed-forgejo-issues.ts --lookup",
     "e2e": "playwright test --config=tests/e2e/playwright.config.ts",
+    "screenshots": "node --experimental-strip-types scripts/screenshots.ts",
     "release:notes": "git-cliff --config cliff.toml --unreleased --strip header"
   },
   "devDependencies": {

@@ -124,6 +124,32 @@ jobs:
           E2E_BACKEND_URL: "http://${{ env.E2E_HOST }}:3000"
         run: pnpm e2e
 
+      # Post-run diagnostics — always run, even on failure. Captures
+      # container restart counts + final health state to help debug
+      # ECONNREFUSED-style flakes where a service was healthy at `--wait`
+      # but went down mid-test (OOM kill, segfault, healthcheck flap).
+      # `Restarts` > 0 on web/backend confirms container churn during the
+      # Playwright run.
+      - name: Container state after Playwright
+        if: always()
+        run: |
+          echo "===== docker compose ps ====="
+          docker compose -f docker/compose.yml -f docker/compose.ci.yml ps
+          echo
+          echo "===== restart counts ====="
+          for svc in centrifugo postgres redis otel-lgtm backend web; do
+            cid="$(docker compose -f docker/compose.yml -f docker/compose.ci.yml ps -q "$svc" 2>/dev/null || true)"
+            if [ -n "$cid" ]; then
+              restarts="$(docker inspect "$cid" --format '{{.RestartCount}}' 2>/dev/null || echo '?')"
+              health="$(docker inspect "$cid" --format '{{.State.Health.Status}}' 2>/dev/null || echo 'none')"
+              status="$(docker inspect "$cid" --format '{{.State.Status}}' 2>/dev/null || echo '?')"
+              printf '%-12s status=%-10s health=%-10s restarts=%s\n' "$svc" "$status" "$health" "$restarts"
+            fi
+          done
+          echo
+          echo "===== docker stats snapshot ====="
+          docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}'
+
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v5

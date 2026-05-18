@@ -17,12 +17,19 @@
 #      `..:/workspace` bind mount.
 #   3. Switches web to the production Dockerfile (apps/web/Dockerfile)
 #      which generates the static SPA at build time and serves it via
-#      nginx on :8080. Drops bind mounts; remaps port 3001 host → 8080
-#      container; sets the APP_* env vars the production runtime-config
-#      entrypoint expects.
+#      nginx on :8080. Drops bind mounts; sets the APP_* env vars the
+#      production runtime-config entrypoint expects.
 #
 # centrifugo is already buildable from docker/centrifugo/Dockerfile in
 # the base compose.yml, so no override needed here.
+#
+# Network model in CI: the e2e workflow attaches the act_runner job
+# container to `course-shelf-net` after `compose up --wait`, so
+# Playwright + curl reach services by container name over docker DNS
+# (e.g. `web:8080`, `backend:3000`). Host port-publishing isn't used by
+# the e2e path — the previous gateway-IP-via-/proc/net/route approach
+# was prone to ECONNREFUSED under concurrent CI load, even with the
+# containers themselves staying healthy.
 #
 # Usage in CI:
 #   docker compose -f docker/compose.yml -f docker/compose.ci.yml up -d --build
@@ -62,14 +69,13 @@ services:
       # The prod image uses NODE_ENV=production by default. Keep that so
       # CI exercises the production codepaths.
       NODE_ENV: production
-      # Same DinD-host-vs-job-container-localhost rationale as the web
-      # service below. `E2E_HOST` is set by the workflow to the docker
-      # bridge gateway IP so the browser-driven URLs land on the host
-      # where compose published the ports.
-      BETTER_AUTH_URL: "http://${E2E_HOST:-localhost}:3000"
-      CORS_ORIGINS: "http://${E2E_HOST:-localhost}:3001,http://${E2E_HOST:-localhost}:8080"
-    # CMD inherits from the prod Dockerfile:
-    #   prisma migrate deploy && node dist/main.js
+      # The runner is attached to course-shelf-net after `up --wait`, so
+      # the browser (Chromium in the runner) reaches services via docker
+      # DNS. Better Auth's URL has to match the Origin the browser sees;
+      # likewise CORS_ORIGINS must list every Origin the SPA can be
+      # served from.
+      BETTER_AUTH_URL: "http://backend:3000"
+      CORS_ORIGINS: "http://web:8080"
 
   web:
     # Production image — Nuxt generate at build, nginx serves the static
@@ -85,22 +91,21 @@ services:
     # config) but be explicit so `docker compose config` doesn't ship a
     # /workspace cwd that confuses log readers.
     working_dir: /
-    # Production web binds to :8080 (nginx-unprivileged default). Remap
-    # so the e2e step's `curl http://${E2E_HOST}:3001/` still works.
-    ports: !override
-      - "3001:8080"
+    # Drop the dev `3001:3001` port-publishing. The e2e job reaches web
+    # over docker DNS (`web:8080`) via the runner's attachment to
+    # course-shelf-net, so host-side ports add nothing but a flaky
+    # iptables-DNAT dependency.
+    ports: !override []
     # APP_* env vars consumed by docker-entrypoint.sh to materialise
     # /_app-config.js for the SPA's runtime-config plugin.
     #
-    # In a DinD CI environment the job container's `localhost` is NOT
-    # the same as the host where compose published the port mappings.
-    # The e2e workflow sets `E2E_HOST` to the docker bridge default
-    # gateway (which IS the host from the job container's perspective);
-    # local dev leaves it unset and gets `localhost`.
+    # The runner is on course-shelf-net (see workflow), so the SPA
+    # served to Chromium can use container-DNS URLs and Chromium will
+    # resolve them through docker's embedded resolver.
     environment:
-      APP_API_BASE_URL: "http://${E2E_HOST:-localhost}:3000/api/v1"
-      APP_AUTH_BASE_URL: "http://${E2E_HOST:-localhost}:3000"
-      APP_CENTRIFUGO_URL: "ws://${E2E_HOST:-localhost}:8000/connection/websocket"
+      APP_API_BASE_URL: "http://backend:3000/api/v1"
+      APP_AUTH_BASE_URL: "http://backend:3000"
+      APP_CENTRIFUGO_URL: "ws://centrifugo:8000/connection/websocket"
     # Production web has a healthcheck on /_app-config.js so we can wait
     # for the entrypoint to finish materialising the runtime config.
     healthcheck:

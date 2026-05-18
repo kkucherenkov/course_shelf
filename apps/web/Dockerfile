@@ -45,11 +45,15 @@ RUN pnpm install --frozen-lockfile --ignore-scripts
 
 COPY . .
 
-# Bundle the spec, regen the TS client (the SPA imports its types), and
-# generate the static SPA. apiBaseUrl / authBaseUrl are placeholders here;
-# the runtime-config plugin overrides them at boot from /_app-config.js.
+# Bundle the spec, regen the TS client (the SPA imports its types),
+# rebuild design tokens (gitignored generated CSS/TS imported by
+# apps/web/app/assets/css/main.css + apps/web/app/design-tokens.generated.ts),
+# and generate the static SPA. apiBaseUrl / authBaseUrl are placeholders
+# here; the runtime-config plugin overrides them at boot from
+# /_app-config.js.
 RUN pnpm --filter @app/specs bundle \
     && pnpm --filter @app/api-client-ts build \
+    && pnpm design:build \
     && NUXT_PUBLIC_API_BASE_URL=__RUNTIME__ \
        NUXT_PUBLIC_AUTH_BASE_URL=__RUNTIME__ \
        pnpm --filter @app/web generate

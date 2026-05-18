@@ -49,8 +49,9 @@ jobs:
       # `localhost` is NOT the same as the host docker daemon's. The
       # compose stack publishes ports on the host; from the job container
       # we reach them via the docker bridge default gateway (which IS the
-      # host). E2E_HOST is then injected into Playwright's baseURL via
-      # E2E_WEB_URL / E2E_BACKEND_URL.
+      # host). E2E_HOST is then propagated into compose (used by
+      # compose.ci.yml's APP_* env vars) and into Playwright's baseURL
+      # via E2E_WEB_URL / E2E_BACKEND_URL.
       - name: Detect docker bridge gateway (host from inside the job container)
         run: |
           set -e
@@ -71,13 +72,36 @@ jobs:
           echo "E2E_HOST=$HOST_IP" >> "$GITHUB_ENV"
           echo "Using E2E_HOST=$HOST_IP"
 
-      # `--wait` blocks until every service with a healthcheck is healthy
-      # (or hits its retry budget). `--wait-timeout 600` gives backend up
-      # to 10 minutes for `prisma migrate deploy` + Nest bootstrap + first
-      # /health probe on a cold image. Replaces the manual curl-loops
-      # (which were too tight under cold-cache rebuilds).
+      # Force-pull only the truly external images (redis, otel-lgtm).
+      # postgres + centrifugo are now buildable (compose.ci.yml + base
+      # compose.yml respectively); backend + web are built from
+      # apps/*/Dockerfile production images via compose.ci.yml. All
+      # buildable services pull their FROM bases during `--build` below.
+      - name: Pull external images
+        run: docker compose -f docker/compose.yml -f docker/compose.ci.yml pull --quiet redis otel-lgtm
+
+      # CI override (docker/compose.ci.yml) replaces dev-mode bind-mount
+      # services with production-shaped builds. The base compose.yml is
+      # the dev-mode stack; running both files merges them with the
+      # override winning on overlapping keys. See compose.ci.yml's
+      # header comment for the DinD root-cause writeup.
+      #
+      # Explicit service list — the base compose.yml also defines `proxy`
+      # (bind-mounts nginx/default.conf) and `storybook` (dev image, not
+      # needed for e2e). Listing services here skips them so `--wait`
+      # doesn't time out on a service we don't care about and don't fix
+      # in compose.ci.yml.
+      #
+      # `--wait` blocks until every listed service with a healthcheck is
+      # healthy (or hits its retry budget). `--wait-timeout 600` gives
+      # backend up to 10 minutes for `prisma migrate deploy` + Nest
+      # bootstrap + first /health probe to flip green on a cold image
+      # cache.
       - name: Bring up docker stack
-        run: docker compose -f docker/compose.yml up -d --build --wait --wait-timeout 600
+        run: |
+          docker compose -f docker/compose.yml -f docker/compose.ci.yml \
+            up -d --build --wait --wait-timeout 600 \
+            postgres redis centrifugo otel-lgtm backend web
 
       - name: Verify backend health from host port
         run: |
@@ -115,12 +139,12 @@ jobs:
       - name: Dump service logs on failure
         if: failure()
         run: |
-          for svc in centrifugo postgres redis backend web; do
+          for svc in centrifugo postgres redis otel-lgtm backend web; do
             echo "===== $svc ====="
-            docker compose -f docker/compose.yml logs --tail=200 "$svc" 2>&1 || true
+            docker compose -f docker/compose.yml -f docker/compose.ci.yml logs --tail=200 "$svc" 2>&1 || true
             echo
             echo "----- $svc inspect (health, exit code, …) -----"
-            cid="$(docker compose -f docker/compose.yml ps -q "$svc" 2>/dev/null || true)"
+            cid="$(docker compose -f docker/compose.yml -f docker/compose.ci.yml ps -q "$svc" 2>/dev/null || true)"
             if [ -n "$cid" ]; then
               docker inspect "$cid" --format '{{json .State}}' 2>&1 | head -c 4000 || true
               echo
@@ -130,4 +154,4 @@ jobs:
 
       - name: Tear down
         if: always()
-        run: docker compose -f docker/compose.yml down -v
+        run: docker compose -f docker/compose.yml -f docker/compose.ci.yml down -v

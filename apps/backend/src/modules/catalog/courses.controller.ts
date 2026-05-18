@@ -63,9 +63,7 @@ const VALID_SORTS: ReadonlySet<CourseListSort> = new Set([
 ]);
 
 function parseStatus(raw: string | undefined): CourseListStatus {
-  return raw && VALID_STATUSES.has(raw as CourseListStatus)
-    ? (raw as CourseListStatus)
-    : 'all';
+  return raw && VALID_STATUSES.has(raw as CourseListStatus) ? (raw as CourseListStatus) : 'all';
 }
 
 function parseSort(raw: string | undefined): CourseListSort {

@@ -42,8 +42,12 @@ const preview: Preview = {
       // when its goal is render + interaction coverage rather than a11y.
       // Default stays 'error' for `pnpm storybook` and any unset env.
       test:
-        ((import.meta.env as Record<string, string | undefined>)
-          ?.STORYBOOK_A11Y_LEVEL as 'off' | 'todo' | 'warn' | 'error' | undefined) ?? 'error',
+        ((import.meta.env as Record<string, string | undefined>)?.STORYBOOK_A11Y_LEVEL as
+          | 'off'
+          | 'todo'
+          | 'warn'
+          | 'error'
+          | undefined) ?? 'error',
     },
   },
   decorators: [

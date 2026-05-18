@@ -46,11 +46,11 @@ No prepare-job, no artifact upload/download, no architectural workflow changes. 
 
 ## Architecture changes
 
-| Surface | Before | After |
-|---|---|---|
-| `~/.cache/ms-playwright/` | (re)downloaded on every Playwright-using job | `actions/cache@v4` keyed on `pnpm-lock.yaml` hash |
-| Chromium browser install step | `playwright install --with-deps chromium` (download + apt) | conditional `playwright install chromium` (binary only, on cache miss) + always `playwright install-deps chromium` (apt only) |
-| `pnpm design:build` step in `web`, `ui-quality`, `ui-storybook` jobs | Always runs | `actions/cache@v4` keyed on hash of `packages/design-tokens/src/**` + `packages/design-tokens/scripts/**` + `specs/design/tokens/**`; build skipped on cache hit |
+| Surface                                                              | Before                                                     | After                                                                                                                                                            |
+| -------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `~/.cache/ms-playwright/`                                            | (re)downloaded on every Playwright-using job               | `actions/cache@v4` keyed on `pnpm-lock.yaml` hash                                                                                                                |
+| Chromium browser install step                                        | `playwright install --with-deps chromium` (download + apt) | conditional `playwright install chromium` (binary only, on cache miss) + always `playwright install-deps chromium` (apt only)                                    |
+| `pnpm design:build` step in `web`, `ui-quality`, `ui-storybook` jobs | Always runs                                                | `actions/cache@v4` keyed on hash of `packages/design-tokens/src/**` + `packages/design-tokens/scripts/**` + `specs/design/tokens/**`; build skipped on cache hit |
 
 ## Playwright cache — applied pattern
 
@@ -109,23 +109,23 @@ The five output paths are taken from `turbo.json`'s declared outputs for `@app/d
 
 ## Touched workflows
 
-| File | Job(s) modified | What's added |
-|---|---|---|
-| `.forgejo/workflows/ci.yml` | `web`, `ui-quality`, `ui-storybook` | Design tokens cache (3 jobs); Playwright cache (1 job — `ui-storybook`) |
-| `.forgejo/workflows/snapshots-regen.yml` | (single job) | Playwright cache |
-| `.forgejo/workflows/e2e.yml` | (single job) | Playwright cache |
+| File                                     | Job(s) modified                     | What's added                                                            |
+| ---------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------- |
+| `.forgejo/workflows/ci.yml`              | `web`, `ui-quality`, `ui-storybook` | Design tokens cache (3 jobs); Playwright cache (1 job — `ui-storybook`) |
+| `.forgejo/workflows/snapshots-regen.yml` | (single job)                        | Playwright cache                                                        |
+| `.forgejo/workflows/e2e.yml`             | (single job)                        | Playwright cache                                                        |
 
 `Trivy`, `release.yml`, `Backend`, `Specs`, `Security audit` — untouched. They neither install Playwright nor run `design:build`.
 
 ## Expected impact
 
-| Metric | Today | After |
-|---|---|---|
-| Wall-time per CI run | ~8:00 | ~7:15 (-45s, ~9%) |
-| `ui-storybook` job duration | 4:45 | ~4:00 (-45s) |
-| Aggregate runner CPU per run | ~14 min | ~13:15 (-45s) |
-| Cache miss behaviour | n/a | Identical to today |
-| Workflow YAML diff | — | +5 step blocks across 3 files |
+| Metric                       | Today   | After                         |
+| ---------------------------- | ------- | ----------------------------- |
+| Wall-time per CI run         | ~8:00   | ~7:15 (-45s, ~9%)             |
+| `ui-storybook` job duration  | 4:45    | ~4:00 (-45s)                  |
+| Aggregate runner CPU per run | ~14 min | ~13:15 (-45s)                 |
+| Cache miss behaviour         | n/a     | Identical to today            |
+| Workflow YAML diff           | —       | +5 step blocks across 3 files |
 
 The win is modest by design — this is a low-risk targeted optimisation, not a CI rearchitecture.
 
@@ -135,7 +135,7 @@ The win is modest by design — this is a low-risk targeted optimisation, not a 
 
 - **R2: `playwright install-deps` requires `sudo`.** The current workflow already runs this command successfully on the act_runner, so the runner image has working `apt-get` and either runs as root or has passwordless sudo. We don't change this behaviour. → Mitigation: none required.
 
-- **R3: design-tokens cache invalidation gap.** If someone changes the `@app/design-tokens` *build* script in a way that produces different output for the same `src/` inputs, the cache won't invalidate. → Mitigation: include `packages/design-tokens/scripts/**` in the hash key (already in the spec above).
+- **R3: design-tokens cache invalidation gap.** If someone changes the `@app/design-tokens` _build_ script in a way that produces different output for the same `src/` inputs, the cache won't invalidate. → Mitigation: include `packages/design-tokens/scripts/**` in the hash key (already in the spec above).
 
 - **R4: `actions/cache` cross-branch reuse.** On a `pull_request` event, the cache normally falls back to the base branch's cache when the PR branch has no own. This is what we want — it maximises hit rate without manual intervention.
 
@@ -150,6 +150,7 @@ The win is modest by design — this is a low-risk targeted optimisation, not a 
 All three phases are independent and atomic. Single PR.
 
 **Verification:** push the PR; observe in the Forgejo Actions UI that:
+
 - The first run lists "Cache miss" for both keys (expected; first time).
 - Subsequent runs (rebases / new commits without dep or token changes) show "Cache hit" and skip the conditional install/build steps.
 - `ui-storybook` job timing drops by ≥30s in the cache-hit case.

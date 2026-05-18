@@ -17,8 +17,13 @@ jobs:
   smoke:
     name: Playwright smoke (web + backend health)
     runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+    # No `container:` here — this job runs `docker compose up` against the
+    # runner's docker daemon, so it MUST execute on the runner image (which
+    # has the docker CLI mounted). Playwright browsers + system deps are
+    # installed explicitly below via `playwright install --with-deps chromium`
+    # — the previous mcr.microsoft.com/playwright image had Chromium baked
+    # in but no docker CLI, which is why `docker compose up` failed with
+    # `docker: command not found`.
     timeout-minutes: 25
 
     steps:
@@ -34,33 +39,65 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Playwright browsers (chromium + system deps)
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Prisma generate
         run: pnpm --filter @app/backend prisma:generate
 
+      # The act_runner runs this workflow inside a job container, whose
+      # `localhost` is NOT the same as the host docker daemon's. The
+      # compose stack publishes ports on the host; from the job container
+      # we reach them via the docker bridge default gateway (which IS the
+      # host). E2E_HOST is then injected into Playwright's baseURL via
+      # E2E_WEB_URL / E2E_BACKEND_URL.
+      - name: Detect docker bridge gateway (host from inside the job container)
+        run: |
+          set -e
+          # Read /proc/net/route directly — `ip` / `route` / `netstat` are
+          # not guaranteed to be in the act_runner job-container image. The
+          # default route row has Destination=00000000; Gateway (col 3) is
+          # a little-endian hex IPv4. Pluck the hex, reverse byte pairs,
+          # and let `printf %d` do the hex→decimal lift (POSIX-portable;
+          # no gawk `strtonum` or other extensions required).
+          HEX="$(awk '$2 == "00000000" { print $3; exit }' /proc/net/route)"
+          if [ -z "$HEX" ] || [ "${#HEX}" -ne 8 ]; then
+            echo "could not parse default gateway from /proc/net/route"
+            cat /proc/net/route
+            exit 1
+          fi
+          HOST_IP="$(printf '%d.%d.%d.%d' \
+            "0x${HEX:6:2}" "0x${HEX:4:2}" "0x${HEX:2:2}" "0x${HEX:0:2}")"
+          echo "E2E_HOST=$HOST_IP" >> "$GITHUB_ENV"
+          echo "Using E2E_HOST=$HOST_IP"
+
+      # `--wait` blocks until every service with a healthcheck is healthy
+      # (or hits its retry budget). `--wait-timeout 600` gives backend up
+      # to 10 minutes for `prisma migrate deploy` + Nest bootstrap + first
+      # /health probe on a cold image. Replaces the manual curl-loops
+      # (which were too tight under cold-cache rebuilds).
       - name: Bring up docker stack
-        run: docker compose -f docker/compose.yml up -d --build
+        run: docker compose -f docker/compose.yml up -d --build --wait --wait-timeout 600
 
-      - name: Wait for backend health
+      - name: Verify backend health from host port
         run: |
-          for i in {1..60}; do
-            if curl -fsS http://localhost:3000/api/v1/health >/dev/null; then
-              echo "backend ready"; exit 0
-            fi
-            sleep 2
-          done
-          echo "backend failed to become healthy"; exit 1
+          curl -fsS "http://${E2E_HOST}:3000/api/v1/health"
+          echo
 
-      - name: Wait for web
+      - name: Verify web from host port
         run: |
-          for i in {1..60}; do
-            if curl -fsS http://localhost:3001/ >/dev/null; then
-              echo "web ready"; exit 0
-            fi
-            sleep 2
-          done
-          echo "web failed to become healthy"; exit 1
+          curl -fsS "http://${E2E_HOST}:3001/" > /dev/null
+          echo "web reachable on :3001 (via ${E2E_HOST})"
 
+      # Playwright config (tests/e2e/playwright.config.ts) reads E2E_WEB_URL
+      # for `use.baseURL`. The smoke specs mock every backend response with
+      # `page.route('**/api/v1/...')` so the SPA never actually hits the
+      # backend — but we still need the SPA reachable from the browser
+      # running inside the job container, hence the gateway IP.
       - name: Run Playwright smoke
+        env:
+          E2E_WEB_URL: "http://${{ env.E2E_HOST }}:3001"
+          E2E_BACKEND_URL: "http://${{ env.E2E_HOST }}:3000"
         run: pnpm e2e
 
       - name: Upload Playwright report
@@ -71,9 +108,25 @@ jobs:
           path: tests/e2e/playwright-report
           retention-days: 7
 
-      - name: Dump backend logs on failure
+      # Dump every service's logs on failure — not just backend. The first
+      # casualty when something goes wrong is often centrifugo / postgres /
+      # redis startup, and `dependency failed to start` propagates a useless
+      # error to the backend status without explaining which dep died.
+      - name: Dump service logs on failure
         if: failure()
-        run: docker compose -f docker/compose.yml logs --tail=200 backend
+        run: |
+          for svc in centrifugo postgres redis backend web; do
+            echo "===== $svc ====="
+            docker compose -f docker/compose.yml logs --tail=200 "$svc" 2>&1 || true
+            echo
+            echo "----- $svc inspect (health, exit code, …) -----"
+            cid="$(docker compose -f docker/compose.yml ps -q "$svc" 2>/dev/null || true)"
+            if [ -n "$cid" ]; then
+              docker inspect "$cid" --format '{{json .State}}' 2>&1 | head -c 4000 || true
+              echo
+            fi
+            echo
+          done
 
       - name: Tear down
         if: always()

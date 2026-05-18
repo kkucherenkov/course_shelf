@@ -27,15 +27,15 @@ After this change, the release pipeline builds and publishes only `courseshelf-b
 
 ## Architecture changes
 
-| Surface | Before | After |
-|---|---|---|
-| `courseshelf-centrifugo` image | wrapper over `centrifugo/centrifugo:v6` (template + envsubst entrypoint) | **removed**; use `centrifugo/centrifugo:v6` directly |
-| `courseshelf-proxy` image | wrapper over `nginxinc/nginx-unprivileged:1.27-alpine` (baked `prod.conf`) | **removed**; bind-mount `nginx-prod.conf` from release bundle |
-| Centrifugo config delivery | template file + envsubst at boot | `CENTRIFUGO_*` environment variables |
-| Files in repo (deleted) | `docker/centrifugo/{Dockerfile, entrypoint.sh, config.template.json}`, `docker/nginx/Dockerfile` | — |
-| Files unchanged | `docker/centrifugo/config.json` (dev bind-mount), `docker/nginx/default.conf` (dev), `docker/nginx/prod.conf` (prod bind-mount) | — |
-| Release bundle | 4 files (`compose.yml`, `.env.example`, `README.md`, `CHANGELOG.md`) | 5 files (+ `nginx-prod.conf`) |
-| Release workflow build steps | 4 image builds + pushes | 2 image builds + pushes |
+| Surface                        | Before                                                                                                                          | After                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `courseshelf-centrifugo` image | wrapper over `centrifugo/centrifugo:v6` (template + envsubst entrypoint)                                                        | **removed**; use `centrifugo/centrifugo:v6` directly          |
+| `courseshelf-proxy` image      | wrapper over `nginxinc/nginx-unprivileged:1.27-alpine` (baked `prod.conf`)                                                      | **removed**; bind-mount `nginx-prod.conf` from release bundle |
+| Centrifugo config delivery     | template file + envsubst at boot                                                                                                | `CENTRIFUGO_*` environment variables                          |
+| Files in repo (deleted)        | `docker/centrifugo/{Dockerfile, entrypoint.sh, config.template.json}`, `docker/nginx/Dockerfile`                                | —                                                             |
+| Files unchanged                | `docker/centrifugo/config.json` (dev bind-mount), `docker/nginx/default.conf` (dev), `docker/nginx/prod.conf` (prod bind-mount) | —                                                             |
+| Release bundle                 | 4 files (`compose.yml`, `.env.example`, `README.md`, `CHANGELOG.md`)                                                            | 5 files (+ `nginx-prod.conf`)                                 |
+| Release workflow build steps   | 4 image builds + pushes                                                                                                         | 2 image builds + pushes                                       |
 
 ## Centrifugo: env-driven configuration
 
@@ -47,20 +47,20 @@ image: centrifugo/centrifugo:v6
 restart: unless-stopped
 environment:
   # client.allowed_origins — space-separated list of strings
-  CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: "${PUBLIC_BASE_URL}"
+  CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: '${PUBLIC_BASE_URL}'
 
   # client.token.hmac_secret_key
-  CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY: "${CENTRIFUGO_TOKEN_HMAC_SECRET}"
+  CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY: '${CENTRIFUGO_TOKEN_HMAC_SECRET}'
 
   # http_api.key
-  CENTRIFUGO_HTTP_API_KEY: "${CENTRIFUGO_API_KEY}"
+  CENTRIFUGO_HTTP_API_KEY: '${CENTRIFUGO_API_KEY}'
 
   # admin.enabled / health.enabled
-  CENTRIFUGO_ADMIN_ENABLED: "false"
-  CENTRIFUGO_HEALTH_ENABLED: "true"
+  CENTRIFUGO_ADMIN_ENABLED: 'false'
+  CENTRIFUGO_HEALTH_ENABLED: 'true'
 
   # log.level
-  CENTRIFUGO_LOG_LEVEL: "${CENTRIFUGO_LOG_LEVEL:-info}"
+  CENTRIFUGO_LOG_LEVEL: '${CENTRIFUGO_LOG_LEVEL:-info}'
 
   # channel.namespaces — JSON string (complex array of objects)
   # Hardcoded in compose, NOT in .env (this is application code, not deploy config).
@@ -75,7 +75,7 @@ environment:
 ulimits:
   nofile: { soft: 65536, hard: 65536 }
 healthcheck:
-  test: ["CMD", "wget", "-qO-", "http://localhost:8000/health"]
+  test: ['CMD', 'wget', '-qO-', 'http://localhost:8000/health']
   interval: 5s
   timeout: 3s
   retries: 20
@@ -101,9 +101,9 @@ depends_on:
 volumes:
   - ./nginx-prod.conf:/etc/nginx/conf.d/default.conf:ro
 ports:
-  - "${PROXY_PORT:-8080}:8080"
+  - '${PROXY_PORT:-8080}:8080'
 healthcheck:
-  test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/v1/health"]
+  test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8080/api/v1/health']
   interval: 10s
   timeout: 5s
   retries: 12

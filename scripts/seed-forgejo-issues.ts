@@ -387,10 +387,7 @@ async function safeCall<T>(method: string, p: string, body?: unknown): Promise<T
 
 async function ensureProject(title: string): Promise<Project | null> {
   console.warn(`[seed] ensuring project "${title}"`);
-  const projects = await safeCall<Project[]>(
-    'GET',
-    `/repos/${owner}/${repo}/projects?state=open`,
-  );
+  const projects = await safeCall<Project[]>('GET', `/repos/${owner}/${repo}/projects?state=open`);
   if (projects === null) {
     console.warn('[seed] projects API not reachable on this Forgejo — skipping project sync.');
     return null;
@@ -432,9 +429,7 @@ interface ProjectColumnWithIssues {
   issues?: { number: number }[];
 }
 
-async function loadIssueColumnMap(
-  projectId: number,
-): Promise<Map<number, number>> {
+async function loadIssueColumnMap(projectId: number): Promise<Map<number, number>> {
   // Forgejo's `/projects/{id}/columns` includes issues per column on some
   // versions. Fall back to per-column issue listing when not.
   const cols = await safeCall<ProjectColumnWithIssues[]>(
@@ -466,10 +461,7 @@ async function moveIssueToColumn(
   return false;
 }
 
-async function syncProject(
-  projectTitle: string,
-  idToIssue: Map<string, number>,
-): Promise<void> {
+async function syncProject(projectTitle: string, idToIssue: Map<string, number>): Promise<void> {
   const project = await ensureProject(projectTitle);
   if (!project) return;
 

@@ -16,20 +16,20 @@
 
 ### Modified
 
-| Path | Responsibility | Change |
-|---|---|---|
-| `.forgejo/workflows/ci.yml` | Per-PR / per-push CI (6 jobs) | Add design-tokens cache to `web`, `ui-quality`, `ui-storybook`. Replace single Playwright install step in `ui-storybook` with cache + conditional download + always-run `install-deps`. |
-| `.forgejo/workflows/snapshots-regen.yml` | Manual workflow that regenerates Storybook visual baselines | Same Playwright cache pattern as `ui-storybook` |
-| `.forgejo/workflows/e2e.yml` | Nightly + manual Playwright smoke | Same Playwright cache pattern (uses `pnpm exec playwright`, no `--filter @app/ui`) |
-| `specs/tasks/active.md` | Project task stack | Tick T-2026-05-05-002 sub-step boxes as work lands |
+| Path                                     | Responsibility                                              | Change                                                                                                                                                                                  |
+| ---------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.forgejo/workflows/ci.yml`              | Per-PR / per-push CI (6 jobs)                               | Add design-tokens cache to `web`, `ui-quality`, `ui-storybook`. Replace single Playwright install step in `ui-storybook` with cache + conditional download + always-run `install-deps`. |
+| `.forgejo/workflows/snapshots-regen.yml` | Manual workflow that regenerates Storybook visual baselines | Same Playwright cache pattern as `ui-storybook`                                                                                                                                         |
+| `.forgejo/workflows/e2e.yml`             | Nightly + manual Playwright smoke                           | Same Playwright cache pattern (uses `pnpm exec playwright`, no `--filter @app/ui`)                                                                                                      |
+| `specs/tasks/active.md`                  | Project task stack                                          | Tick T-2026-05-05-002 sub-step boxes as work lands                                                                                                                                      |
 
 ### Untouched
 
-| Path | Why |
-|---|---|
-| `.forgejo/workflows/release.yml` | Doesn't run Playwright; doesn't need design-tokens (release only builds backend + web Dockerfiles, which build their own tokens during the docker context) |
-| `.forgejo/workflows/trivy.yml` | Static security scan — no Playwright, no tokens |
-| `.forgejo/workflows/ci.yml` jobs `backend`, `specs`, `security-audit` | Don't run Playwright, don't run `design:build` |
+| Path                                                                  | Why                                                                                                                                                        |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.forgejo/workflows/release.yml`                                      | Doesn't run Playwright; doesn't need design-tokens (release only builds backend + web Dockerfiles, which build their own tokens during the docker context) |
+| `.forgejo/workflows/trivy.yml`                                        | Static security scan — no Playwright, no tokens                                                                                                            |
+| `.forgejo/workflows/ci.yml` jobs `backend`, `specs`, `security-audit` | Don't run Playwright, don't run `design:build`                                                                                                             |
 
 ---
 
@@ -38,6 +38,7 @@
 - [ ] **Step 0.1: Create feature branch**
 
 Run:
+
 ```bash
 git checkout main
 git pull --ff-only
@@ -52,22 +53,26 @@ Expected: clean tree on the new branch.
 ## Task 1: Playwright cache in `ci.yml` (`ui-storybook` job)
 
 **Files:**
+
 - Modify: `.forgejo/workflows/ci.yml` (lines around the existing "Install Playwright chromium" step in `ui-storybook` job)
 
 - [ ] **Step 1: Verify current state**
 
 Run:
+
 ```bash
 grep -n "Install Playwright chromium" .forgejo/workflows/ci.yml
 ```
 
 Expected: one match, around line 164:
+
 ```
 164:      - name: Install Playwright chromium
 165:        run: pnpm --filter @app/ui exec playwright install --with-deps chromium
 ```
 
 Also confirm the `ui-storybook` job structure with:
+
 ```bash
 awk '/^  ui-storybook:/,/^  [a-z]/' .forgejo/workflows/ci.yml | head -40
 ```
@@ -77,28 +82,28 @@ awk '/^  ui-storybook:/,/^  [a-z]/' .forgejo/workflows/ci.yml | head -40
 Edit `.forgejo/workflows/ci.yml`. Locate this block in the `ui-storybook` job:
 
 ```yaml
-      - name: Install Playwright chromium
-        run: pnpm --filter @app/ui exec playwright install --with-deps chromium
+- name: Install Playwright chromium
+  run: pnpm --filter @app/ui exec playwright install --with-deps chromium
 ```
 
 Replace with:
 
 ```yaml
-      - name: Cache Playwright browsers
-        id: pw-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
+- name: Cache Playwright browsers
+  id: pw-cache
+  uses: actions/cache@v4
+  with:
+    path: ~/.cache/ms-playwright
+    key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+    restore-keys: |
+      playwright-${{ runner.os }}-
 
-      - name: Install Playwright Chromium (binary only)
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter @app/ui exec playwright install chromium
+- name: Install Playwright Chromium (binary only)
+  if: steps.pw-cache.outputs.cache-hit != 'true'
+  run: pnpm --filter @app/ui exec playwright install chromium
 
-      - name: Install Playwright OS deps
-        run: pnpm --filter @app/ui exec playwright install-deps chromium
+- name: Install Playwright OS deps
+  run: pnpm --filter @app/ui exec playwright install-deps chromium
 ```
 
 Indentation: the leading 6 spaces must match the surrounding `- name:` blocks in this job.
@@ -106,6 +111,7 @@ Indentation: the leading 6 spaces must match the surrounding `- name:` blocks in
 - [ ] **Step 3: Validate workflow YAML**
 
 Run:
+
 ```bash
 python3 -c "import yaml; yaml.safe_load(open('.forgejo/workflows/ci.yml')); print('OK')"
 ```
@@ -115,11 +121,13 @@ Expected: `OK`. Any YAML error fails this step.
 - [ ] **Step 4: Verify the new step structure**
 
 Run:
+
 ```bash
 awk '/^  ui-storybook:/,/^  [a-z][a-z-]*:/' .forgejo/workflows/ci.yml | grep -E "name:|if:|playwright" | head -20
 ```
 
 Expected output contains, in order:
+
 ```
 - name: Cache Playwright browsers
 - name: Install Playwright Chromium (binary only)
@@ -157,6 +165,7 @@ EOF
 ## Task 2: Design-tokens cache in `ci.yml` (`web`, `ui-quality`, `ui-storybook` jobs)
 
 **Files:**
+
 - Modify: `.forgejo/workflows/ci.yml` (three jobs, identical 11-line block inserted before each `pnpm design:build` step)
 
 The block to insert is the same in all three jobs. The `pnpm design:build` step itself becomes conditional.
@@ -164,6 +173,7 @@ The block to insert is the same in all three jobs. The `pnpm design:build` step 
 - [ ] **Step 1: Verify the three current `Build design tokens` step locations**
 
 Run:
+
 ```bash
 grep -n "Build design tokens" .forgejo/workflows/ci.yml
 ```
@@ -175,36 +185,36 @@ Expected: three matches — one per job (`web`, `ui-quality`, `ui-storybook`).
 In the `web` job, locate:
 
 ```yaml
-      # design-tokens.generated.{ts,css} are gitignored — generated by
-      # `pnpm design:build`. Without them, lint/typecheck see the
-      # designTokens import as `error type` and fail with no-unsafe-*.
-      - name: Build design tokens
-        run: pnpm design:build
-        working-directory: .
+# design-tokens.generated.{ts,css} are gitignored — generated by
+# `pnpm design:build`. Without them, lint/typecheck see the
+# designTokens import as `error type` and fail with no-unsafe-*.
+- name: Build design tokens
+  run: pnpm design:build
+  working-directory: .
 ```
 
 Replace with:
 
 ```yaml
-      # design-tokens.generated.{ts,css} are gitignored — generated by
-      # `pnpm design:build`. Without them, lint/typecheck see the
-      # designTokens import as `error type` and fail with no-unsafe-*.
-      - name: Cache design tokens
-        id: tokens-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            apps/web/app/assets/css/tokens.generated.css
-            apps/web/app/design-tokens.generated.ts
-            packages/ui/src/tokens.generated.css
-            packages/ui/src/design-tokens.generated.ts
-            packages/ui_flutter/lib/src/theme/tokens.g.dart
-          key: design-tokens-${{ runner.os }}-${{ hashFiles('packages/design-tokens/src/**', 'packages/design-tokens/scripts/**', 'specs/design/tokens/**') }}
+# design-tokens.generated.{ts,css} are gitignored — generated by
+# `pnpm design:build`. Without them, lint/typecheck see the
+# designTokens import as `error type` and fail with no-unsafe-*.
+- name: Cache design tokens
+  id: tokens-cache
+  uses: actions/cache@v4
+  with:
+    path: |
+      apps/web/app/assets/css/tokens.generated.css
+      apps/web/app/design-tokens.generated.ts
+      packages/ui/src/tokens.generated.css
+      packages/ui/src/design-tokens.generated.ts
+      packages/ui_flutter/lib/src/theme/tokens.g.dart
+    key: design-tokens-${{ runner.os }}-${{ hashFiles('packages/design-tokens/src/**', 'packages/design-tokens/scripts/**', 'specs/design/tokens/**') }}
 
-      - name: Build design tokens
-        if: steps.tokens-cache.outputs.cache-hit != 'true'
-        run: pnpm design:build
-        working-directory: .
+- name: Build design tokens
+  if: steps.tokens-cache.outputs.cache-hit != 'true'
+  run: pnpm design:build
+  working-directory: .
 ```
 
 - [ ] **Step 3: Replace the `ui-quality` job's `Build design tokens` block**
@@ -212,32 +222,32 @@ Replace with:
 In the `ui-quality` job, locate:
 
 ```yaml
-      # @app/ui imports tokens.generated.css from packages/ui/src — gitignored
-      # output of `pnpm design:build`. Build it before any lint/typecheck/audit.
-      - name: Build design tokens
-        run: pnpm design:build
+# @app/ui imports tokens.generated.css from packages/ui/src — gitignored
+# output of `pnpm design:build`. Build it before any lint/typecheck/audit.
+- name: Build design tokens
+  run: pnpm design:build
 ```
 
 Replace with:
 
 ```yaml
-      # @app/ui imports tokens.generated.css from packages/ui/src — gitignored
-      # output of `pnpm design:build`. Build it before any lint/typecheck/audit.
-      - name: Cache design tokens
-        id: tokens-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            apps/web/app/assets/css/tokens.generated.css
-            apps/web/app/design-tokens.generated.ts
-            packages/ui/src/tokens.generated.css
-            packages/ui/src/design-tokens.generated.ts
-            packages/ui_flutter/lib/src/theme/tokens.g.dart
-          key: design-tokens-${{ runner.os }}-${{ hashFiles('packages/design-tokens/src/**', 'packages/design-tokens/scripts/**', 'specs/design/tokens/**') }}
+# @app/ui imports tokens.generated.css from packages/ui/src — gitignored
+# output of `pnpm design:build`. Build it before any lint/typecheck/audit.
+- name: Cache design tokens
+  id: tokens-cache
+  uses: actions/cache@v4
+  with:
+    path: |
+      apps/web/app/assets/css/tokens.generated.css
+      apps/web/app/design-tokens.generated.ts
+      packages/ui/src/tokens.generated.css
+      packages/ui/src/design-tokens.generated.ts
+      packages/ui_flutter/lib/src/theme/tokens.g.dart
+    key: design-tokens-${{ runner.os }}-${{ hashFiles('packages/design-tokens/src/**', 'packages/design-tokens/scripts/**', 'specs/design/tokens/**') }}
 
-      - name: Build design tokens
-        if: steps.tokens-cache.outputs.cache-hit != 'true'
-        run: pnpm design:build
+- name: Build design tokens
+  if: steps.tokens-cache.outputs.cache-hit != 'true'
+  run: pnpm design:build
 ```
 
 (Note: this job has no `working-directory: .` on the build step — preserve that.)
@@ -247,33 +257,34 @@ Replace with:
 In the `ui-storybook` job, locate:
 
 ```yaml
-      - name: Build design tokens
-        run: pnpm design:build
+- name: Build design tokens
+  run: pnpm design:build
 ```
 
 Replace with:
 
 ```yaml
-      - name: Cache design tokens
-        id: tokens-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            apps/web/app/assets/css/tokens.generated.css
-            apps/web/app/design-tokens.generated.ts
-            packages/ui/src/tokens.generated.css
-            packages/ui/src/design-tokens.generated.ts
-            packages/ui_flutter/lib/src/theme/tokens.g.dart
-          key: design-tokens-${{ runner.os }}-${{ hashFiles('packages/design-tokens/src/**', 'packages/design-tokens/scripts/**', 'specs/design/tokens/**') }}
+- name: Cache design tokens
+  id: tokens-cache
+  uses: actions/cache@v4
+  with:
+    path: |
+      apps/web/app/assets/css/tokens.generated.css
+      apps/web/app/design-tokens.generated.ts
+      packages/ui/src/tokens.generated.css
+      packages/ui/src/design-tokens.generated.ts
+      packages/ui_flutter/lib/src/theme/tokens.g.dart
+    key: design-tokens-${{ runner.os }}-${{ hashFiles('packages/design-tokens/src/**', 'packages/design-tokens/scripts/**', 'specs/design/tokens/**') }}
 
-      - name: Build design tokens
-        if: steps.tokens-cache.outputs.cache-hit != 'true'
-        run: pnpm design:build
+- name: Build design tokens
+  if: steps.tokens-cache.outputs.cache-hit != 'true'
+  run: pnpm design:build
 ```
 
 - [ ] **Step 5: Validate workflow YAML**
 
 Run:
+
 ```bash
 python3 -c "import yaml; yaml.safe_load(open('.forgejo/workflows/ci.yml')); print('OK')"
 ```
@@ -283,6 +294,7 @@ Expected: `OK`.
 - [ ] **Step 6: Verify all three caches landed and reference identical paths**
 
 Run:
+
 ```bash
 grep -c "design-tokens-\${{ runner.os }}" .forgejo/workflows/ci.yml
 ```
@@ -290,6 +302,7 @@ grep -c "design-tokens-\${{ runner.os }}" .forgejo/workflows/ci.yml
 Expected: `3` (three identical cache keys).
 
 Run:
+
 ```bash
 grep -c "tokens-cache" .forgejo/workflows/ci.yml
 ```
@@ -324,11 +337,13 @@ EOF
 ## Task 3: Playwright cache in `snapshots-regen.yml`
 
 **Files:**
+
 - Modify: `.forgejo/workflows/snapshots-regen.yml` (around line 57-58)
 
 - [ ] **Step 1: Verify current state**
 
 Run:
+
 ```bash
 grep -n "Install Playwright chromium" .forgejo/workflows/snapshots-regen.yml
 ```
@@ -340,33 +355,34 @@ Expected: one match around line 57.
 Edit `.forgejo/workflows/snapshots-regen.yml`. Locate:
 
 ```yaml
-      - name: Install Playwright chromium (with system deps)
-        run: pnpm --filter @app/ui exec playwright install --with-deps chromium
+- name: Install Playwright chromium (with system deps)
+  run: pnpm --filter @app/ui exec playwright install --with-deps chromium
 ```
 
 Replace with:
 
 ```yaml
-      - name: Cache Playwright browsers
-        id: pw-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
+- name: Cache Playwright browsers
+  id: pw-cache
+  uses: actions/cache@v4
+  with:
+    path: ~/.cache/ms-playwright
+    key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+    restore-keys: |
+      playwright-${{ runner.os }}-
 
-      - name: Install Playwright Chromium (binary only)
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter @app/ui exec playwright install chromium
+- name: Install Playwright Chromium (binary only)
+  if: steps.pw-cache.outputs.cache-hit != 'true'
+  run: pnpm --filter @app/ui exec playwright install chromium
 
-      - name: Install Playwright OS deps
-        run: pnpm --filter @app/ui exec playwright install-deps chromium
+- name: Install Playwright OS deps
+  run: pnpm --filter @app/ui exec playwright install-deps chromium
 ```
 
 - [ ] **Step 3: Validate workflow YAML**
 
 Run:
+
 ```bash
 python3 -c "import yaml; yaml.safe_load(open('.forgejo/workflows/snapshots-regen.yml')); print('OK')"
 ```
@@ -376,6 +392,7 @@ Expected: `OK`.
 - [ ] **Step 4: Confirm no leftover combined install step**
 
 Run:
+
 ```bash
 grep -n "playwright install --with-deps" .forgejo/workflows/snapshots-regen.yml
 ```
@@ -387,6 +404,7 @@ Expected: no matches.
 ## Task 4: Playwright cache in `e2e.yml`
 
 **Files:**
+
 - Modify: `.forgejo/workflows/e2e.yml` (around line 35-36)
 
 This workflow uses `pnpm exec playwright` (without the `--filter @app/ui` qualifier) — pattern is otherwise identical.
@@ -394,11 +412,13 @@ This workflow uses `pnpm exec playwright` (without the `--filter @app/ui` qualif
 - [ ] **Step 1: Verify current state**
 
 Run:
+
 ```bash
 grep -n "Install Playwright" .forgejo/workflows/e2e.yml
 ```
 
 Expected: one match around line 35:
+
 ```
 35:      - name: Install Playwright browsers
 36:        run: pnpm exec playwright install --with-deps chromium
@@ -409,28 +429,28 @@ Expected: one match around line 35:
 Edit `.forgejo/workflows/e2e.yml`. Locate:
 
 ```yaml
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
+- name: Install Playwright browsers
+  run: pnpm exec playwright install --with-deps chromium
 ```
 
 Replace with:
 
 ```yaml
-      - name: Cache Playwright browsers
-        id: pw-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
+- name: Cache Playwright browsers
+  id: pw-cache
+  uses: actions/cache@v4
+  with:
+    path: ~/.cache/ms-playwright
+    key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+    restore-keys: |
+      playwright-${{ runner.os }}-
 
-      - name: Install Playwright Chromium (binary only)
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install chromium
+- name: Install Playwright Chromium (binary only)
+  if: steps.pw-cache.outputs.cache-hit != 'true'
+  run: pnpm exec playwright install chromium
 
-      - name: Install Playwright OS deps
-        run: pnpm exec playwright install-deps chromium
+- name: Install Playwright OS deps
+  run: pnpm exec playwright install-deps chromium
 ```
 
 (No `--filter @app/ui` here — `e2e.yml` runs Playwright against the whole repo.)
@@ -438,6 +458,7 @@ Replace with:
 - [ ] **Step 3: Validate workflow YAML**
 
 Run:
+
 ```bash
 python3 -c "import yaml; yaml.safe_load(open('.forgejo/workflows/e2e.yml')); print('OK')"
 ```
@@ -447,6 +468,7 @@ Expected: `OK`.
 - [ ] **Step 4: Confirm no leftover combined install step**
 
 Run:
+
 ```bash
 grep -n "playwright install --with-deps" .forgejo/workflows/e2e.yml
 ```
@@ -475,6 +497,7 @@ EOF
 ## Task 5: Tick sub-step boxes in `active.md`
 
 **Files:**
+
 - Modify: `specs/tasks/active.md`
 
 - [ ] **Step 1: Tick all three sub-steps**
@@ -525,6 +548,7 @@ Expected: branch pushed; tracking set up. Forgejo may emit a "Create a new pull 
 - [ ] **Step 2: Wait for the push-triggered CI run to start**
 
 Poll the run list until the run for the latest commit appears (status `running` or `success`):
+
 ```bash
 SHA=$(git rev-parse HEAD)
 for i in $(seq 1 30); do
@@ -562,11 +586,13 @@ Expected on first run after the change: status `success`, duration ≈ 4:30-5:00
 - [ ] **Step 4: If `ui-storybook` failed, dump diagnostic**
 
 If `STATUS=failure`, the cache YAML is broken or the conditional install is wrong. Investigate via the Forgejo Actions UI logs at:
+
 ```
 http://code.homelab.local/kkucherenkov/course_shelf/actions
 ```
 
 Common failure modes:
+
 - `Cache not found for input keys: ...` — informational, not a failure.
 - `actions/cache failed to save: ENOSPC` — runner out of disk; report BLOCKED.
 - `playwright install-deps` exits non-zero — `sudo`/apt issue; report BLOCKED.
@@ -597,6 +623,7 @@ Same poll as Task 6 Step 3, replacing `$SHA` with the new HEAD SHA. Expected: `s
 - [ ] **Step 3: Confirm cache hits in Forgejo Actions UI**
 
 Open the run in the Actions UI:
+
 ```
 http://code.homelab.local/kkucherenkov/course_shelf/actions
 ```
@@ -608,6 +635,7 @@ Click into the `Cache design tokens` step in `web`, `ui-quality`, `ui-storybook`
 - [ ] **Step 4: If cache hit doesn't reduce duration**
 
 If duration is still ~4:45 even on the second run:
+
 - Check Forgejo's `actions/cache` storage backend is configured (cache may not persist between runs if disabled).
 - Check the cache key is not picking up a value that changes per-run (it shouldn't — `runner.os` and `hashFiles('pnpm-lock.yaml')` are stable).
 
@@ -624,6 +652,7 @@ If after investigation the cache is working but the timing didn't improve — th
 - [ ] **Step 1: Open the PR via tea**
 
 Run from repo root:
+
 ```bash
 tea pulls create --login homelab \
   --title "ci: cache Playwright Chromium + design-tokens outputs" \
@@ -686,6 +715,7 @@ Edit `specs/tasks/done.md` — paste the block at the top with two extra fields:
 Plus an `- Outcome:` block summarising what shipped (mirroring the format used by previous done.md entries).
 
 Commit:
+
 ```bash
 git add specs/tasks/active.md specs/tasks/done.md
 git commit -m "chore(tasks): T-2026-05-05-002 shipped — move from active to done"
@@ -697,6 +727,7 @@ git push
 ## Self-review notes
 
 **Spec coverage:**
+
 - Playwright cache pattern → Tasks 1, 3, 4
 - Design-tokens cache pattern → Task 2
 - Three touched workflows → Tasks 1+2 (ci.yml), 3 (snapshots-regen.yml), 4 (e2e.yml)
@@ -706,6 +737,7 @@ git push
 - Single PR strategy → Task 8
 
 **Type/name consistency check:**
+
 - Cache `id: pw-cache` reused in all three Playwright caches: Tasks 1, 3, 4 ✓
 - Cache `id: tokens-cache` used in all three design-tokens caches: Task 2 ✓
 - Cache key formula identical in all three Playwright caches: `playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}` ✓

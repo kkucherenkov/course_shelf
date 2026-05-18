@@ -16,35 +16,35 @@
 
 ### Modified
 
-| Path | Responsibility | Change |
-|---|---|---|
-| `docker/compose.prod.yml` | Build-locally production stack | `centrifugo` and `proxy` services switch to upstream images |
-| `docker/compose.release.yml` | Image-pulling production stack (rendered into release bundle) | Same as above; reference `./nginx-prod.conf` for proxy config |
-| `.forgejo/workflows/release.yml` | Tag-triggered release pipeline | Drop two `publish` calls; merge `render compose` + `bundle artefacts` into one staging step |
-| `.env.release.example` | Operator env contract template for releases | Remove now-unused `CENTRIFUGO_ALLOWED_ORIGINS` comment line; add note that namespaces live in compose, not env |
-| `docs/release.md` | Release runbook | Image table drops two rows; bundle layout shows new `nginx-prod.conf` file; UPGRADE NOTE |
-| `docs/deployment.md` | Operator deployment guide | Bundle layout description + extraction note about `nginx-prod.conf` |
-| `specs/tasks/active.md` | Project task stack (per `.claude/CLAUDE.md` rules) | Sub-step boxes ticked as work lands |
+| Path                             | Responsibility                                                | Change                                                                                                         |
+| -------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `docker/compose.prod.yml`        | Build-locally production stack                                | `centrifugo` and `proxy` services switch to upstream images                                                    |
+| `docker/compose.release.yml`     | Image-pulling production stack (rendered into release bundle) | Same as above; reference `./nginx-prod.conf` for proxy config                                                  |
+| `.forgejo/workflows/release.yml` | Tag-triggered release pipeline                                | Drop two `publish` calls; merge `render compose` + `bundle artefacts` into one staging step                    |
+| `.env.release.example`           | Operator env contract template for releases                   | Remove now-unused `CENTRIFUGO_ALLOWED_ORIGINS` comment line; add note that namespaces live in compose, not env |
+| `docs/release.md`                | Release runbook                                               | Image table drops two rows; bundle layout shows new `nginx-prod.conf` file; UPGRADE NOTE                       |
+| `docs/deployment.md`             | Operator deployment guide                                     | Bundle layout description + extraction note about `nginx-prod.conf`                                            |
+| `specs/tasks/active.md`          | Project task stack (per `.claude/CLAUDE.md` rules)            | Sub-step boxes ticked as work lands                                                                            |
 
 ### Deleted
 
-| Path | Was responsible for |
-|---|---|
-| `docker/centrifugo/Dockerfile` | Wrapper image: `centrifugo/centrifugo:v6` + envsubst entrypoint |
-| `docker/centrifugo/entrypoint.sh` | Render template via envsubst then exec centrifugo |
-| `docker/centrifugo/config.template.json` | Centrifugo config with `${VAR}` placeholders |
-| `docker/nginx/Dockerfile` | Wrapper image: `nginx-unprivileged` + baked `prod.conf` |
+| Path                                     | Was responsible for                                             |
+| ---------------------------------------- | --------------------------------------------------------------- |
+| `docker/centrifugo/Dockerfile`           | Wrapper image: `centrifugo/centrifugo:v6` + envsubst entrypoint |
+| `docker/centrifugo/entrypoint.sh`        | Render template via envsubst then exec centrifugo               |
+| `docker/centrifugo/config.template.json` | Centrifugo config with `${VAR}` placeholders                    |
+| `docker/nginx/Dockerfile`                | Wrapper image: `nginx-unprivileged` + baked `prod.conf`         |
 
 ### Preserved (no changes)
 
-| Path | Stays because |
-|---|---|
-| `docker/compose.yml` | Dev compose; already on upstream images |
-| `docker/compose.override.yml` | Dev-only `CENTRIFUGO_LOG_LEVEL=debug` override |
-| `docker/centrifugo/config.json` | Dev bind-mount target |
-| `docker/nginx/default.conf` | Dev nginx config (different `web` upstream port) |
-| `docker/nginx/prod.conf` | Prod nginx config — release workflow copies it into the bundle as `nginx-prod.conf` |
-| `apps/backend/`, `apps/web/` Dockerfiles | Real builds; out of scope |
+| Path                                     | Stays because                                                                       |
+| ---------------------------------------- | ----------------------------------------------------------------------------------- |
+| `docker/compose.yml`                     | Dev compose; already on upstream images                                             |
+| `docker/compose.override.yml`            | Dev-only `CENTRIFUGO_LOG_LEVEL=debug` override                                      |
+| `docker/centrifugo/config.json`          | Dev bind-mount target                                                               |
+| `docker/nginx/default.conf`              | Dev nginx config (different `web` upstream port)                                    |
+| `docker/nginx/prod.conf`                 | Prod nginx config — release workflow copies it into the bundle as `nginx-prod.conf` |
+| `apps/backend/`, `apps/web/` Dockerfiles | Real builds; out of scope                                                           |
 
 ---
 
@@ -53,6 +53,7 @@
 **Why this is first:** Spec risk R1 — centrifugo's env-parsing of `CENTRIFUGO_CHANNEL_NAMESPACES` (array of objects) might have undocumented edge cases. Validating before touching any compose file means we don't have to revert work.
 
 **Files:**
+
 - Create: `/tmp/centrifugo-env-smoketest.sh` (throwaway script — not committed)
 
 - [ ] **Step 1: Write the smoke-test script**
@@ -130,6 +131,7 @@ chmod +x /tmp/centrifugo-env-smoketest.sh
 Run: `/tmp/centrifugo-env-smoketest.sh`
 
 Expected:
+
 - `/health` returns `{"status":"ok"}` or similar non-error JSON.
 - Log dump shows centrifugo started without parse errors and lists 5 namespaces (`system`, `library`, `notes`, `progress`, `notifications`).
 - Publish to `system` channel returns `{"result":{}}` or similar success body — confirms `CENTRIFUGO_HTTP_API_KEY` is honoured AND the namespace is registered.
@@ -157,6 +159,7 @@ No commit — `/tmp/...` is throwaway.
 ## Task 2: Migrate centrifugo service in `compose.prod.yml`
 
 **Files:**
+
 - Modify: `docker/compose.prod.yml` (centrifugo service block)
 
 - [ ] **Step 1: Verify current centrifugo service block**
@@ -164,25 +167,26 @@ No commit — `/tmp/...` is throwaway.
 Run: `grep -A 16 "^  centrifugo:" docker/compose.prod.yml`
 
 Expected (current state):
+
 ```yaml
-  centrifugo:
-    build:
-      context: ..
-      dockerfile: docker/centrifugo/Dockerfile
-    restart: unless-stopped
-    environment:
-      CENTRIFUGO_ALLOWED_ORIGINS: '${CENTRIFUGO_ALLOWED_ORIGINS:-["${PUBLIC_BASE_URL}"]}'
-      CENTRIFUGO_API_KEY: "${CENTRIFUGO_API_KEY}"
-      CENTRIFUGO_TOKEN_HMAC_SECRET: "${CENTRIFUGO_TOKEN_HMAC_SECRET}"
-      CENTRIFUGO_LOG_LEVEL: "${CENTRIFUGO_LOG_LEVEL:-info}"
-    ulimits:
-      nofile: { soft: 65536, hard: 65536 }
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8000/health"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-    networks: [cs-net]
+centrifugo:
+  build:
+    context: ..
+    dockerfile: docker/centrifugo/Dockerfile
+  restart: unless-stopped
+  environment:
+    CENTRIFUGO_ALLOWED_ORIGINS: '${CENTRIFUGO_ALLOWED_ORIGINS:-["${PUBLIC_BASE_URL}"]}'
+    CENTRIFUGO_API_KEY: '${CENTRIFUGO_API_KEY}'
+    CENTRIFUGO_TOKEN_HMAC_SECRET: '${CENTRIFUGO_TOKEN_HMAC_SECRET}'
+    CENTRIFUGO_LOG_LEVEL: '${CENTRIFUGO_LOG_LEVEL:-info}'
+  ulimits:
+    nofile: { soft: 65536, hard: 65536 }
+  healthcheck:
+    test: ['CMD', 'wget', '-qO-', 'http://localhost:8000/health']
+    interval: 5s
+    timeout: 3s
+    retries: 20
+  networks: [cs-net]
 ```
 
 - [ ] **Step 2: Replace centrifugo service block with upstream image + native env config**
@@ -190,37 +194,38 @@ Expected (current state):
 Edit `docker/compose.prod.yml`. Replace the current centrifugo service block with:
 
 ```yaml
-  centrifugo:
-    image: centrifugo/centrifugo:v6
-    restart: unless-stopped
-    environment:
-      # client.allowed_origins — space-separated list (centrifugo v6 native)
-      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: "${PUBLIC_BASE_URL}"
-      # client.token.hmac_secret_key — used to verify connection tokens issued by the backend
-      CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY: "${CENTRIFUGO_TOKEN_HMAC_SECRET}"
-      # http_api.key — backend → centrifugo publish authorization
-      CENTRIFUGO_HTTP_API_KEY: "${CENTRIFUGO_API_KEY}"
-      CENTRIFUGO_ADMIN_ENABLED: "false"
-      CENTRIFUGO_HEALTH_ENABLED: "true"
-      CENTRIFUGO_LOG_LEVEL: "${CENTRIFUGO_LOG_LEVEL:-info}"
-      # channel.namespaces — JSON array of objects. Hardcoded here, not in
-      # .env: namespaces are part of the application contract (backend
-      # publishes to these names), so they live with the compose file, not
-      # with operator-facing secrets.
-      CENTRIFUGO_CHANNEL_NAMESPACES: '[{"name":"system","presence":true,"history_size":10,"history_ttl":"60s"},{"name":"library","presence":false,"history_size":0},{"name":"notes","presence":false,"history_size":0},{"name":"progress","presence":false,"history_size":0},{"name":"notifications","presence":false,"history_size":0}]'
-    ulimits:
-      nofile: { soft: 65536, hard: 65536 }
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8000/health"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-    networks: [cs-net]
+centrifugo:
+  image: centrifugo/centrifugo:v6
+  restart: unless-stopped
+  environment:
+    # client.allowed_origins — space-separated list (centrifugo v6 native)
+    CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: '${PUBLIC_BASE_URL}'
+    # client.token.hmac_secret_key — used to verify connection tokens issued by the backend
+    CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY: '${CENTRIFUGO_TOKEN_HMAC_SECRET}'
+    # http_api.key — backend → centrifugo publish authorization
+    CENTRIFUGO_HTTP_API_KEY: '${CENTRIFUGO_API_KEY}'
+    CENTRIFUGO_ADMIN_ENABLED: 'false'
+    CENTRIFUGO_HEALTH_ENABLED: 'true'
+    CENTRIFUGO_LOG_LEVEL: '${CENTRIFUGO_LOG_LEVEL:-info}'
+    # channel.namespaces — JSON array of objects. Hardcoded here, not in
+    # .env: namespaces are part of the application contract (backend
+    # publishes to these names), so they live with the compose file, not
+    # with operator-facing secrets.
+    CENTRIFUGO_CHANNEL_NAMESPACES: '[{"name":"system","presence":true,"history_size":10,"history_ttl":"60s"},{"name":"library","presence":false,"history_size":0},{"name":"notes","presence":false,"history_size":0},{"name":"progress","presence":false,"history_size":0},{"name":"notifications","presence":false,"history_size":0}]'
+  ulimits:
+    nofile: { soft: 65536, hard: 65536 }
+  healthcheck:
+    test: ['CMD', 'wget', '-qO-', 'http://localhost:8000/health']
+    interval: 5s
+    timeout: 3s
+    retries: 20
+  networks: [cs-net]
 ```
 
 - [ ] **Step 3: Validate compose.prod.yml parses**
 
 Run:
+
 ```bash
 PUBLIC_BASE_URL=http://placeholder.local \
 POSTGRES_PASSWORD=placeholder \
@@ -236,6 +241,7 @@ Expected: exit code 0, no output. Any YAML/syntax/substitution error fails this 
 - [ ] **Step 4: Verify env mapping in rendered output**
 
 Run:
+
 ```bash
 PUBLIC_BASE_URL=https://example.local \
 POSTGRES_PASSWORD=p \
@@ -248,6 +254,7 @@ COURSES_PATH=/tmp \
 ```
 
 Expected output contains:
+
 - `image: centrifugo/centrifugo:v6` (no `build:` block)
 - `CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: https://example.local`
 - `CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY: test-hmac`
@@ -276,6 +283,7 @@ EOF
 ## Task 3: Migrate proxy service in `compose.prod.yml`
 
 **Files:**
+
 - Modify: `docker/compose.prod.yml` (proxy service block)
 
 - [ ] **Step 1: Verify current proxy service block**
@@ -283,19 +291,19 @@ EOF
 Run: `grep -A 14 "^  proxy:" docker/compose.prod.yml`
 
 Expected (current state):
+
 ```yaml
-  proxy:
-    build:
-      context: ..
-      dockerfile: docker/nginx/Dockerfile
-    restart: unless-stopped
-    depends_on:
-      backend: { condition: service_started }
-      web: { condition: service_started }
-    ports:
-      - "${PROXY_PORT:-8080}:8080"
-    healthcheck:
-      ...
+proxy:
+  build:
+    context: ..
+    dockerfile: docker/nginx/Dockerfile
+  restart: unless-stopped
+  depends_on:
+    backend: { condition: service_started }
+    web: { condition: service_started }
+  ports:
+    - '${PROXY_PORT:-8080}:8080'
+  healthcheck: ...
 ```
 
 - [ ] **Step 2: Replace proxy service block with upstream image + bind-mount**
@@ -303,27 +311,27 @@ Expected (current state):
 Edit `docker/compose.prod.yml`. Replace the current proxy block with:
 
 ```yaml
-  proxy:
-    image: nginxinc/nginx-unprivileged:1.27-alpine
-    restart: unless-stopped
-    depends_on:
-      backend: { condition: service_started }
-      web: { condition: service_started }
-    volumes:
-      # Read-only bind-mount: prod.conf is the same file the wrapper
-      # used to bake into its image. nginxinc/nginx-unprivileged already
-      # runs as the `nginx` user (uid 101), so Trivy DS-0002 stays green
-      # without an explicit USER directive in our layer.
-      - ./nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
-    ports:
-      - "${PROXY_PORT:-8080}:8080"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/v1/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
-    networks: [cs-net]
+proxy:
+  image: nginxinc/nginx-unprivileged:1.27-alpine
+  restart: unless-stopped
+  depends_on:
+    backend: { condition: service_started }
+    web: { condition: service_started }
+  volumes:
+    # Read-only bind-mount: prod.conf is the same file the wrapper
+    # used to bake into its image. nginxinc/nginx-unprivileged already
+    # runs as the `nginx` user (uid 101), so Trivy DS-0002 stays green
+    # without an explicit USER directive in our layer.
+    - ./nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
+  ports:
+    - '${PROXY_PORT:-8080}:8080'
+  healthcheck:
+    test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8080/api/v1/health']
+    interval: 10s
+    timeout: 5s
+    retries: 12
+    start_period: 30s
+  networks: [cs-net]
 ```
 
 Note the bind-mount path `./nginx/prod.conf` — this is relative to the compose file's directory (`docker/`), so it resolves to `docker/nginx/prod.conf`.
@@ -331,6 +339,7 @@ Note the bind-mount path `./nginx/prod.conf` — this is relative to the compose
 - [ ] **Step 3: Validate compose.prod.yml parses**
 
 Run:
+
 ```bash
 PUBLIC_BASE_URL=http://placeholder.local \
 POSTGRES_PASSWORD=placeholder \
@@ -346,6 +355,7 @@ Expected: exit 0, no output.
 - [ ] **Step 4: Verify rendered proxy block uses upstream image + bind-mount**
 
 Run:
+
 ```bash
 PUBLIC_BASE_URL=http://placeholder.local \
 POSTGRES_PASSWORD=p \
@@ -358,6 +368,7 @@ COURSES_PATH=/tmp \
 ```
 
 Expected output contains:
+
 - `image: nginxinc/nginx-unprivileged:1.27-alpine` (no `build:` block)
 - A volumes entry resolving to an absolute path ending in `/docker/nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro`
 
@@ -396,6 +407,7 @@ Expected: dev stack stopped (or already down). The prod stack uses different net
 - [ ] **Step 2: Create a throwaway `.env` for the smoke test**
 
 Run:
+
 ```bash
 cat > /tmp/courseshelf-prod-smoketest.env <<'EOF'
 PUBLIC_BASE_URL=http://localhost:8080
@@ -413,6 +425,7 @@ Expected: file created.
 - [ ] **Step 3: Bring the prod stack up**
 
 Run:
+
 ```bash
 docker compose --env-file /tmp/courseshelf-prod-smoketest.env \
   -f docker/compose.prod.yml \
@@ -426,6 +439,7 @@ If any service fails to start, run `docker compose --env-file /tmp/courseshelf-p
 - [ ] **Step 4: Wait for healthchecks and confirm all healthy**
 
 Run (poll until all show `(healthy)`):
+
 ```bash
 for i in $(seq 1 60); do
   STATUS=$(docker compose --env-file /tmp/courseshelf-prod-smoketest.env -f docker/compose.prod.yml ps --format '{{.Service}} {{.Status}}')
@@ -446,6 +460,7 @@ Expected: within ~5 minutes, all four (centrifugo, backend, web, proxy) report `
 - [ ] **Step 5: Probe each route through the proxy**
 
 Run:
+
 ```bash
 echo "─── backend health ───"
 curl -fsS http://localhost:8080/api/v1/health | head -c 200; echo
@@ -459,6 +474,7 @@ curl -fsSI -H "Connection: upgrade" -H "Upgrade: websocket" \
 ```
 
 Expected:
+
 - backend health returns JSON with `"status":"ok"` (or `"status":"degraded"` if optional services like sentry are off — both are 200/503 acceptable per the existing healthcheck).
 - web SPA returns `HTTP/1.1 200 OK`.
 - runtime config script returns JS like `window.__APP_CONFIG__ = {...}`.
@@ -467,6 +483,7 @@ Expected:
 - [ ] **Step 6: Confirm centrifugo accepts a backend-issued token**
 
 Run:
+
 ```bash
 docker compose --env-file /tmp/courseshelf-prod-smoketest.env -f docker/compose.prod.yml \
   logs centrifugo 2>&1 | grep -iE "(namespace|allowed_origins|started)" | head -10
@@ -477,6 +494,7 @@ Expected: log lines confirm centrifugo started, allowed_origins is set to `[http
 - [ ] **Step 7: Tear the stack down**
 
 Run:
+
 ```bash
 docker compose --env-file /tmp/courseshelf-prod-smoketest.env -f docker/compose.prod.yml down -v
 rm /tmp/courseshelf-prod-smoketest.env
@@ -491,6 +509,7 @@ No commit — verification step only. If something failed, return to Task 2 or T
 ## Task 5: Migrate centrifugo service in `compose.release.yml`
 
 **Files:**
+
 - Modify: `docker/compose.release.yml` (centrifugo service block)
 
 - [ ] **Step 1: Verify current centrifugo service block in compose.release.yml**
@@ -504,26 +523,26 @@ Expected: a block referencing `${REGISTRY:-ghcr.io}/${REGISTRY_NAMESPACE:-kkuche
 Edit `docker/compose.release.yml`. Replace the current centrifugo block with:
 
 ```yaml
-  centrifugo:
-    image: centrifugo/centrifugo:v6
-    restart: unless-stopped
-    environment:
-      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: "${PUBLIC_BASE_URL}"
-      CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY: "${CENTRIFUGO_TOKEN_HMAC_SECRET:?CENTRIFUGO_TOKEN_HMAC_SECRET is required}"
-      CENTRIFUGO_HTTP_API_KEY: "${CENTRIFUGO_API_KEY:?CENTRIFUGO_API_KEY is required}"
-      CENTRIFUGO_ADMIN_ENABLED: "false"
-      CENTRIFUGO_HEALTH_ENABLED: "true"
-      CENTRIFUGO_LOG_LEVEL: "${CENTRIFUGO_LOG_LEVEL:-info}"
-      # Application contract: hardcoded namespaces, NOT in operator's .env.
-      CENTRIFUGO_CHANNEL_NAMESPACES: '[{"name":"system","presence":true,"history_size":10,"history_ttl":"60s"},{"name":"library","presence":false,"history_size":0},{"name":"notes","presence":false,"history_size":0},{"name":"progress","presence":false,"history_size":0},{"name":"notifications","presence":false,"history_size":0}]'
-    ulimits:
-      nofile: { soft: 65536, hard: 65536 }
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8000/health"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-    networks: [cs-net]
+centrifugo:
+  image: centrifugo/centrifugo:v6
+  restart: unless-stopped
+  environment:
+    CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: '${PUBLIC_BASE_URL}'
+    CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY: '${CENTRIFUGO_TOKEN_HMAC_SECRET:?CENTRIFUGO_TOKEN_HMAC_SECRET is required}'
+    CENTRIFUGO_HTTP_API_KEY: '${CENTRIFUGO_API_KEY:?CENTRIFUGO_API_KEY is required}'
+    CENTRIFUGO_ADMIN_ENABLED: 'false'
+    CENTRIFUGO_HEALTH_ENABLED: 'true'
+    CENTRIFUGO_LOG_LEVEL: '${CENTRIFUGO_LOG_LEVEL:-info}'
+    # Application contract: hardcoded namespaces, NOT in operator's .env.
+    CENTRIFUGO_CHANNEL_NAMESPACES: '[{"name":"system","presence":true,"history_size":10,"history_ttl":"60s"},{"name":"library","presence":false,"history_size":0},{"name":"notes","presence":false,"history_size":0},{"name":"progress","presence":false,"history_size":0},{"name":"notifications","presence":false,"history_size":0}]'
+  ulimits:
+    nofile: { soft: 65536, hard: 65536 }
+  healthcheck:
+    test: ['CMD', 'wget', '-qO-', 'http://localhost:8000/health']
+    interval: 5s
+    timeout: 3s
+    retries: 20
+  networks: [cs-net]
 ```
 
 Note differences from compose.prod.yml: `CENTRIFUGO_TOKEN_HMAC_SECRET` and `CENTRIFUGO_API_KEY` use `:?...` substitution to fail loudly if unset (operator's `.env` should have them; release context wants explicit failures, not silent empty strings).
@@ -531,6 +550,7 @@ Note differences from compose.prod.yml: `CENTRIFUGO_TOKEN_HMAC_SECRET` and `CENT
 - [ ] **Step 3: Validate compose.release.yml parses**
 
 Run:
+
 ```bash
 PUBLIC_BASE_URL=http://placeholder.local \
 POSTGRES_PASSWORD=placeholder \
@@ -546,6 +566,7 @@ Expected: exit 0.
 - [ ] **Step 4: Confirm `:?` substitutions trigger when secrets are missing**
 
 Run (deliberately missing `CENTRIFUGO_API_KEY`):
+
 ```bash
 PUBLIC_BASE_URL=http://placeholder.local \
 POSTGRES_PASSWORD=p \
@@ -579,6 +600,7 @@ EOF
 ## Task 6: Migrate proxy service in `compose.release.yml`
 
 **Files:**
+
 - Modify: `docker/compose.release.yml` (proxy service block)
 
 - [ ] **Step 1: Verify current proxy service block in compose.release.yml**
@@ -592,28 +614,28 @@ Expected: block referencing `${REGISTRY:-ghcr.io}/${REGISTRY_NAMESPACE:-kkuchere
 Edit `docker/compose.release.yml`. Replace the current proxy block with:
 
 ```yaml
-  proxy:
-    image: nginxinc/nginx-unprivileged:1.27-alpine
-    restart: unless-stopped
-    depends_on:
-      backend: { condition: service_started }
-      web: { condition: service_started }
-    volumes:
-      # Bind-mount the prod nginx config from the release bundle.
-      # The release workflow stages compose.yml + nginx-prod.conf side
-      # by side in STAGE/, so this relative path resolves whether you
-      # run the rendered compose from the workflow or from an extracted
-      # release bundle.
-      - ./nginx-prod.conf:/etc/nginx/conf.d/default.conf:ro
-    ports:
-      - "${PROXY_PORT:-8080}:8080"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/v1/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
-    networks: [cs-net]
+proxy:
+  image: nginxinc/nginx-unprivileged:1.27-alpine
+  restart: unless-stopped
+  depends_on:
+    backend: { condition: service_started }
+    web: { condition: service_started }
+  volumes:
+    # Bind-mount the prod nginx config from the release bundle.
+    # The release workflow stages compose.yml + nginx-prod.conf side
+    # by side in STAGE/, so this relative path resolves whether you
+    # run the rendered compose from the workflow or from an extracted
+    # release bundle.
+    - ./nginx-prod.conf:/etc/nginx/conf.d/default.conf:ro
+  ports:
+    - '${PROXY_PORT:-8080}:8080'
+  healthcheck:
+    test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8080/api/v1/health']
+    interval: 10s
+    timeout: 5s
+    retries: 12
+    start_period: 30s
+  networks: [cs-net]
 ```
 
 Note path differs from compose.prod.yml (`./nginx-prod.conf` vs `./nginx/prod.conf`). In release-bundle mode the compose file lives next to `nginx-prod.conf` directly in the bundle root.
@@ -621,6 +643,7 @@ Note path differs from compose.prod.yml (`./nginx-prod.conf` vs `./nginx/prod.co
 - [ ] **Step 3: Validate compose.release.yml parses (without nginx-prod.conf yet — config-time only)**
 
 Run:
+
 ```bash
 PUBLIC_BASE_URL=http://placeholder.local \
 POSTGRES_PASSWORD=placeholder \
@@ -657,6 +680,7 @@ EOF
 ## Task 7: Drop `courseshelf-proxy` and `courseshelf-centrifugo` from release.yml publish steps
 
 **Files:**
+
 - Modify: `.forgejo/workflows/release.yml` (publish call list)
 
 - [ ] **Step 1: Verify current publish list**
@@ -664,6 +688,7 @@ EOF
 Run: `grep -A 4 "publish courseshelf-backend" .forgejo/workflows/release.yml`
 
 Expected (current state):
+
 ```bash
           publish courseshelf-backend     apps/backend/Dockerfile
           publish courseshelf-web         apps/web/Dockerfile
@@ -687,6 +712,7 @@ Edit `.forgejo/workflows/release.yml`. Find and remove these two lines from the 
 Run: `grep -E "^\s*publish " .forgejo/workflows/release.yml`
 
 Expected output (only two lines):
+
 ```
           publish courseshelf-backend     apps/backend/Dockerfile
           publish courseshelf-web         apps/web/Dockerfile
@@ -743,11 +769,13 @@ EOF
 **Why:** With `compose.release.yml` referencing `./nginx-prod.conf`, the `docker compose config --quiet` validation needs that file adjacent to the compose. Currently render runs in repo root, then bundle copies into STAGE/ separately. We collapse into one staging step that prepares STAGE/, then validates from inside STAGE/.
 
 **Files:**
+
 - Modify: `.forgejo/workflows/release.yml` (the "Render compose-release file" step + the "Bundle release artefacts" step)
 
 - [ ] **Step 1: Find the current "Render compose-release file" step and the "Bundle release artefacts" step**
 
 Run:
+
 ```bash
 grep -n "Render compose-release file\|Bundle release artefacts" .forgejo/workflows/release.yml
 ```
@@ -765,73 +793,74 @@ Confirm these two steps are adjacent (modulo whitespace) by reading the file.
 Edit `.forgejo/workflows/release.yml`. Replace the "Render compose-release file with pinned tag" step AND the "Bundle release artefacts" step with this single step:
 
 ```yaml
-      # ─── Stage release bundle (render + validate + assemble) ────────────
-      # All bundle inputs land in STAGE/ before validation. Validating
-      # from inside STAGE ensures relative paths in compose.yml — like
-      # ./nginx-prod.conf — resolve at workflow time, not at operator
-      # deploy time.
-      - name: Stage release bundle
-        env:
-          SEMVER: ${{ steps.version.outputs.semver }}
-          GHCR_USER: ${{ secrets.GHCR_USER }}
-        run: |
-          set -euo pipefail
-          STAGE="courseshelf-release-v${SEMVER}"
-          NS="$(echo "$GHCR_USER" | tr '[:upper:]' '[:lower:]')"
-          mkdir -p "$STAGE"
+# ─── Stage release bundle (render + validate + assemble) ────────────
+# All bundle inputs land in STAGE/ before validation. Validating
+# from inside STAGE ensures relative paths in compose.yml — like
+# ./nginx-prod.conf — resolve at workflow time, not at operator
+# deploy time.
+- name: Stage release bundle
+  env:
+    SEMVER: ${{ steps.version.outputs.semver }}
+    GHCR_USER: ${{ secrets.GHCR_USER }}
+  run: |
+    set -euo pipefail
+    STAGE="courseshelf-release-v${SEMVER}"
+    NS="$(echo "$GHCR_USER" | tr '[:upper:]' '[:lower:]')"
+    mkdir -p "$STAGE"
 
-          # Render compose with RELEASE_TAG / REGISTRY / REGISTRY_NAMESPACE pinned.
-          sed \
-            -e "s|\${RELEASE_TAG:-latest}|${SEMVER}|g" \
-            -e "s|\${REGISTRY:-ghcr.io}|${REGISTRY}|g" \
-            -e "s|\${REGISTRY_NAMESPACE:-kkucherenkov}|${NS}|g" \
-            docker/compose.release.yml > "$STAGE/compose.yml"
+    # Render compose with RELEASE_TAG / REGISTRY / REGISTRY_NAMESPACE pinned.
+    sed \
+      -e "s|\${RELEASE_TAG:-latest}|${SEMVER}|g" \
+      -e "s|\${REGISTRY:-ghcr.io}|${REGISTRY}|g" \
+      -e "s|\${REGISTRY_NAMESPACE:-kkucherenkov}|${NS}|g" \
+      docker/compose.release.yml > "$STAGE/compose.yml"
 
-          # nginx-prod.conf is bind-mounted by the proxy service. Stage it
-          # next to compose.yml so the relative path ./nginx-prod.conf
-          # resolves both during validation and at operator deploy time.
-          cp docker/nginx/prod.conf "$STAGE/nginx-prod.conf"
+    # nginx-prod.conf is bind-mounted by the proxy service. Stage it
+    # next to compose.yml so the relative path ./nginx-prod.conf
+    # resolves both during validation and at operator deploy time.
+    cp docker/nginx/prod.conf "$STAGE/nginx-prod.conf"
 
-          # Operator-facing artefacts.
-          cp .env.release.example "$STAGE/.env.example"
-          cp release-notes.md "$STAGE/CHANGELOG.md"
-          cat > "$STAGE/README.md" <<EOF
-          # CourseShelf $SEMVER — release bundle
+    # Operator-facing artefacts.
+    cp .env.release.example "$STAGE/.env.example"
+    cp release-notes.md "$STAGE/CHANGELOG.md"
+    cat > "$STAGE/README.md" <<EOF
+    # CourseShelf $SEMVER — release bundle
 
-          1. Copy \`.env.example\` to \`.env\` and fill in the secrets.
-          2. \`docker compose --env-file .env -f compose.yml pull\`
-          3. \`docker compose --env-file .env -f compose.yml up -d\`
-          4. Browse to http://<your-host>:\${PROXY_PORT:-8080}
+    1. Copy \`.env.example\` to \`.env\` and fill in the secrets.
+    2. \`docker compose --env-file .env -f compose.yml pull\`
+    3. \`docker compose --env-file .env -f compose.yml up -d\`
+    4. Browse to http://<your-host>:\${PROXY_PORT:-8080}
 
-          See CHANGELOG.md for what changed in this release.
-          EOF
+    See CHANGELOG.md for what changed in this release.
+    EOF
 
-          # Validate the rendered compose from inside STAGE so relative
-          # paths (./nginx-prod.conf) resolve. compose interpolates ALL
-          # \`\${VAR:?...}\` placeholders during validation, so we feed
-          # dummy values — this only checks YAML/syntax + that referenced
-          # files exist, not that any secret is real.
-          ( cd "$STAGE" && \
-            PUBLIC_BASE_URL=http://placeholder.local \
-            POSTGRES_PASSWORD=placeholder \
-            BETTER_AUTH_SECRET=placeholder \
-            CENTRIFUGO_API_KEY=placeholder \
-            CENTRIFUGO_TOKEN_HMAC_SECRET=placeholder \
-            COURSES_PATH=/tmp \
-              docker compose -f compose.yml config --quiet )
+    # Validate the rendered compose from inside STAGE so relative
+    # paths (./nginx-prod.conf) resolve. compose interpolates ALL
+    # \`\${VAR:?...}\` placeholders during validation, so we feed
+    # dummy values — this only checks YAML/syntax + that referenced
+    # files exist, not that any secret is real.
+    ( cd "$STAGE" && \
+      PUBLIC_BASE_URL=http://placeholder.local \
+      POSTGRES_PASSWORD=placeholder \
+      BETTER_AUTH_SECRET=placeholder \
+      CENTRIFUGO_API_KEY=placeholder \
+      CENTRIFUGO_TOKEN_HMAC_SECRET=placeholder \
+      COURSES_PATH=/tmp \
+        docker compose -f compose.yml config --quiet )
 
-          # Standalone compose file uploaded as a release asset (also
-          # available inside the tarball as compose.yml).
-          cp "$STAGE/compose.yml" "compose-release-v${SEMVER}.yml"
+    # Standalone compose file uploaded as a release asset (also
+    # available inside the tarball as compose.yml).
+    cp "$STAGE/compose.yml" "compose-release-v${SEMVER}.yml"
 
-          # Bundle the staged tree.
-          tar czf "${STAGE}.tar.gz" "$STAGE"
-          ls -la "${STAGE}.tar.gz" "compose-release-v${SEMVER}.yml"
+    # Bundle the staged tree.
+    tar czf "${STAGE}.tar.gz" "$STAGE"
+    ls -la "${STAGE}.tar.gz" "compose-release-v${SEMVER}.yml"
 ```
 
 - [ ] **Step 4: Verify the asset-upload step still finds the right files**
 
 The "Create Forgejo release with assets" step at the end of the workflow uploads:
+
 - `courseshelf-release-v${SEMVER}.tar.gz`
 - `compose-release-v${SEMVER}.yml`
 - `.env.release.example`
@@ -846,6 +875,7 @@ Expected: the four `upload_asset` calls reference the same filenames as before. 
 - [ ] **Step 5: Verify there is no remaining reference to the old separate steps**
 
 Run:
+
 ```bash
 grep -E "name: Render compose-release file|name: Bundle release artefacts|id: render" .forgejo/workflows/release.yml
 ```
@@ -855,6 +885,7 @@ Expected: no matches. Both old step names and the `id: render` output handle are
 - [ ] **Step 6: Validate the workflow YAML is syntactically valid**
 
 Run:
+
 ```bash
 python3 -c "import yaml; yaml.safe_load(open('.forgejo/workflows/release.yml'))" && echo OK
 ```
@@ -888,6 +919,7 @@ EOF
 ## Task 9: Delete the four wrapper files
 
 **Files:**
+
 - Delete: `docker/centrifugo/Dockerfile`
 - Delete: `docker/centrifugo/entrypoint.sh`
 - Delete: `docker/centrifugo/config.template.json`
@@ -896,6 +928,7 @@ EOF
 - [ ] **Step 1: Confirm no other path references these files**
 
 Run:
+
 ```bash
 grep -rn "docker/centrifugo/Dockerfile\|docker/centrifugo/entrypoint\|docker/centrifugo/config.template\|docker/nginx/Dockerfile" \
   --include='*.yml' --include='*.yaml' --include='*.md' --include='*.sh' \
@@ -908,6 +941,7 @@ Expected: only matches inside `docs/superpowers/specs/2026-05-05-thin-docker-wra
 - [ ] **Step 2: Delete the four files**
 
 Run:
+
 ```bash
 git rm \
   docker/centrifugo/Dockerfile \
@@ -923,6 +957,7 @@ Expected: all four files removed; `git status` shows them as deleted in the inde
 Run: `ls docker/centrifugo/ docker/nginx/`
 
 Expected:
+
 - `docker/centrifugo/`: `config.json` (dev bind-mount target).
 - `docker/nginx/`: `default.conf` (dev), `prod.conf` (prod, source for bundle staging).
 
@@ -955,6 +990,7 @@ EOF
 ## Task 10: Update `.env.release.example` (drop unused comment, document namespace placement)
 
 **Files:**
+
 - Modify: `.env.release.example`
 
 - [ ] **Step 1: Verify the unused `CENTRIFUGO_ALLOWED_ORIGINS` block**
@@ -962,6 +998,7 @@ EOF
 Run: `grep -B 2 -A 2 "CENTRIFUGO_ALLOWED_ORIGINS" .env.release.example`
 
 Expected (current state):
+
 ```
 # JSON-array of allowed browser origins. Defaults to `["${PUBLIC_BASE_URL}"]`
 # when unset; override only if you serve the SPA from multiple origins.
@@ -1011,6 +1048,7 @@ EOF
 ## Task 11: Update `docs/release.md` (image table + bundle layout + UPGRADE NOTE)
 
 **Files:**
+
 - Modify: `docs/release.md`
 
 - [ ] **Step 1: Update the "Images on GHCR" table**
@@ -1129,6 +1167,7 @@ EOF
 ## Task 12: Update `docs/deployment.md` (bundle layout note)
 
 **Files:**
+
 - Modify: `docs/deployment.md`
 
 - [ ] **Step 1: Find the "Path 1 — pull a tagged release" section**
@@ -1198,6 +1237,7 @@ EOF
 ## Task 13: Tick off all sub-steps in `specs/tasks/active.md`
 
 **Files:**
+
 - Modify: `specs/tasks/active.md`
 
 - [ ] **Step 1: Tick all five sub-step checkboxes**
@@ -1248,6 +1288,7 @@ EOF
 Assuming work happened on a feature branch (per `.claude/CLAUDE.md` "PRs go through main — never push directly"):
 
 Run:
+
 ```bash
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 echo "Pushing branch: $BRANCH"
@@ -1341,6 +1382,7 @@ This step happens **after** review + merge, not at PR-open time. When the PR is 
 ## Self-review notes
 
 **Spec coverage:**
+
 - Centrifugo env-only config → Tasks 2, 5
 - Proxy bind-mount → Tasks 3, 6
 - Release workflow drops publish → Task 7
@@ -1357,6 +1399,7 @@ This step happens **after** review + merge, not at PR-open time. When the PR is 
 - Risk R3 (operator upgrade) → Task 11 (UPGRADE NOTE)
 
 **Type/name consistency check:**
+
 - Centrifugo env names used identically in Tasks 2 and 5: `CENTRIFUGO_CLIENT_ALLOWED_ORIGINS`, `CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY`, `CENTRIFUGO_HTTP_API_KEY`, `CENTRIFUGO_ADMIN_ENABLED`, `CENTRIFUGO_HEALTH_ENABLED`, `CENTRIFUGO_LOG_LEVEL`, `CENTRIFUGO_CHANNEL_NAMESPACES`. ✓
 - The JSON-string for `CENTRIFUGO_CHANNEL_NAMESPACES` is identical between Tasks 1, 2, 5. ✓
 - Bind-mount paths intentionally differ: `./nginx/prod.conf` in compose.prod.yml (Task 3) vs `./nginx-prod.conf` in compose.release.yml (Task 6). Reason documented in Task 6 Step 2.

@@ -11,12 +11,18 @@ concurrency:
 
 env:
   NODE_VERSION: "24"
-  FLUTTER_VERSION: "3.41.0"
 
 jobs:
   # ── Checks (consolidated lint · typecheck · test · specs · ui audit) ──────
   # One job sharing one pnpm install + one design:build + one prisma generate.
   # turbo handles parallelism across packages within the job.
+  #
+  # Per-package pnpm filter commands instead of `turbo run …` to avoid
+  # turbo's transitive `^build` → `@app/specs#codegen` chain (codegen
+  # needs Java + Flutter; the committed generated clients make it
+  # unnecessary at check-time). Coverage matches the pre-consolidation CI
+  # exactly: backend + web for lint/typecheck/test, ui for audit; plus the
+  # extra quality gates we fix manually today (design:audit, format).
   checks:
     name: Checks (lint · typecheck · test · specs · ui audit)
     runs-on: ubuntu-latest
@@ -44,15 +50,19 @@ jobs:
       - name: Validate + bundle specs
         run: pnpm spec:validate && pnpm spec:bundle
 
-      # Per-package pnpm filter commands instead of `turbo run …` to avoid
-      # turbo's transitive `^build` → `@app/specs#codegen` chain (codegen
-      # needs Java, runner doesn't have it; committed generated files make
-      # it unnecessary at check-time). Coverage matches the pre-consolidation
-      # CI exactly: backend + web for lint/typecheck/test, ui for audit.
-      - name: Lint
+      # Backend + web ESLint are independent — run in parallel and `wait` on
+      # both. Time becomes max(backend, web) instead of sum (~halves the step
+      # at the cost of a slightly noisier log when both fail). `set -e` +
+      # explicit `wait $pid` propagate the first non-zero exit.
+      - name: Lint (ESLint, backend + web in parallel)
         run: |
-          pnpm --filter @app/backend run lint
-          pnpm --filter @app/web run lint
+          set -e
+          pnpm --filter @app/backend run lint &
+          BACK_PID=$!
+          pnpm --filter @app/web run lint &
+          WEB_PID=$!
+          wait $BACK_PID
+          wait $WEB_PID
 
       - name: Typecheck
         run: |
@@ -66,6 +76,16 @@ jobs:
 
       - name: UI components audit
         run: pnpm --filter @app/ui audit:components
+
+      # Reporting mode (no --strict) — catches inventory drift between
+      # specs/design/README.md and the @app/ui Vue components without
+      # failing CI on a minor mismatch. Flip the script to `--strict`
+      # once the inventory stabilises.
+      - name: Design inventory audit
+        run: pnpm design:audit
+
+      - name: Prettier check
+        run: pnpm format:check
 
   # ── Quality (storybook test-runner + security audit) ──────────────────────
   # One job that does the visual-regression Storybook test-runner AND the
@@ -116,5 +136,10 @@ jobs:
       - name: Dependency vulnerability scan
         run: pnpm audit --audit-level=critical
 
+      # MPL-2.0 is on the allowlist as a forward-compatible defensive
+      # entry — no current dep ships under it, but @axe-core/playwright
+      # (used the moment we add Storybook a11y gates) is MPL-2.0. It's
+      # weak-copyleft (file-level reciprocity only, doesn't affect linked
+      # consumers) and standard for accessibility tooling.
       - name: License compliance check
-        run: pnpm dlx license-checker --excludePrivatePackages --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;Python-2.0;CC-BY-3.0;CC-BY-4.0'
+        run: pnpm dlx license-checker --excludePrivatePackages --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;Python-2.0;CC-BY-3.0;CC-BY-4.0;MPL-2.0'

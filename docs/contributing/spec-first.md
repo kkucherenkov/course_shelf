@@ -38,19 +38,19 @@ paths:
       summary: Recent scan history for a library.
       tags: [admin]
       parameters:
-        - $ref: "#/components/parameters/PathLibraryId"
+        - $ref: '#/components/parameters/PathLibraryId'
         - in: query
           name: limit
           schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
       responses:
-        "200":
+        '200':
           description: Recent scans.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RecentScanList"
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
+                $ref: '#/components/schemas/RecentScanList'
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 ```
 
 Add the new schema (or extend an existing one). Examples are required when the operation accepts or returns a meaningful payload — Spectral fails the build otherwise:
@@ -64,11 +64,11 @@ components:
       properties:
         items:
           type: array
-          items: { $ref: "#/components/schemas/RecentScanItem" }
+          items: { $ref: '#/components/schemas/RecentScanItem' }
       example:
         items:
           - id: scan_01HV...
-            startedAt: "2026-04-30T12:00:00Z"
+            startedAt: '2026-04-30T12:00:00Z'
             status: succeeded
 ```
 
@@ -80,11 +80,11 @@ pnpm spec:codegen
 
 That command runs:
 
-| Step | What it does | Where |
-|---|---|---|
-| `spec:validate` | Spectral lint + OpenAPI 3.1 schema check | `packages/specs/openapi/openapi.yaml` |
-| `spec:bundle` | Resolves `$ref`s into a single deterministic file | `packages/specs/dist/openapi.bundled.yaml` |
-| `spec:codegen` | Regenerates TS + Dart clients + NestJS DTOs | `packages/api-client-{ts,dart}/.../generated/` |
+| Step            | What it does                                      | Where                                          |
+| --------------- | ------------------------------------------------- | ---------------------------------------------- |
+| `spec:validate` | Spectral lint + OpenAPI 3.1 schema check          | `packages/specs/openapi/openapi.yaml`          |
+| `spec:bundle`   | Resolves `$ref`s into a single deterministic file | `packages/specs/dist/openapi.bundled.yaml`     |
+| `spec:codegen`  | Regenerates TS + Dart clients + NestJS DTOs       | `packages/api-client-{ts,dart}/.../generated/` |
 
 Generated client files are **checked in** (regenerate via `pnpm spec:codegen`, never edit by hand). The DTOs live at `@app/api-client-ts/server` for the NestJS controllers; the runtime client lives at `@app/api-client-ts` for the SPA.
 
@@ -143,11 +143,11 @@ Wire the controller + handler into the module's providers/controllers list.
 
 ### 4 — Tests
 
-| Layer | What | Where |
-|---|---|---|
-| Unit | Handler with fake repo + `AuthorizationService` | `*.handler.spec.ts` next to the handler |
-| Controller | DI'd `QueryBus` + decorator wiring | `*.controller.spec.ts` |
-| Spec contract | Round-trip request/response against the bundled YAML | `pnpm spec:contract-test` |
+| Layer         | What                                                 | Where                                   |
+| ------------- | ---------------------------------------------------- | --------------------------------------- |
+| Unit          | Handler with fake repo + `AuthorizationService`      | `*.handler.spec.ts` next to the handler |
+| Controller    | DI'd `QueryBus` + decorator wiring                   | `*.controller.spec.ts`                  |
+| Spec contract | Round-trip request/response against the bundled YAML | `pnpm spec:contract-test`               |
 
 ```sh
 pnpm --filter @app/backend test -- src/modules/admin/application/queries/list-recent-scans.handler.spec.ts
@@ -161,7 +161,10 @@ import { listRecentScans } from '@app/api-client-ts';
 
 export function useRecentScans(libraryId: string) {
   return useAsyncData(`recent-scans:${libraryId}`, async () => {
-    const { data, error } = await listRecentScans({ path: { id: libraryId }, query: { limit: 10 } });
+    const { data, error } = await listRecentScans({
+      path: { id: libraryId },
+      query: { limit: 10 },
+    });
     if (error) throw error;
     return data;
   });

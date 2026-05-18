@@ -2,6 +2,22 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-11-001 — README screenshots for Stage A web (#200)
+
+- Created: 2026-05-11
+- Completed: 2026-05-11
+- Owner: claude
+- Spec: README §Screenshots + `docs/screenshots/README.md` capture plan
+- Result: merged via PR #200 — `25c6024 docs(readme): wire Stage A web screenshots + capture script`
+- Outcome:
+  - 4 PNG captures (`home`, `course-detail`, `lesson-player`, `admin-dashboard`) at 1440×900, dark theme, all under 600 KB — embedded inline in `README.md` and `README.ru.md`.
+  - `scripts/screenshots.ts` + `pnpm screenshots` — hermetic Playwright headless driver that mocks every `/api/v1/*` and `/api/v1/auth/*` call (reuses the patterns from `tests/e2e/*.spec.ts`). Backend / Postgres / Centrifugo not required; only the SPA dev server.
+  - Lesson-player capture suppresses `<video>` `error` listeners via `addInitScript`: the stub MP4 data URI otherwise trips the player's error overlay (`Could not load lesson. Please try again.`).
+  - `docs/screenshots/README.md`: file table updated (mobile-home row dropped pending `apps/mobile` Stage A; URLs swapped from slug-shaped placeholders to the actual `[id]` route), theme convention flipped to "dark by default" to match `colorMode.preference = 'dark'` in `apps/web/nuxt.config.ts`.
+- Lessons / follow-ups:
+  - The mock fixture in `tests/e2e/course-detail.spec.ts` omits `sectionId` / `sectionTitle` on `CourseMaterialItem`s, but the spec test never asserts the right-rail rendering so it passes anyway. The screenshot script needed the full shape; consider tightening the e2e fixture to match the OpenAPI schema.
+  - Mobile capture (`mobile-home.png`) is a follow-up — wire a Flutter integration-test capture step once the mobile Stage A home is ready.
+
 ## T-2026-05-05-003 — CI consolidation + Playwright Docker image (#199)
 
 - Created: 2026-05-05

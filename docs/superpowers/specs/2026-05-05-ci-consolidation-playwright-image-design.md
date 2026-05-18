@@ -27,6 +27,7 @@ No caches, no per-step magic. Pure structural simplification.
 ```
 
 `act_runner` enforces concurrency=2. Critical path:
+
 - Batch 1: backend (121s) + web (154s), wall = 154s
 - Batch 2: specs (76s) + ui-audit (64s), wall = 76s
 - Batch 3: ui-storybook (285s) + security (75s), wall = 285s
@@ -35,11 +36,13 @@ No caches, no per-step magic. Pure structural simplification.
 ## Why this approach (vs. caching from T-2026-05-05-002)
 
 The cancelled cache approach showed:
+
 - Forgejo `act_runner` cache backend handles small caches (≤300 MB) but degrades pathologically on multi-GB tarballs (pnpm store restore took ~100s per job).
 - Splitting `playwright install --with-deps` into `install` + `install-deps` serialised work that ran in parallel internally — net regression even on cache hits.
 - Per-run variance on this self-hosted runner is too high (242-427s for nominally identical UI Storybook configs) to validate sub-minute optimisations empirically.
 
 This spec instead targets **structural** wins:
+
 - Job consolidation removes 3 redundant `pnpm install` runs per push (fixed-cost ~60s × 3 saved aggregate — independent of cache backend behaviour).
 - Playwright Docker image removes the entire `playwright install --with-deps` step (~2 min saved on UI Storybook critical path) — independent of network speed, registry latency, or apt mirror state.
 
@@ -104,7 +107,7 @@ checks:
       run: pnpm --filter @app/ui audit:components
 ```
 
-**`turbo run lint typecheck test`** invokes those tasks across every workspace package (backend, web, packages/*) honoring dependency graph from `turbo.json`. Turbo parallelises naturally — backend's vitest runs alongside web's vitest, etc.
+**`turbo run lint typecheck test`** invokes those tasks across every workspace package (backend, web, packages/\*) honoring dependency graph from `turbo.json`. Turbo parallelises naturally — backend's vitest runs alongside web's vitest, etc.
 
 **Modified job: `ui-storybook`** — switches to Playwright Docker image. The image bakes Chromium + all apt system deps for the Playwright version it ships with.
 
@@ -154,12 +157,12 @@ Same Playwright image swap. This is a manual workflow that regenerates Storybook
 
 ## Files modified
 
-| File | Change |
-|---|---|
-| `.forgejo/workflows/ci.yml` | Drop `backend`, `web`, `specs`, `ui-quality` jobs. Add `checks` job. Modify `ui-storybook` to use `container:` directive. `security-audit` unchanged. |
-| `.forgejo/workflows/e2e.yml` | Add `container:` directive; drop `playwright install --with-deps` step. |
-| `.forgejo/workflows/snapshots-regen.yml` | Same as e2e. |
-| `specs/tasks/active.md` | Add T-2026-05-05-003 entry. |
+| File                                     | Change                                                                                                                                                |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.forgejo/workflows/ci.yml`              | Drop `backend`, `web`, `specs`, `ui-quality` jobs. Add `checks` job. Modify `ui-storybook` to use `container:` directive. `security-audit` unchanged. |
+| `.forgejo/workflows/e2e.yml`             | Add `container:` directive; drop `playwright install --with-deps` step.                                                                               |
+| `.forgejo/workflows/snapshots-regen.yml` | Same as e2e.                                                                                                                                          |
+| `specs/tasks/active.md`                  | Add T-2026-05-05-003 entry.                                                                                                                           |
 
 `docker compose`, application code, design tokens — untouched.
 
@@ -175,11 +178,13 @@ If the npm Playwright version is bumped later, the image tag must be bumped in l
 ## Turbo behaviour assumptions
 
 `turbo.json` already declares:
+
 - `lint` → depends on `@app/specs#codegen` + `@app/design-tokens#build`
 - `test` → depends on `^build` + the same
 - `typecheck` → same
 
 When `checks` job runs `turbo run lint typecheck test` AFTER explicit `design:build` + `spec:validate`/`bundle` steps, turbo:
+
 1. Sees codegen + design-tokens already up-to-date (their outputs exist on disk).
 2. Skips re-running their `^build` deps for those tasks.
 3. Parallelises lint/typecheck/test across packages within concurrency limits of the runner host (typically 2-4 workers).
@@ -190,12 +195,12 @@ If turbo decides to rebuild design-tokens or specs (because of stale `node_modul
 
 Numbers to capture from the first PR run + a follow-up commit:
 
-| Metric | Baseline | Target |
-|---|---|---|
-| Total wall-time per push | 8:35 | 5:00-5:30 (-40%) |
-| `checks` job duration | n/a | 3:00-3:30 |
-| `ui-storybook` duration | 4:45 | 1:30-2:30 |
-| `security-audit` duration | 1:15 | unchanged |
+| Metric                    | Baseline | Target           |
+| ------------------------- | -------- | ---------------- |
+| Total wall-time per push  | 8:35     | 5:00-5:30 (-40%) |
+| `checks` job duration     | n/a      | 3:00-3:30        |
+| `ui-storybook` duration   | 4:45     | 1:30-2:30        |
+| `security-audit` duration | 1:15     | unchanged        |
 
 Verification on first run = "still green and at least the wall-time was cut to under 6 min". Variance is high; we're targeting wins much larger than the variance.
 

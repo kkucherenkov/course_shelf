@@ -326,9 +326,7 @@ describe('ListCoursesHandler', () => {
         makeCourseWithDates('b', 'Bananas', 5, 0),
         makeCourseWithDates('c', 'Cherries', 3, 0),
       ]);
-      const result = await h.execute(
-        new ListCoursesQuery(adminActor, undefined, 'all', 'newest'),
-      );
+      const result = await h.execute(new ListCoursesQuery(adminActor, undefined, 'all', 'newest'));
       expect(result.map((d) => d.id)).toEqual(['b', 'c', 'a']);
     });
 

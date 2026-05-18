@@ -30,6 +30,7 @@ git status
 - [ ] **Step 1: Verify current 4 jobs that we're replacing**
 
 Run:
+
 ```bash
 grep -nE "^  (backend|web|specs|ui-quality):" .forgejo/workflows/ci.yml
 ```
@@ -41,41 +42,41 @@ Expected: 4 matches.
 Edit `.forgejo/workflows/ci.yml`. Find the four job blocks (`backend`, `web`, `specs`, `ui-quality`) and replace them all with this single block:
 
 ```yaml
-  # ── Checks (consolidated lint · typecheck · test · specs · ui audit) ──────
-  # One job sharing one pnpm install + one design:build + one prisma generate.
-  # turbo handles parallelism across packages within the job.
-  checks:
-    name: Checks (lint · typecheck · test · specs · ui audit)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+# ── Checks (consolidated lint · typecheck · test · specs · ui audit) ──────
+# One job sharing one pnpm install + one design:build + one prisma generate.
+# turbo handles parallelism across packages within the job.
+checks:
+  name: Checks (lint · typecheck · test · specs · ui audit)
+  runs-on: ubuntu-latest
+  timeout-minutes: 15
 
-    steps:
-      - uses: actions/checkout@v6
+  steps:
+    - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6
+    - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+    - uses: actions/setup-node@v6
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
 
-      - name: Prisma generate
-        run: pnpm --filter @app/backend prisma:generate
+    - name: Prisma generate
+      run: pnpm --filter @app/backend prisma:generate
 
-      - name: Build design tokens
-        run: pnpm design:build
+    - name: Build design tokens
+      run: pnpm design:build
 
-      - name: Validate + bundle specs
-        run: pnpm spec:validate && pnpm spec:bundle
+    - name: Validate + bundle specs
+      run: pnpm spec:validate && pnpm spec:bundle
 
-      - name: Lint, typecheck, test (turbo)
-        run: pnpm exec turbo run lint typecheck test
+    - name: Lint, typecheck, test (turbo)
+      run: pnpm exec turbo run lint typecheck test
 
-      - name: UI components audit
-        run: pnpm --filter @app/ui audit:components
+    - name: UI components audit
+      run: pnpm --filter @app/ui audit:components
 ```
 
 The `ui-storybook` and `security-audit` jobs stay where they are (this task only touches the four jobs listed above).
@@ -83,6 +84,7 @@ The `ui-storybook` and `security-audit` jobs stay where they are (this task only
 - [ ] **Step 3: Validate workflow YAML**
 
 Run:
+
 ```bash
 yq eval '.' .forgejo/workflows/ci.yml > /dev/null && echo OK
 ```
@@ -92,11 +94,13 @@ Expected: `OK`.
 - [ ] **Step 4: Verify only `checks`, `ui-storybook`, `security-audit` remain as jobs**
 
 Run:
+
 ```bash
 yq eval '.jobs | keys' .forgejo/workflows/ci.yml
 ```
 
 Expected output:
+
 ```
 - checks
 - ui-storybook
@@ -134,6 +138,7 @@ EOF
 - [ ] **Step 1: Verify current ui-storybook job**
 
 Run:
+
 ```bash
 awk '/^  ui-storybook:/,/^  [a-z][a-z-]*:/' .forgejo/workflows/ci.yml | head -40
 ```
@@ -145,40 +150,40 @@ Expected: a job that does `pnpm install` + `pnpm design:build` + `playwright ins
 Edit `.forgejo/workflows/ci.yml`. Replace the existing `ui-storybook` job with:
 
 ```yaml
-  # ── Storybook test-runner ──────────────────────────────────────────────────
-  # Builds the static Storybook bundle, serves it, and runs
-  # @storybook/test-runner against every story. Fails on story render errors
-  # and failed play() interactions.
-  ui-storybook:
-    name: UI Storybook test-runner
-    runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright:v1.49.1-jammy
-    timeout-minutes: 15
+# ── Storybook test-runner ──────────────────────────────────────────────────
+# Builds the static Storybook bundle, serves it, and runs
+# @storybook/test-runner against every story. Fails on story render errors
+# and failed play() interactions.
+ui-storybook:
+  name: UI Storybook test-runner
+  runs-on: ubuntu-latest
+  container:
+    image: mcr.microsoft.com/playwright:v1.49.1-jammy
+  timeout-minutes: 15
 
-    steps:
-      - uses: actions/checkout@v6
+  steps:
+    - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6
+    - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+    - uses: actions/setup-node@v6
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
 
-      - name: Build design tokens
-        run: pnpm design:build
+    - name: Build design tokens
+      run: pnpm design:build
 
-      - name: Build Storybook static
-        env:
-          STORYBOOK_A11Y_LEVEL: todo
-        run: pnpm --filter @app/ui storybook:build
+    - name: Build Storybook static
+      env:
+        STORYBOOK_A11Y_LEVEL: todo
+      run: pnpm --filter @app/ui storybook:build
 
-      - name: Run Storybook test-runner
-        run: pnpm --filter @app/ui test:visual:ci
+    - name: Run Storybook test-runner
+      run: pnpm --filter @app/ui test:visual:ci
 ```
 
 The `Install Playwright chromium` step is gone — Chromium and all apt system deps are already in `mcr.microsoft.com/playwright:v1.49.1-jammy`. Playwright auto-discovers them at test-runner time.
@@ -250,7 +255,7 @@ Then remove the `Install Playwright browsers` step entirely:
 ```diff
        - name: Install dependencies
          run: pnpm install --frozen-lockfile
- 
+
 -      - name: Install Playwright browsers
 -        run: pnpm exec playwright install --with-deps chromium
 -
@@ -276,7 +281,7 @@ Remove the `Install Playwright chromium (with system deps)` step:
 ```diff
        - name: Build design tokens
          run: pnpm design:build
- 
+
 -      - name: Install Playwright chromium (with system deps)
 -        run: pnpm --filter @app/ui exec playwright install --with-deps chromium
 -
@@ -422,6 +427,7 @@ Commit + push.
 ## Self-review notes
 
 **Spec coverage:**
+
 - Consolidation of 4 jobs → Task 1
 - Playwright image on ui-storybook → Task 2
 - Playwright image on e2e + snapshots-regen → Task 3
@@ -430,6 +436,7 @@ Commit + push.
 - Risks R1-R6 (spec) — all surface as failure modes during the verification (Forgejo CI) — no preventive code needed.
 
 **Type/name consistency:**
+
 - Image tag `mcr.microsoft.com/playwright:v1.49.1-jammy` identical across Tasks 2 and 3 ✓
 - Job name `checks` referenced consistently ✓
 - Spec's expected impact (wall-time ~5:00) aligns with PR body's test plan ✓

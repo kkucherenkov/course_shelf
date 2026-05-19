@@ -83,8 +83,11 @@ RUN apk add --no-cache gettext
 # Static SPA payload.
 COPY --from=build /workspace/apps/web/.output/public /usr/share/nginx/html
 
-# nginx site config + entrypoint that templates _app-config.js from env.
-COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+# nginx site config + entrypoint that templates _app-config.js + the
+# CSP `connect-src` from env. nginx.conf has the placeholder
+# `__CSP_CONNECT_SRC__` inside `connect-src 'self' …`; docker-entrypoint
+# sed-replaces it with `${CSP_CONNECT_SRC:-}` before exec-ing nginx.
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf.template
 COPY apps/web/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh \
     && chown -R nginx:nginx /usr/share/nginx/html

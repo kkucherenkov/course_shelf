@@ -41,4 +41,23 @@ ${CENTRIFUGO_LINE}
 };
 EOF
 
+# Materialise nginx CSP from a template. The static config copied into
+# /etc/nginx/conf.d/default.conf.template carries the placeholder
+# `__CSP_CONNECT_SRC__` inside the `connect-src` directive; we sed it
+# to the value of `CSP_CONNECT_SRC` env var (or empty if unset).
+#
+# Production deployment: SPA + backend are same-origin via Caddy/NPM,
+# so `connect-src 'self' ws: wss:` is enough and the placeholder
+# expands to empty.
+#
+# CI e2e (compose.ci.yml): SPA is on host:3001, backend on host:3000,
+# Centrifugo on host:8000 — different ports = different origins. CI
+# sets CSP_CONNECT_SRC to allow those origins explicitly so the SPA's
+# initial fetch isn't blocked by the browser's CSP enforcement layer.
+if [ -f /etc/nginx/conf.d/default.conf.template ]; then
+  sed "s|__CSP_CONNECT_SRC__|${CSP_CONNECT_SRC:-}|g" \
+    /etc/nginx/conf.d/default.conf.template \
+    > /etc/nginx/conf.d/default.conf
+fi
+
 exec "$@"

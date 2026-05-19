@@ -101,6 +101,13 @@ services:
       APP_API_BASE_URL: "http://${E2E_HOST:-localhost}:3000/api/v1"
       APP_AUTH_BASE_URL: "http://${E2E_HOST:-localhost}:3000"
       APP_CENTRIFUGO_URL: "ws://${E2E_HOST:-localhost}:8000/connection/websocket"
+      # Inject backend + Centrifugo origins into the SPA's CSP
+      # `connect-src` so the SPA on port 3001 can fetch `/api/v1/*`
+      # from port 3000 (different ports = different origins under
+      # browser CSP enforcement). Empty in production where everything
+      # comes through a single same-origin reverse proxy. The web
+      # docker-entrypoint sed's this into nginx.conf at boot.
+      CSP_CONNECT_SRC: "http://${E2E_HOST:-localhost}:3000 ws://${E2E_HOST:-localhost}:8000"
     # Production web has a healthcheck on /_app-config.js so we can wait
     # for the entrypoint to finish materialising the runtime config.
     healthcheck:

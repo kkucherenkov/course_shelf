@@ -62,7 +62,13 @@ async function bootstrap(): Promise<void> {
               frameAncestors: ["'none'"],
               formAction: ["'self'"],
               baseUri: ["'self'"],
-              upgradeInsecureRequests: [],
+              // `upgrade-insecure-requests` deliberately omitted —
+              // forces every subresource fetch to https://, which
+              // breaks plain-HTTP deployments (CI e2e stack, local
+              // dev). TLS termination at the reverse proxy (Caddy /
+              // Nginx Proxy Manager) handles the http→https hop in
+              // production; the directive is redundant there and
+              // harmful below.
             },
           },
           crossOriginEmbedderPolicy: false,

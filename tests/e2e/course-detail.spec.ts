@@ -101,6 +101,8 @@ function makeOutline(state: 'default' | 'in-progress' | 'completed') {
       {
         id: 'mat-1',
         lessonId: 'lesson-1',
+        sectionId: 'sec-1',
+        sectionTitle: 'Getting Started',
         kind: 'doc',
         label: 'TypeScript Cheatsheet.pdf',
         sizeBytes: 512000,
@@ -128,6 +130,19 @@ async function mockBaseAuth(page: Page): Promise<void> {
       body: JSON.stringify(fakeSession),
     });
   });
+  // The default layout mounts `useScanLifecycle`, which POSTs to
+  // /api/v1/realtime/token on first paint and retries forever on 401.
+  // Returning a fake token keeps Centrifugo's WS attempt local to the
+  // browser (it just fails to connect to ws://localhost:8000) and stops
+  // the retry storm that otherwise spams the console and races with the
+  // page's render assertions.
+  await page.route('**/api/v1/realtime/token**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ token: 'fake-realtime-token', expiresAt: '2099-01-01T00:00:00Z' }),
+    }),
+  );
 }
 
 async function mockOutline(page: Page, body: object, status = 200): Promise<void> {

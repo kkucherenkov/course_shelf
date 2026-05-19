@@ -26,21 +26,26 @@ import type { CourseOutlineDto, Problem } from '@app/api-client-ts';
 
 export type OutlineStatus = 'idle' | 'pending' | 'success' | 'error';
 
+// `statusCode` is the property h3 / Nuxt's `createError` reads when wrapping
+// a thrown error — useAsyncData passes the original through `createError`,
+// which discards arbitrary custom keys but preserves `statusCode` onto the
+// resulting HTTPError. Naming the property accordingly is what lets the
+// computed `errorStatus` recover the HTTP status downstream of the wrap.
 class HttpStatusError extends Error {
-  constructor(
-    public readonly httpStatus: number,
-    message: string,
-  ) {
+  readonly statusCode: number;
+
+  constructor(statusCode: number, message: string) {
     super(message);
     this.name = 'HttpStatusError';
+    this.statusCode = statusCode;
   }
 }
 
-function toError(raw: unknown, httpStatus: number): Error {
+function toError(raw: unknown, statusCode: number): Error {
   if (raw instanceof Error) return raw;
   const p = raw as Problem;
   const msg = p.detail ?? p.title ?? 'Request failed';
-  return new HttpStatusError(httpStatus, msg);
+  return new HttpStatusError(statusCode, msg);
 }
 
 const handlerCache = new Map<string, () => Promise<CourseOutlineDto>>();
@@ -84,9 +89,13 @@ export function useCourseOutline(courseId: string): UseCourseOutlineReturn {
     { lazy: true },
   );
 
+  // Read the status by duck-typing: useAsyncData wraps thrown errors with
+  // Nuxt's `createError` → h3 HTTPError, which breaks `instanceof
+  // HttpStatusError` but preserves `statusCode`/`status` properties.
   const errorStatus = computed<number | null>(() => {
-    const e = error.value;
-    if (e instanceof HttpStatusError) return e.httpStatus;
+    const e = error.value as { statusCode?: number; status?: number } | null | undefined;
+    if (typeof e?.statusCode === 'number') return e.statusCode;
+    if (typeof e?.status === 'number') return e.status;
     return null;
   });
 

@@ -31,7 +31,11 @@
     const out: MaterialGroup[] = [];
     for (const item of props.materials) {
       const last = out.at(-1);
-      if (last?.sectionId === item.sectionId) {
+      // Explicit `last !== undefined` guard: `last?.sectionId === item.sectionId`
+      // wrongly evaluates `undefined === undefined` to true on the first
+      // iteration (or whenever `item.sectionId` is missing), which then
+      // crashes on `last.items.push` with `last` still undefined.
+      if (last !== undefined && last.sectionId === item.sectionId) {
         last.items.push(item);
       } else {
         out.push({

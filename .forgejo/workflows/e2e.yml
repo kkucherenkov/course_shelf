@@ -45,6 +45,67 @@ jobs:
       - name: Prisma generate
         run: pnpm --filter @app/backend prisma:generate
 
+      # Network topology dump — helps figure out where docker compose
+      # publishes ports relative to this job container in a DinD setup.
+      # The act_runner here talks to a separate `dind` service over TCP
+      # (DOCKER_HOST), so compose containers live on dind's daemon while
+      # this job container is on the act_runner host's daemon. The right
+      # `E2E_HOST` value depends on whether dind's container IP sees the
+      # nested published ports, or whether the runner's bridge gateway
+      # does. We print enough state to tell.
+      - name: Diagnose runner ↔ dind network
+        run: |
+          echo "===== /etc/resolv.conf ====="
+          cat /etc/resolv.conf || true
+          echo
+          echo "===== /etc/hosts ====="
+          cat /etc/hosts || true
+          echo
+          echo "===== ip a (if present) ====="
+          ip a 2>/dev/null || ifconfig -a 2>/dev/null || cat /proc/net/fib_trie 2>/dev/null | head -40 || true
+          echo
+          echo "===== /proc/net/route ====="
+          cat /proc/net/route
+          echo
+          echo "===== getent hosts dind ====="
+          getent hosts dind || echo "dind not in resolver"
+          echo
+          echo "===== DOCKER_HOST env ====="
+          echo "DOCKER_HOST=${DOCKER_HOST:-<unset>}"
+          echo
+          echo "===== docker version ====="
+          docker version 2>&1 || true
+          echo
+          echo "===== docker info (server only, abbreviated) ====="
+          docker info --format '{{ .Name }} | {{ .ServerVersion }} | {{ .OperatingSystem }} | {{ .Driver }} | {{ .DockerRootDir }}' 2>&1 || true
+
+      # The act_runner runs this workflow inside a job container, whose
+      # `localhost` is NOT the same as the host docker daemon's. The
+      # compose stack publishes ports on the host; from the job container
+      # we reach them via the docker bridge default gateway (which IS the
+      # host). E2E_HOST is then propagated into compose (used by
+      # compose.ci.yml's APP_* env vars) and into Playwright's baseURL
+      # via E2E_WEB_URL / E2E_BACKEND_URL.
+      - name: Detect docker bridge gateway (host from inside the job container)
+        run: |
+          set -e
+          # Read /proc/net/route directly — `ip` / `route` / `netstat` are
+          # not guaranteed to be in the act_runner job-container image. The
+          # default route row has Destination=00000000; Gateway (col 3) is
+          # a little-endian hex IPv4. Pluck the hex, reverse byte pairs,
+          # and let `printf %d` do the hex→decimal lift (POSIX-portable;
+          # no gawk `strtonum` or other extensions required).
+          HEX="$(awk '$2 == "00000000" { print $3; exit }' /proc/net/route)"
+          if [ -z "$HEX" ] || [ "${#HEX}" -ne 8 ]; then
+            echo "could not parse default gateway from /proc/net/route"
+            cat /proc/net/route
+            exit 1
+          fi
+          HOST_IP="$(printf '%d.%d.%d.%d' \
+            "0x${HEX:6:2}" "0x${HEX:4:2}" "0x${HEX:2:2}" "0x${HEX:0:2}")"
+          echo "E2E_HOST=$HOST_IP" >> "$GITHUB_ENV"
+          echo "Using E2E_HOST=$HOST_IP"
+
       # Force-pull only the truly external images (redis, otel-lgtm).
       # postgres + centrifugo are now buildable (compose.ci.yml + base
       # compose.yml respectively); backend + web are built from
@@ -76,52 +137,25 @@ jobs:
             up -d --build --wait --wait-timeout 600 \
             postgres redis centrifugo otel-lgtm backend web
 
-      # Attach the act_runner job container to the compose project's bridge
-      # network so Playwright + curl can reach services by container name
-      # (`web:8080`, `backend:3000`) over docker DNS. Previously this
-      # workflow detected the docker bridge default gateway from
-      # /proc/net/route and reached the host's published ports
-      # (`${HOST_IP}:3001`) — that worked on coriolis_app's runner but
-      # fails intermittently here with ECONNREFUSED while containers
-      # report `restarts=0` and healthy. The host-port route relies on
-      # docker's iptables DNAT chain holding stable under concurrent
-      # job-container traffic; bypassing it entirely by joining the
-      # compose network removes that whole class of flake.
-      #
-      # `hostname` inside the runner returns the runner container's ID,
-      # which is also a valid docker target. Project name = `course-shelf`
-      # (from compose.yml `name:`), so the full network name is
-      # `course-shelf_course-shelf-net`.
-      - name: Attach runner to compose network
+      - name: Verify backend health from host port
         run: |
-          set -e
-          NET="course-shelf_course-shelf-net"
-          docker network connect "$NET" "$(hostname)"
-          echo "Connected runner ($(hostname)) to $NET"
-          docker network inspect "$NET" --format '{{ range .Containers }}{{ .Name }} {{ .IPv4Address }}{{ "\n" }}{{ end }}'
-
-      - name: Verify backend health via compose DNS
-        run: |
-          curl -fsS "http://backend:3000/api/v1/health"
+          curl -fsS "http://${E2E_HOST}:3000/api/v1/health"
           echo
 
-      - name: Verify web via compose DNS
+      - name: Verify web from host port
         run: |
-          curl -fsS "http://web:8080/" > /dev/null
-          echo "web reachable on web:8080"
+          curl -fsS "http://${E2E_HOST}:3001/" > /dev/null
+          echo "web reachable on :3001 (via ${E2E_HOST})"
 
-      # Playwright config (tests/e2e/playwright.config.ts) reads
-      # E2E_WEB_URL for `use.baseURL`. The smoke specs mock every backend
-      # response with `page.route('**/api/v1/...')` so the SPA never
-      # actually hits the backend — but Chromium still needs the SPA
-      # reachable. With the runner attached to the compose network,
-      # Chromium resolves `web` and `backend` via docker's embedded DNS
-      # and connects to the container's internal ports directly,
-      # bypassing the host-published port DNAT chain.
+      # Playwright config (tests/e2e/playwright.config.ts) reads E2E_WEB_URL
+      # for `use.baseURL`. The smoke specs mock every backend response with
+      # `page.route('**/api/v1/...')` so the SPA never actually hits the
+      # backend — but we still need the SPA reachable from the browser
+      # running inside the job container, hence the gateway IP.
       - name: Run Playwright smoke
         env:
-          E2E_WEB_URL: "http://web:8080"
-          E2E_BACKEND_URL: "http://backend:3000"
+          E2E_WEB_URL: "http://${{ env.E2E_HOST }}:3001"
+          E2E_BACKEND_URL: "http://${{ env.E2E_HOST }}:3000"
         run: pnpm e2e
 
       # Post-run diagnostics — always run, even on failure. Captures

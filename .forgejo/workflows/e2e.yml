@@ -45,40 +45,6 @@ jobs:
       - name: Prisma generate
         run: pnpm --filter @app/backend prisma:generate
 
-      # Network topology dump — helps figure out where docker compose
-      # publishes ports relative to this job container in a DinD setup.
-      # The act_runner here talks to a separate `dind` service over TCP
-      # (DOCKER_HOST), so compose containers live on dind's daemon while
-      # this job container is on the act_runner host's daemon. The right
-      # `E2E_HOST` value depends on whether dind's container IP sees the
-      # nested published ports, or whether the runner's bridge gateway
-      # does. We print enough state to tell.
-      - name: Diagnose runner ↔ dind network
-        run: |
-          echo "===== /etc/resolv.conf ====="
-          cat /etc/resolv.conf || true
-          echo
-          echo "===== /etc/hosts ====="
-          cat /etc/hosts || true
-          echo
-          echo "===== ip a (if present) ====="
-          ip a 2>/dev/null || ifconfig -a 2>/dev/null || cat /proc/net/fib_trie 2>/dev/null | head -40 || true
-          echo
-          echo "===== /proc/net/route ====="
-          cat /proc/net/route
-          echo
-          echo "===== getent hosts dind ====="
-          getent hosts dind || echo "dind not in resolver"
-          echo
-          echo "===== DOCKER_HOST env ====="
-          echo "DOCKER_HOST=${DOCKER_HOST:-<unset>}"
-          echo
-          echo "===== docker version ====="
-          docker version 2>&1 || true
-          echo
-          echo "===== docker info (server only, abbreviated) ====="
-          docker info --format '{{ .Name }} | {{ .ServerVersion }} | {{ .OperatingSystem }} | {{ .Driver }} | {{ .DockerRootDir }}' 2>&1 || true
-
       # The act_runner runs this workflow inside a job container, whose
       # `localhost` is NOT the same as the host docker daemon's. The
       # compose stack publishes ports on the host; from the job container
@@ -152,10 +118,35 @@ jobs:
       # `page.route('**/api/v1/...')` so the SPA never actually hits the
       # backend — but we still need the SPA reachable from the browser
       # running inside the job container, hence the gateway IP.
+      #
+      # Explicitly clear any inherited HTTP proxy env vars — if the
+      # act_runner inherits a proxy from the host (common on
+      # corp/homelab setups), Chromium will route navigation through it,
+      # and the proxy almost certainly can't reach `172.18.0.1:3001`
+      # (an internal docker bridge gateway). Curl in the verify steps
+      # above doesn't respect HTTPS_PROXY for plain http://, so it can
+      # appear that the URL is reachable when Chromium gets refused.
+      # Cleared per-step so local dev/release pipelines that DO want a
+      # proxy aren't affected.
+      #
       - name: Run Playwright smoke
         env:
           E2E_WEB_URL: "http://${{ env.E2E_HOST }}:3001"
           E2E_BACKEND_URL: "http://${{ env.E2E_HOST }}:3000"
+          # Explicitly blank every inherited proxy env var — if the
+          # host act_runner inherits a proxy and the workflow inherits
+          # it transitively, Chromium would route navigation through
+          # it (curl ignores most of these for plain http:// to IP
+          # literals, hence the diagnostic divergence). No effect when
+          # no proxy is set.
+          HTTP_PROXY: ""
+          HTTPS_PROXY: ""
+          NO_PROXY: ""
+          http_proxy: ""
+          https_proxy: ""
+          no_proxy: ""
+          ALL_PROXY: ""
+          all_proxy: ""
         run: pnpm e2e
 
       # Post-run diagnostics — always run, even on failure. Captures

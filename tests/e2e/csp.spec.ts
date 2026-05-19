@@ -21,8 +21,22 @@ function assertSecureHeaders(headers: Record<string, string>): void {
   expect(csp, 'Content-Security-Policy must be present').toBeTruthy();
   expect(csp).toContain("default-src 'self'");
   expect(csp).toContain("script-src 'self'");
+  // `'unsafe-eval'` must never appear in the SPA CSP — there's no
+  // runtime code-evaluation path we want to allow (no `eval`,
+  // `new Function`, dynamic-import-from-string, etc.).
   expect(csp).not.toContain("'unsafe-eval'");
-  expect(csp).not.toContain("script-src 'unsafe-inline'");
+  // Note: `script-src` ALSO carries `'unsafe-inline'`. Nuxt 4 SPA emits
+  // two inline boot scripts even with `ssr: false` — the
+  // @nuxtjs/color-mode pre-mount setup (avoids light/dark flash) and
+  // the `window.__NUXT__ = { config: { … } }` runtime-config bridge.
+  // Without `'unsafe-inline'`, both are dropped, the SPA never mounts,
+  // and every e2e fails with `body` reporting as hidden. SHA-256
+  // hashes change per build; nonce injection needs an SSR layer we
+  // don't run. The trade-off is documented in apps/web/nginx.conf.
+  // `'unsafe-inline'` is permissible because every page is the same
+  // static SPA shell — there's no per-request data interleaved with
+  // app HTML that XSS could ride. Style-src already allows
+  // `'unsafe-inline'` (Vue scoped styles).
   expect(csp).toContain("frame-ancestors 'none'");
   expect(csp).toContain("object-src 'none'");
 

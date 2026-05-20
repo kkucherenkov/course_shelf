@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+# `git pull` fast-forwards or merges into HEAD; after that the local
+# Repowise index may be stale against the new tip. Refresh so subsequent
+# MCP queries reflect the just-pulled state.
+#
+# Guarded on `command -v repowise` so clones without the CLI installed are
+# silently a no-op.
+if command -v repowise >/dev/null 2>&1; then
+  repowise update || echo "[husky/post-merge] repowise update failed — continuing"
+fi

@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+# Refresh Repowise's local index against the current HEAD before pushing so
+# the on-disk cache (and the `Last indexed: …` line in `.claude/CLAUDE.md`)
+# tracks the tip of `origin` after the push lands. Git has no `post-push`
+# hook; `pre-push` runs against HEAD which IS what's about to be pushed, so
+# updating now leaves the cache consistent with the new remote state.
+#
+# Guarded on `command -v repowise` so clones without the CLI installed are
+# silently a no-op — the hook never blocks pushes.
+if command -v repowise >/dev/null 2>&1; then
+  repowise update || echo "[husky/pre-push] repowise update failed — continuing push"
+fi

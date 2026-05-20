@@ -31,11 +31,10 @@
     const out: MaterialGroup[] = [];
     for (const item of props.materials) {
       const last = out.at(-1);
-      // Explicit `last !== undefined` guard: `last?.sectionId === item.sectionId`
-      // wrongly evaluates `undefined === undefined` to true on the first
-      // iteration (or whenever `item.sectionId` is missing), which then
-      // crashes on `last.items.push` with `last` still undefined.
-      if (last !== undefined && last.sectionId === item.sectionId) {
+      // `last?.sectionId === item.sectionId` is safe here because
+      // `item.sectionId` is typed as `string` (never `undefined`),
+      // so `undefined === string` always fails on the first iteration.
+      if (last?.sectionId === item.sectionId) {
         last.items.push(item);
       } else {
         out.push({

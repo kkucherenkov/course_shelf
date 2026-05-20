@@ -2,6 +2,24 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-20-001 — Bookkeeping catch-up: archive 4 shipped cards (#none)
+
+- Created: 2026-05-20
+- Completed: 2026-05-20
+- Owner: claude
+- Spec: none — bookkeeping reconciliation following the audit triggered after T-2026-05-04-002 archived. Audit found 4 cards marked `✅ Done` + `[x]` in TODO.md but missing matching entries in `done.md` (drift type C). Folded into one batch entry plus per-card metadata backfill in each spec.
+- Result: this commit + the four spec edits (E01-F02-S01.md, E13-F02-S08.md, E14-F02-S01.md, E14-F02-S02.md — Completed / Result lines populated where absent).
+- Outcome — four catch-up archive entries follow below:
+  - **E13-F02-S08** — NavigationShell. Completed 2026-04-27 via PR #122 (`e36e8ac feat: AppNavigationShell — sidebar + topbar + bottom-tab`). Single-commit ship (`1ce6208`) on `feat/navigation-shell`. UI tests 707/707 (+45 new); lint + typecheck clean.
+  - **E01-F02-S01** — Env scaffolding & dev docker-compose. Bulk-flipped 2026-05-01 via the archive-sweep PR #185. Actual artefacts (`.env.example`, `docker/compose.yml`, top-level README quickstart) shipped across many earlier PRs.
+  - **E14-F02-S01** — Sign in / sign up / forgot password (Stage A web auth). Bulk-flipped 2026-05-01 via PR #185. Implementation lives in `apps/web/app/pages/{sign-in,sign-up,forgot,reset}.vue` + the `GET /admin/instance` endpoint, shipped across the auth-related PRs that preceded #185.
+  - **E14-F02-S02** — Settings page (Stage B). Bulk-flipped 2026-05-01 via PR #185. Implementation: `apps/web/app/pages/settings.vue` with Profile / Appearance / Playback / Account sections.
+- Lessons / follow-ups:
+  - Pattern to watch for: archive-sweep PRs (`mark N shipped cards as Done`) flip TODO + spec status in bulk but rarely produce per-card archive entries — the entries don't write themselves. The catch-up rule of thumb is: any time a card flips ⬜/🔄 → ✅, add the matching `## T-…` entry to `done.md` in the same commit. Drift-detection rerun every ~1 month catches what slipped.
+  - Drift type A (hidden-shipped) and type B (TODO/spec mismatch) returned zero hits across all 115 cards on the 2026-05-20 audit — so the actual misalignment is narrow (the 4 cards already listed). No active mitigation needed beyond this batch.
+
+---
+
 ## T-2026-05-04-002 — Release pipeline + image-pulling compose (E22-F01-S06, #109)
 
 - Created: 2026-05-04

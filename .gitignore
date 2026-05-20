@@ -99,5 +99,8 @@ test-results
 specs/local-dev.md
 architecture.pptx
 
+# repowise local index cache (per-clone, machine-specific)
+.repowise/
+
 # example data
 docs/data

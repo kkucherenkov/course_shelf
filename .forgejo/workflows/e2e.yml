@@ -2,13 +2,26 @@ name: E2E smoke
 
 on:
   workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: "Regenerate Playwright visual baselines under tests/e2e/*-snapshots/ and commit them back to the branch. Use after the foundations visual regression test fails for legitimate reasons (font/glyph drift, a redesign landed)."
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
   schedule:
     # Nightly at 03:00 UTC — gives us a daily signal without slowing PRs.
     - cron: "0 3 * * *"
 
 concurrency:
   group: e2e-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
+
+permissions:
+  # Needed for the regen path below to push the captured baselines back.
+  contents: write
 
 env:
   NODE_VERSION: "24"
@@ -28,6 +41,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          # `fetch-depth: 0` lets the regen path rebase + push without
+          # a shallow-clone error. No-op cost on the nightly run.
+          fetch-depth: 0
+          token: ${{ secrets.GITEA_TOKEN }}
 
       - uses: pnpm/action-setup@v6
 
@@ -147,7 +165,59 @@ jobs:
           no_proxy: ""
           ALL_PROXY: ""
           all_proxy: ""
-        run: pnpm e2e
+        # On the regen path we pass `--update-snapshots` so Playwright
+        # rewrites every visual baseline under tests/e2e/*-snapshots/
+        # (the foundations visual regression test is the canonical
+        # consumer today). The nightly + default workflow_dispatch path
+        # leaves snapshots untouched and asserts against the committed
+        # baseline.
+        run: |
+          set -e
+          if [ "${{ inputs.update_snapshots }}" = "true" ]; then
+            pnpm e2e -- --update-snapshots
+          else
+            pnpm e2e
+          fi
+
+      # Regen-only: commit refreshed baselines back to the branch the
+      # workflow was dispatched on. Mirrors snapshots-regen.yml for
+      # Storybook. The Linux baseline must come from CI — capturing on
+      # darwin produces glyph-metric drift that breaks the nightly.
+      - name: Commit regenerated Playwright baselines
+        if: inputs.update_snapshots == 'true'
+        run: |
+          set -euo pipefail
+
+          git config user.email "actions@code.homelab.local"
+          git config user.name "Forgejo Actions"
+
+          # Discard Playwright runtime artefacts (report, traces, videos)
+          # that aren't baselines.
+          rm -rf tests/e2e/playwright-report tests/e2e/test-results || true
+
+          # Stage only the snapshot directories (`*-snapshots/` is the
+          # Playwright convention for `toHaveScreenshot` baselines).
+          git add 'tests/e2e/*-snapshots/' || true
+          if git diff --cached --quiet; then
+            echo "No baseline changes — nothing to commit."
+            exit 0
+          fi
+
+          git commit -m "$(cat <<'EOF'
+          chore(e2e): regenerate Playwright visual baselines from CI
+
+          Auto-captured by .forgejo/workflows/e2e.yml (regen path) so the
+          committed baselines match the Linux Playwright runtime
+          (chromium glyph metrics + native form-control rendering) the
+          nightly job runs against.
+          EOF
+          )"
+
+          # Rebase to absorb any commits that landed mid-run; the only
+          # diff in our commit is `*.png` so rebase always applies.
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          git pull --rebase origin "$BRANCH"
+          git push origin "HEAD:$BRANCH"
 
       # Post-run diagnostics — always run, even on failure. Captures
       # container restart counts + final health state to help debug

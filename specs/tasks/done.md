@@ -2,6 +2,24 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-04-002 — Release pipeline + image-pulling compose (E22-F01-S06, #109)
+
+- Created: 2026-05-04
+- Completed: 2026-05-04
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E22-F01-S06.md` (Forgejo #109)
+- Result: shipped via PR #190 — `842d3e7 chore(ci): release pipeline + image-pulling compose (E22-F01-S06) (#190)`. Bookkeeping (this archive entry + spec status flip + TODO row + GHCR-vs-Forgejo design note) caught up 2026-05-20.
+- Outcome:
+  - Tag-triggered workflow at `.forgejo/workflows/release.yml` — pattern `v*.*.*-release` only. Builds `courseshelf-backend` + `courseshelf-web` (amd64), tags each as `:M.m.p`, `:M.m`, `:M`, `:latest`, pushes to GHCR. Proxy + centrifugo run upstream images directly.
+  - `docker/compose.release.yml` — image-pulling variant; templates Centrifugo entirely via `CENTRIFUGO_*` env vars (cleaner than envsubst on `config.json`). Sits alongside the existing build-locally `compose.prod.yml`.
+  - `APP_VERSION` baked into both Dockerfiles (`apps/backend/Dockerfile:97`, `apps/web/Dockerfile:72`) and propagated via `--build-arg` from the workflow.
+  - `cliff.toml` + `pnpm release:notes` → Conventional-Commits changelog. Workflow downloads + installs git-cliff inline; tag pattern matches the release tag pattern.
+  - `.env.release.example` — full operator env contract (image source, public URL, postgres, better-auth, centrifugo).
+  - `docs/release.md` (runbook) + `docs/deployment.md` restructure — registry-pull is now the primary deployment path; build-from-source moved to secondary.
+- Lessons / follow-ups:
+  - **Registry deviation**: spec called for Forgejo OCI at `code.homelab.local`; impl went to GHCR because the homelab Forgejo registry doesn't terminate TLS and the act_runner's container init can't apply the `insecure-registries` workaround. Documented as a "Design decision" section in `E22-F01-S06.md`. Forgejo OCI migration is deferred until the homelab gets a working cert.
+  - **Bookkeeping drift**: the card stayed `in-progress` in `active.md` for 16 days after PR #190 merged. Worth a cleanup pass on any other cards where impl shipped but bookkeeping didn't follow.
+
 ## T-2026-05-11-001 — README screenshots for Stage A web (#200)
 
 - Created: 2026-05-11

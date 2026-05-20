@@ -181,7 +181,7 @@ Progress: `73 / 115` complete (update by hand or via a pre-commit hook).
 - [x] [E22-F01-S03](./tasks/E22-F01-S03.md) `A` — Storybook test-runner job · ⇐ E22-F01-S01, E12-F01-S01
 - [ ] [E22-F01-S04](./tasks/E22-F01-S04.md) `A` — Visual regression (Storybook test-runner snapshots) + manual approval label · ⇐ E22-F01-S03
 - [ ] [E22-F01-S05](./tasks/E22-F01-S05.md) `A` — Flutter golden test job · ⇐ E22-F01-S01, E16-F01-S01
-- [ ] [E22-F01-S06](./tasks/E22-F01-S06.md) `A` — release.yml — build + publish API+web Docker image to GHCR · ⇐ E22-F01-S02
+- [x] [E22-F01-S06](./tasks/E22-F01-S06.md) `A` — release.yml — build + publish API+web Docker image to GHCR · ⇐ E22-F01-S02
 
 ## E23 — Distribution & docs
 

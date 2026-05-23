@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.14.0
+  version: 0.15.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -37,6 +37,10 @@ tags:
     description: "Administrator-only operations: dashboard, backups, configuration."
   - name: realtime
     description: Centrifugo connection tokens
+  - name: Entities
+    description: Instructor, Studio, and Tag entities — browse and lookup.
+  - name: Maintenance
+    description: Admin-only background maintenance operations.
 
 paths:
   /api/v1/access/grants:
@@ -861,6 +865,364 @@ paths:
                     emailVerificationRequired: false
                     ssoProviders: []
 
+  /api/v1/admin/instructors:
+    post:
+      operationId: upsertInstructor
+      summary: Create or update an instructor
+      description: |
+        Creates a new instructor record or updates an existing one (matched by
+        slug or an externalId collision). Returns 409 when the provided slug
+        already exists and belongs to a *different* instructor than would be
+        matched by externalIds. Requires admin role.
+      tags: [admin, Entities]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertInstructorRequest"
+            examples:
+              create:
+                summary: Create Andrei Neagoie with a Udemy externalId
+                value:
+                  displayName: Andrei Neagoie
+                  slug: andrei-neagoie
+                  externalIds:
+                    - source: udemy
+                      externalId: "udemy:instructor:42"
+                      url: "https://udemy.com/user/42"
+      responses:
+        "201":
+          description: Instructor created or updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstructorDto"
+              examples:
+                created:
+                  value:
+                    id: clxvins0000000000000000001
+                    slug: andrei-neagoie
+                    displayName: Andrei Neagoie
+                    externalIds:
+                      - source: udemy
+                        externalId: "udemy:instructor:42"
+                        url: "https://udemy.com/user/42"
+                    coursesTotal: 0
+                    createdAt: "2026-05-23T10:00:00Z"
+                    updatedAt: "2026-05-23T10:00:00Z"
+        "400":
+          description: Validation error — missing or malformed fields
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                badInput:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: "displayName must not be empty."
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "409":
+          description: Slug already taken by a different instructor
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                conflict:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: "Slug 'andrei-neagoie' is already taken by a different instructor."
+
+  /api/v1/admin/maintenance/backfill-metadata:
+    post:
+      operationId: startBackfillMetadata
+      summary: Trigger a background metadata backfill across the library
+      description: |
+        Enqueues a background job that walks every course in the specified
+        library (or all libraries when `libraryId` is omitted), reads each
+        course's `course.json`, and upserts instructor/studio/tag links and
+        extended fields. Returns 202 immediately with a `jobId`; subscribe to
+        the `maintenance:backfill:{jobId}` Centrifugo channel to track progress.
+        Admin only.
+      tags: [admin, Maintenance]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BackfillMetadataRequest"
+            examples:
+              allLibraries:
+                summary: Backfill all libraries
+                value: {}
+              oneLibrary:
+                summary: Backfill a specific library
+                value:
+                  libraryId: clxvlib0000000000000000001
+      responses:
+        "202":
+          description: Backfill job accepted — progress via Centrifugo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BackfillJobAccepted"
+              examples:
+                accepted:
+                  value:
+                    jobId: clxvjob0000000000000000001
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+
+  /api/v1/admin/studios:
+    post:
+      operationId: upsertStudio
+      summary: Create or update a studio
+      description: |
+        Creates a new studio record or updates an existing one (matched by slug
+        or externalId collision). Returns 409 when the slug is taken by a
+        different studio. Requires admin role.
+      tags: [admin, Entities]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertStudioRequest"
+            examples:
+              create:
+                summary: Create Zero To Mastery studio
+                value:
+                  displayName: Zero To Mastery
+                  slug: zero-to-mastery
+                  externalIds:
+                    - source: udemy
+                      externalId: "udemy:organization:ztm"
+                      url: "https://udemy.com/organization/ztm"
+      responses:
+        "201":
+          description: Studio created or updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudioDto"
+              examples:
+                created:
+                  value:
+                    id: clxvstu0000000000000000001
+                    slug: zero-to-mastery
+                    displayName: Zero To Mastery
+                    externalIds:
+                      - source: udemy
+                        externalId: "udemy:organization:ztm"
+                        url: "https://udemy.com/organization/ztm"
+                    coursesTotal: 0
+                    createdAt: "2026-05-23T10:00:00Z"
+                    updatedAt: "2026-05-23T10:00:00Z"
+        "400":
+          description: Validation error
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                badInput:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: "displayName must not be empty."
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "409":
+          description: Slug already taken by a different studio
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                conflict:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: "Slug 'zero-to-mastery' is already taken by a different studio."
+
+  /api/v1/admin/tags:
+    post:
+      operationId: upsertTag
+      summary: Create or update a tag
+      description: |
+        Creates a new tag or updates an existing one (matched by slug or
+        externalId collision). Returns 409 when the slug is taken by a
+        different tag. Requires admin role.
+      tags: [admin, Entities]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertTagRequest"
+            examples:
+              create:
+                summary: Create a JavaScript tag in the language category
+                value:
+                  displayName: JavaScript
+                  slug: javascript
+                  category: language
+      responses:
+        "201":
+          description: Tag created or updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagDto"
+              examples:
+                created:
+                  value:
+                    id: clxvtag0000000000000000001
+                    slug: javascript
+                    displayName: JavaScript
+                    category: language
+                    externalIds: []
+                    coursesTotal: 0
+                    createdAt: "2026-05-23T10:00:00Z"
+                    updatedAt: "2026-05-23T10:00:00Z"
+        "400":
+          description: Validation error
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                badInput:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: "displayName must not be empty."
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "409":
+          description: Slug already taken by a different tag
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                conflict:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: "Slug 'javascript' is already taken by a different tag."
+
   /api/v1/bookmarks/{id}:
     patch:
       operationId: updateBookmark
@@ -1482,6 +1844,450 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+
+  /api/v1/catalog/instructors:
+    get:
+      operationId: listInstructors
+      summary: List instructors with optional search
+      description: |
+        Returns a paginated list of instructors. The optional `search` parameter
+        performs a case-insensitive substring match on `displayName`. Results are
+        ordered by `displayName` ascending.
+      tags: [Entities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: offset
+          in: query
+          required: false
+          description: Number of items to skip (zero-based).
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of items to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: search
+          in: query
+          required: false
+          description: Case-insensitive substring filter on `displayName`.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Instructor list returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstructorListDto"
+              examples:
+                list:
+                  value:
+                    items:
+                      - id: clxvins0000000000000000001
+                        slug: andrei-neagoie
+                        displayName: Andrei Neagoie
+                        externalIds:
+                          - source: udemy
+                            externalId: "udemy:instructor:42"
+                            url: "https://udemy.com/user/42"
+                        coursesTotal: 12
+                        createdAt: "2026-05-23T10:00:00Z"
+                        updatedAt: "2026-05-23T10:00:00Z"
+                    total: 1
+                    offset: 0
+                    limit: 20
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+
+  /api/v1/catalog/instructors/{slug}:
+    get:
+      operationId: getInstructor
+      summary: Get a single instructor by slug
+      description: Returns the instructor details plus a list of their associated courses.
+      tags: [Entities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: URL-safe slug identifying the instructor.
+          schema:
+            $ref: "#/components/schemas/EntitySlug"
+      responses:
+        "200":
+          description: Instructor found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstructorDetailDto"
+              examples:
+                found:
+                  value:
+                    instructor:
+                      id: clxvins0000000000000000001
+                      slug: andrei-neagoie
+                      displayName: Andrei Neagoie
+                      externalIds:
+                        - source: udemy
+                          externalId: "udemy:instructor:42"
+                          url: "https://udemy.com/user/42"
+                      coursesTotal: 1
+                      createdAt: "2026-05-23T10:00:00Z"
+                      updatedAt: "2026-05-23T10:00:00Z"
+                    courses:
+                      - id: clxvcrs0000000000000000001
+                        libraryId: clxvp1234567890abcdefghij
+                        slug: complete-web-developer-bootcamp
+                        title: The Complete Web Developer in 2024
+                        sections: []
+                        progress:
+                          percent: 0
+                          lessonsCompleted: 0
+                          lessonsTotal: 300
+                        createdAt: "2026-05-20T08:00:00Z"
+                        updatedAt: "2026-05-20T08:00:00Z"
+                    coursesTotal: 1
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "404":
+          description: Instructor not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No instructor with slug 'andrei-neagoie' exists.
+
+  /api/v1/catalog/studios:
+    get:
+      operationId: listStudios
+      summary: List studios with optional search
+      description: |
+        Returns a paginated list of studios. The optional `search` parameter
+        performs a case-insensitive substring match on `displayName`. Results are
+        ordered by `displayName` ascending.
+      tags: [Entities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: offset
+          in: query
+          required: false
+          description: Number of items to skip (zero-based).
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of items to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: search
+          in: query
+          required: false
+          description: Case-insensitive substring filter on `displayName`.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Studio list returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudioListDto"
+              examples:
+                list:
+                  value:
+                    items:
+                      - id: clxvstu0000000000000000001
+                        slug: zero-to-mastery
+                        displayName: Zero To Mastery
+                        externalIds:
+                          - source: udemy
+                            externalId: "udemy:organization:ztm"
+                            url: "https://udemy.com/organization/ztm"
+                        coursesTotal: 5
+                        createdAt: "2026-05-23T10:00:00Z"
+                        updatedAt: "2026-05-23T10:00:00Z"
+                    total: 1
+                    offset: 0
+                    limit: 20
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+
+  /api/v1/catalog/studios/{slug}:
+    get:
+      operationId: getStudio
+      summary: Get a single studio by slug
+      description: Returns the studio details plus a list of their associated courses.
+      tags: [Entities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: URL-safe slug identifying the studio.
+          schema:
+            $ref: "#/components/schemas/EntitySlug"
+      responses:
+        "200":
+          description: Studio found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudioDetailDto"
+              examples:
+                found:
+                  value:
+                    studio:
+                      id: clxvstu0000000000000000001
+                      slug: zero-to-mastery
+                      displayName: Zero To Mastery
+                      externalIds:
+                        - source: udemy
+                          externalId: "udemy:organization:ztm"
+                          url: "https://udemy.com/organization/ztm"
+                      coursesTotal: 1
+                      createdAt: "2026-05-23T10:00:00Z"
+                      updatedAt: "2026-05-23T10:00:00Z"
+                    courses:
+                      - id: clxvcrs0000000000000000001
+                        libraryId: clxvp1234567890abcdefghij
+                        slug: complete-web-developer-bootcamp
+                        title: The Complete Web Developer in 2024
+                        sections: []
+                        progress:
+                          percent: 0
+                          lessonsCompleted: 0
+                          lessonsTotal: 300
+                        createdAt: "2026-05-20T08:00:00Z"
+                        updatedAt: "2026-05-20T08:00:00Z"
+                    coursesTotal: 1
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "404":
+          description: Studio not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No studio with slug 'zero-to-mastery' exists.
+
+  /api/v1/catalog/tags:
+    get:
+      operationId: listTags
+      summary: List tags with optional search and category filter
+      description: |
+        Returns a paginated list of tags. The optional `search` parameter
+        performs a case-insensitive substring match on `displayName`. The
+        optional `category` parameter filters by exact category value.
+        Results are ordered by `displayName` ascending.
+      tags: [Entities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: offset
+          in: query
+          required: false
+          description: Number of items to skip (zero-based).
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of items to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: search
+          in: query
+          required: false
+          description: Case-insensitive substring filter on `displayName`.
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: false
+          description: Exact match filter on `category`. Omit to return tags from all categories.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tag list returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagListDto"
+              examples:
+                list:
+                  value:
+                    items:
+                      - id: clxvtag0000000000000000001
+                        slug: javascript
+                        displayName: JavaScript
+                        category: language
+                        externalIds: []
+                        coursesTotal: 8
+                        createdAt: "2026-05-23T10:00:00Z"
+                        updatedAt: "2026-05-23T10:00:00Z"
+                    total: 1
+                    offset: 0
+                    limit: 20
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+
+  /api/v1/catalog/tags/{slug}:
+    get:
+      operationId: getTag
+      summary: Get a single tag by slug
+      description: Returns the tag details plus a list of associated courses.
+      tags: [Entities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: URL-safe slug identifying the tag.
+          schema:
+            $ref: "#/components/schemas/EntitySlug"
+      responses:
+        "200":
+          description: Tag found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagDetailDto"
+              examples:
+                found:
+                  value:
+                    tag:
+                      id: clxvtag0000000000000000001
+                      slug: javascript
+                      displayName: JavaScript
+                      category: language
+                      externalIds: []
+                      coursesTotal: 1
+                      createdAt: "2026-05-23T10:00:00Z"
+                      updatedAt: "2026-05-23T10:00:00Z"
+                    courses:
+                      - id: clxvcrs0000000000000000001
+                        libraryId: clxvp1234567890abcdefghij
+                        slug: complete-web-developer-bootcamp
+                        title: The Complete Web Developer in 2024
+                        sections: []
+                        progress:
+                          percent: 0
+                          lessonsCompleted: 0
+                          lessonsTotal: 300
+                        createdAt: "2026-05-20T08:00:00Z"
+                        updatedAt: "2026-05-20T08:00:00Z"
+                    coursesTotal: 1
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "404":
+          description: Tag not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No tag with slug 'javascript' exists.
 
   /api/v1/home/continue-watching:
     get:
@@ -3419,6 +4225,549 @@ components:
       scheme: bearer
       bearerFormat: Better Auth bearer token
   schemas:
+    BackfillJobAccepted:
+      type: object
+      required: [jobId]
+      description: Confirmation that a backfill job has been accepted and is running in the background.
+      properties:
+        jobId:
+          type: string
+          description: Unique cuid identifying the background job. Subscribe to `maintenance:backfill:{jobId}` on Centrifugo for progress events.
+      example:
+        jobId: clxvjob0000000000000000001
+
+    BackfillMetadataRequest:
+      type: object
+      description: |
+        Optional scope for a metadata backfill job. When both fields are
+        omitted the backfill runs across all libraries.
+      properties:
+        libraryId:
+          type: string
+          description: cuid of the library to restrict the backfill to. Omit to backfill all libraries.
+      example:
+        libraryId: clxvlib0000000000000000001
+
+    CourseLevel:
+      type: string
+      enum: [beginner, intermediate, advanced, expert, all_levels]
+      description: >-
+        Difficulty level of a course. `all_levels` is used when the course
+        is suitable for all experience levels regardless of background.
+      example: intermediate
+
+    EntitySlug:
+      type: string
+      pattern: "^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$"
+      minLength: 1
+      maxLength: 100
+      description: >-
+        URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens;
+        cannot start or end with a hyphen. Shared by Instructor, Studio, and Tag aggregates.
+      example: andrei-neagoie
+
+    ExternalIdRef:
+      type: object
+      required: [source, externalId]
+      description: A reference to an entity in an external system (e.g. Udemy, YouTube).
+      properties:
+        source:
+          type: string
+          minLength: 1
+          description: >-
+            Namespace identifying the external system (e.g. `udemy`,
+            `youtube`). Scrapers are responsible for namespacing their ids
+            (e.g. `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`).
+        externalId:
+          type: string
+          minLength: 1
+          description: Identifier within the source system.
+        url:
+          type: string
+          format: uri
+          description: Optional canonical URL of the entity on the source platform.
+      examples:
+        - source: udemy
+          externalId: "udemy:instructor:42"
+          url: "https://udemy.com/user/42"
+        - source: youtube
+          externalId: "youtube:channel:UCnUYZLuoy1rq1aVMwx4aTzw"
+
+    InstructorDetailDto:
+      type: object
+      required: [instructor, courses, coursesTotal]
+      description: Full instructor view including their associated courses (paginated, up to 20).
+      properties:
+        instructor:
+          $ref: "#/components/schemas/InstructorDto"
+        courses:
+          type: array
+          items:
+            $ref: "#/components/schemas/CourseDto"
+          description: Courses associated with this instructor, up to 20, sorted by title.
+        coursesTotal:
+          type: integer
+          minimum: 0
+          description: Total number of courses associated with this instructor (may exceed `courses.length`).
+      example:
+        instructor:
+          id: clxvins0000000000000000001
+          slug: andrei-neagoie
+          displayName: Andrei Neagoie
+          externalIds:
+            - source: udemy
+              externalId: "udemy:instructor:42"
+              url: "https://udemy.com/user/42"
+          coursesTotal: 1
+          createdAt: "2026-05-23T10:00:00Z"
+          updatedAt: "2026-05-23T10:00:00Z"
+        courses: []
+        coursesTotal: 1
+
+    InstructorDto:
+      type: object
+      required: [id, slug, displayName, externalIds, coursesTotal, createdAt, updatedAt]
+      description: Full representation of an Instructor aggregate.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid.
+        slug:
+          $ref: "#/components/schemas/EntitySlug"
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Human-readable instructor name.
+        externalIds:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalIdRef"
+          description: External system references for this instructor.
+        coursesTotal:
+          type: integer
+          minimum: 0
+          description: Total number of courses linked to this instructor.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      example:
+        id: clxvins0000000000000000001
+        slug: andrei-neagoie
+        displayName: Andrei Neagoie
+        externalIds:
+          - source: udemy
+            externalId: "udemy:instructor:42"
+            url: "https://udemy.com/user/42"
+        coursesTotal: 12
+        createdAt: "2026-05-23T10:00:00Z"
+        updatedAt: "2026-05-23T10:00:00Z"
+
+    InstructorListDto:
+      type: object
+      required: [items, total, offset, limit]
+      description: Paginated list of instructors.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/InstructorDto"
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of instructors matching the filter (before pagination).
+        offset:
+          type: integer
+          minimum: 0
+          description: Number of items skipped.
+        limit:
+          type: integer
+          minimum: 1
+          description: Maximum items returned per page.
+      example:
+        items:
+          - id: clxvins0000000000000000001
+            slug: andrei-neagoie
+            displayName: Andrei Neagoie
+            externalIds:
+              - source: udemy
+                externalId: "udemy:instructor:42"
+                url: "https://udemy.com/user/42"
+            coursesTotal: 12
+            createdAt: "2026-05-23T10:00:00Z"
+            updatedAt: "2026-05-23T10:00:00Z"
+        total: 1
+        offset: 0
+        limit: 20
+
+    InstructorRef:
+      type: object
+      required: [id, slug, displayName]
+      description: Lightweight reference to an instructor, embedded in CourseDto.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid of the instructor.
+        slug:
+          $ref: "#/components/schemas/EntitySlug"
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+      example:
+        id: clxvins0000000000000000001
+        slug: andrei-neagoie
+        displayName: Andrei Neagoie
+
+    StudioDetailDto:
+      type: object
+      required: [studio, courses, coursesTotal]
+      description: Full studio view including their associated courses (paginated, up to 20).
+      properties:
+        studio:
+          $ref: "#/components/schemas/StudioDto"
+        courses:
+          type: array
+          items:
+            $ref: "#/components/schemas/CourseDto"
+          description: Courses associated with this studio, up to 20, sorted by title.
+        coursesTotal:
+          type: integer
+          minimum: 0
+          description: Total number of courses associated with this studio (may exceed `courses.length`).
+      example:
+        studio:
+          id: clxvstu0000000000000000001
+          slug: zero-to-mastery
+          displayName: Zero To Mastery
+          externalIds:
+            - source: udemy
+              externalId: "udemy:organization:ztm"
+              url: "https://udemy.com/organization/ztm"
+          coursesTotal: 5
+          createdAt: "2026-05-23T10:00:00Z"
+          updatedAt: "2026-05-23T10:00:00Z"
+        courses: []
+        coursesTotal: 5
+
+    StudioDto:
+      type: object
+      required: [id, slug, displayName, externalIds, coursesTotal, createdAt, updatedAt]
+      description: Full representation of a Studio aggregate.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid.
+        slug:
+          $ref: "#/components/schemas/EntitySlug"
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Human-readable studio name.
+        externalIds:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalIdRef"
+          description: External system references for this studio.
+        coursesTotal:
+          type: integer
+          minimum: 0
+          description: Total number of courses linked to this studio.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      example:
+        id: clxvstu0000000000000000001
+        slug: zero-to-mastery
+        displayName: Zero To Mastery
+        externalIds:
+          - source: udemy
+            externalId: "udemy:organization:ztm"
+            url: "https://udemy.com/organization/ztm"
+        coursesTotal: 5
+        createdAt: "2026-05-23T10:00:00Z"
+        updatedAt: "2026-05-23T10:00:00Z"
+
+    StudioListDto:
+      type: object
+      required: [items, total, offset, limit]
+      description: Paginated list of studios.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StudioDto"
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of studios matching the filter (before pagination).
+        offset:
+          type: integer
+          minimum: 0
+          description: Number of items skipped.
+        limit:
+          type: integer
+          minimum: 1
+          description: Maximum items returned per page.
+      example:
+        items:
+          - id: clxvstu0000000000000000001
+            slug: zero-to-mastery
+            displayName: Zero To Mastery
+            externalIds:
+              - source: udemy
+                externalId: "udemy:organization:ztm"
+                url: "https://udemy.com/organization/ztm"
+            coursesTotal: 5
+            createdAt: "2026-05-23T10:00:00Z"
+            updatedAt: "2026-05-23T10:00:00Z"
+        total: 1
+        offset: 0
+        limit: 20
+
+    StudioRef:
+      type: object
+      required: [id, slug, displayName]
+      description: Lightweight reference to a studio, embedded in CourseDto.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid of the studio.
+        slug:
+          $ref: "#/components/schemas/EntitySlug"
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+      example:
+        id: clxvstu0000000000000000001
+        slug: zero-to-mastery
+        displayName: Zero To Mastery
+
+    TagDetailDto:
+      type: object
+      required: [tag, courses, coursesTotal]
+      description: Full tag view including associated courses (paginated, up to 20).
+      properties:
+        tag:
+          $ref: "#/components/schemas/TagDto"
+        courses:
+          type: array
+          items:
+            $ref: "#/components/schemas/CourseDto"
+          description: Courses associated with this tag, up to 20, sorted by title.
+        coursesTotal:
+          type: integer
+          minimum: 0
+          description: Total number of courses associated with this tag (may exceed `courses.length`).
+      example:
+        tag:
+          id: clxvtag0000000000000000001
+          slug: javascript
+          displayName: JavaScript
+          category: language
+          externalIds: []
+          coursesTotal: 8
+          createdAt: "2026-05-23T10:00:00Z"
+          updatedAt: "2026-05-23T10:00:00Z"
+        courses: []
+        coursesTotal: 8
+
+    TagDto:
+      type: object
+      required: [id, slug, displayName, externalIds, coursesTotal, createdAt, updatedAt]
+      description: Full representation of a Tag aggregate.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid.
+        slug:
+          $ref: "#/components/schemas/EntitySlug"
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Human-readable tag name.
+        category:
+          oneOf:
+            - type: string
+              maxLength: 64
+            - type: "null"
+          description: Free-form category label (e.g. `language`, `framework`, `topic`). Null when uncategorised.
+        externalIds:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalIdRef"
+          description: External system references for this tag.
+        coursesTotal:
+          type: integer
+          minimum: 0
+          description: Total number of courses linked to this tag.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      example:
+        id: clxvtag0000000000000000001
+        slug: javascript
+        displayName: JavaScript
+        category: language
+        externalIds: []
+        coursesTotal: 8
+        createdAt: "2026-05-23T10:00:00Z"
+        updatedAt: "2026-05-23T10:00:00Z"
+
+    TagListDto:
+      type: object
+      required: [items, total, offset, limit]
+      description: Paginated list of tags.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TagDto"
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of tags matching the filter (before pagination).
+        offset:
+          type: integer
+          minimum: 0
+          description: Number of items skipped.
+        limit:
+          type: integer
+          minimum: 1
+          description: Maximum items returned per page.
+      example:
+        items:
+          - id: clxvtag0000000000000000001
+            slug: javascript
+            displayName: JavaScript
+            category: language
+            externalIds: []
+            coursesTotal: 8
+            createdAt: "2026-05-23T10:00:00Z"
+            updatedAt: "2026-05-23T10:00:00Z"
+        total: 1
+        offset: 0
+        limit: 20
+
+    TagRef:
+      type: object
+      required: [id, slug, displayName]
+      description: Lightweight reference to a tag, embedded in CourseDto.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid of the tag.
+        slug:
+          $ref: "#/components/schemas/EntitySlug"
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        category:
+          oneOf:
+            - type: string
+              maxLength: 64
+            - type: "null"
+          description: Tag category, or null when uncategorised.
+      example:
+        id: clxvtag0000000000000000001
+        slug: javascript
+        displayName: JavaScript
+        category: language
+
+    UpsertInstructorRequest:
+      type: object
+      required: [displayName]
+      description: Payload for creating or updating an instructor.
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Human-readable name displayed in the UI.
+        slug:
+          $ref: "#/components/schemas/EntitySlug"
+          description: URL-safe slug. Auto-generated from `displayName` when omitted.
+        externalIds:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalIdRef"
+          description: External system references for this instructor.
+      example:
+        displayName: Andrei Neagoie
+        slug: andrei-neagoie
+        externalIds:
+          - source: udemy
+            externalId: "udemy:instructor:42"
+            url: "https://udemy.com/user/42"
+
+    UpsertStudioRequest:
+      type: object
+      required: [displayName]
+      description: Payload for creating or updating a studio.
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Human-readable studio name.
+        slug:
+          $ref: "#/components/schemas/EntitySlug"
+          description: URL-safe slug. Auto-generated from `displayName` when omitted.
+        externalIds:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalIdRef"
+          description: External system references for this studio.
+      example:
+        displayName: Zero To Mastery
+        slug: zero-to-mastery
+        externalIds:
+          - source: udemy
+            externalId: "udemy:organization:ztm"
+            url: "https://udemy.com/organization/ztm"
+
+    UpsertTagRequest:
+      type: object
+      required: [displayName]
+      description: Payload for creating or updating a tag.
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Human-readable tag name.
+        slug:
+          $ref: "#/components/schemas/EntitySlug"
+          description: URL-safe slug. Auto-generated from `displayName` when omitted.
+        category:
+          oneOf:
+            - type: string
+              maxLength: 64
+            - type: "null"
+          description: Free-form category label (e.g. `language`, `framework`, `topic`). Pass `null` to clear.
+        externalIds:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalIdRef"
+          description: External system references for this tag.
+      example:
+        displayName: JavaScript
+        slug: javascript
+        category: language
+
     AccessGrantDto:
       type: object
       required: [id, userId, target, level, createdAt]
@@ -4110,6 +5459,74 @@ components:
           description: Sections sorted ascending by position.
         progress:
           $ref: "#/components/schemas/CourseProgress"
+        instructors:
+          type: array
+          items:
+            $ref: "#/components/schemas/InstructorRef"
+          default: []
+          description: Instructors associated with this course. Empty array when none linked.
+        studios:
+          type: array
+          items:
+            $ref: "#/components/schemas/StudioRef"
+          default: []
+          description: Studios associated with this course. Empty array when none linked.
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/TagRef"
+          default: []
+          description: Tags associated with this course. Empty array when none linked.
+        level:
+          oneOf:
+            - $ref: "#/components/schemas/CourseLevel"
+            - type: "null"
+          description: Difficulty level of the course, or null when not set.
+        language:
+          oneOf:
+            - type: string
+            - type: "null"
+          description: >-
+            BCP-47 language tag for the course primary language (e.g. `en`,
+            `en-US`). Validated server-side; null when not set.
+        releaseDate:
+          oneOf:
+            - type: string
+              format: date
+            - type: "null"
+          description: ISO-8601 date when the course was originally released. Null when not set.
+        posterUrl:
+          oneOf:
+            - type: string
+              format: uri
+            - type: "null"
+          description: URL of the course poster image. Null when not set.
+        ratingAverage:
+          oneOf:
+            - type: number
+              multipleOf: 0.01
+              minimum: 0
+              maximum: 5
+            - type: "null"
+          description: Average rating on a 0–5 scale (two decimal places). Null when not set.
+        ratingCount:
+          oneOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+          description: Number of ratings contributing to `ratingAverage`. Null when not set.
+        externalIds:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalIdRef"
+          default: []
+          description: External system references for this course. Empty array when none.
+        sourceUpdatedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+          description: Timestamp from the upstream source when this course was last updated. Null when not set.
         createdAt:
           type: string
           format: date-time
@@ -4133,6 +5550,17 @@ components:
           percent: 0
           lessonsCompleted: 0
           lessonsTotal: 24
+        instructors: []
+        studios: []
+        tags: []
+        level: null
+        language: null
+        releaseDate: null
+        posterUrl: null
+        ratingAverage: null
+        ratingCount: null
+        externalIds: []
+        sourceUpdatedAt: null
         createdAt: "2026-04-25T09:00:00Z"
         updatedAt: "2026-04-25T09:00:00Z"
 
@@ -5343,9 +6771,15 @@ components:
       type: object
       description: |
         Payload for updating course metadata. All fields are optional, but at
-        least one of `title`, `description`, or `slug` must be present
-        (server-side validation rule — OpenAPI does not have a native
-        "at-least-one" constraint).
+        least one of `title`, `description`, `slug`, `instructorIds`,
+        `studioIds`, `tagIds`, `posterUrl`, `level`, `language`,
+        `releaseDate`, `sourceUpdatedAt`, `ratingAverage`, `ratingCount`, or
+        `externalIds` must be present (server-side validation rule — OpenAPI
+        does not have a native "at-least-one" constraint).
+
+        **Set-replace semantics for relation arrays:** `null` means "leave the
+        existing set alone"; `[]` (empty array) means "remove all links";
+        a non-empty array replaces the full set with exactly the listed ids.
       properties:
         title:
           type: string
@@ -5356,9 +6790,94 @@ components:
           maxLength: 4000
         slug:
           $ref: "#/components/schemas/CourseSlug"
+        instructorIds:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: "null"
+          description: >-
+            Set-replace list of instructor cuids. `null` = leave unchanged;
+            `[]` = remove all instructor links; `[id1, id2]` = replace with
+            exactly these instructors.
+        studioIds:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: "null"
+          description: >-
+            Set-replace list of studio cuids. Same null/empty/array semantics
+            as `instructorIds`.
+        tagIds:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: "null"
+          description: >-
+            Set-replace list of tag cuids. Same null/empty/array semantics as
+            `instructorIds`.
+        level:
+          oneOf:
+            - $ref: "#/components/schemas/CourseLevel"
+            - type: "null"
+          description: Difficulty level. Pass `null` to clear.
+        language:
+          oneOf:
+            - type: string
+            - type: "null"
+          description: BCP-47 language tag (e.g. `en`, `en-US`). Pass `null` to clear.
+        releaseDate:
+          oneOf:
+            - type: string
+              format: date
+            - type: "null"
+          description: ISO-8601 date of original release. Pass `null` to clear.
+        posterUrl:
+          oneOf:
+            - type: string
+              format: uri
+            - type: "null"
+          description: Course poster image URL. Pass `null` to clear.
+        ratingAverage:
+          oneOf:
+            - type: number
+              multipleOf: 0.01
+              minimum: 0
+              maximum: 5
+            - type: "null"
+          description: Average rating 0–5. Pass `null` to clear.
+        ratingCount:
+          oneOf:
+            - type: integer
+              minimum: 0
+            - type: "null"
+          description: Number of ratings. Pass `null` to clear.
+        externalIds:
+          oneOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/ExternalIdRef"
+            - type: "null"
+          description: >-
+            Replaces all external id refs for this course. `null` = leave
+            unchanged; `[]` = remove all; an array = full replacement.
+        sourceUpdatedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+          description: Upstream source last-updated timestamp. Pass `null` to clear.
       example:
         title: Pragmatic Clean Architecture (2nd ed.)
         slug: pragmatic-clean-architecture-2nd-ed
+        level: intermediate
+        language: en
+        instructorIds:
+          - clxvins0000000000000000001
+        tagIds:
+          - clxvtag0000000000000000001
 
     UpsertNoteRequest:
       type: object

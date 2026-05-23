@@ -15,16 +15,36 @@ import { brand } from '../../../../shared/branded-id';
 import { Slug } from './slug';
 import { Title } from './title';
 import { Position } from './position';
+import { LanguageTag } from '../shared-vo/language-tag';
+import { ExternalIdRefVO } from '../shared-vo/external-id-ref';
 import {
   SectionNotFoundError,
   SectionPositionConflictError,
   SectionPositionOutOfRangeError,
+  CourseLanguageInvalidError,
+  CourseRatingInvalidError,
 } from './course.errors';
 
 import type { Id } from '../../../../shared/branded-id';
+import type { ExternalIdRef } from '../shared-vo/external-id-ref';
+import type { InstructorRef, StudioRef, TagRef } from '../shared-vo/refs';
 
 /** Phantom-branded id for Course — prevents mixing with Library/Lesson ids. */
 export type CourseId = Id<'Course'>;
+
+/** Skill level of a course — maps to the DB enum course_level. */
+export type CourseLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'all_levels';
+
+/** Runtime guard for CourseLevel — rejects arbitrary strings. */
+export function isCourseLevel(v: unknown): v is CourseLevel {
+  return (
+    v === 'beginner' ||
+    v === 'intermediate' ||
+    v === 'advanced' ||
+    v === 'expert' ||
+    v === 'all_levels'
+  );
+}
 
 /** Lightweight struct that lives inside a Course aggregate. */
 export interface SectionData {
@@ -42,6 +62,19 @@ export interface CourseProps {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly sections: SectionData[];
+  // Enrichment metadata — all optional for backwards-compat with existing code
+  readonly posterUrl?: string;
+  readonly posterStoragePath?: string;
+  readonly level?: CourseLevel;
+  readonly language?: string;
+  readonly releaseDate?: Date;
+  readonly sourceUpdatedAt?: Date;
+  readonly ratingAverage?: number;
+  readonly ratingCount?: number;
+  readonly instructors?: InstructorRef[];
+  readonly studios?: StudioRef[];
+  readonly tags?: TagRef[];
+  readonly externalIds?: ExternalIdRef[];
 }
 
 export class Course {
@@ -53,6 +86,19 @@ export class Course {
   readonly createdAt: Date;
   private _updatedAt: Date;
   private _sections: SectionData[];
+  // Enrichment metadata
+  private _posterUrl: string | undefined;
+  private _posterStoragePath: string | undefined;
+  private _level: CourseLevel | undefined;
+  private _language: LanguageTag | undefined;
+  private _releaseDate: Date | undefined;
+  private _sourceUpdatedAt: Date | undefined;
+  private _ratingAverage: number | undefined;
+  private _ratingCount: number | undefined;
+  private _instructors: InstructorRef[];
+  private _studios: StudioRef[];
+  private _tags: TagRef[];
+  private _externalIds: ExternalIdRef[];
 
   private constructor(props: CourseProps) {
     this.id = props.id;
@@ -63,6 +109,19 @@ export class Course {
     this.createdAt = props.createdAt;
     this._updatedAt = props.updatedAt;
     this._sections = [...props.sections].toSorted((a, b) => a.position - b.position);
+    // Enrichment metadata
+    this._posterUrl = props.posterUrl;
+    this._posterStoragePath = props.posterStoragePath;
+    this._level = props.level;
+    this._language = props.language === undefined ? undefined : LanguageTag.from(props.language);
+    this._releaseDate = props.releaseDate;
+    this._sourceUpdatedAt = props.sourceUpdatedAt;
+    this._ratingAverage = props.ratingAverage;
+    this._ratingCount = props.ratingCount;
+    this._instructors = [...(props.instructors ?? [])];
+    this._studios = [...(props.studios ?? [])];
+    this._tags = [...(props.tags ?? [])];
+    this._externalIds = [...(props.externalIds ?? [])];
   }
 
   // ---------------------------------------------------------------------------
@@ -88,6 +147,55 @@ export class Course {
   /** Sections ordered ascending by position. */
   get sections(): readonly SectionData[] {
     return this._sections;
+  }
+
+  get posterUrl(): string | undefined {
+    return this._posterUrl;
+  }
+
+  get posterStoragePath(): string | undefined {
+    return this._posterStoragePath;
+  }
+
+  get level(): CourseLevel | undefined {
+    return this._level;
+  }
+
+  /** Returns the normalised BCP-47 string value, or undefined when not set. */
+  get language(): string | undefined {
+    return this._language?.value;
+  }
+
+  get releaseDate(): Date | undefined {
+    return this._releaseDate;
+  }
+
+  get sourceUpdatedAt(): Date | undefined {
+    return this._sourceUpdatedAt;
+  }
+
+  get ratingAverage(): number | undefined {
+    return this._ratingAverage;
+  }
+
+  get ratingCount(): number | undefined {
+    return this._ratingCount;
+  }
+
+  get instructors(): readonly InstructorRef[] {
+    return this._instructors;
+  }
+
+  get studios(): readonly StudioRef[] {
+    return this._studios;
+  }
+
+  get tags(): readonly TagRef[] {
+    return this._tags;
+  }
+
+  get externalIds(): readonly ExternalIdRef[] {
+    return this._externalIds;
   }
 
   // ---------------------------------------------------------------------------
@@ -148,6 +256,131 @@ export class Course {
   /** Change the slug. The uniqueness constraint is enforced by the repository. */
   changeSlug(newSlug: string): void {
     this._slug = Slug.from(newSlug);
+    this._touch();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Enrichment metadata setters
+  // ---------------------------------------------------------------------------
+
+  /** Set or clear the poster image URL. Pass undefined to clear. */
+  setPosterUrl(url: string | undefined): void {
+    this._posterUrl = url;
+    this._touch();
+  }
+
+  /** Set or clear the poster local storage path. Pass undefined to clear. */
+  setPosterStoragePath(p: string | undefined): void {
+    this._posterStoragePath = p;
+    this._touch();
+  }
+
+  /**
+   * Set or clear the skill level. Pass undefined to clear.
+   * Throws CourseRatingInvalidError when a defined value is not a valid CourseLevel.
+   */
+  setLevel(level: CourseLevel | undefined): void {
+    if (level !== undefined && !isCourseLevel(level)) {
+      throw new CourseRatingInvalidError(`"${String(level)}" is not a valid CourseLevel value.`);
+    }
+    this._level = level;
+    this._touch();
+  }
+
+  /**
+   * Set or clear the BCP-47 language tag. Pass undefined to clear.
+   * Throws CourseLanguageInvalidError when the tag is defined but invalid.
+   */
+  setLanguage(langTag: string | undefined): void {
+    if (langTag === undefined) {
+      this._language = undefined;
+    } else {
+      try {
+        this._language = LanguageTag.from(langTag);
+      } catch (error) {
+        throw new CourseLanguageInvalidError(langTag, error);
+      }
+    }
+    this._touch();
+  }
+
+  /** Set or clear the release date. Pass undefined to clear. */
+  setReleaseDate(d: Date | undefined): void {
+    this._releaseDate = d;
+    this._touch();
+  }
+
+  /** Set or clear the upstream source's last-updated timestamp. Pass undefined to clear. */
+  setSourceUpdatedAt(d: Date | undefined): void {
+    this._sourceUpdatedAt = d;
+    this._touch();
+  }
+
+  /**
+   * Set or clear the rating. Pass both arguments as undefined to clear.
+   * Throws CourseRatingInvalidError when:
+   *   - avg is defined and outside [0, 5]
+   *   - count is defined and is not a non-negative integer
+   */
+  setRating(avg: number | undefined, count: number | undefined): void {
+    if (avg === undefined && count === undefined) {
+      this._ratingAverage = undefined;
+      this._ratingCount = undefined;
+      this._touch();
+      return;
+    }
+    if (avg === undefined || count === undefined) {
+      throw new CourseRatingInvalidError(
+        'Both ratingAverage and ratingCount must be provided together, or both must be undefined.',
+      );
+    }
+    if (avg < 0 || avg > 5) {
+      throw new CourseRatingInvalidError(`ratingAverage must be in [0, 5]; got ${String(avg)}.`);
+    }
+    if (!Number.isInteger(count) || count < 0) {
+      throw new CourseRatingInvalidError(
+        `ratingCount must be a non-negative integer; got ${String(count)}.`,
+      );
+    }
+    this._ratingAverage = avg;
+    this._ratingCount = count;
+    this._touch();
+  }
+
+  /**
+   * Replace instructor links. Dedupes by id (preserves first-seen order).
+   * Calls _touch().
+   */
+  setInstructors(refs: InstructorRef[]): void {
+    this._instructors = dedupeById(refs);
+    this._touch();
+  }
+
+  /**
+   * Replace studio links. Dedupes by id (preserves first-seen order).
+   * Calls _touch().
+   */
+  setStudios(refs: StudioRef[]): void {
+    this._studios = dedupeById(refs);
+    this._touch();
+  }
+
+  /**
+   * Replace tag links. Dedupes by id (preserves first-seen order).
+   * Calls _touch().
+   */
+  setTags(refs: TagRef[]): void {
+    this._tags = dedupeById(refs);
+    this._touch();
+  }
+
+  /**
+   * Replace the external-id set. Validates each ref via ExternalIdRefVO.from.
+   * Dedupes by (source, externalId). Calls _touch().
+   */
+  setExternalIds(refs: ExternalIdRef[]): void {
+    const validated = refs.map((r) => ExternalIdRefVO.from(r));
+    this._externalIds = dedupeExternalIdRefs(validated);
     this._touch();
   }
 
@@ -258,4 +491,29 @@ export class Course {
   private _touch(): void {
     this._updatedAt = new Date();
   }
+}
+
+// ---------------------------------------------------------------------------
+// Module-private helpers
+// ---------------------------------------------------------------------------
+
+/** Dedupe an array of refs that have an `id` field — first-seen wins. */
+function dedupeById<T extends { id: string }>(refs: T[]): T[] {
+  const seen = new Set<string>();
+  return refs.filter((r) => {
+    if (seen.has(r.id)) return false;
+    seen.add(r.id);
+    return true;
+  });
+}
+
+/** Dedupe ExternalIdRef by (source, externalId) — first-seen wins. */
+function dedupeExternalIdRefs(refs: ExternalIdRef[]): ExternalIdRef[] {
+  const seen = new Set<string>();
+  return refs.filter((r) => {
+    const key = `${r.source}:${r.externalId}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

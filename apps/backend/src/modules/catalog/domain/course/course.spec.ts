@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { Course } from './course';
+import type { CourseLevel } from './course';
 import {
+  CourseLanguageInvalidError,
+  CourseRatingInvalidError,
   CourseSlugInvalidError,
   CourseTitleInvalidError,
   SectionNotFoundError,
@@ -223,5 +226,283 @@ describe('Course metadata mutations', () => {
   it('changeSlug throws CourseSlugInvalidError for invalid slug', () => {
     const c = makeCourse();
     expect(() => c.changeSlug('-invalid')).toThrow(CourseSlugInvalidError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Enrichment metadata: posterUrl / posterStoragePath
+// ---------------------------------------------------------------------------
+
+describe('Course.setPosterUrl', () => {
+  it('sets and reads back the poster URL', () => {
+    const c = makeCourse();
+    c.setPosterUrl('https://example.com/poster.jpg');
+    expect(c.posterUrl).toBe('https://example.com/poster.jpg');
+  });
+
+  it('clears the poster URL when undefined is passed', () => {
+    const c = makeCourse();
+    c.setPosterUrl('https://example.com/poster.jpg');
+    c.setPosterUrl(undefined);
+    expect(c.posterUrl).toBeUndefined();
+  });
+
+  it('advances updatedAt on set', () => {
+    const c = makeCourse();
+    const before = c.updatedAt;
+    c.setPosterUrl('https://example.com/poster.jpg');
+    expect(c.updatedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+  });
+});
+
+describe('Course.setPosterStoragePath', () => {
+  it('sets and clears the poster storage path', () => {
+    const c = makeCourse();
+    c.setPosterStoragePath('/storage/posters/abc.jpg');
+    expect(c.posterStoragePath).toBe('/storage/posters/abc.jpg');
+    c.setPosterStoragePath(undefined);
+    expect(c.posterStoragePath).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Enrichment metadata: level
+// ---------------------------------------------------------------------------
+
+describe('Course.setLevel', () => {
+  it('sets a valid CourseLevel and reads it back', () => {
+    const c = makeCourse();
+    c.setLevel('intermediate');
+    expect(c.level).toBe('intermediate');
+  });
+
+  it('clears the level when undefined is passed', () => {
+    const c = makeCourse();
+    c.setLevel('beginner');
+    c.setLevel(undefined);
+    expect(c.level).toBeUndefined();
+  });
+
+  it('throws CourseRatingInvalidError for an invalid level string (cast)', () => {
+    const c = makeCourse();
+    // Cast through unknown to test the runtime guard path
+    expect(() => c.setLevel('wizard' as CourseLevel)).toThrow(CourseRatingInvalidError);
+  });
+
+  it('accepts all valid levels', () => {
+    const c = makeCourse();
+    const levels: CourseLevel[] = ['beginner', 'intermediate', 'advanced', 'expert', 'all_levels'];
+    for (const level of levels) {
+      c.setLevel(level);
+      expect(c.level).toBe(level);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Enrichment metadata: language
+// ---------------------------------------------------------------------------
+
+describe('Course.setLanguage', () => {
+  it('sets a valid BCP-47 tag and normalises casing ("en-us" → "en-US")', () => {
+    const c = makeCourse();
+    c.setLanguage('en-us');
+    expect(c.language).toBe('en-US');
+  });
+
+  it('accepts a simple two-letter tag', () => {
+    const c = makeCourse();
+    c.setLanguage('fr');
+    expect(c.language).toBe('fr');
+  });
+
+  it('clears the language when undefined is passed', () => {
+    const c = makeCourse();
+    c.setLanguage('en');
+    c.setLanguage(undefined);
+    expect(c.language).toBeUndefined();
+  });
+
+  it('throws CourseLanguageInvalidError for a subtag longer than 8 chars', () => {
+    const c = makeCourse();
+    expect(() => c.setLanguage('xxx-yyy-1234567890')).toThrow(CourseLanguageInvalidError);
+  });
+
+  it('throws CourseLanguageInvalidError for a single-char primary tag', () => {
+    const c = makeCourse();
+    expect(() => c.setLanguage('X')).toThrow(CourseLanguageInvalidError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Enrichment metadata: releaseDate
+// ---------------------------------------------------------------------------
+
+describe('Course.setReleaseDate', () => {
+  it('sets and reads back the release date', () => {
+    const c = makeCourse();
+    const d = new Date('2024-03-15T00:00:00.000Z');
+    c.setReleaseDate(d);
+    expect(c.releaseDate).toEqual(d);
+  });
+
+  it('clears the release date when undefined is passed', () => {
+    const c = makeCourse();
+    c.setReleaseDate(new Date());
+    c.setReleaseDate(undefined);
+    expect(c.releaseDate).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Enrichment metadata: rating
+// ---------------------------------------------------------------------------
+
+describe('Course.setRating', () => {
+  it('sets a valid rating and reads it back', () => {
+    const c = makeCourse();
+    c.setRating(4.7, 150);
+    expect(c.ratingAverage).toBe(4.7);
+    expect(c.ratingCount).toBe(150);
+  });
+
+  it('clears both fields when both undefined are passed', () => {
+    const c = makeCourse();
+    c.setRating(4, 100);
+    c.setRating(undefined, undefined);
+    expect(c.ratingAverage).toBeUndefined();
+    expect(c.ratingCount).toBeUndefined();
+  });
+
+  it('accepts boundary values avg=0, count=0', () => {
+    const c = makeCourse();
+    c.setRating(0, 0);
+    expect(c.ratingAverage).toBe(0);
+    expect(c.ratingCount).toBe(0);
+  });
+
+  it('accepts avg=5 (upper boundary)', () => {
+    const c = makeCourse();
+    c.setRating(5, 1);
+    expect(c.ratingAverage).toBe(5);
+  });
+
+  it('throws CourseRatingInvalidError when avg > 5', () => {
+    const c = makeCourse();
+    expect(() => c.setRating(5.1, 10)).toThrow(CourseRatingInvalidError);
+  });
+
+  it('throws CourseRatingInvalidError when avg < 0', () => {
+    const c = makeCourse();
+    expect(() => c.setRating(-0.1, 10)).toThrow(CourseRatingInvalidError);
+  });
+
+  it('throws CourseRatingInvalidError when count is negative', () => {
+    const c = makeCourse();
+    expect(() => c.setRating(3, -1)).toThrow(CourseRatingInvalidError);
+  });
+
+  it('throws CourseRatingInvalidError when count is not an integer', () => {
+    const c = makeCourse();
+    expect(() => c.setRating(3, 3.7)).toThrow(CourseRatingInvalidError);
+  });
+
+  it('throws CourseRatingInvalidError when only one of avg/count is undefined', () => {
+    const c = makeCourse();
+    expect(() => c.setRating(undefined, 10)).toThrow(CourseRatingInvalidError);
+    expect(() => c.setRating(3, undefined)).toThrow(CourseRatingInvalidError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Enrichment metadata: instructors / studios / tags
+// ---------------------------------------------------------------------------
+
+describe('Course.setInstructors', () => {
+  it('replaces instructor links and reads them back', () => {
+    const c = makeCourse();
+    c.setInstructors([
+      { id: 'i-1', slug: 'alice', displayName: 'Alice' },
+      { id: 'i-2', slug: 'bob', displayName: 'Bob' },
+    ]);
+    expect(c.instructors).toHaveLength(2);
+    expect(c.instructors[0]!.id).toBe('i-1');
+  });
+
+  it('dedupes by id — first occurrence wins', () => {
+    const c = makeCourse();
+    c.setInstructors([
+      { id: 'i-1', slug: 'alice', displayName: 'Alice' },
+      { id: 'i-1', slug: 'alice-dup', displayName: 'Alice Dup' },
+    ]);
+    expect(c.instructors).toHaveLength(1);
+    expect(c.instructors[0]!.slug).toBe('alice');
+  });
+
+  it('clears links when called with empty array', () => {
+    const c = makeCourse();
+    c.setInstructors([{ id: 'i-1', slug: 'alice', displayName: 'Alice' }]);
+    c.setInstructors([]);
+    expect(c.instructors).toHaveLength(0);
+  });
+
+  it('advances updatedAt', () => {
+    const c = makeCourse();
+    const before = c.updatedAt;
+    c.setInstructors([]);
+    expect(c.updatedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+  });
+});
+
+describe('Course.setStudios', () => {
+  it('replaces studio links', () => {
+    const c = makeCourse();
+    c.setStudios([{ id: 's-1', slug: 'acme', displayName: 'Acme Studio' }]);
+    expect(c.studios).toHaveLength(1);
+    expect(c.studios[0]!.id).toBe('s-1');
+  });
+});
+
+describe('Course.setTags', () => {
+  it('replaces tag links', () => {
+    const c = makeCourse();
+    c.setTags([
+      { id: 't-1', slug: 'react', displayName: 'React', category: 'framework' },
+      { id: 't-2', slug: 'ts', displayName: 'TypeScript', category: null },
+    ]);
+    expect(c.tags).toHaveLength(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Enrichment metadata: externalIds
+// ---------------------------------------------------------------------------
+
+describe('Course.setExternalIds', () => {
+  it('validates and stores external ids', () => {
+    const c = makeCourse();
+    c.setExternalIds([
+      { source: 'udemy', externalId: 'C-100', url: 'https://udemy.com/course/C-100' },
+    ]);
+    expect(c.externalIds).toHaveLength(1);
+    expect(c.externalIds[0]!.source).toBe('udemy');
+  });
+
+  it('dedupes by (source, externalId) — first occurrence wins', () => {
+    const c = makeCourse();
+    c.setExternalIds([
+      { source: 'udemy', externalId: 'C-100' },
+      { source: 'udemy', externalId: 'C-100', url: 'https://udemy.com' },
+    ]);
+    expect(c.externalIds).toHaveLength(1);
+    // First-seen wins — no url on first entry
+    expect(c.externalIds[0]!.url).toBeUndefined();
+  });
+
+  it('clears external ids when called with empty array', () => {
+    const c = makeCourse();
+    c.setExternalIds([{ source: 'udemy', externalId: 'C-100' }]);
+    c.setExternalIds([]);
+    expect(c.externalIds).toHaveLength(0);
   });
 });

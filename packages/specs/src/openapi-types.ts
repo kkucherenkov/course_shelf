@@ -248,6 +248,98 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/instructors': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create or update an instructor
+     * @description Creates a new instructor record or updates an existing one (matched by
+     *     slug or an externalId collision). Returns 409 when the provided slug
+     *     already exists and belongs to a *different* instructor than would be
+     *     matched by externalIds. Requires admin role.
+     */
+    post: operations['upsertInstructor'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/maintenance/backfill-metadata': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Trigger a background metadata backfill across the library
+     * @description Enqueues a background job that walks every course in the specified
+     *     library (or all libraries when `libraryId` is omitted), reads each
+     *     course's `course.json`, and upserts instructor/studio/tag links and
+     *     extended fields. Returns 202 immediately with a `jobId`; subscribe to
+     *     the `maintenance:backfill:{jobId}` Centrifugo channel to track progress.
+     *     Admin only.
+     */
+    post: operations['startBackfillMetadata'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/studios': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create or update a studio
+     * @description Creates a new studio record or updates an existing one (matched by slug
+     *     or externalId collision). Returns 409 when the slug is taken by a
+     *     different studio. Requires admin role.
+     */
+    post: operations['upsertStudio'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/tags': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create or update a tag
+     * @description Creates a new tag or updates an existing one (matched by slug or
+     *     externalId collision). Returns 409 when the slug is taken by a
+     *     different tag. Requires admin role.
+     */
+    post: operations['upsertTag'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/bookmarks/{id}': {
     parameters: {
       query?: never;
@@ -406,6 +498,133 @@ export interface paths {
      *     no events are emitted on delete).
      */
     post: operations['resetCourseProgress'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/catalog/instructors': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List instructors with optional search
+     * @description Returns a paginated list of instructors. The optional `search` parameter
+     *     performs a case-insensitive substring match on `displayName`. Results are
+     *     ordered by `displayName` ascending.
+     */
+    get: operations['listInstructors'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/catalog/instructors/{slug}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a single instructor by slug
+     * @description Returns the instructor details plus a list of their associated courses.
+     */
+    get: operations['getInstructor'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/catalog/studios': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List studios with optional search
+     * @description Returns a paginated list of studios. The optional `search` parameter
+     *     performs a case-insensitive substring match on `displayName`. Results are
+     *     ordered by `displayName` ascending.
+     */
+    get: operations['listStudios'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/catalog/studios/{slug}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a single studio by slug
+     * @description Returns the studio details plus a list of their associated courses.
+     */
+    get: operations['getStudio'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/catalog/tags': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List tags with optional search and category filter
+     * @description Returns a paginated list of tags. The optional `search` parameter
+     *     performs a case-insensitive substring match on `displayName`. The
+     *     optional `category` parameter filters by exact category value.
+     *     Results are ordered by `displayName` ascending.
+     */
+    get: operations['listTags'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/catalog/tags/{slug}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a single tag by slug
+     * @description Returns the tag details plus a list of associated courses.
+     */
+    get: operations['getTag'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1036,6 +1255,443 @@ export interface components {
       courseId: string;
     };
     /**
+     * @description Confirmation that a backfill job has been accepted and is running in the background.
+     * @example {
+     *       "jobId": "clxvjob0000000000000000001"
+     *     }
+     */
+    BackfillJobAccepted: {
+      /** @description Unique cuid identifying the background job. Subscribe to `maintenance:backfill:{jobId}` on Centrifugo for progress events. */
+      jobId: string;
+    };
+    /**
+     * @description Optional scope for a metadata backfill job. When both fields are
+     *     omitted the backfill runs across all libraries.
+     * @example {
+     *       "libraryId": "clxvlib0000000000000000001"
+     *     }
+     */
+    BackfillMetadataRequest: {
+      /** @description cuid of the library to restrict the backfill to. Omit to backfill all libraries. */
+      libraryId?: string;
+    };
+    /**
+     * @description Difficulty level of a course. `all_levels` is used when the course is suitable for all experience levels regardless of background.
+     * @example intermediate
+     * @enum {string}
+     */
+    CourseLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'all_levels';
+    /**
+     * @description URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens; cannot start or end with a hyphen. Shared by Instructor, Studio, and Tag aggregates.
+     * @example andrei-neagoie
+     */
+    EntitySlug: string;
+    /**
+     * @description A reference to an entity in an external system (e.g. Udemy, YouTube).
+     * @example {
+     *       "source": "udemy",
+     *       "externalId": "udemy:instructor:42",
+     *       "url": "https://udemy.com/user/42"
+     *     }
+     * @example {
+     *       "source": "youtube",
+     *       "externalId": "youtube:channel:UCnUYZLuoy1rq1aVMwx4aTzw"
+     *     }
+     */
+    ExternalIdRef: {
+      /** @description Namespace identifying the external system (e.g. `udemy`, `youtube`). Scrapers are responsible for namespacing their ids (e.g. `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`). */
+      source: string;
+      /** @description Identifier within the source system. */
+      externalId: string;
+      /**
+       * Format: uri
+       * @description Optional canonical URL of the entity on the source platform.
+       */
+      url?: string;
+    };
+    /**
+     * @description Full instructor view including their associated courses (paginated, up to 20).
+     * @example {
+     *       "instructor": {
+     *         "id": "clxvins0000000000000000001",
+     *         "slug": "andrei-neagoie",
+     *         "displayName": "Andrei Neagoie",
+     *         "externalIds": [
+     *           {
+     *             "source": "udemy",
+     *             "externalId": "udemy:instructor:42",
+     *             "url": "https://udemy.com/user/42"
+     *           }
+     *         ],
+     *         "coursesTotal": 1,
+     *         "createdAt": "2026-05-23T10:00:00Z",
+     *         "updatedAt": "2026-05-23T10:00:00Z"
+     *       },
+     *       "courses": [],
+     *       "coursesTotal": 1
+     *     }
+     */
+    InstructorDetailDto: {
+      instructor: components['schemas']['InstructorDto'];
+      /** @description Courses associated with this instructor, up to 20, sorted by title. */
+      courses: components['schemas']['CourseDto'][];
+      /** @description Total number of courses associated with this instructor (may exceed `courses.length`). */
+      coursesTotal: number;
+    };
+    /**
+     * @description Full representation of an Instructor aggregate.
+     * @example {
+     *       "id": "clxvins0000000000000000001",
+     *       "slug": "andrei-neagoie",
+     *       "displayName": "Andrei Neagoie",
+     *       "externalIds": [
+     *         {
+     *           "source": "udemy",
+     *           "externalId": "udemy:instructor:42",
+     *           "url": "https://udemy.com/user/42"
+     *         }
+     *       ],
+     *       "coursesTotal": 12,
+     *       "createdAt": "2026-05-23T10:00:00Z",
+     *       "updatedAt": "2026-05-23T10:00:00Z"
+     *     }
+     */
+    InstructorDto: {
+      /** @description Server-generated cuid. */
+      id: string;
+      slug: components['schemas']['EntitySlug'];
+      /** @description Human-readable instructor name. */
+      displayName: string;
+      /** @description External system references for this instructor. */
+      externalIds: components['schemas']['ExternalIdRef'][];
+      /** @description Total number of courses linked to this instructor. */
+      coursesTotal: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    /**
+     * @description Paginated list of instructors.
+     * @example {
+     *       "items": [
+     *         {
+     *           "id": "clxvins0000000000000000001",
+     *           "slug": "andrei-neagoie",
+     *           "displayName": "Andrei Neagoie",
+     *           "externalIds": [
+     *             {
+     *               "source": "udemy",
+     *               "externalId": "udemy:instructor:42",
+     *               "url": "https://udemy.com/user/42"
+     *             }
+     *           ],
+     *           "coursesTotal": 12,
+     *           "createdAt": "2026-05-23T10:00:00Z",
+     *           "updatedAt": "2026-05-23T10:00:00Z"
+     *         }
+     *       ],
+     *       "total": 1,
+     *       "offset": 0,
+     *       "limit": 20
+     *     }
+     */
+    InstructorListDto: {
+      items: components['schemas']['InstructorDto'][];
+      /** @description Total number of instructors matching the filter (before pagination). */
+      total: number;
+      /** @description Number of items skipped. */
+      offset: number;
+      /** @description Maximum items returned per page. */
+      limit: number;
+    };
+    /**
+     * @description Lightweight reference to an instructor, embedded in CourseDto.
+     * @example {
+     *       "id": "clxvins0000000000000000001",
+     *       "slug": "andrei-neagoie",
+     *       "displayName": "Andrei Neagoie"
+     *     }
+     */
+    InstructorRef: {
+      /** @description Server-generated cuid of the instructor. */
+      id: string;
+      slug: components['schemas']['EntitySlug'];
+      displayName: string;
+    };
+    /**
+     * @description Full studio view including their associated courses (paginated, up to 20).
+     * @example {
+     *       "studio": {
+     *         "id": "clxvstu0000000000000000001",
+     *         "slug": "zero-to-mastery",
+     *         "displayName": "Zero To Mastery",
+     *         "externalIds": [
+     *           {
+     *             "source": "udemy",
+     *             "externalId": "udemy:organization:ztm",
+     *             "url": "https://udemy.com/organization/ztm"
+     *           }
+     *         ],
+     *         "coursesTotal": 5,
+     *         "createdAt": "2026-05-23T10:00:00Z",
+     *         "updatedAt": "2026-05-23T10:00:00Z"
+     *       },
+     *       "courses": [],
+     *       "coursesTotal": 5
+     *     }
+     */
+    StudioDetailDto: {
+      studio: components['schemas']['StudioDto'];
+      /** @description Courses associated with this studio, up to 20, sorted by title. */
+      courses: components['schemas']['CourseDto'][];
+      /** @description Total number of courses associated with this studio (may exceed `courses.length`). */
+      coursesTotal: number;
+    };
+    /**
+     * @description Full representation of a Studio aggregate.
+     * @example {
+     *       "id": "clxvstu0000000000000000001",
+     *       "slug": "zero-to-mastery",
+     *       "displayName": "Zero To Mastery",
+     *       "externalIds": [
+     *         {
+     *           "source": "udemy",
+     *           "externalId": "udemy:organization:ztm",
+     *           "url": "https://udemy.com/organization/ztm"
+     *         }
+     *       ],
+     *       "coursesTotal": 5,
+     *       "createdAt": "2026-05-23T10:00:00Z",
+     *       "updatedAt": "2026-05-23T10:00:00Z"
+     *     }
+     */
+    StudioDto: {
+      /** @description Server-generated cuid. */
+      id: string;
+      slug: components['schemas']['EntitySlug'];
+      /** @description Human-readable studio name. */
+      displayName: string;
+      /** @description External system references for this studio. */
+      externalIds: components['schemas']['ExternalIdRef'][];
+      /** @description Total number of courses linked to this studio. */
+      coursesTotal: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    /**
+     * @description Paginated list of studios.
+     * @example {
+     *       "items": [
+     *         {
+     *           "id": "clxvstu0000000000000000001",
+     *           "slug": "zero-to-mastery",
+     *           "displayName": "Zero To Mastery",
+     *           "externalIds": [
+     *             {
+     *               "source": "udemy",
+     *               "externalId": "udemy:organization:ztm",
+     *               "url": "https://udemy.com/organization/ztm"
+     *             }
+     *           ],
+     *           "coursesTotal": 5,
+     *           "createdAt": "2026-05-23T10:00:00Z",
+     *           "updatedAt": "2026-05-23T10:00:00Z"
+     *         }
+     *       ],
+     *       "total": 1,
+     *       "offset": 0,
+     *       "limit": 20
+     *     }
+     */
+    StudioListDto: {
+      items: components['schemas']['StudioDto'][];
+      /** @description Total number of studios matching the filter (before pagination). */
+      total: number;
+      /** @description Number of items skipped. */
+      offset: number;
+      /** @description Maximum items returned per page. */
+      limit: number;
+    };
+    /**
+     * @description Lightweight reference to a studio, embedded in CourseDto.
+     * @example {
+     *       "id": "clxvstu0000000000000000001",
+     *       "slug": "zero-to-mastery",
+     *       "displayName": "Zero To Mastery"
+     *     }
+     */
+    StudioRef: {
+      /** @description Server-generated cuid of the studio. */
+      id: string;
+      slug: components['schemas']['EntitySlug'];
+      displayName: string;
+    };
+    /**
+     * @description Full tag view including associated courses (paginated, up to 20).
+     * @example {
+     *       "tag": {
+     *         "id": "clxvtag0000000000000000001",
+     *         "slug": "javascript",
+     *         "displayName": "JavaScript",
+     *         "category": "language",
+     *         "externalIds": [],
+     *         "coursesTotal": 8,
+     *         "createdAt": "2026-05-23T10:00:00Z",
+     *         "updatedAt": "2026-05-23T10:00:00Z"
+     *       },
+     *       "courses": [],
+     *       "coursesTotal": 8
+     *     }
+     */
+    TagDetailDto: {
+      tag: components['schemas']['TagDto'];
+      /** @description Courses associated with this tag, up to 20, sorted by title. */
+      courses: components['schemas']['CourseDto'][];
+      /** @description Total number of courses associated with this tag (may exceed `courses.length`). */
+      coursesTotal: number;
+    };
+    /**
+     * @description Full representation of a Tag aggregate.
+     * @example {
+     *       "id": "clxvtag0000000000000000001",
+     *       "slug": "javascript",
+     *       "displayName": "JavaScript",
+     *       "category": "language",
+     *       "externalIds": [],
+     *       "coursesTotal": 8,
+     *       "createdAt": "2026-05-23T10:00:00Z",
+     *       "updatedAt": "2026-05-23T10:00:00Z"
+     *     }
+     */
+    TagDto: {
+      /** @description Server-generated cuid. */
+      id: string;
+      slug: components['schemas']['EntitySlug'];
+      /** @description Human-readable tag name. */
+      displayName: string;
+      /** @description Free-form category label (e.g. `language`, `framework`, `topic`). Null when uncategorised. */
+      category?: string | null;
+      /** @description External system references for this tag. */
+      externalIds: components['schemas']['ExternalIdRef'][];
+      /** @description Total number of courses linked to this tag. */
+      coursesTotal: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    /**
+     * @description Paginated list of tags.
+     * @example {
+     *       "items": [
+     *         {
+     *           "id": "clxvtag0000000000000000001",
+     *           "slug": "javascript",
+     *           "displayName": "JavaScript",
+     *           "category": "language",
+     *           "externalIds": [],
+     *           "coursesTotal": 8,
+     *           "createdAt": "2026-05-23T10:00:00Z",
+     *           "updatedAt": "2026-05-23T10:00:00Z"
+     *         }
+     *       ],
+     *       "total": 1,
+     *       "offset": 0,
+     *       "limit": 20
+     *     }
+     */
+    TagListDto: {
+      items: components['schemas']['TagDto'][];
+      /** @description Total number of tags matching the filter (before pagination). */
+      total: number;
+      /** @description Number of items skipped. */
+      offset: number;
+      /** @description Maximum items returned per page. */
+      limit: number;
+    };
+    /**
+     * @description Lightweight reference to a tag, embedded in CourseDto.
+     * @example {
+     *       "id": "clxvtag0000000000000000001",
+     *       "slug": "javascript",
+     *       "displayName": "JavaScript",
+     *       "category": "language"
+     *     }
+     */
+    TagRef: {
+      /** @description Server-generated cuid of the tag. */
+      id: string;
+      slug: components['schemas']['EntitySlug'];
+      displayName: string;
+      /** @description Tag category, or null when uncategorised. */
+      category?: string | null;
+    };
+    /**
+     * @description Payload for creating or updating an instructor.
+     * @example {
+     *       "displayName": "Andrei Neagoie",
+     *       "slug": "andrei-neagoie",
+     *       "externalIds": [
+     *         {
+     *           "source": "udemy",
+     *           "externalId": "udemy:instructor:42",
+     *           "url": "https://udemy.com/user/42"
+     *         }
+     *       ]
+     *     }
+     */
+    UpsertInstructorRequest: {
+      /** @description Human-readable name displayed in the UI. */
+      displayName: string;
+      /** @description URL-safe slug. Auto-generated from `displayName` when omitted. */
+      slug?: components['schemas']['EntitySlug'];
+      /** @description External system references for this instructor. */
+      externalIds?: components['schemas']['ExternalIdRef'][];
+    };
+    /**
+     * @description Payload for creating or updating a studio.
+     * @example {
+     *       "displayName": "Zero To Mastery",
+     *       "slug": "zero-to-mastery",
+     *       "externalIds": [
+     *         {
+     *           "source": "udemy",
+     *           "externalId": "udemy:organization:ztm",
+     *           "url": "https://udemy.com/organization/ztm"
+     *         }
+     *       ]
+     *     }
+     */
+    UpsertStudioRequest: {
+      /** @description Human-readable studio name. */
+      displayName: string;
+      /** @description URL-safe slug. Auto-generated from `displayName` when omitted. */
+      slug?: components['schemas']['EntitySlug'];
+      /** @description External system references for this studio. */
+      externalIds?: components['schemas']['ExternalIdRef'][];
+    };
+    /**
+     * @description Payload for creating or updating a tag.
+     * @example {
+     *       "displayName": "JavaScript",
+     *       "slug": "javascript",
+     *       "category": "language"
+     *     }
+     */
+    UpsertTagRequest: {
+      /** @description Human-readable tag name. */
+      displayName: string;
+      /** @description URL-safe slug. Auto-generated from `displayName` when omitted. */
+      slug?: components['schemas']['EntitySlug'];
+      /** @description Free-form category label (e.g. `language`, `framework`, `topic`). Pass `null` to clear. */
+      category?: string | null;
+      /** @description External system references for this tag. */
+      externalIds?: components['schemas']['ExternalIdRef'][];
+    };
+    /**
      * @description A single access grant issued by an admin.
      * @example {
      *       "id": "clxvgnt0000000000000000001",
@@ -1490,6 +2146,17 @@ export interface components {
      *         "lessonsCompleted": 0,
      *         "lessonsTotal": 24
      *       },
+     *       "instructors": [],
+     *       "studios": [],
+     *       "tags": [],
+     *       "level": null,
+     *       "language": null,
+     *       "releaseDate": null,
+     *       "posterUrl": null,
+     *       "ratingAverage": null,
+     *       "ratingCount": null,
+     *       "externalIds": [],
+     *       "sourceUpdatedAt": null,
      *       "createdAt": "2026-04-25T09:00:00Z",
      *       "updatedAt": "2026-04-25T09:00:00Z"
      *     }
@@ -1505,6 +2172,40 @@ export interface components {
       /** @description Sections sorted ascending by position. */
       sections: components['schemas']['SectionDto'][];
       progress: components['schemas']['CourseProgress'];
+      /**
+       * @description Instructors associated with this course. Empty array when none linked.
+       * @default []
+       */
+      instructors: components['schemas']['InstructorRef'][];
+      /**
+       * @description Studios associated with this course. Empty array when none linked.
+       * @default []
+       */
+      studios: components['schemas']['StudioRef'][];
+      /**
+       * @description Tags associated with this course. Empty array when none linked.
+       * @default []
+       */
+      tags: components['schemas']['TagRef'][];
+      /** @description Difficulty level of the course, or null when not set. */
+      level?: components['schemas']['CourseLevel'] | null;
+      /** @description BCP-47 language tag for the course primary language (e.g. `en`, `en-US`). Validated server-side; null when not set. */
+      language?: string | null;
+      /** @description ISO-8601 date when the course was originally released. Null when not set. */
+      releaseDate?: string | null;
+      /** @description URL of the course poster image. Null when not set. */
+      posterUrl?: string | null;
+      /** @description Average rating on a 0–5 scale (two decimal places). Null when not set. */
+      ratingAverage?: number | null;
+      /** @description Number of ratings contributing to `ratingAverage`. Null when not set. */
+      ratingCount?: number | null;
+      /**
+       * @description External system references for this course. Empty array when none.
+       * @default []
+       */
+      externalIds: components['schemas']['ExternalIdRef'][];
+      /** @description Timestamp from the upstream source when this course was last updated. Null when not set. */
+      sourceUpdatedAt?: string | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -2278,18 +2979,54 @@ export interface components {
     };
     /**
      * @description Payload for updating course metadata. All fields are optional, but at
-     *     least one of `title`, `description`, or `slug` must be present
-     *     (server-side validation rule — OpenAPI does not have a native
-     *     "at-least-one" constraint).
+     *     least one of `title`, `description`, `slug`, `instructorIds`,
+     *     `studioIds`, `tagIds`, `posterUrl`, `level`, `language`,
+     *     `releaseDate`, `sourceUpdatedAt`, `ratingAverage`, `ratingCount`, or
+     *     `externalIds` must be present (server-side validation rule — OpenAPI
+     *     does not have a native "at-least-one" constraint).
+     *
+     *     **Set-replace semantics for relation arrays:** `null` means "leave the
+     *     existing set alone"; `[]` (empty array) means "remove all links";
+     *     a non-empty array replaces the full set with exactly the listed ids.
      * @example {
      *       "title": "Pragmatic Clean Architecture (2nd ed.)",
-     *       "slug": "pragmatic-clean-architecture-2nd-ed"
+     *       "slug": "pragmatic-clean-architecture-2nd-ed",
+     *       "level": "intermediate",
+     *       "language": "en",
+     *       "instructorIds": [
+     *         "clxvins0000000000000000001"
+     *       ],
+     *       "tagIds": [
+     *         "clxvtag0000000000000000001"
+     *       ]
      *     }
      */
     UpdateCourseRequest: {
       title?: string;
       description?: string;
       slug?: components['schemas']['CourseSlug'];
+      /** @description Set-replace list of instructor cuids. `null` = leave unchanged; `[]` = remove all instructor links; `[id1, id2]` = replace with exactly these instructors. */
+      instructorIds?: string[] | null;
+      /** @description Set-replace list of studio cuids. Same null/empty/array semantics as `instructorIds`. */
+      studioIds?: string[] | null;
+      /** @description Set-replace list of tag cuids. Same null/empty/array semantics as `instructorIds`. */
+      tagIds?: string[] | null;
+      /** @description Difficulty level. Pass `null` to clear. */
+      level?: components['schemas']['CourseLevel'] | null;
+      /** @description BCP-47 language tag (e.g. `en`, `en-US`). Pass `null` to clear. */
+      language?: string | null;
+      /** @description ISO-8601 date of original release. Pass `null` to clear. */
+      releaseDate?: string | null;
+      /** @description Course poster image URL. Pass `null` to clear. */
+      posterUrl?: string | null;
+      /** @description Average rating 0–5. Pass `null` to clear. */
+      ratingAverage?: number | null;
+      /** @description Number of ratings. Pass `null` to clear. */
+      ratingCount?: number | null;
+      /** @description Replaces all external id refs for this course. `null` = leave unchanged; `[]` = remove all; an array = full replacement. */
+      externalIds?: components['schemas']['ExternalIdRef'][] | null;
+      /** @description Upstream source last-updated timestamp. Pass `null` to clear. */
+      sourceUpdatedAt?: string | null;
     };
     /**
      * @description Payload for creating or replacing the requester's note on a lesson.
@@ -2795,6 +3532,228 @@ export interface operations {
       };
     };
   };
+  upsertInstructor: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpsertInstructorRequest'];
+      };
+    };
+    responses: {
+      /** @description Instructor created or updated */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InstructorDto'];
+        };
+      };
+      /** @description Validation error — missing or malformed fields */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Slug already taken by a different instructor */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  startBackfillMetadata: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['BackfillMetadataRequest'];
+      };
+    };
+    responses: {
+      /** @description Backfill job accepted — progress via Centrifugo */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BackfillJobAccepted'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  upsertStudio: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpsertStudioRequest'];
+      };
+    };
+    responses: {
+      /** @description Studio created or updated */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StudioDto'];
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Slug already taken by a different studio */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  upsertTag: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpsertTagRequest'];
+      };
+    };
+    responses: {
+      /** @description Tag created or updated */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TagDto'];
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Slug already taken by a different tag */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
   deleteBookmark: {
     parameters: {
       query?: never;
@@ -3215,6 +4174,239 @@ export interface operations {
         };
       };
       /** @description Course not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listInstructors: {
+    parameters: {
+      query?: {
+        /** @description Number of items to skip (zero-based). */
+        offset?: number;
+        /** @description Maximum number of items to return. */
+        limit?: number;
+        /** @description Case-insensitive substring filter on `displayName`. */
+        search?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Instructor list returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InstructorListDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getInstructor: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description URL-safe slug identifying the instructor. */
+        slug: components['schemas']['EntitySlug'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Instructor found */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InstructorDetailDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Instructor not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listStudios: {
+    parameters: {
+      query?: {
+        /** @description Number of items to skip (zero-based). */
+        offset?: number;
+        /** @description Maximum number of items to return. */
+        limit?: number;
+        /** @description Case-insensitive substring filter on `displayName`. */
+        search?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Studio list returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StudioListDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getStudio: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description URL-safe slug identifying the studio. */
+        slug: components['schemas']['EntitySlug'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Studio found */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StudioDetailDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Studio not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listTags: {
+    parameters: {
+      query?: {
+        /** @description Number of items to skip (zero-based). */
+        offset?: number;
+        /** @description Maximum number of items to return. */
+        limit?: number;
+        /** @description Case-insensitive substring filter on `displayName`. */
+        search?: string;
+        /** @description Exact match filter on `category`. Omit to return tags from all categories. */
+        category?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Tag list returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TagListDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getTag: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description URL-safe slug identifying the tag. */
+        slug: components['schemas']['EntitySlug'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Tag found */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TagDetailDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Tag not found */
       404: {
         headers: {
           [name: string]: unknown;

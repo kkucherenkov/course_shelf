@@ -33,6 +33,335 @@ export type _1 = {
 };
 
 /**
+ * Confirmation that a backfill job has been accepted and is running in the background.
+ */
+export type BackfillJobAccepted = {
+    /**
+     * Unique cuid identifying the background job. Subscribe to `maintenance:backfill:{jobId}` on Centrifugo for progress events.
+     */
+    jobId: string;
+};
+
+/**
+ * Optional scope for a metadata backfill job. When both fields are
+ * omitted the backfill runs across all libraries.
+ *
+ */
+export type BackfillMetadataRequest = {
+    /**
+     * cuid of the library to restrict the backfill to. Omit to backfill all libraries.
+     */
+    libraryId?: string;
+};
+
+/**
+ * Difficulty level of a course. `all_levels` is used when the course is suitable for all experience levels regardless of background.
+ */
+export type CourseLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'all_levels';
+
+/**
+ * URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens; cannot start or end with a hyphen. Shared by Instructor, Studio, and Tag aggregates.
+ */
+export type EntitySlug = string;
+
+/**
+ * A reference to an entity in an external system (e.g. Udemy, YouTube).
+ */
+export type ExternalIdRef = {
+    /**
+     * Namespace identifying the external system (e.g. `udemy`, `youtube`). Scrapers are responsible for namespacing their ids (e.g. `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`).
+     */
+    source: string;
+    /**
+     * Identifier within the source system.
+     */
+    externalId: string;
+    /**
+     * Optional canonical URL of the entity on the source platform.
+     */
+    url?: string;
+};
+
+/**
+ * Full instructor view including their associated courses (paginated, up to 20).
+ */
+export type InstructorDetailDto = {
+    instructor: InstructorDto;
+    /**
+     * Courses associated with this instructor, up to 20, sorted by title.
+     */
+    courses: Array<CourseDto>;
+    /**
+     * Total number of courses associated with this instructor (may exceed `courses.length`).
+     */
+    coursesTotal: number;
+};
+
+/**
+ * Full representation of an Instructor aggregate.
+ */
+export type InstructorDto = {
+    /**
+     * Server-generated cuid.
+     */
+    id: string;
+    slug: EntitySlug;
+    /**
+     * Human-readable instructor name.
+     */
+    displayName: string;
+    /**
+     * External system references for this instructor.
+     */
+    externalIds: Array<ExternalIdRef>;
+    /**
+     * Total number of courses linked to this instructor.
+     */
+    coursesTotal: number;
+    createdAt: string;
+    updatedAt: string;
+};
+
+/**
+ * Paginated list of instructors.
+ */
+export type InstructorListDto = {
+    items: Array<InstructorDto>;
+    /**
+     * Total number of instructors matching the filter (before pagination).
+     */
+    total: number;
+    /**
+     * Number of items skipped.
+     */
+    offset: number;
+    /**
+     * Maximum items returned per page.
+     */
+    limit: number;
+};
+
+/**
+ * Lightweight reference to an instructor, embedded in CourseDto.
+ */
+export type InstructorRef = {
+    /**
+     * Server-generated cuid of the instructor.
+     */
+    id: string;
+    slug: EntitySlug;
+    displayName: string;
+};
+
+/**
+ * Full studio view including their associated courses (paginated, up to 20).
+ */
+export type StudioDetailDto = {
+    studio: StudioDto;
+    /**
+     * Courses associated with this studio, up to 20, sorted by title.
+     */
+    courses: Array<CourseDto>;
+    /**
+     * Total number of courses associated with this studio (may exceed `courses.length`).
+     */
+    coursesTotal: number;
+};
+
+/**
+ * Full representation of a Studio aggregate.
+ */
+export type StudioDto = {
+    /**
+     * Server-generated cuid.
+     */
+    id: string;
+    slug: EntitySlug;
+    /**
+     * Human-readable studio name.
+     */
+    displayName: string;
+    /**
+     * External system references for this studio.
+     */
+    externalIds: Array<ExternalIdRef>;
+    /**
+     * Total number of courses linked to this studio.
+     */
+    coursesTotal: number;
+    createdAt: string;
+    updatedAt: string;
+};
+
+/**
+ * Paginated list of studios.
+ */
+export type StudioListDto = {
+    items: Array<StudioDto>;
+    /**
+     * Total number of studios matching the filter (before pagination).
+     */
+    total: number;
+    /**
+     * Number of items skipped.
+     */
+    offset: number;
+    /**
+     * Maximum items returned per page.
+     */
+    limit: number;
+};
+
+/**
+ * Lightweight reference to a studio, embedded in CourseDto.
+ */
+export type StudioRef = {
+    /**
+     * Server-generated cuid of the studio.
+     */
+    id: string;
+    slug: EntitySlug;
+    displayName: string;
+};
+
+/**
+ * Full tag view including associated courses (paginated, up to 20).
+ */
+export type TagDetailDto = {
+    tag: TagDto;
+    /**
+     * Courses associated with this tag, up to 20, sorted by title.
+     */
+    courses: Array<CourseDto>;
+    /**
+     * Total number of courses associated with this tag (may exceed `courses.length`).
+     */
+    coursesTotal: number;
+};
+
+/**
+ * Full representation of a Tag aggregate.
+ */
+export type TagDto = {
+    /**
+     * Server-generated cuid.
+     */
+    id: string;
+    slug: EntitySlug;
+    /**
+     * Human-readable tag name.
+     */
+    displayName: string;
+    /**
+     * Free-form category label (e.g. `language`, `framework`, `topic`). Null when uncategorised.
+     */
+    category?: string | null;
+    /**
+     * External system references for this tag.
+     */
+    externalIds: Array<ExternalIdRef>;
+    /**
+     * Total number of courses linked to this tag.
+     */
+    coursesTotal: number;
+    createdAt: string;
+    updatedAt: string;
+};
+
+/**
+ * Paginated list of tags.
+ */
+export type TagListDto = {
+    items: Array<TagDto>;
+    /**
+     * Total number of tags matching the filter (before pagination).
+     */
+    total: number;
+    /**
+     * Number of items skipped.
+     */
+    offset: number;
+    /**
+     * Maximum items returned per page.
+     */
+    limit: number;
+};
+
+/**
+ * Lightweight reference to a tag, embedded in CourseDto.
+ */
+export type TagRef = {
+    /**
+     * Server-generated cuid of the tag.
+     */
+    id: string;
+    slug: EntitySlug;
+    displayName: string;
+    /**
+     * Tag category, or null when uncategorised.
+     */
+    category?: string | null;
+};
+
+/**
+ * Payload for creating or updating an instructor.
+ */
+export type UpsertInstructorRequest = {
+    /**
+     * Human-readable name displayed in the UI.
+     */
+    displayName: string;
+    /**
+     * URL-safe slug. Auto-generated from `displayName` when omitted.
+     */
+    slug?: EntitySlug;
+    /**
+     * External system references for this instructor.
+     */
+    externalIds?: Array<ExternalIdRef>;
+};
+
+/**
+ * Payload for creating or updating a studio.
+ */
+export type UpsertStudioRequest = {
+    /**
+     * Human-readable studio name.
+     */
+    displayName: string;
+    /**
+     * URL-safe slug. Auto-generated from `displayName` when omitted.
+     */
+    slug?: EntitySlug;
+    /**
+     * External system references for this studio.
+     */
+    externalIds?: Array<ExternalIdRef>;
+};
+
+/**
+ * Payload for creating or updating a tag.
+ */
+export type UpsertTagRequest = {
+    /**
+     * Human-readable tag name.
+     */
+    displayName: string;
+    /**
+     * URL-safe slug. Auto-generated from `displayName` when omitted.
+     */
+    slug?: EntitySlug;
+    /**
+     * Free-form category label (e.g. `language`, `framework`, `topic`). Pass `null` to clear.
+     */
+    category?: string | null;
+    /**
+     * External system references for this tag.
+     */
+    externalIds?: Array<ExternalIdRef>;
+};
+
+/**
  * A single access grant issued by an admin.
  */
 export type AccessGrantDto = {
@@ -427,6 +756,50 @@ export type CourseDto = {
      */
     sections: Array<SectionDto>;
     progress: CourseProgress;
+    /**
+     * Instructors associated with this course. Empty array when none linked.
+     */
+    instructors?: Array<InstructorRef>;
+    /**
+     * Studios associated with this course. Empty array when none linked.
+     */
+    studios?: Array<StudioRef>;
+    /**
+     * Tags associated with this course. Empty array when none linked.
+     */
+    tags?: Array<TagRef>;
+    /**
+     * Difficulty level of the course, or null when not set.
+     */
+    level?: CourseLevel | null;
+    /**
+     * BCP-47 language tag for the course primary language (e.g. `en`, `en-US`). Validated server-side; null when not set.
+     */
+    language?: string | null;
+    /**
+     * ISO-8601 date when the course was originally released. Null when not set.
+     */
+    releaseDate?: string | null;
+    /**
+     * URL of the course poster image. Null when not set.
+     */
+    posterUrl?: string | null;
+    /**
+     * Average rating on a 0–5 scale (two decimal places). Null when not set.
+     */
+    ratingAverage?: number | null;
+    /**
+     * Number of ratings contributing to `ratingAverage`. Null when not set.
+     */
+    ratingCount?: number | null;
+    /**
+     * External system references for this course. Empty array when none.
+     */
+    externalIds?: Array<ExternalIdRef>;
+    /**
+     * Timestamp from the upstream source when this course was last updated. Null when not set.
+     */
+    sourceUpdatedAt?: string | null;
     createdAt: string;
     updatedAt: string;
 };
@@ -1194,15 +1567,65 @@ export type UpdateBookmarkRequest = {
 
 /**
  * Payload for updating course metadata. All fields are optional, but at
- * least one of `title`, `description`, or `slug` must be present
- * (server-side validation rule — OpenAPI does not have a native
- * "at-least-one" constraint).
+ * least one of `title`, `description`, `slug`, `instructorIds`,
+ * `studioIds`, `tagIds`, `posterUrl`, `level`, `language`,
+ * `releaseDate`, `sourceUpdatedAt`, `ratingAverage`, `ratingCount`, or
+ * `externalIds` must be present (server-side validation rule — OpenAPI
+ * does not have a native "at-least-one" constraint).
+ *
+ * **Set-replace semantics for relation arrays:** `null` means "leave the
+ * existing set alone"; `[]` (empty array) means "remove all links";
+ * a non-empty array replaces the full set with exactly the listed ids.
  *
  */
 export type UpdateCourseRequest = {
     title?: string;
     description?: string;
     slug?: CourseSlug;
+    /**
+     * Set-replace list of instructor cuids. `null` = leave unchanged; `[]` = remove all instructor links; `[id1, id2]` = replace with exactly these instructors.
+     */
+    instructorIds?: Array<string> | null;
+    /**
+     * Set-replace list of studio cuids. Same null/empty/array semantics as `instructorIds`.
+     */
+    studioIds?: Array<string> | null;
+    /**
+     * Set-replace list of tag cuids. Same null/empty/array semantics as `instructorIds`.
+     */
+    tagIds?: Array<string> | null;
+    /**
+     * Difficulty level. Pass `null` to clear.
+     */
+    level?: CourseLevel | null;
+    /**
+     * BCP-47 language tag (e.g. `en`, `en-US`). Pass `null` to clear.
+     */
+    language?: string | null;
+    /**
+     * ISO-8601 date of original release. Pass `null` to clear.
+     */
+    releaseDate?: string | null;
+    /**
+     * Course poster image URL. Pass `null` to clear.
+     */
+    posterUrl?: string | null;
+    /**
+     * Average rating 0–5. Pass `null` to clear.
+     */
+    ratingAverage?: number | null;
+    /**
+     * Number of ratings. Pass `null` to clear.
+     */
+    ratingCount?: number | null;
+    /**
+     * Replaces all external id refs for this course. `null` = leave unchanged; `[]` = remove all; an array = full replacement.
+     */
+    externalIds?: Array<ExternalIdRef> | null;
+    /**
+     * Upstream source last-updated timestamp. Pass `null` to clear.
+     */
+    sourceUpdatedAt?: string | null;
 };
 
 /**
@@ -1582,6 +2005,146 @@ export type GetAdminInstanceResponses = {
 
 export type GetAdminInstanceResponse = GetAdminInstanceResponses[keyof GetAdminInstanceResponses];
 
+export type UpsertInstructorData = {
+    body: UpsertInstructorRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/instructors';
+};
+
+export type UpsertInstructorErrors = {
+    /**
+     * Validation error — missing or malformed fields
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Slug already taken by a different instructor
+     */
+    409: Problem;
+};
+
+export type UpsertInstructorError = UpsertInstructorErrors[keyof UpsertInstructorErrors];
+
+export type UpsertInstructorResponses = {
+    /**
+     * Instructor created or updated
+     */
+    201: InstructorDto;
+};
+
+export type UpsertInstructorResponse = UpsertInstructorResponses[keyof UpsertInstructorResponses];
+
+export type StartBackfillMetadataData = {
+    body?: BackfillMetadataRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/maintenance/backfill-metadata';
+};
+
+export type StartBackfillMetadataErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+};
+
+export type StartBackfillMetadataError = StartBackfillMetadataErrors[keyof StartBackfillMetadataErrors];
+
+export type StartBackfillMetadataResponses = {
+    /**
+     * Backfill job accepted — progress via Centrifugo
+     */
+    202: BackfillJobAccepted;
+};
+
+export type StartBackfillMetadataResponse = StartBackfillMetadataResponses[keyof StartBackfillMetadataResponses];
+
+export type UpsertStudioData = {
+    body: UpsertStudioRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/studios';
+};
+
+export type UpsertStudioErrors = {
+    /**
+     * Validation error
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Slug already taken by a different studio
+     */
+    409: Problem;
+};
+
+export type UpsertStudioError = UpsertStudioErrors[keyof UpsertStudioErrors];
+
+export type UpsertStudioResponses = {
+    /**
+     * Studio created or updated
+     */
+    201: StudioDto;
+};
+
+export type UpsertStudioResponse = UpsertStudioResponses[keyof UpsertStudioResponses];
+
+export type UpsertTagData = {
+    body: UpsertTagRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/tags';
+};
+
+export type UpsertTagErrors = {
+    /**
+     * Validation error
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Slug already taken by a different tag
+     */
+    409: Problem;
+};
+
+export type UpsertTagError = UpsertTagErrors[keyof UpsertTagErrors];
+
+export type UpsertTagResponses = {
+    /**
+     * Tag created or updated
+     */
+    201: TagDto;
+};
+
+export type UpsertTagResponse = UpsertTagResponses[keyof UpsertTagResponses];
+
 export type DeleteBookmarkData = {
     body?: never;
     path: {
@@ -1906,6 +2469,226 @@ export type ResetCourseProgressResponses = {
 };
 
 export type ResetCourseProgressResponse = ResetCourseProgressResponses[keyof ResetCourseProgressResponses];
+
+export type ListInstructorsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Number of items to skip (zero-based).
+         */
+        offset?: number;
+        /**
+         * Maximum number of items to return.
+         */
+        limit?: number;
+        /**
+         * Case-insensitive substring filter on `displayName`.
+         */
+        search?: string;
+    };
+    url: '/api/v1/catalog/instructors';
+};
+
+export type ListInstructorsErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+};
+
+export type ListInstructorsError = ListInstructorsErrors[keyof ListInstructorsErrors];
+
+export type ListInstructorsResponses = {
+    /**
+     * Instructor list returned
+     */
+    200: InstructorListDto;
+};
+
+export type ListInstructorsResponse = ListInstructorsResponses[keyof ListInstructorsResponses];
+
+export type GetInstructorData = {
+    body?: never;
+    path: {
+        /**
+         * URL-safe slug identifying the instructor.
+         */
+        slug: EntitySlug;
+    };
+    query?: never;
+    url: '/api/v1/catalog/instructors/{slug}';
+};
+
+export type GetInstructorErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Instructor not found
+     */
+    404: Problem;
+};
+
+export type GetInstructorError = GetInstructorErrors[keyof GetInstructorErrors];
+
+export type GetInstructorResponses = {
+    /**
+     * Instructor found
+     */
+    200: InstructorDetailDto;
+};
+
+export type GetInstructorResponse = GetInstructorResponses[keyof GetInstructorResponses];
+
+export type ListStudiosData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Number of items to skip (zero-based).
+         */
+        offset?: number;
+        /**
+         * Maximum number of items to return.
+         */
+        limit?: number;
+        /**
+         * Case-insensitive substring filter on `displayName`.
+         */
+        search?: string;
+    };
+    url: '/api/v1/catalog/studios';
+};
+
+export type ListStudiosErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+};
+
+export type ListStudiosError = ListStudiosErrors[keyof ListStudiosErrors];
+
+export type ListStudiosResponses = {
+    /**
+     * Studio list returned
+     */
+    200: StudioListDto;
+};
+
+export type ListStudiosResponse = ListStudiosResponses[keyof ListStudiosResponses];
+
+export type GetStudioData = {
+    body?: never;
+    path: {
+        /**
+         * URL-safe slug identifying the studio.
+         */
+        slug: EntitySlug;
+    };
+    query?: never;
+    url: '/api/v1/catalog/studios/{slug}';
+};
+
+export type GetStudioErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Studio not found
+     */
+    404: Problem;
+};
+
+export type GetStudioError = GetStudioErrors[keyof GetStudioErrors];
+
+export type GetStudioResponses = {
+    /**
+     * Studio found
+     */
+    200: StudioDetailDto;
+};
+
+export type GetStudioResponse = GetStudioResponses[keyof GetStudioResponses];
+
+export type ListTagsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Number of items to skip (zero-based).
+         */
+        offset?: number;
+        /**
+         * Maximum number of items to return.
+         */
+        limit?: number;
+        /**
+         * Case-insensitive substring filter on `displayName`.
+         */
+        search?: string;
+        /**
+         * Exact match filter on `category`. Omit to return tags from all categories.
+         */
+        category?: string;
+    };
+    url: '/api/v1/catalog/tags';
+};
+
+export type ListTagsErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+};
+
+export type ListTagsError = ListTagsErrors[keyof ListTagsErrors];
+
+export type ListTagsResponses = {
+    /**
+     * Tag list returned
+     */
+    200: TagListDto;
+};
+
+export type ListTagsResponse = ListTagsResponses[keyof ListTagsResponses];
+
+export type GetTagData = {
+    body?: never;
+    path: {
+        /**
+         * URL-safe slug identifying the tag.
+         */
+        slug: EntitySlug;
+    };
+    query?: never;
+    url: '/api/v1/catalog/tags/{slug}';
+};
+
+export type GetTagErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Tag not found
+     */
+    404: Problem;
+};
+
+export type GetTagError = GetTagErrors[keyof GetTagErrors];
+
+export type GetTagResponses = {
+    /**
+     * Tag found
+     */
+    200: TagDetailDto;
+};
+
+export type GetTagResponse = GetTagResponses[keyof GetTagResponses];
 
 export type GetContinueWatchingData = {
     body?: never;

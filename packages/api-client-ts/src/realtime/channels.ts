@@ -134,12 +134,31 @@ export type ScanLifecycleEvent =
       errorsCount: number;
     };
 
+/**
+ * Emitted once when the backfill job begins.
+ */
+export interface BackfillStarted {
+  /**
+   * Unique cuid identifying the backfill job.
+   */
+  jobId: string;
+  /**
+   * ISO-8601 instant when the job started.
+   */
+  startedAt: string;
+  /**
+   * Number of libraries included in this backfill run.
+   */
+  librariesScanned: number;
+}
+
 export type RealtimeChannel =
   | 'system:health'
   | 'library:scan:{libraryId}'
   | 'notes:lesson:{lessonId}'
   | 'progress:user:{userId}'
-  | 'scans:user:{userId}';
+  | 'scans:user:{userId}'
+  | 'maintenance:backfill:{jobId}';
 
 export interface RealtimeChannelPayloadMap {
   'system:health': HealthUpdate;
@@ -147,6 +166,7 @@ export interface RealtimeChannelPayloadMap {
   'notes:lesson:{lessonId}': NoteUpdated;
   'progress:user:{userId}': ProgressUpdated;
   'scans:user:{userId}': ScanLifecycleEvent;
+  'maintenance:backfill:{jobId}': BackfillStarted;
 }
 
 export type RealtimeChannelPayload<C extends RealtimeChannel> = RealtimeChannelPayloadMap[C];

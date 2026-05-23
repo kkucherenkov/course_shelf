@@ -1,7 +1,7 @@
 asyncapi: 3.1.0
 info:
   title: App Realtime API
-  version: 0.2.0
+  version: 0.3.0
   description: |
     Real-time channels delivered via Centrifugo. Clients connect with a
     short-lived JWT issued by the backend (`POST /api/v1/realtime/token`)
@@ -87,6 +87,26 @@ channels:
       (no per-channel subscribe-time auth needed) — only the user's own
       scans are fanned out here.
 
+  maintenanceBackfill:
+    address: "maintenance:backfill:{jobId}"
+    parameters:
+      jobId:
+        description: Unique cuid identifying the backfill job, returned by `POST /api/v1/admin/maintenance/backfill-metadata`.
+    messages:
+      backfillStarted:
+        $ref: "#/components/messages/BackfillStarted"
+      backfillProgress:
+        $ref: "#/components/messages/BackfillProgress"
+      backfillFinished:
+        $ref: "#/components/messages/BackfillFinished"
+    description: |
+      Per-job backfill progress feed. Emitted by the
+      `backfill-course-metadata` handler as it processes courses.
+      Subscribe immediately after receiving the `jobId` from the HTTP
+      endpoint. The channel is closed after `BackfillFinished` is published.
+      Admin-only — the connection token must include this channel in its
+      `channels` claim.
+
 operations:
   receiveHealthUpdate:
     action: receive
@@ -128,6 +148,30 @@ operations:
     messages:
       - $ref: "#/channels/scansUser/messages/scanLifecycle"
 
+  receiveBackfillStarted:
+    action: receive
+    channel:
+      $ref: "#/channels/maintenanceBackfill"
+    summary: Listen for backfill job start
+    messages:
+      - $ref: "#/channels/maintenanceBackfill/messages/backfillStarted"
+
+  receiveBackfillProgress:
+    action: receive
+    channel:
+      $ref: "#/channels/maintenanceBackfill"
+    summary: Listen for per-course backfill progress
+    messages:
+      - $ref: "#/channels/maintenanceBackfill/messages/backfillProgress"
+
+  receiveBackfillFinished:
+    action: receive
+    channel:
+      $ref: "#/channels/maintenanceBackfill"
+    summary: Listen for backfill job completion
+    messages:
+      - $ref: "#/channels/maintenanceBackfill/messages/backfillFinished"
+
 components:
   messages:
     HealthUpdate:
@@ -159,6 +203,24 @@ components:
       contentType: application/json
       payload:
         $ref: "#/components/schemas/ScanLifecycleEvent"
+
+    BackfillStarted:
+      name: BackfillStarted
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/BackfillStarted"
+
+    BackfillProgress:
+      name: BackfillProgress
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/BackfillProgress"
+
+    BackfillFinished:
+      name: BackfillFinished
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/BackfillFinished"
 
   schemas:
     HealthUpdate:
@@ -408,6 +470,93 @@ components:
           type: string
           format: date-time
           description: Set when `completed` is true (>= 90% threshold crossed).
+
+    BackfillCurrentAction:
+      type: string
+      enum: [parsing, linking, persisting, skipped]
+      description: >-
+        The processing phase for the current course being backfilled.
+        `parsing` = reading course.json; `linking` = upserting instructor/studio/tag;
+        `persisting` = writing course relations; `skipped` = no course.json found.
+
+    BackfillStarted:
+      type: object
+      required: [jobId, startedAt, librariesScanned]
+      description: Emitted once when the backfill job begins.
+      properties:
+        jobId:
+          type: string
+          description: Unique cuid identifying the backfill job.
+        startedAt:
+          type: string
+          format: date-time
+          description: ISO-8601 instant when the job started.
+        librariesScanned:
+          type: integer
+          minimum: 0
+          description: Number of libraries included in this backfill run.
+
+    BackfillProgress:
+      type: object
+      required: [jobId, courseSlug, coursesProcessed, coursesTotal, currentAction]
+      description: >-
+        Emitted once per course as the backfill handler processes it.
+        Clients should throttle rendering to avoid UI jank on large libraries.
+      properties:
+        jobId:
+          type: string
+          description: Unique cuid identifying the backfill job.
+        courseSlug:
+          type: string
+          description: Slug of the course currently being processed.
+        coursesProcessed:
+          type: integer
+          minimum: 0
+          description: Number of courses processed so far (including the current one).
+        coursesTotal:
+          type: integer
+          minimum: 0
+          description: Total number of courses in the backfill scope.
+        currentAction:
+          $ref: "#/components/schemas/BackfillCurrentAction"
+
+    BackfillFinished:
+      type: object
+      required: [jobId, finishedAt, coursesProcessed, coursesUpdated, coursesSkipped, errors]
+      description: Emitted once when the backfill job completes (success or partial failure).
+      properties:
+        jobId:
+          type: string
+          description: Unique cuid identifying the backfill job.
+        finishedAt:
+          type: string
+          format: date-time
+          description: ISO-8601 instant when the job finished.
+        coursesProcessed:
+          type: integer
+          minimum: 0
+          description: Total number of courses inspected.
+        coursesUpdated:
+          type: integer
+          minimum: 0
+          description: Number of courses whose metadata was actually changed.
+        coursesSkipped:
+          type: integer
+          minimum: 0
+          description: Number of courses skipped (no course.json or no changes needed).
+        errors:
+          type: array
+          items:
+            type: object
+            required: [courseId, message]
+            properties:
+              courseId:
+                type: string
+                description: cuid of the course that failed.
+              message:
+                type: string
+                description: Human-readable description of what went wrong.
+          description: Per-course errors. Empty array when all courses succeeded.
 
   securitySchemes:
     connectionJwt:

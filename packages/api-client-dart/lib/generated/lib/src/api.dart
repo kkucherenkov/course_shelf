@@ -13,7 +13,9 @@ import 'package:app_api_client/src/api/access_api.dart';
 import 'package:app_api_client/src/api/account_api.dart';
 import 'package:app_api_client/src/api/admin_api.dart';
 import 'package:app_api_client/src/api/catalog_api.dart';
+import 'package:app_api_client/src/api/entities_api.dart';
 import 'package:app_api_client/src/api/learning_api.dart';
+import 'package:app_api_client/src/api/maintenance_api.dart';
 import 'package:app_api_client/src/api/ops_api.dart';
 import 'package:app_api_client/src/api/realtime_api.dart';
 import 'package:app_api_client/src/api/streaming_api.dart';
@@ -97,10 +99,22 @@ class AppApiClient {
     return CatalogApi(dio, serializers);
   }
 
+  /// Get EntitiesApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  EntitiesApi getEntitiesApi() {
+    return EntitiesApi(dio, serializers);
+  }
+
   /// Get LearningApi instance, base route and serializer can be overridden by a given but be careful,
   /// by doing that all interceptors will not be executed
   LearningApi getLearningApi() {
     return LearningApi(dio, serializers);
+  }
+
+  /// Get MaintenanceApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  MaintenanceApi getMaintenanceApi() {
+    return MaintenanceApi(dio, serializers);
   }
 
   /// Get OpsApi instance, base route and serializer can be overridden by a given but be careful,

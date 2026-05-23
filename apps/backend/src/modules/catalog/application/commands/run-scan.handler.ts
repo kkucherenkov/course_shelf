@@ -42,7 +42,7 @@ import { LESSON_REPOSITORY } from '../../domain/lesson/lesson.repository';
 import { Subtitle } from '../../domain/lesson/subtitle';
 import { LibraryNotFoundError } from '../../domain/library/library.errors';
 import { LIBRARY_REPOSITORY } from '../../domain/library/library.repository';
-import { parseCourseJson } from '../../domain/scan/course-json.schema';
+import { parseCourseJson, normaliseCourseJson } from '../../domain/scan/course-json.schema';
 import { FFMPEG_ADAPTER } from '../../domain/scan/ffmpeg-adapter';
 import { FS_ADAPTER } from '../../domain/scan/fs-adapter';
 import { parseFolderName, parseLessonFileName } from '../../domain/scan/folder-name.parser';
@@ -51,6 +51,8 @@ import { Scan } from '../../domain/scan/scan';
 import { ScanAlreadyRunningError } from '../../domain/scan/scan.errors';
 import { SCAN_REPOSITORY } from '../../domain/scan/scan.repository';
 
+import { MetadataLinker } from '../scan/metadata-linker';
+import { isCourseLevel } from '../../domain/course/course';
 import { RunScanCommand } from './run-scan.command';
 
 import type { FfmpegAdapter, VideoMetadata } from '../../domain/scan/ffmpeg-adapter';
@@ -59,6 +61,7 @@ import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { LibraryRepository } from '../../domain/library/library.repository';
 import type { FsAdapter } from '../../domain/scan/fs-adapter';
 import type { ScanRepository } from '../../domain/scan/scan.repository';
+import type { NormalisedCourseJsonV2 } from '../../domain/scan/course-json.schema';
 import type {
   DiscoveredFileEntry,
   ScannedLessonEntry,
@@ -106,6 +109,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
     @Inject(FFMPEG_ADAPTER) private readonly ffmpeg: FfmpegAdapter,
     private readonly appConfig: AppConfig,
     private readonly centrifugo: CentrifugoService,
+    private readonly linker: MetadataLinker,
   ) {}
 
   async execute(command: RunScanCommand): Promise<Scan> {
@@ -233,13 +237,15 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
 
         // Attempt to read and parse course.json.
         let courseTitle = folderTitle;
+        let normalisedCourseJson: NormalisedCourseJsonV2 | undefined;
         const jsonFile = files.find((f) => path.basename(f.path) === 'course.json');
 
         if (jsonFile) {
           try {
             const raw = await this.fs.readUtf8(jsonFile.path);
             const parsed = parseCourseJson(raw, jsonFile.path);
-            courseTitle = parsed.title;
+            normalisedCourseJson = normaliseCourseJson(parsed);
+            courseTitle = normalisedCourseJson.title;
           } catch (error) {
             // Record a non-fatal ScanError but continue with folder-derived title.
             scan.recordError({
@@ -647,6 +653,60 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
                   path: path.relative(rootPath, entry.videoPath),
                   message: error instanceof Error ? error.message : String(error),
                   code: 'lesson-persist-failed',
+                });
+              }
+            }
+
+            // -------------------------------------------------------------------
+            // Metadata linking (Slice 7): upsert Instructor/Studio/Tag rows and
+            // set their refs on the course, then do a second save so the join
+            // rows land in the same repo transaction as the course.
+            //
+            // Runs only when a course.json was successfully parsed; errors are
+            // non-fatal (logged as 'metadata-link-failed') so a bad link never
+            // aborts the scan or discards the already-persisted course+lessons.
+            // -------------------------------------------------------------------
+            if (normalisedCourseJson !== undefined) {
+              try {
+                const instructorRefs = await this.linker.upsertInstructorsByName(
+                  normalisedCourseJson.instructorNames ?? [],
+                );
+                course.setInstructors([...instructorRefs]);
+
+                const studioRef = normalisedCourseJson.studioName
+                  ? await this.linker.upsertStudioByName(normalisedCourseJson.studioName)
+                  : null;
+                course.setStudios(studioRef ? [studioRef] : []);
+
+                const tagRefs = await this.linker.upsertTagsByName(normalisedCourseJson.tags ?? []);
+                course.setTags([...tagRefs]);
+
+                if (
+                  normalisedCourseJson.level !== undefined &&
+                  isCourseLevel(normalisedCourseJson.level)
+                ) {
+                  course.setLevel(normalisedCourseJson.level);
+                }
+                if (normalisedCourseJson.language !== undefined) {
+                  course.setLanguage(normalisedCourseJson.language);
+                }
+                if (normalisedCourseJson.releaseDate !== undefined) {
+                  course.setReleaseDate(new Date(normalisedCourseJson.releaseDate));
+                }
+                if (normalisedCourseJson.posterUrl !== undefined) {
+                  course.setPosterUrl(normalisedCourseJson.posterUrl);
+                }
+                if (normalisedCourseJson.externalIds !== undefined) {
+                  course.setExternalIds([...normalisedCourseJson.externalIds]);
+                }
+
+                await this.courseRepo.save(course);
+              } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                scan.recordError({
+                  path: jsonFile?.path ?? '<unknown>',
+                  message: `metadata-link-failed: ${message}`,
+                  code: 'metadata-link-failed',
                 });
               }
             }

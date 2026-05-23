@@ -16,6 +16,7 @@
  * filtering.
  */
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -148,10 +149,38 @@ export class CoursesController {
     @Session() session: SessionContext,
   ): Promise<CourseDto> {
     const actor = session.user;
-    const patch: { title?: string; description?: string; slug?: string } = {};
+    const patch: UpdateCourseMetadataCommand['patch'] = {};
+
     if (body.title !== undefined) patch.title = body.title;
     if (body.description !== undefined) patch.description = body.description;
     if (body.slug !== undefined) patch.slug = body.slug;
+
+    if (body.posterUrl !== undefined) patch.posterUrl = body.posterUrl;
+    if (body.level !== undefined) patch.level = body.level;
+    if (body.language !== undefined) patch.language = body.language;
+    if (body.releaseDate !== undefined) {
+      patch.releaseDate = body.releaseDate === null ? null : new Date(body.releaseDate);
+    }
+    if (body.sourceUpdatedAt !== undefined) {
+      patch.sourceUpdatedAt = body.sourceUpdatedAt === null ? null : new Date(body.sourceUpdatedAt);
+    }
+    if (body.externalIds !== undefined) patch.externalIds = body.externalIds;
+
+    // Rating fields must be supplied together or both omitted. Reject lopsided input.
+    if (body.ratingAverage !== undefined || body.ratingCount !== undefined) {
+      if (body.ratingAverage === undefined || body.ratingCount === undefined) {
+        throw new BadRequestException({
+          code: 'rating-fields-must-be-paired',
+          detail: 'ratingAverage and ratingCount must be supplied together (or both omitted).',
+        });
+      }
+      patch.ratingAverage = body.ratingAverage;
+      patch.ratingCount = body.ratingCount;
+    }
+
+    if (body.instructorIds !== undefined) patch.instructorIds = body.instructorIds;
+    if (body.studioIds !== undefined) patch.studioIds = body.studioIds;
+    if (body.tagIds !== undefined) patch.tagIds = body.tagIds;
 
     return this.commandBus.execute<UpdateCourseMetadataCommand, CourseDto>(
       new UpdateCourseMetadataCommand(id, actor, patch),

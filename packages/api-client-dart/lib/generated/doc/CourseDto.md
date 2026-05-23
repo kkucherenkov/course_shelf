@@ -15,6 +15,17 @@ Name | Type | Description | Notes
 **description** | **String** |  | [optional] 
 **sections** | [**BuiltList&lt;SectionDto&gt;**](SectionDto.md) | Sections sorted ascending by position. | 
 **progress** | [**CourseProgress**](CourseProgress.md) |  | 
+**instructors** | [**BuiltList&lt;InstructorRef&gt;**](InstructorRef.md) | Instructors associated with this course. Empty array when none linked. | [optional] [default to ListBuilder()]
+**studios** | [**BuiltList&lt;StudioRef&gt;**](StudioRef.md) | Studios associated with this course. Empty array when none linked. | [optional] [default to ListBuilder()]
+**tags** | [**BuiltList&lt;TagRef&gt;**](TagRef.md) | Tags associated with this course. Empty array when none linked. | [optional] [default to ListBuilder()]
+**level** | [**CourseLevel**](CourseLevel.md) |  | [optional] 
+**language** | **String** |  | [optional] 
+**releaseDate** | [**Date**](Date.md) |  | [optional] 
+**posterUrl** | **String** |  | [optional] 
+**ratingAverage** | **num** |  | [optional] 
+**ratingCount** | **int** |  | [optional] 
+**externalIds** | [**BuiltList&lt;ExternalIdRef&gt;**](ExternalIdRef.md) | External system references for this course. Empty array when none. | [optional] [default to ListBuilder()]
+**sourceUpdatedAt** | [**DateTime**](DateTime.md) |  | [optional] 
 **createdAt** | [**DateTime**](DateTime.md) |  | 
 **updatedAt** | [**DateTime**](DateTime.md) |  | 
 

@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:app_api_client/src/model/lesson_progress_dto.dart';
 import 'package:app_api_client/src/model/batch_progress_item_forbidden.dart';
 import 'package:app_api_client/src/model/batch_progress_item_stale.dart';
 import 'package:built_collection/built_collection.dart';
@@ -81,9 +82,7 @@ class _$BatchProgressItemResultSerializer implements PrimitiveSerializer<BatchPr
 
   Iterable<Object?> _serializeProperties(
     Serializers serializers,
-    BatchProgressItemResult object, {
-    FullType specifiedType = FullType.unspecified,
-  }) sync* {
+    BatchProgressItemResult object) sync* {
   }
 
   @override

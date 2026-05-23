@@ -111,3 +111,56 @@ export class SectionPositionOutOfRangeError extends InvariantViolation {
     this.name = 'SectionPositionOutOfRangeError';
   }
 }
+
+// ---------------------------------------------------------------------------
+// Enrichment metadata errors
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown when setLanguage receives a string that does not conform to the
+ * BCP-47 subset accepted by LanguageTag VO. Wraps LanguageTagInvalidError
+ * from shared-vo as cause so the error namespace stays within the Course
+ * bounded context.
+ */
+export class CourseLanguageInvalidError extends InvariantViolation {
+  constructor(raw: string, cause?: unknown) {
+    super(
+      `Course language "${raw}" is invalid. Must be a BCP-47 tag (e.g. "en", "en-US", "zh-Hant").`,
+      'course-language-invalid',
+    );
+    this.name = 'CourseLanguageInvalidError';
+    // Preserve the underlying VO error for debugging; DomainError supports `cause` via Error options.
+    if (cause !== undefined) {
+      (this as { cause: unknown }).cause = cause;
+    }
+  }
+}
+
+/**
+ * Thrown when setRating receives an average outside [0, 5] or a count that is
+ * not a non-negative integer. Surfaces as 422 Unprocessable Entity.
+ */
+export class CourseRatingInvalidError extends InvariantViolation {
+  constructor(reason: string) {
+    super(`Course rating is invalid: ${reason}`, 'course-rating-invalid');
+    this.name = 'CourseRatingInvalidError';
+  }
+}
+
+/**
+ * Thrown by the Prisma adapter in set-instructors/studios/tags when a FK
+ * violation occurs because a referenced entity does not exist. Defined here
+ * (not in the adapter) so command handlers can catch it without forward
+ * references into infra/. Surfaces as 404 Not Found.
+ */
+export class CourseLinkUnknownEntityError extends DomainError {
+  constructor(entityType: string, entityId: string) {
+    super({
+      code: 'course-link-unknown-entity',
+      status: 404,
+      title: 'Linked entity not found',
+      detail: `${entityType} "${entityId}" does not exist and cannot be linked to the course.`,
+    });
+    this.name = 'CourseLinkUnknownEntityError';
+  }
+}

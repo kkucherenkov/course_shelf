@@ -145,19 +145,130 @@ model DiscoveredFile {
 
 // ----- Course -----
 
+enum CourseLevel {
+  beginner
+  intermediate
+  advanced
+  expert
+  all_levels
+}
+
+enum ExternalIdEntityType {
+  course
+  instructor
+  studio
+  tag
+}
+
 model Course {
-  id          String    @id @default(cuid())
-  libraryId   String
-  slug        String
-  title       String
-  description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  sections    Section[]
+  id                String             @id @default(cuid())
+  libraryId         String
+  slug              String
+  title             String
+  description       String?
+  posterUrl         String?
+  posterStoragePath String?
+  level             CourseLevel?
+  language          String?
+  releaseDate       DateTime?
+  sourceUpdatedAt   DateTime?
+  ratingAverage     Decimal?           @db.Decimal(3, 2)
+  ratingCount       Int?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  sections          Section[]
+  instructors       CourseInstructor[]
+  studios           CourseStudio[]
+  tags              CourseTag[]
 
   @@unique([libraryId, slug], name: "uq_course_library_slug")
   @@index([libraryId])
   @@map("course")
+}
+
+model Instructor {
+  id          String             @id @default(cuid())
+  slug        String             @unique
+  displayName String
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  courses     CourseInstructor[]
+
+  @@index([displayName])
+  @@map("instructor")
+}
+
+model Studio {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  displayName String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  courses     CourseStudio[]
+
+  @@index([displayName])
+  @@map("studio")
+}
+
+model Tag {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  displayName String
+  category    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  courses     CourseTag[]
+
+  @@index([category])
+  @@map("tag")
+}
+
+model ExternalId {
+  id         String               @id @default(cuid())
+  entityType ExternalIdEntityType
+  entityId   String
+  source     String
+  externalId String
+  url        String?
+  createdAt  DateTime             @default(now())
+
+  @@unique([source, externalId], name: "uq_external_id_source_value")
+  @@index([entityType, entityId])
+  @@map("external_id")
+}
+
+model CourseInstructor {
+  courseId     String
+  instructorId String
+  position     Int        @default(0)
+  course       Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, instructorId])
+  @@index([instructorId])
+  @@map("course_instructor")
+}
+
+model CourseStudio {
+  courseId String
+  studioId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studio   Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, studioId])
+  @@index([studioId])
+  @@map("course_studio")
+}
+
+model CourseTag {
+  courseId String
+  tagId    String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  tag      Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, tagId])
+  @@index([tagId])
+  @@map("course_tag")
 }
 
 model Section {

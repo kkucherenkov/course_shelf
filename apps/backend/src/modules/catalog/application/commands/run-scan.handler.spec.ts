@@ -49,15 +49,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Course } from '../../domain/course/course';
+import { Instructor } from '../../domain/instructor/instructor';
+import { InstructorSlugAlreadyTakenError } from '../../domain/instructor/instructor.errors';
 import { Lesson } from '../../domain/lesson/lesson';
 import { Library } from '../../domain/library/library';
 import { LibraryNotFoundError } from '../../domain/library/library.errors';
+import { Studio } from '../../domain/studio/studio';
+import { Tag } from '../../domain/tag/tag';
 import { Scan } from '../../domain/scan/scan';
 import { ScanAlreadyRunningError } from '../../domain/scan/scan.errors';
+import { MetadataLinker } from '../scan/metadata-linker';
 import { RunScanCommand } from './run-scan.command';
 import { RunScanHandler } from './run-scan.handler';
 
 import type { CourseRepository } from '../../domain/course/course.repository';
+import type { InstructorRepository } from '../../domain/instructor/instructor.repository';
+import type { StudioRepository } from '../../domain/studio/studio.repository';
+import type { TagRepository } from '../../domain/tag/tag.repository';
 import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { FfmpegAdapter, VideoMetadata } from '../../domain/scan/ffmpeg-adapter';
 import type { FsAdapter, FsEntry } from '../../domain/scan/fs-adapter';
@@ -178,6 +186,84 @@ function makeLessonRepo(): LessonRepository & { store: Map<string, Lesson> } {
         new Map(courseIds.map((id) => [id, { lessonCount: 0, totalDurationSeconds: 0 }])),
     ),
   };
+}
+
+function makeInstructorRepo(): InstructorRepository & { store: Map<string, Instructor> } {
+  const store = new Map<string, Instructor>();
+  const bySlug = new Map<string, Instructor>();
+  return {
+    store,
+    save: vi.fn(async (inst: Instructor) => {
+      if (bySlug.has(inst.slug)) {
+        throw new InstructorSlugAlreadyTakenError(inst.slug);
+      }
+      store.set(inst.id, inst);
+      bySlug.set(inst.slug, inst);
+    }),
+    findById: vi.fn(async (id: string) => store.get(id) ?? null),
+    findBySlug: vi.fn(async (slug: string) => bySlug.get(slug) ?? null),
+    findByExternalId: vi.fn(async () => null),
+    findManyByIds: vi.fn(async () => []),
+    findManyPaginated: vi.fn(async () => []),
+    count: vi.fn(async () => 0),
+    findCoursesForInstructor: vi.fn(async () => ({ courseIds: [], total: 0 })),
+  };
+}
+
+function makeStudioRepo(): StudioRepository & { store: Map<string, Studio> } {
+  const store = new Map<string, Studio>();
+  const bySlug = new Map<string, Studio>();
+  return {
+    store,
+    save: vi.fn(async (s: Studio) => {
+      if (bySlug.has(s.slug)) {
+        throw new Error(`Studio slug already taken: ${s.slug}`);
+      }
+      store.set(s.id, s);
+      bySlug.set(s.slug, s);
+    }),
+    findById: vi.fn(async (id: string) => store.get(id) ?? null),
+    findBySlug: vi.fn(async (slug: string) => bySlug.get(slug) ?? null),
+    findByExternalId: vi.fn(async () => null),
+    findManyByIds: vi.fn(async () => []),
+    findManyPaginated: vi.fn(async () => []),
+    count: vi.fn(async () => 0),
+    findCoursesForStudio: vi.fn(async () => ({ courseIds: [], total: 0 })),
+  };
+}
+
+function makeTagRepo(): TagRepository & { store: Map<string, Tag> } {
+  const store = new Map<string, Tag>();
+  const bySlug = new Map<string, Tag>();
+  return {
+    store,
+    save: vi.fn(async (t: Tag) => {
+      if (bySlug.has(t.slug)) {
+        throw new Error(`Tag slug already taken: ${t.slug}`);
+      }
+      store.set(t.id, t);
+      bySlug.set(t.slug, t);
+    }),
+    findById: vi.fn(async (id: string) => store.get(id) ?? null),
+    findBySlug: vi.fn(async (slug: string) => bySlug.get(slug) ?? null),
+    findByExternalId: vi.fn(async () => null),
+    findManyByIds: vi.fn(async () => []),
+    findManyPaginated: vi.fn(async () => []),
+    count: vi.fn(async () => 0),
+    findCoursesForTag: vi.fn(async () => ({ courseIds: [], total: 0 })),
+  };
+}
+
+function makeMetadataLinker(
+  instructorRepo?: InstructorRepository,
+  studioRepo?: StudioRepository,
+  tagRepo?: TagRepository,
+): MetadataLinker {
+  return new MetadataLinker(
+    instructorRepo ?? makeInstructorRepo(),
+    studioRepo ?? makeStudioRepo(),
+    tagRepo ?? makeTagRepo(),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -360,6 +446,7 @@ describe('RunScanHandler', () => {
       makePassthroughFfmpeg(),
       makeFakeAppConfig(),
       centrifugo,
+      makeMetadataLinker(),
     );
   });
 
@@ -445,6 +532,7 @@ describe('RunScanHandler', () => {
       makePassthroughFfmpeg(),
       makeFakeAppConfig(),
       centrifugo,
+      makeMetadataLinker(),
     );
 
     const scan = await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -469,6 +557,7 @@ describe('RunScanHandler', () => {
       makePassthroughFfmpeg(),
       makeFakeAppConfig(),
       centrifugo,
+      makeMetadataLinker(),
     );
 
     await expect(
@@ -501,6 +590,7 @@ describe('RunScanHandler', () => {
       makePassthroughFfmpeg(),
       makeFakeAppConfig(),
       centrifugo,
+      makeMetadataLinker(),
     );
 
     await expect(
@@ -554,6 +644,7 @@ describe('RunScanHandler', () => {
         makePassthroughFfmpeg(),
         makeFakeAppConfig(),
         centrifugo,
+        makeMetadataLinker(),
       );
 
       const scan = await neovimHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -621,6 +712,7 @@ describe('RunScanHandler', () => {
         makePassthroughFfmpeg(),
         makeFakeAppConfig(),
         centrifugo,
+        makeMetadataLinker(),
       );
 
       const scan = await cacheHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -666,6 +758,7 @@ describe('RunScanHandler', () => {
         makePassthroughFfmpeg(),
         makeFakeAppConfig(),
         centrifugo,
+        makeMetadataLinker(),
       );
 
       const scan = await dotHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -731,6 +824,7 @@ describe('RunScanHandler', () => {
         ffmpegAdapter,
         makeFakeAppConfig(),
         centrifugo,
+        makeMetadataLinker(),
       );
 
       const scan = await ffHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -787,8 +881,11 @@ describe('RunScanHandler', () => {
       const saved = scanRepo.store.get(scan.id)!;
       expect(saved.status).toBe('succeeded');
 
-      // Two courses persisted.
-      expect(courseRepo.save).toHaveBeenCalledTimes(2);
+      // Two courses persisted. Course A gets a second save for metadata linking
+      // (its course.json is valid → normalisedCourseJson is defined → metadata
+      // block runs → second courseRepo.save). Course B has no course.json →
+      // one save. Total: 3 saves.
+      expect(courseRepo.save).toHaveBeenCalledTimes(3);
 
       const slugs = [...courseRepo.store.values()].map((c) => c.slug).toSorted();
       // 'Course A from JSON' → 'course-a-from-json'
@@ -837,15 +934,16 @@ describe('RunScanHandler', () => {
       await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
-      expect(courseRepo.save).toHaveBeenCalledTimes(2);
+      // 3 saves on first scan: 2 for Course A (initial + metadata) + 1 for Course B.
+      expect(courseRepo.save).toHaveBeenCalledTimes(3);
       expect(lessonRepo.save).toHaveBeenCalledTimes(3);
 
       // Second scan — same FS, same slugs → skip both courses.
       await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
-      // courseRepo.save must NOT have been called again.
-      expect(courseRepo.save).toHaveBeenCalledTimes(2);
+      // courseRepo.save must NOT have been called again (slugs already known).
+      expect(courseRepo.save).toHaveBeenCalledTimes(3);
       // lessonRepo.save must NOT have been called again.
       expect(lessonRepo.save).toHaveBeenCalledTimes(3);
 
@@ -971,6 +1069,7 @@ describe('RunScanHandler', () => {
         makePassthroughFfmpeg(),
         makeFakeAppConfig(),
         cleanCentrifugo,
+        makeMetadataLinker(),
       );
 
       const scan = await cleanHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1010,6 +1109,7 @@ describe('RunScanHandler', () => {
         makePassthroughFfmpeg(),
         makeFakeAppConfig(),
         failCentrifugo,
+        makeMetadataLinker(),
       );
 
       const scan = await failHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1061,6 +1161,7 @@ describe('RunScanHandler', () => {
         makePassthroughFfmpeg(),
         makeFakeAppConfig(),
         makeCentrifugoService(),
+        makeMetadataLinker(),
       );
 
       await orderingHandler.execute(new RunScanCommand('lib-x', ACTOR_USER_ID));
@@ -1091,6 +1192,7 @@ describe('RunScanHandler', () => {
         makePassthroughFfmpeg(),
         makeFakeAppConfig(),
         makeCentrifugoService(),
+        makeMetadataLinker(),
       );
 
       await orderingHandler.execute(new RunScanCommand('lib-y', ACTOR_USER_ID));
@@ -1106,6 +1208,277 @@ describe('RunScanHandler', () => {
         'Appendix',
         'Bonus Material',
       ]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Slice 7: metadata pipeline integration
+  //
+  // Verifies that course.json v1/v2 data drives upserts of Instructor/Studio/Tag
+  // rows and that the course aggregate has all enrichment fields set after scan.
+  // -------------------------------------------------------------------------
+  describe('Slice 7: metadata pipeline', () => {
+    it('course.json v2 with full enrichment → instructor/studio/tag rows created, course fields set', async () => {
+      vi.useRealTimers();
+
+      const instructorRepo = makeInstructorRepo();
+      const studioRepo = makeStudioRepo();
+      const tagRepo = makeTagRepo();
+      const enrichedCourseRepo = makeCourseRepo();
+
+      const courseJsonV2 = JSON.stringify({
+        schemaVersion: 2,
+        title: 'Enriched Course',
+        instructorNames: ['Alice Smith', 'Bob Jones'],
+        studioName: 'Acme Studio',
+        tags: ['TypeScript', 'NestJS'],
+        level: 'intermediate',
+        language: 'en',
+        releaseDate: '2024-03-15',
+        posterUrl: 'https://example.com/poster.jpg',
+        externalIds: [{ source: 'udemy', externalId: 'course-123' }],
+      });
+
+      const metadataFiles: FileRecord[] = [
+        { path: '/lib/Enriched Course/01 - Intro.mp4', mtime: BASE_TIME, size: 100 },
+        {
+          path: '/lib/Enriched Course/course.json',
+          mtime: BASE_TIME,
+          size: courseJsonV2.length,
+          content: courseJsonV2,
+        },
+      ];
+
+      const metadataLinker = makeMetadataLinker(instructorRepo, studioRepo, tagRepo);
+      const metadataFs = new FakeFsAdapter(metadataFiles);
+      const metadataScanRepo = makeScanRepo();
+      const metadataHandler = new RunScanHandler(
+        libraryRepo,
+        metadataScanRepo,
+        enrichedCourseRepo,
+        makeLessonRepo(),
+        metadataFs,
+        makePassthroughFfmpeg(),
+        makeFakeAppConfig(),
+        makeCentrifugoService(),
+        metadataLinker,
+      );
+
+      const scan = await metadataHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = metadataScanRepo.store.get(scan.id)!;
+      expect(saved.status).toBe('succeeded');
+
+      // Instructor rows created.
+      expect(instructorRepo.store.size).toBe(2);
+      const instructorSlugs = [...instructorRepo.store.values()].map((i) => i.slug).toSorted();
+      expect(instructorSlugs).toContain('alice-smith');
+      expect(instructorSlugs).toContain('bob-jones');
+
+      // Studio row created.
+      expect(studioRepo.store.size).toBe(1);
+      expect([...studioRepo.store.values()][0]!.slug).toBe('acme-studio');
+
+      // Tag rows created.
+      expect(tagRepo.store.size).toBe(2);
+      const tagSlugs = [...tagRepo.store.values()].map((t) => t.slug).toSorted();
+      expect(tagSlugs).toContain('typescript');
+      expect(tagSlugs).toContain('nestjs');
+
+      // Course aggregate has all enrichment fields set.
+      const course = [...enrichedCourseRepo.store.values()][0]!;
+      expect(course.instructors).toHaveLength(2);
+      expect(course.studios).toHaveLength(1);
+      expect(course.tags).toHaveLength(2);
+      expect(course.level).toBe('intermediate');
+      expect(course.language).toBe('en');
+      expect(course.releaseDate?.toISOString().startsWith('2024-03-15')).toBe(true);
+      expect(course.posterUrl).toBe('https://example.com/poster.jpg');
+      expect(course.externalIds).toHaveLength(1);
+      expect(course.externalIds[0]!.source).toBe('udemy');
+      expect(course.externalIds[0]!.externalId).toBe('course-123');
+
+      // No metadata-link-failed errors.
+      const linkErrors = saved.errors.filter((e) => e.code === 'metadata-link-failed');
+      expect(linkErrors).toHaveLength(0);
+    });
+
+    it('course.json v1 with instructor string → one Instructor row created, course has instructorRefs', async () => {
+      vi.useRealTimers();
+
+      const instructorRepo = makeInstructorRepo();
+      const v1CourseRepo = makeCourseRepo();
+
+      const courseJsonV1 = JSON.stringify({
+        schemaVersion: 1,
+        title: 'Classic Course',
+        instructor: 'Jane Classic',
+      });
+
+      const v1Files: FileRecord[] = [
+        { path: '/lib/Classic Course/01 - Intro.mp4', mtime: BASE_TIME, size: 100 },
+        {
+          path: '/lib/Classic Course/course.json',
+          mtime: BASE_TIME,
+          size: courseJsonV1.length,
+          content: courseJsonV1,
+        },
+      ];
+
+      const v1Linker = makeMetadataLinker(instructorRepo, makeStudioRepo(), makeTagRepo());
+      const v1ScanRepo = makeScanRepo();
+      const v1Handler = new RunScanHandler(
+        libraryRepo,
+        v1ScanRepo,
+        v1CourseRepo,
+        makeLessonRepo(),
+        new FakeFsAdapter(v1Files),
+        makePassthroughFfmpeg(),
+        makeFakeAppConfig(),
+        makeCentrifugoService(),
+        v1Linker,
+      );
+
+      const scan = await v1Handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = v1ScanRepo.store.get(scan.id)!;
+      expect(saved.status).toBe('succeeded');
+
+      // One instructor row with displayName from v1 instructor field.
+      expect(instructorRepo.store.size).toBe(1);
+      const instructor = [...instructorRepo.store.values()][0]!;
+      expect(instructor.displayName).toBe('Jane Classic');
+      expect(instructor.slug).toBe('jane-classic');
+
+      // Course has instructorRefs set.
+      const course = [...v1CourseRepo.store.values()][0]!;
+      expect(course.instructors).toHaveLength(1);
+      expect(course.instructors[0]!.displayName).toBe('Jane Classic');
+    });
+
+    it('course.json v2 with empty instructorNames and tags → no entities created, course has empty refs', async () => {
+      vi.useRealTimers();
+
+      const instructorRepo = makeInstructorRepo();
+      const tagRepo = makeTagRepo();
+      const emptyMetaCourseRepo = makeCourseRepo();
+
+      const courseJson = JSON.stringify({
+        schemaVersion: 2,
+        title: 'Bare Course',
+        instructorNames: [],
+        tags: [],
+      });
+
+      const emptyFiles: FileRecord[] = [
+        { path: '/lib/Bare Course/01 - Intro.mp4', mtime: BASE_TIME, size: 100 },
+        {
+          path: '/lib/Bare Course/course.json',
+          mtime: BASE_TIME,
+          size: courseJson.length,
+          content: courseJson,
+        },
+      ];
+
+      const emptyLinker = makeMetadataLinker(instructorRepo, makeStudioRepo(), tagRepo);
+      const emptyHandler = new RunScanHandler(
+        libraryRepo,
+        makeScanRepo(),
+        emptyMetaCourseRepo,
+        makeLessonRepo(),
+        new FakeFsAdapter(emptyFiles),
+        makePassthroughFfmpeg(),
+        makeFakeAppConfig(),
+        makeCentrifugoService(),
+        emptyLinker,
+      );
+
+      await emptyHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      expect(instructorRepo.store.size).toBe(0);
+      expect(tagRepo.store.size).toBe(0);
+
+      const course = [...emptyMetaCourseRepo.store.values()][0]!;
+      expect(course.instructors).toHaveLength(0);
+      expect(course.tags).toHaveLength(0);
+    });
+
+    it('re-scan over same library → idempotent (instructor/studio/tag rows reused, no duplicates)', async () => {
+      vi.useRealTimers();
+
+      const instructorRepo = makeInstructorRepo();
+      const studioRepo = makeStudioRepo();
+      const tagRepo = makeTagRepo();
+      const idempotentCourseRepo = makeCourseRepo();
+
+      const courseJson = JSON.stringify({
+        schemaVersion: 2,
+        title: 'Idempotent Course',
+        instructorNames: ['Repeat Author'],
+        studioName: 'Repeat Studio',
+        tags: ['repeat-tag'],
+      });
+
+      const idempotentFiles: FileRecord[] = [
+        { path: '/lib/Idempotent Course/01 - Intro.mp4', mtime: BASE_TIME, size: 100 },
+        {
+          path: '/lib/Idempotent Course/course.json',
+          mtime: BASE_TIME,
+          size: courseJson.length,
+          content: courseJson,
+        },
+      ];
+
+      const idempotentLinker = makeMetadataLinker(instructorRepo, studioRepo, tagRepo);
+
+      // First scan.
+      const firstHandler = new RunScanHandler(
+        libraryRepo,
+        makeScanRepo(),
+        idempotentCourseRepo,
+        makeLessonRepo(),
+        new FakeFsAdapter(idempotentFiles),
+        makePassthroughFfmpeg(),
+        makeFakeAppConfig(),
+        makeCentrifugoService(),
+        idempotentLinker,
+      );
+
+      await firstHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const instructorCountAfterFirst = instructorRepo.store.size;
+      const studioCountAfterFirst = studioRepo.store.size;
+      const tagCountAfterFirst = tagRepo.store.size;
+
+      expect(instructorCountAfterFirst).toBe(1);
+      expect(studioCountAfterFirst).toBe(1);
+      expect(tagCountAfterFirst).toBe(1);
+
+      // Second scan — same FS. Course slug already exists so the course is skipped
+      // and metadata linking for that course is also skipped (correct idempotency).
+      const secondHandler = new RunScanHandler(
+        libraryRepo,
+        makeScanRepo(),
+        idempotentCourseRepo,
+        makeLessonRepo(),
+        new FakeFsAdapter(idempotentFiles),
+        makePassthroughFfmpeg(),
+        makeFakeAppConfig(),
+        makeCentrifugoService(),
+        idempotentLinker,
+      );
+
+      await secondHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      // No new rows created on second scan.
+      expect(instructorRepo.store.size).toBe(instructorCountAfterFirst);
+      expect(studioRepo.store.size).toBe(studioCountAfterFirst);
+      expect(tagRepo.store.size).toBe(tagCountAfterFirst);
     });
   });
 });

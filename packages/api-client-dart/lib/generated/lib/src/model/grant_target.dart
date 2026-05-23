@@ -75,9 +75,7 @@ class _$GrantTargetSerializer implements PrimitiveSerializer<GrantTarget> {
 
   Iterable<Object?> _serializeProperties(
     Serializers serializers,
-    GrantTarget object, {
-    FullType specifiedType = FullType.unspecified,
-  }) sync* {
+    GrantTarget object) sync* {
   }
 
   @override

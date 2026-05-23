@@ -28,6 +28,8 @@ import 'package:app_api_client/src/model/admin_update_user_request.dart';
 import 'package:app_api_client/src/model/admin_user_list_dto.dart';
 import 'package:app_api_client/src/model/admin_user_list_item.dart';
 import 'package:app_api_client/src/model/admin_user_role.dart';
+import 'package:app_api_client/src/model/backfill_job_accepted.dart';
+import 'package:app_api_client/src/model/backfill_metadata_request.dart';
 import 'package:app_api_client/src/model/batch_progress_item_accepted.dart';
 import 'package:app_api_client/src/model/batch_progress_item_forbidden.dart';
 import 'package:app_api_client/src/model/batch_progress_item_result.dart';
@@ -39,6 +41,7 @@ import 'package:app_api_client/src/model/bookmark_list_dto.dart';
 import 'package:app_api_client/src/model/continue_watching_dto.dart';
 import 'package:app_api_client/src/model/continue_watching_item.dart';
 import 'package:app_api_client/src/model/course_dto.dart';
+import 'package:app_api_client/src/model/course_level.dart';
 import 'package:app_api_client/src/model/course_list_dto.dart';
 import 'package:app_api_client/src/model/course_material_item.dart';
 import 'package:app_api_client/src/model/course_outline_dto.dart';
@@ -48,12 +51,17 @@ import 'package:app_api_client/src/model/course_target.dart';
 import 'package:app_api_client/src/model/create_bookmark_request.dart';
 import 'package:app_api_client/src/model/date_range.dart';
 import 'package:app_api_client/src/model/dependency_status.dart';
+import 'package:app_api_client/src/model/external_id_ref.dart';
 import 'package:app_api_client/src/model/grant_level.dart';
 import 'package:app_api_client/src/model/grant_target.dart';
 import 'package:app_api_client/src/model/has_users_response.dart';
 import 'package:app_api_client/src/model/health_status.dart';
 import 'package:app_api_client/src/model/health_status_dependencies.dart';
 import 'package:app_api_client/src/model/instance_config_dto.dart';
+import 'package:app_api_client/src/model/instructor_detail_dto.dart';
+import 'package:app_api_client/src/model/instructor_dto.dart';
+import 'package:app_api_client/src/model/instructor_list_dto.dart';
+import 'package:app_api_client/src/model/instructor_ref.dart';
 import 'package:app_api_client/src/model/lesson_dto.dart';
 import 'package:app_api_client/src/model/lesson_outline_item.dart';
 import 'package:app_api_client/src/model/lesson_progress.dart';
@@ -88,12 +96,23 @@ import 'package:app_api_client/src/model/section_dto.dart';
 import 'package:app_api_client/src/model/section_outline.dart';
 import 'package:app_api_client/src/model/sso_provider_config.dart';
 import 'package:app_api_client/src/model/stream_url_dto.dart';
+import 'package:app_api_client/src/model/studio_detail_dto.dart';
+import 'package:app_api_client/src/model/studio_dto.dart';
+import 'package:app_api_client/src/model/studio_list_dto.dart';
+import 'package:app_api_client/src/model/studio_ref.dart';
 import 'package:app_api_client/src/model/subtitle_dto.dart';
+import 'package:app_api_client/src/model/tag_detail_dto.dart';
+import 'package:app_api_client/src/model/tag_dto.dart';
+import 'package:app_api_client/src/model/tag_list_dto.dart';
+import 'package:app_api_client/src/model/tag_ref.dart';
 import 'package:app_api_client/src/model/update_bookmark_request.dart';
 import 'package:app_api_client/src/model/update_course_request.dart';
 import 'package:app_api_client/src/model/update_library_request.dart';
 import 'package:app_api_client/src/model/update_me_request.dart';
+import 'package:app_api_client/src/model/upsert_instructor_request.dart';
 import 'package:app_api_client/src/model/upsert_note_request.dart';
+import 'package:app_api_client/src/model/upsert_studio_request.dart';
+import 'package:app_api_client/src/model/upsert_tag_request.dart';
 import 'package:app_api_client/src/model/your_week_dto.dart';
 
 part 'serializers.g.dart';
@@ -113,6 +132,8 @@ part 'serializers.g.dart';
   AdminUserListDto,
   AdminUserListItem,
   AdminUserRole,
+  BackfillJobAccepted,
+  BackfillMetadataRequest,
   BatchProgressItemAccepted,
   BatchProgressItemForbidden,
   BatchProgressItemResult,
@@ -124,6 +145,7 @@ part 'serializers.g.dart';
   ContinueWatchingDto,
   ContinueWatchingItem,
   CourseDto,
+  CourseLevel,
   CourseListDto,
   CourseMaterialItem,
   CourseOutlineDto,
@@ -133,12 +155,17 @@ part 'serializers.g.dart';
   CreateBookmarkRequest,
   DateRange,
   DependencyStatus,
+  ExternalIdRef,
   GrantLevel,
   GrantTarget,
   HasUsersResponse,
   HealthStatus,
   HealthStatusDependencies,
   InstanceConfigDto,
+  InstructorDetailDto,
+  InstructorDto,
+  InstructorListDto,
+  InstructorRef,
   LessonDto,
   LessonOutlineItem,
   LessonProgress,
@@ -173,12 +200,23 @@ part 'serializers.g.dart';
   SectionOutline,
   SsoProviderConfig,
   StreamUrlDto,
+  StudioDetailDto,
+  StudioDto,
+  StudioListDto,
+  StudioRef,
   SubtitleDto,
+  TagDetailDto,
+  TagDto,
+  TagListDto,
+  TagRef,
   UpdateBookmarkRequest,
   UpdateCourseRequest,
   UpdateLibraryRequest,
   UpdateMeRequest,
+  UpsertInstructorRequest,
   UpsertNoteRequest,
+  UpsertStudioRequest,
+  UpsertTagRequest,
   YourWeekDto,
 ])
 Serializers serializers = (_$serializers.toBuilder()

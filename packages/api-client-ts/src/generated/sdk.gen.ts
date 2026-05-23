@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceResponses, GetAdminUserData, GetAdminUserErrors, GetAdminUserResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueMaterialDownloadUrlData, IssueMaterialDownloadUrlErrors, IssueMaterialDownloadUrlResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListAdminLibrariesData, ListAdminLibrariesErrors, ListAdminLibrariesResponses, ListAdminScansData, ListAdminScansErrors, ListAdminScansResponses, ListAdminUsersData, ListAdminUsersErrors, ListAdminUsersResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RemoveLibraryData, RemoveLibraryErrors, RemoveLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, SearchCatalogueData, SearchCatalogueErrors, SearchCatalogueResponses, SignOutOtherSessionsData, SignOutOtherSessionsErrors, SignOutOtherSessionsResponses, UpdateAdminUserData, UpdateAdminUserErrors, UpdateAdminUserResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpdateLibraryData, UpdateLibraryErrors, UpdateLibraryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses } from './types.gen';
+import type { CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceResponses, GetAdminUserData, GetAdminUserErrors, GetAdminUserResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetInstructorData, GetInstructorErrors, GetInstructorResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetStudioData, GetStudioErrors, GetStudioResponses, GetTagData, GetTagErrors, GetTagResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueMaterialDownloadUrlData, IssueMaterialDownloadUrlErrors, IssueMaterialDownloadUrlResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListAdminLibrariesData, ListAdminLibrariesErrors, ListAdminLibrariesResponses, ListAdminScansData, ListAdminScansErrors, ListAdminScansResponses, ListAdminUsersData, ListAdminUsersErrors, ListAdminUsersResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListInstructorsData, ListInstructorsErrors, ListInstructorsResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, ListStudiosData, ListStudiosErrors, ListStudiosResponses, ListTagsData, ListTagsErrors, ListTagsResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RemoveLibraryData, RemoveLibraryErrors, RemoveLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, SearchCatalogueData, SearchCatalogueErrors, SearchCatalogueResponses, SignOutOtherSessionsData, SignOutOtherSessionsErrors, SignOutOtherSessionsResponses, StartBackfillMetadataData, StartBackfillMetadataErrors, StartBackfillMetadataResponses, UpdateAdminUserData, UpdateAdminUserErrors, UpdateAdminUserResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpdateLibraryData, UpdateLibraryErrors, UpdateLibraryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpsertInstructorData, UpsertInstructorErrors, UpsertInstructorResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses, UpsertStudioData, UpsertStudioErrors, UpsertStudioResponses, UpsertTagData, UpsertTagErrors, UpsertTagResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -205,6 +205,82 @@ export const getAdminHasUsers = <ThrowOnError extends boolean = false>(options?:
 export const getAdminInstance = <ThrowOnError extends boolean = false>(options?: Options<GetAdminInstanceData, ThrowOnError>) => (options?.client ?? client).get<GetAdminInstanceResponses, unknown, ThrowOnError>({ url: '/api/v1/admin/instance', ...options });
 
 /**
+ * Create or update an instructor
+ *
+ * Creates a new instructor record or updates an existing one (matched by
+ * slug or an externalId collision). Returns 409 when the provided slug
+ * already exists and belongs to a *different* instructor than would be
+ * matched by externalIds. Requires admin role.
+ *
+ */
+export const upsertInstructor = <ThrowOnError extends boolean = false>(options: Options<UpsertInstructorData, ThrowOnError>) => (options.client ?? client).post<UpsertInstructorResponses, UpsertInstructorErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/instructors',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Trigger a background metadata backfill across the library
+ *
+ * Enqueues a background job that walks every course in the specified
+ * library (or all libraries when `libraryId` is omitted), reads each
+ * course's `course.json`, and upserts instructor/studio/tag links and
+ * extended fields. Returns 202 immediately with a `jobId`; subscribe to
+ * the `maintenance:backfill:{jobId}` Centrifugo channel to track progress.
+ * Admin only.
+ *
+ */
+export const startBackfillMetadata = <ThrowOnError extends boolean = false>(options?: Options<StartBackfillMetadataData, ThrowOnError>) => (options?.client ?? client).post<StartBackfillMetadataResponses, StartBackfillMetadataErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/maintenance/backfill-metadata',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+    }
+});
+
+/**
+ * Create or update a studio
+ *
+ * Creates a new studio record or updates an existing one (matched by slug
+ * or externalId collision). Returns 409 when the slug is taken by a
+ * different studio. Requires admin role.
+ *
+ */
+export const upsertStudio = <ThrowOnError extends boolean = false>(options: Options<UpsertStudioData, ThrowOnError>) => (options.client ?? client).post<UpsertStudioResponses, UpsertStudioErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/studios',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Create or update a tag
+ *
+ * Creates a new tag or updates an existing one (matched by slug or
+ * externalId collision). Returns 409 when the slug is taken by a
+ * different tag. Requires admin role.
+ *
+ */
+export const upsertTag = <ThrowOnError extends boolean = false>(options: Options<UpsertTagData, ThrowOnError>) => (options.client ?? client).post<UpsertTagResponses, UpsertTagErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/tags',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Delete a bookmark
  *
  * Owner-only. Admins may delete any bookmark for moderation.
@@ -339,6 +415,82 @@ export const markCourseComplete = <ThrowOnError extends boolean = false>(options
 export const resetCourseProgress = <ThrowOnError extends boolean = false>(options: Options<ResetCourseProgressData, ThrowOnError>) => (options.client ?? client).post<ResetCourseProgressResponses, ResetCourseProgressErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/courses/{id}/reset-progress',
+    ...options
+});
+
+/**
+ * List instructors with optional search
+ *
+ * Returns a paginated list of instructors. The optional `search` parameter
+ * performs a case-insensitive substring match on `displayName`. Results are
+ * ordered by `displayName` ascending.
+ *
+ */
+export const listInstructors = <ThrowOnError extends boolean = false>(options?: Options<ListInstructorsData, ThrowOnError>) => (options?.client ?? client).get<ListInstructorsResponses, ListInstructorsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/catalog/instructors',
+    ...options
+});
+
+/**
+ * Get a single instructor by slug
+ *
+ * Returns the instructor details plus a list of their associated courses.
+ */
+export const getInstructor = <ThrowOnError extends boolean = false>(options: Options<GetInstructorData, ThrowOnError>) => (options.client ?? client).get<GetInstructorResponses, GetInstructorErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/catalog/instructors/{slug}',
+    ...options
+});
+
+/**
+ * List studios with optional search
+ *
+ * Returns a paginated list of studios. The optional `search` parameter
+ * performs a case-insensitive substring match on `displayName`. Results are
+ * ordered by `displayName` ascending.
+ *
+ */
+export const listStudios = <ThrowOnError extends boolean = false>(options?: Options<ListStudiosData, ThrowOnError>) => (options?.client ?? client).get<ListStudiosResponses, ListStudiosErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/catalog/studios',
+    ...options
+});
+
+/**
+ * Get a single studio by slug
+ *
+ * Returns the studio details plus a list of their associated courses.
+ */
+export const getStudio = <ThrowOnError extends boolean = false>(options: Options<GetStudioData, ThrowOnError>) => (options.client ?? client).get<GetStudioResponses, GetStudioErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/catalog/studios/{slug}',
+    ...options
+});
+
+/**
+ * List tags with optional search and category filter
+ *
+ * Returns a paginated list of tags. The optional `search` parameter
+ * performs a case-insensitive substring match on `displayName`. The
+ * optional `category` parameter filters by exact category value.
+ * Results are ordered by `displayName` ascending.
+ *
+ */
+export const listTags = <ThrowOnError extends boolean = false>(options?: Options<ListTagsData, ThrowOnError>) => (options?.client ?? client).get<ListTagsResponses, ListTagsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/catalog/tags',
+    ...options
+});
+
+/**
+ * Get a single tag by slug
+ *
+ * Returns the tag details plus a list of associated courses.
+ */
+export const getTag = <ThrowOnError extends boolean = false>(options: Options<GetTagData, ThrowOnError>) => (options.client ?? client).get<GetTagResponses, GetTagErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/catalog/tags/{slug}',
     ...options
 });
 

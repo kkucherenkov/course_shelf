@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.15.0
+  version: 0.16.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -41,6 +41,8 @@ tags:
     description: Instructor, Studio, and Tag entities — browse and lookup.
   - name: Maintenance
     description: Admin-only background maintenance operations.
+  - name: Scrapers
+    description: Admin-only scraper registry and preview-scrape operations.
 
 paths:
   /api/v1/access/grants:
@@ -1029,6 +1031,196 @@ paths:
                     title: Forbidden
                     status: 403
                     detail: Administrator role required.
+
+  /api/v1/admin/scrapers:
+    get:
+      operationId: listScrapers
+      summary: List available metadata scrapers
+      description: Returns the scrapers configured on this instance with the invocation kinds each supports. Requires admin role.
+      tags: [admin, Scrapers]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Configured scrapers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScraperListDto"
+              examples:
+                configured:
+                  value:
+                    scrapers:
+                      - id: youtube
+                        supportedKinds: [url, name, fragment]
+                        configured: true
+                      - id: udemy
+                        supportedKinds: [url, name, fragment]
+                        configured: true
+                      - id: json-ld
+                        supportedKinds: [url, fragment]
+                        configured: true
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+
+  /api/v1/admin/courses/{id}/scrape-preview:
+    post:
+      operationId: scrapeCoursePreview
+      summary: Preview scraped metadata for a course
+      description: |
+        Runs the selected scraper against the given input and returns candidate
+        metadata fragments. PREVIEW ONLY — nothing is persisted and scraped
+        names are not resolved to existing entities. Requires admin role.
+      tags: [admin, Scrapers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the course.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScrapePreviewRequest"
+            examples:
+              byUrl:
+                summary: Scrape a URL with auto-detected source
+                value:
+                  kind: url
+                  url: "https://www.youtube.com/playlist?list=PL123"
+              byName:
+                summary: Search YouTube by name
+                value:
+                  source: youtube
+                  kind: name
+                  query: "rust programming"
+      responses:
+        "200":
+          description: Scrape candidates (possibly empty)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScrapePreviewResponse"
+              examples:
+                oneCandidate:
+                  value:
+                    candidates:
+                      - source: youtube
+                        sourceUrl: "https://www.youtube.com/playlist?list=PL123"
+                        fragment:
+                          title: Rust Course
+                          studioName: Rustacean
+                          externalIds:
+                            - source: youtube
+                              externalId: "youtube:playlist:PL123"
+                empty:
+                  value:
+                    candidates: []
+        "400":
+          description: Malformed request body
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                badInput:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: "kind must be one of: url, name, fragment."
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "404":
+          description: Course not found or unknown scraper source
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No course with that id exists.
+        "422":
+          description: Scraper does not support the kind, or is not configured
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unsupported:
+                  value:
+                    type: about:blank
+                    title: Unprocessable Entity
+                    status: 422
+                    detail: "Scraper 'json-ld' does not support the 'name' invocation kind."
+        "502":
+          description: Upstream fetch or parse failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                fetchFailed:
+                  value:
+                    type: about:blank
+                    title: Bad Gateway
+                    status: 502
+                    detail: "Failed to fetch 'https://www.youtube.com/playlist?list=PL123' from the upstream source."
 
   /api/v1/admin/studios:
     post:
@@ -4292,6 +4484,240 @@ components:
           url: "https://udemy.com/user/42"
         - source: youtube
           externalId: "youtube:channel:UCnUYZLuoy1rq1aVMwx4aTzw"
+
+    ScrapeCandidateDto:
+      type: object
+      required: [source, fragment]
+      description: A single candidate produced by a scraper run.
+      properties:
+        source:
+          type: string
+          description: Id of the scraper that produced this candidate (e.g. `youtube`, `json-ld`).
+          example: youtube
+        sourceUrl:
+          type: string
+          format: uri
+          description: URL of the upstream resource that was fetched, if applicable.
+          example: "https://www.youtube.com/playlist?list=PL123"
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Optional confidence score in the range [0, 1].
+          example: 0.9
+        fragment:
+          $ref: "#/components/schemas/ScrapedCourseFragmentDto"
+      example:
+        source: youtube
+        sourceUrl: "https://www.youtube.com/playlist?list=PL123"
+        fragment:
+          title: Rust Course
+          studioName: Rustacean
+          externalIds:
+            - source: youtube
+              externalId: "youtube:playlist:PL123"
+
+    ScrapedCourseFragmentDto:
+      type: object
+      description: >-
+        Raw scraped metadata. Names are not resolved to entities (Stage 4 does that).
+        All fields are optional because any given scraper may return a partial set.
+      properties:
+        title:
+          type: string
+          description: Raw course title as returned by the scraper.
+          example: Rust Course
+        description:
+          type: string
+          description: Raw course description.
+        instructorNames:
+          type: array
+          items:
+            type: string
+          description: Instructor names as scraped (not resolved to Instructor entities).
+          example: ["Jane Doe"]
+        studioName:
+          type: string
+          description: Studio or channel name as scraped (not resolved to a Studio entity).
+          example: Rustacean
+        tags:
+          type: array
+          items:
+            type: string
+          description: Raw tags or topic labels.
+        level:
+          $ref: "#/components/schemas/CourseLevel"
+        language:
+          type: string
+          description: BCP-47 language code (e.g. `en`, `de`).
+          example: en
+        releaseDate:
+          type: string
+          format: date
+          description: Original release date of the course in ISO 8601 date format.
+          example: "2024-03-15"
+        posterUrl:
+          type: string
+          format: uri
+          description: URL of the course thumbnail / poster image.
+          example: "https://i.ytimg.com/vi/example/hqdefault.jpg"
+        externalIds:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalIdRef"
+          description: External system references detected during scraping.
+        ratingAverage:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          description: Aggregate rating value in the range [0, 5].
+          example: 4.7
+        ratingCount:
+          type: integer
+          minimum: 0
+          description: Number of ratings that make up the aggregate.
+          example: 1234
+      example:
+        title: Rust Course
+        studioName: Rustacean
+        language: en
+        ratingAverage: 4.7
+        ratingCount: 1234
+        externalIds:
+          - source: youtube
+            externalId: "youtube:playlist:PL123"
+
+    ScrapePreviewRequest:
+      type: object
+      required: [kind]
+      description: >-
+        Input for the scrape-preview endpoint. The `kind` field determines
+        which additional fields are required: `url` for kind=url, `query`
+        for kind=name, `fragment` for kind=fragment. `source` pins the
+        scraper explicitly; when omitted the registry auto-detects from the
+        URL (kind=url) or falls back to `json-ld` (kind=fragment). Required
+        for kind=name.
+      properties:
+        source:
+          type: string
+          description: >-
+            Explicit scraper id (e.g. `youtube`, `udemy`, `json-ld`). Omit
+            to auto-detect (kind=url) or default to json-ld (kind=fragment).
+            Required for kind=name.
+          example: youtube
+        kind:
+          $ref: "#/components/schemas/ScraperKind"
+        url:
+          type: string
+          format: uri
+          description: Required when kind=url.
+          example: "https://www.youtube.com/playlist?list=PL123"
+        query:
+          type: string
+          description: Required when kind=name.
+          example: "rust programming"
+        fragment:
+          type: string
+          description: Required when kind=fragment (raw HTML or JSON-LD string).
+      allOf:
+        - if:
+            properties:
+              kind: { const: url }
+          then:
+            required: [url]
+        - if:
+            properties:
+              kind: { const: name }
+          then:
+            required: [query, source]
+        - if:
+            properties:
+              kind: { const: fragment }
+          then:
+            required: [fragment]
+      example:
+        kind: url
+        url: "https://www.youtube.com/playlist?list=PL123"
+
+    ScrapePreviewResponse:
+      type: object
+      required: [candidates]
+      description: Zero or more scrape candidates returned by the preview endpoint.
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScrapeCandidateDto"
+          description: Ordered list of scrape candidates; may be empty.
+      example:
+        candidates:
+          - source: youtube
+            sourceUrl: "https://www.youtube.com/playlist?list=PL123"
+            fragment:
+              title: Rust Course
+              studioName: Rustacean
+              externalIds:
+                - source: youtube
+                  externalId: "youtube:playlist:PL123"
+
+    ScraperInfoDto:
+      type: object
+      required: [id, supportedKinds, configured]
+      description: Metadata about a single registered scraper.
+      properties:
+        id:
+          type: string
+          description: Stable scraper identifier used as the `source` field in requests.
+          example: youtube
+        supportedKinds:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScraperKind"
+          description: Invocation kinds this scraper handles.
+          example: [url, name, fragment]
+        configured:
+          type: boolean
+          description: >-
+            True when all required credentials / config are present on this
+            instance (e.g. YouTube requires an API key). Unconfigured scrapers
+            are omitted from the registry entirely — this flag is always true
+            for listed scrapers.
+          example: true
+      example:
+        id: youtube
+        supportedKinds: [url, name, fragment]
+        configured: true
+
+    ScraperKind:
+      type: string
+      enum: [url, name, fragment]
+      description: >-
+        Invocation kind for the scrape-preview endpoint.
+        `url` — fetch and parse a remote URL;
+        `name` — search the source by course title;
+        `fragment` — parse a raw HTML or JSON-LD string supplied by the caller.
+      example: url
+
+    ScraperListDto:
+      type: object
+      required: [scrapers]
+      description: List of scrapers configured on this instance.
+      properties:
+        scrapers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScraperInfoDto"
+          description: All configured scrapers in registration order.
+      example:
+        scrapers:
+          - id: youtube
+            supportedKinds: [url, name, fragment]
+            configured: true
+          - id: json-ld
+            supportedKinds: [url, fragment]
+            configured: true
 
     InstructorDetailDto:
       type: object

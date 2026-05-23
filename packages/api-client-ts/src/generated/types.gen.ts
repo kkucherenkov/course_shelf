@@ -83,6 +83,142 @@ export type ExternalIdRef = {
 };
 
 /**
+ * A single candidate produced by a scraper run.
+ */
+export type ScrapeCandidateDto = {
+    /**
+     * Id of the scraper that produced this candidate (e.g. `youtube`, `json-ld`).
+     */
+    source: string;
+    /**
+     * URL of the upstream resource that was fetched, if applicable.
+     */
+    sourceUrl?: string;
+    /**
+     * Optional confidence score in the range [0, 1].
+     */
+    confidence?: number;
+    fragment: ScrapedCourseFragmentDto;
+};
+
+/**
+ * Raw scraped metadata. Names are not resolved to entities (Stage 4 does that). All fields are optional because any given scraper may return a partial set.
+ */
+export type ScrapedCourseFragmentDto = {
+    /**
+     * Raw course title as returned by the scraper.
+     */
+    title?: string;
+    /**
+     * Raw course description.
+     */
+    description?: string;
+    /**
+     * Instructor names as scraped (not resolved to Instructor entities).
+     */
+    instructorNames?: Array<string>;
+    /**
+     * Studio or channel name as scraped (not resolved to a Studio entity).
+     */
+    studioName?: string;
+    /**
+     * Raw tags or topic labels.
+     */
+    tags?: Array<string>;
+    level?: CourseLevel;
+    /**
+     * BCP-47 language code (e.g. `en`, `de`).
+     */
+    language?: string;
+    /**
+     * Original release date of the course in ISO 8601 date format.
+     */
+    releaseDate?: string;
+    /**
+     * URL of the course thumbnail / poster image.
+     */
+    posterUrl?: string;
+    /**
+     * External system references detected during scraping.
+     */
+    externalIds?: Array<ExternalIdRef>;
+    /**
+     * Aggregate rating value in the range [0, 5].
+     */
+    ratingAverage?: number;
+    /**
+     * Number of ratings that make up the aggregate.
+     */
+    ratingCount?: number;
+};
+
+/**
+ * Input for the scrape-preview endpoint. The `kind` field determines which additional fields are required: `url` for kind=url, `query` for kind=name, `fragment` for kind=fragment. `source` pins the scraper explicitly; when omitted the registry auto-detects from the URL (kind=url) or falls back to `json-ld` (kind=fragment). Required for kind=name.
+ */
+export type ScrapePreviewRequest = unknown & {
+    /**
+     * Explicit scraper id (e.g. `youtube`, `udemy`, `json-ld`). Omit to auto-detect (kind=url) or default to json-ld (kind=fragment). Required for kind=name.
+     */
+    source?: string;
+    kind: ScraperKind;
+    /**
+     * Required when kind=url.
+     */
+    url?: string;
+    /**
+     * Required when kind=name.
+     */
+    query?: string;
+    /**
+     * Required when kind=fragment (raw HTML or JSON-LD string).
+     */
+    fragment?: string;
+};
+
+/**
+ * Zero or more scrape candidates returned by the preview endpoint.
+ */
+export type ScrapePreviewResponse = {
+    /**
+     * Ordered list of scrape candidates; may be empty.
+     */
+    candidates: Array<ScrapeCandidateDto>;
+};
+
+/**
+ * Metadata about a single registered scraper.
+ */
+export type ScraperInfoDto = {
+    /**
+     * Stable scraper identifier used as the `source` field in requests.
+     */
+    id: string;
+    /**
+     * Invocation kinds this scraper handles.
+     */
+    supportedKinds: Array<ScraperKind>;
+    /**
+     * True when all required credentials / config are present on this instance (e.g. YouTube requires an API key). Unconfigured scrapers are omitted from the registry entirely — this flag is always true for listed scrapers.
+     */
+    configured: boolean;
+};
+
+/**
+ * Invocation kind for the scrape-preview endpoint. `url` — fetch and parse a remote URL; `name` — search the source by course title; `fragment` — parse a raw HTML or JSON-LD string supplied by the caller.
+ */
+export type ScraperKind = 'url' | 'name' | 'fragment';
+
+/**
+ * List of scrapers configured on this instance.
+ */
+export type ScraperListDto = {
+    /**
+     * All configured scrapers in registration order.
+     */
+    scrapers: Array<ScraperInfoDto>;
+};
+
+/**
  * Full instructor view including their associated courses (paginated, up to 20).
  */
 export type InstructorDetailDto = {
@@ -2070,6 +2206,85 @@ export type StartBackfillMetadataResponses = {
 };
 
 export type StartBackfillMetadataResponse = StartBackfillMetadataResponses[keyof StartBackfillMetadataResponses];
+
+export type ListScrapersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/scrapers';
+};
+
+export type ListScrapersErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+};
+
+export type ListScrapersError = ListScrapersErrors[keyof ListScrapersErrors];
+
+export type ListScrapersResponses = {
+    /**
+     * Configured scrapers
+     */
+    200: ScraperListDto;
+};
+
+export type ListScrapersResponse = ListScrapersResponses[keyof ListScrapersResponses];
+
+export type ScrapeCoursePreviewData = {
+    body: ScrapePreviewRequest;
+    path: {
+        /**
+         * Server-generated cuid identifying the course.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/courses/{id}/scrape-preview';
+};
+
+export type ScrapeCoursePreviewErrors = {
+    /**
+     * Malformed request body
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Course not found or unknown scraper source
+     */
+    404: Problem;
+    /**
+     * Scraper does not support the kind, or is not configured
+     */
+    422: Problem;
+    /**
+     * Upstream fetch or parse failed
+     */
+    502: Problem;
+};
+
+export type ScrapeCoursePreviewError = ScrapeCoursePreviewErrors[keyof ScrapeCoursePreviewErrors];
+
+export type ScrapeCoursePreviewResponses = {
+    /**
+     * Scrape candidates (possibly empty)
+     */
+    200: ScrapePreviewResponse;
+};
+
+export type ScrapeCoursePreviewResponse = ScrapeCoursePreviewResponses[keyof ScrapeCoursePreviewResponses];
 
 export type UpsertStudioData = {
     body: UpsertStudioRequest;

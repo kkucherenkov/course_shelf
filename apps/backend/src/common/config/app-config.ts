@@ -77,6 +77,16 @@ export interface ProvidersConfig {
   readonly storage: ProviderMode;
 }
 
+export interface ScrapersConfig {
+  /** 'mock' swaps real adapters for fixture-backed ones (used in e2e/CI). Default 'real'. */
+  readonly mode: ProviderMode;
+  readonly httpTimeoutMs: number;
+  readonly maxResponseBytes: number;
+  readonly userAgent: string;
+  readonly youtube: { readonly configured: boolean; readonly apiKey: string };
+  readonly udemy: { readonly enabled: boolean };
+}
+
 export interface SsoProviderConfigEntry {
   /** Stable identifier emitted on click (e.g. `google`, `okta-foo`). */
   readonly id: string;
@@ -154,6 +164,21 @@ export class AppConfig {
       email: 'mock',
       push: 'mock',
       storage: 'mock',
+    };
+  }
+
+  get scrapers(): ScrapersConfig {
+    const apiKey = this.config.get<string>('YOUTUBE_API_KEY') ?? '';
+    return {
+      mode: this.stringOrDefault('SCRAPERS_MODE', 'real') as ProviderMode,
+      httpTimeoutMs: this.numberOrDefault('SCRAPERS_HTTP_TIMEOUT_MS', 10_000),
+      maxResponseBytes: this.numberOrDefault('SCRAPERS_MAX_RESPONSE_BYTES', 2_000_000),
+      userAgent: this.stringOrDefault(
+        'SCRAPERS_USER_AGENT',
+        `courseShelf/${this.runtime.version} (+metadata-scraper)`,
+      ),
+      youtube: { configured: apiKey.length > 0, apiKey },
+      udemy: { enabled: this.boolOrDefault('SCRAPERS_UDEMY_ENABLED', true) },
     };
   }
 

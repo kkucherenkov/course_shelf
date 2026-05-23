@@ -89,6 +89,13 @@ import 'package:app_api_client/src/model/register_library_request.dart';
 import 'package:app_api_client/src/model/scan_dto.dart';
 import 'package:app_api_client/src/model/scan_error.dart';
 import 'package:app_api_client/src/model/scan_status.dart';
+import 'package:app_api_client/src/model/scrape_candidate_dto.dart';
+import 'package:app_api_client/src/model/scrape_preview_request.dart';
+import 'package:app_api_client/src/model/scrape_preview_response.dart';
+import 'package:app_api_client/src/model/scraped_course_fragment_dto.dart';
+import 'package:app_api_client/src/model/scraper_info_dto.dart';
+import 'package:app_api_client/src/model/scraper_kind.dart';
+import 'package:app_api_client/src/model/scraper_list_dto.dart';
 import 'package:app_api_client/src/model/search_course_hit.dart';
 import 'package:app_api_client/src/model/search_lesson_hit.dart';
 import 'package:app_api_client/src/model/search_result_dto.dart';
@@ -193,6 +200,13 @@ part 'serializers.g.dart';
   ScanDto,
   ScanError,
   ScanStatus,
+  ScrapeCandidateDto,
+  ScrapePreviewRequest,
+  ScrapePreviewResponse,
+  ScrapedCourseFragmentDto,
+  ScraperInfoDto,
+  ScraperKind,
+  ScraperListDto,
   SearchCourseHit,
   SearchLessonHit,
   SearchResultDto,

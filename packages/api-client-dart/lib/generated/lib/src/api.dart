@@ -18,6 +18,7 @@ import 'package:app_api_client/src/api/learning_api.dart';
 import 'package:app_api_client/src/api/maintenance_api.dart';
 import 'package:app_api_client/src/api/ops_api.dart';
 import 'package:app_api_client/src/api/realtime_api.dart';
+import 'package:app_api_client/src/api/scrapers_api.dart';
 import 'package:app_api_client/src/api/streaming_api.dart';
 import 'package:app_api_client/src/api/system_api.dart';
 
@@ -127,6 +128,12 @@ class AppApiClient {
   /// by doing that all interceptors will not be executed
   RealtimeApi getRealtimeApi() {
     return RealtimeApi(dio, serializers);
+  }
+
+  /// Get ScrapersApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  ScrapersApi getScrapersApi() {
+    return ScrapersApi(dio, serializers);
   }
 
   /// Get StreamingApi instance, base route and serializer can be overridden by a given but be careful,

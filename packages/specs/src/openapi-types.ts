@@ -296,6 +296,48 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/scrapers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List available metadata scrapers
+     * @description Returns the scrapers configured on this instance with the invocation kinds each supports. Requires admin role.
+     */
+    get: operations['listScrapers'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/courses/{id}/scrape-preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Preview scraped metadata for a course
+     * @description Runs the selected scraper against the given input and returns candidate
+     *     metadata fragments. PREVIEW ONLY — nothing is persisted and scraped
+     *     names are not resolved to existing entities. Requires admin role.
+     */
+    post: operations['scrapeCoursePreview'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/studios': {
     parameters: {
       query?: never;
@@ -1308,6 +1350,233 @@ export interface components {
        * @description Optional canonical URL of the entity on the source platform.
        */
       url?: string;
+    };
+    /**
+     * @description A single candidate produced by a scraper run.
+     * @example {
+     *       "source": "youtube",
+     *       "sourceUrl": "https://www.youtube.com/playlist?list=PL123",
+     *       "fragment": {
+     *         "title": "Rust Course",
+     *         "studioName": "Rustacean",
+     *         "externalIds": [
+     *           {
+     *             "source": "youtube",
+     *             "externalId": "youtube:playlist:PL123"
+     *           }
+     *         ]
+     *       }
+     *     }
+     */
+    ScrapeCandidateDto: {
+      /**
+       * @description Id of the scraper that produced this candidate (e.g. `youtube`, `json-ld`).
+       * @example youtube
+       */
+      source: string;
+      /**
+       * Format: uri
+       * @description URL of the upstream resource that was fetched, if applicable.
+       * @example https://www.youtube.com/playlist?list=PL123
+       */
+      sourceUrl?: string;
+      /**
+       * Format: float
+       * @description Optional confidence score in the range [0, 1].
+       * @example 0.9
+       */
+      confidence?: number;
+      fragment: components['schemas']['ScrapedCourseFragmentDto'];
+    };
+    /**
+     * @description Raw scraped metadata. Names are not resolved to entities (Stage 4 does that). All fields are optional because any given scraper may return a partial set.
+     * @example {
+     *       "title": "Rust Course",
+     *       "studioName": "Rustacean",
+     *       "language": "en",
+     *       "ratingAverage": 4.7,
+     *       "ratingCount": 1234,
+     *       "externalIds": [
+     *         {
+     *           "source": "youtube",
+     *           "externalId": "youtube:playlist:PL123"
+     *         }
+     *       ]
+     *     }
+     */
+    ScrapedCourseFragmentDto: {
+      /**
+       * @description Raw course title as returned by the scraper.
+       * @example Rust Course
+       */
+      title?: string;
+      /** @description Raw course description. */
+      description?: string;
+      /**
+       * @description Instructor names as scraped (not resolved to Instructor entities).
+       * @example [
+       *       "Jane Doe"
+       *     ]
+       */
+      instructorNames?: string[];
+      /**
+       * @description Studio or channel name as scraped (not resolved to a Studio entity).
+       * @example Rustacean
+       */
+      studioName?: string;
+      /** @description Raw tags or topic labels. */
+      tags?: string[];
+      level?: components['schemas']['CourseLevel'];
+      /**
+       * @description BCP-47 language code (e.g. `en`, `de`).
+       * @example en
+       */
+      language?: string;
+      /**
+       * Format: date
+       * @description Original release date of the course in ISO 8601 date format.
+       * @example 2024-03-15
+       */
+      releaseDate?: string;
+      /**
+       * Format: uri
+       * @description URL of the course thumbnail / poster image.
+       * @example https://i.ytimg.com/vi/example/hqdefault.jpg
+       */
+      posterUrl?: string;
+      /** @description External system references detected during scraping. */
+      externalIds?: components['schemas']['ExternalIdRef'][];
+      /**
+       * Format: float
+       * @description Aggregate rating value in the range [0, 5].
+       * @example 4.7
+       */
+      ratingAverage?: number;
+      /**
+       * @description Number of ratings that make up the aggregate.
+       * @example 1234
+       */
+      ratingCount?: number;
+    };
+    /**
+     * @description Input for the scrape-preview endpoint. The `kind` field determines which additional fields are required: `url` for kind=url, `query` for kind=name, `fragment` for kind=fragment. `source` pins the scraper explicitly; when omitted the registry auto-detects from the URL (kind=url) or falls back to `json-ld` (kind=fragment). Required for kind=name.
+     * @example {
+     *       "kind": "url",
+     *       "url": "https://www.youtube.com/playlist?list=PL123"
+     *     }
+     */
+    ScrapePreviewRequest: {
+      /**
+       * @description Explicit scraper id (e.g. `youtube`, `udemy`, `json-ld`). Omit to auto-detect (kind=url) or default to json-ld (kind=fragment). Required for kind=name.
+       * @example youtube
+       */
+      source?: string;
+      kind: components['schemas']['ScraperKind'];
+      /**
+       * Format: uri
+       * @description Required when kind=url.
+       * @example https://www.youtube.com/playlist?list=PL123
+       */
+      url?: string;
+      /**
+       * @description Required when kind=name.
+       * @example rust programming
+       */
+      query?: string;
+      /** @description Required when kind=fragment (raw HTML or JSON-LD string). */
+      fragment?: string;
+    } & (unknown & unknown & unknown);
+    /**
+     * @description Zero or more scrape candidates returned by the preview endpoint.
+     * @example {
+     *       "candidates": [
+     *         {
+     *           "source": "youtube",
+     *           "sourceUrl": "https://www.youtube.com/playlist?list=PL123",
+     *           "fragment": {
+     *             "title": "Rust Course",
+     *             "studioName": "Rustacean",
+     *             "externalIds": [
+     *               {
+     *                 "source": "youtube",
+     *                 "externalId": "youtube:playlist:PL123"
+     *               }
+     *             ]
+     *           }
+     *         }
+     *       ]
+     *     }
+     */
+    ScrapePreviewResponse: {
+      /** @description Ordered list of scrape candidates; may be empty. */
+      candidates: components['schemas']['ScrapeCandidateDto'][];
+    };
+    /**
+     * @description Metadata about a single registered scraper.
+     * @example {
+     *       "id": "youtube",
+     *       "supportedKinds": [
+     *         "url",
+     *         "name",
+     *         "fragment"
+     *       ],
+     *       "configured": true
+     *     }
+     */
+    ScraperInfoDto: {
+      /**
+       * @description Stable scraper identifier used as the `source` field in requests.
+       * @example youtube
+       */
+      id: string;
+      /**
+       * @description Invocation kinds this scraper handles.
+       * @example [
+       *       "url",
+       *       "name",
+       *       "fragment"
+       *     ]
+       */
+      supportedKinds: components['schemas']['ScraperKind'][];
+      /**
+       * @description True when all required credentials / config are present on this instance (e.g. YouTube requires an API key). Unconfigured scrapers are omitted from the registry entirely — this flag is always true for listed scrapers.
+       * @example true
+       */
+      configured: boolean;
+    };
+    /**
+     * @description Invocation kind for the scrape-preview endpoint. `url` — fetch and parse a remote URL; `name` — search the source by course title; `fragment` — parse a raw HTML or JSON-LD string supplied by the caller.
+     * @example url
+     * @enum {string}
+     */
+    ScraperKind: 'url' | 'name' | 'fragment';
+    /**
+     * @description List of scrapers configured on this instance.
+     * @example {
+     *       "scrapers": [
+     *         {
+     *           "id": "youtube",
+     *           "supportedKinds": [
+     *             "url",
+     *             "name",
+     *             "fragment"
+     *           ],
+     *           "configured": true
+     *         },
+     *         {
+     *           "id": "json-ld",
+     *           "supportedKinds": [
+     *             "url",
+     *             "fragment"
+     *           ],
+     *           "configured": true
+     *         }
+     *       ]
+     *     }
+     */
+    ScraperListDto: {
+      /** @description All configured scrapers in registration order. */
+      scrapers: components['schemas']['ScraperInfoDto'][];
     };
     /**
      * @description Full instructor view including their associated courses (paginated, up to 20).
@@ -3625,6 +3894,125 @@ export interface operations {
       };
       /** @description Caller does not have the admin role */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listScrapers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Configured scrapers */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScraperListDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  scrapeCoursePreview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the course. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ScrapePreviewRequest'];
+      };
+    };
+    responses: {
+      /** @description Scrape candidates (possibly empty) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScrapePreviewResponse'];
+        };
+      };
+      /** @description Malformed request body */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Course not found or unknown scraper source */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Scraper does not support the kind, or is not configured */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Upstream fetch or parse failed */
+      502: {
         headers: {
           [name: string]: unknown;
         };

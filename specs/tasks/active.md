@@ -1,5 +1,28 @@
 # Active tasks
 
+## T-2026-05-23-002 — Stage 2 scraper port (Tasks 1–8)
+
+- Created: 2026-05-23
+- Owner: claude
+- Plan: `docs/superpowers/plans/2026-05-23-stage2-scraper-port.md`
+- Goal: Scraper subsystem — domain types/port/errors, ScrapersConfig, HttpFetcher, HtmlMetadataExtractor, JsonLdScraper, YouTubeScraper, UdemyScraper, ScraperRegistry + mock scrapers.
+- Sub-steps:
+  - [x] **Task 1** — Domain types (`scraper.types.ts`), port (`scraper.port.ts`), errors (`scraper.errors.ts`) + spec
+  - [x] **Task 2** — `ScrapersConfig` interface + `scrapers` getter in `AppConfig` + spec
+  - [x] **Task 3** — `HttpFetcher` + `isBlockedHostname` SSRF guard (`http-fetcher.ts`) + spec
+  - [x] **Task 4** — `HtmlMetadataExtractor` (JSON-LD + OpenGraph, cheerio@^1.0.0) + spec
+  - [x] **Task 5** — `JsonLdScraper` generic fallback + spec
+  - [x] **Task 6** — `YouTubeScraper` (Data API v3, playlist/video/search) + spec
+  - [x] **Task 7** — `UdemyScraper` (defensive landing-page) + spec
+  - [x] **Task 8** — `DefaultScraperRegistry` + `createMockScrapers` + spec; typecheck/lint sweep fixing `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes` across all scraper specs
+  - [x] **Task 8b** — Code-quality fixes: exact host match in `UdemyScraper.canHandle` (Fix 1), non-2xx guards in `JsonLdScraper` + `UdemyScraper` (Fix 2), YouTube API key redaction + 4xx/5xx throw in `getJson` (Fix 3), real hostname logic in `createMockScrapers` (Fix 4); 4 regression tests added
+  - [x] **Task 9** — `ScrapeCourseCommand` + handler
+  - [x] **Task 10** — OpenAPI spec + client regen
+  - [x] **Task 11** — Controller + module wiring
+  - [x] **Task 12** — e2e (mock mode)
+- Status: done (Tasks 1–12 complete; PR pending)
+- Blockers: —
+
 ## T-2026-05-23-001 — Stage 1 of Stash-style metadata enrichment (data model foundation)
 
 - Created: 2026-05-23

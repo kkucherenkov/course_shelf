@@ -6,6 +6,7 @@
  *   - CoursesController (HTTP entry point for course CRUD)
  *   - LessonsController (HTTP entry point for lesson reads)
  *   - HomeController (HTTP entry point for home-row endpoints)
+ *   - CatalogScrapeAdminController (admin scrape-preview + scrapers list)
  *   - Command/query handlers (application layer)
  *   - Event handlers subscribing to Learning events:
  *     - LessonCompletedHandler
@@ -23,6 +24,8 @@
  *   - NodeFsAdapter bound behind the FS_ADAPTER port token
  *   - LocalFfmpegAdapter bound behind the FFMPEG_ADAPTER port token
  *   - AdminGuard (provided here for ScansController/CoursesController)
+ *   - SCRAPER_REGISTRY factory: mock or real (YouTube/Udemy/JsonLd) depending
+ *     on AppConfig.scrapers.mode / youtube.configured / udemy.enabled
  *
  * Learning-side ports (LESSON_PROGRESS_REPOSITORY) are imported via
  * LearningProgressModule — a thin common module that exposes the Prisma adapter
@@ -35,7 +38,20 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 
+import { AppConfig } from '../../common/config/app-config';
 import { AdminGuard } from '../../common/auth/admin.guard';
+import { ScrapeCourseHandler } from './application/commands/scrape-course.handler';
+import { CatalogScrapeAdminController } from './catalog-scrape-admin.controller';
+import { SCRAPER_REGISTRY } from './domain/scraper/scraper.port';
+import { DefaultScraperRegistry } from './infra/scrapers/scraper.registry';
+import { HttpFetcher } from './infra/scrapers/http-fetcher';
+import { HtmlMetadataExtractor } from './infra/scrapers/html-metadata.extractor';
+import { JsonLdScraper } from './infra/scrapers/json-ld.scraper';
+import { UdemyScraper } from './infra/scrapers/udemy.scraper';
+import { YouTubeScraper } from './infra/scrapers/youtube.scraper';
+import { createMockScrapers } from './infra/scrapers/mock.scrapers';
+
+import type { Scraper } from './domain/scraper/scraper.port';
 import { CommonAccessModule } from '../../common/access/access.module';
 import { LearningProgressModule } from '../../common/learning-progress/learning-progress.module';
 import { RegisterLibraryHandler } from './application/commands/register-library.handler';
@@ -113,6 +129,7 @@ import { NodeFsAdapter } from './infra/node-fs-adapter';
     CatalogController,
     CatalogEntitiesController,
     CatalogEntitiesAdminController,
+    CatalogScrapeAdminController,
     ScansController,
     CoursesController,
     LessonsController,
@@ -152,6 +169,27 @@ import { NodeFsAdapter } from './infra/node-fs-adapter';
     ListTagsHandler,
     GetTagHandler,
     BackfillCourseMetadataHandler,
+    ScrapeCourseHandler,
+    {
+      provide: SCRAPER_REGISTRY,
+      useFactory: (config: AppConfig): DefaultScraperRegistry => {
+        if (config.scrapers.mode === 'mock') {
+          return new DefaultScraperRegistry(createMockScrapers());
+        }
+        const fetcher = new HttpFetcher(config.scrapers);
+        const extractor = new HtmlMetadataExtractor();
+        const scrapers: Scraper[] = [];
+        if (config.scrapers.youtube.configured) {
+          scrapers.push(new YouTubeScraper(fetcher, config.scrapers.youtube.apiKey));
+        }
+        if (config.scrapers.udemy.enabled) {
+          scrapers.push(new UdemyScraper(fetcher, extractor));
+        }
+        scrapers.push(new JsonLdScraper(fetcher, extractor)); // generic fallback LAST
+        return new DefaultScraperRegistry(scrapers);
+      },
+      inject: [AppConfig],
+    },
     MetadataLinker,
     LessonCompletedHandler,
     LessonProgressRecordedHandler,

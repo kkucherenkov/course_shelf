@@ -2,6 +2,19 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-24-001 — Stage 2 scraper: fix SSRF IPv4-mapped IPv6 + wrong JSON-LD node fallback + missing .code assertions
+
+- Created: 2026-05-24
+- Completed: 2026-05-24
+- Owner: claude
+- PR: feat/stage2-scraper-port (single commit, no push)
+- Goal: Three code-quality fixes found during review of scraper foundation.
+- Sub-steps:
+  - [x] **Fix 1 (Critical)** — Block IPv4-mapped IPv6 in `ipIsBlocked` + tests
+  - [x] **Fix 2 (Important)** — Drop wrong-node JSON-LD fallback in `fromJsonLd` + test
+  - [x] **Fix 3 (Minor)** — Add `.code` assertions to `scraper.errors.spec.ts`
+- Status: done
+
 ## T-2026-05-20-001 — Bookkeeping catch-up: archive 4 shipped cards (#none)
 
 - Created: 2026-05-20

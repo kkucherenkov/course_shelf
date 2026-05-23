@@ -16,6 +16,8 @@ Method | HTTP request | Description
 [**listAdminLibraries**](AdminApi.md#listadminlibraries) | **GET** /api/v1/admin/libraries | List every library with admin-flavoured counters
 [**listAdminScans**](AdminApi.md#listadminscans) | **GET** /api/v1/admin/scans | List recent scans across every library
 [**listAdminUsers**](AdminApi.md#listadminusers) | **GET** /api/v1/admin/users | List every user in the platform
+[**listScrapers**](AdminApi.md#listscrapers) | **GET** /api/v1/admin/scrapers | List available metadata scrapers
+[**scrapeCoursePreview**](AdminApi.md#scrapecoursepreview) | **POST** /api/v1/admin/courses/{id}/scrape-preview | Preview scraped metadata for a course
 [**startBackfillMetadata**](AdminApi.md#startbackfillmetadata) | **POST** /api/v1/admin/maintenance/backfill-metadata | Trigger a background metadata backfill across the library
 [**updateAdminUser**](AdminApi.md#updateadminuser) | **PATCH** /api/v1/admin/users/{id} | Patch role and/or banned flag on a user
 [**upsertInstructor**](AdminApi.md#upsertinstructor) | **POST** /api/v1/admin/instructors | Create or update an instructor
@@ -308,6 +310,90 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
  - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **listScrapers**
+> ScraperListDto listScrapers()
+
+List available metadata scrapers
+
+Returns the scrapers configured on this instance with the invocation kinds each supports. Requires admin role.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getAdminApi();
+
+try {
+    final response = api.listScrapers();
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling AdminApi->listScrapers: $e\n');
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**ScraperListDto**](ScraperListDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **scrapeCoursePreview**
+> ScrapePreviewResponse scrapeCoursePreview(id, scrapePreviewRequest)
+
+Preview scraped metadata for a course
+
+Runs the selected scraper against the given input and returns candidate metadata fragments. PREVIEW ONLY — nothing is persisted and scraped names are not resolved to existing entities. Requires admin role. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getAdminApi();
+final String id = id_example; // String | Server-generated cuid identifying the course.
+final ScrapePreviewRequest scrapePreviewRequest = {"kind":"url","url":"https://www.youtube.com/playlist?list=PL123"}; // ScrapePreviewRequest | 
+
+try {
+    final response = api.scrapeCoursePreview(id, scrapePreviewRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling AdminApi->scrapeCoursePreview: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the course. | 
+ **scrapePreviewRequest** | [**ScrapePreviewRequest**](ScrapePreviewRequest.md)|  | 
+
+### Return type
+
+[**ScrapePreviewResponse**](ScrapePreviewResponse.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
  - **Accept**: application/json, application/problem+json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

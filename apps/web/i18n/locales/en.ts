@@ -194,6 +194,8 @@ export default {
       bookmarksEmptyTitle: 'No bookmarks yet',
       bookmarksEmptyBody: 'Add a bookmark from the player to mark a moment for later.',
       materialsEmpty: 'No materials for this lesson.',
+      sectionLabel: 'Section {n} · {title}',
+      bookmarkAdd: '+ Bookmark current position',
       upNextIn: 'Up next in {n}s',
       stayHere: 'Stay here',
       playNext: 'Play next',

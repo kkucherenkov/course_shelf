@@ -211,6 +211,28 @@ describe('AppPlayerChrome', () => {
         (errored.find('button[aria-label="Play"]').element as HTMLButtonElement).disabled,
       ).toBe(true);
     });
+
+    it('disables the prev control when hasPrev is false', () => {
+      const wrapper = makeWrapper({ hasPrev: false });
+      expect(
+        (wrapper.find('button[aria-label="Previous lesson"]').element as HTMLButtonElement)
+          .disabled,
+      ).toBe(true);
+    });
+
+    it('disables the next control when hasNext is false', () => {
+      const wrapper = makeWrapper({ hasNext: false });
+      expect(
+        (wrapper.find('button[aria-label="Next lesson"]').element as HTMLButtonElement).disabled,
+      ).toBe(true);
+    });
+
+    it('renders custom visible labels from props', () => {
+      const errored = makeWrapper({ state: 'error', retryLabel: 'Повторить' });
+      expect(errored.findAll('button').some((b) => b.text() === 'Повторить')).toBe(true);
+      const locked = makeWrapper({ state: 'locked', lockedLabel: 'Нет доступа' });
+      expect(locked.text()).toContain('Нет доступа');
+    });
   });
 
   describe('keyboard map', () => {

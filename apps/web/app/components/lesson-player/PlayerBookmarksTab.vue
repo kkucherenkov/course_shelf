@@ -12,6 +12,8 @@
     currentTime: number;
     emptyTitle: string;
     emptyBody: string;
+    /** Label for the "add bookmark" button (translated by the parent). */
+    addLabel: string;
   }>();
 
   const emit = defineEmits<{
@@ -93,7 +95,7 @@
       class="player-bookmarks-tab__add-btn"
       @click="showAddRow = true"
     >
-      + Bookmark current position
+      {{ props.addLabel }}
     </button>
   </div>
 </template>

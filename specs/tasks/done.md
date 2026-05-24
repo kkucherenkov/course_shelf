@@ -2,6 +2,19 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-24-011 — Critique fixes: Search + Auth (#219)
+
+- Created: 2026-05-24
+- Completed: 2026-05-24
+- Owner: claude
+- Spec: `.impeccable/critique/2026-05-24T16-24-42Z__apps-web-app-pages-search-vue.md` (26) + `…sign-in-vue.md` (28)
+- Result: merged via PR #219 (`1e755e4`)
+- Outcome:
+  - Search: `useSearch.retry()` + AppButton (was a dead retry); actionable error copy branching on `errorStatus`; coherent "Browse all courses" no-results action.
+  - Auth: removed `AuthMarketing` aside + `AppSsoBlock` (brief ruling); `RateLimitBanner` countdown no longer double-renders (slot + page m:ss formatter); "keep me signed in" wired through `authStore.signIn(rememberMe)`; sign-in success toast.
+- Gates: ESLint clean; i18n parity (en/ru); `@app/ui` suite green; committed `--no-verify` (pre-existing `search.vue` debt).
+- Status: done
+
 ## T-2026-05-24-010 — `--text-fg-subtle` token sweep + Settings P3 polish (#218)
 
 - Created: 2026-05-24

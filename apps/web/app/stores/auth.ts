@@ -64,11 +64,14 @@ export const useAuthStore = defineStore('auth', () => {
     email: string,
     password: string,
     rememberMe = true,
-  ): Promise<{ ok: boolean; error?: string }> {
+  ): Promise<{ ok: boolean; error?: string; statusCode?: number; retryAfter?: number }> {
     error.value = null;
     isPending.value = true;
 
     let capturedToken: string | null = null;
+    // `Retry-After` (seconds) captured from a 429 response so the page can
+    // drive the rate-limit countdown.
+    let retryAfter: number | undefined;
 
     try {
       const auth = getAuthClient();
@@ -84,13 +87,19 @@ export const useAuthStore = defineStore('auth', () => {
             const raw = ctx.response.headers.get('set-auth-token');
             if (raw) capturedToken = raw;
           },
+          onError(ctx) {
+            const raw = ctx.response.headers.get('retry-after');
+            const n = raw === null ? Number.NaN : Number(raw);
+            if (!Number.isNaN(n)) retryAfter = n;
+          },
         },
       );
 
       if (result.error) {
         const message = result.error.message ?? 'Sign-in failed';
         error.value = message;
-        return { ok: false, error: message };
+        const statusCode = (result.error as { status?: number }).status;
+        return { ok: false, error: message, statusCode, retryAfter };
       }
 
       // capturedToken is mutated inside the onSuccess callback above; TypeScript

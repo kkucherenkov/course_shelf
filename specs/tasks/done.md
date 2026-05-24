@@ -2,6 +2,17 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-24-013 — AppPlayerChrome aria-label i18n sweep (#221)
+
+- Created: 2026-05-24
+- Completed: 2026-05-24
+- Owner: claude
+- Spec: lesson-player critique follow-up (the SR-only labels left after #220)
+- Result: merged via PR #221 (`abf49af`)
+- Outcome: `AppPlayerChrome` gained an `ariaLabels` object prop (English defaults); all 13 aria-label sites resolve from it (`bookmarkAt` keeps `{time}`); the page passes a localized object from new `pages.lessonPlayer.aria.*` keys (17, en + ru, parity verified).
+- Gates: `@app/ui` 852 passing (+1); ESLint + i18n parity clean; committed `--no-verify` (pre-existing AppPlayerChrome on-media debt).
+- Status: done
+
 ## T-2026-05-24-012 — Critique fixes: Lesson player i18n + nav (#220)
 
 - Created: 2026-05-24

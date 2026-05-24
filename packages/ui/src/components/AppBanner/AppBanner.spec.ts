@@ -60,6 +60,21 @@ describe('AppBanner', () => {
     expect(wrapper.find('.app-banner__body').text()).toBe('Slot content wins');
   });
 
+  it('does not render the actions container when no actions slot is provided', () => {
+    const wrapper = mount(AppBanner, { global, props: { body: 'Body' } });
+    expect(wrapper.find('.app-banner__actions').exists()).toBe(false);
+  });
+
+  it('renders the actions slot when provided', () => {
+    const wrapper = mount(AppBanner, {
+      global,
+      props: { body: 'Body' },
+      slots: { actions: '<button class="my-action">Retry</button>' },
+    });
+    expect(wrapper.find('.app-banner__actions').exists()).toBe(true);
+    expect(wrapper.find('.app-banner__actions .my-action').exists()).toBe(true);
+  });
+
   it('does not render the dismiss button when dismissible=false (default)', () => {
     const wrapper = mount(AppBanner, { global, props: {} });
     expect(wrapper.find('.app-banner__dismiss').exists()).toBe(false);

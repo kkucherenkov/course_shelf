@@ -66,6 +66,20 @@ export const WithTitleAndSlot: Story = {
   }),
 };
 
+export const WithActions: Story = {
+  render: (args) => ({
+    components: { AppBanner },
+    setup: () => ({ args }),
+    template: `
+      <AppBanner v-bind="args" variant="error" title="Could not load courses" body="We couldn't load your courses. Check your connection, then try again.">
+        <template #actions>
+          <button type="button">Retry</button>
+        </template>
+      </AppBanner>
+    `,
+  }),
+};
+
 export const Dismissible: Story = {
   args: {
     variant: 'success',

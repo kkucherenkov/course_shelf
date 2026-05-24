@@ -2,6 +2,7 @@
   import { computed, ref } from 'vue';
   import {
     AppBanner,
+    AppButton,
     AppChip,
     AppEmptyState,
     AppSelect,
@@ -25,13 +26,22 @@
   const status = ref<CourseListStatusFilter>('all');
   const sort = ref<CourseListSort>('recently-watched');
 
-  const { data, status: fetchStatus, error, refetch } = useCoursesList({ status, sort });
+  const { data, status: fetchStatus, refetch } = useCoursesList({ status, sort });
 
   const items = computed(() => data.value?.items ?? []);
 
-  // Filter chip groups — each chip toggles `status` to its value (or back
-  // to 'all' when re-clicked). The active chip is rendered with the
-  // 'primary' AppChip variant.
+  // The count subtitle reflects loaded results, so only show it once data has
+  // arrived — during `pending` `items` is empty and a raw count flashes "0".
+  const subtitle = computed<string>(() => {
+    if (fetchStatus.value === 'pending') return t('pages.browse.subtitleLoading');
+    if (fetchStatus.value === 'success')
+      return t('pages.browse.subtitle', { n: items.value.length });
+    return ''; // error / idle: the banner explains errors; the title carries the page
+  });
+
+  // Single-select status filter: each chip sets `status` to its value. The
+  // active chip is marked `selected` (drives aria-pressed + the accent border)
+  // and rendered with the 'primary' AppChip variant.
   const statusOptions: { value: CourseListStatusFilter; label: string }[] = [
     { value: 'all', label: t('pages.browse.filters.all') },
     { value: 'in-progress', label: t('pages.browse.filters.inProgress') },
@@ -56,7 +66,9 @@
     return {
       id: item.id,
       title: item.title,
-      instructor: '',
+      // `instructors` is optional and may be empty; an empty join yields ''
+      // and the card hides the line. Multiple instructors render comma-joined.
+      instructor: (item.instructors ?? []).map((i) => i.displayName).join(', '),
       lessons: item.progress.lessonsTotal,
       completed: item.progress.lessonsCompleted,
       accent: accentFromId(item.id),
@@ -68,8 +80,8 @@
   <div class="page-browse" data-testid="page-browse">
     <header class="page-browse__header">
       <h1 class="page-browse__title">{{ t('pages.browse.title') }}</h1>
-      <p class="page-browse__subtitle">
-        {{ t('pages.browse.subtitle', { n: items.length }) }}
+      <p v-if="subtitle" class="page-browse__subtitle">
+        {{ subtitle }}
       </p>
     </header>
 
@@ -89,6 +101,7 @@
           v-for="option in statusOptions"
           :key="option.value"
           :variant="status === option.value ? 'primary' : 'default'"
+          :selected="status === option.value"
           :label="option.label"
           :data-testid="`browse-filter-${option.value}`"
           @click="selectStatus(option.value)"
@@ -113,13 +126,13 @@
       v-else-if="fetchStatus === 'error'"
       variant="error"
       :title="t('pages.browse.errorTitle')"
-      :body="error?.message ?? ''"
+      :body="t('pages.browse.errorBody')"
       class="page-browse__banner"
     >
       <template #actions>
-        <button type="button" class="page-browse__retry" @click="refetch">
+        <AppButton variant="secondary" size="sm" @click="refetch">
           {{ t('pages.browse.retry') }}
-        </button>
+        </AppButton>
       </template>
     </AppBanner>
 
@@ -127,9 +140,17 @@
     <AppEmptyState
       v-else-if="items.length === 0"
       icon="folder"
-      :title="t('pages.browse.emptyTitle')"
+      :title="
+        status === 'all' ? t('pages.browse.emptyTitle') : t('pages.browse.emptyFilteredTitle')
+      "
       :body="status === 'all' ? t('pages.browse.emptyBody') : t('pages.browse.emptyFilteredBody')"
-    />
+    >
+      <template v-if="status !== 'all'" #action>
+        <AppButton variant="secondary" size="sm" @click="selectStatus('all')">
+          {{ t('pages.browse.emptyShowAll') }}
+        </AppButton>
+      </template>
+    </AppEmptyState>
 
     <!-- Populated grid -->
     <div v-else class="page-browse__grid">
@@ -139,7 +160,7 @@
         :to="`/courses/${item.id}`"
         class="page-browse__card-link"
       >
-        <CoursePosterCard :course="toCourse(item)" />
+        <CoursePosterCard :course="toCourse(item)" :interactive="false" />
       </NuxtLink>
     </div>
   </div>
@@ -181,6 +202,14 @@
       display: flex;
       flex-wrap: wrap;
       gap: var(--space-2);
+
+      // Status chips are the primary tap target on this page, so guarantee the
+      // web ≥32px hit area (design brief §8.2). AppChip's 22px default is tuned
+      // for dense tag/pill contexts; scope the bump here instead of globally.
+      :deep(.app-chip) {
+        min-height: var(--space-6); // 32px
+        padding-inline: var(--space-3);
+      }
     }
 
     &__sort {
@@ -218,21 +247,6 @@
 
     &__banner {
       margin-bottom: var(--space-4);
-    }
-
-    &__retry {
-      padding: var(--space-1) var(--space-3);
-      border: 0;
-      border-radius: var(--radius-sm);
-      background: transparent;
-      color: var(--brand-accent);
-      cursor: pointer;
-      font-size: var(--text-sm);
-      font-weight: 500;
-
-      &:hover {
-        background: var(--brand-accent-soft);
-      }
     }
   }
 </style>

@@ -192,6 +192,7 @@
           >
             <CoursePosterCard
               :course="recentlyAddedToCourse(item)"
+              :interactive="false"
               class="page-home__poster-card"
             />
           </NuxtLink>
@@ -225,6 +226,7 @@
             <CoursePosterCard
               :course="recentlyCompletedToCourse(item)"
               state="completed"
+              :interactive="false"
               class="page-home__poster-card"
             />
           </NuxtLink>

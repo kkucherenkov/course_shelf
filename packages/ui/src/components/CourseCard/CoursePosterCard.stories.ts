@@ -76,6 +76,32 @@ export const Loading: Story = {
   },
 };
 
+/** A course with no linked instructor: the instructor line is omitted, not left blank. */
+export const NoInstructor: Story = {
+  args: {
+    course: { ...sampleCourse, instructor: '' },
+  },
+};
+
+/**
+ * Presentational variant for the grid pattern: the card sits inside a link
+ * that owns navigation, focus, and the accessible name, so the card itself
+ * carries no `role="button"`/`tabindex` (avoids a nested interactive in `<a>`).
+ */
+export const StaticInsideLink: Story = {
+  render: () => ({
+    components: { CoursePosterCard },
+    setup() {
+      return { course: sampleCourse };
+    },
+    template: `
+      <a href="#" style="display: block; width: 200px; text-decoration: none; color: inherit;">
+        <CoursePosterCard :course="course" :interactive="false" />
+      </a>
+    `,
+  }),
+};
+
 export const Variants: Story = {
   render: () => ({
     components: { CoursePosterCard },

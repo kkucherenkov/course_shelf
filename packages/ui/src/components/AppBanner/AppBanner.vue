@@ -53,6 +53,9 @@
       <div class="app-banner__body">
         <slot>{{ body }}</slot>
       </div>
+      <div v-if="$slots['actions']" class="app-banner__actions">
+        <slot name="actions" />
+      </div>
     </div>
     <AppIconButton
       v-if="dismissible"
@@ -97,6 +100,13 @@
       font-size: var(--text-sm);
       line-height: var(--leading-snug);
       color: var(--text-fg);
+    }
+
+    &__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
     }
 
     &__dismiss {

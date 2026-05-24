@@ -23,6 +23,12 @@ describe('CoursePosterCard', () => {
     expect(wrapper.find('.course-poster-card__instructor').text()).toBe('Jane Doe');
   });
 
+  it('hides the instructor line when instructor is empty', () => {
+    const wrapper = mount(CoursePosterCard, { props: { course: { ...base, instructor: '' } } });
+    expect(wrapper.find('.course-poster-card__title').exists()).toBe(true);
+    expect(wrapper.find('.course-poster-card__instructor').exists()).toBe(false);
+  });
+
   // --- cover background ---
 
   it('uses COVER[accent] as background when course.cover is undefined', () => {
@@ -94,6 +100,21 @@ describe('CoursePosterCard', () => {
     expect(root.attributes('tabindex')).toBe('0');
     expect(root.attributes('role')).toBe('button');
     expect(root.attributes('aria-label')).toBe('Advanced Vue Patterns');
+  });
+
+  it('interactive=false renders presentational root (no role/tabindex/aria-label)', () => {
+    const wrapper = mount(CoursePosterCard, { props: { course: base, interactive: false } });
+    const root = wrapper.find('.course-poster-card');
+    expect(root.attributes('tabindex')).toBeUndefined();
+    expect(root.attributes('role')).toBeUndefined();
+    expect(root.attributes('aria-label')).toBeUndefined();
+  });
+
+  it('interactive=false does not emit click on click or Enter', async () => {
+    const wrapper = mount(CoursePosterCard, { props: { course: base, interactive: false } });
+    await wrapper.find('.course-poster-card').trigger('click');
+    await wrapper.find('.course-poster-card').trigger('keydown', { key: 'Enter' });
+    expect(wrapper.emitted('click')).toBeUndefined();
   });
 
   // --- click / keyboard emit ---

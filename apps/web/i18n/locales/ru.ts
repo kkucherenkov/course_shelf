@@ -465,6 +465,11 @@ export default {
       accountSignOutOthersHelp: 'Отозвать все активные сессии, кроме текущей.',
       accountSignOutOthersCta: 'Выйти на других устройствах',
       accountSignOutOthersToastDone: 'Все другие сессии завершены.',
+      accountSignOutOthersDialogTitle: 'Выйти на других устройствах?',
+      accountSignOutOthersDialogDescription:
+        'Все активные сессии, кроме текущей, будут завершены. Вы сможете снова войти на тех устройствах в любой момент.',
+      accountSignOutOthersDialogConfirm: 'Выйти на других устройствах',
+      accountSignOutOthersDialogCancel: 'Отмена',
       accountDeleteLabel: 'Удалить аккаунт',
       accountDeleteHelp: 'Безвозвратно удалить аккаунт и все данные.',
       accountDeleteCta: 'Удалить аккаунт',

@@ -2,6 +2,23 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-24-006 — Course detail: critique fixes (#214)
+
+- Created: 2026-05-24
+- Completed: 2026-05-24
+- Owner: claude
+- Spec: `.impeccable/critique/2026-05-24T14-15-15Z__apps-web-app-pages-courses-id-vue.md` (scored 31/40)
+- Result: merged via PR #214 (`bce81dd`)
+- Outcome:
+  - a11y (P1): `AppButton` gained an optional `to` → renders as `NuxtLink`; `CourseActions` primary CTA is a single anchor (no button-in-anchor).
+  - states (P1): completed course offers a working "Rewatch" CTA to the first lesson instead of a dead "Start → #".
+  - anti-pattern (P2): dropped the current-lesson side-stripe in `AppLessonRow`.
+  - consistency (P2): load-error retry uses `AppButton`.
+  - minors: re-exported `COVER` from `@app/ui` (dedup `ACCENT_BG` + dead bg line in `CourseHero`); hero duration meta; clarified `resumeLesson` comment; tokenised pre-existing `width: 24px`.
+- Gates: `@app/ui` 845 passing (AppButton link-mode specs); ESLint clean; stylelint clean on all touched `.vue` (committed without `--no-verify`); i18n parity (en/ru).
+- Deferred: breadcrumb (needs library name in DTO → spec+backend); lessons-as-links (`AppLessonRow` contract change).
+- Status: done
+
 ## Browse critique fixes — a11y, card data, states, hit-target, polish (#212)
 
 - Created: 2026-05-24

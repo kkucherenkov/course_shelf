@@ -11,6 +11,8 @@
    * reuse the same component.
    */
 
+  import { IconCS } from '@app/ui';
+
   interface Props {
     state: 'idle' | 'saving' | 'saved' | 'error';
     labelSaving: string;
@@ -35,16 +37,18 @@
       <span
         class="setting-sync-indicator__icon setting-sync-indicator__icon--check"
         aria-hidden="true"
-        >✓</span
       >
+        <IconCS name="check" :size="9" />
+      </span>
       <span class="setting-sync-indicator__label">{{ props.labelSaved }}</span>
     </template>
     <template v-else-if="props.state === 'error'">
       <span
         class="setting-sync-indicator__icon setting-sync-indicator__icon--error"
         aria-hidden="true"
-        >!</span
       >
+        <IconCS name="alert" :size="9" />
+      </span>
       <span class="setting-sync-indicator__label">{{ props.labelError }}</span>
     </template>
   </span>
@@ -71,7 +75,7 @@
     }
 
     &--saving {
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
 
     &--saved {

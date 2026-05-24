@@ -464,6 +464,11 @@ export default {
       accountSignOutOthersHelp: 'Revoke every active session except this one.',
       accountSignOutOthersCta: 'Sign out other devices',
       accountSignOutOthersToastDone: 'All other sessions have been signed out.',
+      accountSignOutOthersDialogTitle: 'Sign out other devices?',
+      accountSignOutOthersDialogDescription:
+        'Every active session except this one will be signed out. You can sign back in on those devices anytime.',
+      accountSignOutOthersDialogConfirm: 'Sign out other devices',
+      accountSignOutOthersDialogCancel: 'Cancel',
       accountDeleteLabel: 'Delete account',
       accountDeleteHelp: 'Permanently remove your account and all data.',
       accountDeleteCta: 'Delete account',

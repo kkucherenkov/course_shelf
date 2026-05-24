@@ -20,16 +20,11 @@
         <slot />
       </div>
     </div>
-    <!-- Marketing pane — hidden at < 768px via CSS -->
-    <div class="auth-layout__marketing-pane" aria-hidden="true">
-      <AuthMarketing :variant="variant" />
-    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
   $form-max-width: 420px; // max readable width for auth forms
-  $marketing-pane-width: 420px; // fixed width for the marketing panel
 
   .auth-layout {
     display: flex;
@@ -57,16 +52,6 @@
       width: 100%;
       max-width: $form-max-width;
       margin: 0 auto;
-    }
-
-    &__marketing-pane {
-      display: none;
-      flex: 0 0 $marketing-pane-width;
-      min-width: 0;
-
-      @media (min-width: 768px) {
-        display: block;
-      }
     }
   }
 </style>

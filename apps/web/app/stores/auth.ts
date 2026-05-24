@@ -60,7 +60,11 @@ export const useAuthStore = defineStore('auth', () => {
    * On success the `set-auth-token` response header is captured and stored
    * in localStorage (the server-side `bearer` plugin sets this header).
    */
-  async function signIn(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
+  async function signIn(
+    email: string,
+    password: string,
+    rememberMe = true,
+  ): Promise<{ ok: boolean; error?: string }> {
     error.value = null;
     isPending.value = true;
 
@@ -70,7 +74,9 @@ export const useAuthStore = defineStore('auth', () => {
       const auth = getAuthClient();
 
       const result = await auth.signIn.email(
-        { email, password },
+        // `rememberMe: false` issues a non-persistent session (cleared on
+        // browser close); Better Auth defaults it to true.
+        { email, password, rememberMe },
         {
           // @better-fetch/fetch onSuccess hook — the Response object carries
           // the `set-auth-token` header set by the server's `bearer` plugin.

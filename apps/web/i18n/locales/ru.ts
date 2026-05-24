@@ -68,7 +68,8 @@ export default {
       errorPasswordTooShort: 'Пароль должен содержать не менее 8 символов.',
       errorCredentials: 'Неверный email или пароль. Попробуйте ещё раз.',
       errorGeneric: 'Что-то пошло не так. Попробуйте ещё раз.',
-      errorRateLimit: 'Слишком много попыток. Повторите через {n}с.',
+      errorRateLimit: 'Слишком много попыток. Повторите через {time}.',
+      successToast: 'Вход выполнен',
     },
     signUp: {
       title: 'Создать аккаунт',
@@ -209,8 +210,12 @@ export default {
       emptyTypeSomething: 'Введите запрос в строку поиска выше',
       emptyShortQuery: 'Продолжайте ввод — нужно не менее 2 символов',
       emptyNoMatches: 'Ничего не найдено по запросу «{q}»',
+      emptyNoMatchesBody: 'Попробуйте более общий запрос или проверьте написание.',
+      emptyBrowseAll: 'Открыть каталог',
       courseLessonsTotal: '{n} урок | {n} урока | {n} уроков',
-      errorTitle: 'Поиск не удался',
+      errorTitle: 'Не удалось выполнить поиск',
+      errorBody: 'Проверьте соединение и попробуйте снова.',
+      errorBodyRateLimited: 'Слишком много запросов. Подождите немного и попробуйте снова.',
       errorRetry: 'Попробовать снова',
     },
     browse: {

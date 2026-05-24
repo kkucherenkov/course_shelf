@@ -64,6 +64,13 @@ export const EndOfLesson: Story = {
   },
 };
 
+export const AtCourseStart: Story = {
+  args: { ...base, state: 'playing', hasPrev: false },
+  parameters: {
+    docs: { description: { story: 'First lesson: the previous-lesson control is disabled.' } },
+  },
+};
+
 export const Minimal: Story = { args: { ...base, mode: 'minimal' } };
 
 export const Muted: Story = { args: { ...base, state: 'playing', muted: true } };

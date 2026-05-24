@@ -153,6 +153,10 @@
     return flat[idx + 1] ?? null;
   });
 
+  // Course-boundary flags for the chrome's prev/next controls.
+  const hasNext = computed<boolean>(() => nextLesson.value !== null);
+  const hasPrev = computed<boolean>(() => allLessons.value.findIndex((l) => l.id === lessonId) > 0);
+
   const endNext = computed<{ title: string; countdownSec: number } | undefined>(() => {
     if (!nextLesson.value) return;
     return {
@@ -264,7 +268,12 @@
     const lesson = lessonData.value;
     if (!outline || !lesson) return '';
     const section = outline.sections.find((s) => s.id === lesson.sectionId);
-    return section ? `Section ${String(section.position).padStart(2, '0')} · ${section.title}` : '';
+    return section
+      ? t('pages.lessonPlayer.sectionLabel', {
+          n: String(section.position).padStart(2, '0'),
+          title: section.title,
+        })
+      : '';
   });
 
   // Computed chrome state.
@@ -325,6 +334,13 @@
             :bookmarks="bookmarkMarkers"
             :error-message="errorMessage"
             :end-next="endNext"
+            :has-prev="hasPrev"
+            :has-next="hasNext"
+            :retry-label="t('pages.lessonPlayer.retry')"
+            :locked-label="t('pages.lessonPlayer.noAccessBody')"
+            :up-next-label="t('pages.lessonPlayer.upNextIn', { n: '{n}' })"
+            :stay-label="t('pages.lessonPlayer.stayHere')"
+            :play-next-label="t('pages.lessonPlayer.playNext')"
             @play="onPlay"
             @pause="onPause"
             @seek="onSeek"
@@ -367,6 +383,7 @@
           :tab-materials="t('pages.lessonPlayer.tabMaterials')"
           :bookmarks-empty-title="t('pages.lessonPlayer.bookmarksEmptyTitle')"
           :bookmarks-empty-body="t('pages.lessonPlayer.bookmarksEmptyBody')"
+          :bookmarks-add-label="t('pages.lessonPlayer.bookmarkAdd')"
           :materials-empty-label="t('pages.lessonPlayer.materialsEmpty')"
           @seek="onBookmarkSeek"
           @update:bookmarks="(b) => (bookmarks = b)"

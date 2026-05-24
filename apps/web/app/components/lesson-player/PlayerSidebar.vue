@@ -23,6 +23,7 @@
     tabMaterials: string;
     bookmarksEmptyTitle: string;
     bookmarksEmptyBody: string;
+    bookmarksAddLabel: string;
     materialsEmptyLabel: string;
   }>();
 
@@ -59,6 +60,7 @@
         :current-time="props.currentTime"
         :empty-title="props.bookmarksEmptyTitle"
         :empty-body="props.bookmarksEmptyBody"
+        :add-label="props.bookmarksAddLabel"
         @seek="(t) => emit('seek', t)"
         @update:bookmarks="(b) => emit('update:bookmarks', b)"
       />

@@ -56,6 +56,16 @@
       errorMessage?: string;
       /** Up-next info for the `end` state. */
       endNext?: { title: string; countdownSec?: number };
+      // Visible labels — defaults are English; pass localized strings from the
+      // page (the component stays i18n-free). `upNextLabel` interpolates `{n}`.
+      retryLabel?: string;
+      lockedLabel?: string;
+      upNextLabel?: string;
+      stayLabel?: string;
+      playNextLabel?: string;
+      /** Disable the prev/next controls at the course boundaries. */
+      hasPrev?: boolean;
+      hasNext?: boolean;
     }>(),
     {
       state: 'idle',
@@ -72,6 +82,13 @@
       bookmarks: () => [],
       errorMessage: 'Playback failed',
       endNext: undefined,
+      retryLabel: 'Try again',
+      lockedLabel: 'You don’t have access to this lesson',
+      upNextLabel: 'Up next in {n}s',
+      stayLabel: 'Stay here',
+      playNextLabel: 'Play next',
+      hasPrev: true,
+      hasNext: true,
     },
   );
 
@@ -274,7 +291,7 @@
     >
       <IconCS name="alert" :size="28" class="app-player-chrome__state-icon--error" />
       <span class="app-player-chrome__state-text">{{ errorMessage }}</span>
-      <AppButton variant="secondary" size="sm" label="Try again" @click="emit('retry')" />
+      <AppButton variant="secondary" size="sm" :label="retryLabel" @click="emit('retry')" />
     </div>
 
     <div
@@ -283,25 +300,23 @@
       role="status"
     >
       <IconCS name="lock" :size="28" />
-      <span class="app-player-chrome__state-text">
-        You don&rsquo;t have access to this lesson
-      </span>
+      <span class="app-player-chrome__state-text">{{ lockedLabel }}</span>
     </div>
 
     <div v-else-if="state === 'end' && endNext" class="app-player-chrome__end-banner" role="status">
       <div v-if="endNext.countdownSec !== undefined" class="app-player-chrome__end-countdown">
-        Up next in {{ String(Math.max(0, Math.floor(endNext.countdownSec))) }}s
+        {{ upNextLabel.replace('{n}', String(Math.max(0, Math.floor(endNext.countdownSec)))) }}
       </div>
       <div class="app-player-chrome__end-title">
         {{ endNext.title }}
       </div>
       <div class="app-player-chrome__end-actions">
-        <AppButton variant="secondary" size="sm" label="Stay here" @click="emit('stayHere')" />
+        <AppButton variant="secondary" size="sm" :label="stayLabel" @click="emit('stayHere')" />
         <AppButton
           variant="primary"
           size="sm"
           icon-leading="next"
-          label="Play next"
+          :label="playNextLabel"
           @click="emit('nextLesson')"
         />
       </div>
@@ -397,6 +412,7 @@
             type="button"
             class="app-player-chrome__btn"
             aria-label="Previous lesson"
+            :disabled="!hasPrev"
             @click="emit('prevLesson')"
           >
             <IconCS name="prev" :size="16" />
@@ -405,6 +421,7 @@
             type="button"
             class="app-player-chrome__btn"
             aria-label="Next lesson"
+            :disabled="!hasNext"
             @click="emit('nextLesson')"
           >
             <IconCS name="next" :size="16" />

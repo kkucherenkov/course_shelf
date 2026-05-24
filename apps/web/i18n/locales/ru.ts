@@ -195,6 +195,8 @@ export default {
       bookmarksEmptyTitle: 'Закладок пока нет',
       bookmarksEmptyBody: 'Добавьте закладку из плеера, чтобы отметить момент для просмотра позже.',
       materialsEmpty: 'У этого урока нет материалов.',
+      sectionLabel: 'Раздел {n} · {title}',
+      bookmarkAdd: '+ Отметить текущую позицию',
       upNextIn: 'Следующий через {n}с',
       stayHere: 'Остаться здесь',
       playNext: 'Следующий',

@@ -166,7 +166,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
       pointer-events: none;
       transform: translateY(-50%);
     }

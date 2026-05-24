@@ -75,7 +75,7 @@
     }
 
     &__help {
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
     }
 
     &__error {

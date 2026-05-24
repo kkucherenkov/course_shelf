@@ -105,7 +105,7 @@
 
     &__step--upcoming &__num {
       background: var(--surface-overlay);
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
       border-color: var(--border-default);
     }
 
@@ -115,7 +115,7 @@
     }
 
     &__step--done &__label {
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
     }
 
     &__step--current &__label {

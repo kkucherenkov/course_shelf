@@ -2,6 +2,24 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-24-008 — Home: fix CourseWideCard + extract a shared card base (#216)
+
+- Created: 2026-05-24
+- Completed: 2026-05-24
+- Owner: claude
+- Spec: `.impeccable/critique/2026-05-24T15-16-54Z__apps-web-app-pages-index-vue.md` (scored 35/40)
+- Result: merged via PR #216 (`5f178d9`)
+- Outcome:
+  - shared base: new `use-course-card` composable (cover/initials/progress/interactive); `CoursePosterCard` + `CourseWideCard` refactored onto it.
+  - a11y (P1): `CourseWideCard` gained `interactive`; Home passes `:interactive="false"` (no button nested in the link).
+  - states (P2): dropped `resume-at="0"` (no resume data) → card shows progress %.
+  - i18n (P2): `CourseWideCard` takes a `resumeLabel` prop instead of baking "Resume <time>".
+  - empty line (P2): instructor line hidden when empty.
+  - a11y (P2): Home greeting promoted to `<h1>`.
+  - minor: "Your week" dates format in the active locale.
+- Gates: `@app/ui` 848 passing; ESLint clean; committed `--no-verify` (pre-existing on-media token debt in the two card `.vue`).
+- Status: done
+
 ## T-2026-05-24-007 — Settings: migrate off raw Nuxt UI onto @app/ui (#215)
 
 - Created: 2026-05-24

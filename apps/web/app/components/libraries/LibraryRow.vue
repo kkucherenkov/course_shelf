@@ -137,7 +137,7 @@
       align-items: center;
       gap: var(--space-1);
       font-size: var(--text-sm);
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
 
       code {
         font-family: var(--font-mono);
@@ -147,13 +147,13 @@
 
     &__path-icon {
       flex-shrink: 0;
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
     }
 
     &__meta {
       margin: 0;
       font-size: var(--text-xs);
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
     }
 
     &__actions {

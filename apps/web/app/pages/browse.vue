@@ -186,7 +186,7 @@
     &__subtitle {
       margin: var(--space-1) 0 0;
       font-size: var(--text-sm);
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
     }
 
     &__controls {
@@ -220,7 +220,7 @@
 
     &__sort-label {
       font-size: var(--text-sm);
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
     }
 
     &__grid {

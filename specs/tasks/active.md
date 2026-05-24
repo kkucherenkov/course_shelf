@@ -1,24 +1,26 @@
 # Active tasks
 
-## T-2026-05-24-014 — Auth follow-ups: live rate-limit, SSO off sign-up, drop orphan
+## T-2026-05-24-015 — Auth cheap polish: first-run framing, autofocus, form width
 
-- Created: 2026-05-24
+- Created: 2026-05-25
 - Owner: claude
-- Spec: `.impeccable/critique/2026-05-24T17-…__apps-web-app-pages-sign-in-vue.md` (Auth re-critique 28 → 31; the #219 gaps)
-- Goal: make the rate-limit banner actually reachable, finish the brief's "no third-party" on sign-up, and remove the dead marketing component.
+- Spec: `.impeccable/critique/…__apps-web-app-pages-sign-in-vue.md` (Auth re-critique 33; the cheap frontend gaps)
+- Goal: clear the cheap, frontend-only Auth gaps from the re-critique.
 - Acceptance:
-  - a 429 sign-in surfaces `statusCode`/`retryAfter` from the store, so `RateLimitBanner` mounts with the server's Retry-After
-  - sign-up no longer renders an SSO block / divider
-  - `AuthMarketing.vue` is gone (0 references)
+  - first-run sign-up shows the "first administrator" framing (not the generic SaaS copy)
+  - the "No credit card" SaaS-ism is gone
+  - sign-in autofocuses the email field
+  - the auth form column matches the brief's 380px
 - Spec diff: none
 - Codegen impact: no
-- Design impact: none new
-- Tests: existing suites green; i18n parity (en/ru, unchanged)
-- Notes (carried, not in scope): rate-limit "12 min" magnitude depends on the backend lockout window (now plumbed via Retry-After, falls back to 60s); `promoteToAdmin` is a backend stub; OTP paste + structured error codes deferred; `$form-max-width` 420 vs 380.
+- Design impact: none
+- Tests: existing green; i18n parity (en/ru — reuses `setup.*`, reworded `signUp.subtitle`)
+- Notes (NOT cheap, left out): `promoteToAdmin` is a backend stub (Better Auth `admin.setRole`); OTP paste; structured error codes; sign-up step 2→1 discards the verify code.
 - Sub-steps:
-  - [x] `authStore.signIn` returns `statusCode` + `retryAfter` (Better Auth `error.status` + `Retry-After` via `onError`); page drops the casts
-  - [x] remove SSO block/divider + imports + `ssoProviders` from `sign-up.vue`
-  - [x] `git rm` orphan `AuthMarketing.vue`
-  - [x] lint/format (eslint clean; stylelint clean on changed .vue; `@app/ui` green). NOTE: `@app/web` vitest can't start under Node 20 (`ERR_REQUIRE_ESM`); `auth.spec` asserts are property-level so the additive `signIn` fields don't break them.
+  - [x] sign-up: first-run-aware `title`/`subtitle` (`setup.*` when `hasUsers === false`)
+  - [x] reword `signUp.subtitle` (drop "Free for self-hosters. No credit card.") en + ru
+  - [x] sign-in: `autofocus` on the email field
+  - [x] `AuthLayout` `$form-max-width` 420 → 380
+  - [x] lint/format (eslint web clean; stylelint clean on changed .vue — no `--no-verify`; i18n parity reused/reworded)
 - Status: in-progress (awaiting commit/PR)
 - Blockers: —

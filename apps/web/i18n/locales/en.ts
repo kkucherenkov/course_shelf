@@ -73,7 +73,7 @@ export default {
     },
     signUp: {
       title: 'Create your account',
-      subtitle: 'Free for self-hosters. No credit card.',
+      subtitle: 'Choose a display name and password to get started.',
       disabledTitle: 'Sign-up is disabled',
       disabledBody: 'Sign-up is disabled on this instance. Contact your administrator.',
       stepAccount: 'Account',

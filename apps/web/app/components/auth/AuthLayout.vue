@@ -24,7 +24,7 @@
 </template>
 
 <style lang="scss" scoped>
-  $form-max-width: 420px; // max readable width for auth forms
+  $form-max-width: 380px; // max readable width for auth forms (brief §6.2)
 
   .auth-layout {
     display: flex;

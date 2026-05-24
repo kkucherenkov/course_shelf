@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { AppNoPermission, AppSkeleton } from '@app/ui';
+  import { AppButton, AppNoPermission, AppSkeleton } from '@app/ui';
   import type { CourseMaterialItem, LessonOutlineItem } from '@app/api-client-ts';
 
   import { accentFromId } from '~/utils/course-accent';
@@ -53,11 +53,11 @@
   });
 
   /**
-   * The "current" lesson:
-   * - If any lesson is in-progress, pick the first one (most recently watched
-   *   would need a timestamp, but the backend returns them sorted by position,
-   *   so we take the last in-progress lesson as the resume target).
-   * - Otherwise take the first not-started lesson.
+   * The lesson to resume:
+   * - the furthest-along in-progress lesson (last by position), since the
+   *   backend returns lessons sorted by position and we lack a watched-at
+   *   timestamp; otherwise
+   * - the first not-started lesson.
    */
   const resumeLesson = computed<LessonOutlineItem | null>(() => {
     const lessons = allLessons.value;
@@ -70,6 +70,9 @@
 
   /** The lesson id to highlight as "current" in the rows. */
   const currentLessonId = computed<string | null>(() => resumeLesson.value?.id ?? null);
+
+  /** First lesson in the course — the rewatch target once everything is done. */
+  const firstLessonId = computed<string | null>(() => allLessons.value[0]?.id ?? null);
 
   /**
    * Find the section number and lesson position for the resume CTA label.
@@ -91,13 +94,16 @@
         lesson: resumePosition.value.lesson,
       });
     }
+    // A finished course can't be "started" — offer a rewatch from the top.
+    if (courseState.value === 'completed') return t('pages.courseDetail.ctaRewatch');
     return t('pages.courseDetail.ctaStart');
   });
 
   const primaryCTAHref = computed<string>(() => {
-    const lessonId = resumeLesson.value?.id;
+    // Resume target when in-progress/not-started; first lesson when completed
+    // (rewatch). Only '#' when the course genuinely has no lessons.
+    const lessonId = resumeLesson.value?.id ?? firstLessonId.value;
     if (lessonId) return `/courses/${courseId}/lessons/${lessonId}`;
-    // Fallback — no lesson to jump to (all completed with no "first not-started")
     return '#';
   });
 
@@ -114,6 +120,15 @@
   const lessonsLabel = computed<string>(() => {
     const n = data.value?.course.lessonsTotal ?? 0;
     return t('pages.courseDetail.lessons', n, { named: { n } });
+  });
+
+  // Total course duration for the hero meta. Empty (hidden) when unknown.
+  const durationLabel = computed<string>(() => {
+    const totalSec = data.value?.course.totalDurationSeconds ?? 0;
+    if (totalSec <= 0) return '';
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.round((totalSec % 3600) / 60);
+    return t('pages.courseDetail.durationValue', { h, m });
   });
 
   // ── Access control ───────────────────────────────────────────────────────────
@@ -172,9 +187,12 @@
       />
       <div v-else class="page-course-detail__load-error">
         <p class="page-course-detail__load-error-msg">{{ t('pages.courseDetail.loadingError') }}</p>
-        <button type="button" class="page-course-detail__retry-btn" @click="refetch()">
-          {{ t('pages.courseDetail.retry') }}
-        </button>
+        <AppButton
+          variant="secondary"
+          size="md"
+          :label="t('pages.courseDetail.retry')"
+          @click="refetch()"
+        />
       </div>
     </div>
 
@@ -197,6 +215,7 @@
         :resume-label="primaryCTALabel"
         :instructor-label="t('pages.courseDetail.instructorBy')"
         :lessons-label="lessonsLabel"
+        :duration-label="durationLabel"
         :progress-label="t('pages.courseDetail.progress')"
         class="page-course-detail__hero"
       />
@@ -281,21 +300,6 @@
       margin: 0;
       font-size: var(--text-base);
       color: var(--text-secondary);
-    }
-
-    &__retry-btn {
-      appearance: none;
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-md);
-      background: transparent;
-      color: var(--text-fg);
-      padding: var(--space-2) var(--space-4);
-      font-size: var(--text-sm);
-      cursor: pointer;
-
-      &:hover {
-        background: var(--surface-raised);
-      }
     }
 
     &__skeleton {

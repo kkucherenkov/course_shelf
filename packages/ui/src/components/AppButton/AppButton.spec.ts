@@ -135,4 +135,40 @@ describe('AppButton', () => {
     expect(wrapper.find('.app-button__icon--trailing').exists()).toBe(true);
     expect(wrapper.find('.app-button__label').text()).toBe('Go');
   });
+
+  // --- link mode (`to`) ---
+
+  // Register NuxtLink as a plain anchor so resolveComponent('NuxtLink')
+  // resolves in the unit env and we can assert the rendered tag/attributes.
+  const linkGlobal = {
+    stubs: { IconCS: true },
+    components: { NuxtLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } },
+  } as const;
+
+  it('renders as a link (anchor) carrying the button classes when `to` is set', () => {
+    const wrapper = mount(AppButton, { global: linkGlobal, props: { label: 'Open', to: '/x' } });
+    const a = wrapper.find('a');
+    expect(a.exists()).toBe(true);
+    expect(a.attributes('href')).toBe('/x');
+    expect(a.classes()).toContain('app-button');
+    expect(wrapper.find('button').exists()).toBe(false);
+  });
+
+  it('falls back to a <button> when `to` is set but disabled', () => {
+    const wrapper = mount(AppButton, {
+      global: linkGlobal,
+      props: { label: 'Open', to: '/x', disabled: true },
+    });
+    expect(wrapper.find('a').exists()).toBe(false);
+    expect(wrapper.find('button').exists()).toBe(true);
+  });
+
+  it('falls back to a <button> when `to` is set but loading', () => {
+    const wrapper = mount(AppButton, {
+      global: linkGlobal,
+      props: { label: 'Open', to: '/x', loading: true },
+    });
+    expect(wrapper.find('a').exists()).toBe(false);
+    expect(wrapper.find('button').exists()).toBe(true);
+  });
 });

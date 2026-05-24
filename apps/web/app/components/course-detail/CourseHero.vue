@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { AppProgressLinear } from '@app/ui';
+  import { AppProgressLinear, COVER } from '@app/ui';
   import type { CourseOutlineSummary } from '@app/api-client-ts';
   import type { CourseAccent } from '@app/ui';
 
@@ -10,21 +10,13 @@
     resumeLabel: string;
     instructorLabel: string;
     lessonsLabel: string;
+    /** Optional total-duration label (e.g. "9h 45m"); hidden when empty. */
+    durationLabel?: string;
     progressLabel: string;
   }>();
 
-  // COVER map mirrors the one in @app/ui/CourseCard — used to derive cover bg.
-  // These values live in TypeScript (not SCSS), which is how the UI lib does it.
-  const ACCENT_BG: Record<CourseAccent, string> = {
-    teal: '#3F8C84',
-    amber: '#C8821C',
-    indigo: '#6B72B8',
-    warm: '#5C5644',
-    coral: '#D26B5C',
-    neutral: '#454952',
-  };
-
-  const coverStyle = computed(() => ({ background: ACCENT_BG[props.accent] }));
+  // Cover background reuses the single source of truth from @app/ui.
+  const coverStyle = computed(() => ({ background: COVER[props.accent] }));
 </script>
 
 <template>
@@ -41,7 +33,7 @@
       </p>
       <h1 class="course-hero__title">{{ course.title }}</h1>
       <p class="course-hero__meta">
-        {{ lessonsLabel }}
+        {{ lessonsLabel }}<template v-if="durationLabel"> · {{ durationLabel }}</template>
       </p>
       <div class="course-hero__progress-wrap">
         <AppProgressLinear
@@ -97,8 +89,7 @@
     &__cover-inner {
       width: 100%;
       height: 100%;
-      // background is set via :style binding in the component script
-      background: var(--surface-raised);
+      // background is set via the :style binding in the component script
       opacity: 0.85;
     }
 

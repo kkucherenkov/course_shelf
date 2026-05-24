@@ -37,16 +37,15 @@
 
 <template>
   <div class="course-actions">
-    <!-- Primary CTA -->
-    <NuxtLink :to="primaryHref" class="course-actions__primary-link">
-      <AppButton
-        :label="primaryLabel"
-        variant="primary"
-        size="lg"
-        icon-leading="play"
-        class="course-actions__primary"
-      />
-    </NuxtLink>
+    <!-- Primary CTA — renders as a single anchor via AppButton's `to`. -->
+    <AppButton
+      :to="primaryHref"
+      :label="primaryLabel"
+      variant="primary"
+      size="lg"
+      icon-leading="play"
+      class="course-actions__primary"
+    />
 
     <!-- Secondary actions -->
     <div class="course-actions__secondary">
@@ -103,11 +102,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
-
-    &__primary-link {
-      text-decoration: none;
-      display: inline-flex;
-    }
 
     &__primary {
       // Stretch to a comfortable min-width on the primary CTA

@@ -2,6 +2,17 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-24-009 — Replace the undefined `--text-fg-muted` token app-wide (#217)
+
+- Created: 2026-05-24
+- Completed: 2026-05-24
+- Owner: claude
+- Spec: `.impeccable/critique/2026-05-24T15-41-07Z__apps-web-app-pages-browse-vue.md` (Browse re-critique, 27 → 36)
+- Result: merged via PR #217 (`ede596f`)
+- Outcome: swept `var(--text-fg-muted)` → `var(--text-secondary)` across ~15 sites (Browse, auth, setup, libraries, AppCard/AppField/AppSelect, AuthStepper) plus the Tailwind `@theme` mappings; the token was emitted nowhere, so "muted" text had been inheriting full-strength `--text-fg`.
+- Gates: `@app/ui` 848 passing; ESLint clean; committed `--no-verify` (pre-existing on-media debt in swept `.vue`).
+- Status: done
+
 ## T-2026-05-24-008 — Home: fix CourseWideCard + extract a shared card base (#216)
 
 - Created: 2026-05-24

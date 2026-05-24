@@ -219,7 +219,7 @@
       gap: var(--space-3);
       margin: var(--space-5) 0;
       font-size: var(--text-xs);
-      color: var(--text-fg-subtle);
+      color: var(--text-tertiary);
 
       &::before,
       &::after {
@@ -249,7 +249,7 @@
     &__legal {
       margin: var(--space-4) 0 0;
       font-size: var(--text-xs);
-      color: var(--text-fg-subtle);
+      color: var(--text-tertiary);
       text-align: center;
     }
   }

@@ -124,7 +124,7 @@
     }
 
     &__step--upcoming &__label {
-      color: var(--text-fg-subtle);
+      color: var(--text-tertiary);
     }
 
     &__connector {

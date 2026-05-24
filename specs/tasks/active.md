@@ -1,21 +1,23 @@
 # Active tasks
 
-## T-2026-05-24-009 — Replace the undefined `--text-fg-muted` token app-wide
+## T-2026-05-24-010 — `--text-fg-subtle` token sweep + Settings P3 polish
 
 - Created: 2026-05-24
 - Owner: claude
-- Spec: `.impeccable/critique/2026-05-24T15-41-07Z__apps-web-app-pages-browse-vue.md` (re-critique P2, 36/40)
-- Goal: "muted" text renders muted — no references to a token that resolves to nothing.
+- Spec: `.impeccable/critique/2026-05-24T16-10-37Z__apps-web-app-pages-settings-vue.md` (Settings re-critique, 31 → 38) + the `--text-fg-subtle` follow-up flagged in #217
+- Goal: kill the second undefined-token bug app-wide and clear the Settings P3 polish.
 - Acceptance:
-  - no `var(--text-fg-muted)` remains in the codebase (it was defined nowhere)
-  - the Tailwind `--color-fg-muted` theme mapping resolves to a real token
+  - no `var(--text-fg-subtle)` remains (it was emitted nowhere); subtle text resolves to `--text-tertiary`
+  - the completion-threshold slider announces a percentage to screen readers
+  - a wide segmented picker scrolls rather than overflowing on a narrow viewport
 - Spec diff: none
 - Codegen impact: no
-- Design impact: CSS value swap only (`--text-fg-muted` → `--text-secondary`) across ~15 sites
-- Tests: none (CSS value); existing suites must stay green
-- Notes: sibling `--text-fg-subtle` is the same undefined-token bug (~11 sites) but should map to `--text-tertiary`, not `--text-secondary` — left as a follow-up to keep this scope clean. Re-critique minors deferred: sort "duration" (backend-blocked — not in the OpenAPI `sort` enum), chip radiogroup semantics (needs an AppChip radio mode or AppSegmented, which would overflow with 4 wide labels on mobile).
+- Design impact: CSS value swap (`--text-fg-subtle` → `--text-tertiary`) + `settings.vue` a11y
+- Tests: none new (CSS/aria); existing suites stay green
+- Notes: kept the disabled "coming soon" controls (avatar/email/delete) as disabled-with-cue rather than hiding — communicates the roadmap and is honest. Settings re-critique left no P0/P1/P2.
 - Sub-steps:
-  - [x] sweep `var(--text-fg-muted)` → `var(--text-secondary)` (incl. the `@theme` mappings)
+  - [x] sweep `var(--text-fg-subtle)` → `var(--text-tertiary)` (incl. the `@theme` mappings)
+  - [x] `settings.vue`: slider `aria-valuetext`; segmented overflow guard
   - [x] lint/format/tests (eslint clean; @app/ui 848 green; prettier applied)
 - Status: in-progress (awaiting commit/PR)
 - Blockers: —

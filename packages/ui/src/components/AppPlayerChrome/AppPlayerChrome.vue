@@ -22,6 +22,27 @@
     label?: string;
   }
 
+  /** Screen-reader labels for the chrome controls. `bookmarkAt` takes `{time}`. */
+  export interface PlayerChromeAriaLabels {
+    player: string;
+    buffering: string;
+    pip: string;
+    settings: string;
+    seek: string;
+    bookmarkAt: string;
+    pause: string;
+    play: string;
+    prevLesson: string;
+    nextLesson: string;
+    mute: string;
+    unmute: string;
+    speed: string;
+    subtitlesEnable: string;
+    subtitlesDisable: string;
+    fullscreenEnter: string;
+    fullscreenExit: string;
+  }
+
   const props = withDefaults(
     defineProps<{
       /** Drives the overlay rendered above the video frame. */
@@ -66,6 +87,8 @@
       /** Disable the prev/next controls at the course boundaries. */
       hasPrev?: boolean;
       hasNext?: boolean;
+      /** Localized screen-reader labels; English defaults fill any gaps. */
+      ariaLabels?: Partial<PlayerChromeAriaLabels>;
     }>(),
     {
       state: 'idle',
@@ -89,6 +112,7 @@
       playNextLabel: 'Play next',
       hasPrev: true,
       hasNext: true,
+      ariaLabels: () => ({}),
     },
   );
 
@@ -106,6 +130,28 @@
     retry: [];
     stayHere: [];
   }>();
+
+  const DEFAULT_ARIA: PlayerChromeAriaLabels = {
+    player: 'Lesson video player',
+    buffering: 'Buffering',
+    pip: 'Picture in picture',
+    settings: 'Settings',
+    seek: 'Seek',
+    bookmarkAt: 'Bookmark at {time}',
+    pause: 'Pause',
+    play: 'Play',
+    prevLesson: 'Previous lesson',
+    nextLesson: 'Next lesson',
+    mute: 'Mute',
+    unmute: 'Unmute',
+    speed: 'Playback speed',
+    subtitlesEnable: 'Enable subtitles',
+    subtitlesDisable: 'Disable subtitles',
+    fullscreenEnter: 'Enter fullscreen',
+    fullscreenExit: 'Exit fullscreen',
+  };
+
+  const aria = computed<PlayerChromeAriaLabels>(() => ({ ...DEFAULT_ARIA, ...props.ariaLabels }));
 
   const SEEK_STEP_S = 5;
   const SEEK_LARGE_S = 10;
@@ -266,7 +312,7 @@
     ]"
     :tabindex="isInert ? -1 : 0"
     role="region"
-    aria-label="Lesson video player"
+    :aria-label="aria.player"
     @keydown="onKeydown"
   >
     <div class="app-player-chrome__frame" aria-hidden="true">
@@ -279,7 +325,7 @@
       class="app-player-chrome__state-overlay"
       role="status"
       aria-live="polite"
-      aria-label="Buffering"
+      :aria-label="aria.buffering"
     >
       <div class="app-player-chrome__buffer-spinner" aria-hidden="true" />
     </div>
@@ -338,12 +384,12 @@
             v-if="pipAvailable"
             type="button"
             class="app-player-chrome__btn"
-            aria-label="Picture in picture"
+            :aria-label="aria.pip"
             @click="emit('togglePip')"
           >
             <IconCS name="pip" :size="16" />
           </button>
-          <button type="button" class="app-player-chrome__btn" aria-label="Settings">
+          <button type="button" class="app-player-chrome__btn" :aria-label="aria.settings">
             <IconCS name="settings" :size="16" />
           </button>
         </div>
@@ -359,7 +405,7 @@
           :aria-valuemax="duration"
           :aria-valuenow="position"
           :aria-valuetext="sliderValueText"
-          aria-label="Seek"
+          :aria-label="aria.seek"
           :aria-disabled="isInert ? 'true' : undefined"
           @click="onScrubberPointer"
           @keydown="onScrubberKeydown"
@@ -390,7 +436,7 @@
             type="button"
             class="app-player-chrome__scrubber-bm"
             :style="{ left: `${String(clamp01(bm.time / nonZero(duration)) * 100)}%` }"
-            :aria-label="bm.label ?? `Bookmark at ${fmtTime(bm.time)}`"
+            :aria-label="bm.label ?? aria.bookmarkAt.replace('{time}', fmtTime(bm.time))"
             @click.stop="seekTo(bm.time / nonZero(duration))"
           >
             <IconCS name="bookmark" :size="10" />
@@ -401,7 +447,7 @@
           <button
             type="button"
             class="app-player-chrome__btn"
-            :aria-label="isPlaying ? 'Pause' : 'Play'"
+            :aria-label="isPlaying ? aria.pause : aria.play"
             :aria-pressed="isPlaying ? 'true' : 'false'"
             :disabled="isInert"
             @click="togglePlay"
@@ -411,7 +457,7 @@
           <button
             type="button"
             class="app-player-chrome__btn"
-            aria-label="Previous lesson"
+            :aria-label="aria.prevLesson"
             :disabled="!hasPrev"
             @click="emit('prevLesson')"
           >
@@ -420,7 +466,7 @@
           <button
             type="button"
             class="app-player-chrome__btn"
-            aria-label="Next lesson"
+            :aria-label="aria.nextLesson"
             :disabled="!hasNext"
             @click="emit('nextLesson')"
           >
@@ -429,7 +475,7 @@
           <button
             type="button"
             class="app-player-chrome__btn"
-            :aria-label="muted ? 'Unmute' : 'Mute'"
+            :aria-label="muted ? aria.unmute : aria.mute"
             :aria-pressed="muted ? 'true' : 'false'"
             @click="emit('toggleMute')"
           >
@@ -442,7 +488,7 @@
           <button
             type="button"
             class="app-player-chrome__btn app-player-chrome__btn--text"
-            aria-label="Playback speed"
+            :aria-label="aria.speed"
             @click="emit('speed', props.speed)"
           >
             {{ speedLabel }}
@@ -450,7 +496,7 @@
           <button
             type="button"
             class="app-player-chrome__btn"
-            :aria-label="subtitlesEnabled ? 'Disable subtitles' : 'Enable subtitles'"
+            :aria-label="subtitlesEnabled ? aria.subtitlesDisable : aria.subtitlesEnable"
             :aria-pressed="subtitlesEnabled ? 'true' : 'false'"
             @click="emit('toggleSubtitles')"
           >
@@ -459,7 +505,7 @@
           <button
             type="button"
             class="app-player-chrome__btn"
-            :aria-label="fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'"
+            :aria-label="fullscreen ? aria.fullscreenExit : aria.fullscreenEnter"
             :aria-pressed="fullscreen ? 'true' : 'false'"
             @click="emit('toggleFullscreen')"
           >

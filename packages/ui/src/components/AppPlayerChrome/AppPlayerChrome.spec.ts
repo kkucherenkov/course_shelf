@@ -233,6 +233,14 @@ describe('AppPlayerChrome', () => {
       const locked = makeWrapper({ state: 'locked', lockedLabel: 'Нет доступа' });
       expect(locked.text()).toContain('Нет доступа');
     });
+
+    it('applies ariaLabels overrides to control labels', () => {
+      const wrapper = makeWrapper({
+        ariaLabels: { nextLesson: 'Следующий урок', player: 'Видеоплеер' },
+      });
+      expect(wrapper.find('button[aria-label="Следующий урок"]').exists()).toBe(true);
+      expect(wrapper.find('[aria-label="Видеоплеер"]').exists()).toBe(true);
+    });
   });
 
   describe('keyboard map', () => {

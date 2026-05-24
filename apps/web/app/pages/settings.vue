@@ -491,6 +491,7 @@
             step="5"
             class="settings-slider"
             :aria-label="t('pages.settings.playbackThresholdLabel')"
+            :aria-valuetext="`${prefs.completionThreshold}%`"
             @input="
               (e) => prefs.setCompletionThreshold(Number((e.target as HTMLInputElement).value))
             "
@@ -644,6 +645,14 @@
   }
 
   // ── Row ────────────────────────────────────────────────────────────────────
+
+  // AppSegmented is inline-flex with no wrap; cap it to the row width and let
+  // it scroll rather than overflow when a picker is wide (e.g. the 6-item
+  // speed control on a very narrow viewport).
+  .settings-row :deep(.app-segmented) {
+    max-width: 100%;
+    overflow-x: auto;
+  }
 
   .settings-row {
     display: flex;

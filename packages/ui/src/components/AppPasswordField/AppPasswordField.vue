@@ -171,7 +171,7 @@
         box-shadow var(--dur-fast) var(--ease-default);
 
       &::placeholder {
-        color: var(--text-fg-subtle);
+        color: var(--text-tertiary);
       }
 
       &:focus-visible {

@@ -200,7 +200,7 @@
       font-size: var(--text-xs);
       font-weight: var(--fw-medium);
       letter-spacing: var(--tracking-widest);
-      color: var(--text-fg-subtle);
+      color: var(--text-tertiary);
       margin-bottom: var(--space-3);
       text-transform: uppercase;
     }

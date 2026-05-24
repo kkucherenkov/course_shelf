@@ -142,7 +142,7 @@
     &__legal {
       margin: 0;
       font-size: var(--text-xs);
-      color: var(--text-fg-subtle);
+      color: var(--text-tertiary);
       text-align: center;
     }
   }

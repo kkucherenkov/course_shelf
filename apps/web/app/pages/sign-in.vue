@@ -1,15 +1,5 @@
 <script setup lang="ts">
-  import {
-    AppField,
-    AppInput,
-    AppButton,
-    AppCheckbox,
-    AppSsoBlock,
-    AppBanner,
-    AppPasswordField,
-  } from '@app/ui';
-  import type { SsoProvider } from '@app/ui';
-  import type { IconName } from '@app/ui';
+  import { AppField, AppInput, AppButton, AppCheckbox, AppBanner, AppPasswordField } from '@app/ui';
   import { ref, computed } from 'vue';
 
   import { useAuthStore } from '~/stores/auth';
@@ -18,6 +8,7 @@
   definePageMeta({ layout: false });
 
   const { t } = useI18n();
+  const toast = useToast();
   const authStore = useAuthStore();
   const { config } = useInstanceConfig();
 
@@ -31,16 +22,15 @@
   const passwordValid = computed(() => password.value.length >= 8);
   const formValid = computed(() => emailValid.value && passwordValid.value);
 
-  // SsoProviderConfig.iconName is string; AppSsoBlock.SsoProvider.iconName is IconName (union).
-  // The cast is safe: the backend only emits valid icon names.
-  const ssoProviders = computed<SsoProvider[]>(() =>
-    config.value.ssoProviders.map((p) => ({
-      id: p.id,
-      label: p.label,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      iconName: p.iconName as IconName,
-    })),
-  );
+  // Countdown formatter — m:ss once we're over a minute, else "{n}s".
+  function formatRetry(sec: number): string {
+    if (sec >= 60) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${String(m)}:${String(s).padStart(2, '0')}`;
+    }
+    return `${String(sec)}s`;
+  }
 
   async function onSignIn(): Promise<void> {
     if (rateLimitSec.value !== null) return;
@@ -54,7 +44,7 @@
       return;
     }
 
-    const result = await authStore.signIn(email.value, password.value);
+    const result = await authStore.signIn(email.value, password.value, keepSignedIn.value);
 
     if (!result.ok) {
       const statusCode = (result as { statusCode?: number }).statusCode;
@@ -71,6 +61,7 @@
           : t('pages.signIn.errorGeneric');
       return;
     }
+    toast.add({ title: t('pages.signIn.successToast'), color: 'success' });
     await navigateTo('/');
   }
 
@@ -91,14 +82,17 @@
         </p>
       </div>
 
-      <!-- Rate-limit banner -->
+      <!-- Rate-limit banner — the banner owns the countdown; we format it. -->
       <RateLimitBanner
         v-if="rateLimitSec !== null"
         :retry-after-sec="rateLimitSec"
-        :body-prefix="t('pages.signIn.errorRateLimit', { n: rateLimitSec })"
         class="page-sign-in__banner"
         @expired="onRateLimitExpired"
-      />
+      >
+        <template #default="{ remaining }">
+          {{ t('pages.signIn.errorRateLimit', { time: formatRetry(remaining) }) }}
+        </template>
+      </RateLimitBanner>
 
       <!-- Generic error banner -->
       <AppBanner
@@ -150,14 +144,6 @@
           :disabled="!formValid || rateLimitSec !== null"
         />
       </form>
-
-      <!-- SSO block — only when providers are configured -->
-      <template v-if="ssoProviders.length > 0">
-        <div class="page-sign-in__divider" aria-hidden="true">
-          <span>or</span>
-        </div>
-        <AppSsoBlock :providers="ssoProviders" />
-      </template>
 
       <!-- Sign-up CTA — hidden when self-registration is disabled -->
       <p v-if="config.selfRegistration" class="page-sign-in__footnote-link">
@@ -211,23 +197,6 @@
       align-items: center;
       justify-content: space-between;
       gap: var(--space-4);
-    }
-
-    &__divider {
-      display: flex;
-      align-items: center;
-      gap: var(--space-3);
-      margin: var(--space-5) 0;
-      font-size: var(--text-xs);
-      color: var(--text-tertiary);
-
-      &::before,
-      &::after {
-        content: '';
-        flex: 1;
-        height: 1px;
-        background: var(--border-default);
-      }
     }
 
     &__footnote-link {

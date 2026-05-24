@@ -68,7 +68,8 @@ export default {
       errorPasswordTooShort: 'Password must be at least 8 characters.',
       errorCredentials: 'Incorrect email or password. Please try again.',
       errorGeneric: 'Something went wrong. Please try again.',
-      errorRateLimit: 'Too many attempts. Try again in {n}s.',
+      errorRateLimit: 'Too many attempts. Try again in {time}.',
+      successToast: 'Signed in',
     },
     signUp: {
       title: 'Create your account',
@@ -208,8 +209,12 @@ export default {
       emptyTypeSomething: 'Type something in the search bar above',
       emptyShortQuery: 'Keep typing — at least 2 characters',
       emptyNoMatches: 'No matches for "{q}"',
+      emptyNoMatchesBody: 'Try a broader term or check the spelling.',
+      emptyBrowseAll: 'Browse all courses',
       courseLessonsTotal: '{n} lesson | {n} lessons',
-      errorTitle: 'Search failed',
+      errorTitle: "Couldn't run your search",
+      errorBody: 'Check your connection, then try again.',
+      errorBodyRateLimited: 'Too many searches just now. Wait a moment, then try again.',
       errorRetry: 'Try again',
     },
     browse: {

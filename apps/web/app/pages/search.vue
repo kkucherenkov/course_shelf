@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { AppEmptyState, AppSkeleton } from '@app/ui';
+  import { AppButton, AppEmptyState, AppSkeleton } from '@app/ui';
   import type { SearchCourseHit, SearchLessonHit } from '@app/api-client-ts';
 
   import { useSearch } from '~/composables/useSearch';
@@ -18,7 +18,15 @@
     return typeof raw === 'string' ? raw : '';
   });
 
-  const { data, status } = useSearch(q);
+  const { data, status, errorStatus, retry } = useSearch(q);
+
+  // Cause-specific error body: rate-limit reads differently from a transient
+  // failure. (Other statuses share one actionable line.)
+  const errorBody = computed<string>(() =>
+    errorStatus.value === 429
+      ? t('pages.search.errorBodyRateLimited')
+      : t('pages.search.errorBody'),
+  );
 
   const courses = computed<SearchCourseHit[]>(() => data.value?.courses ?? []);
   const lessons = computed<SearchLessonHit[]>(() => data.value?.lessons ?? []);
@@ -84,11 +92,15 @@
     </template>
 
     <!-- ── Error ──────────────────────────────────────────────────────────── -->
-    <div v-else-if="status === 'error'" class="page-search__error">
+    <div v-else-if="status === 'error'" class="page-search__error" role="alert">
       <p class="page-search__error-title">{{ t('pages.search.errorTitle') }}</p>
-      <NuxtLink :to="`/search?q=${encodeURIComponent(q)}`" class="page-search__error-retry">
-        {{ t('pages.search.errorRetry') }}
-      </NuxtLink>
+      <p class="page-search__error-body">{{ errorBody }}</p>
+      <AppButton
+        variant="secondary"
+        size="sm"
+        :label="t('pages.search.errorRetry')"
+        @click="retry"
+      />
     </div>
 
     <!-- ── No results ─────────────────────────────────────────────────────── -->
@@ -96,11 +108,15 @@
       v-else-if="isEmpty"
       icon="search"
       :title="t('pages.search.emptyNoMatches', { q })"
+      :body="t('pages.search.emptyNoMatchesBody')"
     >
       <template #action>
-        <NuxtLink to="/search" class="page-search__clear-link">
-          {{ t('pages.search.emptyTypeSomething') }}
-        </NuxtLink>
+        <AppButton
+          variant="secondary"
+          size="sm"
+          to="/browse"
+          :label="t('pages.search.emptyBrowseAll')"
+        />
       </template>
     </AppEmptyState>
 
@@ -371,29 +387,15 @@
     }
 
     &__error-title {
-      margin: 0 0 var(--space-3);
+      margin: 0 0 var(--space-1);
       font-size: var(--text-sm);
       color: var(--status-error-fg);
     }
 
-    &__error-retry {
+    &__error-body {
+      margin: 0 0 var(--space-3);
       font-size: var(--text-sm);
-      color: var(--brand-accent);
-      text-decoration: none;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-
-    &__clear-link {
-      font-size: var(--text-sm);
-      color: var(--brand-accent);
-      text-decoration: none;
-
-      &:hover {
-        text-decoration: underline;
-      }
+      color: var(--text-secondary);
     }
   }
 </style>

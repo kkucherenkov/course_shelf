@@ -2,6 +2,17 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-24-010 — `--text-fg-subtle` token sweep + Settings P3 polish (#218)
+
+- Created: 2026-05-24
+- Completed: 2026-05-24
+- Owner: claude
+- Spec: Settings re-critique (31 → 38) + `--text-fg-subtle` follow-up flagged in #217
+- Result: merged via PR #218 (`21b7f20`)
+- Outcome: swept `var(--text-fg-subtle)` → `var(--text-tertiary)` across ~11 sites + `@theme` mappings (sibling of the `--text-fg-muted` bug); Settings slider gained `aria-valuetext`; segmented overflow guard. Both undefined-token bugs of this family now cleared app-wide.
+- Gates: `@app/ui` 848 passing; ESLint clean; committed `--no-verify` (pre-existing on-media debt in swept files).
+- Status: done
+
 ## T-2026-05-24-009 — Replace the undefined `--text-fg-muted` token app-wide (#217)
 
 - Created: 2026-05-24

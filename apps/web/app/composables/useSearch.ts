@@ -36,6 +36,8 @@ export interface UseSearchReturn {
   status: Ref<SearchStatus>;
   error: Ref<Error | null>;
   errorStatus: Ref<number | null>;
+  /** Re-run the current query (e.g. from an error-state retry button). */
+  retry: () => void;
 }
 
 export function useSearch(qRef: Ref<string>): UseSearchReturn {
@@ -82,10 +84,15 @@ export function useSearch(qRef: Ref<string>): UseSearchReturn {
     { immediate: true },
   );
 
+  function retry(): void {
+    if (isActive.value) void doSearch(trimmedQ.value);
+  }
+
   return {
     data: data as Ref<SearchResultDto | null>,
     status: status as Ref<SearchStatus>,
     error: error as Ref<Error | null>,
     errorStatus,
+    retry,
   };
 }

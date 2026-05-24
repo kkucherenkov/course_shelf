@@ -1,22 +1,19 @@
 <script setup lang="ts">
-  import { ref, onMounted, onUnmounted, computed } from 'vue';
+  import { ref, onMounted, onUnmounted } from 'vue';
   import { AppBanner } from '@app/ui';
 
-  const props = defineProps<{
-    retryAfterSec: number;
-    bodyPrefix?: string;
-  }>();
+  /**
+   * Owns the lockout countdown only; the parent renders the (localized,
+   * formatted) message via the default slot using the exposed `remaining`
+   * seconds. Keeping the copy in the parent avoids both i18n inside the
+   * component and the previous double-rendered "{prefix} {n}s {n}s" bug.
+   */
+  const props = defineProps<{ retryAfterSec: number }>();
 
   const emit = defineEmits<{ expired: [] }>();
 
   const remaining = ref(props.retryAfterSec);
   let timer: ReturnType<typeof setInterval> | null = null;
-
-  const displayText = computed(() => {
-    const prefix = props.bodyPrefix ?? '';
-    const sec = String(remaining.value);
-    return `${prefix} ${sec}s`.trim();
-  });
 
   onMounted(() => {
     timer = setInterval(() => {
@@ -34,5 +31,7 @@
 </script>
 
 <template>
-  <AppBanner variant="warning" :body="displayText" />
+  <AppBanner variant="warning">
+    <slot :remaining="remaining" />
+  </AppBanner>
 </template>

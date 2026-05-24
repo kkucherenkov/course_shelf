@@ -108,7 +108,7 @@
     &__description {
       margin: var(--space-1) 0 0;
       font-size: var(--text-sm);
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
     }
 
     // size: md (matches .card — 16px uniform, --radius-md)

@@ -70,7 +70,7 @@ const singleSelectRender: Story['render'] = (rawArgs) => {
     template: `
       <div style="width: 280px;">
         <AppSelect v-bind="args" v-model="value" :options="options" />
-        <p style="margin-top: var(--space-4); color: var(--text-fg-muted); font-family: var(--font-mono); font-size: var(--text-xs);">
+        <p style="margin-top: var(--space-4); color: var(--text-secondary); font-family: var(--font-mono); font-size: var(--text-xs);">
           modelValue: {{ value ?? 'null' }}
         </p>
       </div>

@@ -193,7 +193,7 @@
     &__subtitle {
       margin: 0;
       font-size: var(--text-sm);
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
     }
 
     &__banner {
@@ -233,7 +233,7 @@
     &__footnote-link {
       margin: var(--space-4) 0 0;
       font-size: var(--text-sm);
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
       text-align: center;
     }
 

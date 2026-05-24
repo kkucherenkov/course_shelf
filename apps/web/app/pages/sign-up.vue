@@ -474,7 +474,7 @@
     &__subtitle {
       margin: 0;
       font-size: var(--text-sm);
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
     }
 
     &__banner {
@@ -536,7 +536,7 @@
       margin: 0;
       text-align: center;
       font-size: var(--text-sm);
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
     }
 
     &__path-input {
@@ -551,7 +551,7 @@
     &__footnote-link {
       margin: var(--space-4) 0 0;
       font-size: var(--text-sm);
-      color: var(--text-fg-muted);
+      color: var(--text-secondary);
       text-align: center;
     }
 

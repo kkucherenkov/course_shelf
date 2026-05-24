@@ -12,8 +12,17 @@
       course: Course;
       state?: CourseState;
       loading?: boolean;
+      /**
+       * Whether the card is its own interactive control. Default `true`
+       * keeps the standalone button semantics (role/tabindex/keyboard).
+       * Set `false` when the card is wrapped in a link (the grid pattern):
+       * the wrapping anchor owns navigation, focus, and the accessible name,
+       * so the card must stay presentational to avoid nesting a button
+       * inside an `<a>` (a duplicate tab stop + invalid semantics).
+       */
+      interactive?: boolean;
     }>(),
-    { state: 'auto', loading: false },
+    { state: 'auto', loading: false, interactive: true },
   );
 
   const emit = defineEmits<{ click: [course: Course] }>();
@@ -31,6 +40,7 @@
   const coverInitials = computed(() => initials(props.course.title));
 
   function handleActivate(event: MouseEvent | KeyboardEvent): void {
+    if (!props.interactive) return;
     if (event instanceof KeyboardEvent && event.key !== 'Enter' && event.key !== ' ') return;
     emit('click', props.course);
   }
@@ -40,9 +50,9 @@
   <div
     v-if="!loading"
     class="course-poster-card"
-    tabindex="0"
-    role="button"
-    :aria-label="course.title"
+    :tabindex="interactive ? 0 : undefined"
+    :role="interactive ? 'button' : undefined"
+    :aria-label="interactive ? course.title : undefined"
     @click="handleActivate"
     @keydown="handleActivate"
   >
@@ -74,7 +84,7 @@
       <p class="course-poster-card__title">
         {{ course.title }}
       </p>
-      <p class="course-poster-card__instructor">
+      <p v-if="course.instructor" class="course-poster-card__instructor">
         {{ course.instructor }}
       </p>
     </div>

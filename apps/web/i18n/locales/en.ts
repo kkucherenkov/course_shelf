@@ -213,10 +213,14 @@ export default {
     browse: {
       title: 'Browse courses',
       subtitle: '{n} course | {n} courses',
+      subtitleLoading: 'Loading your courses…',
       emptyTitle: 'No courses yet',
       emptyBody: 'Add a library and trigger a scan to see courses here.',
-      emptyFilteredBody: 'No courses match the active filter.',
+      emptyFilteredTitle: 'No courses match this filter',
+      emptyFilteredBody: 'Clear the filter to see your whole shelf.',
+      emptyShowAll: 'Show all courses',
       errorTitle: 'Could not load courses',
+      errorBody: "We couldn't load your courses. Check your connection, then try again.",
       retry: 'Retry',
       filters: {
         regionLabel: 'Course filters and sort',

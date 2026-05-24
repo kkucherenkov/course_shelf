@@ -1,10 +1,7 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
-
   import AppSkeleton from '../AppSkeleton/AppSkeleton.vue';
   import IconCS from '../IconCS/IconCS.vue';
-  import { COVER, initials } from './cover-map';
-  import { useCourseProgress } from './use-course-progress';
+  import { useCourseCard } from './use-course-card';
   import type { Course, CourseState } from './types';
 
   const props = withDefaults(
@@ -14,11 +11,9 @@
       loading?: boolean;
       /**
        * Whether the card is its own interactive control. Default `true`
-       * keeps the standalone button semantics (role/tabindex/keyboard).
-       * Set `false` when the card is wrapped in a link (the grid pattern):
-       * the wrapping anchor owns navigation, focus, and the accessible name,
-       * so the card must stay presentational to avoid nesting a button
-       * inside an `<a>` (a duplicate tab stop + invalid semantics).
+       * keeps the standalone button semantics. Set `false` when the card is
+       * wrapped in a link so the anchor owns navigation/focus/name and the
+       * card stays presentational (no button nested inside an `<a>`).
        */
       interactive?: boolean;
     }>(),
@@ -27,22 +22,15 @@
 
   const emit = defineEmits<{ click: [course: Course] }>();
 
-  const { pct, realState } = useCourseProgress(
-    () => props.course,
-    () => props.state,
-  );
-
-  const coverStyle = computed(() => {
-    const bg = props.course.cover ?? COVER[props.course.accent];
-    return { background: bg };
-  });
-
-  const coverInitials = computed(() => initials(props.course.title));
+  const { pct, realState, coverStyle, coverInitials, interactiveAttrs, shouldActivate } =
+    useCourseCard(
+      () => props.course,
+      () => props.state,
+      () => props.interactive,
+    );
 
   function handleActivate(event: MouseEvent | KeyboardEvent): void {
-    if (!props.interactive) return;
-    if (event instanceof KeyboardEvent && event.key !== 'Enter' && event.key !== ' ') return;
-    emit('click', props.course);
+    if (shouldActivate(event)) emit('click', props.course);
   }
 </script>
 
@@ -50,9 +38,7 @@
   <div
     v-if="!loading"
     class="course-poster-card"
-    :tabindex="interactive ? 0 : undefined"
-    :role="interactive ? 'button' : undefined"
-    :aria-label="interactive ? course.title : undefined"
+    v-bind="interactiveAttrs"
     @click="handleActivate"
     @keydown="handleActivate"
   >

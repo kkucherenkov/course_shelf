@@ -24,7 +24,7 @@
 
   definePageMeta({ layout: 'default' });
 
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const authStore = useAuthStore();
 
   // ── Auth user info ──────────────────────────────────────────────────────────
@@ -99,7 +99,7 @@
   // ── Your week labels ────────────────────────────────────────────────────────
 
   function fmtDate(iso: string): string {
-    return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return new Date(iso).toLocaleDateString(locale.value, { month: 'short', day: 'numeric' });
   }
 
   const yourWeekMinutesLabel = computed(() => {
@@ -165,7 +165,7 @@
           >
             <CourseWideCard
               :course="continueWatchingToCourse(item)"
-              :resume-at="0"
+              :interactive="false"
               class="page-home__wide-card"
             />
           </NuxtLink>

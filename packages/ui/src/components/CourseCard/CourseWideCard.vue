@@ -3,41 +3,38 @@
 
   import AppSkeleton from '../AppSkeleton/AppSkeleton.vue';
   import IconCS from '../IconCS/IconCS.vue';
-  import { COVER, initials, fmtTime } from './cover-map';
-  import { useCourseProgress } from './use-course-progress';
+  import { useCourseCard } from './use-course-card';
   import type { Course, CourseState } from './types';
 
   const props = withDefaults(
     defineProps<{
       course: Course;
       state?: CourseState;
-      resumeAt?: number;
+      /**
+       * Translated resume label from the parent (e.g. "Resume 2:05"). When
+       * omitted, the card shows the completion percentage. The component
+       * never bakes a user-visible string itself.
+       */
+      resumeLabel?: string;
       loading?: boolean;
+      /** See CoursePosterCard — `false` when wrapped in a link. */
+      interactive?: boolean;
     }>(),
-    { state: 'auto', resumeAt: undefined, loading: false },
+    { state: 'auto', resumeLabel: undefined, loading: false, interactive: true },
   );
 
   const emit = defineEmits<{ click: [course: Course] }>();
 
-  const { pct } = useCourseProgress(
+  const { pct, coverStyle, coverInitials, interactiveAttrs, shouldActivate } = useCourseCard(
     () => props.course,
     () => props.state,
+    () => props.interactive,
   );
 
-  const coverStyle = computed(() => {
-    const bg = props.course.cover ?? COVER[props.course.accent];
-    return { background: bg };
-  });
-
-  const coverInitials = computed(() => initials(props.course.title));
-
-  const resumeLabel = computed(() =>
-    props.resumeAt === undefined ? `${String(pct.value)}%` : `Resume ${fmtTime(props.resumeAt)}`,
-  );
+  const metaLabel = computed(() => props.resumeLabel ?? `${String(pct.value)}%`);
 
   function handleActivate(event: MouseEvent | KeyboardEvent): void {
-    if (event instanceof KeyboardEvent && event.key !== 'Enter' && event.key !== ' ') return;
-    emit('click', props.course);
+    if (shouldActivate(event)) emit('click', props.course);
   }
 </script>
 
@@ -45,9 +42,7 @@
   <div
     v-if="!loading"
     class="course-wide-card"
-    tabindex="0"
-    role="button"
-    :aria-label="course.title"
+    v-bind="interactiveAttrs"
     @click="handleActivate"
     @keydown="handleActivate"
   >
@@ -65,12 +60,12 @@
       <p class="course-wide-card__title">
         {{ course.title }}
       </p>
-      <p class="course-wide-card__instructor">
+      <p v-if="course.instructor" class="course-wide-card__instructor">
         {{ course.instructor }}
       </p>
       <div class="course-wide-card__meta">
         <IconCS name="play" fill :size="12" class="course-wide-card__meta-icon" />
-        <span class="course-wide-card__meta-resume">{{ resumeLabel }}</span>
+        <span class="course-wide-card__meta-resume">{{ metaLabel }}</span>
         <span class="course-wide-card__meta-sep" aria-hidden="true"> · </span>
         <span class="course-wide-card__meta-count"
           >{{ course.completed }}/{{ course.lessons }}</span

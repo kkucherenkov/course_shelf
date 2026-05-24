@@ -2,6 +2,23 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-24-007 — Settings: migrate off raw Nuxt UI onto @app/ui (#215)
+
+- Created: 2026-05-24
+- Completed: 2026-05-24
+- Owner: claude
+- Spec: `.impeccable/critique/2026-05-24T14-57-28Z__apps-web-app-pages-settings-vue.md` (scored 31/40)
+- Result: merged via PR #215 (`dd7b0e0`)
+- Outcome:
+  - DS drift (P1): every control moved to `@app/ui` — `AppButton`/`AppInput`/`AppPasswordField`/`AppSwitch`; bespoke pickers → `AppSegmented`/`AppSegmentedItem`.
+  - `UToggle` (P1): replaced with `AppSwitch` (UToggle isn't a Nuxt UI v4 component).
+  - broken token (P2): undefined `--space-1-5` gone with the bespoke picker.
+  - dead affordances (P2): avatar/email/delete disabled with a "coming soon" cue.
+  - destructive guard (P2): "sign out other devices" confirmed via `AppDialog`.
+  - minors: `IconCS` in `SettingSyncIndicator`; token vocabulary unified; debounce cleanup on unmount + flush on blur.
+- Gates: ESLint clean; stylelint clean on both touched `.vue` (committed without `--no-verify`); `@app/ui` 845 passing; i18n parity (en/ru).
+- Status: done
+
 ## T-2026-05-24-006 — Course detail: critique fixes (#214)
 
 - Created: 2026-05-24

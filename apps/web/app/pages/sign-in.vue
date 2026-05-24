@@ -47,11 +47,9 @@
     const result = await authStore.signIn(email.value, password.value, keepSignedIn.value);
 
     if (!result.ok) {
-      const statusCode = (result as { statusCode?: number }).statusCode;
-      if (statusCode === 429) {
-        // Try to extract Retry-After from error payload.
-        const retryAfter = (result as { retryAfter?: number }).retryAfter ?? 60;
-        rateLimitSec.value = retryAfter;
+      if (result.statusCode === 429) {
+        // Server-supplied Retry-After (seconds); fall back to 60 if absent.
+        rateLimitSec.value = result.retryAfter ?? 60;
         return;
       }
       const msg = (result.error ?? '').toLowerCase();

@@ -1,21 +1,24 @@
 # Active tasks
 
-## T-2026-05-24-013 — AppPlayerChrome aria-label i18n sweep
+## T-2026-05-24-014 — Auth follow-ups: live rate-limit, SSO off sign-up, drop orphan
 
 - Created: 2026-05-24
 - Owner: claude
-- Spec: lesson-player critique follow-up (the ~14 screen-reader-only labels left after #220)
-- Goal: the player's control `aria-label`s are localized, not English-only for SR users.
+- Spec: `.impeccable/critique/2026-05-24T17-…__apps-web-app-pages-sign-in-vue.md` (Auth re-critique 28 → 31; the #219 gaps)
+- Goal: make the rate-limit banner actually reachable, finish the brief's "no third-party" on sign-up, and remove the dead marketing component.
 - Acceptance:
-  - every `AppPlayerChrome` `aria-label` resolves from an `ariaLabels` prop (English defaults preserved)
-  - the page passes a localized `ariaLabels` object
+  - a 429 sign-in surfaces `statusCode`/`retryAfter` from the store, so `RateLimitBanner` mounts with the server's Retry-After
+  - sign-up no longer renders an SSO block / divider
+  - `AuthMarketing.vue` is gone (0 references)
 - Spec diff: none
 - Codegen impact: no
-- Design impact: `@app/ui` — `AppPlayerChrome` gains an `ariaLabels` object prop (defaults preserve behaviour)
-- Tests: `@app/ui` (custom aria label renders); i18n parity (en/ru)
+- Design impact: none new
+- Tests: existing suites green; i18n parity (en/ru, unchanged)
+- Notes (carried, not in scope): rate-limit "12 min" magnitude depends on the backend lockout window (now plumbed via Retry-After, falls back to 60s); `promoteToAdmin` is a backend stub; OTP paste + structured error codes deferred; `$form-max-width` 420 vs 380.
 - Sub-steps:
-  - [x] `AppPlayerChrome`: `ariaLabels` object prop + defaults; wired all 13 aria-label sites (incl. `bookmarkAt` `{time}`)
-  - [x] page passes a localized `ariaLabels` object (`pages.lessonPlayer.aria.*`)
-  - [x] i18n keys (en/ru, 17 keys, parity verified); spec (+1); lint/format/tests (@app/ui 852)
+  - [x] `authStore.signIn` returns `statusCode` + `retryAfter` (Better Auth `error.status` + `Retry-After` via `onError`); page drops the casts
+  - [x] remove SSO block/divider + imports + `ssoProviders` from `sign-up.vue`
+  - [x] `git rm` orphan `AuthMarketing.vue`
+  - [x] lint/format (eslint clean; stylelint clean on changed .vue; `@app/ui` green). NOTE: `@app/web` vitest can't start under Node 20 (`ERR_REQUIRE_ESM`); `auth.spec` asserts are property-level so the additive `signIn` fields don't break them.
 - Status: in-progress (awaiting commit/PR)
 - Blockers: —

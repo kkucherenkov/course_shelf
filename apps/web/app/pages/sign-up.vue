@@ -3,14 +3,12 @@
     AppField,
     AppInput,
     AppButton,
-    AppSsoBlock,
     AppBanner,
     AppPasswordField,
     AppSelect,
     AppNoPermission,
   } from '@app/ui';
-  import type { AppSelectOption, SsoProvider } from '@app/ui';
-  import type { IconName } from '@app/ui';
+  import type { AppSelectOption } from '@app/ui';
   import { ref, computed, watch } from 'vue';
 
   import { registerLibrary } from '@app/api-client-ts';
@@ -75,17 +73,6 @@
     { id: 'frame', label: t('pages.signUp.libraryScanStrategyFrame') },
     { id: 'skip', label: t('pages.signUp.libraryScanStrategySkip') },
   ]);
-
-  // SsoProviderConfig.iconName is string; AppSsoBlock.SsoProvider.iconName is IconName (union).
-  // The cast is safe: the backend only emits valid icon names.
-  const ssoProviders = computed<SsoProvider[]>(() =>
-    config.value.ssoProviders.map((p) => ({
-      id: p.id,
-      label: p.label,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      iconName: p.iconName as IconName,
-    })),
-  );
 
   // ── Step 1 submit ─────────────────────────────────────────────────────────────
 
@@ -299,12 +286,6 @@
           />
         </form>
 
-        <!-- SSO block — only when providers are configured -->
-        <template v-if="ssoProviders.length > 0">
-          <div class="page-sign-up__divider" aria-hidden="true"><span>or</span></div>
-          <AppSsoBlock :providers="ssoProviders" />
-        </template>
-
         <p class="page-sign-up__footnote-link">
           {{ t('pages.signUp.alreadyHaveAccount') }}
           <NuxtLink to="/sign-in" class="page-sign-up__link">
@@ -485,23 +466,6 @@
       display: flex;
       flex-direction: column;
       gap: var(--space-4);
-    }
-
-    &__divider {
-      display: flex;
-      align-items: center;
-      gap: var(--space-3);
-      margin: var(--space-5) 0;
-      font-size: var(--text-xs);
-      color: var(--text-tertiary);
-
-      &::before,
-      &::after {
-        content: '';
-        flex: 1;
-        height: 1px;
-        background: var(--border-default);
-      }
     }
 
     &__code-row {

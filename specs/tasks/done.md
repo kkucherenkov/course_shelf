@@ -2,6 +2,35 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-23-002 — Stage 2 scraper port (#209)
+
+- Created: 2026-05-23
+- Completed: 2026-05-24
+- Owner: claude
+- Plan: `docs/superpowers/plans/2026-05-23-stage2-scraper-port.md`
+- Design: `docs/superpowers/specs/2026-05-23-stage2-scraper-port-design.md`
+- Result: merged via PR #209 (`124d63a feat: Stage 2 — scraper port + JSON-LD/YouTube/Udemy + scrape-preview`). Preview-only scraper subsystem; no DB writes (persistence/merge deferred to Stage 4).
+- Outcome:
+  - Domain: `Scraper` port + `SCRAPER_REGISTRY`, `scraper.types.ts`, `scraper.errors.ts` (RFC 9457 via DomainError).
+  - Infra: SSRF-guarded `HttpFetcher` (timeout/size-cap/redirect-cap; blocks loopback/private/link-local/IPv4-mapped-IPv6/metadata), cheerio `HtmlMetadataExtractor` (JSON-LD + OpenGraph), `JsonLdScraper` / `YouTubeScraper` / `UdemyScraper`, `DefaultScraperRegistry` + mock scrapers (`SCRAPERS_MODE=mock`).
+  - App/HTTP: `ScrapeCourseCommand` + handler; `POST /api/v1/admin/courses/{id}/scrape-preview` + `GET /api/v1/admin/scrapers`; `ScrapersConfig`.
+  - Spec-first: OpenAPI surface + regen `@app/api-client-ts` + `@app/api-client-dart`; `ScrapePreviewRequest` conditional-required via `if/then`.
+  - Two code-review rounds; fixes (also recorded standalone in T-2026-05-24-001): IPv4-mapped-IPv6 SSRF block, wrong-node JSON-LD fallback drop, exact-host Udemy match, non-2xx guards, YouTube API-key redaction in 502.
+- Gates: backend 1499 passed / 2 skipped, `tsc` clean, ESLint clean (pre-existing `boundaries` deprecation warnings only), `spec:validate/bundle/codegen` no drift.
+- Out of scope (roadmap): persist/merge → Stage 4, community-DB connector → Stage 3, Admin UI → Stage 5, YAML engine → Stage 6.
+- Status: done
+
+## T-2026-05-23-001 — Stage 1 Stash-style metadata enrichment (#208)
+
+- Created: 2026-05-23
+- Completed: 2026-05-24
+- Owner: claude
+- Spec: [/Users/kkucherenkov/.claude/plans/memoized-chasing-nest.md](../../.claude/plans/memoized-chasing-nest.md) (approved plan)
+- Result: merged via PR #208 (`dcba3d5 Stage 1 — Stash-style metadata enrichment`). Data-model foundation for the scraper / identify roadmap.
+- Goal: Instructor / Studio / Tag lightweight aggregates + new Course fields (poster, level, language, releaseDate, rating, externalIds); live-bug fix — instructor from `course.json` now persisted to the DB.
+- Sub-steps: Slices 1–9 complete — Prisma schema + migration + `course.json` v2 + shared VO; domain aggregates + ports + Course extension; Prisma adapters; OpenAPI + regen clients; CQRS upsert/set/list/get + extended update-course-metadata; catalog-entities controllers + PATCH /courses/{id}; run-scan integration + MetadataLinker + AsyncAPI backfill channel; backfill CLI + admin maintenance endpoint; regression sweep + format.
+- Status: done
+
 ## T-2026-05-24-001 — Stage 2 scraper: fix SSRF IPv4-mapped IPv6 + wrong JSON-LD node fallback + missing .code assertions
 
 - Created: 2026-05-24

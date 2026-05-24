@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceResponses, GetAdminUserData, GetAdminUserErrors, GetAdminUserResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetInstructorData, GetInstructorErrors, GetInstructorResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetStudioData, GetStudioErrors, GetStudioResponses, GetTagData, GetTagErrors, GetTagResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueMaterialDownloadUrlData, IssueMaterialDownloadUrlErrors, IssueMaterialDownloadUrlResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListAdminLibrariesData, ListAdminLibrariesErrors, ListAdminLibrariesResponses, ListAdminScansData, ListAdminScansErrors, ListAdminScansResponses, ListAdminUsersData, ListAdminUsersErrors, ListAdminUsersResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListInstructorsData, ListInstructorsErrors, ListInstructorsResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, ListScrapersData, ListScrapersErrors, ListScrapersResponses, ListStudiosData, ListStudiosErrors, ListStudiosResponses, ListTagsData, ListTagsErrors, ListTagsResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RemoveLibraryData, RemoveLibraryErrors, RemoveLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, ScrapeCoursePreviewData, ScrapeCoursePreviewErrors, ScrapeCoursePreviewResponses, SearchCatalogueData, SearchCatalogueErrors, SearchCatalogueResponses, SignOutOtherSessionsData, SignOutOtherSessionsErrors, SignOutOtherSessionsResponses, StartBackfillMetadataData, StartBackfillMetadataErrors, StartBackfillMetadataResponses, UpdateAdminUserData, UpdateAdminUserErrors, UpdateAdminUserResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpdateLibraryData, UpdateLibraryErrors, UpdateLibraryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpsertInstructorData, UpsertInstructorErrors, UpsertInstructorResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses, UpsertStudioData, UpsertStudioErrors, UpsertStudioResponses, UpsertTagData, UpsertTagErrors, UpsertTagResponses } from './types.gen';
+import type { ApplyIdentifyResultData, ApplyIdentifyResultErrors, ApplyIdentifyResultResponses, CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, DiscardIdentifyTaskData, DiscardIdentifyTaskErrors, DiscardIdentifyTaskResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceResponses, GetAdminUserData, GetAdminUserErrors, GetAdminUserResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetIdentifyTaskData, GetIdentifyTaskErrors, GetIdentifyTaskResponses, GetInstructorData, GetInstructorErrors, GetInstructorResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetStudioData, GetStudioErrors, GetStudioResponses, GetTagData, GetTagErrors, GetTagResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueMaterialDownloadUrlData, IssueMaterialDownloadUrlErrors, IssueMaterialDownloadUrlResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListAdminLibrariesData, ListAdminLibrariesErrors, ListAdminLibrariesResponses, ListAdminScansData, ListAdminScansErrors, ListAdminScansResponses, ListAdminUsersData, ListAdminUsersErrors, ListAdminUsersResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListIdentifyTasksData, ListIdentifyTasksErrors, ListIdentifyTasksResponses, ListInstructorsData, ListInstructorsErrors, ListInstructorsResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, ListScrapersData, ListScrapersErrors, ListScrapersResponses, ListStudiosData, ListStudiosErrors, ListStudiosResponses, ListTagsData, ListTagsErrors, ListTagsResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RemoveLibraryData, RemoveLibraryErrors, RemoveLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunIdentifyTaskData, RunIdentifyTaskErrors, RunIdentifyTaskResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, ScrapeCoursePreviewData, ScrapeCoursePreviewErrors, ScrapeCoursePreviewResponses, SearchCatalogueData, SearchCatalogueErrors, SearchCatalogueResponses, SignOutOtherSessionsData, SignOutOtherSessionsErrors, SignOutOtherSessionsResponses, StartBackfillMetadataData, StartBackfillMetadataErrors, StartBackfillMetadataResponses, UpdateAdminUserData, UpdateAdminUserErrors, UpdateAdminUserResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpdateLibraryData, UpdateLibraryErrors, UpdateLibraryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpsertInstructorData, UpsertInstructorErrors, UpsertInstructorResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses, UpsertStudioData, UpsertStudioErrors, UpsertStudioResponses, UpsertTagData, UpsertTagErrors, UpsertTagResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -271,6 +271,69 @@ export const scrapeCoursePreview = <ThrowOnError extends boolean = false>(option
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Create an identify proposal for a course
+ *
+ * Persists a chosen scraped fragment as a `proposed` IdentifyTask. Nothing is written to the course until the task is applied. Requires admin role.
+ */
+export const runIdentifyTask = <ThrowOnError extends boolean = false>(options: Options<RunIdentifyTaskData, ThrowOnError>) => (options.client ?? client).post<RunIdentifyTaskResponses, RunIdentifyTaskErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/courses/{id}/identify',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List identify tasks
+ *
+ * Returns identify tasks ordered newest-first. Optionally filtered by status and/or courseId. Requires admin role.
+ */
+export const listIdentifyTasks = <ThrowOnError extends boolean = false>(options?: Options<ListIdentifyTasksData, ThrowOnError>) => (options?.client ?? client).get<ListIdentifyTasksResponses, ListIdentifyTasksErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/identify-tasks',
+    ...options
+});
+
+/**
+ * Get one identify task
+ *
+ * Returns a single identify task by id. Requires admin role.
+ */
+export const getIdentifyTask = <ThrowOnError extends boolean = false>(options: Options<GetIdentifyTaskData, ThrowOnError>) => (options.client ?? client).get<GetIdentifyTaskResponses, GetIdentifyTaskErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/identify-tasks/{id}',
+    ...options
+});
+
+/**
+ * Apply a proposed identify task to its course
+ *
+ * Merges the scraped fragment into the course per the (optionally overridden) merge policy, resolving names to entities. Requires admin role.
+ */
+export const applyIdentifyResult = <ThrowOnError extends boolean = false>(options: Options<ApplyIdentifyResultData, ThrowOnError>) => (options.client ?? client).post<ApplyIdentifyResultResponses, ApplyIdentifyResultErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/identify-tasks/{id}/apply',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Discard a proposed identify task
+ *
+ * Marks the task as discarded; no changes are written to the course. Requires admin role.
+ */
+export const discardIdentifyTask = <ThrowOnError extends boolean = false>(options: Options<DiscardIdentifyTaskData, ThrowOnError>) => (options.client ?? client).post<DiscardIdentifyTaskResponses, DiscardIdentifyTaskErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/identify-tasks/{id}/discard',
+    ...options
 });
 
 /**

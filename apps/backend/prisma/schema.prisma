@@ -180,6 +180,7 @@ model Course {
   instructors       CourseInstructor[]
   studios           CourseStudio[]
   tags              CourseTag[]
+  identifyTasks     IdentifyTask[]
 
   @@unique([libraryId, slug], name: "uq_course_library_slug")
   @@index([libraryId])
@@ -235,6 +236,28 @@ model ExternalId {
   @@unique([source, externalId], name: "uq_external_id_source_value")
   @@index([entityType, entityId])
   @@map("external_id")
+}
+
+enum IdentifyTaskStatus {
+  proposed
+  applied
+  discarded
+}
+
+model IdentifyTask {
+  id              String             @id @default(cuid())
+  courseId        String
+  status          IdentifyTaskStatus @default(proposed)
+  source          String
+  sourceUrl       String?
+  scrapedFragment Json
+  mergePolicy     Json
+  createdAt       DateTime           @default(now())
+  completedAt     DateTime?
+  course          Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, status])
+  @@map("identify_task")
 }
 
 model CourseInstructor {

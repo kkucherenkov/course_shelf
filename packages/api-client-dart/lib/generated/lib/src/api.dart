@@ -14,6 +14,7 @@ import 'package:app_api_client/src/api/account_api.dart';
 import 'package:app_api_client/src/api/admin_api.dart';
 import 'package:app_api_client/src/api/catalog_api.dart';
 import 'package:app_api_client/src/api/entities_api.dart';
+import 'package:app_api_client/src/api/identify_api.dart';
 import 'package:app_api_client/src/api/learning_api.dart';
 import 'package:app_api_client/src/api/maintenance_api.dart';
 import 'package:app_api_client/src/api/ops_api.dart';
@@ -104,6 +105,12 @@ class AppApiClient {
   /// by doing that all interceptors will not be executed
   EntitiesApi getEntitiesApi() {
     return EntitiesApi(dio, serializers);
+  }
+
+  /// Get IdentifyApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  IdentifyApi getIdentifyApi() {
+    return IdentifyApi(dio, serializers);
   }
 
   /// Get LearningApi instance, base route and serializer can be overridden by a given but be careful,

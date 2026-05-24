@@ -219,6 +219,88 @@ export type ScraperListDto = {
 };
 
 /**
+ * How one field reconciles scraped vs existing values. `merge` fills empty scalars / unions arrays; `overwrite` replaces; `ignore` leaves unchanged.
+ */
+export type MergeMode = 'merge' | 'overwrite' | 'ignore';
+
+/**
+ * Per-field merge mode. Any omitted field defaults to `merge`.
+ */
+export type MergePolicyDto = {
+    title?: MergeMode;
+    description?: MergeMode;
+    level?: MergeMode;
+    language?: MergeMode;
+    posterUrl?: MergeMode;
+    releaseDate?: MergeMode;
+    ratingAverage?: MergeMode;
+    ratingCount?: MergeMode;
+    instructors?: MergeMode;
+    studios?: MergeMode;
+    tags?: MergeMode;
+    externalIds?: MergeMode;
+};
+
+/**
+ * Lifecycle state of an identify task.
+ */
+export type IdentifyTaskStatus = 'proposed' | 'applied' | 'discarded';
+
+/**
+ * An admin-reviewed metadata enrichment proposal for a course.
+ */
+export type IdentifyTaskDto = {
+    id: string;
+    courseId: string;
+    status: IdentifyTaskStatus;
+    /**
+     * Label of the scraper/source that produced the fragment.
+     */
+    source: string;
+    /**
+     * URL the fragment was scraped from, if any.
+     */
+    sourceUrl?: string;
+    scrapedFragment: ScrapedCourseFragmentDto;
+    mergePolicy: MergePolicyDto;
+    createdAt: string;
+    completedAt?: string;
+};
+
+/**
+ * Identify tasks, newest first.
+ */
+export type IdentifyTaskListDto = {
+    tasks: Array<IdentifyTaskDto>;
+};
+
+/**
+ * Create an identify proposal from a chosen scrape candidate. The fragment is typically one of the candidates returned by scrape-preview.
+ */
+export type RunIdentifyRequest = {
+    fragment: ScrapedCourseFragmentDto;
+    /**
+     * Label of the source/scraper this fragment came from.
+     */
+    source: string;
+    sourceUrl?: string;
+    /**
+     * Optional initial policy. Defaults to `merge` for every field.
+     */
+    mergePolicy?: MergePolicyDto;
+};
+
+/**
+ * Apply a proposed identify task, optionally overriding its merge policy.
+ */
+export type ApplyIdentifyRequest = {
+    /**
+     * Overrides the policy stored on the task when present.
+     */
+    mergePolicy?: MergePolicyDto;
+};
+
+/**
  * Full instructor view including their associated courses (paginated, up to 20).
  */
 export type InstructorDetailDto = {
@@ -2285,6 +2367,186 @@ export type ScrapeCoursePreviewResponses = {
 };
 
 export type ScrapeCoursePreviewResponse = ScrapeCoursePreviewResponses[keyof ScrapeCoursePreviewResponses];
+
+export type RunIdentifyTaskData = {
+    body: RunIdentifyRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/courses/{id}/identify';
+};
+
+export type RunIdentifyTaskErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Course not found
+     */
+    404: Problem;
+};
+
+export type RunIdentifyTaskError = RunIdentifyTaskErrors[keyof RunIdentifyTaskErrors];
+
+export type RunIdentifyTaskResponses = {
+    /**
+     * The created identify task
+     */
+    201: IdentifyTaskDto;
+};
+
+export type RunIdentifyTaskResponse = RunIdentifyTaskResponses[keyof RunIdentifyTaskResponses];
+
+export type ListIdentifyTasksData = {
+    body?: never;
+    path?: never;
+    query?: {
+        status?: IdentifyTaskStatus;
+        courseId?: string;
+    };
+    url: '/api/v1/admin/identify-tasks';
+};
+
+export type ListIdentifyTasksErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+};
+
+export type ListIdentifyTasksError = ListIdentifyTasksErrors[keyof ListIdentifyTasksErrors];
+
+export type ListIdentifyTasksResponses = {
+    /**
+     * Matching identify tasks
+     */
+    200: IdentifyTaskListDto;
+};
+
+export type ListIdentifyTasksResponse = ListIdentifyTasksResponses[keyof ListIdentifyTasksResponses];
+
+export type GetIdentifyTaskData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/identify-tasks/{id}';
+};
+
+export type GetIdentifyTaskErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Identify task not found
+     */
+    404: Problem;
+};
+
+export type GetIdentifyTaskError = GetIdentifyTaskErrors[keyof GetIdentifyTaskErrors];
+
+export type GetIdentifyTaskResponses = {
+    /**
+     * The identify task
+     */
+    200: IdentifyTaskDto;
+};
+
+export type GetIdentifyTaskResponse = GetIdentifyTaskResponses[keyof GetIdentifyTaskResponses];
+
+export type ApplyIdentifyResultData = {
+    body?: ApplyIdentifyRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/identify-tasks/{id}/apply';
+};
+
+export type ApplyIdentifyResultErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Identify task not found
+     */
+    404: Problem;
+    /**
+     * Task is not in the proposed state
+     */
+    409: Problem;
+};
+
+export type ApplyIdentifyResultError = ApplyIdentifyResultErrors[keyof ApplyIdentifyResultErrors];
+
+export type ApplyIdentifyResultResponses = {
+    /**
+     * The applied identify task
+     */
+    200: IdentifyTaskDto;
+};
+
+export type ApplyIdentifyResultResponse = ApplyIdentifyResultResponses[keyof ApplyIdentifyResultResponses];
+
+export type DiscardIdentifyTaskData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/identify-tasks/{id}/discard';
+};
+
+export type DiscardIdentifyTaskErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Identify task not found
+     */
+    404: Problem;
+    /**
+     * Task is not in the proposed state
+     */
+    409: Problem;
+};
+
+export type DiscardIdentifyTaskError = DiscardIdentifyTaskErrors[keyof DiscardIdentifyTaskErrors];
+
+export type DiscardIdentifyTaskResponses = {
+    /**
+     * The discarded identify task
+     */
+    200: IdentifyTaskDto;
+};
+
+export type DiscardIdentifyTaskResponse = DiscardIdentifyTaskResponses[keyof DiscardIdentifyTaskResponses];
 
 export type UpsertStudioData = {
     body: UpsertStudioRequest;

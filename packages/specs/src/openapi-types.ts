@@ -338,6 +338,106 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/courses/{id}/identify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create an identify proposal for a course
+     * @description Persists a chosen scraped fragment as a `proposed` IdentifyTask. Nothing is written to the course until the task is applied. Requires admin role.
+     */
+    post: operations['runIdentifyTask'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/identify-tasks': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List identify tasks
+     * @description Returns identify tasks ordered newest-first. Optionally filtered by status and/or courseId. Requires admin role.
+     */
+    get: operations['listIdentifyTasks'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/identify-tasks/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get one identify task
+     * @description Returns a single identify task by id. Requires admin role.
+     */
+    get: operations['getIdentifyTask'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/identify-tasks/{id}/apply': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Apply a proposed identify task to its course
+     * @description Merges the scraped fragment into the course per the (optionally overridden) merge policy, resolving names to entities. Requires admin role.
+     */
+    post: operations['applyIdentifyResult'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/identify-tasks/{id}/discard': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Discard a proposed identify task
+     * @description Marks the task as discarded; no changes are written to the course. Requires admin role.
+     */
+    post: operations['discardIdentifyTask'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/studios': {
     parameters: {
       query?: never;
@@ -1577,6 +1677,79 @@ export interface components {
     ScraperListDto: {
       /** @description All configured scrapers in registration order. */
       scrapers: components['schemas']['ScraperInfoDto'][];
+    };
+    /**
+     * @description How one field reconciles scraped vs existing values. `merge` fills empty scalars / unions arrays; `overwrite` replaces; `ignore` leaves unchanged.
+     * @example merge
+     * @enum {string}
+     */
+    MergeMode: 'merge' | 'overwrite' | 'ignore';
+    /** @description Per-field merge mode. Any omitted field defaults to `merge`. */
+    MergePolicyDto: {
+      title?: components['schemas']['MergeMode'];
+      description?: components['schemas']['MergeMode'];
+      level?: components['schemas']['MergeMode'];
+      language?: components['schemas']['MergeMode'];
+      posterUrl?: components['schemas']['MergeMode'];
+      releaseDate?: components['schemas']['MergeMode'];
+      ratingAverage?: components['schemas']['MergeMode'];
+      ratingCount?: components['schemas']['MergeMode'];
+      instructors?: components['schemas']['MergeMode'];
+      studios?: components['schemas']['MergeMode'];
+      tags?: components['schemas']['MergeMode'];
+      externalIds?: components['schemas']['MergeMode'];
+    };
+    /**
+     * @description Lifecycle state of an identify task.
+     * @example proposed
+     * @enum {string}
+     */
+    IdentifyTaskStatus: 'proposed' | 'applied' | 'discarded';
+    /** @description An admin-reviewed metadata enrichment proposal for a course. */
+    IdentifyTaskDto: {
+      /** @example clx123 */
+      id: string;
+      /** @example clc456 */
+      courseId: string;
+      status: components['schemas']['IdentifyTaskStatus'];
+      /**
+       * @description Label of the scraper/source that produced the fragment.
+       * @example youtube
+       */
+      source: string;
+      /**
+       * Format: uri
+       * @description URL the fragment was scraped from, if any.
+       */
+      sourceUrl?: string;
+      scrapedFragment: components['schemas']['ScrapedCourseFragmentDto'];
+      mergePolicy: components['schemas']['MergePolicyDto'];
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      completedAt?: string;
+    };
+    /** @description Identify tasks, newest first. */
+    IdentifyTaskListDto: {
+      tasks: components['schemas']['IdentifyTaskDto'][];
+    };
+    /** @description Create an identify proposal from a chosen scrape candidate. The fragment is typically one of the candidates returned by scrape-preview. */
+    RunIdentifyRequest: {
+      fragment: components['schemas']['ScrapedCourseFragmentDto'];
+      /**
+       * @description Label of the source/scraper this fragment came from.
+       * @example youtube
+       */
+      source: string;
+      /** Format: uri */
+      sourceUrl?: string;
+      /** @description Optional initial policy. Defaults to `merge` for every field. */
+      mergePolicy?: components['schemas']['MergePolicyDto'];
+    };
+    /** @description Apply a proposed identify task, optionally overriding its merge policy. */
+    ApplyIdentifyRequest: {
+      /** @description Overrides the policy stored on the task when present. */
+      mergePolicy?: components['schemas']['MergePolicyDto'];
     };
     /**
      * @description Full instructor view including their associated courses (paginated, up to 20).
@@ -4013,6 +4186,269 @@ export interface operations {
       };
       /** @description Upstream fetch or parse failed */
       502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  runIdentifyTask: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RunIdentifyRequest'];
+      };
+    };
+    responses: {
+      /** @description The created identify task */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IdentifyTaskDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Course not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listIdentifyTasks: {
+    parameters: {
+      query?: {
+        status?: components['schemas']['IdentifyTaskStatus'];
+        courseId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Matching identify tasks */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IdentifyTaskListDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getIdentifyTask: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The identify task */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IdentifyTaskDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Identify task not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  applyIdentifyResult: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ApplyIdentifyRequest'];
+      };
+    };
+    responses: {
+      /** @description The applied identify task */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IdentifyTaskDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Identify task not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Task is not in the proposed state */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  discardIdentifyTask: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The discarded identify task */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IdentifyTaskDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Identify task not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Task is not in the proposed state */
+      409: {
         headers: {
           [name: string]: unknown;
         };

@@ -2,6 +2,24 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-24-002 — Stage 4 — Identify task with per-field merge policy
+
+- Created: 2026-05-24
+- Completed: 2026-05-24
+- Owner: claude
+- Plan: `docs/superpowers/plans/2026-05-24-stage4-identify-task.md`
+- Design: `docs/superpowers/specs/2026-05-24-stage4-identify-task-design.md`
+- PR: #211 (feat/stage4-identify-task)
+- Outcome:
+  - Domain: `IdentifyTask` aggregate (proposed → applied | discarded lifecycle), `MergePolicy` value object (12 fields × 3 modes), pure `computeMergedPatch`, `IdentifyTaskRepository` port + `IDENTIFY_TASK_REPOSITORY` token, `IdentifyTaskProposed` + `IdentifyTaskApplied` domain events.
+  - Infra: `PrismaIdentifyTaskRepository` (jsonb `scrapedFragment` + `mergePolicy`; upsert + findById + findMany); new `identify_task` Prisma table + `IdentifyTaskStatus` enum + migration.
+  - Application: 3 commands (`RunIdentifyTask`, `ApplyIdentifyResult`, `DiscardIdentifyTask`) + handlers; 2 queries (`ListIdentifyTasks`, `GetIdentifyTask`) + handlers; `toIdentifyTaskDto` mapper.
+  - HTTP: `IdentifyAdminController` — 5 routes: `POST /api/v1/admin/courses/{id}/identify`, `GET /api/v1/admin/identify-tasks`, `GET /api/v1/admin/identify-tasks/{id}`, `POST /api/v1/admin/identify-tasks/{id}/apply`, `POST /api/v1/admin/identify-tasks/{id}/discard`.
+  - Spec-first: 8 new OpenAPI schemas (`IdentifyTaskDto`, `MergePolicyDto`, `MergeMode`, `IdentifyTaskStatus`, `IdentifyTaskListDto`, `RunIdentifyRequest`, `ApplyIdentifyRequest`) + 5 routes; regenerated `@app/api-client-ts` + `@app/api-client-dart`.
+  - Module wiring: all handlers + controller + `PrismaIdentifyTaskRepository` registered in `CatalogModule`; `MetadataLinker` + `CommandBus`/`QueryBus`/`EventBus` injected via existing providers.
+- Gates: backend 1537 passed / 2 skipped; `tsc --noEmit` clean (17 pre-existing `exactOptionalPropertyTypes` violations fixed); ESLint clean (pre-existing `boundaries` deprecation warnings only); `spec:validate/bundle/codegen` no drift; `nest build` successful (DI compilation verified).
+- Status: done
+
 ## T-2026-05-23-002 — Stage 2 scraper port (#209)
 
 - Created: 2026-05-23

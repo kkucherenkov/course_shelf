@@ -28,6 +28,7 @@ import 'package:app_api_client/src/model/admin_update_user_request.dart';
 import 'package:app_api_client/src/model/admin_user_list_dto.dart';
 import 'package:app_api_client/src/model/admin_user_list_item.dart';
 import 'package:app_api_client/src/model/admin_user_role.dart';
+import 'package:app_api_client/src/model/apply_identify_request.dart';
 import 'package:app_api_client/src/model/backfill_job_accepted.dart';
 import 'package:app_api_client/src/model/backfill_metadata_request.dart';
 import 'package:app_api_client/src/model/batch_progress_item_accepted.dart';
@@ -57,6 +58,9 @@ import 'package:app_api_client/src/model/grant_target.dart';
 import 'package:app_api_client/src/model/has_users_response.dart';
 import 'package:app_api_client/src/model/health_status.dart';
 import 'package:app_api_client/src/model/health_status_dependencies.dart';
+import 'package:app_api_client/src/model/identify_task_dto.dart';
+import 'package:app_api_client/src/model/identify_task_list_dto.dart';
+import 'package:app_api_client/src/model/identify_task_status.dart';
 import 'package:app_api_client/src/model/instance_config_dto.dart';
 import 'package:app_api_client/src/model/instructor_detail_dto.dart';
 import 'package:app_api_client/src/model/instructor_dto.dart';
@@ -73,6 +77,8 @@ import 'package:app_api_client/src/model/material_download_url_dto.dart';
 import 'package:app_api_client/src/model/material_dto.dart';
 import 'package:app_api_client/src/model/material_kind.dart';
 import 'package:app_api_client/src/model/me_dto.dart';
+import 'package:app_api_client/src/model/merge_mode.dart';
+import 'package:app_api_client/src/model/merge_policy_dto.dart';
 import 'package:app_api_client/src/model/model0.dart';
 import 'package:app_api_client/src/model/model1.dart';
 import 'package:app_api_client/src/model/note_dto.dart';
@@ -86,6 +92,7 @@ import 'package:app_api_client/src/model/recently_completed_item.dart';
 import 'package:app_api_client/src/model/record_progress_request.dart';
 import 'package:app_api_client/src/model/register_grant_request.dart';
 import 'package:app_api_client/src/model/register_library_request.dart';
+import 'package:app_api_client/src/model/run_identify_request.dart';
 import 'package:app_api_client/src/model/scan_dto.dart';
 import 'package:app_api_client/src/model/scan_error.dart';
 import 'package:app_api_client/src/model/scan_status.dart';
@@ -139,6 +146,7 @@ part 'serializers.g.dart';
   AdminUserListDto,
   AdminUserListItem,
   AdminUserRole,
+  ApplyIdentifyRequest,
   BackfillJobAccepted,
   BackfillMetadataRequest,
   BatchProgressItemAccepted,
@@ -168,6 +176,9 @@ part 'serializers.g.dart';
   HasUsersResponse,
   HealthStatus,
   HealthStatusDependencies,
+  IdentifyTaskDto,
+  IdentifyTaskListDto,
+  IdentifyTaskStatus,
   InstanceConfigDto,
   InstructorDetailDto,
   InstructorDto,
@@ -184,6 +195,8 @@ part 'serializers.g.dart';
   MaterialDto,
   MaterialKind,
   MeDto,
+  MergeMode,
+  MergePolicyDto,
   Model0,
   Model1,
   NoteDto,
@@ -197,6 +210,7 @@ part 'serializers.g.dart';
   RecordProgressRequest,
   RegisterGrantRequest,
   RegisterLibraryRequest,
+  RunIdentifyRequest,
   ScanDto,
   ScanError,
   ScanStatus,

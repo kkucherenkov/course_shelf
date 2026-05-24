@@ -26,6 +26,9 @@
   const { config } = useInstanceConfig();
   const { hasUsers, refresh: refreshHasUsers } = useFirstRun();
 
+  // First-run: no users exist yet, so this account becomes the first admin.
+  const isFirstAdmin = computed(() => hasUsers.value === false);
+
   // ── Step management ─────────────────────────────────────────────────────────
 
   // Logical steps — 'verify' is conditional on emailVerificationRequired.
@@ -231,8 +234,12 @@
       <!-- Step 1: Account -->
       <template v-if="currentStep === 'account'">
         <div class="page-sign-up__header">
-          <h1 class="page-sign-up__title">{{ t('pages.signUp.title') }}</h1>
-          <p class="page-sign-up__subtitle">{{ t('pages.signUp.subtitle') }}</p>
+          <h1 class="page-sign-up__title">
+            {{ isFirstAdmin ? t('pages.setup.title') : t('pages.signUp.title') }}
+          </h1>
+          <p class="page-sign-up__subtitle">
+            {{ isFirstAdmin ? t('pages.setup.subtitle') : t('pages.signUp.subtitle') }}
+          </p>
         </div>
 
         <AppBanner

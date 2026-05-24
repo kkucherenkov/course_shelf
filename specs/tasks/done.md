@@ -2,6 +2,18 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-24-014 — Auth follow-ups: reachable rate-limit, no SSO on sign-up, drop orphan (#222)
+
+- Created: 2026-05-24
+- Completed: 2026-05-24
+- Owner: claude
+- Spec: Auth re-critique (28 → 31; #219 gaps)
+- Result: merged via PR #222 (`cd311af`)
+- Outcome: `authStore.signIn` now returns `statusCode` + `retryAfter` (Better Auth `error.status` + `Retry-After` via `onError`) so the 429 path mounts `RateLimitBanner` (was dead code); SSO block/divider removed from sign-up (brief "no third-party"); orphan `AuthMarketing.vue` deleted.
+- Gates: ESLint (ui + web) clean; stylelint clean on changed `.vue` (no `--no-verify`); `@app/ui` green. (`@app/web` vitest can't start under Node 20 — env limit; `signIn` change additive/backward-compatible.)
+- Re-critique after merge: 31 → 33.
+- Status: done
+
 ## T-2026-05-24-013 — AppPlayerChrome aria-label i18n sweep (#221)
 
 - Created: 2026-05-24

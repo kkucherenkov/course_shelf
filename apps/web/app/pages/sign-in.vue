@@ -113,6 +113,7 @@
               type="email"
               autocomplete="email"
               inputmode="email"
+              autofocus
               placeholder="user@example.com"
             />
           </template>

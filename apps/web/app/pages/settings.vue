@@ -14,7 +14,16 @@
    *  4. Account  — sign out, sign out other devices, delete account
    */
 
-  import { ref, computed } from 'vue';
+  import { ref, computed, onBeforeUnmount } from 'vue';
+  import {
+    AppButton,
+    AppInput,
+    AppSwitch,
+    AppPasswordField,
+    AppSegmented,
+    AppSegmentedItem,
+    AppDialog,
+  } from '@app/ui';
   import { updateMe, signOutOtherSessions, client } from '@app/api-client-ts';
   import type { MeDto } from '@app/api-client-ts';
 
@@ -80,23 +89,24 @@
     }, 800);
   }
 
+  // Flush a pending debounced save when the field loses focus.
+  function onDisplayNameBlur(): void {
+    if (nameDebounceTimer !== null) {
+      clearTimeout(nameDebounceTimer);
+      nameDebounceTimer = null;
+      void saveDisplayName();
+    }
+  }
+
+  // Don't let a queued save/reset fire after the page is gone.
+  onBeforeUnmount(() => {
+    if (nameDebounceTimer !== null) clearTimeout(nameDebounceTimer);
+    if (nameSaveTimer !== null) clearTimeout(nameSaveTimer);
+  });
+
   // ── Profile — email (read-only) ───────────────────────────────────────────
 
   const emailDisplay = computed(() => authStore.user?.email ?? '');
-
-  function onEmailChange(): void {
-    toast.add({ title: t('pages.settings.profileEmailComingSoon'), color: 'info' });
-  }
-
-  // ── Profile — avatar (placeholder) ────────────────────────────────────────
-
-  function onAvatarUpload(): void {
-    toast.add({ title: t('pages.settings.profileAvatarComingSoon'), color: 'info' });
-  }
-
-  function onAvatarRemove(): void {
-    toast.add({ title: t('pages.settings.profileAvatarComingSoon'), color: 'info' });
-  }
 
   // ── Profile — password ────────────────────────────────────────────────────
 
@@ -185,11 +195,13 @@
     await navigateTo('/sign-in');
   }
 
-  // ── Account — sign out other devices ──────────────────────────────────────
+  // ── Account — sign out other devices (confirmed) ──────────────────────────
 
   const signOutOthersPending = ref(false);
+  const signOutOthersDialogOpen = ref(false);
 
-  async function onSignOutOthers(): Promise<void> {
+  async function confirmSignOutOthers(): Promise<void> {
+    signOutOthersDialogOpen.value = false;
     signOutOthersPending.value = true;
     const res = await signOutOtherSessions({ client, throwOnError: false });
     signOutOthersPending.value = false;
@@ -200,12 +212,6 @@
     }
 
     toast.add({ title: t('pages.settings.accountSignOutOthersToastDone'), color: 'success' });
-  }
-
-  // ── Account — delete (coming soon) ────────────────────────────────────────
-
-  function onDeleteAccount(): void {
-    toast.add({ title: t('pages.settings.accountDeleteComingSoon'), color: 'info' });
   }
 </script>
 
@@ -228,7 +234,9 @@
         <div class="settings-row">
           <div class="settings-row__left">
             <span class="settings-row__label">{{ t('pages.settings.profileAvatarLabel') }}</span>
-            <span class="settings-row__help">{{ t('pages.settings.profileAvatarHelp') }}</span>
+            <span class="settings-row__help">{{
+              t('pages.settings.profileAvatarComingSoon')
+            }}</span>
           </div>
           <div class="settings-row__control settings-row__control--avatar">
             <div class="settings-avatar">
@@ -237,12 +245,18 @@
               </div>
             </div>
             <div class="settings-avatar__actions">
-              <UButton size="sm" variant="outline" @click="onAvatarUpload">
-                {{ t('pages.settings.profileAvatarUpload') }}
-              </UButton>
-              <UButton size="sm" variant="ghost" color="neutral" @click="onAvatarRemove">
-                {{ t('pages.settings.profileAvatarRemove') }}
-              </UButton>
+              <AppButton
+                size="sm"
+                variant="secondary"
+                disabled
+                :label="t('pages.settings.profileAvatarUpload')"
+              />
+              <AppButton
+                size="sm"
+                variant="ghost"
+                disabled
+                :label="t('pages.settings.profileAvatarRemove')"
+              />
             </div>
           </div>
         </div>
@@ -254,11 +268,12 @@
             <span class="settings-row__help">{{ t('pages.settings.profileNameHelp') }}</span>
           </div>
           <div class="settings-row__control">
-            <UInput
+            <AppInput
               v-model="displayName"
               :placeholder="t('pages.settings.profileNamePlaceholder')"
               class="settings-row__input"
-              @input="onDisplayNameInput"
+              @update:model-value="onDisplayNameInput"
+              @blur="onDisplayNameBlur"
             />
             <SettingSyncIndicator
               :state="nameSyncState"
@@ -273,13 +288,16 @@
         <div class="settings-row">
           <div class="settings-row__left">
             <span class="settings-row__label">{{ t('pages.settings.profileEmailLabel') }}</span>
-            <span class="settings-row__help">{{ t('pages.settings.profileEmailHelp') }}</span>
+            <span class="settings-row__help">{{ t('pages.settings.profileEmailComingSoon') }}</span>
           </div>
           <div class="settings-row__control settings-row__control--inline">
             <span class="settings-row__value">{{ emailDisplay }}</span>
-            <UButton size="sm" variant="ghost" @click="onEmailChange">
-              {{ t('pages.settings.profileEmailChange') }}
-            </UButton>
+            <AppButton
+              size="sm"
+              variant="ghost"
+              disabled
+              :label="t('pages.settings.profileEmailChange')"
+            />
           </div>
         </div>
 
@@ -293,9 +311,12 @@
               <span class="settings-row__help">{{ t('pages.settings.profilePasswordHelp') }}</span>
             </div>
             <div class="settings-row__control">
-              <UButton size="sm" variant="outline" @click="togglePasswordForm">
-                {{ t('pages.settings.profilePasswordChange') }}
-              </UButton>
+              <AppButton
+                size="sm"
+                variant="secondary"
+                :label="t('pages.settings.profilePasswordChange')"
+                @click="togglePasswordForm"
+              />
             </div>
           </div>
 
@@ -304,36 +325,32 @@
             class="settings-password-form"
             @submit.prevent="onPasswordSubmit"
           >
-            <UFormField :label="t('pages.settings.profilePasswordCurrent')">
-              <UInput
-                v-model="currentPassword"
-                type="password"
-                autocomplete="current-password"
-                class="settings-password-form__input"
-              />
-            </UFormField>
-            <UFormField :label="t('pages.settings.profilePasswordNew')">
-              <UInput
-                v-model="newPassword"
-                type="password"
-                autocomplete="new-password"
-                class="settings-password-form__input"
-              />
-            </UFormField>
-            <UFormField :label="t('pages.settings.profilePasswordConfirm')">
-              <UInput
-                v-model="confirmPassword"
-                type="password"
-                autocomplete="new-password"
-                class="settings-password-form__input"
-              />
-            </UFormField>
+            <AppPasswordField
+              v-model="currentPassword"
+              :label="t('pages.settings.profilePasswordCurrent')"
+              auto-complete="current-password"
+              class="settings-password-form__input"
+            />
+            <AppPasswordField
+              v-model="newPassword"
+              :label="t('pages.settings.profilePasswordNew')"
+              auto-complete="new-password"
+              class="settings-password-form__input"
+            />
+            <AppPasswordField
+              v-model="confirmPassword"
+              :label="t('pages.settings.profilePasswordConfirm')"
+              auto-complete="new-password"
+              class="settings-password-form__input"
+            />
             <p v-if="passwordError" class="settings-password-form__error" role="alert">
               {{ passwordError }}
             </p>
-            <UButton type="submit" :loading="passwordSaving">
-              {{ t('pages.settings.profilePasswordSubmit') }}
-            </UButton>
+            <AppButton
+              type="submit"
+              :loading="passwordSaving"
+              :label="t('pages.settings.profilePasswordSubmit')"
+            />
           </form>
         </div>
       </section>
@@ -351,24 +368,18 @@
             <span class="settings-row__help">{{ t('pages.settings.appearanceThemeHelp') }}</span>
           </div>
           <div class="settings-row__control">
-            <div
-              class="settings-picker"
-              role="radiogroup"
-              :aria-label="t('pages.settings.appearanceThemeLabel')"
+            <AppSegmented
+              :model-value="activeTheme"
+              :label="t('pages.settings.appearanceThemeLabel')"
+              @update:model-value="onTheme"
             >
-              <button
+              <AppSegmentedItem
                 v-for="opt in themeOptions"
                 :key="opt"
-                type="button"
-                role="radio"
-                :aria-checked="activeTheme === opt"
-                class="settings-picker__btn"
-                :class="{ 'settings-picker__btn--active': activeTheme === opt }"
-                @click="onTheme(opt)"
-              >
-                {{ themeLabel(opt) }}
-              </button>
-            </div>
+                :value="opt"
+                :label="themeLabel(opt)"
+              />
+            </AppSegmented>
           </div>
         </div>
 
@@ -381,24 +392,18 @@
             <span class="settings-row__help">{{ t('pages.settings.appearanceDensityHelp') }}</span>
           </div>
           <div class="settings-row__control">
-            <div
-              class="settings-picker"
-              role="radiogroup"
-              :aria-label="t('pages.settings.appearanceDensityLabel')"
+            <AppSegmented
+              :model-value="prefs.density"
+              :label="t('pages.settings.appearanceDensityLabel')"
+              @update:model-value="prefs.setDensity"
             >
-              <button
+              <AppSegmentedItem
                 v-for="opt in densityOptions"
                 :key="opt"
-                type="button"
-                role="radio"
-                :aria-checked="prefs.density === opt"
-                class="settings-picker__btn"
-                :class="{ 'settings-picker__btn--active': prefs.density === opt }"
-                @click="prefs.setDensity(opt)"
-              >
-                {{ densityLabel(opt) }}
-              </button>
-            </div>
+                :value="opt"
+                :label="densityLabel(opt)"
+              />
+            </AppSegmented>
           </div>
         </div>
       </section>
@@ -416,24 +421,18 @@
             <span class="settings-row__help">{{ t('pages.settings.playbackSpeedHelp') }}</span>
           </div>
           <div class="settings-row__control">
-            <div
-              class="settings-picker settings-picker--wrap"
-              role="radiogroup"
-              :aria-label="t('pages.settings.playbackSpeedLabel')"
+            <AppSegmented
+              :model-value="prefs.defaultSpeed"
+              :label="t('pages.settings.playbackSpeedLabel')"
+              @update:model-value="prefs.setDefaultSpeed"
             >
-              <button
+              <AppSegmentedItem
                 v-for="speed in speedOptions"
                 :key="speed"
-                type="button"
-                role="radio"
-                :aria-checked="prefs.defaultSpeed === speed"
-                class="settings-picker__btn"
-                :class="{ 'settings-picker__btn--active': prefs.defaultSpeed === speed }"
-                @click="prefs.setDefaultSpeed(speed)"
-              >
-                {{ speed === 1 ? '1×' : `${speed}×` }}
-              </button>
-            </div>
+                :value="speed"
+                :label="speed === 1 ? '1×' : `${speed}×`"
+              />
+            </AppSegmented>
           </div>
         </div>
 
@@ -444,8 +443,9 @@
             <span class="settings-row__help">{{ t('pages.settings.playbackAutoplayHelp') }}</span>
           </div>
           <div class="settings-row__control">
-            <UToggle
+            <AppSwitch
               :model-value="prefs.autoplayNext"
+              :aria-label="t('pages.settings.playbackAutoplayLabel')"
               @update:model-value="prefs.setAutoplayNext"
             />
           </div>
@@ -458,8 +458,9 @@
             <span class="settings-row__help">{{ t('pages.settings.playbackResumeHelp') }}</span>
           </div>
           <div class="settings-row__control">
-            <UToggle
+            <AppSwitch
               :model-value="prefs.resumeWhereLeftOff"
+              :aria-label="t('pages.settings.playbackResumeLabel')"
               @update:model-value="prefs.setResumeWhereLeftOff"
             />
           </div>
@@ -510,9 +511,11 @@
             <span class="settings-row__help">{{ t('pages.settings.accountSignOutHelp') }}</span>
           </div>
           <div class="settings-row__control">
-            <UButton variant="outline" color="neutral" @click="onSignOut">
-              {{ t('pages.settings.accountSignOutCta') }}
-            </UButton>
+            <AppButton
+              variant="secondary"
+              :label="t('pages.settings.accountSignOutCta')"
+              @click="onSignOut"
+            />
           </div>
         </div>
 
@@ -527,14 +530,12 @@
             }}</span>
           </div>
           <div class="settings-row__control">
-            <UButton
-              variant="outline"
-              color="neutral"
+            <AppButton
+              variant="secondary"
               :loading="signOutOthersPending"
-              @click="onSignOutOthers"
-            >
-              {{ t('pages.settings.accountSignOutOthersCta') }}
-            </UButton>
+              :label="t('pages.settings.accountSignOutOthersCta')"
+              @click="signOutOthersDialogOpen = true"
+            />
           </div>
         </div>
 
@@ -542,15 +543,41 @@
         <div class="settings-row">
           <div class="settings-row__left">
             <span class="settings-row__label">{{ t('pages.settings.accountDeleteLabel') }}</span>
-            <span class="settings-row__help">{{ t('pages.settings.accountDeleteHelp') }}</span>
+            <span class="settings-row__help">{{
+              t('pages.settings.accountDeleteComingSoon')
+            }}</span>
           </div>
           <div class="settings-row__control">
-            <UButton variant="outline" color="error" @click="onDeleteAccount">
-              {{ t('pages.settings.accountDeleteCta') }}
-            </UButton>
+            <AppButton
+              variant="destructive"
+              disabled
+              :label="t('pages.settings.accountDeleteCta')"
+            />
           </div>
         </div>
       </section>
+
+      <!-- Confirm: sign out other devices -->
+      <AppDialog
+        :open="signOutOthersDialogOpen"
+        size="sm"
+        :title="t('pages.settings.accountSignOutOthersDialogTitle')"
+        :description="t('pages.settings.accountSignOutOthersDialogDescription')"
+        @update:open="signOutOthersDialogOpen = $event"
+      >
+        <template #footer>
+          <AppButton
+            variant="ghost"
+            :label="t('pages.settings.accountSignOutOthersDialogCancel')"
+            @click="signOutOthersDialogOpen = false"
+          />
+          <AppButton
+            variant="destructive"
+            :label="t('pages.settings.accountSignOutOthersDialogConfirm')"
+            @click="confirmSignOutOthers"
+          />
+        </template>
+      </AppDialog>
     </div>
   </div>
 </template>
@@ -561,7 +588,6 @@
   $row-gap: var(--space-1);
   $border: 1px solid var(--border-default);
   $ctrl-min-w: 220px;
-  $dur-btn: var(--dur-fast);
 
   .page-settings {
     padding: var(--space-8) var(--space-4);
@@ -584,13 +610,13 @@
     &__title {
       font-size: var(--text-2xl);
       font-weight: 700;
-      color: var(--text-loud);
+      color: var(--text-fg);
       margin: 0;
     }
 
     &__subtitle {
       font-size: var(--text-sm);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       margin: 0;
     }
   }
@@ -609,7 +635,7 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: var(--text-muted);
+      color: var(--text-secondary);
       padding: var(--space-3) var(--space-4);
       margin: 0;
       background: var(--surface-raised);
@@ -665,7 +691,7 @@
 
     &__help {
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
 
     &__control {
@@ -723,7 +749,7 @@
       place-items: center;
       font-size: var(--text-lg);
       font-weight: 700;
-      color: var(--text-muted);
+      color: var(--text-secondary);
       user-select: none;
     }
 
@@ -731,49 +757,6 @@
       display: flex;
       flex-direction: column;
       gap: var(--space-1);
-    }
-  }
-
-  // ── 3-up picker ────────────────────────────────────────────────────────────
-
-  .settings-picker {
-    display: flex;
-    border: $border;
-    border-radius: var(--radius-md);
-    overflow: hidden;
-
-    &--wrap {
-      flex-wrap: wrap;
-    }
-
-    &__btn {
-      flex: 1;
-      padding: var(--space-1-5) var(--space-3);
-      font-size: var(--text-sm);
-      font-weight: 500;
-      background: var(--surface-surface);
-      color: var(--text-muted);
-      border: none;
-      border-right: $border;
-      cursor: pointer;
-      transition:
-        background $dur-btn ease,
-        color $dur-btn ease;
-      white-space: nowrap;
-
-      &:last-child {
-        border-right: none;
-      }
-
-      &:hover:not(.settings-picker__btn--active) {
-        background: var(--surface-raised);
-        color: var(--text-fg);
-      }
-
-      &--active {
-        background: var(--primary);
-        color: var(--text-inverse);
-      }
     }
   }
 
@@ -801,7 +784,7 @@
 
   .settings-slider {
     width: 100%;
-    accent-color: var(--primary);
+    accent-color: var(--brand-accent);
     cursor: pointer;
   }
 

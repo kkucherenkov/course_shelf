@@ -90,11 +90,17 @@ import { MetadataLinker } from './application/scan/metadata-linker';
 import { LessonCompletedHandler } from './application/event-handlers/lesson-completed.handler';
 import { LessonProgressRecordedHandler } from './application/event-handlers/lesson-progress-recorded.handler';
 import { RebuildProjectionsService } from './application/projections/rebuild-projections.service';
+import { RunIdentifyTaskHandler } from './application/commands/run-identify-task.handler';
+import { ApplyIdentifyResultHandler } from './application/commands/apply-identify-result.handler';
+import { DiscardIdentifyTaskHandler } from './application/commands/discard-identify-task.handler';
+import { ListIdentifyTasksHandler } from './application/queries/list-identify-tasks.handler';
+import { GetIdentifyTaskHandler } from './application/queries/get-identify-task.handler';
 import { CatalogController } from './catalog.controller';
 import { CatalogEntitiesController } from './catalog-entities.controller';
 import { CatalogEntitiesAdminController } from './catalog-entities-admin.controller';
 import { CoursesController } from './courses.controller';
 import { HomeController } from './home.controller';
+import { IdentifyAdminController } from './identify-admin.controller';
 import { LessonsController } from './lessons.controller';
 import { ScansController } from './scans.controller';
 import { SearchController } from './search.controller';
@@ -119,9 +125,11 @@ import { PrismaInstructorRepository } from './infra/prisma-instructor.repository
 import { PrismaStudioRepository } from './infra/prisma-studio.repository';
 import { PrismaTagRepository } from './infra/prisma-tag.repository';
 import { PrismaExternalIdRepository } from './infra/prisma-external-id.repository';
+import { PrismaIdentifyTaskRepository } from './infra/prisma-identify-task.repository';
 import { PrismaSearchAdapter } from './infra/prisma-search.adapter';
 import { LocalFfmpegAdapter } from './infra/local-ffmpeg.adapter';
 import { NodeFsAdapter } from './infra/node-fs-adapter';
+import { IDENTIFY_TASK_REPOSITORY } from './domain/identify/identify-task.repository';
 
 @Module({
   imports: [CqrsModule, CommonAccessModule, LearningProgressModule],
@@ -130,6 +138,7 @@ import { NodeFsAdapter } from './infra/node-fs-adapter';
     CatalogEntitiesController,
     CatalogEntitiesAdminController,
     CatalogScrapeAdminController,
+    IdentifyAdminController,
     ScansController,
     CoursesController,
     LessonsController,
@@ -170,6 +179,11 @@ import { NodeFsAdapter } from './infra/node-fs-adapter';
     GetTagHandler,
     BackfillCourseMetadataHandler,
     ScrapeCourseHandler,
+    RunIdentifyTaskHandler,
+    ApplyIdentifyResultHandler,
+    DiscardIdentifyTaskHandler,
+    ListIdentifyTasksHandler,
+    GetIdentifyTaskHandler,
     {
       provide: SCRAPER_REGISTRY,
       useFactory: (config: AppConfig): DefaultScraperRegistry => {
@@ -196,6 +210,7 @@ import { NodeFsAdapter } from './infra/node-fs-adapter';
     RebuildProjectionsService,
     AdminGuard,
     { provide: EXTERNAL_ID_REPOSITORY, useClass: PrismaExternalIdRepository },
+    { provide: IDENTIFY_TASK_REPOSITORY, useClass: PrismaIdentifyTaskRepository },
     { provide: LIBRARY_REPOSITORY, useClass: PrismaLibraryRepository },
     { provide: SCAN_REPOSITORY, useClass: PrismaScanRepository },
     { provide: COURSE_REPOSITORY, useClass: PrismaCourseRepository },

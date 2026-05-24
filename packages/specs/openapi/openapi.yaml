@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.16.0
+  version: 0.17.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -1221,6 +1221,456 @@ paths:
                     title: Bad Gateway
                     status: 502
                     detail: "Failed to fetch 'https://www.youtube.com/playlist?list=PL123' from the upstream source."
+
+  /api/v1/admin/courses/{id}/identify:
+    post:
+      operationId: runIdentifyTask
+      summary: Create an identify proposal for a course
+      description: >-
+        Persists a chosen scraped fragment as a `proposed` IdentifyTask. Nothing
+        is written to the course until the task is applied. Requires admin role.
+      tags: [admin, Identify]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RunIdentifyRequest" }
+            examples:
+              fromScrapeCandidate:
+                summary: Propose an identify task from a YouTube scrape result
+                value:
+                  source: youtube
+                  sourceUrl: "https://www.youtube.com/playlist?list=PL123"
+                  fragment:
+                    title: Rust Course
+                    studioName: Rustacean
+                    externalIds:
+                      - source: youtube
+                        externalId: "youtube:playlist:PL123"
+      responses:
+        "201":
+          description: The created identify task
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IdentifyTaskDto" }
+              examples:
+                created:
+                  value:
+                    id: clx123
+                    courseId: clc456
+                    status: proposed
+                    source: youtube
+                    sourceUrl: "https://www.youtube.com/playlist?list=PL123"
+                    scrapedFragment:
+                      title: Rust Course
+                      studioName: Rustacean
+                      externalIds:
+                        - source: youtube
+                          externalId: "youtube:playlist:PL123"
+                    mergePolicy:
+                      title: merge
+                      description: merge
+                      level: merge
+                      language: merge
+                      posterUrl: merge
+                      releaseDate: merge
+                      ratingAverage: merge
+                      ratingCount: merge
+                      instructors: merge
+                      studios: merge
+                      tags: merge
+                      externalIds: merge
+                    createdAt: "2026-05-24T10:00:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "404":
+          description: Course not found
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No course with that id exists.
+
+  /api/v1/admin/identify-tasks:
+    get:
+      operationId: listIdentifyTasks
+      summary: List identify tasks
+      description: >-
+        Returns identify tasks ordered newest-first. Optionally filtered by
+        status and/or courseId. Requires admin role.
+      tags: [admin, Identify]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/IdentifyTaskStatus" }
+        - name: courseId
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Matching identify tasks
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IdentifyTaskListDto" }
+              examples:
+                list:
+                  value:
+                    tasks:
+                      - id: clx123
+                        courseId: clc456
+                        status: proposed
+                        source: youtube
+                        scrapedFragment:
+                          title: Rust Course
+                        mergePolicy:
+                          title: merge
+                          description: merge
+                          level: merge
+                          language: merge
+                          posterUrl: merge
+                          releaseDate: merge
+                          ratingAverage: merge
+                          ratingCount: merge
+                          instructors: merge
+                          studios: merge
+                          tags: merge
+                          externalIds: merge
+                        createdAt: "2026-05-24T10:00:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+
+  /api/v1/admin/identify-tasks/{id}:
+    get:
+      operationId: getIdentifyTask
+      summary: Get one identify task
+      description: Returns a single identify task by id. Requires admin role.
+      tags: [admin, Identify]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: The identify task
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IdentifyTaskDto" }
+              examples:
+                found:
+                  value:
+                    id: clx123
+                    courseId: clc456
+                    status: proposed
+                    source: youtube
+                    scrapedFragment:
+                      title: Rust Course
+                    mergePolicy:
+                      title: merge
+                      description: merge
+                      level: merge
+                      language: merge
+                      posterUrl: merge
+                      releaseDate: merge
+                      ratingAverage: merge
+                      ratingCount: merge
+                      instructors: merge
+                      studios: merge
+                      tags: merge
+                      externalIds: merge
+                    createdAt: "2026-05-24T10:00:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "404":
+          description: Identify task not found
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No identify task with that id exists.
+
+  /api/v1/admin/identify-tasks/{id}/apply:
+    post:
+      operationId: applyIdentifyResult
+      summary: Apply a proposed identify task to its course
+      description: >-
+        Merges the scraped fragment into the course per the (optionally
+        overridden) merge policy, resolving names to entities. Requires admin role.
+      tags: [admin, Identify]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApplyIdentifyRequest" }
+            examples:
+              withPolicyOverride:
+                summary: Apply with title forced to overwrite
+                value:
+                  mergePolicy:
+                    title: overwrite
+      responses:
+        "200":
+          description: The applied identify task
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IdentifyTaskDto" }
+              examples:
+                applied:
+                  value:
+                    id: clx123
+                    courseId: clc456
+                    status: applied
+                    source: youtube
+                    scrapedFragment:
+                      title: Rust Course
+                    mergePolicy:
+                      title: overwrite
+                      description: merge
+                      level: merge
+                      language: merge
+                      posterUrl: merge
+                      releaseDate: merge
+                      ratingAverage: merge
+                      ratingCount: merge
+                      instructors: merge
+                      studios: merge
+                      tags: merge
+                      externalIds: merge
+                    createdAt: "2026-05-24T10:00:00Z"
+                    completedAt: "2026-05-24T10:05:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "404":
+          description: Identify task not found
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No identify task with that id exists.
+        "409":
+          description: Task is not in the proposed state
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notPending:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: 'Identify task "clx123" is "applied" and can no longer be applied or discarded.'
+
+  /api/v1/admin/identify-tasks/{id}/discard:
+    post:
+      operationId: discardIdentifyTask
+      summary: Discard a proposed identify task
+      description: >-
+        Marks the task as discarded; no changes are written to the course.
+        Requires admin role.
+      tags: [admin, Identify]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: The discarded identify task
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IdentifyTaskDto" }
+              examples:
+                discarded:
+                  value:
+                    id: clx123
+                    courseId: clc456
+                    status: discarded
+                    source: youtube
+                    scrapedFragment:
+                      title: Rust Course
+                    mergePolicy:
+                      title: merge
+                      description: merge
+                      level: merge
+                      language: merge
+                      posterUrl: merge
+                      releaseDate: merge
+                      ratingAverage: merge
+                      ratingCount: merge
+                      instructors: merge
+                      studios: merge
+                      tags: merge
+                      externalIds: merge
+                    createdAt: "2026-05-24T10:00:00Z"
+                    completedAt: "2026-05-24T10:03:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "404":
+          description: Identify task not found
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No identify task with that id exists.
+        "409":
+          description: Task is not in the proposed state
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notPending:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: 'Identify task "clx123" is "applied" and can no longer be applied or discarded.'
 
   /api/v1/admin/studios:
     post:
@@ -4718,6 +5168,94 @@ components:
           - id: json-ld
             supportedKinds: [url, fragment]
             configured: true
+
+    MergeMode:
+      type: string
+      enum: [merge, overwrite, ignore]
+      description: >-
+        How one field reconciles scraped vs existing values. `merge` fills empty
+        scalars / unions arrays; `overwrite` replaces; `ignore` leaves unchanged.
+      example: merge
+
+    MergePolicyDto:
+      type: object
+      description: Per-field merge mode. Any omitted field defaults to `merge`.
+      properties:
+        title: { $ref: "#/components/schemas/MergeMode" }
+        description: { $ref: "#/components/schemas/MergeMode" }
+        level: { $ref: "#/components/schemas/MergeMode" }
+        language: { $ref: "#/components/schemas/MergeMode" }
+        posterUrl: { $ref: "#/components/schemas/MergeMode" }
+        releaseDate: { $ref: "#/components/schemas/MergeMode" }
+        ratingAverage: { $ref: "#/components/schemas/MergeMode" }
+        ratingCount: { $ref: "#/components/schemas/MergeMode" }
+        instructors: { $ref: "#/components/schemas/MergeMode" }
+        studios: { $ref: "#/components/schemas/MergeMode" }
+        tags: { $ref: "#/components/schemas/MergeMode" }
+        externalIds: { $ref: "#/components/schemas/MergeMode" }
+
+    IdentifyTaskStatus:
+      type: string
+      enum: [proposed, applied, discarded]
+      description: Lifecycle state of an identify task.
+      example: proposed
+
+    IdentifyTaskDto:
+      type: object
+      required: [id, courseId, status, source, scrapedFragment, mergePolicy, createdAt]
+      description: An admin-reviewed metadata enrichment proposal for a course.
+      properties:
+        id: { type: string, example: "clx123" }
+        courseId: { type: string, example: "clc456" }
+        status: { $ref: "#/components/schemas/IdentifyTaskStatus" }
+        source:
+          type: string
+          description: Label of the scraper/source that produced the fragment.
+          example: youtube
+        sourceUrl:
+          type: string
+          format: uri
+          description: URL the fragment was scraped from, if any.
+        scrapedFragment: { $ref: "#/components/schemas/ScrapedCourseFragmentDto" }
+        mergePolicy: { $ref: "#/components/schemas/MergePolicyDto" }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time }
+
+    IdentifyTaskListDto:
+      type: object
+      required: [tasks]
+      description: Identify tasks, newest first.
+      properties:
+        tasks:
+          type: array
+          items: { $ref: "#/components/schemas/IdentifyTaskDto" }
+
+    RunIdentifyRequest:
+      type: object
+      required: [fragment, source]
+      description: >-
+        Create an identify proposal from a chosen scrape candidate. The fragment
+        is typically one of the candidates returned by scrape-preview.
+      properties:
+        fragment: { $ref: "#/components/schemas/ScrapedCourseFragmentDto" }
+        source:
+          type: string
+          description: Label of the source/scraper this fragment came from.
+          example: youtube
+        sourceUrl:
+          type: string
+          format: uri
+        mergePolicy:
+          allOf: [{ $ref: "#/components/schemas/MergePolicyDto" }]
+          description: Optional initial policy. Defaults to `merge` for every field.
+
+    ApplyIdentifyRequest:
+      type: object
+      description: Apply a proposed identify task, optionally overriding its merge policy.
+      properties:
+        mergePolicy:
+          allOf: [{ $ref: "#/components/schemas/MergePolicyDto" }]
+          description: Overrides the policy stored on the task when present.
 
     InstructorDetailDto:
       type: object

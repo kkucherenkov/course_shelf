@@ -21,7 +21,7 @@ const meta: Meta<typeof CourseWideCard> = {
       control: { type: 'select' },
       options: ['auto', 'not-started', 'in-progress', 'completed', 'locked'],
     },
-    resumeAt: { control: { type: 'number' } },
+    resumeLabel: { control: { type: 'text' } },
   },
   args: {
     course: sampleCourse,
@@ -42,7 +42,7 @@ export default meta;
 type Story = StoryObj<typeof CourseWideCard>;
 
 export const Default: Story = {
-  args: { resumeAt: 125 },
+  args: { resumeLabel: 'Resume 2:05' },
 };
 
 export const NotStarted: Story = {
@@ -79,10 +79,10 @@ export const Loading: Story = {
   },
 };
 
-export const WithResumeAt: Story = {
+export const WithResumeLabel: Story = {
   args: {
     course: { ...sampleCourse, completed: 5 },
-    resumeAt: 4370,
+    resumeLabel: 'Resume 1:12:50',
   },
 };
 
@@ -103,7 +103,7 @@ export const Variants: Story = {
     },
     template: `
       <div style="max-width: 480px; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4);">
-        <CourseWideCard v-for="c in courses" :key="c.id" :course="c" :resume-at="c.completed * 60" />
+        <CourseWideCard v-for="c in courses" :key="c.id" :course="c" />
       </div>
     `,
   }),
@@ -118,7 +118,7 @@ export const HoverFocus: Story = {
     template: `
       <div style="max-width: 480px; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4);">
         <p style="font-size: var(--text-sm); color: var(--text-secondary);">Hover or Tab to these cards to see focus/hover state.</p>
-        <CourseWideCard :course="course" :resume-at="125" />
+        <CourseWideCard :course="course" resume-label="Resume 2:05" />
         <CourseWideCard :course="course" />
       </div>
     `,

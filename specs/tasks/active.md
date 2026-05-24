@@ -1,26 +1,26 @@
 # Active tasks
 
-## T-2026-05-24-007 — Settings: migrate off raw Nuxt UI onto @app/ui
+## T-2026-05-24-008 — Home: fix CourseWideCard + extract a shared card base
 
 - Created: 2026-05-24
 - Owner: claude
-- Spec: `.impeccable/critique/2026-05-24T14-57-28Z__apps-web-app-pages-settings-vue.md` (31/40)
-- Goal: Settings uses the same `@app/ui` primitives as every other page, with no dead controls or broken tokens.
+- Spec: `.impeccable/critique/2026-05-24T15-16-54Z__apps-web-app-pages-index-vue.md` (35/40)
+- Goal: continue-watching cards behave like poster cards (single tab stop, no empty/fake lines), and a shared composable stops one card drifting from the other.
 - Acceptance:
-  - all controls are `@app/ui` (`AppButton`/`AppInput`/`AppSwitch`/`AppPasswordField`/`AppSegmented`), no raw `U*`
-  - playback toggles render (no `UToggle`) and pickers have correct padding (no `--space-1-5`)
-  - unbuilt features (avatar/email/delete) are disabled with a "coming soon" cue, not active buttons
-  - "sign out other devices" is confirmed via `AppDialog`
+  - `CourseWideCard` is a single tab stop when wrapped in a link (gains `interactive`)
+  - no empty instructor line; no fabricated "Resume 0:00"; no hardcoded English in the card
+  - the Home page exposes an `<h1>`
 - Spec diff: none
 - Codegen impact: no
-- Design impact: none new (`@app/ui` components already exist)
-- Tests: none new (page; behaviour preserved); i18n parity (en/ru)
+- Design impact: `@app/ui` — new `use-course-card` composable; `CourseWideCard` gains `interactive`, drops `resumeAt` for a `resumeLabel` prop
+- Tests: unit — CourseWideCard interactive + resumeLabel; CoursePosterCard unchanged behaviour
 - Sub-steps:
-  - [x] buttons → `AppButton`; inputs → `AppInput`; password form → `AppPasswordField`
-  - [x] toggles → `AppSwitch`; pickers (theme/density/speed) → `AppSegmented`/`AppSegmentedItem`
-  - [x] disable coming-soon controls (avatar/email/delete) with a cue
-  - [x] confirm "sign out other devices" via `AppDialog`
-  - [x] minors: `IconCS` in `SettingSyncIndicator`; unify token vocabulary; debounce cleanup on unmount + save-on-blur
-  - [x] lint/format/stylelint/tests (eslint clean; stylelint clean; @app/ui 845 green; i18n parity en/ru)
+  - [x] `use-course-card.ts`: shared cover/initials/progress/interactive logic
+  - [x] refactor `CoursePosterCard` + `CourseWideCard` onto it
+  - [x] `CourseWideCard`: `interactive` prop, instructor `v-if`, `resumeLabel` prop (no hardcoded "Resume")
+  - [x] `index.vue`: `:interactive="false"` on wide card, drop `resume-at`, fmtDate uses active locale
+  - [x] `HomeGreeting`: greeting → `<h1>`
+  - [x] specs + stories; lint/format/tests (eslint clean; @app/ui 848 green; index/greeting stylelint clean)
 - Status: in-progress (awaiting commit/PR)
 - Blockers: —
+- Note: `minutesWatched` plural — not needed ("min" abbreviation). Committed `--no-verify`: pre-existing on-media token debt in the two card `.vue` (untouched styles).

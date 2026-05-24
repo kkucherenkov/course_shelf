@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { Course } from './types';
 import CourseWideCard from './CourseWideCard.vue';
-import { COVER, fmtTime } from './cover-map';
+import { COVER } from './cover-map';
 
 const base: Course = {
   id: '1',
@@ -43,20 +43,27 @@ describe('CourseWideCard', () => {
     expect(thumb.attributes('style')).toContain('url(');
   });
 
-  // --- resumeAt meta ---
+  // --- resume / progress meta ---
 
-  it('shows Resume <fmtTime> when resumeAt is set', () => {
-    const wrapper = mount(CourseWideCard, { props: { course: base, resumeAt: 125 } });
+  it('shows the resumeLabel when provided', () => {
+    const wrapper = mount(CourseWideCard, {
+      props: { course: base, resumeLabel: 'Resume 2:05' },
+    });
     const resume = wrapper.find('.course-wide-card__meta-resume');
-    expect(resume.text()).toBe(`Resume ${fmtTime(125)}`);
+    expect(resume.text()).toBe('Resume 2:05');
   });
 
-  it('shows pct% when resumeAt is not set', () => {
+  it('shows pct% when no resumeLabel is provided', () => {
     const wrapper = mount(CourseWideCard, {
       props: { course: { ...base, completed: 4, lessons: 12 } },
     });
     const resume = wrapper.find('.course-wide-card__meta-resume');
     expect(resume.text()).toBe('33%');
+  });
+
+  it('hides the instructor line when instructor is empty', () => {
+    const wrapper = mount(CourseWideCard, { props: { course: { ...base, instructor: '' } } });
+    expect(wrapper.find('.course-wide-card__instructor').exists()).toBe(false);
   });
 
   it('play icon is present in meta row', () => {
@@ -106,6 +113,21 @@ describe('CourseWideCard', () => {
     expect(root.attributes('tabindex')).toBe('0');
     expect(root.attributes('role')).toBe('button');
     expect(root.attributes('aria-label')).toBe('Advanced Vue Patterns');
+  });
+
+  it('interactive=false renders presentational root (no role/tabindex/aria-label)', () => {
+    const wrapper = mount(CourseWideCard, { props: { course: base, interactive: false } });
+    const root = wrapper.find('.course-wide-card');
+    expect(root.attributes('tabindex')).toBeUndefined();
+    expect(root.attributes('role')).toBeUndefined();
+    expect(root.attributes('aria-label')).toBeUndefined();
+  });
+
+  it('interactive=false does not emit click on click or Enter', async () => {
+    const wrapper = mount(CourseWideCard, { props: { course: base, interactive: false } });
+    await wrapper.find('.course-wide-card').trigger('click');
+    await wrapper.find('.course-wide-card').trigger('keydown', { key: 'Enter' });
+    expect(wrapper.emitted('click')).toBeUndefined();
   });
 
   // --- click / keyboard emit ---

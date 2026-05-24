@@ -25,10 +25,10 @@
       class="home-greeting__avatar"
     />
     <div class="home-greeting__text">
-      <p class="home-greeting__hello">
+      <h1 class="home-greeting__hello">
         {{ greeting }}
         <span class="home-greeting__name">{{ name }}</span>
-      </p>
+      </h1>
       <span class="home-greeting__role">{{ roleLabel }}</span>
     </div>
   </div>

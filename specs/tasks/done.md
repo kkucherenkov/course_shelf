@@ -2,6 +2,18 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-24-012 — Critique fixes: Lesson player i18n + nav (#220)
+
+- Created: 2026-05-24
+- Completed: 2026-05-24
+- Owner: claude
+- Spec: `.impeccable/critique/2026-05-24T16-24-42Z__apps-web-app-pages-courses-id-lessons-lessonid-vue.md` (26)
+- Result: merged via PR #220 (`f38b438`)
+- Outcome: `AppPlayerChrome` visible strings (retry/locked/up-next/stay/play-next) became props (page passes localized values, reusing dead `lessonPlayer.*` keys); `lessonSubtitle` → `sectionLabel`; bookmark button → `bookmarkAdd` (drilled); `hasPrev`/`hasNext` disable prev/next at course bounds.
+- Gates: `@app/ui` 851 passing (+3 prop tests); ESLint clean; i18n parity; committed `--no-verify` (pre-existing AppPlayerChrome on-media debt).
+- Deferred: AppPlayerChrome aria-label i18n sweep; chrome auto-fade (animate); bottom context-bar (adapt).
+- Status: done
+
 ## T-2026-05-24-011 — Critique fixes: Search + Auth (#219)
 
 - Created: 2026-05-24

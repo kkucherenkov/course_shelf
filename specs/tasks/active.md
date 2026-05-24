@@ -1,26 +1,21 @@
 # Active tasks
 
-## T-2026-05-24-012 — Critique fixes: Lesson player (i18n + nav)
+## T-2026-05-24-013 — AppPlayerChrome aria-label i18n sweep
 
 - Created: 2026-05-24
 - Owner: claude
-- Spec: `.impeccable/critique/2026-05-24T16-24-42Z__apps-web-app-pages-courses-id-lessons-lessonid-vue.md` (26)
-- Goal: the player's visible copy is localized and its prev/next controls respect course bounds.
+- Spec: lesson-player critique follow-up (the ~14 screen-reader-only labels left after #220)
+- Goal: the player's control `aria-label`s are localized, not English-only for SR users.
 - Acceptance:
-  - `AppPlayerChrome` visible strings (retry / locked / up-next / stay / play-next) come from props; the page passes localized values
-  - `lessonSubtitle` + the bookmark "add" button are localized
-  - prev/next are disabled at the first/last lesson
+  - every `AppPlayerChrome` `aria-label` resolves from an `ariaLabels` prop (English defaults preserved)
+  - the page passes a localized `ariaLabels` object
 - Spec diff: none
 - Codegen impact: no
-- Design impact: `@app/ui` — `AppPlayerChrome` gains visible-label props + `hasPrev`/`hasNext` (defaults preserve behaviour)
-- Tests: `@app/ui` 851 (new AppPlayerChrome prop tests); i18n parity (en/ru)
-- Deferred to own follow-up PRs:
-  - `AppPlayerChrome` aria-label i18n sweep (~14 SR-only strings) — a focused a11y-i18n pass
-  - chrome auto-fade after 3s idle (animate); bottom context-bar with title/instructor/"progress synced" (adapt) — need visual iteration
+- Design impact: `@app/ui` — `AppPlayerChrome` gains an `ariaLabels` object prop (defaults preserve behaviour)
+- Tests: `@app/ui` (custom aria label renders); i18n parity (en/ru)
 - Sub-steps:
-  - [x] `AppPlayerChrome`: visible-label props (retry/locked/upNext/stay/playNext) + `hasPrev`/`hasNext`; spec + story
-  - [x] page passes localized labels (reusing existing `lessonPlayer.*` keys) + `hasPrev`/`hasNext`
-  - [x] localize `lessonSubtitle` (`sectionLabel`) + `PlayerBookmarksTab` add button (`bookmarkAdd`, drilled via PlayerSidebar)
-  - [x] i18n (en/ru); lint/format/tests
+  - [x] `AppPlayerChrome`: `ariaLabels` object prop + defaults; wired all 13 aria-label sites (incl. `bookmarkAt` `{time}`)
+  - [x] page passes a localized `ariaLabels` object (`pages.lessonPlayer.aria.*`)
+  - [x] i18n keys (en/ru, 17 keys, parity verified); spec (+1); lint/format/tests (@app/ui 852)
 - Status: in-progress (awaiting commit/PR)
 - Blockers: —

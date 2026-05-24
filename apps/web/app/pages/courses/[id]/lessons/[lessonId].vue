@@ -157,6 +157,28 @@
   const hasNext = computed<boolean>(() => nextLesson.value !== null);
   const hasPrev = computed<boolean>(() => allLessons.value.findIndex((l) => l.id === lessonId) > 0);
 
+  // Localized screen-reader labels for the player chrome controls.
+  // `bookmarkAt` keeps its `{time}` placeholder for the chrome to interpolate.
+  const chromeAria = computed(() => ({
+    player: t('pages.lessonPlayer.aria.player'),
+    buffering: t('pages.lessonPlayer.aria.buffering'),
+    pip: t('pages.lessonPlayer.aria.pip'),
+    settings: t('pages.lessonPlayer.aria.settings'),
+    seek: t('pages.lessonPlayer.aria.seek'),
+    bookmarkAt: t('pages.lessonPlayer.aria.bookmarkAt', { time: '{time}' }),
+    pause: t('pages.lessonPlayer.aria.pause'),
+    play: t('pages.lessonPlayer.aria.play'),
+    prevLesson: t('pages.lessonPlayer.aria.prevLesson'),
+    nextLesson: t('pages.lessonPlayer.aria.nextLesson'),
+    mute: t('pages.lessonPlayer.aria.mute'),
+    unmute: t('pages.lessonPlayer.aria.unmute'),
+    speed: t('pages.lessonPlayer.aria.speed'),
+    subtitlesEnable: t('pages.lessonPlayer.aria.subtitlesEnable'),
+    subtitlesDisable: t('pages.lessonPlayer.aria.subtitlesDisable'),
+    fullscreenEnter: t('pages.lessonPlayer.aria.fullscreenEnter'),
+    fullscreenExit: t('pages.lessonPlayer.aria.fullscreenExit'),
+  }));
+
   const endNext = computed<{ title: string; countdownSec: number } | undefined>(() => {
     if (!nextLesson.value) return;
     return {
@@ -341,6 +363,7 @@
             :up-next-label="t('pages.lessonPlayer.upNextIn', { n: '{n}' })"
             :stay-label="t('pages.lessonPlayer.stayHere')"
             :play-next-label="t('pages.lessonPlayer.playNext')"
+            :aria-labels="chromeAria"
             @play="onPlay"
             @pause="onPause"
             @seek="onSeek"

@@ -55,6 +55,15 @@ export const Focus: Story = {
   },
 };
 
+/**
+ * With `to` set, the button renders as a `NuxtLink` (a single anchor) so
+ * navigation CTAs don't nest a `<button>` inside an `<a>`. A disabled or
+ * loading button keeps the native `<button>` element.
+ */
+export const AsLink: Story = {
+  args: { label: 'View course', to: '/courses/1', iconLeading: 'play' },
+};
+
 export const WithLeadingIcon: Story = {
   args: { iconLeading: 'check', label: 'Confirm' },
 };

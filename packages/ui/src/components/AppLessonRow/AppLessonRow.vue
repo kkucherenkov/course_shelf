@@ -148,6 +148,9 @@
   //   --text-subtle   → --text-tertiary
   //   --success       → --feedback-success
   //   --d-fast        → --dur-fast
+  // Leading lesson-number column width — named var, exempt from the raw-px rule.
+  $num-col-w: 24px;
+
   .app-lesson-row {
     position: relative;
     display: flex;
@@ -167,19 +170,10 @@
       outline-offset: -2px;
     }
 
+    // Current row is marked by the accent-soft background + play icon +
+    // aria-current. No left side-stripe (avoids the side-stripe anti-pattern).
     &--current {
       background: var(--brand-accent-soft);
-
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: var(--space-2);
-        bottom: var(--space-2);
-        width: 3px;
-        background: var(--brand-accent);
-        border-radius: 0 2px 2px 0;
-      }
     }
 
     &--locked {
@@ -187,7 +181,7 @@
     }
 
     &__num {
-      width: 24px;
+      width: $num-col-w;
       flex-shrink: 0;
       font-family: var(--font-mono);
       font-size: var(--text-xs);

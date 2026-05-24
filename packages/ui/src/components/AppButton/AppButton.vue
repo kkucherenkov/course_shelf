@@ -1,5 +1,6 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, resolveComponent } from 'vue';
+  import type { RouteLocationRaw } from 'vue-router';
 
   import IconCS, { type IconName } from '../IconCS/IconCS.vue';
 
@@ -17,6 +18,13 @@
       type?: 'button' | 'submit' | 'reset';
       iconLeading?: IconName;
       iconTrailing?: IconName;
+      /**
+       * When set, the button renders as a `NuxtLink` so navigation CTAs stay
+       * a single anchor instead of a `<button>` nested inside an `<a>`. A
+       * `disabled`/`loading` button keeps the native `<button>` so the
+       * inactive state and click-guard still apply.
+       */
+      to?: RouteLocationRaw;
     }>(),
     {
       label: undefined,
@@ -28,10 +36,14 @@
       type: 'button',
       iconLeading: undefined,
       iconTrailing: undefined,
+      to: undefined,
     },
   );
 
   const emit = defineEmits<{ click: [event: MouseEvent] }>();
+
+  const isLink = computed(() => Boolean(props.to) && !props.disabled && !props.loading);
+  const rootTag = computed(() => (isLink.value ? resolveComponent('NuxtLink') : 'button'));
 
   const iconPxSize = computed<number>(() => {
     if (props.size === 'sm') return 16;
@@ -50,15 +62,17 @@
 </script>
 
 <template>
-  <button
+  <component
+    :is="rootTag"
+    :to="isLink ? to : undefined"
     :class="[
       'app-button',
       `app-button--${variant}`,
       `app-button--${size}`,
       { 'app-button--block': block },
     ]"
-    :type="type"
-    :disabled="loading || disabled"
+    :type="isLink ? undefined : type"
+    :disabled="isLink ? undefined : loading || disabled"
     :data-loading="loading || undefined"
     :aria-busy="loading || undefined"
     :aria-disabled="loading || disabled || undefined"
@@ -79,7 +93,7 @@
       :size="iconPxSize"
       class="app-button__icon app-button__icon--trailing"
     />
-  </button>
+  </component>
 </template>
 
 <style lang="scss" scoped>

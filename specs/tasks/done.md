@@ -2,6 +2,42 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-25-003 — Auth structured error codes (replace brittle message string-matching) (#227)
+
+- Created: 2026-05-25
+- Completed: 2026-05-25
+- Owner: claude
+- Spec: deferred item C from T-2026-05-24-015 (Auth cheap polish, #223)
+- Result: merged via PR #227
+- Outcome: auth failures are matched on Better Auth's stable machine `code` (`BASE_ERROR_CODES`) instead of `message.includes(...)`. `stores/auth.ts` `signIn`/`signUp`/`changePassword` return `code?: string` from `result.error.code`; the three pages map it via a centralised `app/constants/authErrorCodes.ts` (`INVALID_EMAIL_OR_PASSWORD`→`signIn.errorCredentials`; `USER_ALREADY_EXISTS`→`signUp.errorEmailTaken`; `INVALID_PASSWORD`→`settings.profilePasswordErrorWrongCurrent`). `settings.vue` stopped leaking the raw Better Auth message — falls back to a new localized `profilePasswordErrorGeneric` (en + ru).
+- Scope correction: estimated as cross-cutting (spec→backend→client) but turned out frontend-only — Better Auth already emits the codes. No spec/codegen.
+- Gates: web ESLint clean; `nuxt typecheck` exit 0; `auth.spec.ts` +3 cases, 31/31 green via isolated vitest config (Node 24 — repo web runner env-broken, see #225 note); `check:i18n` parity 480×2.
+- Status: done
+
+## T-2026-05-25-002 — Remove redundant client-side promoteToAdmin stub (#226)
+
+- Created: 2026-05-25
+- Completed: 2026-05-25
+- Owner: claude
+- Spec: deferred item A from T-2026-05-24-015 (Auth cheap polish, #223)
+- Result: merged via PR #226
+- Outcome: deleted the dead client-side first-admin promotion — `promoteToAdmin` removed from `stores/auth.ts` (stub + return entry), the sign-up call and its orphaned submit-time `refreshHasUsers` guard removed, destructure trimmed to `{ hasUsers }`.
+- Scope correction: the note said "wire Better Auth `admin.setRole`", but the backend already promotes the first user server-side (`auth.service.ts` → `databaseHooks.user.create.before` sets `role: 'ADMIN'` when user count is 0); the client stub only warned and returned ok. So it was a delete, not a feature. `hasUsers` still drives the first-run framing.
+- Gates: web ESLint clean; `nuxt typecheck` exit 0; no `promoteToAdmin` references remain.
+- Status: done
+
+## T-2026-05-25-001 — Sign-up OTP polish: paste support + clear code on edit-email (#225)
+
+- Created: 2026-05-25
+- Completed: 2026-05-25
+- Owner: claude
+- Spec: deferred items B + D from T-2026-05-24-015 (Auth cheap polish, #223)
+- Result: merged via PR #225
+- Outcome: extracted segmented code entry into a headless `useOtpInput` composable (`digits/fullCode/onInput/onKeydown/onPaste/reset`, focus via injected callback). Pasting a 6-digit code now distributes one digit per cell (strips non-digits, ignores overflow); "edit email" (verify → account) resets the code, clears the step-2 error and stops the resend countdown; focus moves via per-cell template refs instead of a global `querySelectorAll`.
+- Gates: web ESLint clean; `nuxt typecheck` exit 0; `useOtpInput.spec.ts` 15 cases green via isolated vitest config (Node 24).
+- Note: the repo-wide `apps/web` vitest runner is env-broken on `main` — `@nuxt/ui` `#build/ui/badge` subpath fails to resolve under vite optimizeDeps (reproduces on untouched specs). Pure composable/store specs verified via an isolated vitest config. Fixing the web unit-test runner is a separate infra task.
+- Status: done
+
 ## T-2026-05-24-015 — Auth cheap polish: first-run framing, autofocus, form width (#223)
 
 - Created: 2026-05-25

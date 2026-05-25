@@ -1,5 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
+
+// Stub @app/ui so importing the component doesn't pull the whole barrel — which
+// transitively loads @nuxt/ui runtime and its Nuxt-build virtuals (#build/ui/*,
+// #imports) that don't resolve outside a Nuxt build. IconCS only renders inside
+// the indicator's own spans, so a stub is behaviour-preserving for these tests.
+vi.mock('@app/ui', () => ({
+  IconCS: { name: 'IconCS', props: ['name', 'size'], template: '<i class="icon-cs" />' },
+}));
+
 import SettingSyncIndicator from '../SettingSyncIndicator.vue';
 
 const LABEL_PROPS = {

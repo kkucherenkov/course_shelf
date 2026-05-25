@@ -2,6 +2,18 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-24-015 — Auth cheap polish: first-run framing, autofocus, form width (#223)
+
+- Created: 2026-05-25
+- Completed: 2026-05-25
+- Owner: claude
+- Spec: `.impeccable/critique/…__apps-web-app-pages-sign-in-vue.md` (Auth re-critique 33; the cheap frontend gaps)
+- Result: merged via PR #223 (`d93b5d0`)
+- Outcome: first-run sign-up shows "first administrator" framing (`setup.*` when `hasUsers === false`) instead of generic SaaS copy; "No credit card" SaaS-ism removed from `signUp.subtitle` (en + ru); sign-in autofocuses the email field; `AuthLayout` `$form-max-width` 420 → 380 (brief).
+- Gates: ESLint (web) clean; stylelint clean on changed `.vue` (no `--no-verify`); i18n parity reused/reworded.
+- Deferred (NOT cheap, left out): `promoteToAdmin` backend stub (Better Auth `admin.setRole`); OTP paste; structured error codes; sign-up step 2→1 discards the verify code.
+- Status: done
+
 ## T-2026-05-24-014 — Auth follow-ups: reachable rate-limit, no SSO on sign-up, drop orphan (#222)
 
 - Created: 2026-05-24

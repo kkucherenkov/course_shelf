@@ -64,7 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
     email: string,
     password: string,
     rememberMe = true,
-  ): Promise<{ ok: boolean; error?: string; statusCode?: number; retryAfter?: number }> {
+  ): Promise<{ ok: boolean; error?: string; code?: string; statusCode?: number; retryAfter?: number }> {
     error.value = null;
     isPending.value = true;
 
@@ -98,8 +98,8 @@ export const useAuthStore = defineStore('auth', () => {
       if (result.error) {
         const message = result.error.message ?? 'Sign-in failed';
         error.value = message;
-        const statusCode = (result.error as { status?: number }).status;
-        return { ok: false, error: message, statusCode, retryAfter };
+        const { status: statusCode, code } = result.error as { status?: number; code?: string };
+        return { ok: false, error: message, code, statusCode, retryAfter };
       }
 
       // capturedToken is mutated inside the onSuccess callback above; TypeScript
@@ -184,7 +184,7 @@ export const useAuthStore = defineStore('auth', () => {
     email: string,
     password: string,
     displayName?: string,
-  ): Promise<{ ok: boolean; error?: string }> {
+  ): Promise<{ ok: boolean; error?: string; code?: string }> {
     error.value = null;
     isPending.value = true;
 
@@ -212,7 +212,8 @@ export const useAuthStore = defineStore('auth', () => {
       if (result.error) {
         const message = result.error.message ?? 'Sign-up failed';
         error.value = message;
-        return { ok: false, error: message };
+        const { code } = result.error as { code?: string };
+        return { ok: false, error: message, code };
       }
 
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -281,7 +282,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function changePassword(
     currentPassword: string,
     newPassword: string,
-  ): Promise<{ ok: boolean; error?: string }> {
+  ): Promise<{ ok: boolean; error?: string; code?: string }> {
     const auth = getAuthClient();
     try {
       const result = await (
@@ -290,7 +291,7 @@ export const useAuthStore = defineStore('auth', () => {
             currentPassword: string;
             newPassword: string;
             revokeOtherSessions: boolean;
-          }) => Promise<{ error?: { message?: string } | null }>;
+          }) => Promise<{ error?: { message?: string; code?: string } | null }>;
         }
       ).changePassword({
         currentPassword,
@@ -300,7 +301,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (result.error) {
         const message = result.error.message ?? 'Password change failed';
-        return { ok: false, error: message };
+        return { ok: false, error: message, code: result.error.code };
       }
       return { ok: true };
     } catch (error_) {

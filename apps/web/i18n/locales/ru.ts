@@ -465,6 +465,7 @@ export default {
       profilePasswordToastSaved: 'Пароль обновлён.',
       profilePasswordErrorMismatch: 'Пароли не совпадают.',
       profilePasswordErrorWrongCurrent: 'Текущий пароль введён неверно.',
+      profilePasswordErrorGeneric: 'Что-то пошло не так. Попробуйте ещё раз.',
       appearanceThemeLabel: 'Тема',
       appearanceThemeHelp: 'Выберите оформление интерфейса.',
       themeDark: 'Тёмная',

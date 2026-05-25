@@ -29,6 +29,7 @@
 
   import { useAuthStore } from '~/stores/auth';
   import { usePreferencesStore } from '~/stores/preferences';
+  import { AUTH_ERROR_CODES } from '~/constants/authErrorCodes';
   import SettingSyncIndicator from '~/components/SettingSyncIndicator.vue';
 
   definePageMeta({ layout: 'default' });
@@ -138,12 +139,12 @@
     passwordSaving.value = false;
 
     if (!result.ok) {
-      const msg = result.error ?? '';
-      // Better Auth returns a message containing "incorrect" or similar for a
-      // wrong current password; map it to a human-readable key.
-      passwordError.value = msg.toLowerCase().includes('incorrect')
-        ? t('pages.settings.profilePasswordErrorWrongCurrent')
-        : msg;
+      // Map Better Auth's machine code to a localized message; never surface
+      // the raw (English, internal) message to the user.
+      passwordError.value =
+        result.code === AUTH_ERROR_CODES.INVALID_PASSWORD
+          ? t('pages.settings.profilePasswordErrorWrongCurrent')
+          : t('pages.settings.profilePasswordErrorGeneric');
       return;
     }
 

@@ -4,6 +4,7 @@
 
   import { useAuthStore } from '~/stores/auth';
   import { useInstanceConfig } from '~/composables/useInstanceConfig';
+  import { AUTH_ERROR_CODES } from '~/constants/authErrorCodes';
 
   definePageMeta({ layout: false });
 
@@ -52,9 +53,8 @@
         rateLimitSec.value = result.retryAfter ?? 60;
         return;
       }
-      const msg = (result.error ?? '').toLowerCase();
       errorMsg.value =
-        msg.includes('invalid') || msg.includes('credential') || msg.includes('password')
+        result.code === AUTH_ERROR_CODES.INVALID_CREDENTIALS
           ? t('pages.signIn.errorCredentials')
           : t('pages.signIn.errorGeneric');
       return;

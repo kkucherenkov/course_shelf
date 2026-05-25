@@ -93,8 +93,10 @@ function setupSignInSuccess(
   );
 }
 
-function setupSignInError(message: string) {
-  mockSignInEmail.mockImplementation(() => Promise.resolve({ data: null, error: { message } }));
+function setupSignInError(message: string, code?: string) {
+  mockSignInEmail.mockImplementation(() =>
+    Promise.resolve({ data: null, error: { message, ...(code ? { code } : {}) } }),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -185,6 +187,26 @@ describe('useAuthStore', () => {
     await store.signIn('x@y.com', 'pw');
 
     expect(store.isPending).toBe(false);
+  });
+
+  it('surfaces the Better Auth error code from a failed signIn', async () => {
+    setupSignInError('Invalid email or password', 'INVALID_EMAIL_OR_PASSWORD');
+
+    const store = useAuthStore();
+    const result = await store.signIn('a@b.com', 'wrongpassword');
+
+    expect(result.ok).toBe(false);
+    expect(result.code).toBe('INVALID_EMAIL_OR_PASSWORD');
+  });
+
+  it('leaves code undefined when a failed signIn carries no code', async () => {
+    setupSignInError('Something odd');
+
+    const store = useAuthStore();
+    const result = await store.signIn('a@b.com', 'pw');
+
+    expect(result.ok).toBe(false);
+    expect(result.code).toBeUndefined();
   });
 
   // -------------------------------------------------------------------------
@@ -307,5 +329,18 @@ describe('useAuthStore', () => {
     expect(store.error).toBe('Email taken');
     expect(store.user).toBeNull();
     expect(store.isPending).toBe(false);
+  });
+
+  it('surfaces the Better Auth error code from a failed signUp', async () => {
+    mockSignUpEmail.mockResolvedValue({
+      data: null,
+      error: { message: 'User already exists.', code: 'USER_ALREADY_EXISTS' },
+    });
+
+    const store = useAuthStore();
+    const result = await store.signUp('taken@b.com', 'password1');
+
+    expect(result.ok).toBe(false);
+    expect(result.code).toBe('USER_ALREADY_EXISTS');
   });
 });

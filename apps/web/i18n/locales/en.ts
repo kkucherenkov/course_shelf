@@ -464,6 +464,7 @@ export default {
       profilePasswordToastSaved: 'Password updated.',
       profilePasswordErrorMismatch: 'Passwords do not match.',
       profilePasswordErrorWrongCurrent: 'Current password is incorrect.',
+      profilePasswordErrorGeneric: 'Something went wrong. Please try again.',
       appearanceThemeLabel: 'Theme',
       appearanceThemeHelp: 'Choose how the interface looks.',
       themeDark: 'Dark',

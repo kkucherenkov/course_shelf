@@ -1,5 +1,31 @@
 # Active tasks
 
+## T-2026-05-25-003 — Auth structured error codes (replace brittle message string-matching)
+
+- Created: 2026-05-25
+- Owner: claude
+- Spec: deferred item C from T-2026-05-24-015 (Auth cheap polish, #223)
+- Goal: map auth failures by Better Auth machine `code` instead of `message.includes(...)`.
+- Scope: frontend-only. Better Auth 1.6.8 emits stable `BASE_ERROR_CODES` (`{ code: KEY, message }`); the client surfaces `result.error.code`. No spec/backend/codegen.
+- Acceptance:
+  - `stores/auth.ts` returns `code?: string` from `signIn` / `signUp` / `changePassword` (sourced from `result.error.code`)
+  - `sign-in.vue` / `sign-up.vue` / `settings.vue` map the code to the existing i18n key, generic fallback (no new keys)
+  - codes centralised in `app/constants/authErrorCodes.ts`
+  - settings stops surfacing the raw Better Auth message on unknown errors
+- Code map: `INVALID_EMAIL_OR_PASSWORD`→`signIn.errorCredentials`; `USER_ALREADY_EXISTS`→`signUp.errorEmailTaken`; `INVALID_PASSWORD`→`settings.profilePasswordErrorWrongCurrent`
+- Spec diff: none
+- Codegen impact: no
+- Design impact: none
+- Tests: extend `stores/auth.spec.ts` — `code` surfaced from `result.error.code` (isolated vitest config, Node 24)
+- Sub-steps:
+  - [x] `app/constants/authErrorCodes.ts` (+ `AuthErrorCode` type)
+  - [x] `stores/auth.ts` — `code` added to `signIn`/`signUp`/`changePassword` returns
+  - [x] mapped codes in `sign-in.vue` / `sign-up.vue` / `settings.vue`; settings no longer leaks raw message (new `profilePasswordErrorGeneric` en+ru)
+  - [x] extended `auth.spec.ts` (3 new cases — code surfaced / undefined fallback)
+  - [x] lint/typecheck/test (eslint clean; typecheck EXIT=0; 31/31 isolated; i18n parity 480×2)
+- Status: in-progress (awaiting commit/PR)
+- Blockers: —
+
 ## T-2026-05-25-002 — Remove redundant client-side promoteToAdmin stub
 
 - Created: 2026-05-25
@@ -19,7 +45,7 @@
   - [x] remove `promoteToAdmin` from `stores/auth.ts` (method + return entry)
   - [x] remove the call + orphaned `refreshHasUsers` guard from `sign-up.vue`; trimmed destructure to `{ hasUsers }`
   - [x] lint/typecheck (eslint web clean; typecheck EXIT=0; no `promoteToAdmin` refs remain)
-- Status: in-progress (awaiting commit/PR)
+- Status: done (#226) — pending archive to done.md (batched chore PR)
 - Blockers: —
 
 ## T-2026-05-25-001 — Sign-up OTP polish: paste support + clear code on edit-email

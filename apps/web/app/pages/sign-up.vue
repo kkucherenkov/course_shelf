@@ -18,6 +18,7 @@
   import { useInstanceConfig } from '~/composables/useInstanceConfig';
   import { useFirstRun } from '~/composables/useFirstRun';
   import { useOtpInput } from '~/composables/useOtpInput';
+  import { AUTH_ERROR_CODES } from '~/constants/authErrorCodes';
   import type { StepDef } from '~/components/auth/AuthStepper.vue';
 
   definePageMeta({ layout: false });
@@ -100,9 +101,8 @@
 
     const result = await authStore.signUp(email.value, password.value, fullName.value || undefined);
     if (!result.ok) {
-      const msg = (result.error ?? '').toLowerCase();
       step1Error.value =
-        msg.includes('exist') || msg.includes('taken')
+        result.code === AUTH_ERROR_CODES.USER_ALREADY_EXISTS
           ? t('pages.signUp.errorEmailTaken')
           : t('pages.signUp.errorGeneric');
       return;

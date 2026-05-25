@@ -2,6 +2,19 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-05-25-004 — Fix web vitest runner (whole-suite crash on @app/ui barrel import) (#229)
+
+- Created: 2026-05-25
+- Completed: 2026-05-25
+- Owner: claude
+- Spec: infra — `pnpm --filter @app/web test` aborted at startup on `main`
+- Result: merged via PR #229
+- Root cause (systematic-debugging): `app/components/__tests__/SettingSyncIndicator.spec.ts` mounted the real component, which imports `{ IconCS } from '@app/ui'`. The `@app/ui` barrel transitively pulls `@nuxt/ui` runtime (e.g. `AppBadge.vue` → `@nuxt/ui/components/Badge.vue`), whose files import the Nuxt build virtuals `#build/ui/*` and `#imports`; outside a Nuxt build vite resolves those `#`-specifiers against `@nuxt/ui`'s own package `imports` (absent) → `Missing "#build/ui/badge" specifier`. vitest builds the whole-project module graph at collection, so that one spec aborted the entire run. Found by per-spec isolation (only that spec crashed). Aliasing `#build`→`.nuxt` only uncovered `#imports` next (Nuxt-virtual cascade) — confirmed running `@nuxt/ui` under plain-vite vitest is a dead end.
+- Outcome: mocked `@app/ui` (stub `IconCS`) in the offending spec — matching the convention of the other 3 component specs (asserted classes live on the component's own `<span>`s, so behaviour-preserving). Also added `app/utils/**/*.spec.ts` to `test.include` (was an uncovered gap — `highlight.spec.ts` never ran).
+- Gates: full web suite green — 28 files / 183 tests / exit 0 (Node 24); web ESLint clean.
+- Node note: `.nvmrc` already pins `24` + `engines.node` `>=24.0.0`; the `ERR_REQUIRE_ESM` seen elsewhere was just running under Node 20.
+- Status: done
+
 ## T-2026-05-25-003 — Auth structured error codes (replace brittle message string-matching) (#227)
 
 - Created: 2026-05-25

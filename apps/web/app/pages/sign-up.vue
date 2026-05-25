@@ -17,6 +17,7 @@
   import { useAuthStore } from '~/stores/auth';
   import { useInstanceConfig } from '~/composables/useInstanceConfig';
   import { useFirstRun } from '~/composables/useFirstRun';
+  import { useOtpInput } from '~/composables/useOtpInput';
   import type { StepDef } from '~/components/auth/AuthStepper.vue';
 
   definePageMeta({ layout: false });
@@ -60,7 +61,22 @@
   const step1Error = ref('');
 
   // Step 2 — Verify
-  const verifyCode = ref<string[]>(['', '', '', '', '', '']);
+  // Per-cell template refs so the OTP model can drive focus without a global
+  // DOM query.
+  const codeInputs = ref<HTMLInputElement[]>([]);
+  function setCodeInput(el: unknown, index: number): void {
+    if (el instanceof HTMLInputElement) codeInputs.value[index] = el;
+  }
+  const {
+    digits: verifyCode,
+    fullCode,
+    onInput: onCodeInput,
+    onKeydown: onCodeKeydown,
+    onPaste: onCodePaste,
+    reset: resetCode,
+  } = useOtpInput({
+    focusInput: (index) => codeInputs.value[index]?.focus(),
+  });
   const resendCountdown = ref(60);
   let resendTimer: ReturnType<typeof setInterval> | null = null;
   const step2Error = ref('');
@@ -112,40 +128,23 @@
 
   // ── Step 2 — verification ──────────────────────────────────────────────────
 
+  function stopResendCountdown(): void {
+    if (resendTimer !== null) {
+      clearInterval(resendTimer);
+      resendTimer = null;
+    }
+  }
+
   function startResendCountdown(): void {
     resendCountdown.value = 60;
-    if (resendTimer !== null) clearInterval(resendTimer);
+    stopResendCountdown();
     resendTimer = setInterval(() => {
       resendCountdown.value -= 1;
-      if (resendCountdown.value <= 0 && resendTimer !== null) {
-        clearInterval(resendTimer);
-      }
+      if (resendCountdown.value <= 0) stopResendCountdown();
     }, 1000);
   }
 
-  onUnmounted(() => {
-    if (resendTimer !== null) clearInterval(resendTimer);
-  });
-
-  const fullCode = computed(() => verifyCode.value.join(''));
-
-  function onCodeInput(index: number, event: Event): void {
-    const target = event.target as HTMLInputElement;
-    const char = target.value.replaceAll(/\D/g, '').slice(-1);
-    verifyCode.value[index] = char;
-    if (char && index < 5) {
-      // Auto-advance to next input
-      const inputs = document.querySelectorAll<HTMLInputElement>('.page-sign-up__code-input');
-      inputs[index + 1]?.focus();
-    }
-  }
-
-  function onCodeKeydown(index: number, event: KeyboardEvent): void {
-    if (event.key === 'Backspace' && !verifyCode.value[index] && index > 0) {
-      const inputs = document.querySelectorAll<HTMLInputElement>('.page-sign-up__code-input');
-      inputs[index - 1]?.focus();
-    }
-  }
+  onUnmounted(stopResendCountdown);
 
   async function onVerifySubmit(): Promise<void> {
     step2Error.value = '';
@@ -161,6 +160,15 @@
     if (resendCountdown.value > 0) return;
     // Stub: real impl would call authClient.emailVerification.send().
     startResendCountdown();
+  }
+
+  // Going back to fix the email must not leave a stale code or a running
+  // countdown behind for the next verify pass.
+  function onEditEmail(): void {
+    resetCode();
+    step2Error.value = '';
+    stopResendCountdown();
+    currentStep.value = 'account';
   }
 
   // ── Step 3 — Library ──────────────────────────────────────────────────────
@@ -326,6 +334,7 @@
             <input
               v-for="(_, index) in verifyCode"
               :key="index"
+              :ref="(el) => setCodeInput(el, index)"
               class="page-sign-up__code-input"
               type="text"
               inputmode="numeric"
@@ -334,6 +343,7 @@
               :aria-label="`Digit ${index + 1}`"
               @input="onCodeInput(index, $event)"
               @keydown="onCodeKeydown(index, $event)"
+              @paste="onCodePaste"
             />
           </div>
 
@@ -365,7 +375,7 @@
           <button
             type="button"
             class="page-sign-up__link page-sign-up__link--btn"
-            @click="currentStep = 'account'"
+            @click="onEditEmail"
           >
             {{ t('pages.signUp.editEmail') }}
           </button>

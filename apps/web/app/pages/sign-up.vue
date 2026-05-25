@@ -25,7 +25,7 @@
   const { t } = useI18n();
   const authStore = useAuthStore();
   const { config } = useInstanceConfig();
-  const { hasUsers, refresh: refreshHasUsers } = useFirstRun();
+  const { hasUsers } = useFirstRun();
 
   // First-run: no users exist yet, so this account becomes the first admin.
   const isFirstAdmin = computed(() => hasUsers.value === false);
@@ -98,11 +98,6 @@
   async function onAccountSubmit(): Promise<void> {
     step1Error.value = '';
 
-    // Ensure first-run state is known before sign-up.
-    if (hasUsers.value === null) {
-      await refreshHasUsers();
-    }
-
     const result = await authStore.signUp(email.value, password.value, fullName.value || undefined);
     if (!result.ok) {
       const msg = (result.error ?? '').toLowerCase();
@@ -113,10 +108,8 @@
       return;
     }
 
-    // First-user promotion stub — promote after sign-up if no users existed.
-    if (hasUsers.value === false && authStore.user?.id) {
-      await authStore.promoteToAdmin(authStore.user.id);
-    }
+    // The first account is promoted to ADMIN server-side by the Better Auth
+    // user-create hook — no client-side promotion call needed.
 
     if (config.value.emailVerificationRequired) {
       currentStep.value = 'verify';

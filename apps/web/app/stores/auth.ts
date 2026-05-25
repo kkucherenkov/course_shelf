@@ -275,16 +275,6 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * Promote the currently signed-in user to the ADMIN role via the Better Auth admin plugin.
-   * STUB — requires Better Auth admin plugin's `setRole` or equivalent.
-   */
-  // eslint-disable-next-line unicorn/consistent-function-scoping
-  function promoteToAdmin(_userId: string): Promise<{ ok: boolean; error?: string }> {
-    console.warn('[auth] promoteToAdmin is a stub — wire Better Auth admin setRole');
-    return Promise.resolve({ ok: true });
-  }
-
-  /**
    * Change the current user's password via Better Auth's `changePassword` method.
    * Returns `{ ok: true }` on success or `{ ok: false, error }` on failure.
    */
@@ -333,7 +323,6 @@ export const useAuthStore = defineStore('auth', () => {
     verifyEmail,
     forgotPassword,
     resetPassword,
-    promoteToAdmin,
     changePassword,
   };
 });

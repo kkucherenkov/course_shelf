@@ -86,7 +86,7 @@ services:
     networks: [cs-net]
 
   backend:
-    image: "${REGISTRY:-ghcr.io}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-backend:${RELEASE_TAG:-latest}"
+    image: "${REGISTRY:-code.homelab.local}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-backend:${RELEASE_TAG:-latest}"
     restart: unless-stopped
     depends_on:
       postgres: { condition: service_healthy }
@@ -120,7 +120,7 @@ services:
     networks: [cs-net]
 
   web:
-    image: "${REGISTRY:-ghcr.io}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-web:${RELEASE_TAG:-latest}"
+    image: "${REGISTRY:-code.homelab.local}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-web:${RELEASE_TAG:-latest}"
     restart: unless-stopped
     depends_on:
       backend: { condition: service_started }

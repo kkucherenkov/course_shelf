@@ -64,7 +64,13 @@ export const useAuthStore = defineStore('auth', () => {
     email: string,
     password: string,
     rememberMe = true,
-  ): Promise<{ ok: boolean; error?: string; code?: string; statusCode?: number; retryAfter?: number }> {
+  ): Promise<{
+    ok: boolean;
+    error?: string;
+    code?: string;
+    statusCode?: number;
+    retryAfter?: number;
+  }> {
     error.value = null;
     isPending.value = true;
 

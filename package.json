@@ -113,7 +113,8 @@
       "protobufjs@8": "^8.0.2",
       "@opentelemetry/exporter-prometheus": "^0.217.0",
       "@opentelemetry/auto-instrumentations-node": "^0.75.0",
-      "@opentelemetry/sdk-node": "^0.217.0"
+      "@opentelemetry/sdk-node": "^0.217.0",
+      "shell-quote": ">=1.8.4"
     },
     "peerDependencyRules": {
       "allowedVersions": {

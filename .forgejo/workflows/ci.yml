@@ -87,59 +87,10 @@ jobs:
       - name: Prettier check
         run: pnpm format:check
 
-  # ── Quality (storybook test-runner + security audit) ──────────────────────
-  # One job that does the visual-regression Storybook test-runner AND the
-  # dependency/license audits. Runs in slot 2 in parallel with `checks`
-  # (slot 1) under the act_runner's concurrency=2 limit.
-  #
-  # Runs inside mcr.microsoft.com/playwright:v1.59.1-jammy so Chromium and
-  # every apt system dep Playwright needs are already in the image — no
-  # `playwright install --with-deps` step required. Image tag must match
-  # `playwright` version in packages/ui/package.json.
-  #
-  # Security audits don't strictly need the Playwright image, but folding
-  # them into the same job avoids a redundant pnpm install + checkout
-  # + Node setup (~60s saved on every run).
-  quality:
-    name: Quality (storybook · security audit)
-    runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
-    timeout-minutes: 20
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build design tokens
-        run: pnpm design:build
-
-      - name: Build Storybook static
-        env:
-          STORYBOOK_A11Y_LEVEL: todo
-        run: pnpm --filter @app/ui storybook:build
-
-      - name: Run Storybook test-runner
-        run: pnpm --filter @app/ui test:visual:ci
-
-      - name: Dependency vulnerability scan
+      # Cheap per-PR security signal — deps are already installed above, so
+      # this adds only a couple of seconds. The heavier license-checker (a
+      # `pnpm dlx` download) and the Storybook visual-regression run live in
+      # the on-demand `quality.yml` workflow to keep PR CI fast on the
+      # homelab runner.
+      - name: Dependency vulnerability scan (critical only)
         run: pnpm audit --audit-level=critical
-
-      # MPL-2.0 is on the allowlist as a forward-compatible defensive
-      # entry — no current dep ships under it, but @axe-core/playwright
-      # (used the moment we add Storybook a11y gates) is MPL-2.0. It's
-      # weak-copyleft (file-level reciprocity only, doesn't affect linked
-      # consumers) and standard for accessibility tooling.
-      - name: License compliance check
-        run: pnpm dlx license-checker --excludePrivatePackages --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;Python-2.0;CC-BY-3.0;CC-BY-4.0;MPL-2.0'

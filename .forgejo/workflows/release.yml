@@ -12,7 +12,7 @@ name: Release
 #      services in compose.release.yml run upstream images directly
 #      (nginxinc/nginx-unprivileged and centrifugo/centrifugo:v6) and
 #      need no per-release rebuilds.
-#   3. Push to GitHub Container Registry under four tags each:
+#   3. Push to the homelab Forgejo container registry under four tags each:
 #        :MAJOR.MINOR.PATCH, :MAJOR.MINOR, :MAJOR, :latest
 #   4. Generate release notes from Conventional Commits via git-cliff.
 #   5. Render `compose-release-v<semver>.yml` with RELEASE_TAG pinned.
@@ -20,24 +20,24 @@ name: Release
 #   7. Create a Forgejo Release (draft=false, prerelease=false) with the
 #      changelog as body and the tarball + standalone compose file as assets.
 #
-# Why GHCR (not the homelab Forgejo registry):
-#   The homelab Forgejo at code.homelab.local doesn't terminate TLS on its
-#   container-registry endpoint. Docker requires HTTPS by default, and the
-#   only workaround (insecure-registries via daemon.json + restart) needs
-#   systemd, which the act_runner's container init isn't. GHCR is reliable
-#   public infra, has proper TLS, and the runner already pulls FROM-images
-#   from Docker Hub fine — it has internet access and HTTPS works.
+# Why the local Forgejo registry (not ghcr.io):
+#   The homelab is fully self-hosted — images should never leave the LAN.
+#   The act_runner's dind daemon is already started with
+#   `--insecure-registry=code.homelab.local` and resolves the host via
+#   extra_hosts, so pushing over plain HTTP works without any systemd
+#   restart. The host docker daemon that runs Dockge needs the same trust
+#   (insecure-registries in daemon.json, or TLS via Caddy) to pull —
+#   documented in docs/deploy/dockge.md.
 #
-# Required Forgejo secrets (Settings → Actions → Secrets):
-#   GHCR_USER  — GitHub username that owns the published packages
-#   GHCR_TOKEN — GitHub Personal Access Token with `write:packages` and
-#                `read:packages` scopes
-#                (https://github.com/settings/tokens/new)
+# Auth:
+#   GITEA_TOKEN is auto-provided by the runner. It authenticates BOTH the
+#   package push (this is the same Forgejo instance that hosts the registry)
+#   and the Forgejo Release API call. If your instance scopes packages
+#   separately, set a FORGEJO_PKG_TOKEN secret (PAT with `write:package`)
+#   and swap it into the login step below.
 #
 # Notes:
 #   - amd64 only for v1; multi-arch can be added later via `setup-buildx`.
-#   - GITEA_TOKEN is auto-provided and is used ONLY for creating the
-#     Forgejo Release (where the release page itself lives).
 #   - Re-pushing the same tag will fail at `docker push` (the registry
 #     should reject overwriting an immutable tag); to re-cut a release,
 #     bump the patch and push a new tag.
@@ -53,7 +53,8 @@ permissions:
 
 env:
   NODE_VERSION: "24"
-  REGISTRY: ghcr.io
+  REGISTRY: code.homelab.local
+  REGISTRY_NAMESPACE: kkucherenkov
 
 jobs:
   release:
@@ -119,27 +120,23 @@ jobs:
         run: pnpm design:build
 
       # ─── Registry login ──────────────────────────────────────────────────
-      - name: Verify GHCR secrets are set
+      # The registry lives on the same Forgejo instance the runner belongs
+      # to, so GITEA_TOKEN (auto-provided) authenticates the package push.
+      # Override with a dedicated FORGEJO_PKG_TOKEN if packages are scoped
+      # separately on your instance.
+      - name: Log in to the Forgejo container registry
         env:
-          GHCR_USER: ${{ secrets.GHCR_USER }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          REGISTRY_TOKEN: ${{ secrets.FORGEJO_PKG_TOKEN || secrets.GITEA_TOKEN }}
         run: |
           set -euo pipefail
-          if [[ -z "${GHCR_USER:-}" || -z "${GHCR_TOKEN:-}" ]]; then
-            echo "::error::GHCR_USER and GHCR_TOKEN secrets must be set" >&2
-            echo "Settings → Actions → Secrets in this repo." >&2
-            echo "Token = github.com/settings/tokens with write:packages." >&2
+          if [[ -z "${REGISTRY_TOKEN:-}" ]]; then
+            echo "::error::no registry token available" >&2
+            echo "GITEA_TOKEN should be auto-provided; otherwise set a" >&2
+            echo "FORGEJO_PKG_TOKEN secret (PAT with write:package)." >&2
             exit 1
           fi
-
-      - name: Log in to GitHub Container Registry
-        env:
-          GHCR_USER: ${{ secrets.GHCR_USER }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-        run: |
-          set -euo pipefail
-          echo "$GHCR_TOKEN" | docker login "$REGISTRY" \
-            --username "$GHCR_USER" \
+          echo "$REGISTRY_TOKEN" | docker login "$REGISTRY" \
+            --username "$REGISTRY_NAMESPACE" \
             --password-stdin
 
       # ─── Build + push images ─────────────────────────────────────────────
@@ -150,12 +147,11 @@ jobs:
           SEMVER: ${{ steps.version.outputs.semver }}
           MAJOR: ${{ steps.version.outputs.major }}
           MINOR: ${{ steps.version.outputs.minor }}
-          GHCR_USER: ${{ secrets.GHCR_USER }}
         run: |
           set -euo pipefail
 
-          # GHCR namespace = the GitHub user that owns the package, lowercased.
-          NS="$(echo "$GHCR_USER" | tr '[:upper:]' '[:lower:]')"
+          # Registry namespace = the Forgejo owner that holds the packages.
+          NS="$REGISTRY_NAMESPACE"
 
           publish() {
             local name="$1"
@@ -165,7 +161,7 @@ jobs:
             echo "::group::build $name"
             docker build \
               --build-arg "APP_VERSION=$SEMVER" \
-              --label "org.opencontainers.image.source=https://github.com/${GHCR_USER}/courseShelf" \
+              --label "org.opencontainers.image.source=http://${REGISTRY}/${NS}/course_shelf" \
               --label "org.opencontainers.image.version=$SEMVER" \
               --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
               -f "$dockerfile" \
@@ -222,17 +218,16 @@ jobs:
       - name: Stage release bundle
         env:
           SEMVER: ${{ steps.version.outputs.semver }}
-          GHCR_USER: ${{ secrets.GHCR_USER }}
         run: |
           set -euo pipefail
           STAGE="courseshelf-release-v${SEMVER}"
-          NS="$(echo "$GHCR_USER" | tr '[:upper:]' '[:lower:]')"
+          NS="$REGISTRY_NAMESPACE"
           mkdir -p "$STAGE"
 
           # Render compose with RELEASE_TAG / REGISTRY / REGISTRY_NAMESPACE pinned.
           sed \
             -e "s|\${RELEASE_TAG:-latest}|${SEMVER}|g" \
-            -e "s|\${REGISTRY:-ghcr.io}|${REGISTRY}|g" \
+            -e "s|\${REGISTRY:-code.homelab.local}|${REGISTRY}|g" \
             -e "s|\${REGISTRY_NAMESPACE:-kkucherenkov}|${NS}|g" \
             docker/compose.release.yml > "$STAGE/compose.yml"
 

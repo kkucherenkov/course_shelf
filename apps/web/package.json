@@ -23,7 +23,7 @@
     "@nuxtjs/i18n": "^10.2.4",
     "@pinia/nuxt": "^0.11.3",
     "@tailwindcss/vite": "^4.2.4",
-    "better-auth": "^1.6.8",
+    "better-auth": "^1.6.23",
     "centrifuge": "^5.5.3",
     "nuxt": "^4.4.0",
     "pinia": "^3.0.4",

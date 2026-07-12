@@ -18,3 +18,9 @@ pnpm-lock.yaml
 # Centrifugo config template carries `${VAR}` placeholders that envsubst
 # expands at boot — Prettier's JSON parser rejects them.
 docker/centrifugo/config.template.json
+
+# Long-form prose — Markdown tables/prose fight Prettier's reflow and the
+# churn isn't worth gating. `.impeccable/` holds generated design-critique
+# dumps that regenerate unformatted anyway.
+docs
+.impeccable

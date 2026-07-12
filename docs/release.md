@@ -2,56 +2,42 @@
 
 Pushing a tag matching `vMAJOR.MINOR.PATCH-release` triggers
 `.forgejo/workflows/release.yml`. The workflow builds and pushes two
-release images (backend, web) to **GitHub Container Registry**
-(ghcr.io), generates a Conventional-Commits-derived changelog, and
-creates a **Forgejo Release** (on `code.homelab.local`) with the
-changelog and a deploy-ready artefact bundle. The proxy and centrifugo
-services run upstream images directly and are not built by this
-pipeline.
+release images (backend, web) to the **homelab Forgejo container
+registry** (`code.homelab.local`), generates a
+Conventional-Commits-derived changelog, and creates a **Forgejo
+Release** (on the same host) with the changelog and a deploy-ready
+artefact bundle. The proxy and centrifugo services run upstream images
+directly and are not built by this pipeline.
 
-> **Why GHCR, not the homelab Forgejo registry**: the homelab Forgejo
-> doesn't terminate TLS on its registry endpoint. Docker requires HTTPS
-> by default and the only workaround (insecure-registries via
-> daemon.json) needs systemd, which the act_runner's container init
-> isn't. GHCR has proper TLS and the runner has internet access.
+> **Why the local registry**: the homelab is fully self-hosted — images
+> should never leave the LAN just to be pulled back onto it. The
+> act_runner's dind daemon is already started with
+> `--insecure-registry=code.homelab.local` (and resolves the host via
+> `extra_hosts`), so the push works over plain HTTP without any systemd
+> restart. The host daemon that runs the deploy (Dockge) needs the same
+> trust to pull — see [`deployment.md`](./deployment.md).
 
-## One-time setup: GHCR credentials
+## One-time setup: registry credentials
 
-Before the first release run, both secrets below must exist in
-`Settings → Actions → Secrets` of this repository on Forgejo.
+The registry lives on the **same Forgejo instance** the runner belongs
+to, so the auto-provided `GITEA_TOKEN` authenticates the package push —
+**no manual secret is required** for the default path.
 
-### 1. Create a GitHub Personal Access Token
+If your Forgejo instance scopes package writes separately from the
+Actions token, create a PAT and wire it in:
 
-1. Open <https://github.com/settings/tokens/new> (Classic PAT).
-2. Fields:
-   - **Note**: `forgejo-courseshelf-release`
-   - **Expiration**: 90 days or 1 year (avoid "no expiration" — security risk).
-   - **Scopes**: tick `write:packages` and `read:packages` only. The
-     `repo` scope is **not** required if you publish to your own
-     user-namespaced packages and don't link them to a private repo.
-3. Click **Generate token**. Copy the `ghp_…` value — GitHub shows it
-   once.
+1. `http://code.homelab.local/<owner>/-/user/settings/applications` →
+   generate a token with the **`write:package`** scope.
+2. Add it as a secret at
+   `http://code.homelab.local/<owner>/course_shelf/settings/actions/secrets`
+   named `FORGEJO_PKG_TOKEN`. The workflow's login step prefers it over
+   `GITEA_TOKEN` when present.
 
-### 2. Add the secrets to Forgejo
-
-`http://code.homelab.local/<owner>/course_shelf/settings/actions/secrets`
-→ **Add Secret** twice:
-
-| Name         | Value                                      |
-| ------------ | ------------------------------------------ |
-| `GHCR_USER`  | your GitHub username (e.g. `kkucherenkov`) |
-| `GHCR_TOKEN` | the `ghp_…` value from step 1              |
-
-The release workflow pre-flights both before doing anything expensive,
-so a missing/empty secret fails fast with a clear error.
-
-### 3. (Optional) Make the published packages public
-
-After the first successful release run, packages appear at
-`https://github.com/users/<USER>/packages`. Open each one →
-**Package settings** → **Change visibility** → **Public** if you want
-operators to pull them anonymously. Otherwise the deploy host needs
-its own GHCR PAT for `docker pull`.
+Packages published by the workflow appear under the owner's **Packages**
+tab on Forgejo. Whether the deploy host can pull them anonymously
+depends on the repo/package visibility on your instance — if private,
+the host runs `docker login code.homelab.local` once (see
+[`deployment.md`](./deployment.md)).
 
 ## Cutting the release
 
@@ -71,19 +57,19 @@ git push origin v0.2.0-release
 
 The push to `v0.2.0-release` triggers the workflow. Watch the run at
 `http://code.homelab.local/<owner>/course_shelf/actions`. End-to-end
-takes ~10–15 min for amd64-only builds (the GHCR push of the two
-images is the long part).
+takes ~10–15 min for amd64-only builds (the image build is the long
+part; the push stays on the LAN).
 
 ## What gets published
 
-### Images on GHCR
+### Images on the Forgejo registry
 
 For every release tag, two images are pushed under four tags each:
 
-| Image                                | Source                    |
-| ------------------------------------ | ------------------------- |
-| `ghcr.io/<user>/courseshelf-backend` | `apps/backend/Dockerfile` |
-| `ghcr.io/<user>/courseshelf-web`     | `apps/web/Dockerfile`     |
+| Image                                            | Source                    |
+| ------------------------------------------------ | ------------------------- |
+| `code.homelab.local/<owner>/courseshelf-backend` | `apps/backend/Dockerfile` |
+| `code.homelab.local/<owner>/courseshelf-web`     | `apps/web/Dockerfile`     |
 
 Each image is tagged `:0.2.0`, `:0.2`, `:0`, and `:latest` — pin to the
 exact patch in production, use the floating tags for dev/staging if you
@@ -138,11 +124,11 @@ git tag v0.2.0-release
 git push origin v0.2.0-release
 ```
 
-**Don't** reuse a tag whose images are already published: GHCR rejects
-overwrites for immutable tags, and the workflow will fail at push. If
-the run partially pushed (only one of the two images), delete those
-versions from GHCR via the package settings page, or bump the patch
-number.
+**Don't** reuse a tag whose images are already published: the registry
+rejects overwrites for immutable tags, and the workflow will fail at
+push. If the run partially pushed (only one of the two images), delete
+those versions from the owner's **Packages** page on Forgejo, or bump
+the patch number.
 
 ## Versioning policy
 

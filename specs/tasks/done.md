@@ -2,6 +2,25 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-12-001 — deploy via Dockge from local Forgejo registry (#231)
+
+- Created: 2026-07-12
+- Completed: 2026-07-12
+- Owner: claude
+- Spec: [plan](~/.claude/plans/optimized-tickling-mccarthy.md)
+- Goal: run CourseShelf in the homelab via Dockge, updating by release tag, with images staying on the LAN (no ghcr.io roundtrip).
+- Result: merged via PR #231 (`24765c9`)
+- Outcome:
+  - `.forgejo/workflows/release.yml` pushes to `code.homelab.local` instead of ghcr.io (env, login, push, render, comment); `docker/compose.release.yml` default REGISTRY aligned.
+  - Dockge deploy + host `insecure-registries` prereq documented in `docs/deployment.md` + `docs/release.md` (registry is plain HTTP; Caddy-TLS left as future note); noted in `.env.release.example`.
+  - CI trim: Storybook visual-regression + license-check moved off per-PR into on-demand `.forgejo/workflows/quality.yml` (nightly + dispatch); cheap `pnpm audit` kept in `checks`; trivy removed entirely (`.forgejo/workflows/trivy.yml` + `.trivyignore.yaml` deleted).
+  - New `pnpm audit` gate caught 3 pre-existing criticals → fixed at root: better-auth ^1.6.8→^1.6.23 (GHSA-pw9m-5jxm-xr6h), shell-quote override ≥1.8.4 (GHSA-w7jw-789q-3m8p, dev-only transitive). 0 criticals now.
+  - Prettier gate: excluded `docs` + `.impeccable`, formatted `apps/web/app/stores/auth.ts`.
+- Follow-ups:
+  - first release after the registry switch unverified — if `docker push` fails with a permission error, add `FORGEJO_PKG_TOKEN` (PAT `write:package`); workflow uses `FORGEJO_PKG_TOKEN || GITEA_TOKEN`.
+  - `quality.yml` nightly failed both runs since introduction — separate task.
+- Status: done
+
 ## T-2026-05-25-004 — Fix web vitest runner (whole-suite crash on @app/ui barrel import) (#229)
 
 - Created: 2026-05-25

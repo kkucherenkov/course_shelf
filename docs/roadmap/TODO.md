@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `73 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `74 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 

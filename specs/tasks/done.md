@@ -2,6 +2,38 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-14-004 — GitHub Projects board for mobile (E15–E20) + frontend-alignment realignment (#136)
+
+- Created: 2026-07-14
+- Completed: 2026-07-14
+- Owner: claude
+- Spec: user request — populate a GitHub Projects v2 board with epics E15–E20 (stories + tasks), reviewing each card for alignment with the real frontend decisions/pivots; ensure design tokens match the real SCSS (SCSS = source of truth)
+- Result: merged via PR #136 (`7950234`). Board live: https://github.com/users/kkucherenkov/projects/1 — 133 issues (6 epics + 40 stories + 87 tasks).
+- Goal: an honest GitHub Projects board (Epic→Story→Task sub-issue tree, status seeded from reality) for the mobile epics, with the roadmap source corrected where it drifted from what actually shipped.
+- Spec diff: none (no OpenAPI/AsyncAPI change)
+- Codegen impact: no
+- Decisions (user): Projects v2 board + native sub-issues · full Epic+Story+Task tree · report-first review, amend on approval · fix source + create corrected issues · full status seeding from reality · add all 6 E17 coverage-gap stories · one combined PR
+- Sub-steps:
+  - [x] scope grant (`gh auth refresh -s project,read:project`) + verify
+  - [x] 3-dimension alignment review (stack · component catalog · features/API)
+  - [x] fix `.claude/agents/flutter-engineer.md` — it prescribed Riverpod + "no get_it", the opposite of CLAUDE.md/AGENTS.md and the shipped `apps/mobile` (flutter_bloc + get_it). Highest-leverage fix: any agent handed a mobile card would have built the wrong stack.
+  - [x] tokens ↔ SCSS check — VALUES fully aligned; there is no upstream hand-authored SCSS (packages/ui has 0 `.scss` files), tokens.json IS the source. Found + fixed a real web bug instead: `@theme inline` referenced ~14 names the generator never emits (dangling `var()`s), and Nuxt UI's `primary:'accent'` had no accent scale at all. Added `radius.xs/xl/2xl` + the accent 50–950 amber ramp; repointed stale refs. 0 dangling (was ~14).
+  - [x] correct E15–E20 source: live `.md` cards + mirror into `generate.py` (NOT re-run — `render_task()` hardcodes "Not started" and would wipe all 121 card statuses). Dead refs (DESIGN.md/PRD.md don't exist), 61→66 icons, AppDropdown→AppSelect, CourseCard 3 widgets + resumeLabel, Browse filters, 3 Blocked.
+  - [x] add 6 E17 coverage-gap stories (AppBadge, AppTextarea, AppNoPermission, AppRadioGroup, AppBookmarkList, AppSectionHeader) — needed `git add -f` (global `~/.gitignore: docs/*`)
+  - [x] enable repo issues; create Projects v2 board #1 (Epic/Stage/Type fields + Blocked status option); linked to the repo
+  - [x] generate the 133-issue Epic→Story→Task tree via an idempotent script; fields + status seeded from reality; alignment notes embedded in issue bodies
+  - [x] regenerate @app/ui Storybook baselines — 48 changed / 285; 237 byte-identical proved the jammy container matches CI glyph metrics, isolating the 48 as genuine token diffs (284/284 stories pass)
+  - [x] regenerate the e2e foundations baseline against the PRODUCTION-shaped stack + verify on a clean re-run
+  - [x] add `.github/workflows/regen-snapshots.yml` — restores the baseline-regen path lost when Forgejo was dropped; fixed the now-dead Forgejo regen instructions in `test-runner.ts` + `e2e.yml`
+  - [x] open + merge PR #136
+- Status: done
+- Notes:
+  - apps/mobile is NOT greenfield — E15-F01-S02 shipped (Dio+bearer), S03 largely shipped (phone-OTP, `AuthApiImpl`, `otpSent` — not the email flow the card described), S01 half done (theme-from-tokens still on a placeholder seed). Board status seeded accordingly.
+  - 3 Stage-B stories BLOCKED on missing mockups: cs-mobile-course-detail, cs-mobile-search-settings, cs-mobile-downloads. cs-mobile-browse is partial (needs app.jsx).
+  - GOTCHA: Storybook baseline regen needs `STORYBOOK_A11Y_LEVEL=todo` — at the default level the a11y addon throws before test-runner's `postVisit`, silently leaving ~75 baselines stale. Now documented in `test-runner.ts`.
+  - GOTCHA: the e2e foundations baseline must be captured against the production stack — dev renders the canvas 50px taller (10986 vs prod 10936). The +121px vs the old 10815 baseline is real: the canvas now renders the 11 new accent swatches + xs/xl/2xl radii.
+  - Follow-ups (not blocking): E15-F01-S01 theme-from-tokens is now unblocked (`tokens.g.dart` carries the full scale); the 4 missing/partial `cs-mobile-*` mockups gate 4 Stage-B stories.
+
 ## T-2026-07-14-002 — public GitHub repo + ghcr release lane (github#237)
 
 - Created: 2026-07-14

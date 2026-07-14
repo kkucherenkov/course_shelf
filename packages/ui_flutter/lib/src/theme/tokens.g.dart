@@ -13,6 +13,17 @@ abstract final class AppColorsLight {
   static const Color brandAccentFg = Color(0xFFFFFFFF);
   static const Color brandAccentSubtle = Color(0xFFF5F0E7);
   static const Color brandAccentSoft = Color(0x1A9C6612);
+  static const Color brandAccent50 = Color(0xFFFCF1DB);
+  static const Color brandAccent100 = Color(0xFFF8E3B4);
+  static const Color brandAccent200 = Color(0xFFF3D38A);
+  static const Color brandAccent300 = Color(0xFFE9BA62);
+  static const Color brandAccent400 = Color(0xFFE0A23B);
+  static const Color brandAccent500 = Color(0xFFC8821C);
+  static const Color brandAccent600 = Color(0xFF9C6612);
+  static const Color brandAccent700 = Color(0xFF6E480C);
+  static const Color brandAccent800 = Color(0xFF4F3409);
+  static const Color brandAccent900 = Color(0xFF392506);
+  static const Color brandAccent950 = Color(0xFF291B04);
   static const Color surfacePage = Color(0xFFFAFAF7);
   static const Color surfaceSurface = Color(0xFFFFFFFF);
   static const Color surfaceRaised = Color(0xFFF4F3EE);
@@ -50,6 +61,17 @@ abstract final class AppColorsDark {
   static const Color brandAccentFg = Color(0xFF15130C);
   static const Color brandAccentSubtle = Color(0xFF2E2620);
   static const Color brandAccentSoft = Color(0x24C8821C);
+  static const Color brandAccent50 = Color(0xFFFCF1DB);
+  static const Color brandAccent100 = Color(0xFFF8E3B4);
+  static const Color brandAccent200 = Color(0xFFF3D38A);
+  static const Color brandAccent300 = Color(0xFFE9BA62);
+  static const Color brandAccent400 = Color(0xFFE0A23B);
+  static const Color brandAccent500 = Color(0xFFC8821C);
+  static const Color brandAccent600 = Color(0xFF9C6612);
+  static const Color brandAccent700 = Color(0xFF6E480C);
+  static const Color brandAccent800 = Color(0xFF4F3409);
+  static const Color brandAccent900 = Color(0xFF392506);
+  static const Color brandAccent950 = Color(0xFF291B04);
   static const Color surfacePage = Color(0xFF0E0F12);
   static const Color surfaceSurface = Color(0xFF15171B);
   static const Color surfaceRaised = Color(0xFF1A1C20);
@@ -98,9 +120,12 @@ abstract final class AppSpacing {
 
 abstract final class AppRadius {
   static const double none = 0.0;
+  static const double xs = 2.0;
   static const double sm = 4.0;
   static const double md = 8.0;
   static const double lg = 16.0;
+  static const double xl = 24.0;
+  static const double r2xl = 32.0;
   static const double pill = 999.0;
 }
 

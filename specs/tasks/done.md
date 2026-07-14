@@ -2,6 +2,34 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-14-002 — public GitHub repo + ghcr release lane (github#237)
+
+- Created: 2026-07-14
+- Completed: 2026-07-14
+- Owner: claude
+- Spec: user decision — public repo at github.com/kkucherenkov/course_shelf, ghcr release lane, keep CodeQL + trufflehog on the GitHub side
+- Result: GitHub is the main repo with its own green CI (CI/CodeQL/Quality/E2E) + a public release lane. `v0.2.0-release` cut 2026-07-14 → GitHub Release "CourseShelf 0.2.0" (Latest) + `ghcr.io/kkucherenkov/courseshelf-{backend,web}` each tagged `latest,0,0.2,0.2.0`. Workflows landed via #237.
+- Goal: GitHub as main repo with green CI + a public release lane (ghcr images + GitHub Releases).
+- Spec diff: none (no OpenAPI/AsyncAPI change)
+- Codegen impact: no
+- Sub-steps:
+  - [x] pre-flight full-history trufflehog scan (`--only-verified`) — 0 verified/unverified across 12916 chunks
+  - [x] `.github/workflows/ci.yml` — consolidated `checks` job + GitHub-only codegen-drift & security jobs (trufflehog pinned v3.95.9, license-checker)
+  - [x] `.github/workflows/e2e.yml` — jammy-container Playwright shape (`docker run --network=host`, committed baselines are jammy-captured)
+  - [x] `.github/workflows/quality.yml` — Storybook visual-regression nightly (same jammy container)
+  - [x] `.github/workflows/release.yml` — ghcr lane, 4 tags/image, git-cliff notes, `gh release create`, GITHUB_TOKEN only
+  - [x] `.github/workflows/codeql.yml` kept as-is
+  - [x] delete `.github/dependabot.yml`
+  - [x] README.md + README.ru.md badges + notice
+  - [x] create the GitHub repo, initial push of `main` + `v0.1.0-release`
+  - [x] verify GitHub CI green — all four workflows passed first runs on ubuntu-latest
+  - [x] verify release path (ghcr/GitHub half): `v0.2.0-release` → GitHub Release + both images live with 4 tags each
+  - [~] ~~reverse sync GitHub → Forgejo~~ CANCELLED — Forgejo dropped (user, 2026-07-14): "forget about forgejo, let's focus on github"
+  - [~] ~~LAN registry publish via Forgejo~~ CANCELLED — same reason
+- Status: done
+- Notes:
+  - Forgejo homelab/mirror direction abandoned 2026-07-14 — GitHub is now the sole repo. Optional non-blocking follow-up cleanup: `.forgejo/workflows/`, the Forgejo issues mirror (`pnpm issues:*`), Dockge/LAN deploy, and CLAUDE.md Forgejo references.
+
 ## T-2026-07-14-003 — triage + fix first CodeQL findings (10 alerts) (github#1)
 
 - Created: 2026-07-14

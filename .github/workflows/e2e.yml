@@ -11,8 +11,10 @@ name: E2E smoke
 #     Chromium on the 24.04 runner host instead would drift glyph metrics
 #     and flake the visual spec. Image tag must match the playwright
 #     version in package.json.
-#   - No baseline-regen path here — baselines are regenerated and committed
-#     on Forgejo (the source of truth); this mirror never pushes.
+#   - This workflow never writes baselines. To refresh them, run the
+#     `Regenerate visual snapshots` workflow (suite: `e2e`) — it brings up
+#     this same production-shaped stack in the same image, reruns the suite
+#     with `--update-snapshots`, and commits the result back to the branch.
 
 on:
   workflow_dispatch:

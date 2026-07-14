@@ -9,6 +9,19 @@ Release** (on the same host) with the changelog and a deploy-ready
 artefact bundle. The proxy and centrifugo services run upstream images
 directly and are not built by this pipeline.
 
+## Public lane (GitHub mirror)
+
+The same tag, once the push mirror syncs it to
+github.com/kkucherenkov/course_shelf, triggers the twin
+`.github/workflows/release.yml`: identical images to
+`ghcr.io/kkucherenkov/courseshelf-{backend,web}` (same four tags) and a
+**GitHub Release** with the identical bundle, except `compose.yml` is
+rendered with `REGISTRY=ghcr.io`. No secrets to manage — `GITHUB_TOKEN`
+covers both the ghcr push and the Release API. One tag push therefore
+cuts both releases; the homelab deploy keeps pulling from the LAN
+registry and never touches ghcr. Keep the two workflow files in
+lockstep when changing the bundle layout or tag policy.
+
 > **Why the local registry**: the homelab is fully self-hosted — images
 > should never leave the LAN just to be pulled back onto it. The
 > act_runner's dind daemon is already started with

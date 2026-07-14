@@ -1,17 +1,28 @@
 name: E2E smoke
 
+# GitHub-side twin of .forgejo/workflows/e2e.yml, adapted for GitHub-hosted
+# runners:
+#   - Steps run directly on the ubuntu-latest VM, so `localhost` reaches the
+#     compose-published ports — no docker-bridge-gateway detection needed
+#     (compose.ci.yml's E2E_HOST defaults to localhost).
+#   - Playwright runs INSIDE mcr.microsoft.com/playwright:v1.59.1-jammy via
+#     `docker run --network=host`. The committed visual baselines under
+#     tests/e2e/*-snapshots/ were captured in exactly that image; running
+#     Chromium on the 24.04 runner host instead would drift glyph metrics
+#     and flake the visual spec. Image tag must match the playwright
+#     version in package.json.
+#   - No baseline-regen path here — baselines are regenerated and committed
+#     on Forgejo (the source of truth); this mirror never pushes.
+
 on:
   workflow_dispatch:
   schedule:
-    # Nightly at 03:00 UTC — gives us a daily signal without slowing PRs.
+    # Nightly at 03:00 UTC — mirrors the Forgejo cadence.
     - cron: "0 3 * * *"
 
 concurrency:
   group: e2e-${{ github.ref }}
-  cancel-in-progress: true
-
-env:
-  NODE_VERSION: "24"
+  cancel-in-progress: false
 
 jobs:
   smoke:
@@ -26,43 +37,60 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: "24"
           cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
-
       - name: Prisma generate
         run: pnpm --filter @app/backend prisma:generate
 
+      - name: Build design tokens
+        # Tokens are gitignored — apps/web's docker build (`nuxt generate`)
+        # fails to resolve tokens.generated.css without them in the build
+        # context.
+        run: pnpm design:build
+
+      - name: Pull external images
+        run: docker compose -f docker/compose.yml -f docker/compose.ci.yml pull --quiet redis otel-lgtm
+
+      # Same production-shaped stack as the Forgejo nightly: compose.ci.yml
+      # overrides the dev bind-mount services with real image builds.
+      # Explicit service list skips `proxy` and `storybook` (see the
+      # Forgejo twin for the full rationale).
       - name: Bring up docker stack
-        run: docker compose -f docker/compose.yml up -d --build
-
-      - name: Wait for backend health
         run: |
-          for i in {1..60}; do
-            if curl -fsS http://localhost:3000/api/v1/health >/dev/null; then
-              echo "backend ready"; exit 0
-            fi
-            sleep 2
-          done
-          echo "backend failed to become healthy"; exit 1
+          docker compose -f docker/compose.yml -f docker/compose.ci.yml \
+            up -d --build --wait --wait-timeout 600 \
+            postgres redis centrifugo otel-lgtm backend web
 
-      - name: Wait for web
+      - name: Verify backend health
+        run: curl -fsS http://localhost:3000/api/v1/health
+
+      - name: Verify web
+        run: curl -fsS http://localhost:3001/ > /dev/null
+
+      # --network=host lets the container's localhost reach the published
+      # ports; --ipc=host is Chromium's shared-memory recommendation. The
+      # repo mounts read-write because Playwright writes its report and
+      # traces into tests/e2e/.
+      - name: Run Playwright smoke (inside the baseline-capture image)
         run: |
-          for i in {1..60}; do
-            if curl -fsS http://localhost:3001/ >/dev/null; then
-              echo "web ready"; exit 0
-            fi
-            sleep 2
-          done
-          echo "web failed to become healthy"; exit 1
+          docker run --rm --ipc=host --network=host \
+            -v "$PWD:/work" -w /work \
+            -e CI=1 \
+            -e E2E_WEB_URL=http://localhost:3001 \
+            -e E2E_BACKEND_URL=http://localhost:3000 \
+            -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+            mcr.microsoft.com/playwright:v1.59.1-jammy \
+            ./node_modules/.bin/playwright test --config=tests/e2e/playwright.config.ts
 
-      - name: Run Playwright smoke
-        run: pnpm e2e
+      - name: Container state after Playwright
+        if: always()
+        run: |
+          docker compose -f docker/compose.yml -f docker/compose.ci.yml ps
+          docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}'
 
       - name: Upload Playwright report
         if: always()
@@ -72,10 +100,14 @@ jobs:
           path: tests/e2e/playwright-report
           retention-days: 7
 
-      - name: Dump backend logs on failure
+      - name: Dump service logs on failure
         if: failure()
-        run: docker compose -f docker/compose.yml logs --tail=200 backend
+        run: |
+          for svc in centrifugo postgres redis otel-lgtm backend web; do
+            echo "===== $svc ====="
+            docker compose -f docker/compose.yml -f docker/compose.ci.yml logs --tail=200 "$svc" 2>&1 || true
+          done
 
       - name: Tear down
         if: always()
-        run: docker compose -f docker/compose.yml down -v
+        run: docker compose -f docker/compose.yml -f docker/compose.ci.yml down -v

@@ -4,10 +4,12 @@
 
 **Local-first Coursera** -- спецификация-первичный монорепозиторий для создания платформы онлайн-обучения, спроектированный для разработки с участием AI-агентов.
 
-[![CI](https://img.shields.io/github/actions/workflow/status/example/course-shelf/ci.yml?branch=main&label=CI)](https://github.com/example/course-shelf/actions)
+[![CI](https://img.shields.io/github/actions/workflow/status/kkucherenkov/course_shelf/ci.yml?branch=main&label=CI)](https://github.com/kkucherenkov/course_shelf/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node >=24](https://img.shields.io/badge/Node-%E2%89%A524-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![pnpm >=10](https://img.shields.io/badge/pnpm-%E2%89%A510-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
+
+> **О зеркале** — разработка ведётся на self-hosted Forgejo; github.com/kkucherenkov/course_shelf — это push-зеркало только для чтения. Issues и pull requests здесь не отслеживаются, ветки могут быть принудительно перезаписаны синхронизацией зеркала. Релизные образы публикуются и в приватный реестр хоумлаба, и публично в `ghcr.io/kkucherenkov/courseshelf-{backend,web}`.
 
 ---
 

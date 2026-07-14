@@ -1,0 +1,157 @@
+name: Regenerate visual snapshots
+
+# Replaces the Forgejo-side "Regenerate visual snapshots" workflow that was
+# lost when Forgejo was dropped (2026-07-14) — GitHub is now the sole repo,
+# so the regen path has to live here.
+#
+# Why a workflow instead of regenerating locally: every committed baseline was
+# captured in mcr.microsoft.com/playwright:v1.59.1-jammy. Capturing on a dev
+# host drifts glyph metrics and fails every story. This job captures in that
+# exact image and commits the PNGs straight back to the branch you dispatch it
+# on.
+#
+# Run it after any change that legitimately shifts rendering (design tokens,
+# component markup), then review the committed image diff on the PR.
+
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Which baselines to regenerate
+        type: choice
+        options:
+          - both
+          - storybook
+          - e2e
+        default: both
+
+permissions:
+  contents: write
+
+concurrency:
+  group: regen-snapshots-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  storybook:
+    if: ${{ inputs.suite == 'storybook' || inputs.suite == 'both' }}
+    name: Regenerate Storybook baselines
+    runs-on: ubuntu-latest
+    # Must match `playwright` in packages/ui/package.json — the committed
+    # baselines under packages/ui/test/__snapshots__/ carry this image's
+    # glyph metrics.
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build design tokens
+        run: pnpm design:build
+
+      - name: Build Storybook static
+        env:
+          # Without this the a11y addon fails ~75 stories *before* the
+          # test-runner's postVisit screenshot hook runs, silently leaving
+          # those baselines stale. Same value quality.yml builds with.
+          STORYBOOK_A11Y_LEVEL: todo
+        run: pnpm --filter @app/ui storybook:build
+
+      - name: Capture baselines (capture-only mode)
+        env:
+          # test-runner.ts writes the screenshot as the new baseline and
+          # skips the diff when this is set.
+          STORYBOOK_REGEN: "1"
+        run: pnpm --filter @app/ui test:visual:ci
+
+      - name: Commit regenerated baselines
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/ui/test/__snapshots__
+          if git diff --cached --quiet; then
+            echo "No baseline changes — nothing to commit."
+          else
+            git commit -m "chore(ui): regenerate Storybook visual snapshots from CI"
+            git push
+          fi
+
+  e2e:
+    if: ${{ inputs.suite == 'e2e' || inputs.suite == 'both' }}
+    name: Regenerate e2e visual baselines
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate
+        run: pnpm --filter @app/backend prisma:generate
+
+      - name: Build design tokens
+        # Tokens are gitignored; apps/web's docker build (`nuxt generate`)
+        # bakes them in and fails to resolve tokens.generated.css without them.
+        run: pnpm design:build
+
+      - name: Pull external images
+        run: docker compose -f docker/compose.yml -f docker/compose.ci.yml pull --quiet redis otel-lgtm
+
+      # Identical production-shaped stack to e2e.yml — the baselines must be
+      # captured against the same `nuxt generate` build the nightly compares
+      # against, not a dev server (the dev build renders the foundations
+      # canvas at a different height).
+      - name: Bring up docker stack
+        run: |
+          docker compose -f docker/compose.yml -f docker/compose.ci.yml \
+            up -d --build --wait --wait-timeout 600 \
+            postgres redis centrifugo otel-lgtm backend web
+
+      - name: Regenerate baselines (inside the capture image)
+        run: |
+          docker run --rm --ipc=host --network=host \
+            -v "$PWD:/work" -w /work \
+            -e CI=1 \
+            -e E2E_WEB_URL=http://localhost:3001 \
+            -e E2E_BACKEND_URL=http://localhost:3000 \
+            -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+            mcr.microsoft.com/playwright:v1.59.1-jammy \
+            ./node_modules/.bin/playwright test --config=tests/e2e/playwright.config.ts --update-snapshots
+
+      - name: Container state
+        if: always()
+        run: docker compose -f docker/compose.yml -f docker/compose.ci.yml ps
+
+      - name: Commit regenerated baselines
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Playwright runs as root in the container; the PNGs land root-owned
+          # but stay world-readable, so git can stage them.
+          git add tests/e2e
+          if git diff --cached --quiet; then
+            echo "No baseline changes — nothing to commit."
+          else
+            git commit -m "chore(e2e): regenerate Playwright visual baselines from CI"
+            git push
+          fi

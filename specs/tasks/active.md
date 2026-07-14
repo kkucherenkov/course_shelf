@@ -1,24 +1,5 @@
 # Active tasks
 
-## T-2026-07-14-003 — triage + fix first CodeQL findings (10 alerts)
-
-- Created: 2026-07-14
-- Owner: claude
-- Spec: https://github.com/kkucherenkov/course_shelf/security/code-scanning (first CodeQL run after the mirror went live)
-- Goal: every alert either fixed at the root or dismissed with a recorded justification.
-- Spec diff: none (no OpenAPI/AsyncAPI change)
-- Codegen impact: no
-- Sub-steps:
-  - [x] #3–#6 (high, `js/insecure-temporary-file`): streaming spec fixtures moved from pid-predictable names in shared `os.tmpdir()` into a `mkdtempSync` dir (mode 0700, unpredictable name); recursive cleanup also covers the `.cache.vtt` sibling — 21/21 green
-  - [x] #2/#9 (medium, shell-injection family, `contract-test.ts`): `execSync(string)` → `spawnSync('docker', args)` — env-provided base URL is a single argv entry, never shell-parsed
-  - [x] #10 (medium, `js/indirect-command-line-injection`, `diff.ts`): `execSync(\`git show ${base}:…\`)`→`spawnSync('git', ['show', …])`via a`gitShow`helper;`--base` CLI value never shell-parsed; verified (script runs, exits 2 on missing oasdiff as designed)
-  - [x] #1 (high, `js/insecure-helmet-configuration`): dismissed — flagged branch is the dev-only helmet config; production branch three lines above ships the full CSP; CSP stays off in dev for Vite HMR/Storybook (documented in main.ts)
-  - [x] #7/#8 (medium, `js/file-access-to-http`): dismissed — uploading local roadmap-card content to the Forgejo issue API is the seed script's purpose
-- Status: in-review
-- Blockers: —
-- Notes:
-  - process pivot: GitHub (github.com/kkucherenkov/course_shelf) is now the MAIN repository — this PR is the first to land via GitHub. Follow-ups: reverse the sync direction (GitHub → Forgejo) so the homelab release lane keeps triggering, update CLAUDE.md/docs references to the primary remote
-
 ## T-2026-07-14-002 — public GitHub mirror + ghcr release lane
 
 - Created: 2026-07-14
@@ -37,11 +18,14 @@
   - [x] delete `.github/dependabot.yml` — dependabot PRs merged on a force-synced mirror get clobbered; dep updates belong on Forgejo
   - [x] README.md + README.ru.md: badges `example/course-shelf` → `kkucherenkov/course_shelf`, mirror notice added
   - [x] `.forgejo/workflows/release.yml`: stale "IMAGES live on GHCR" comment fixed (leftover from before #231)
-  - [ ] create the GitHub repo + configure the Forgejo push mirror (PAT with contents:write)
-  - [ ] verify: mirror sync arrives, GitHub CI green on mirrored `main`
-  - [ ] verify release path: cut a `v*.*.*-release` tag → both lanes publish (folds in the pending homelab-registry smoke test)
+  - [x] create the GitHub repo — public, issues/wiki/projects disabled, initial push of `main` + the inert `v0.1.0-release` tag (its tree predates the ghcr workflow)
+  - [x] verify: GitHub CI green — all four workflows passed their FIRST runs (CI, CodeQL, Quality, E2E; the jammy-container recipe held on ubuntu-latest)
+  - [x] ~~configure the Forgejo push mirror~~ OBSOLETE — direction flipped (see notes): GitHub is now the main repo, Forgejo is downstream
+  - [ ] reverse sync GitHub → Forgejo (workflow pushing `main` + tags with a `FORGEJO_TOKEN` secret) so homelab nightlies + the LAN release lane keep triggering; until then main is dual-pushed manually
+  - [ ] verify release path: cut a `v*.*.*-release` tag → both lanes publish (ghcr via GitHub, LAN registry via Forgejo — folds in the pending homelab-registry smoke test)
 - Status: in-progress
 - Blockers: —
 - Notes:
+  - PIVOT (2026-07-14, user decision): GitHub (github.com/kkucherenkov/course_shelf) is the MAIN repository; development PRs land there (first: github#1, CodeQL fixes). Forgejo remains for homelab deploy (LAN registry, Dockge) + the issues mirror. Follow-up: update CLAUDE.md/docs remote references.
   - Forgejo executes only `.forgejo/workflows/` (first-match directory) — verified empirically: the dormant `.github/` set produced zero Forgejo runs despite `on: push` triggers. The two estates never cross-trigger.
   - mirror-sync pushes are PAT-authenticated, so they DO trigger GitHub workflows (GITHUB_TOKEN-authored pushes wouldn't)

@@ -21,8 +21,8 @@
   - [x] regenerate @app/ui Storybook baselines — 48 changed / 285, captured in `mcr.microsoft.com/playwright:v1.59.1-jammy` (284/284 stories pass; 237 byte-identical proves the container matches CI glyph metrics, so the 48 are genuine token diffs). GOTCHA: the build needs `STORYBOOK_A11Y_LEVEL=todo` or the a11y addon throws before `postVisit`, silently leaving ~75 baselines stale.
   - [x] add `.github/workflows/regen-snapshots.yml` — replaces the Forgejo regen workflow lost in the GitHub pivot (workflow_dispatch, suite: storybook|e2e|both, captures in the jammy image, commits baselines back). Fixed the now-wrong Forgejo regen instructions in `test-runner.ts` + `e2e.yml`.
   - [x] regenerate the e2e foundations baseline against the PRODUCTION-shaped stack (`compose.ci.yml` web:ci rebuilt with new tokens, port 3021) + verified it passes on a clean re-run. Heights: baseline 10815 → dev 10986 → prod 10936 — proving (a) dev≠prod so a dev capture would have been wrong for CI, and (b) the +121px is real: the foundations canvas now renders the 11 new accent-50…950 swatches + xs/xl/2xl radii added to tokens.json.
-  - [ ] open PR(s) for the branch (web token fix + roadmap realignment) — needs `git add -f` for the 6 new docs/ cards
-- Status: in-progress
+  - [x] open PR — https://github.com/kkucherenkov/course_shelf/pull/136 (combined; 4 logical commits: token fix / baselines / regen workflow / roadmap realignment). The 6 new docs/ cards needed `git add -f`.
+- Status: in-progress (awaiting PR #136 review + merge; archive to done.md on merge)
 - Blockers: —
 - Notes:
   - apps/mobile is NOT greenfield — E15-F01-S02 shipped (Dio+bearer), S03 largely shipped (phone-OTP, `AuthApiImpl`, `otpSent`), S01 half (theme-from-tokens still on placeholder seed). Board status seeded accordingly.

@@ -4,8 +4,9 @@
  * All endpoints are mocked with Playwright `route()` — no live backend needed.
  *
  * Tests covered:
- *  1. First-user signup → admin role promotion called
- *  2. Second-user signup → no role promotion
+ *  1. First-user signup → first-run wizard (admin framing) through the library step
+ *     (admin promotion itself is server-side since #226 — not observable here)
+ *  2. Second-user signup → standard wizard, no first-run framing
  *  3. Sign-in error → error banner shown
  *  4. Forgot-password full flow (email → sent → reset)
  *  5. Sign-up disabled → empty state on /sign-up; sign-in hides CTA
@@ -155,27 +156,27 @@ async function gotoAuthPage(page: Page, path: string): Promise<void> {
   await page.goto(path);
 }
 
-// ── Test 1: First-user signup → admin promotion ───────────────────────────────
+// ── Test 1: First-user signup — first-run wizard to the library step ──────────
+//
+// The client-side promoteToAdmin stub this test used to observe was removed
+// in #226 — the backend now promotes the first user server-side (Better Auth
+// databaseHooks in auth.service.ts), which is invisible to the browser. What
+// the wizard owns is the first-run framing and the library registration.
 
-test('first-user signup drives full wizard and calls promoteToAdmin stub', async ({ page }) => {
+test('first-user signup drives the full wizard to the library step', async ({ page }) => {
   await mockHasUsers(page, false);
   await mockInstance(page, adminInstance);
   await mockAuthEndpoints(page);
   await mockSignUpSuccess(page);
   await mockLibrarySuccess(page);
 
-  const promoteCalls: string[] = [];
-  // Track the admin setRole call — stub logs a console warning, we capture it.
-  page.on('console', (msg) => {
-    if (msg.type() === 'warning' && msg.text().includes('promoteToAdmin')) {
-      promoteCalls.push(msg.text());
-    }
-  });
-
   await gotoAuthPage(page, '/sign-up');
 
   // Should be on the sign-up page (wizard visible)
   await expect(page.locator('[data-testid="page-sign-up"]')).toBeVisible({ timeout: 10_000 });
+
+  // First-run framing: the wizard presents itself as admin bootstrap.
+  await expect(page.locator('.page-sign-up__title')).toContainText('Create administrator');
 
   // Step 1: fill account form
   await page.fill('input[autocomplete="name"]', 'Elena Lin');
@@ -191,7 +192,7 @@ test('first-user signup drives full wizard and calls promoteToAdmin stub', async
   await expect(
     page.locator('.page-sign-up__title').filter({ hasText: /courses|library/i }),
   ).toBeVisible({
-    timeout: 8_000,
+    timeout: 8000,
   });
 
   // Step 3: fill library
@@ -204,38 +205,35 @@ test('first-user signup drives full wizard and calls promoteToAdmin stub', async
   const pathInputs = page.locator('input[placeholder*="/workspace"]');
   await pathInputs.fill('/workspace/docs/data/courses');
 
-  // Finish
-  await page.locator('button[type="submit"]').last().click();
-
-  // After Finish the wizard navigates to /libraries (production path).
-  // We don't assert the destination here because the test mocks
+  // Finish — the wizard's terminal action registers the library. We don't
+  // assert the post-finish destination because the test mocks
   // `hasUsers: false` statically — the auth middleware would bounce a
   // post-signup visit to /libraries back to /sign-up. In production the
-  // mock value flips to true once the new user is persisted, breaking
-  // the loop. The /libraries-redirect itself is verified separately via
-  // the libraries.spec.ts e2e. Here we just confirm step 1 fired
-  // promoteToAdmin and the wizard reached its terminal click.
-  expect(promoteCalls.length).toBeGreaterThan(0);
+  // value flips to true once the new user is persisted. The
+  // /libraries-redirect itself is verified via libraries.spec.ts.
+  const libraryRegistered = page.waitForRequest(
+    (req) => req.method() === 'POST' && req.url().includes('/api/v1/libraries'),
+    { timeout: 8000 },
+  );
+  await page.locator('button[type="submit"]').last().click();
+  await libraryRegistered;
 });
 
-// ── Test 2: Second-user signup → no promotion ─────────────────────────────────
+// ── Test 2: Second-user signup — standard wizard, no first-run framing ────────
 
-test('second-user signup — no admin promotion', async ({ page }) => {
+test('second-user signup shows the standard wizard without first-run framing', async ({ page }) => {
   await mockHasUsers(page, true);
   await mockInstance(page, adminInstance);
   await mockAuthEndpoints(page);
   await mockSignUpSuccess(page);
   await mockLibrarySuccess(page);
 
-  const promoteCalls: string[] = [];
-  page.on('console', (msg) => {
-    if (msg.type() === 'warning' && msg.text().includes('promoteToAdmin')) {
-      promoteCalls.push(msg.text());
-    }
-  });
-
   await gotoAuthPage(page, '/sign-up');
   await expect(page.locator('[data-testid="page-sign-up"]')).toBeVisible({ timeout: 10_000 });
+
+  // Standard framing — NOT the admin-bootstrap copy.
+  await expect(page.locator('.page-sign-up__title')).toContainText('Create your account');
+  await expect(page.locator('.page-sign-up__title')).not.toContainText('Create administrator');
 
   await page.fill('input[autocomplete="name"]', 'Bob Smith');
   await page.fill('input[type="email"]', 'bob@example.com');
@@ -243,8 +241,10 @@ test('second-user signup — no admin promotion', async ({ page }) => {
 
   await page.locator('button[type="submit"]').first().click();
 
-  // No promote call expected for second user
-  expect(promoteCalls).toHaveLength(0);
+  // emailVerificationRequired=false → the wizard advances to the library step.
+  await expect(
+    page.locator('.page-sign-up__title').filter({ hasText: /courses|library/i }),
+  ).toBeVisible({ timeout: 8000 });
 });
 
 // ── Test 3: Sign-in error → error banner ──────────────────────────────────────
@@ -263,7 +263,7 @@ test('sign-in with wrong credentials shows error banner', async ({ page }) => {
   await page.locator('button[type="submit"]').click();
 
   // Error banner (AppBanner variant="error" has role="alert")
-  await expect(page.locator('[role="alert"]')).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator('[role="alert"]')).toBeVisible({ timeout: 8000 });
   await expect(page.locator('[role="alert"]')).not.toBeEmpty();
 });
 
@@ -293,7 +293,7 @@ test('forgot-password full flow: email → confirmation → reset', async ({ pag
 
   // Step 2: confirmation card
   // forgotPassword is a stub → returns ok:true, advances to 'sent' step
-  await expect(page.locator('text=/Check your email/i')).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator('text=/Check your email/i')).toBeVisible({ timeout: 8000 });
 
   // The "Open mail app" button should link to mailto:
   const mailBtn = page.locator('a[href^="mailto:"]');
@@ -305,7 +305,7 @@ test('forgot-password full flow: email → confirmation → reset', async ({ pag
 
   // Should be on step 3 (new password form)
   await expect(page.locator('input[autocomplete="new-password"]').first()).toBeVisible({
-    timeout: 8_000,
+    timeout: 8000,
   });
 
   // Fill both password fields

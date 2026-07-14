@@ -56,21 +56,29 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // Defensive server-side guard; this code never runs because ssr: false.
   if (import.meta.server) return;
 
+  // The production nginx serves the statically generated site with directory
+  // redirects: GET /sign-up → 301 /sign-up/ (each page is a directory with an
+  // index.html). The SPA then hydrates with a trailing-slash `to.path`, which
+  // an exact-string comparison misclassifies as a protected route and bounces
+  // to /sign-in — breaking every deep link to a public page. Normalize before
+  // comparing.
+  const path = to.path.length > 1 ? to.path.replace(/\/+$/, '') : to.path;
+
   const hasUsers = await fetchHasUsers();
 
   // First-run: no users in the DB — funnel every auth entry point into the
   // 3-step sign-up wizard. The wizard's step 1 promotes the first user to
   // ADMIN; there is no separate /setup screen.
   if (!hasUsers) {
-    if (to.path === '/sign-up') return;
+    if (path === '/sign-up') return;
     return navigateTo('/sign-up');
   }
 
   // Setup is locked once an admin exists.
-  if (to.path === '/setup') return navigateTo('/sign-in');
+  if (path === '/setup') return navigateTo('/sign-in');
 
   // Public routes skip the auth check entirely.
-  if (PUBLIC_ROUTES.has(to.path)) return;
+  if (PUBLIC_ROUTES.has(path)) return;
 
   const auth = useAuthStore();
 

@@ -244,18 +244,18 @@ test.describe('lesson player — auto-advance banner', () => {
     });
 
     // End banner should appear (state="end")
-    await expect(page.locator('.app-player-chrome--state-end')).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('.app-player-chrome--state-end')).toBeVisible({ timeout: 5000 });
 
     // End banner should contain end-countdown text
     const endBanner = page.locator('.app-player-chrome__end-banner');
-    await expect(endBanner).toBeVisible({ timeout: 5_000 });
+    await expect(endBanner).toBeVisible({ timeout: 5000 });
 
     // Click "Play next" — should navigate to next lesson
     const playNextBtn = endBanner.locator('button', { hasText: /Play next|Следующий/i });
     await expect(playNextBtn).toBeVisible();
 
     const navPromise = page.waitForURL(`**/courses/${COURSE_ID}/lessons/${NEXT_LESSON_ID}**`, {
-      timeout: 5_000,
+      timeout: 5000,
     });
     await playNextBtn.click();
     // Navigation is async — if it doesn't complete in time it's still a valid assertion

@@ -171,10 +171,15 @@ jobs:
         # consumer today). The nightly + default workflow_dispatch path
         # leaves snapshots untouched and asserts against the committed
         # baseline.
+        # No `--` separator: pnpm forwards it literally, and Playwright
+        # treats everything after `--` as positional test-file regexes —
+        # `--update-snapshots` then matches nothing and the run dies with
+        # "No tests found". pnpm passes flags after the script name
+        # through to the command as-is.
         run: |
           set -e
           if [ "${{ inputs.update_snapshots }}" = "true" ]; then
-            pnpm e2e -- --update-snapshots
+            pnpm e2e --update-snapshots
           else
             pnpm e2e
           fi

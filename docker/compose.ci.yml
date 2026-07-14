@@ -39,6 +39,21 @@ services:
     image: course-shelf-postgres:ci
     volumes: !override
       - pgdata:/var/lib/postgresql
+    # The runner host is shared with other stacks (coriolis-companion
+    # publishes :3200, others may claim :5432/:6379). The e2e job only
+    # needs web (:3001), backend (:3000) and centrifugo (:8000 — the
+    # SPA's websocket URL points at the host gateway) reachable from
+    # the job container; postgres/redis/otel-lgtm are internal to the
+    # compose network (backend reaches them by service name). Unpublish
+    # their host ports so the nightly can't die on
+    # "Bind for 0.0.0.0:3200 failed: port is already allocated".
+    ports: !override []
+
+  redis:
+    ports: !override []
+
+  otel-lgtm:
+    ports: !override []
 
   backend:
     # Production image — COPYs source, builds, runs `prisma migrate

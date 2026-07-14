@@ -4,10 +4,12 @@
 
 **Local-first Coursera** -- a spec-first monorepo for building an online learning platform, designed for AI-agent-driven development.
 
-[![CI](https://img.shields.io/github/actions/workflow/status/example/course-shelf/ci.yml?branch=main&label=CI)](https://github.com/example/course-shelf/actions)
+[![CI](https://img.shields.io/github/actions/workflow/status/kkucherenkov/course_shelf/ci.yml?branch=main&label=CI)](https://github.com/kkucherenkov/course_shelf/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node >=24](https://img.shields.io/badge/Node-%E2%89%A524-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![pnpm >=10](https://img.shields.io/badge/pnpm-%E2%89%A510-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
+
+> **Mirror notice** — development happens on a self-hosted Forgejo; github.com/kkucherenkov/course_shelf is a read-only push mirror. Issues and pull requests opened here are not monitored, and branches may be force-updated by the mirror sync. Release images are published both to the private homelab registry and publicly to `ghcr.io/kkucherenkov/courseshelf-{backend,web}`.
 
 ---
 

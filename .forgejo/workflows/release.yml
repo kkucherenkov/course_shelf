@@ -273,8 +273,8 @@ jobs:
           ls -la "${STAGE}.tar.gz" "compose-release-v${SEMVER}.yml"
 
       # ─── Forgejo release ─────────────────────────────────────────────────
-      # The release page lives on Forgejo (where the source repo is); the
-      # IMAGES live on GHCR. Use GITEA_TOKEN for the API call.
+      # The release page and the images both live on this Forgejo instance
+      # (the registry is the same host). Use GITEA_TOKEN for the API call.
       - name: Create Forgejo release with assets
         env:
           TAG: ${{ steps.version.outputs.tag }}

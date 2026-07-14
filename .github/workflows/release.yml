@@ -1,0 +1,221 @@
+name: Release (ghcr)
+
+# Public twin of .forgejo/workflows/release.yml.
+#
+# The homelab lane pushes images to the LAN Forgejo registry and creates a
+# Forgejo Release; this lane runs when the mirror sync delivers the same
+# `vMAJOR.MINOR.PATCH-release` tag to GitHub, and publishes the public
+# equivalents:
+#   - images → ghcr.io/kkucherenkov/courseshelf-{backend,web}
+#     (four tags each: X.Y.Z, X.Y, X, latest)
+#   - a GitHub Release with the identical artefact bundle (compose rendered
+#     with REGISTRY=ghcr.io instead of code.homelab.local)
+#
+# Mirror-sync pushes are authenticated with a PAT, so they DO trigger this
+# workflow (GITHUB_TOKEN-authored pushes wouldn't). No extra secrets are
+# needed: GITHUB_TOKEN with `packages: write` covers the ghcr push and the
+# Release API.
+#
+# Kept deliberately in lockstep with the Forgejo twin — if you change the
+# bundle layout or tag policy there, change it here too.
+
+on:
+  push:
+    tags:
+      - "v*.*.*-release"
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  NODE_VERSION: "24"
+  REGISTRY: ghcr.io
+  REGISTRY_NAMESPACE: kkucherenkov
+
+jobs:
+  release:
+    name: Build, push to ghcr, and create GitHub release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full history for git-cliff
+
+      # ─── Tag → semver ────────────────────────────────────────────────────
+      - name: Parse release tag
+        id: version
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF#refs/tags/}"
+          if ! echo "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+-release$'; then
+            echo "tag '$TAG' does not match vMAJOR.MINOR.PATCH-release" >&2
+            exit 1
+          fi
+          SEMVER="${TAG#v}"
+          SEMVER="${SEMVER%-release}"
+          MAJOR="${SEMVER%%.*}"
+          MINOR="${SEMVER#*.}"; MINOR="${MINOR%%.*}"
+          PATCH="${SEMVER##*.}"
+          {
+            echo "tag=$TAG"
+            echo "semver=$SEMVER"
+            echo "major=$MAJOR"
+            echo "minor=$MINOR"
+            echo "patch=$PATCH"
+          } >> "$GITHUB_OUTPUT"
+
+      # ─── Toolchain ───────────────────────────────────────────────────────
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Spec validate
+        run: pnpm spec:validate
+
+      - name: Build design tokens
+        # Tokens are gitignored — the web Dockerfile's `nuxt generate` step
+        # needs the generated files in the build context via `COPY . .`.
+        run: pnpm design:build
+
+      # ─── Registry login ──────────────────────────────────────────────────
+      - name: Log in to ghcr.io
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login "$REGISTRY" \
+            --username "${{ github.actor }}" \
+            --password-stdin
+
+      # ─── Build + push images ─────────────────────────────────────────────
+      - name: Build and push release images
+        env:
+          SEMVER: ${{ steps.version.outputs.semver }}
+          MAJOR: ${{ steps.version.outputs.major }}
+          MINOR: ${{ steps.version.outputs.minor }}
+        run: |
+          set -euo pipefail
+
+          NS="$REGISTRY_NAMESPACE"
+
+          publish() {
+            local name="$1"
+            local dockerfile="$2"
+            local image="$REGISTRY/$NS/$name"
+
+            echo "::group::build $name"
+            docker build \
+              --build-arg "APP_VERSION=$SEMVER" \
+              --label "org.opencontainers.image.source=https://github.com/${NS}/course_shelf" \
+              --label "org.opencontainers.image.version=$SEMVER" \
+              --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+              -f "$dockerfile" \
+              -t "$image:$SEMVER" \
+              -t "$image:$MAJOR.$MINOR" \
+              -t "$image:$MAJOR" \
+              -t "$image:latest" \
+              .
+            echo "::endgroup::"
+
+            echo "::group::push $name"
+            docker push "$image:$SEMVER"
+            docker push "$image:$MAJOR.$MINOR"
+            docker push "$image:$MAJOR"
+            docker push "$image:latest"
+            echo "::endgroup::"
+          }
+
+          publish courseshelf-backend     apps/backend/Dockerfile
+          publish courseshelf-web         apps/web/Dockerfile
+
+      # ─── Changelog (git-cliff) ───────────────────────────────────────────
+      - name: Install git-cliff
+        run: |
+          set -euo pipefail
+          VERSION="2.6.1"
+          curl -sSfL \
+            "https://github.com/orhun/git-cliff/releases/download/v${VERSION}/git-cliff-${VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+            -o /tmp/git-cliff.tgz
+          tar -xzf /tmp/git-cliff.tgz -C /tmp
+          install -m 0755 "/tmp/git-cliff-${VERSION}/git-cliff" /usr/local/bin/git-cliff
+          git-cliff --version
+
+      - name: Generate release notes
+        run: |
+          set -euo pipefail
+          git-cliff \
+            --config cliff.toml \
+            --current \
+            --strip header \
+            > release-notes.md
+          cat release-notes.md
+
+      # ─── Stage release bundle (render + validate + assemble) ────────────
+      - name: Stage release bundle
+        env:
+          SEMVER: ${{ steps.version.outputs.semver }}
+        run: |
+          set -euo pipefail
+          STAGE="courseshelf-release-v${SEMVER}"
+          NS="$REGISTRY_NAMESPACE"
+          mkdir -p "$STAGE"
+
+          # Render compose with RELEASE_TAG / REGISTRY / REGISTRY_NAMESPACE
+          # pinned to the public ghcr coordinates.
+          sed \
+            -e "s|\${RELEASE_TAG:-latest}|${SEMVER}|g" \
+            -e "s|\${REGISTRY:-code.homelab.local}|${REGISTRY}|g" \
+            -e "s|\${REGISTRY_NAMESPACE:-kkucherenkov}|${NS}|g" \
+            docker/compose.release.yml > "$STAGE/compose.yml"
+
+          cp docker/nginx/prod.conf "$STAGE/nginx-prod.conf"
+          cp .env.release.example "$STAGE/.env.example"
+          cp release-notes.md "$STAGE/CHANGELOG.md"
+          cat > "$STAGE/README.md" <<EOF
+          # CourseShelf $SEMVER — release bundle
+
+          1. Copy \`.env.example\` to \`.env\` and fill in the secrets.
+          2. \`docker compose --env-file .env -f compose.yml pull\`
+          3. \`docker compose --env-file .env -f compose.yml up -d\`
+          4. Browse to http://<your-host>:\${PROXY_PORT:-8080}
+
+          See CHANGELOG.md for what changed in this release.
+          EOF
+
+          # Validate the rendered compose (dummy secrets — syntax + file
+          # existence only).
+          ( cd "$STAGE" && \
+            PUBLIC_BASE_URL=http://placeholder.local \
+            POSTGRES_PASSWORD=placeholder \
+            BETTER_AUTH_SECRET=placeholder \
+            CENTRIFUGO_API_KEY=placeholder \
+            CENTRIFUGO_TOKEN_HMAC_SECRET=placeholder \
+            COURSES_PATH=/tmp \
+              docker compose -f compose.yml config --quiet )
+
+          cp "$STAGE/compose.yml" "compose-release-v${SEMVER}.yml"
+
+          tar czf "${STAGE}.tar.gz" "$STAGE"
+          ls -la "${STAGE}.tar.gz" "compose-release-v${SEMVER}.yml"
+
+      # ─── GitHub release ──────────────────────────────────────────────────
+      - name: Create GitHub release with assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+          SEMVER: ${{ steps.version.outputs.semver }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" \
+            --title "CourseShelf $SEMVER" \
+            --notes-file release-notes.md \
+            "courseshelf-release-v${SEMVER}.tar.gz" \
+            "compose-release-v${SEMVER}.yml" \
+            ".env.release.example" \
+            "release-notes.md"

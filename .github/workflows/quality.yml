@@ -1,0 +1,52 @@
+name: Quality (on-demand)
+
+# GitHub-side twin of .forgejo/workflows/quality.yml — Storybook
+# visual-regression in the same jammy Playwright container the committed
+# baselines were captured in. The license check lives in ci.yml's security
+# job on this side (GitHub runners are free for public repos, so it can
+# afford to run per-push), leaving this workflow purely visual.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Nightly at 03:30 UTC — after the e2e nightly, same as the Forgejo twin.
+    - cron: "30 3 * * *"
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Storybook visual regression
+    runs-on: ubuntu-latest
+    # Image tag must match `playwright` in packages/ui/package.json — the
+    # committed baselines under packages/ui/test/__snapshots__/ were
+    # captured with this exact image's glyph metrics.
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build design tokens
+        run: pnpm design:build
+
+      - name: Build Storybook static
+        env:
+          STORYBOOK_A11Y_LEVEL: todo
+        run: pnpm --filter @app/ui storybook:build
+
+      - name: Run Storybook test-runner
+        run: pnpm --filter @app/ui test:visual:ci

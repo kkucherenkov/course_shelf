@@ -22,7 +22,8 @@
  *   --dry-run         print would-be requests without calling the API
  *   --print-map       print the card-id → issue-number map and exit
  *                     (uses existing issues, doesn't create or reconcile)
- *   --lookup=<id>     print only the issue number for one card (e.g. E13-F02-S07)
+ *   --lookup=<id>     print only the issue number for one card (e.g. E13-F02-S07);
+ *                     the id may also be passed positionally: --lookup <id>
  *   --owner=<owner>   default kkucherenkov
  *   --repo=<repo>     default course_shelf
  *   --url=<url>       default http://code.homelab.local
@@ -38,9 +39,12 @@ import { fileURLToPath } from 'node:url';
 
 // CLI args
 const argv = new Map<string, string>();
+const positionals: string[] = [];
 for (const raw of process.argv.slice(2)) {
+  if (raw === '--') continue; // pnpm forwards the separator verbatim
   const m = /^--([^=]+)(?:=(.*))?$/.exec(raw);
   if (m) argv.set(m[1]!, m[2] ?? 'true');
+  else positionals.push(raw);
 }
 
 const dryRun = argv.has('dry-run');
@@ -505,9 +509,15 @@ async function loadIssueMap(): Promise<Map<string, number>> {
 
 // Main
 (async (): Promise<void> => {
-  // --lookup=<id>: print just the issue number for one card.
-  const lookup = argv.get('lookup');
-  if (lookup) {
+  // --lookup=<id> (or bare `--lookup <id>`, as `pnpm issues:lookup` passes it):
+  // print just the issue number for one card.
+  if (argv.has('lookup')) {
+    const flag = argv.get('lookup')!;
+    const lookup = flag !== 'true' ? flag : positionals[0];
+    if (!lookup) {
+      console.error('[seed] --lookup requires a card id (e.g. E13-F02-S07)');
+      process.exit(1);
+    }
     const map = await loadIssueMap();
     const num = map.get(lookup);
     if (num === undefined) {

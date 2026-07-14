@@ -96,22 +96,26 @@ docker compose -f docker/compose.yml restart backend
 
 ### Running a single test
 
+No `--` separator before args — pnpm forwards them verbatim, and a literal
+`--` makes vitest silently ignore the filter (runs the full suite) and makes
+Playwright treat the flag as a test-file regex (`Error: No tests found`).
+
 ```sh
 # backend (vitest)
-pnpm --filter @app/backend test -- src/path/to/file.spec.ts
-pnpm --filter @app/backend test -- -t "test name pattern"
+pnpm --filter @app/backend test src/path/to/file.spec.ts
+pnpm --filter @app/backend test -t "test name pattern"
 
 # web (vitest + @nuxt/test-utils)
-pnpm --filter @app/web test -- app/components/Foo.spec.ts
+pnpm --filter @app/web test app/components/Foo.spec.ts
 
 # @app/ui (vitest)
-pnpm --filter @app/ui test -- src/Button/Button.spec.ts
+pnpm --filter @app/ui test src/Button/Button.spec.ts
 
 # mobile (Flutter)
 cd apps/mobile && flutter test test/path/to/file_test.dart
 
 # e2e (Playwright)
-pnpm e2e -- --grep "smoke"
+pnpm e2e --grep "smoke"
 ```
 
 ## Forgejo issues mirror

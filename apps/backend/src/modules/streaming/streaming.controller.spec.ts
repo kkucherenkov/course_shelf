@@ -43,7 +43,7 @@
  *   21. 401 tampered token on material stream.
  *   22. 404 missing material (MaterialNotFoundError) on stream.
  */
-import { unlinkSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import type { IncomingMessage } from 'node:http';
 import type supertest from 'supertest';
@@ -86,6 +86,7 @@ import type { MaterialDownloadUrlDto } from '@app/api-client-ts';
 // ---------------------------------------------------------------------------
 
 const FIXTURE_SIZE = 1024;
+let FIXTURE_DIR: string;
 let FIXTURE_PATH: string;
 let PDF_FIXTURE_PATH: string;
 
@@ -227,33 +228,28 @@ function materialStreamUrl(materialId = 'mat-1', token: string | null = VALID_TO
 
 describe('StreamingController — GET /api/v1/stream/lessons/:id', () => {
   beforeAll(() => {
-    FIXTURE_PATH = path.join(os.tmpdir(), `stream-fixture-${process.pid}.mp4`);
+    // mkdtemp gives a mode-0700 directory with an unpredictable name, so
+    // fixtures never share the world-writable tmpdir root with other
+    // processes (CodeQL js/insecure-temporary-file).
+    FIXTURE_DIR = mkdtempSync(path.join(os.tmpdir(), 'streaming-fixtures-'));
+
+    FIXTURE_PATH = path.join(FIXTURE_DIR, 'stream-fixture.mp4');
     fixtureBytes = makeFixtureBuffer();
     writeFileSync(FIXTURE_PATH, fixtureBytes);
 
-    PDF_FIXTURE_PATH = path.join(os.tmpdir(), `material-fixture-${process.pid}.pdf`);
+    PDF_FIXTURE_PATH = path.join(FIXTURE_DIR, 'material-fixture.pdf');
     writeFileSync(PDF_FIXTURE_PATH, Buffer.from('%PDF-1.4 fixture content'));
 
-    VTT_FIXTURE_PATH = path.join(os.tmpdir(), `subtitle-fixture-${process.pid}.vtt`);
-    SRT_FIXTURE_PATH = path.join(os.tmpdir(), `subtitle-fixture-${process.pid}.srt`);
+    VTT_FIXTURE_PATH = path.join(FIXTURE_DIR, 'subtitle-fixture.vtt');
+    SRT_FIXTURE_PATH = path.join(FIXTURE_DIR, 'subtitle-fixture.srt');
     writeFileSync(VTT_FIXTURE_PATH, VTT_CONTENT, 'utf8');
     writeFileSync(SRT_FIXTURE_PATH, SRT_CONTENT, 'utf8');
   });
 
   afterAll(() => {
-    for (const p of [
-      FIXTURE_PATH,
-      PDF_FIXTURE_PATH,
-      VTT_FIXTURE_PATH,
-      SRT_FIXTURE_PATH,
-      `${SRT_FIXTURE_PATH.slice(0, -4)}.cache.vtt`,
-    ]) {
-      try {
-        unlinkSync(p);
-      } catch {
-        // ignore cleanup errors
-      }
-    }
+    // Recursive removal also covers the `.cache.vtt` sibling the SRT→VTT
+    // conversion writes next to the fixture.
+    rmSync(FIXTURE_DIR, { recursive: true, force: true });
   });
 
   // -------------------------------------------------------------------------

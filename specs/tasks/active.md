@@ -1,31 +1,30 @@
 # Active tasks
 
-## T-2026-07-14-002 — public GitHub mirror + ghcr release lane
+## T-2026-07-14-004 — GitHub Projects board for mobile (E15–E20) + frontend-alignment realignment
 
 - Created: 2026-07-14
 - Owner: claude
-- Spec: user decision — public mirror at github.com/kkucherenkov/course_shelf, ghcr release lane now, keep CodeQL + trufflehog on the GitHub side
-- Goal: Forgejo stays the source of truth; GitHub is a read-only push mirror with its own green CI and a public release lane (ghcr.io images + GitHub Releases).
+- Spec: user request — populate a GitHub Projects v2 board with epics E15–E20 (stories + tasks), reviewing each card for alignment with the real frontend decisions/pivots; ensure design tokens match the real SCSS (SCSS = source of truth)
+- Goal: an honest GitHub Projects board (Epic→Story→Task sub-issue tree, status seeded from reality) for the mobile epics, with the roadmap source corrected where it drifted from what actually shipped.
 - Spec diff: none (no OpenAPI/AsyncAPI change)
 - Codegen impact: no
+- Decisions (user): Projects v2 board + native sub-issues · full Epic+Story+Task tree (~150 issues) · report-first review, amend on approval · fix source + create corrected issues · full status seeding from reality · add all 6 E17 coverage-gap stories
 - Sub-steps:
-  - [x] pre-flight: full-history trufflehog scan (`--only-verified`) — 0 verified, 0 unverified across 12916 chunks
-  - [x] `.github/workflows/ci.yml`: replace the stale pre-migration 6-job layout (it was missing `design:build` — tokens are gitignored, web typecheck/test would fail) with the consolidated `checks` job kept in lockstep with `.forgejo/workflows/ci.yml`, plus GitHub-only jobs: codegen-drift (full Flutter toolchain) and security (trufflehog pinned to v3.95.9 instead of @main, license-checker)
-  - [x] `.github/workflows/e2e.yml`: rewrite to the proven Forgejo shape — compose.ci.yml production-shaped stack, Playwright executed inside `mcr.microsoft.com/playwright:v1.59.1-jammy` via `docker run --network=host` (committed baselines are jammy-captured; host-run Chromium on ubuntu-latest would drift glyph metrics). No regen path — baselines only regenerate on Forgejo
-  - [x] `.github/workflows/quality.yml`: port the Storybook visual-regression nightly (same jammy container); license check stays in ci.yml's security job on the GitHub side
-  - [x] `.github/workflows/release.yml`: new ghcr lane — same `v*.*.*-release` tag pattern, images to `ghcr.io/kkucherenkov/courseshelf-{backend,web}` (4 tags each), same git-cliff notes + bundle, GitHub Release via `gh release create`; GITHUB_TOKEN only, no new secrets
-  - [x] `.github/workflows/codeql.yml`: kept as-is
-  - [x] delete `.github/dependabot.yml` — dependabot PRs merged on a force-synced mirror get clobbered; dep updates belong on Forgejo
-  - [x] README.md + README.ru.md: badges `example/course-shelf` → `kkucherenkov/course_shelf`, mirror notice added
-  - [x] `.forgejo/workflows/release.yml`: stale "IMAGES live on GHCR" comment fixed (leftover from before #231)
-  - [x] create the GitHub repo — public, issues/wiki/projects disabled, initial push of `main` + the inert `v0.1.0-release` tag (its tree predates the ghcr workflow)
-  - [x] verify: GitHub CI green — all four workflows passed their FIRST runs (CI, CodeQL, Quality, E2E; the jammy-container recipe held on ubuntu-latest)
-  - [x] ~~configure the Forgejo push mirror~~ OBSOLETE — direction flipped (see notes): GitHub is now the main repo, Forgejo is downstream
-  - [ ] reverse sync GitHub → Forgejo (workflow pushing `main` + tags with a `FORGEJO_TOKEN` secret) so homelab nightlies + the LAN release lane keep triggering; until then main is dual-pushed manually
-  - [ ] verify release path: cut a `v*.*.*-release` tag → both lanes publish (ghcr via GitHub, LAN registry via Forgejo — folds in the pending homelab-registry smoke test)
+  - [x] scope grant (`gh auth refresh -s project,read:project`) + verify
+  - [x] 3-dimension alignment review (stack · component catalog · features/API) — reports in
+  - [x] fix `.claude/agents/flutter-engineer.md` (Riverpod → flutter_bloc + get_it; align layering to shipped tree)
+  - [x] tokens ↔ SCSS alignment check — VALUES fully aligned (no upstream SCSS exists; tokens.json is source). Found + FIXED a real web bug: `@theme inline` in main.css/styles.css referenced ~14 token names the generator never emits (dangling var()s + missing accent 50–950 scale for Nuxt UI `primary:'accent'`). Fix: added `radius.xs/xl/2xl` + accent 50–950 ramp (from `_palette.accent.amber`) to tokens.json; repointed stale @theme refs to canonical names (bg→page, danger→error, fg-disabled→disabled, etc.). Regenerated; verified 0 dangling refs. Visual-regression baselines will shift (Nuxt UI primary now renders the real amber scale).
+  - [x] correct E15–E20 source: live `.md` cards in place + mirror into `generate.py` registry (NO wholesale regenerate — it resets status). Repointed dead refs, 61→66 icons, AppDropdown→AppSelect, CourseCard 3-comp + resumeLabel, AppBottomSheet mobile-only, Browse filters, course-detail scope, 3 Blocked statuses. Verified: 0 dead refs remain, generate.py py_compile clean.
+  - [x] add 6 new E17 stories (AppBadge, AppBookmarkList, AppSectionHeader, AppTextarea, AppNoPermission, AppRadioGroup) — ⚠️ new files under docs/ are hidden by global `~/.gitignore: docs/*`; need `git add -f` at commit time
+  - [x] enable repo issues; create Projects v2 board #1 (+ Epic/Stage/Type fields, Blocked status option); linked to the repo
+  - [x] generate Epic+Story+Task issues — 133 total (6 epics + 40 stories + 87 tasks) via idempotent script; sub-issue tree + fields + status seeded from reality; 3 Blocked flagged; alignment notes embedded in bodies. Board: https://github.com/users/kkucherenkov/projects/1
+  - [x] regenerate @app/ui Storybook baselines — 48 changed / 285, captured in `mcr.microsoft.com/playwright:v1.59.1-jammy` (284/284 stories pass; 237 byte-identical proves the container matches CI glyph metrics, so the 48 are genuine token diffs). GOTCHA: the build needs `STORYBOOK_A11Y_LEVEL=todo` or the a11y addon throws before `postVisit`, silently leaving ~75 baselines stale.
+  - [x] add `.github/workflows/regen-snapshots.yml` — replaces the Forgejo regen workflow lost in the GitHub pivot (workflow_dispatch, suite: storybook|e2e|both, captures in the jammy image, commits baselines back). Fixed the now-wrong Forgejo regen instructions in `test-runner.ts` + `e2e.yml`.
+  - [x] regenerate the e2e foundations baseline against the PRODUCTION-shaped stack (`compose.ci.yml` web:ci rebuilt with new tokens, port 3021) + verified it passes on a clean re-run. Heights: baseline 10815 → dev 10986 → prod 10936 — proving (a) dev≠prod so a dev capture would have been wrong for CI, and (b) the +121px is real: the foundations canvas now renders the 11 new accent-50…950 swatches + xs/xl/2xl radii added to tokens.json.
+  - [ ] open PR(s) for the branch (web token fix + roadmap realignment) — needs `git add -f` for the 6 new docs/ cards
 - Status: in-progress
 - Blockers: —
 - Notes:
-  - PIVOT (2026-07-14, user decision): GitHub (github.com/kkucherenkov/course_shelf) is the MAIN repository; development PRs land there (first: github#1, CodeQL fixes). Forgejo remains for homelab deploy (LAN registry, Dockge) + the issues mirror. Follow-up: update CLAUDE.md/docs remote references.
-  - Forgejo executes only `.forgejo/workflows/` (first-match directory) — verified empirically: the dormant `.github/` set produced zero Forgejo runs despite `on: push` triggers. The two estates never cross-trigger.
-  - mirror-sync pushes are PAT-authenticated, so they DO trigger GitHub workflows (GITHUB_TOKEN-authored pushes wouldn't)
+  - apps/mobile is NOT greenfield — E15-F01-S02 shipped (Dio+bearer), S03 largely shipped (phone-OTP, `AuthApiImpl`, `otpSent`), S01 half (theme-from-tokens still on placeholder seed). Board status seeded accordingly.
+  - 3 Stage-B stories BLOCKED on missing mockups: cs-mobile-course-detail, cs-mobile-search-settings, cs-mobile-downloads. cs-mobile-browse is partial (needs app.jsx).
+  - Roadmap cards are generated by `docs/roadmap/tools/generate.py` but have diverged (status/notes hand-edited post-gen), so cards are the live source; generator is mirrored, not re-run.

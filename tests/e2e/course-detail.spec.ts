@@ -105,7 +105,7 @@ function makeOutline(state: 'default' | 'in-progress' | 'completed') {
         sectionTitle: 'Getting Started',
         kind: 'doc',
         label: 'TypeScript Cheatsheet.pdf',
-        sizeBytes: 512000,
+        sizeBytes: 512_000,
       },
     ],
   };
@@ -264,8 +264,11 @@ test.describe('course detail — InProgress state', () => {
 
     await expect(page.locator('.course-hero')).toBeVisible({ timeout: 10_000 });
 
-    // Primary CTA button label should contain "Resume"
-    const primaryLink = page.locator('.course-actions__primary-link');
+    // Primary CTA button label should contain "Resume". `.course-actions__primary`
+    // is the AppButton root itself (CourseActions.vue passes the class through
+    // fallthrough attrs onto the same element as `.app-button`) — there is no
+    // separate `-link` wrapper.
+    const primaryLink = page.locator('.course-actions__primary');
     await expect(primaryLink).toBeVisible();
     const btn = primaryLink.locator('.app-button__label');
     await expect(btn).toContainText('Resume');
@@ -323,7 +326,7 @@ test.describe('course detail — Mark complete mutation', () => {
     await markBtn.click();
 
     // After mutation, completed banner should appear
-    await expect(page.locator('.course-completed-banner')).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('.course-completed-banner')).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -353,7 +356,7 @@ test.describe('course detail — Reset progress mutation', () => {
 
     // Dialog should appear
     const dialog = page.locator('.app-dialog');
-    await expect(dialog).toBeVisible({ timeout: 3_000 });
+    await expect(dialog).toBeVisible({ timeout: 3000 });
 
     // Confirm reset
     const confirmBtn = dialog.locator('.app-button', { hasText: /Reset|Сбросить/i });
@@ -361,9 +364,9 @@ test.describe('course detail — Reset progress mutation', () => {
     await confirmBtn.click();
 
     // Dialog should close
-    await expect(dialog).not.toBeVisible({ timeout: 3_000 });
+    await expect(dialog).not.toBeVisible({ timeout: 3000 });
 
     // Completed banner should NOT be visible after reset
-    await expect(page.locator('.course-completed-banner')).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('.course-completed-banner')).not.toBeVisible({ timeout: 5000 });
   });
 });

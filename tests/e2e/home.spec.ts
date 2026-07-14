@@ -202,7 +202,7 @@ test.describe('home page — 1440x900', () => {
     const continueSection = page.locator('.page-home__row--continue');
     await expect(continueSection).toBeVisible();
     await expect(continueSection.locator('.course-wide-card').first()).toBeVisible({
-      timeout: 8_000,
+      timeout: 8000,
     });
 
     // "Recently completed" section exists but its card area is collapsed by default
@@ -247,7 +247,7 @@ test.describe('home page — 375x800', () => {
     const continueRow = page.locator('.page-home__row--continue');
     await expect(continueRow).toBeVisible();
     const scrollArea = continueRow.locator('.home-row__scroll');
-    await expect(scrollArea).toBeVisible({ timeout: 8_000 });
+    await expect(scrollArea).toBeVisible({ timeout: 8000 });
 
     // Bottom-tab bar: AppNavigationShell renders it when viewport < 600px.
     // The default layout wraps pages inside AppNavigationShell so the

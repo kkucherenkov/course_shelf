@@ -18,7 +18,7 @@ export default defineConfig({
   workers: 1,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   timeout: 30_000,
-  expect: { timeout: 5_000 },
+  expect: { timeout: 5000 },
   use: {
     baseURL: process.env.E2E_WEB_URL ?? 'http://localhost:3001',
     trace: 'on-first-retry',

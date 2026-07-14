@@ -18,19 +18,26 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaCourseRepository } from '../../modules/catalog/infra/prisma-course.repository';
+import { PrismaExternalIdRepository } from '../../modules/catalog/infra/prisma-external-id.repository';
 import { PrismaLessonRepository } from '../../modules/catalog/infra/prisma-lesson.repository';
 import { PrismaLibraryRepository } from '../../modules/catalog/infra/prisma-library.repository';
 import { COURSE_REPOSITORY } from '../../modules/catalog/domain/course/course.repository';
 import { LESSON_REPOSITORY } from '../../modules/catalog/domain/lesson/lesson.repository';
 import { LIBRARY_REPOSITORY } from '../../modules/catalog/domain/library/library.repository';
+import { EXTERNAL_ID_REPOSITORY } from '../../modules/catalog/domain/shared-vo/external-id.repository';
 
 // LIBRARY_REPOSITORY added for E08-F02-S01: LessonFileLocator resolves
 // lesson.videoPath against library.rootPath to obtain the absolute video path.
+//
+// EXTERNAL_ID_REPOSITORY is NOT exported: PrismaCourseRepository's
+// constructor requires it (enrichment, #208), so it must be constructible
+// here — but consumers of this module only get the three domain tokens.
 @Module({
   providers: [
     { provide: LESSON_REPOSITORY, useClass: PrismaLessonRepository },
     { provide: COURSE_REPOSITORY, useClass: PrismaCourseRepository },
     { provide: LIBRARY_REPOSITORY, useClass: PrismaLibraryRepository },
+    { provide: EXTERNAL_ID_REPOSITORY, useClass: PrismaExternalIdRepository },
   ],
   exports: [LESSON_REPOSITORY, COURSE_REPOSITORY, LIBRARY_REPOSITORY],
 })

@@ -1415,7 +1415,7 @@ add(
     title="Flutter bootstrap, theme from tokens",
     duration=2, stage="A",
     deps=["E03-F01-S02"],
-    spec_refs=["AGENTS.md §7.7", "DESIGN.md §8"],
+    spec_refs=["AGENTS.md", "docs/design/DESIGN_BRIEF.md"],
     goal="Skeleton with feature-folder layout, BLoC dependencies, theme derived from generated tokens.",
     acceptance=[
         "`flutter analyze` clean",
@@ -1425,7 +1425,7 @@ add(
     design="yes",
     tests="golden of the token demo screen",
     substeps=[
-        "`flutter create` + reorganize to layout in DESIGN.md §8",
+        "`flutter create` + reorganize to layout in docs/design/DESIGN_BRIEF.md",
         "add `flutter_bloc`, `equatable`, `dio`, `drift`, `flutter_secure_storage`, `widgetbook`",
         "`app.dart` builds `ThemeData.fromTokens()`",
     ],
@@ -1438,7 +1438,7 @@ add(
     title="Wire generated Dio client with bearer interceptor",
     duration=1, stage="A",
     deps=["E02-F02-S03", "E15-F01-S01"],
-    spec_refs=["DESIGN.md §8.5"],
+    spec_refs=["docs/design/DESIGN_BRIEF.md"],
     goal="One configured Dio + generated client used everywhere.",
     acceptance=[
         "`Authorization: Bearer <token>` injected for `/api/v1/*`",
@@ -1458,7 +1458,7 @@ add(
     title="AuthCubit + AuthHttpClient (mobile sign-in/out)",
     duration=2, stage="A",
     deps=["E15-F01-S02", "E04-F02-S02"],
-    spec_refs=["DESIGN.md §8.5", "DESIGN.md §10.6"],
+    spec_refs=["docs/design/DESIGN_BRIEF.md"],
     goal="Mobile mirrors the web bearer flow.",
     acceptance=[
         "`AuthCubit` emits Unauthenticated, Authenticating, Authenticated(user), Failed",
@@ -1480,7 +1480,7 @@ add(
     title="Drift schema + DAOs",
     duration=2, stage="A",
     deps=["E15-F01-S01"],
-    spec_refs=["DESIGN.md §8.2"],
+    spec_refs=["docs/design/DESIGN_BRIEF.md"],
     goal="Local persistence for cache + outbox + downloads.",
     acceptance=[
         "Migrations run cleanly on cold start",
@@ -1501,7 +1501,7 @@ add(
     title="widgetbook/main.dart + canary use case",
     duration=1, stage="A",
     deps=["E15-F01-S01"],
-    spec_refs=["AGENTS.md §7.8"],
+    spec_refs=["AGENTS.md"],
     goal="A separately-buildable Widgetbook entry catalogs all mobile widgets.",
     acceptance=[
         "`flutter run -t widgetbook/main.dart` shows the catalog",
@@ -1522,7 +1522,7 @@ def stub_mobile_primitive(sid, title, deps_extra=None, duration=1):
         feature="F01", feature_title="Mobile primitives",
         title=title, duration=duration, stage="A",
         deps=["E16-F01-S01"] + (deps_extra or []),
-        spec_refs=["docs/design/cs-foundations/", "docs/design/shared/tokens.json"],
+        spec_refs=["docs/design/cs-foundation/", "docs/design/shared/tokens.json"],
         goal=f"Flutter equivalent of the web {title}.",
         acceptance=["Widgetbook use case per state matches the bundle", "Uses Tokens.* (no hard-coded values)"],
         design="yes",
@@ -1532,14 +1532,14 @@ add(
     id="E17-F01-S01",
     epic="E17", epic_title="Mobile widget catalog",
     feature="F01", feature_title="Mobile primitives",
-    title="IconCS Flutter widget — port the 61 icons",
+    title="IconCS Flutter widget — port the 66 icons",
     duration=3, stage="A",
     deps=["E16-F01-S01"],
     spec_refs=["docs/design/shared/icons.jsx"],
-    goal="The same 61 named glyphs available as a single `IconCS` widget, portable across web and mobile.",
+    goal="The same 66 named glyphs available as a single `IconCS` widget, portable across web and mobile.",
     acceptance=[
         "`IconCS(name: IconName.play, size: 16, fill: true)` renders the same glyph as the web component",
-        "61 named values in an enum (includes `at`, `banner`, `github` added with the auth bundle)",
+        "66 named values in an enum (includes `at`, `banner`, `github` added with the auth bundle)",
     ],
     design="yes",
     tests="golden test per icon at 16/20/24",
@@ -1550,14 +1550,82 @@ add(
 )
 
 stub_mobile_primitive("E17-F01-S02", "AppButton, AppIconButton (Flutter)", deps_extra=["E17-F01-S01"], duration=2)
-stub_mobile_primitive("E17-F01-S03", "AppTextField, AppNumberField, AppSearchField, AppDropdown, AppSwitch, AppCheckbox, AppRadio", deps_extra=["E17-F01-S01"], duration=3)
+stub_mobile_primitive("E17-F01-S03", "AppTextField, AppNumberField, AppSearchField, AppSelect, AppSwitch, AppCheckbox, AppRadio", deps_extra=["E17-F01-S01"], duration=3)
 stub_mobile_primitive("E17-F01-S04", "AppCard, AppRow, AppTabs, AppSegmented", deps_extra=["E17-F01-S01"], duration=2)
 stub_mobile_primitive("E17-F01-S05", "AppBanner, AppToast, AppAlert", deps_extra=["E17-F01-S01"], duration=1)
-stub_mobile_primitive("E17-F01-S06", "AppDialog, AppBottomSheet", deps_extra=["E17-F01-S02"], duration=1)
+stub_mobile_primitive("E17-F01-S06", "AppDialog (mirrors web AppDialog), AppBottomSheet (mobile-only pattern — no web equivalent)", deps_extra=["E17-F01-S02"], duration=1)
 stub_mobile_primitive("E17-F01-S07", "AppProgressLinear, AppProgressCircle, AppSpinner, AppSkeleton", duration=1)
 stub_mobile_primitive("E17-F01-S08", "AppEmptyState, AppErrorState", deps_extra=["E17-F01-S01", "E17-F01-S02"], duration=1)
 stub_mobile_primitive("E17-F01-S09", "AppAvatar with role badges", duration=1)
 stub_mobile_primitive("E17-F01-S10", "AppChip", deps_extra=["E17-F01-S01"], duration=1)
+
+add(
+    id="E17-F01-S11",
+    epic="E17", epic_title="Mobile widget catalog",
+    feature="F01", feature_title="Primitive families (from cs-foundation)",
+    title="AppBadge (Flutter) — status/count badge",
+    duration=1, stage="A",
+    deps=["E16-F01-S01", "E17-F01-S01"],
+    spec_refs=["docs/design/cs-foundation/"],
+    goal="Flutter equivalent of the web AppBadge — a status/count badge, distinct from AppChip and AppProgressBadge.",
+    acceptance=[
+        "Matches the `cs-foundation` bundle's AppBadge spec (status + count)",
+        "Widgetbook use case per state + colocated golden/widget test",
+        "Design tokens only (no hard-coded values)",
+    ],
+    design="yes",
+)
+
+add(
+    id="E17-F01-S12",
+    epic="E17", epic_title="Mobile widget catalog",
+    feature="F01", feature_title="Primitive families (from cs-foundation)",
+    title="AppTextarea (Flutter) — multiline text input",
+    duration=1, stage="A",
+    deps=["E16-F01-S01", "E17-F01-S01"],
+    spec_refs=["docs/design/cs-foundation/"],
+    goal="Flutter equivalent of the web AppTextarea — a multiline text input (used by NoteEditor).",
+    acceptance=[
+        "Matches the `cs-foundation` bundle's AppTextarea spec",
+        "Widgetbook use case per state + colocated golden/widget test",
+        "Design tokens only (no hard-coded values)",
+    ],
+    design="yes",
+)
+
+add(
+    id="E17-F01-S13",
+    epic="E17", epic_title="Mobile widget catalog",
+    feature="F01", feature_title="Primitive families (from cs-foundation)",
+    title="AppNoPermission (Flutter) — permission-denied state",
+    duration=1, stage="A",
+    deps=["E16-F01-S01", "E17-F01-S01"],
+    spec_refs=["docs/design/cs-foundation/"],
+    goal="Flutter equivalent of the web AppNoPermission — the permission-denied state (S08 covers only Empty/Error).",
+    acceptance=[
+        "Matches the `cs-foundation` bundle's AppNoPermission spec",
+        "Widgetbook use case per state + colocated golden/widget test",
+        "Design tokens only (no hard-coded values)",
+    ],
+    design="yes",
+)
+
+add(
+    id="E17-F01-S14",
+    epic="E17", epic_title="Mobile widget catalog",
+    feature="F01", feature_title="Primitive families (from cs-foundation)",
+    title="AppRadioGroup (Flutter) — radio group wrapper",
+    duration=1, stage="A",
+    deps=["E16-F01-S01", "E17-F01-S03"],
+    spec_refs=["docs/design/cs-foundation/"],
+    goal="Flutter equivalent of the web AppRadioGroup — a radio group wrapper (S03 ports AppRadio but not the group).",
+    acceptance=[
+        "Matches the `cs-foundation` bundle's AppRadioGroup spec",
+        "Widgetbook use case per state + colocated golden/widget test",
+        "Design tokens only (no hard-coded values)",
+    ],
+    design="yes",
+)
 
 add(
     id="E17-F02-S01",
@@ -1569,10 +1637,15 @@ add(
     spec_refs=["docs/design/cs-components/components.jsx §CourseCard", "DESIGN_BRIEF §5.1"],
     goal="Flutter equivalent of the web CourseCard family.",
     acceptance=[
-        "Same prop surface as the web component (variant, course, state, resumeAt)",
+        "Three widgets — `CoursePosterCard` / `CourseWideCard` / `CourseCompactRow` — not one component with a `variant` prop; matching the web CourseCard family (course, state, resumeLabel)",
         "Same state matrix; Widgetbook use cases per state",
     ],
     design="yes",
+    notes=(
+        "`resumeLabel` is a PRE-TRANSLATED string (e.g. \"Resume · 12:04 left\"), not a `resumeAt` in seconds — the "
+        "widget must never format a time string itself (i18n contract; formatting happens in the feature layer via "
+        "AppLocalizations)."
+    ),
 )
 
 add(
@@ -1712,6 +1785,40 @@ add(
     ),
 )
 
+add(
+    id="E17-F02-S10",
+    epic="E17", epic_title="Mobile widget catalog",
+    feature="F02", feature_title="Domain components (from cs-components)",
+    title="AppBookmarkList (Flutter) — bookmark list with hover edit/delete",
+    duration=1, stage="A",
+    deps=["E17-F02-S04"],
+    spec_refs=["docs/design/cs-foundation/"],
+    goal="Flutter equivalent of the web AppBookmarkList — a bookmark list with hover edit/delete (S04 omits the list).",
+    acceptance=[
+        "Matches the bundle's AppBookmarkList spec (edit/delete affordances)",
+        "Widgetbook use case per state + colocated golden/widget test",
+        "Design tokens only (no hard-coded values)",
+    ],
+    design="yes",
+)
+
+add(
+    id="E17-F02-S11",
+    epic="E17", epic_title="Mobile widget catalog",
+    feature="F02", feature_title="Domain components (from cs-components)",
+    title="AppSectionHeader (Flutter) — collapsible section header (count + duration)",
+    duration=1, stage="A",
+    deps=["E17-F02-S02"],
+    spec_refs=["docs/design/cs-foundation/"],
+    goal="Flutter equivalent of the web SectionHeader — a collapsible section header showing count + duration (shipped with the web LessonRow).",
+    acceptance=[
+        "Matches the bundle's SectionHeader spec (collapse toggle, count + duration)",
+        "Widgetbook use case per state + colocated golden/widget test",
+        "Design tokens only (no hard-coded values)",
+    ],
+    design="yes",
+)
+
 # ============================================================ E18 ============
 add(
     id="E18-F01-S01",
@@ -1742,18 +1849,23 @@ add(
     title="Stage B · Browse tab (precede with cs-mobile-browse)",
     duration=3, stage="B",
     deps=["E17-F02-S01", "E17-F02-S07"],
-    spec_refs=["DESIGN_BRIEF §7.4", "docs/design/cs-mobile-browse/ (to be produced)"],
+    spec_refs=["DESIGN_BRIEF §7.4", "docs/design/cs-mobile-browse/ (finish the partial bundle — needs app.jsx)"],
     goal="Grid of poster CourseCards; filter bottom sheet; sort.",
     acceptance=[
         "2 columns at narrow widths, 3 at tablet widths",
-        "Filter button opens a bottom sheet (status, library, duration, instructor)",
+        "Filter button opens a bottom sheet (status, library)",
         "Empty / loading / error states",
     ],
     design="yes — produce bundle first",
     substeps=[
-        "**Design pre-step**: produce `cs-mobile-browse` bundle",
+        "**Design pre-step**: finish the partial `cs-mobile-browse` bundle (needs app.jsx)",
         "BrowseCubit + screen",
     ],
+    notes=(
+        "Duration + instructor filters are deferred: they need `totalDurationSeconds` on `CourseDto` and an "
+        "instructor field on the Course aggregate (neither exists yet). v1 ships only the `libraryId` / `status` / "
+        "`sort` filters the API supports."
+    ),
 )
 
 add(
@@ -1781,6 +1893,10 @@ add(
         "CourseDetailCubit",
         "screen composition; tap-to-download wires to DownloadsBloc",
     ],
+    notes=(
+        "Bigger than a trivial add: needs BOTH the new `GET /courses/{id}/download-estimate` endpoint AND a "
+        "per-course size/duration field on `CourseDto` (absent today)."
+    ),
 )
 
 add(
@@ -1790,7 +1906,7 @@ add(
     title="Stage A · Mobile player BLoC + portrait/landscape lesson screen",
     duration=4, stage="A",
     deps=["E17-F02-S03", "E17-F02-S04", "E15-F02-S01"],
-    spec_refs=["docs/design/cs-mobile-lesson-player/", "DESIGN.md §8.1", "DESIGN_BRIEF §7.6"],
+    spec_refs=["docs/design/cs-mobile-lesson-player/", "docs/design/DESIGN_BRIEF.md", "DESIGN_BRIEF §7.6"],
     goal="Event-driven player BLoC; portrait shows player + tabs; landscape shows immersive PlayerChrome.",
     acceptance=[
         "Portrait: 16:9 player + tab strip (Sections / Notes / Bookmarks / Materials)",
@@ -1803,7 +1919,7 @@ add(
     design="consumes existing",
     tests="bloc_test + integration_test",
     substeps=[
-        "events + states per DESIGN.md §8.1",
+        "events + states per docs/design/DESIGN_BRIEF.md",
         "BLoC + repository injection",
         "portrait + landscape screens",
         "write-through to `progress_outbox`",
@@ -1875,7 +1991,7 @@ add(
     title="DownloadsBloc with resumable encrypted downloads",
     duration=4, stage="A",
     deps=["E18-F02-S01", "E15-F02-S01"],
-    spec_refs=["PRD.md FR-OFF-01..04", "DESIGN.md §8.3"],
+    spec_refs=["docs/design/DESIGN_BRIEF.md"],
     goal="BLoC-managed queue with byte-range resumption and AES-GCM encryption at rest.",
     acceptance=[
         "Pause + resume + retry",
@@ -1898,7 +2014,7 @@ add(
     title="Offline-first lesson resolution",
     duration=2, stage="A",
     deps=["E19-F01-S01"],
-    spec_refs=["PRD.md FR-OFF-05"],
+    spec_refs=["docs/design/DESIGN_BRIEF.md"],
     goal="Player picks local file when available; falls back gracefully when missing.",
     acceptance=[
         "When `downloaded_lessons[lessonId].state == READY`, player uses local path",
@@ -1944,7 +2060,7 @@ add(
     title="SyncBloc with connectivity + ticker triggers",
     duration=3, stage="A",
     deps=["E19-F01-S01"],
-    spec_refs=["PRD.md FR-PROG-04", "DESIGN.md §8.4", "DESIGN.md §10.4"],
+    spec_refs=["docs/design/DESIGN_BRIEF.md"],
     goal="BLoC-driven sync with predictable trigger rules and observable state.",
     acceptance=[
         "Outbox empties on reconnect within one tick window",

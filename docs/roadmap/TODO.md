@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `74 / 115` complete (update by hand or via a pre-commit hook).
+Progress: `75 / 121` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -118,7 +118,7 @@ Progress: `74 / 115` complete (update by hand or via a pre-commit hook).
 ## E15 — Mobile foundations
 
 - [ ] [E15-F01-S01](./tasks/E15-F01-S01.md) `A` — Flutter bootstrap, theme from tokens · ⇐ E03-F01-S02
-- [ ] [E15-F01-S02](./tasks/E15-F01-S02.md) `A` — Wire generated Dio client with bearer interceptor · ⇐ E02-F02-S03, E15-F01-S01
+- [x] [E15-F01-S02](./tasks/E15-F01-S02.md) `A` — Wire generated Dio client with bearer interceptor · ⇐ E02-F02-S03, E15-F01-S01
 - [ ] [E15-F01-S03](./tasks/E15-F01-S03.md) `A` — AuthCubit + AuthHttpClient (mobile sign-in/out) · ⇐ E15-F01-S02, E04-F02-S02
 - [ ] [E15-F02-S01](./tasks/E15-F02-S01.md) `A` — Drift schema + DAOs · ⇐ E15-F01-S01
 
@@ -128,9 +128,9 @@ Progress: `74 / 115` complete (update by hand or via a pre-commit hook).
 
 ## E17 — Mobile widget catalog
 
-- [ ] [E17-F01-S01](./tasks/E17-F01-S01.md) `A` — IconCS Flutter widget — port the 61 icons · ⇐ E16-F01-S01
+- [ ] [E17-F01-S01](./tasks/E17-F01-S01.md) `A` — IconCS Flutter widget — port the 66 icons · ⇐ E16-F01-S01
 - [ ] [E17-F01-S02](./tasks/E17-F01-S02.md) `A` — AppButton, AppIconButton (Flutter) · ⇐ E16-F01-S01, E17-F01-S01
-- [ ] [E17-F01-S03](./tasks/E17-F01-S03.md) `A` — AppTextField, AppNumberField, AppSearchField, AppDropdown, AppSwitch, AppCheckbox, AppRadio · ⇐ E16-F01-S01, E17-F01-S01
+- [ ] [E17-F01-S03](./tasks/E17-F01-S03.md) `A` — AppTextField, AppNumberField, AppSearchField, AppSelect, AppSwitch, AppCheckbox, AppRadio · ⇐ E16-F01-S01, E17-F01-S01
 - [ ] [E17-F01-S04](./tasks/E17-F01-S04.md) `A` — AppCard, AppRow, AppTabs, AppSegmented · ⇐ E16-F01-S01, E17-F01-S01
 - [ ] [E17-F01-S05](./tasks/E17-F01-S05.md) `A` — AppBanner, AppToast, AppAlert · ⇐ E16-F01-S01, E17-F01-S01
 - [ ] [E17-F01-S06](./tasks/E17-F01-S06.md) `A` — AppDialog, AppBottomSheet · ⇐ E16-F01-S01, E17-F01-S02
@@ -138,6 +138,10 @@ Progress: `74 / 115` complete (update by hand or via a pre-commit hook).
 - [ ] [E17-F01-S08](./tasks/E17-F01-S08.md) `A` — AppEmptyState, AppErrorState · ⇐ E16-F01-S01, E17-F01-S01, E17-F01-S02
 - [ ] [E17-F01-S09](./tasks/E17-F01-S09.md) `A` — AppAvatar with role badges · ⇐ E16-F01-S01
 - [ ] [E17-F01-S10](./tasks/E17-F01-S10.md) `A` — AppChip · ⇐ E16-F01-S01, E17-F01-S01
+- [ ] [E17-F01-S11](./tasks/E17-F01-S11.md) `A` — AppBadge (Flutter) — status/count badge · ⇐ E16-F01-S01, E17-F01-S01
+- [ ] [E17-F01-S12](./tasks/E17-F01-S12.md) `A` — AppTextarea (Flutter) — multiline text input · ⇐ E16-F01-S01, E17-F01-S01
+- [ ] [E17-F01-S13](./tasks/E17-F01-S13.md) `A` — AppNoPermission (Flutter) — permission-denied state · ⇐ E16-F01-S01, E17-F01-S01
+- [ ] [E17-F01-S14](./tasks/E17-F01-S14.md) `A` — AppRadioGroup (Flutter) — radio group wrapper · ⇐ E16-F01-S01, E17-F01-S03
 - [ ] [E17-F02-S01](./tasks/E17-F02-S01.md) `A` — CourseCard (poster / wide / compact in Flutter) · ⇐ E17-F01-S01, E17-F01-S07
 - [ ] [E17-F02-S02](./tasks/E17-F02-S02.md) `A` — Mobile LessonRow including download state · ⇐ E17-F01-S01, E17-F01-S04, E17-F01-S07
 - [ ] [E17-F02-S03](./tasks/E17-F02-S03.md) `A` — Mobile-landscape PlayerChrome with edge gestures · ⇐ E17-F01-S01, E17-F01-S02
@@ -147,6 +151,8 @@ Progress: `74 / 115` complete (update by hand or via a pre-commit hook).
 - [ ] [E17-F02-S07](./tasks/E17-F02-S07.md) `A` — NavigationShell (mobile — bottom tab bar with 5 tabs) · ⇐ E17-F01-S01
 - [ ] [E17-F02-S08](./tasks/E17-F02-S08.md) `A` — PasswordField (Flutter) — visibility toggle + strength meter · ⇐ E17-F01-S01, E17-F01-S03
 - [ ] [E17-F02-S09](./tasks/E17-F02-S09.md) `A` — SsoBlock (Flutter) — provider button list · ⇐ E17-F01-S02, E17-F01-S01
+- [ ] [E17-F02-S10](./tasks/E17-F02-S10.md) `A` — AppBookmarkList (Flutter) — bookmark list with edit/delete · ⇐ E17-F02-S04
+- [ ] [E17-F02-S11](./tasks/E17-F02-S11.md) `A` — AppSectionHeader (Flutter) — collapsible section header · ⇐ E17-F02-S02
 
 ## E18 — Mobile features
 

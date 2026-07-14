@@ -6,40 +6,59 @@
 @import './tokens.generated.css';
 
 @theme inline {
-  --color-bg: var(--surface-bg);
-  --color-bg-subtle: var(--surface-bg-subtle);
-  --color-bg-muted: var(--surface-bg-muted);
+  /* Semantic surfaces */
+  --color-bg: var(--surface-page);
+  --color-bg-subtle: var(--surface-raised);
+  --color-bg-muted: var(--surface-overlay);
   --color-surface: var(--surface-surface);
-  --color-surface-alt: var(--surface-surface-alt);
+  --color-surface-alt: var(--surface-raised);
   --color-overlay: var(--surface-overlay);
 
+  /* Text */
   --color-fg: var(--text-fg);
   --color-fg-muted: var(--text-secondary);
   --color-fg-subtle: var(--text-tertiary);
-  --color-fg-disabled: var(--text-fg-disabled);
-  --color-fg-inverse: var(--text-fg-inverse);
+  --color-fg-disabled: var(--text-disabled);
+  --color-fg-inverse: var(--text-inverse);
 
+  /* Borders */
   --color-border: var(--border-default);
   --color-border-strong: var(--border-strong);
-  --color-border-soft: var(--border-soft);
+  --color-border-soft: var(--border-default);
 
+  /* Brand accent — semantic aliases */
   --color-accent: var(--brand-accent);
   --color-accent-hover: var(--brand-accent-hover);
   --color-accent-active: var(--brand-accent-active);
   --color-accent-soft: var(--brand-accent-soft);
-  --color-accent-soft-hover: var(--brand-accent-soft-hover);
+  --color-accent-soft-hover: var(--brand-accent-subtle);
   --color-accent-fg: var(--brand-accent-fg);
-  --color-accent-border: var(--brand-accent-border);
+  --color-accent-border: var(--border-focus);
 
-  --color-success: var(--status-success);
+  /* Brand accent scale — consumed by Nuxt UI as `primary.*` via app.config.ts */
+  --color-accent-50: var(--brand-accent-50);
+  --color-accent-100: var(--brand-accent-100);
+  --color-accent-200: var(--brand-accent-200);
+  --color-accent-300: var(--brand-accent-300);
+  --color-accent-400: var(--brand-accent-400);
+  --color-accent-500: var(--brand-accent-500);
+  --color-accent-600: var(--brand-accent-600);
+  --color-accent-700: var(--brand-accent-700);
+  --color-accent-800: var(--brand-accent-800);
+  --color-accent-900: var(--brand-accent-900);
+  --color-accent-950: var(--brand-accent-950);
+
+  /* Status */
+  --color-success: var(--status-success-fg);
   --color-success-soft: var(--status-success-soft);
-  --color-warning: var(--status-warning);
+  --color-warning: var(--status-warning-fg);
   --color-warning-soft: var(--status-warning-soft);
-  --color-danger: var(--status-danger);
-  --color-danger-soft: var(--status-danger-soft);
-  --color-info: var(--status-info);
+  --color-danger: var(--status-error-fg);
+  --color-danger-soft: var(--status-error-soft);
+  --color-info: var(--status-info-fg);
   --color-info-soft: var(--status-info-soft);
 
+  /* Radius */
   --radius-xs: var(--radius-xs);
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
@@ -48,6 +67,7 @@
   --radius-2xl: var(--radius-2xl);
   --radius-pill: var(--radius-pill);
 
+  /* Shadows — resolve per theme via the token cascade */
   --shadow-xs: var(--shadow-xs);
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);

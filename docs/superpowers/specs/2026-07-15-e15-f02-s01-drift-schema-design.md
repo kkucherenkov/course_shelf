@@ -33,21 +33,21 @@ This story writes **no sync logic and no crypto**. It makes both possible.
 | --- | --- | --- |
 | `progress_outbox` | **unique(lessonId)**, upsert | Server is last-write-wins on `clientUpdatedAt`; only the newest write per lesson matters. Web reports every 10 s, so append-only would store 6 rows/min — one hour offline on a single lesson is 360 rows, 359 of them writes the server discards as stale, and it **breaches the 200-item batch cap after ~33 minutes**. Coalescing makes overflow structurally impossible rather than a drain-side concern. |
 | `notes_outbox` | **unique(lessonId)**, upsert, `op ∈ {upsert, delete}` | `PUT /notes` and `DELETE /notes/{lessonId}` are both keyed by `lessonId` and idempotent. Same reasoning as progress. |
-| `bookmarks_outbox` | **append-only** rows: `localId`, nullable `serverId`, `op ∈ {create, update, delete}` | Each create is a distinct entity, so it cannot coalesce by key. |
+| `bookmarks_outbox` | **unique(localId)**, upsert: `localId`, nullable `serverId`, `lessonId`, `op ∈ {create, update, delete}` | Each bookmark is a distinct entity, so — unlike progress/notes — this does NOT coalesce per lesson: a lesson can have many bookmarks queued at once. It DOES coalesce per bookmark, on `localId`, which is what makes the id-collapsing below work. |
 
 ### The bookmark id problem
 
 The server assigns `id` on create, but `PATCH`/`DELETE` need it. Create a bookmark offline and edit it, and the edit references an id that does not exist yet.
 
-**Resolution: op collapsing on `localId`.** Ops queued against the same `localId` collapse before sync:
+**Resolution: op collapsing on `localId`, performed by the enqueue-time upsert itself, not a separate drain step.** `bookmarks_outbox` has `PK(localId)`, so `enqueue()`'s `insertOnConflictUpdate` overwrites the row in place every time the same `localId` is queued again:
 
-- `create` + `update` → a single `create` carrying the final values
-- `create` + `delete` → both dropped, nothing sent
-- `update` / `delete` on an already-synced bookmark → carries the real `serverId`, which it has
+- `create` + `update` → the `update` overwrites the row: final state is `op == update`, `serverId == null`. No `create` row survives for a bookmark that was created and then edited offline before syncing.
+- `create` + `delete` → the `delete` overwrites the row: `op == delete`, `serverId == null`.
+- `update` / `delete` on an already-synced bookmark → carries the real `serverId`, which it has.
 
-No id-mapping table, no rewrite step, no ordering hazard: an op that needs a `serverId` always has one, because anything without one collapses into its create. The rejected alternative — queue verbatim, map `localId → serverId` at drain, rewrite dependents — needs strict ordering and correct rewriting, and a failed create strands every dependent op.
+No id-mapping table, no rewrite step, no ordering hazard: an op that needs a `serverId` always has one, because anything without one collapsed at enqueue. The rejected alternative — queue verbatim, map `localId → serverId` at drain, rewrite dependents — needs strict ordering and correct rewriting, and a failed create strands every dependent op.
 
-**This story stores the columns that make collapsing possible. E20 performs the collapse.**
+**This story stores the columns AND performs the collapse — the collapse is a side effect of the `PK(localId)` upsert, not separate logic. What E20 must still implement is a correct drain: key off `serverId`, not `op`.** `serverId == null` ⟹ POST regardless of `op` (and if `op == delete`, drop it — nothing was ever created server-side); `serverId != null` ⟹ PATCH/DELETE by that id, per `op`.
 
 ### Outbox columns
 
@@ -135,7 +135,7 @@ Every guard must be mutation-proven — this session produced four separate test
 | DAO round-trip per table on `NativeDatabase.memory()` | — |
 | `progress_outbox` coalesces: two writes for one lesson → **1 row**, newest values win | drop the unique index → 2 rows |
 | `notes_outbox` coalesces per `lessonId` | drop the unique index |
-| `bookmarks_outbox` appends: two creates → **2 rows** | add a unique key on `localId` |
+| `bookmarks_outbox` coalesces per-bookmark, not per-lesson: two creates on one lesson → **2 rows** | change the PK to `{lessonId}` |
 | `bookmarks_outbox` stores a create with `serverId == null` | make the column non-nullable |
 | Schema: `schemaVersion == 1`, `onCreate` builds all 7 tables from cold | — |
 | `downloaded_lessons` has no key column | add one (guards the crypto boundary) |

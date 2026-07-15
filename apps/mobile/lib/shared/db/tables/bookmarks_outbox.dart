@@ -6,16 +6,18 @@ import 'package:app_mobile/shared/db/tables/outbox_op.dart';
 /// `POST /api/v1/lessons/{lessonId}/bookmarks`, `PATCH /api/v1/bookmarks/{id}`
 /// and `DELETE /api/v1/bookmarks/{id}`.
 ///
-/// APPEND-ONLY, unlike the other two outboxes: each create is a distinct
-/// entity, so rows cannot coalesce by key.
+/// Unlike the other two outboxes, this coalesces per-bookmark ([localId]),
+/// NOT per-lesson ([lessonId]): a lesson can have many bookmarks queued at
+/// once, and each one collapses independently on its own [localId]. See
+/// [BookmarksOutboxDao.enqueue] — the `PK(localId)` upsert does the
+/// collapsing at write time, not a later drain step.
 ///
 /// The server assigns the bookmark id on create, so a bookmark created offline
 /// has no [serverId] until its create syncs — and an edit made before that
-/// would reference an id that does not exist. E20 resolves this by collapsing
-/// ops on the same [localId] (create+update -> one create with final values;
-/// create+delete -> both dropped), so any op that needs a [serverId] has one.
-/// This table stores the columns that make the collapse possible; it does not
-/// perform it.
+/// would reference an id that does not exist. Because enqueue collapses
+/// create+update into one row keyed by [localId], that row survives as an
+/// `update` with `serverId == null`, never as a `create` — so the drain rule
+/// keys off `serverId`, not `op`. See [BookmarksOutboxDao] for that rule.
 @DataClassName('BookmarksOutboxEntry')
 class BookmarksOutbox extends Table {
   @override

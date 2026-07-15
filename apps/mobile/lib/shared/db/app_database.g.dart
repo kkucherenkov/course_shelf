@@ -3136,6 +3136,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $DownloadedLessonsTable downloadedLessons =
       $DownloadedLessonsTable(this);
+  late final Index idxCachedSectionsCourseId = Index(
+    'idx_cached_sections_course_id',
+    'CREATE INDEX idx_cached_sections_course_id ON cached_sections (course_id)',
+  );
+  late final Index idxCachedLessonsCourseId = Index(
+    'idx_cached_lessons_course_id',
+    'CREATE INDEX idx_cached_lessons_course_id ON cached_lessons (course_id)',
+  );
   late final CachedCatalogDao cachedCatalogDao = CachedCatalogDao(
     this as AppDatabase,
   );
@@ -3161,6 +3169,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     notesOutbox,
     bookmarksOutbox,
     downloadedLessons,
+    idxCachedSectionsCourseId,
+    idxCachedLessonsCourseId,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([

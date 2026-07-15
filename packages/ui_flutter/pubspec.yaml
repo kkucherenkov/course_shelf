@@ -20,4 +20,18 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # No assets in this package yet — components render through the host app's theme.
+  fonts:
+    - family: IBM Plex Sans
+      fonts:
+        - asset: fonts/IBMPlexSans-Regular.ttf
+          weight: 400
+        - asset: fonts/IBMPlexSans-Medium.ttf
+          weight: 500
+        - asset: fonts/IBMPlexSans-SemiBold.ttf
+          weight: 600
+        - asset: fonts/IBMPlexSans-Bold.ttf
+          weight: 700
+    - family: IBM Plex Mono
+      fonts:
+        - asset: fonts/IBMPlexMono-Regular.ttf
+          weight: 400

@@ -133,20 +133,24 @@ git commit -m "chore(ui_flutter): add lint config and export generated tokens"
 
 Weights are driven by `AppFontWeight` (400/500/600/700) and `AppTextStyles.code` (mono 400). Only those 5 faces ship — no italics, no unused weights.
 
+Both URLs and the TTF paths inside the archives are verified working.
+
 ```bash
-cd /tmp && rm -rf plexdl && mkdir plexdl && cd plexdl
+DEST="$(git rev-parse --show-toplevel)/packages/ui_flutter/fonts"
+mkdir -p "$DEST"
+
+WORK="$(mktemp -d)" && cd "$WORK"
 curl -sSL -o sans.zip "https://github.com/IBM/plex/releases/download/%40ibm%2Fplex-sans%401.1.0/ibm-plex-sans.zip"
 curl -sSL -o mono.zip "https://github.com/IBM/plex/releases/download/%40ibm%2Fplex-mono%401.1.0/ibm-plex-mono.zip"
 unzip -q sans.zip && unzip -q mono.zip
 
-DEST="$OLDPWD/packages/ui_flutter/fonts"   # adjust if $OLDPWD is not the repo root
-mkdir -p "$DEST"
 cp ibm-plex-sans/fonts/complete/ttf/IBMPlexSans-Regular.ttf  "$DEST/"
 cp ibm-plex-sans/fonts/complete/ttf/IBMPlexSans-Medium.ttf   "$DEST/"
 cp ibm-plex-sans/fonts/complete/ttf/IBMPlexSans-SemiBold.ttf "$DEST/"
 cp ibm-plex-sans/fonts/complete/ttf/IBMPlexSans-Bold.ttf     "$DEST/"
 cp ibm-plex-mono/fonts/complete/ttf/IBMPlexMono-Regular.ttf  "$DEST/"
 cp ibm-plex-sans/LICENSE.txt "$DEST/"
+cd - >/dev/null && rm -rf "$WORK"
 ```
 
 Verify 6 files landed:

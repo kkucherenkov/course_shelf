@@ -17,7 +17,7 @@ class ProgressOutboxDao extends DatabaseAccessor<AppDatabase>
   /// Upserts on `lessonId` — the server is last-write-wins, so a newer write
   /// supersedes the queued one rather than queueing behind it.
   Future<void> enqueue(ProgressOutboxCompanion entry) =>
-      into(progressOutbox).insertOnConflictUpdate(entry);
+      into(progressOutbox).insertOnConflictUpdate(_normalizeUtc(entry));
 
   Future<List<ProgressOutboxEntry>> pending({int limit = 200}) =>
       (select(progressOutbox)
@@ -28,3 +28,19 @@ class ProgressOutboxDao extends DatabaseAccessor<AppDatabase>
   Future<void> clear(Iterable<String> lessonIds) =>
       (delete(progressOutbox)..where((t) => t.lessonId.isIn(lessonIds))).go();
 }
+
+/// Drift's TEXT datetime encoding (`store_date_time_values_as_text: true`)
+/// gives UTC and local `DateTime`s different string shapes — UTC ends in
+/// `Z`, local has a leading space and a trailing `+HH:MM` offset — so
+/// `ORDER BY queued_at`, a lexicographic TEXT sort, can rank a chronologically
+/// earlier LOCAL row after a later UTC one. Normalizing every write to UTC
+/// keeps the column single-shaped, which keeps `ORDER BY` chronological.
+ProgressOutboxCompanion _normalizeUtc(ProgressOutboxCompanion entry) =>
+    entry.copyWith(
+      clientUpdatedAt: entry.clientUpdatedAt.present
+          ? Value(entry.clientUpdatedAt.value.toUtc())
+          : entry.clientUpdatedAt,
+      queuedAt: entry.queuedAt.present
+          ? Value(entry.queuedAt.value.toUtc())
+          : entry.queuedAt,
+    );

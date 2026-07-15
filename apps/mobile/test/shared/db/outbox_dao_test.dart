@@ -57,6 +57,35 @@ void main() {
       final pending = await db.progressOutboxDao.pending();
       expect(pending.single.lessonId, 'l2');
     });
+
+    test('a local DateTime is normalized to UTC on write', () async {
+      final local = DateTime(2026, 7, 15, 11);
+      await db.progressOutboxDao.enqueue(entry('l1', 10, local));
+
+      final row = (await db.progressOutboxDao.pending()).single;
+      expect(row.clientUpdatedAt.isUtc, isTrue);
+      expect(row.clientUpdatedAt, local.toUtc());
+      expect(row.queuedAt.isUtc, isTrue);
+      expect(row.queuedAt, local.toUtc());
+    });
+
+    test('pending is chronological across mixed local/UTC writes', () async {
+      // This machine's local zone is UTC+04:00 (`DateTime(..., 23)` is
+      // 19:00Z), so `earlyLocal` is the earlier instant even though its
+      // wall-clock hour (23) is numerically larger than `laterUtc`'s (21).
+      // Unnormalized, drift renders `earlyLocal` as
+      // "...T23:00:00.000 +04:00" and `laterUtc` as "...T21:00:00.000Z" —
+      // lexicographically "23" > "21", so `ORDER BY queued_at` would rank
+      // the later row first. This proves the write-boundary UTC
+      // normalization keeps that ordering chronological instead.
+      final earlyLocal = DateTime(2026, 7, 15, 23); // local, == 19:00Z
+      final laterUtc = DateTime.utc(2026, 7, 15, 21); // 21:00Z
+      await db.progressOutboxDao.enqueue(entry('early', 1, earlyLocal));
+      await db.progressOutboxDao.enqueue(entry('late', 2, laterUtc));
+
+      final pending = await db.progressOutboxDao.pending();
+      expect(pending.map((e) => e.lessonId).toList(), ['early', 'late']);
+    });
   });
 
   group('notes_outbox', () {

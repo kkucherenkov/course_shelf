@@ -88,6 +88,13 @@ class TokenDemoScreen extends StatelessWidget {
               ),
             ),
             _Section(
+              title: 'Code (mono)',
+              child: Text(
+                'const answer = 42;',
+                style: AppTypography.code,
+              ),
+            ),
+            _Section(
               title: 'Spacing',
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,

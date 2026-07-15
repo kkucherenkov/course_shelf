@@ -26,6 +26,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - Card's `ThemeData.fromTokens()` sub-step name predates the scaffolding comment in `main.dart`, which already specified `AppTheme` — shipped as `AppTheme.light()`/`.dark()` instead.
   - Issue numbers: E15-F01-S01 → story #4, tasks #5 #6 #7. E15-F01-S02 → story #8, tasks #9 #10 #11 (shipped long ago; closed via this work's future PR `Closes` keywords, not `pnpm issues:sync`).
   - PR not yet opened — blocked on a separate decision the user is handling. This entry documents the shipped code and bookkeeping; update `- Result:` with the PR link once it lands.
+
 ## T-2026-07-14-004 — GitHub Projects board for mobile (E15–E20) + frontend-alignment realignment (#136)
 
 - Created: 2026-07-14

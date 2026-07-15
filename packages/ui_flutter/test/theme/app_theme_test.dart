@@ -24,13 +24,14 @@ void main() {
           'packages/app_ui/${AppFontFamily.sans}');
     });
 
-    test('does not put the mono face in titleSmall', () {
+    test('keeps the sans face in titleSmall', () {
       // titleSmall is the M3 default for TabBar labels, DataTable headings
       // and DatePicker — a mono face here renders every tab label in mono.
-      expect(
-        theme.textTheme.titleSmall?.fontFamily,
-        isNot('packages/app_ui/${AppFontFamily.mono}'),
-      );
+      // Assert POSITIVELY: `isNot(mono)` would only exclude the one spelling
+      // we thought of, and would sail past `AppTextStyles.code`'s BARE mono
+      // family — the exact form tokens.g.dart generates.
+      expect(theme.textTheme.titleSmall?.fontFamily,
+          'packages/app_ui/${AppFontFamily.sans}');
     });
 
     test('carries the semantic colour extension', () {

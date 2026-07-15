@@ -35,7 +35,10 @@ class BookmarksOutbox extends Table {
   /// Null when [op] is delete.
   IntColumn get positionSeconds => integer().nullable()();
 
-  /// Null when [op] is delete, or when the bookmark has no label.
+  /// Null when [op] is delete, or when the bookmark has no label. Update rows
+  /// carry the bookmark's FULL desired state, not a patch — so a null label on
+  /// an update means "clear the label", which the drain sends as an explicit
+  /// null.
   TextColumn get label => text().nullable()();
 
   DateTimeColumn get clientUpdatedAt => dateTime()();

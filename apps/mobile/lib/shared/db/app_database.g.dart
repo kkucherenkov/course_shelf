@@ -2272,7 +2272,10 @@ class BookmarksOutboxEntry extends DataClass
   /// Null when [op] is delete.
   final int? positionSeconds;
 
-  /// Null when [op] is delete, or when the bookmark has no label.
+  /// Null when [op] is delete, or when the bookmark has no label. Update rows
+  /// carry the bookmark's FULL desired state, not a patch — so a null label on
+  /// an update means "clear the label", which the drain sends as an explicit
+  /// null.
   final String? label;
   final DateTime clientUpdatedAt;
   final DateTime queuedAt;

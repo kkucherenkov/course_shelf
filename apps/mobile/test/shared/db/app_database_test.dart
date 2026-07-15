@@ -50,7 +50,8 @@ void main() {
         await db.customSelect('PRAGMA table_info(downloaded_lessons)').get();
     final names =
         cols.map((r) => r.read<String>('name').toLowerCase()).toList();
-    expect(names, isNot(contains('key')));
+    // Substring, not equality: a real leak would be named `encryption_key` or
+    // `key_id`, not `key`.
     expect(names.where((n) => n.contains('key')), isEmpty);
     expect(names, contains('nonce'));
   });

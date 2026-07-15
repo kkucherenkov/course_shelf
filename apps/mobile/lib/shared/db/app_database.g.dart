@@ -3148,6 +3148,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final BookmarksOutboxDao bookmarksOutboxDao = BookmarksOutboxDao(
     this as AppDatabase,
   );
+  late final DownloadsDao downloadsDao = DownloadsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

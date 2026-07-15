@@ -2,6 +2,31 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-16-001 — Drift local persistence: DownloadsDao + DI registration (E15-F02-S01)
+
+- Created: 2026-07-16
+- Completed: 2026-07-16
+- Owner: claude
+- Spec: [E15-F02-S01](../../docs/roadmap/tasks/E15-F02-S01.md)
+- Result: (PR pending)
+- Goal: close out E15-F02-S01 — local persistence for cache + outbox + downloads in `apps/mobile`. This task was the last of a six-task plan; tasks 1-5 landed the 7 tables and the cache/outbox DAOs (`CachedCatalogDao`, `ProgressOutboxDao`, `NotesOutboxDao`, `BookmarksOutboxDao`). This task adds `DownloadsDao`, registers `AppDatabase` in the get_it composition root, and closes out the card.
+- Spec diff: none (no OpenAPI/AsyncAPI change)
+- Codegen impact: no
+- Sub-steps:
+  - [x] failing test first: `apps/mobile/test/shared/db/downloads_dao_test.dart` (4 cases — round-trip defaults, upsert-advances-without-duplicating, byState filtering, remove-deletes)
+  - [x] `DownloadsDao` (`apps/mobile/lib/shared/db/daos/downloads_dao.dart`) — `upsert`, `byLessonId`, `byState`, `watch`, `remove`; holds no key material, only the per-file AES-GCM `nonce`
+  - [x] registered in `AppDatabase` (`daos:` list) and re-exported via `export ... show DownloadsDao` — a plain `import` doesn't propagate the type generated in a DAO's own `part` file to callers that only import `app_database.dart`
+  - [x] `AppDatabase` registered as a `registerLazySingleton<AppDatabase>(AppDatabase.open)` in `shared/di/injector.dart`
+  - [x] `dart run build_runner build --delete-conflicting-outputs` — clean, no `InvalidOutputException`
+  - [x] roadmap bookkeeping: `E15-F02-S01` → Done, `docs/roadmap/TODO.md` row ticked
+- Status: done
+- Notes:
+  - Security-critical: `downloaded_lessons` carries the per-file nonce but NOT the AES key — E19 keeps a device-bound key in `flutter_secure_storage`. The existing `app_database_test.dart` assertion that no column name contains `key` was left untouched and still passes.
+  - Deliberately did NOT add `.toUtc()` normalization to `DownloadsDao.upsert`, unlike the outbox DAOs (`ProgressOutboxDao._normalizeUtc`). Those normalize because drift's TEXT datetime encoding makes local/UTC `DateTime`s sort non-chronologically under `ORDER BY`, and the outbox queries order by timestamp. `DownloadsDao` has no such ordering contract in this story — added scope would be silent and unrequested. Flagging for whoever writes the E19 download-progress UI: if a query ever orders by `updatedAt`, revisit.
+  - Test-file gotcha not in the original brief: drift's top-level export collides with `flutter_test` on **both** `isNotNull` and `isNull` (the brief's sibling-pattern reference only needed to hide `isNotNull`); `downloads_dao_test.dart` uses both matchers, so the import is `hide isNotNull, isNull`.
+  - Whole suite: 27 pre-existing + 4 new = 31 tests, all green. `flutter analyze` clean.
+  - PR not yet opened — same holding pattern as T-2026-07-15-001, blocked on a separate decision the user is handling.
+
 ## T-2026-07-15-001 — Flutter design-system theme from generated tokens (E15-F01-S01, E15-F01-S02 bookkeeping)
 
 - Created: 2026-07-15

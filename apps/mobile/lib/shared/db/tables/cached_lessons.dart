@@ -5,6 +5,7 @@ import 'package:app_mobile/shared/db/tables/cached_sections.dart';
 
 /// Cached lesson, from `CourseOutlineDto.sections[].lessons`.
 @DataClassName('CachedLesson')
+@TableIndex(name: 'idx_cached_lessons_course_id', columns: {#courseId})
 class CachedLessons extends Table {
   @override
   String get tableName => 'cached_lessons';

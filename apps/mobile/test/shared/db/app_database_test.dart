@@ -42,6 +42,18 @@ void main() {
     );
   });
 
+  test('cached_lessons and cached_sections are indexed on courseId',
+      () async {
+    // `lessonsForCourse` and `replaceOutline`'s deletes both filter on
+    // courseId; without an index this is an unindexed table scan.
+    final indexes = await db
+        .customSelect("SELECT name FROM sqlite_master WHERE type='index'")
+        .get();
+    final names = indexes.map((r) => r.read<String>('name')).toSet();
+    expect(names, contains('idx_cached_lessons_course_id'));
+    expect(names, contains('idx_cached_sections_course_id'));
+  });
+
   test('downloaded_lessons stores no encryption key', () async {
     // E19 keeps the device-bound AES key in flutter_secure_storage. A key
     // stored beside its own ciphertext is not encryption — this guards that

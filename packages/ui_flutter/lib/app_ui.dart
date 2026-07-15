@@ -6,3 +6,4 @@
 library;
 
 export 'src/theme/tokens.g.dart';
+export 'src/theme/app_theme.dart';

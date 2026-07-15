@@ -3,6 +3,10 @@ import 'package:drift/drift.dart';
 /// Lifecycle of a downloaded lesson file. Drives E19's `EnqueueLesson`,
 /// `EnqueueCourse`, `Pause`, `Resume`, `Retry`. Cancel deletes the row rather
 /// than adding a terminal state — there is nothing left to resume from.
+///
+/// Persisted by name via `textEnum`, so these names are a storage contract:
+/// renaming a value silently breaks every row already on disk (a download
+/// stuck mid-state, with no error).
 enum DownloadState { queued, downloading, paused, ready, failed }
 
 /// One row per downloaded lesson.

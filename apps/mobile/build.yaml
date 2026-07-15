@@ -1,0 +1,15 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # DateTime columns default to unix-timestamp (INTEGER) storage, which
+          # loses the UTC/local distinction on read-back: reading returns a
+          # local-time DateTime even when a UTC one was written, so two
+          # DateTimes representing the same instant stop being `==`-equal
+          # (Dart's DateTime equality considers `isUtc`, not just the instant).
+          # The outbox tables carry `clientUpdatedAt`/`queuedAt` verbatim into
+          # sync requests and staleness comparisons, where that distinction
+          # matters — so store as ISO-8601 text instead, which round-trips the
+          # UTC marker exactly. Recommended by drift for new projects.
+          store_date_time_values_as_text: true

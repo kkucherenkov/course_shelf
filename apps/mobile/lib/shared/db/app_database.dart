@@ -1,7 +1,10 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+import 'package:app_mobile/shared/db/daos/bookmarks_outbox_dao.dart';
 import 'package:app_mobile/shared/db/daos/cached_catalog_dao.dart';
+import 'package:app_mobile/shared/db/daos/notes_outbox_dao.dart';
+import 'package:app_mobile/shared/db/daos/progress_outbox_dao.dart';
 import 'package:app_mobile/shared/db/tables/bookmarks_outbox.dart';
 import 'package:app_mobile/shared/db/tables/cached_courses.dart';
 import 'package:app_mobile/shared/db/tables/cached_lessons.dart';
@@ -12,9 +15,17 @@ import 'package:app_mobile/shared/db/tables/outbox_op.dart';
 import 'package:app_mobile/shared/db/tables/progress_outbox.dart';
 
 // Re-exported so consumers (BLoCs, tests) that only import app_database.dart
-// can reference CachedCatalogDao without a second import to its own library.
+// can reference each DAO without a second import to its own library — a
+// plain `import` does not propagate the type generated in each DAO's own
+// `part` file to files that only import app_database.dart.
+export 'package:app_mobile/shared/db/daos/bookmarks_outbox_dao.dart'
+    show BookmarksOutboxDao;
 export 'package:app_mobile/shared/db/daos/cached_catalog_dao.dart'
     show CachedCatalogDao;
+export 'package:app_mobile/shared/db/daos/notes_outbox_dao.dart'
+    show NotesOutboxDao;
+export 'package:app_mobile/shared/db/daos/progress_outbox_dao.dart'
+    show ProgressOutboxDao;
 
 part 'app_database.g.dart';
 
@@ -32,7 +43,12 @@ part 'app_database.g.dart';
     BookmarksOutbox,
     DownloadedLessons,
   ],
-  daos: [CachedCatalogDao],
+  daos: [
+    CachedCatalogDao,
+    ProgressOutboxDao,
+    NotesOutboxDao,
+    BookmarksOutboxDao,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);

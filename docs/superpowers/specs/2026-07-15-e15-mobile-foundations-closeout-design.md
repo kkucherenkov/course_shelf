@@ -64,6 +64,43 @@ primary sign-in path; phone OTP is secondary.** This reverses the
 E15-F01-S03 card, which declares phone-OTP primary. The card gets corrected
 as part of PR 3.
 
+## Rule of thumb: web is the tiebreaker
+
+When a card/PRD conflicts with reality or is ambiguous, **mirror what
+`apps/web` actually implements** and file the difference against the
+card/PRD as a follow-up card. Cards predate the code; web is the
+furthest-along surface and is the de-facto contract. Mobile "improving on"
+web makes the platforms diverge — the exact failure a shared token pipeline
+exists to prevent.
+
+Check web *runs* the thing, not just that it names it. Both live traps in
+this epic were of that shape: `useOtpInput` looks like email OTP but calls no
+API; `--font-sans: 'IBM Plex Sans', …` names a font web never loads.
+
+## Typography: fonts are aspirational on both platforms
+
+`AppFontFamily.sans = "IBM Plex Sans"` (tokens.g.dart:155) reads like a
+decision. It is not honoured anywhere:
+
+- **No IBM Plex font files exist in the repo.** No `@font-face`, no
+  `@fontsource` dependency, no Google Fonts link in `apps/web`. Web renders
+  the stack's fallback, `system-ui`.
+- The Dart emitter flattens web's stack to its first family, dropping the
+  fallbacks. Flutter given `fontFamily: "IBM Plex Sans"` with no bundled font
+  **silently** falls back — no error.
+
+**Decision:** bundle on **both** platforms so the token stops lying and both
+render the real brand font. Bundling on mobile alone was rejected: it would
+make mobile render true IBM Plex while web renders system-ui.
+
+This widens PR 1 into `apps/web` — accepted deliberately. Fonts are IBM Plex
+(SIL OFL 1.1; redistribution permitted, license text must ship alongside).
+Weights are driven by `AppFontWeight`: Sans 400/500/600/700, Mono 400.
+
+Getting this right in S01 is load-bearing: E17 ports 25+ widgets onto
+`AppTheme`, each with its own golden. Wrong typography at the root bakes into
+every downstream golden and forces a full regeneration later.
+
 ## Issue map
 
 Epic #3.
@@ -108,14 +145,36 @@ packages/ui_flutter/
   lib/src/theme/
     tokens.g.dart                      # generated — untouched
     app_theme.dart                     # NEW  AppTheme.light() / AppTheme.dark()
+  fonts/                               # NEW  5 TTFs + OFL LICENSE.txt
   example/
-    token_demo_screen.dart             # NEW  renders all 18 groups
+    token_demo_screen.dart             # NEW  renders every populated token group
   test/theme/
     token_demo_golden_test.dart        # NEW
     goldens/token_demo_{light,dark}.png
+  analysis_options.yaml                # NEW — package currently has none
+  pubspec.yaml                         # + fonts: declaration
 
 apps/mobile/lib/main.dart              # drop ColorScheme.fromSeed → AppTheme.light()/dark()
+
+apps/web/
+  package.json                         # + @fontsource/ibm-plex-{sans,mono}
+  app/assets/css/main.css              # + @fontsource imports (hand-written file;
+                                       #   tokens.generated.css is generated — do not edit)
 ```
+
+`AppVerticalColors` (tokens.g.dart:105) is emitted but **empty** — the demo
+screen renders the 17 populated groups and skips it. Noted so nobody hunts
+for missing constants.
+
+`packages/ui_flutter` has **no `analysis_options.yaml`**, so `flutter analyze`
+there runs without `flutter_lints` or strict casts — weaker than
+`apps/mobile`. S01 is the first real code in the package, so it adds one
+mirroring `apps/mobile/analysis_options.yaml`.
+
+The demo screen mirrors the token sections of
+`apps/web/app/pages/dev/foundations.vue` (web's equivalent showcase) — colors,
+spacing, radius, typography, shadows. It does **not** mirror that page's
+component sections; E17 has not ported those widgets yet.
 
 - `AppTheme` maps tokens onto `ThemeData`: `ColorScheme` from
   `AppColorsLight`/`AppColorsDark`, `TextTheme` from `AppTextStyles`, shapes
@@ -215,3 +274,16 @@ Every PR must show `flutter analyze` + `flutter test` clean before the
 2. **Refresh `docs/design/DESIGN_BRIEF.md`.** Stale on every token path;
    actively misleads subagents.
 3. **Remove `AuthState.devCode`.** Dead field kept "for schema stability".
+4. **Dart token emitter drops font fallbacks.** `packages/design-tokens`
+   flattens `'IBM Plex Sans', system-ui, …` to `"IBM Plex Sans"`. Harmless
+   once fonts are bundled (PR 1), but the emitter still loses information the
+   source token carries.
+5. **Email OTP does not exist.** No backend `emailOTP()` plugin, no mail
+   transport. `verifyEmail()` / `forgotPassword()` in `apps/web`'s auth store
+   are `console.warn` stubs, and `useOtpInput` drives a sign-up verification
+   flow whose endpoint was never built. Decide: build it (backend story) or
+   remove the dead UI.
+6. **Card/PRD drift is systemic.** E15-F01-S03 declared phone-OTP primary
+   against a web that does email+password; DESIGN_BRIEF points at token paths
+   that moved. Cards were generated once and the generator is never re-run.
+   Worth a pass over the mobile cards before E17 scales the work up.

@@ -279,13 +279,15 @@ void main() {
           'packages/app_ui/${AppFontFamily.sans}');
     });
 
-    test('does not put the mono face in titleSmall', () {
+    test('keeps the sans face in titleSmall', () {
       // titleSmall is the M3 default for TabBar labels, DataTable headings
       // and DatePicker — a mono face here renders every tab label in mono.
-      expect(
-        theme.textTheme.titleSmall?.fontFamily,
-        isNot('packages/app_ui/${AppFontFamily.mono}'),
-      );
+      // Assert POSITIVELY: `isNot(mono)` would only exclude the one spelling
+      // we thought of, and would sail past `AppTextStyles.code`'s BARE mono
+      // family — the exact form tokens.g.dart generates and the form a
+      // regression would actually take.
+      expect(theme.textTheme.titleSmall?.fontFamily,
+          'packages/app_ui/${AppFontFamily.sans}');
     });
 
     test('carries the semantic colour extension', () {
@@ -366,7 +368,7 @@ void main() {
 }
 ```
 
-The test file needs `import 'package:flutter/material.dart';` for `TextPainter`/`TextSpan` and `import '_support/fonts.dart';` — note `always_use_package_imports` is on, so use `package:app_ui/...` only for `lib/` code; a relative import between test files is correct here since `test/` is not part of the package's public surface. If the linter objects, place the helper under `lib/src/testing/` and import it by package URI.
+The test file needs `import 'package:flutter/material.dart';` for `TextPainter`/`TextSpan` and `import '../_support/fonts.dart';` — the test lives in `test/theme/`, so the helper is one level up; a bare `'_support/fonts.dart'` would resolve to `test/theme/_support/` and fail. Note `always_use_package_imports` is on, so use `package:app_ui/...` only for `lib/` code; a relative import between test files is correct here since `test/` is not part of the package's public surface. If the linter objects, place the helper under `lib/src/testing/` and import it by package URI.
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -848,7 +850,6 @@ Create `packages/ui_flutter/test/_support/fonts.dart`:
 
 ```dart
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -946,7 +947,7 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 
 import 'package:app_ui/app_ui.dart';
 
-import '_support/fonts.dart';
+import '../_support/fonts.dart';
 
 Widget _wrap(ThemeData theme) => MaterialApp(
       debugShowCheckedModeBanner: false,

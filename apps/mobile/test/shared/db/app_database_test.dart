@@ -30,7 +30,28 @@ void main() {
     final names = tables.map((r) => r.read<String>('name')).toSet();
     expect(
       names,
-      containsAll(<String>['cached_courses', 'cached_sections', 'cached_lessons']),
+      containsAll(<String>[
+        'cached_courses',
+        'cached_sections',
+        'cached_lessons',
+        'progress_outbox',
+        'notes_outbox',
+        'bookmarks_outbox',
+        'downloaded_lessons',
+      ]),
     );
+  });
+
+  test('downloaded_lessons stores no encryption key', () async {
+    // E19 keeps the device-bound AES key in flutter_secure_storage. A key
+    // stored beside its own ciphertext is not encryption — this guards that
+    // boundary against a well-meaning future column.
+    final cols =
+        await db.customSelect('PRAGMA table_info(downloaded_lessons)').get();
+    final names =
+        cols.map((r) => r.read<String>('name').toLowerCase()).toList();
+    expect(names, isNot(contains('key')));
+    expect(names.where((n) => n.contains('key')), isEmpty);
+    expect(names, contains('nonce'));
   });
 }

@@ -2,6 +2,30 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-15-001 — Flutter design-system theme from generated tokens (E15-F01-S01, E15-F01-S02 bookkeeping)
+
+- Created: 2026-07-15
+- Completed: 2026-07-15
+- Owner: claude
+- Spec: [E15-F01-S01](../../docs/roadmap/tasks/E15-F01-S01.md), [E15-F01-S02](../../docs/roadmap/tasks/E15-F01-S02.md)
+- Result: (PR pending)
+- Goal: `AppTheme` in `packages/ui_flutter` built from the generated design tokens, wired into `apps/mobile`, replacing the placeholder `ColorScheme.fromSeed` seed; close out the long-shipped E15-F01-S02 Dio/bearer wiring as bookkeeping.
+- Spec diff: none (no OpenAPI/AsyncAPI change)
+- Codegen impact: no
+- Sub-steps:
+  - [x] `AppTheme.light()` / `AppTheme.dark()` in `packages/ui_flutter/lib/src/theme/app_theme.dart`, built from `tokens.g.dart`
+  - [x] brightness-dependent colours/shadows as `AppSemanticColors` / `AppShadows` `ThemeExtension`s; brightness-independent tokens (spacing, radius, durations, easings, opacity) stay plain constants
+  - [x] `packages/ui_flutter/lib/app_ui.dart` now exports tokens + theme + the demo screen (previously exported nothing)
+  - [x] golden-tested token demo screen at `packages/ui_flutter/lib/src/example/token_demo_screen.dart` (light + dark, 420x1400), mirroring `apps/web/app/pages/dev/foundations.vue`
+  - [x] bundle IBM Plex Sans/Mono on both platforms (`packages/ui_flutter/fonts/` + `@fontsource/*` in `apps/web`) — the tokens named the family but nothing loaded it; web rendered `system-ui`
+  - [x] `apps/mobile/lib/main.dart` uses `AppTheme.light()`/`.dark()`, replacing the placeholder `ColorScheme.fromSeed(0xFF6750A4)`
+  - [x] `.husky/commit-msg` + commitlint `scope-enum` aligned with real usage (commitlint was configured but never invoked)
+  - [x] roadmap bookkeeping: E15-F01-S01 → Done, E15-F01-S02 Notes closed out (code shipped earlier; issues never closed because `pnpm issues:sync` targets a Forgejo host dropped 2026-07-14)
+- Status: done
+- Notes:
+  - Card's `ThemeData.fromTokens()` sub-step name predates the scaffolding comment in `main.dart`, which already specified `AppTheme` — shipped as `AppTheme.light()`/`.dark()` instead.
+  - Issue numbers: E15-F01-S01 → story #4, tasks #5 #6 #7. E15-F01-S02 → story #8, tasks #9 #10 #11 (shipped long ago; closed via this work's future PR `Closes` keywords, not `pnpm issues:sync`).
+  - PR not yet opened — blocked on a separate decision the user is handling. This entry documents the shipped code and bookkeeping; update `- Result:` with the PR link once it lands.
 ## T-2026-07-14-004 — GitHub Projects board for mobile (E15–E20) + frontend-alignment realignment (#136)
 
 - Created: 2026-07-14

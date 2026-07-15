@@ -1084,6 +1084,17 @@ class TokenDemoScreen extends StatelessWidget {
               ),
             ),
             _Section(
+              title: 'Code (mono)',
+              // AppTypography.code, never the raw AppTextStyles.code token —
+              // the token carries a bare family that silently falls back.
+              // This is also the only golden coverage of the mono face; the
+              // sans face is covered by every other line on this screen.
+              child: Text(
+                'const answer = 42;',
+                style: AppTypography.code,
+              ),
+            ),
+            _Section(
               title: 'Spacing',
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,

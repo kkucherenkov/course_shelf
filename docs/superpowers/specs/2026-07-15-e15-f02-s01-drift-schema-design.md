@@ -96,6 +96,14 @@ lessonId PK, state, filePath, bytesDownloaded, totalBytes, nonce, updatedAt, las
 
 **The encryption key is deliberately absent.** E19-F01-S01 specifies a "device-bound key in secure storage", and `flutter_secure_storage` is already wired for the bearer token (`shared/auth/token_storage.dart`). A key stored beside its own ciphertext is not encryption. This table holds the nonce only.
 
+## Datetime storage
+
+`build.yaml` sets `store_date_time_values_as_text: true` for all 11 `DateTimeColumn`s across the 7 tables. Drift's INTEGER default stores `millisecondsSinceEpoch ~/ 1000`, which discards `isUtc` on read-back and truncates sub-second precision — both unacceptable here, since `clientUpdatedAt` is wire-bound (it goes into `RecordProgressRequest` and is compared server-side against `lastSeenAt`) and a zone-less or truncated timestamp would be misread on the far end.
+
+TEXT storage fixes that, but at a cost: drift encodes a UTC `DateTime` as `...Z` and a local one as `... +HH:MM` (offset trailing, different shape entirely), so a column holding a mix of both sorts lexicographically rather than chronologically under `ORDER BY`. `progress_outbox`, `notes_outbox`, and `bookmarks_outbox` all promise chronological drain ordering on `queuedAt` — so their DAOs normalize `clientUpdatedAt` and `queuedAt` to UTC at the `enqueue` write boundary, keeping every stored value single-shaped. This is enforced at the DAO layer, not the schema; a `TypeConverter` was considered and rejected as more machinery than a two-line `.toUtc()` normalization needs.
+
+Acceptable at `schemaVersion 1`: there is no shipped app yet and therefore no migration owed if this is later revisited (e.g. moving the normalization into a `TypeConverter` for defense-in-depth).
+
 ## Structure
 
 ```

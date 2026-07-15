@@ -14,7 +14,7 @@ class NotesOutboxDao extends DatabaseAccessor<AppDatabase>
   /// Upserts on `lessonId`: `PUT /notes` and `DELETE /notes/{lessonId}` are
   /// both idempotent, so only the latest intent matters.
   Future<void> enqueue(NotesOutboxCompanion entry) =>
-      into(notesOutbox).insertOnConflictUpdate(entry);
+      into(notesOutbox).insertOnConflictUpdate(_normalizeUtc(entry));
 
   Future<List<NotesOutboxEntry>> pending() => (select(notesOutbox)
         ..orderBy([(t) => OrderingTerm(expression: t.queuedAt)]))
@@ -23,3 +23,19 @@ class NotesOutboxDao extends DatabaseAccessor<AppDatabase>
   Future<void> clear(Iterable<String> lessonIds) =>
       (delete(notesOutbox)..where((t) => t.lessonId.isIn(lessonIds))).go();
 }
+
+/// Drift's TEXT datetime encoding (`store_date_time_values_as_text: true`)
+/// gives UTC and local `DateTime`s different string shapes — UTC ends in
+/// `Z`, local has a leading space and a trailing `+HH:MM` offset — so
+/// `ORDER BY queued_at`, a lexicographic TEXT sort, can rank a chronologically
+/// earlier LOCAL row after a later UTC one. Normalizing every write to UTC
+/// keeps the column single-shaped, which keeps `ORDER BY` chronological.
+NotesOutboxCompanion _normalizeUtc(NotesOutboxCompanion entry) =>
+    entry.copyWith(
+      clientUpdatedAt: entry.clientUpdatedAt.present
+          ? Value(entry.clientUpdatedAt.value.toUtc())
+          : entry.clientUpdatedAt,
+      queuedAt: entry.queuedAt.present
+          ? Value(entry.queuedAt.value.toUtc())
+          : entry.queuedAt,
+    );

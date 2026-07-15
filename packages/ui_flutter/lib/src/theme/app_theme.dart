@@ -4,9 +4,28 @@ import 'package:app_ui/src/theme/tokens.g.dart';
 
 /// Font families resolve under a `packages/<name>/` prefix because the TTFs
 /// ship inside this package rather than the host app.
+///
+/// The prefix applies to CONSUMERS of the package (`apps/mobile`, where
+/// `app_ui` is a path dependency). Inside this package's own test binary
+/// `app_ui` is the ROOT package, so Flutter registers the BARE family names
+/// and these prefixed names fall back to Ahem — silently, with no error.
+/// In-package tests and goldens must therefore re-register the faces under
+/// the prefixed names; see `test/_support/fonts.dart`.
 const String _fontPackage = 'app_ui';
 const String _sans = 'packages/$_fontPackage/${AppFontFamily.sans}';
 const String _mono = 'packages/$_fontPackage/${AppFontFamily.mono}';
+
+/// Text styles that need a font family bound to the packaged faces.
+///
+/// `AppTextStyles.code` in `tokens.g.dart` is generated with the BARE mono
+/// family, which resolves only when `app_ui` is the root package — in
+/// `apps/mobile` it silently renders the platform default. Consume these
+/// accessors instead of the raw token wherever the family matters.
+abstract final class AppTypography {
+  /// Monospace code style, bound to the packaged mono face.
+  static TextStyle get code =>
+      AppTextStyles.code.copyWith(fontFamily: _mono);
+}
 
 /// Brightness-dependent colours that Material's [ColorScheme] has no slot for.
 ///
@@ -409,9 +428,14 @@ abstract final class AppTheme {
     );
   }
 
-  /// Maps the token type scale onto Material's slots. `AppTextStyles.code`
-  /// carries the *bare* mono family, which does not resolve for a packaged
-  /// font — rewrite it with the prefixed name.
+  /// Maps the token type scale onto Material's slots.
+  ///
+  /// `AppTextStyles.code` is deliberately NOT mapped here. `titleSmall` is
+  /// the M3 default for `TabBar` labels, `DataTable` headings and
+  /// `DatePicker`, so putting a monospace face in it renders every tab label
+  /// and table heading in mono. Code style is exposed via [AppTypography.code]
+  /// instead. `titleSmall` is left unset so Material's default applies with
+  /// the theme's sans family.
   static TextTheme _textTheme(Color color) {
     TextStyle sans(TextStyle style) =>
         style.copyWith(fontFamily: _sans, color: color);
@@ -427,7 +451,6 @@ abstract final class AppTheme {
       bodySmall: sans(AppTextStyles.small),
       labelLarge: sans(AppTextStyles.label),
       labelSmall: sans(AppTextStyles.meta),
-      titleSmall: AppTextStyles.code.copyWith(fontFamily: _mono, color: color),
     );
   }
 }

@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# Run lint-staged over staged files. Without this hook the `lint-staged` block
+# in package.json was inert config — `prettier --write` never ran, so
+# unformatted markdown/JSON reached CI and failed `pnpm format:check` there
+# instead of being fixed here.
+npx --no-install lint-staged

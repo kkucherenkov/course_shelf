@@ -5,8 +5,4 @@
 /// `src/` paths directly.
 library;
 
-// Add component and theme exports here as the library grows.
-// Example:
-//   export 'src/button/app_button.dart';
-//   export 'src/theme/app_theme.dart';
-//   export 'src/theme/tokens.g.dart';
+export 'src/theme/tokens.g.dart';

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+import 'package:app_mobile/shared/db/daos/cached_catalog_dao.dart';
 import 'package:app_mobile/shared/db/tables/bookmarks_outbox.dart';
 import 'package:app_mobile/shared/db/tables/cached_courses.dart';
 import 'package:app_mobile/shared/db/tables/cached_lessons.dart';
@@ -9,6 +10,11 @@ import 'package:app_mobile/shared/db/tables/downloaded_lessons.dart';
 import 'package:app_mobile/shared/db/tables/notes_outbox.dart';
 import 'package:app_mobile/shared/db/tables/outbox_op.dart';
 import 'package:app_mobile/shared/db/tables/progress_outbox.dart';
+
+// Re-exported so consumers (BLoCs, tests) that only import app_database.dart
+// can reference CachedCatalogDao without a second import to its own library.
+export 'package:app_mobile/shared/db/daos/cached_catalog_dao.dart'
+    show CachedCatalogDao;
 
 part 'app_database.g.dart';
 
@@ -26,6 +32,7 @@ part 'app_database.g.dart';
     BookmarksOutbox,
     DownloadedLessons,
   ],
+  daos: [CachedCatalogDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);

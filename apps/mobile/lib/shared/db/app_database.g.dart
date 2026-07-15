@@ -3136,6 +3136,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $DownloadedLessonsTable downloadedLessons =
       $DownloadedLessonsTable(this);
+  late final CachedCatalogDao cachedCatalogDao = CachedCatalogDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

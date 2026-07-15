@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
 import 'package:app_mobile/shared/db/tables/cached_courses.dart';
+import 'package:app_mobile/shared/db/tables/cached_lessons.dart';
+import 'package:app_mobile/shared/db/tables/cached_sections.dart';
 
 part 'app_database.g.dart';
 
@@ -9,7 +11,7 @@ part 'app_database.g.dart';
 ///
 /// Consumers are BLoCs only — widget code must never touch Drift
 /// (E15-F02-S01 acceptance).
-@DriftDatabase(tables: [CachedCourses])
+@DriftDatabase(tables: [CachedCourses, CachedSections, CachedLessons])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 

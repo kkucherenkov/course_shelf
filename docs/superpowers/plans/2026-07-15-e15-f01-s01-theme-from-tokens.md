@@ -1343,39 +1343,64 @@ Expected: `No issues found!`, all tests PASS.
 
 - [ ] **Step 3: Confirm the theme actually reaches the app**
 
-This guards against the app silently keeping a default theme. Add to `apps/mobile/test/app_theme_wiring_test.dart`:
+This guards against the app silently keeping a default theme, so it must pump **`main.dart`'s own `App` widget**. Do NOT build a fresh `MaterialApp(theme: AppTheme.light())` in the test and assert on it — that asserts the theme the test itself just supplied, proves nothing about `main.dart`, and passes even when the app is still on the placeholder.
+
+`App`'s `home` is `AuthGate`, which resolves `getIt<AuthCubit>()` and calls `checkSession()`, so the injector needs a stubbed repository before pumping. Add to `apps/mobile/test/app_theme_wiring_test.dart`:
 
 ```dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 import 'package:app_ui/app_ui.dart';
 
+import 'package:app_mobile/features/auth/domain/auth_repository.dart';
+import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
+import 'package:app_mobile/i18n/strings.g.dart';
+import 'package:app_mobile/main.dart';
+import 'package:app_mobile/shared/di/injector.dart';
+
+class _MockAuthRepository extends Mock implements AuthRepository {}
+
 void main() {
-  testWidgets('app theme exposes the brand accent and semantic colours',
-      (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        home: Builder(
-          builder: (context) {
-            expect(
-              Theme.of(context).colorScheme.primary,
-              AppColorsLight.brandAccent,
-            );
-            expect(context.semanticColors.successFg,
-                AppColorsLight.statusSuccessFg);
-            return const SizedBox.shrink();
-          },
-        ),
-      ),
+  late _MockAuthRepository repository;
+
+  setUp(() async {
+    await resetInjector();
+    repository = _MockAuthRepository();
+    // AuthGate calls checkSession() on build; null keeps it on the
+    // unauthenticated branch and off the network.
+    when(() => repository.getSession()).thenAnswer((_) async => null);
+    getIt.registerFactory<AuthCubit>(() => AuthCubit(repository));
+  });
+
+  tearDown(resetInjector);
+
+  testWidgets('App wires AppTheme, not a placeholder', (tester) async {
+    await tester.pumpWidget(TranslationProvider(child: const App()));
+
+    // Read the MaterialApp that App actually built.
+    final MaterialApp app = tester.widget<MaterialApp>(
+      find.byType(MaterialApp),
     );
+
+    expect(app.theme?.colorScheme.primary, AppColorsLight.brandAccent);
+    expect(app.darkTheme?.colorScheme.primary, AppColorsDark.brandAccent);
+    expect(app.themeMode, ThemeMode.system);
   });
 }
 ```
 
 Run: `flutter test test/app_theme_wiring_test.dart`
 Expected: PASS.
+
+**Then prove the guard works.** Temporarily restore the placeholder in `main.dart`:
+
+```dart
+theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6750A4))),
+```
+
+Re-run the test. Expected: **FAIL** on the `colorScheme.primary` assertion. Revert, re-run, confirm green and `git status` clean. A wiring test that passes under this mutation is not a wiring test.
 
 - [ ] **Step 4: Commit**
 

@@ -730,7 +730,11 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
+      // `InputDecorationThemeData`, not the legacy `InputDecorationTheme`
+      // (now an InheritedTheme widget). ThemeData's ctor param is typed
+      // `Object?` during the migration, so the wrong type compiles and only
+      // misbehaves at runtime — pick the type the field actually declares.
+      inputDecorationTheme: InputDecorationThemeData(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),

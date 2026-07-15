@@ -164,9 +164,20 @@ jobs:
         working-directory: packages/ui_flutter
         run: flutter test
 
+      # lib/i18n/strings.g.dart is gitignored by design (see apps/mobile/slang.yaml),
+      # so a fresh checkout does not have it and every `context.t` reference fails
+      # to resolve — 449 analyzer errors. It must be generated before analyze.
+      # Unlike freezed's output (auth_user.freezed.dart / .g.dart), which IS
+      # committed, slang's is regenerated on demand.
+      - name: mobile — generate i18n (slang)
+        working-directory: apps/mobile
+        run: |
+          flutter pub get
+          dart run slang
+
       - name: mobile — analyze
         working-directory: apps/mobile
-        run: flutter pub get && flutter analyze
+        run: flutter analyze
 
       - name: mobile — test
         working-directory: apps/mobile

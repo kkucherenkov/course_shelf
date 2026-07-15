@@ -1,5 +1,6 @@
 // `isNotNull`/`isNull` collide with the matchers of the same name from
-// `package:flutter_test`.
+// `package:flutter_test`. `Uint8List` comes through drift's own export, so
+// no separate `dart:typed_data` import is needed.
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,6 +34,15 @@ void main() {
     expect(got.bytesDownloaded, 0);
     expect(got.totalBytes, isNull);
     expect(got.nonce, isNull);
+  });
+
+  test('nonce round-trips as written bytes', () async {
+    final nonce = Uint8List.fromList(List.generate(12, (i) => i));
+    await db.downloadsDao.upsert(
+      entry('l1', DownloadState.downloading).copyWith(nonce: Value(nonce)),
+    );
+    final got = await db.downloadsDao.byLessonId('l1');
+    expect(got!.nonce, nonce);
   });
 
   test('upsert advances state without duplicating the row', () async {

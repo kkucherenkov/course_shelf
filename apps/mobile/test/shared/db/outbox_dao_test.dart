@@ -1,3 +1,7 @@
+// Only `Value` is needed from drift here — a narrow `show` avoids pulling in
+// drift's `isNull`, which collides with the matcher of the same name from
+// `package:flutter_test`.
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -41,13 +45,22 @@ void main() {
     });
 
     test('pending is chronological and caps at the batch limit', () async {
-      for (var i = 0; i < 250; i++) {
+      // Insert in REVERSE chronological order (l249 first, l0 last) so
+      // SQLite's rowid insertion order is the exact opposite of the
+      // chronological order the test asserts. If `pending()` merely returned
+      // rows in insertion order (no working `ORDER BY`), this would produce
+      // l249..l50 instead of l0..l199, and the assertion below would fail.
+      for (var i = 249; i >= 0; i--) {
         await db.progressOutboxDao
             .enqueue(entry('l$i', i, t0.add(Duration(seconds: i))));
       }
       final page = await db.progressOutboxDao.pending();
       expect(page.length, 200, reason: '/progress/batch maxItems is 200');
-      expect(page.first.lessonId, 'l0');
+      expect(
+        page.map((e) => e.lessonId).toList(),
+        List.generate(200, (i) => 'l$i'),
+        reason: 'must be the 200 chronologically earliest rows, in order',
+      );
     });
 
     test('clear removes only the named lessons', () async {
@@ -80,8 +93,13 @@ void main() {
       // normalization keeps that ordering chronological instead.
       final earlyLocal = DateTime(2026, 7, 15, 23); // local, == 19:00Z
       final laterUtc = DateTime.utc(2026, 7, 15, 21); // 21:00Z
-      await db.progressOutboxDao.enqueue(entry('early', 1, earlyLocal));
+      // Enqueue the LATER row first and the EARLIER row second, so rowid
+      // insertion order is the opposite of chronological order. If
+      // `pending()` merely reproduced insertion order (no working
+      // `ORDER BY`, or a working `ORDER BY` undone by unnormalized mixed
+      // zones), this would return ['late', 'early'] instead.
       await db.progressOutboxDao.enqueue(entry('late', 2, laterUtc));
+      await db.progressOutboxDao.enqueue(entry('early', 1, earlyLocal));
 
       final pending = await db.progressOutboxDao.pending();
       expect(pending.map((e) => e.lessonId).toList(), ['early', 'late']);
@@ -110,6 +128,24 @@ void main() {
       expect(pending.length, 1);
       expect(pending.single.op, OutboxOp.delete);
       expect(pending.single.body, isNull);
+    });
+
+    test('a local DateTime is normalized to UTC on write', () async {
+      final local = DateTime(2026, 7, 15, 11);
+      await db.notesOutboxDao.enqueue(
+        NotesOutboxCompanion.insert(
+          lessonId: 'l1',
+          op: OutboxOp.update,
+          clientUpdatedAt: local,
+          queuedAt: local,
+        ),
+      );
+
+      final row = (await db.notesOutboxDao.pending()).single;
+      expect(row.clientUpdatedAt.isUtc, isTrue);
+      expect(row.clientUpdatedAt, local.toUtc());
+      expect(row.queuedAt.isUtc, isTrue);
+      expect(row.queuedAt, local.toUtc());
     });
   });
 
@@ -141,6 +177,57 @@ void main() {
         isNull,
         reason: 'nullable serverId IS the collapse contract',
       );
+    });
+
+    test('create then update on one localId collapses to a single row',
+        () async {
+      await db.bookmarksOutboxDao.enqueue(create('b1'));
+      await db.bookmarksOutboxDao.enqueue(
+        BookmarksOutboxCompanion.insert(
+          localId: 'b1',
+          lessonId: 'l1',
+          op: OutboxOp.update,
+          positionSeconds: const Value(99),
+          label: const Value('edited'),
+          clientUpdatedAt: t1,
+          queuedAt: t1,
+        ),
+      );
+
+      final pending = await db.bookmarksOutboxDao.pending();
+      expect(
+        pending.length,
+        1,
+        reason: 'the update overwrites the create at enqueue time',
+      );
+      final row = pending.single;
+      expect(row.op, OutboxOp.update);
+      expect(row.positionSeconds, 99);
+      expect(
+        row.serverId,
+        isNull,
+        reason:
+            'no create row survives to drain — it collapsed into this update',
+      );
+    });
+
+    test('a local DateTime is normalized to UTC on write', () async {
+      final local = DateTime(2026, 7, 15, 11);
+      await db.bookmarksOutboxDao.enqueue(
+        BookmarksOutboxCompanion.insert(
+          localId: 'b1',
+          lessonId: 'l1',
+          op: OutboxOp.create,
+          clientUpdatedAt: local,
+          queuedAt: local,
+        ),
+      );
+
+      final row = (await db.bookmarksOutboxDao.pending()).single;
+      expect(row.clientUpdatedAt.isUtc, isTrue);
+      expect(row.clientUpdatedAt, local.toUtc());
+      expect(row.queuedAt.isUtc, isTrue);
+      expect(row.queuedAt, local.toUtc());
     });
   });
 }

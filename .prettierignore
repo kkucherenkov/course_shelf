@@ -24,3 +24,8 @@ docker/centrifugo/config.template.json
 # dumps that regenerate unformatted anyway.
 docs
 .impeccable
+
+# Superpowers scratch (plans, briefs, agent reports, progress ledger). Local
+# working notes, git-ignored, regenerated per session — CI never sees them but
+# they made `pnpm format:check` noisy locally.
+.superpowers

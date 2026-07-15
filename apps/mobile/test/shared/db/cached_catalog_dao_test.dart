@@ -132,4 +132,83 @@ void main() {
     await (db.delete(db.cachedCourses)..where((t) => t.id.equals('c1'))).go();
     expect(await dao.lessonsForCourse('c1'), isEmpty);
   });
+
+  test('replaceOutline drops rows the server no longer returns', () async {
+    // First write: two sections (s1, s2) with two lessons (l1 under s1, l2 under s2).
+    await dao.upsertCourse(course('c1'));
+    await dao.replaceOutline(
+      courseId: 'c1',
+      sections: [
+        CachedSectionsCompanion.insert(
+          id: 's1',
+          courseId: 'c1',
+          position: 0,
+          cachedAt: now,
+          payload: '{}',
+        ),
+        CachedSectionsCompanion.insert(
+          id: 's2',
+          courseId: 'c1',
+          position: 1,
+          cachedAt: now,
+          payload: '{}',
+        ),
+      ],
+      lessons: [
+        CachedLessonsCompanion.insert(
+          id: 'l1',
+          sectionId: 's1',
+          courseId: 'c1',
+          position: 0,
+          cachedAt: now,
+          payload: '{}',
+        ),
+        CachedLessonsCompanion.insert(
+          id: 'l2',
+          sectionId: 's2',
+          courseId: 'c1',
+          position: 0,
+          cachedAt: now,
+          payload: '{}',
+        ),
+      ],
+    );
+
+    // Second write: server now only returns s1/l1. Without the delete-before-insert,
+    // l2 and s2 would remain in the cache forever.
+    await dao.replaceOutline(
+      courseId: 'c1',
+      sections: [
+        CachedSectionsCompanion.insert(
+          id: 's1',
+          courseId: 'c1',
+          position: 0,
+          cachedAt: now,
+          payload: '{}',
+        ),
+      ],
+      lessons: [
+        CachedLessonsCompanion.insert(
+          id: 'l1',
+          sectionId: 's1',
+          courseId: 'c1',
+          position: 0,
+          cachedAt: now,
+          payload: '{}',
+        ),
+      ],
+    );
+
+    // Verify orphaned lesson is gone.
+    final lessons = await dao.lessonsForCourse('c1');
+    expect(lessons.length, 1);
+    expect(lessons.single.id, 'l1');
+
+    // Verify orphaned section is gone.
+    final sections = await (db.select(db.cachedSections)
+          ..where((t) => t.courseId.equals('c1')))
+        .get();
+    expect(sections, hasLength(1));
+    expect(sections.single.id, 's1');
+  });
 }

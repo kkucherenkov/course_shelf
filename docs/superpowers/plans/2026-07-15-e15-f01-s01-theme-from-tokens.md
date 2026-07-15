@@ -274,9 +274,18 @@ void main() {
       expect(theme.useMaterial3, isTrue);
     });
 
-    test('resolves the sans font from inside the app_ui package', () {
+    test('names the packaged sans family', () {
       expect(theme.textTheme.bodyMedium?.fontFamily,
           'packages/app_ui/${AppFontFamily.sans}');
+    });
+
+    test('does not put the mono face in titleSmall', () {
+      // titleSmall is the M3 default for TabBar labels, DataTable headings
+      // and DatePicker — a mono face here renders every tab label in mono.
+      expect(
+        theme.textTheme.titleSmall?.fontFamily,
+        isNot('packages/app_ui/${AppFontFamily.mono}'),
+      );
     });
 
     test('carries the semantic colour extension', () {
@@ -321,8 +330,43 @@ void main() {
       expect(light.lerp(dark, 1).accentScale.last, dark.accentScale.last);
     });
   });
+
+  // Asserting the family STRING proves nothing — an unresolved family falls
+  // back silently and the string assertion still passes. Measure instead: a
+  // fallback renders as Ahem, whose glyphs are all a uniform em square, so
+  // proportional text measures exactly `chars * fontSize`.
+  group('packaged fonts actually resolve', () {
+    setUpAll(loadPackagedFonts);
+
+    double widthOf(String family) {
+      final painter = TextPainter(
+        text: TextSpan(
+          text: 'MMMMiiii',
+          style: TextStyle(fontFamily: family, fontSize: 40),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      return painter.width;
+    }
+
+    test('sans renders the real face, not the Ahem fallback', () {
+      // 8 chars * 40px = 320.0 exactly => Ahem fallback.
+      expect(widthOf('packages/app_ui/${AppFontFamily.sans}'), isNot(320.0));
+    });
+
+    test('mono renders the real face, not the Ahem fallback', () {
+      expect(widthOf('packages/app_ui/${AppFontFamily.mono}'), isNot(320.0));
+    });
+
+    test('the code accessor binds the packaged mono family', () {
+      expect(AppTypography.code.fontFamily,
+          'packages/app_ui/${AppFontFamily.mono}');
+    });
+  });
 }
 ```
+
+The test file needs `import 'package:flutter/material.dart';` for `TextPainter`/`TextSpan` and `import '_support/fonts.dart';` — note `always_use_package_imports` is on, so use `package:app_ui/...` only for `lib/` code; a relative import between test files is correct here since `test/` is not part of the package's public surface. If the linter objects, place the helper under `lib/src/testing/` and import it by package URI.
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -344,9 +388,28 @@ import 'package:app_ui/src/theme/tokens.g.dart';
 
 /// Font families resolve under a `packages/<name>/` prefix because the TTFs
 /// ship inside this package rather than the host app.
+///
+/// The prefix applies to CONSUMERS of the package (`apps/mobile`, where
+/// `app_ui` is a path dependency). Inside this package's own test binary
+/// `app_ui` is the ROOT package, so Flutter registers the BARE family names
+/// and these prefixed names fall back to Ahem — silently, with no error.
+/// In-package tests and goldens must therefore re-register the faces under
+/// the prefixed names; see `test/_support/fonts.dart`.
 const String _fontPackage = 'app_ui';
 const String _sans = 'packages/$_fontPackage/${AppFontFamily.sans}';
 const String _mono = 'packages/$_fontPackage/${AppFontFamily.mono}';
+
+/// Text styles that need a font family bound to the packaged faces.
+///
+/// `AppTextStyles.code` in `tokens.g.dart` is generated with the BARE mono
+/// family, which resolves only when `app_ui` is the root package — in
+/// `apps/mobile` it silently renders the platform default. Consume these
+/// accessors instead of the raw token wherever the family matters.
+abstract final class AppTypography {
+  /// Monospace code style, bound to the packaged mono face.
+  static TextStyle get code =>
+      AppTextStyles.code.copyWith(fontFamily: _mono);
+}
 
 /// Brightness-dependent colours that Material's [ColorScheme] has no slot for.
 ///
@@ -749,9 +812,14 @@ abstract final class AppTheme {
     );
   }
 
-  /// Maps the token type scale onto Material's slots. `AppTextStyles.code`
-  /// carries the *bare* mono family, which does not resolve for a packaged
-  /// font — rewrite it with the prefixed name.
+  /// Maps the token type scale onto Material's slots.
+  ///
+  /// `AppTextStyles.code` is deliberately NOT mapped here. `titleSmall` is
+  /// the M3 default for `TabBar` labels, `DataTable` headings and
+  /// `DatePicker`, so putting a monospace face in it renders every tab label
+  /// and table heading in mono. Code style is exposed via [AppTypography.code]
+  /// instead. `titleSmall` is left unset so Material's default applies with
+  /// the theme's sans family.
   static TextTheme _textTheme(Color color) {
     TextStyle sans(TextStyle style) =>
         style.copyWith(fontFamily: _sans, color: color);
@@ -767,11 +835,61 @@ abstract final class AppTheme {
       bodySmall: sans(AppTextStyles.small),
       labelLarge: sans(AppTextStyles.label),
       labelSmall: sans(AppTextStyles.meta),
-      titleSmall: AppTextStyles.code.copyWith(fontFamily: _mono, color: color),
     );
   }
 }
 ```
+
+- [ ] **Step 3b: Add the in-package font bootstrap**
+
+This is what makes every in-package golden honest, so it must land before the first golden (Task 4).
+
+Create `packages/ui_flutter/test/_support/fonts.dart`:
+
+```dart
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:app_ui/app_ui.dart';
+
+/// Registers this package's bundled TTFs under the `packages/app_ui/`-prefixed
+/// family names that [AppTheme] uses.
+///
+/// Fonts declared by a package resolve as `packages/<name>/<family>` only for
+/// CONSUMERS of that package. Inside `app_ui`'s own test binary `app_ui` is the
+/// ROOT package, so Flutter registers the BARE family names — and the prefixed
+/// names the theme uses fall back to Ahem with no error and no test failure.
+/// `fontFamilyFallback` does NOT rescue this; only re-registration does.
+///
+/// Call from `setUpAll` in any test that renders themed text or a golden.
+Future<void> loadPackagedFonts() async {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  await _register('packages/app_ui/${AppFontFamily.sans}', <String>[
+    'fonts/IBMPlexSans-Regular.ttf',
+    'fonts/IBMPlexSans-Medium.ttf',
+    'fonts/IBMPlexSans-SemiBold.ttf',
+    'fonts/IBMPlexSans-Bold.ttf',
+  ]);
+  await _register('packages/app_ui/${AppFontFamily.mono}', <String>[
+    'fonts/IBMPlexMono-Regular.ttf',
+  ]);
+}
+
+Future<void> _register(String family, List<String> assetPaths) async {
+  final loader = FontLoader(family);
+  for (final path in assetPaths) {
+    final bytes = await File(path).readAsBytes();
+    loader.addFont(Future<ByteData>.value(ByteData.sublistView(bytes)));
+  }
+  await loader.load();
+}
+```
+
+Paths are relative to the package root, which is the working directory `flutter test` runs from.
 
 - [ ] **Step 4: Export the theme**
 
@@ -828,6 +946,8 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 
 import 'package:app_ui/app_ui.dart';
 
+import '_support/fonts.dart';
+
 Widget _wrap(ThemeData theme) => MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: theme,
@@ -835,7 +955,13 @@ Widget _wrap(ThemeData theme) => MaterialApp(
     );
 
 void main() {
-  setUpAll(loadAppFonts);
+  // `loadAppFonts` registers the BARE families; `loadPackagedFonts` registers
+  // the `packages/app_ui/`-prefixed ones the theme actually asks for. Without
+  // the second call the golden renders Ahem and still passes — see Task 3.
+  setUpAll(() async {
+    await loadAppFonts();
+    await loadPackagedFonts();
+  });
 
   testGoldens('token demo renders every populated group in light', (tester) async {
     await tester.pumpWidgetBuilder(

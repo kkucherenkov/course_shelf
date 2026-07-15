@@ -8,6 +8,10 @@ part 'downloads_dao.g.dart';
 /// Reads and writes download state.
 ///
 /// Holds no key material: E19 keeps the device-bound AES key in secure storage.
+///
+/// Unlike outbox DAOs (see [ProgressOutboxDao]), does not normalize `updatedAt`
+/// to UTC — no ordering contract exists. If adding `ORDER BY updatedAt`, must
+/// normalize: Drift's TEXT datetime encoding makes `ORDER BY` lexicographic.
 @DriftAccessor(tables: [DownloadedLessons])
 class DownloadsDao extends DatabaseAccessor<AppDatabase>
     with _$DownloadsDaoMixin {

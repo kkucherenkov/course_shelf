@@ -7,7 +7,7 @@ Greenfield monorepo. Three apps, one backend, one auth system, one source of tru
 ```
 apps/backend    NestJS 11 + Prisma 7 + CQRS + Better Auth
 apps/web        Nuxt 4 (SPA, ssr:false) + Nuxt UI v4 + Tailwind 4 + @app/ui + @nuxtjs/i18n
-apps/mobile     Flutter 3.41 + flutter_bloc + get_it + Dio
+apps/mobile     Flutter 3.44 + flutter_bloc + get_it + Dio
 packages/specs  OpenAPI 3.1 + AsyncAPI 3.0 — single source of API truth
 packages/ui     brand component library + colocated Storybook + stories
 packages/api-client-{ts,dart}   generated clients — never edit by hand

@@ -37,6 +37,14 @@ void main() {
     expect(got.payload, '{"id":"c1"}');
   });
 
+  test('a local cachedAt is normalized to UTC on write', () async {
+    final local = DateTime(2026, 7, 15, 11);
+    await dao.upsertCourse(course('c1').copyWith(cachedAt: Value(local)));
+    final got = await dao.courseById('c1');
+    expect(got!.cachedAt.isUtc, isTrue);
+    expect(got.cachedAt, local.toUtc());
+  });
+
   test('upsert replaces rather than duplicating', () async {
     await dao.upsertCourse(course('c1'));
     await dao.upsertCourse(
@@ -76,7 +84,8 @@ void main() {
     expect(lessons.single.id, 'l1');
   });
 
-  test('replaceOutline is idempotent — re-running does not duplicate', () async {
+  test('re-running replaceOutline with the same outline does not duplicate rows',
+      () async {
     await dao.upsertCourse(course('c1'));
     Future<void> write() => dao.replaceOutline(
           courseId: 'c1',

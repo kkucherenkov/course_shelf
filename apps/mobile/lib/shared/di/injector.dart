@@ -6,6 +6,7 @@ import 'package:app_mobile/features/auth/domain/auth_repository.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:app_mobile/shared/auth/token_storage.dart';
 import 'package:app_mobile/shared/config/app_config.dart';
+import 'package:app_mobile/shared/db/app_database.dart';
 import 'package:app_mobile/shared/network/api_client.dart';
 
 /// Global service locator. All runtime dependencies register here; widgets
@@ -32,7 +33,8 @@ void configureDependencies() {
         config: getIt<AppConfig>(),
         tokenStorage: getIt<TokenStorage>(),
       ),
-    );
+    )
+    ..registerLazySingleton<AppDatabase>(AppDatabase.open);
 
   // ── Domain repository singletons ────────────────────────────────────────
   getIt.registerLazySingleton<AuthRepository>(

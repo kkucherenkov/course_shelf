@@ -3,6 +3,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 
 import 'package:app_mobile/shared/db/daos/bookmarks_outbox_dao.dart';
 import 'package:app_mobile/shared/db/daos/cached_catalog_dao.dart';
+import 'package:app_mobile/shared/db/daos/downloads_dao.dart';
 import 'package:app_mobile/shared/db/daos/notes_outbox_dao.dart';
 import 'package:app_mobile/shared/db/daos/progress_outbox_dao.dart';
 import 'package:app_mobile/shared/db/tables/bookmarks_outbox.dart';
@@ -22,6 +23,8 @@ export 'package:app_mobile/shared/db/daos/bookmarks_outbox_dao.dart'
     show BookmarksOutboxDao;
 export 'package:app_mobile/shared/db/daos/cached_catalog_dao.dart'
     show CachedCatalogDao;
+export 'package:app_mobile/shared/db/daos/downloads_dao.dart'
+    show DownloadsDao;
 export 'package:app_mobile/shared/db/daos/notes_outbox_dao.dart'
     show NotesOutboxDao;
 export 'package:app_mobile/shared/db/daos/progress_outbox_dao.dart'
@@ -48,6 +51,7 @@ part 'app_database.g.dart';
     ProgressOutboxDao,
     NotesOutboxDao,
     BookmarksOutboxDao,
+    DownloadsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {

@@ -83,9 +83,6 @@ jobs:
       - name: Prettier check
         run: pnpm format:check
 
-      - name: Dependency vulnerability scan (critical only)
-        run: pnpm audit --audit-level=critical
-
   # ── Codegen drift guard ────────────────────────────────────────────────────
   # GitHub-only: needs the full Flutter + Java toolchain (Dart client
   # generation), which the homelab runner deliberately avoids — the
@@ -123,9 +120,9 @@ jobs:
           git diff --exit-code -- packages/api-client-ts packages/api-client-dart \
             || (echo '::error::Generated clients are out of date. Run `pnpm spec:codegen` locally and commit the diff.' && exit 1)
 
-  # ── Security (secrets + licenses) ──────────────────────────────────────────
+  # ── Security (secrets + licenses + vulnerabilities) ────────────────────────
   security:
-    name: Security (secret scan · license audit)
+    name: Security (secret scan · license audit · vulnerabilities)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -160,3 +157,49 @@ jobs:
       # defensive MPL-2.0 entry for @axe-core/playwright).
       - name: License compliance check
         run: pnpm dlx license-checker --excludePrivatePackages --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;Python-2.0;CC-BY-3.0;CC-BY-4.0;MPL-2.0'
+
+      # Replaces `pnpm audit`, which is permanently broken: npm retired the
+      # legacy audit endpoints (410 since 2026-07-15) and pnpm still calls
+      # them — reproduced on pnpm 10.33.0, 10.34.5 and 11.13.0, so no upgrade
+      # fixes it. See https://github.com/pnpm/pnpm/issues/11265.
+      #
+      # osv-scanner reads pnpm-lock.yaml directly and queries osv.dev, so it
+      # depends on no npm endpoint. Pinned tag, same supply-chain hygiene as
+      # trufflehog above.
+      #
+      # It exits 1 on ANY finding and has no severity threshold flag, so the
+      # gate is applied below: fail on CRITICAL or HIGH. That raises the old
+      # `--audit-level=critical` bar — the tree is clean at both levels as of
+      # #140, which cleared CVE-2024-21534 plus 35 high-severity advisories.
+      # MODERATE/LOW are reported in the log but do not fail the build.
+      - name: Dependency vulnerability scan (critical + high)
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/src:ro" \
+            ghcr.io/google/osv-scanner:v2.3.8 \
+            scan source --lockfile=/src/pnpm-lock.yaml --format=json > osv.json || true
+
+          if [ ! -s osv.json ]; then
+            echo '::error::osv-scanner produced no output — treating as a scan failure rather than a pass.'
+            exit 1
+          fi
+
+          jq -r '
+            [ .results[]?.packages[]?
+              | .package as $p
+              | .vulnerabilities[]?
+              | select((.database_specific.severity // "") as $s
+                       | $s == "CRITICAL" or $s == "HIGH")
+              | "\(.database_specific.severity)\t\($p.name)@\($p.version)\t\(.id)"
+            ] | unique | .[]
+          ' osv.json > gated.txt
+
+          echo "Advisories by severity:"
+          jq -r '[.results[]?.packages[]?.vulnerabilities[]?.database_specific.severity // "UNKNOWN"]
+                 | group_by(.) | map("  \(.[0]): \(length)") | .[]' osv.json
+
+          if [ -s gated.txt ]; then
+            echo '::error::Critical or high-severity advisories found:'
+            cat gated.txt
+            exit 1
+          fi
+          echo 'No critical or high-severity advisories.'

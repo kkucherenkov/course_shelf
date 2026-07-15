@@ -1,8 +1,25 @@
-# Flutter checks in GitHub CI — design
+# CI actually tests everything — design
 
 **Date:** 2026-07-15
-**Scope:** Make `flutter analyze` + `flutter test` (including goldens) run in GitHub Actions for `packages/ui_flutter` and `apps/mobile`.
+**Scope:** Make CI run the tests that exist. Add `flutter analyze` + `flutter test` (including goldens) for `packages/ui_flutter` and `apps/mobile`, and stop enumerating JS packages by name so none can silently drop out.
 **Not in scope:** deleting `.forgejo/`, the mobile feature work (E15-F02-S01 Drift, E15-F01-S03 auth).
+
+## The real problem is broader than Flutter
+
+The initial framing — "Flutter isn't in CI" — was too narrow. The `Test` step names packages one at a time:
+
+```yaml
+- name: Test
+  run: |
+    pnpm --filter @app/backend run test:coverage
+    pnpm --filter @app/web run test
+```
+
+`@app/ui` has a `test` script and **852 tests**. It is not on that list, so none of them have ever run in CI. The disease is not "Flutter is missing" — it is **CI tests whatever someone remembered to enumerate**. Flutter is one symptom; `@app/ui` is another; the next package added will be the third.
+
+That gap had a real cost. On pre-#140 dependencies, `@app/ui`'s suite was **broken**: 49 of 50 files failed, 17 tests executed, with `[Vue warn]: resolveComponent can only be used in render() or setup()` — a Vue/Nuxt-UI version mismatch. Nobody knew, because nothing ran it. #140's security overrides (`vite@^8.0.16`, `nuxt@^4.4.7`) incidentally fixed it: **50/50 files, 852/852 tests pass** on current `main`.
+
+So the stale dependencies that harboured `CVE-2024-21534` were *also* breaking the component library's tests. Had CI been running `@app/ui`, the mismatch would have surfaced months ago, someone would have bumped vite/nuxt, and the RCE window would have closed as a side effect. Two unrelated-looking failures, one root cause, both invisible for the same reason.
 
 ## Why
 
@@ -73,9 +90,22 @@ The job needs **no Node and no pnpm**: `tokens.g.dart` is committed, so nothing 
 
 The pubspec floor is a guard, not bookkeeping: an older local Flutter then fails `pub get` with a clear message instead of silently producing goldens that disagree with CI. It is only a floor — a *newer* local Flutter still slips through. Fully pinning local dev needs `fvm`/`asdf`; deliberately out of scope (YAGNI), noted as a follow-up.
 
+### Stop enumerating JS packages
+
+Replace the hand-listed `Test` step with turbo, which discovers every package that has a `test` script:
+
+```yaml
+- name: Test
+  run: |
+    pnpm --filter @app/backend run test:coverage
+    turbo run test --filter='!@app/backend'
+```
+
+Backend keeps `test:coverage` explicitly (its `test` script omits coverage, and `reporter: ['text','html']` prints a report in the log; there are no thresholds, so this is reporting, not a gate). Everything else goes through turbo, which was verified to include `@app/ui#test` — the 852 currently-invisible tests — plus `@app/web#test`. A package added tomorrow with a `test` script is covered automatically; the inverted filter cannot silently omit it the way the old list did.
+
 ### Stale comment in the same file
 
-`ci.yml`'s header says "Development happens on the self-hosted Forgejo; this file mirrors `.forgejo/workflows/ci.yml`". Forgejo was dropped 2026-07-14; GitHub is the sole repo. The comment is corrected while the file is open. `.forgejo/` still exists and its deletion is a separate PR.
+`ci.yml`'s header says "Development happens on the self-hosted Forgejo; this file mirrors `.forgejo/workflows/ci.yml`". Forgejo was dropped 2026-07-14; GitHub is the sole repo, and #141 already made the two files diverge. The comment is corrected while the file is open. `.forgejo/` still exists and its deletion is a separate PR.
 
 ## Risks
 
@@ -87,11 +117,11 @@ Two that cannot be verified before CI runs. Both are acceptable — the job's wh
 
 ## Testing
 
-The workflow is the test. Success = the `flutter` job runs on this PR and passes:
+The workflow is the test. Success = on this PR:
 
-- `packages/ui_flutter` — `analyze` clean, 15/15 including both goldens
-- `apps/mobile` — `analyze` clean, 8/8
-- `codegen-drift` still green on the bumped version
+- `flutter` job — `packages/ui_flutter` analyze clean + 15/15 (13 theme tests + 2 goldens); `apps/mobile` analyze clean + 8/8
+- `checks` job — `@app/ui`'s 852 tests now run and pass (verified locally on current `main`)
+- `codegen-drift` — still green on the bumped Flutter version
 
 A red `flutter` job on this PR is a *result*, not a setback: it means CI is looking at Flutter for the first time and has found something real.
 

@@ -1,14 +1,13 @@
 name: CI
 
-# GitHub-side CI for the public mirror (github.com/kkucherenkov/course_shelf).
-# Development happens on the self-hosted Forgejo; this file mirrors
-# .forgejo/workflows/ci.yml's consolidated `checks` job and adds the
-# GitHub-only gates we keep off the homelab runner (codegen drift with a
-# full Flutter toolchain, trufflehog, per-PR license check) — GitHub-hosted
-# runners are free for public repos, so the heavier per-push CI is fine here.
+# CI for github.com/kkucherenkov/course_shelf — the sole repo since the
+# self-hosted Forgejo was dropped on 2026-07-14. This file is the only CI that
+# runs; `.forgejo/workflows/` is dead and pending deletion, so do NOT keep this
+# in lockstep with it.
 #
-# Forgejo executes only .forgejo/workflows/ (first-match directory), so
-# nothing in this file ever runs on the homelab runner.
+# Runners are free for public repos, so everything gates here: the consolidated
+# `checks` job, codegen drift with a full Flutter toolchain, the Flutter
+# analyze/test/golden job, trufflehog, license check and the vulnerability scan.
 
 on:
   push:
@@ -21,7 +20,11 @@ concurrency:
 
 env:
   NODE_VERSION: "24"
-  FLUTTER_VERSION: "3.41.0"
+  # Must match the version goldens are generated with — golden PNGs are
+  # rendering-engine artefacts, so a version skew fails them for reasons that
+  # have nothing to do with the code. Bump here, in .claude/CLAUDE.md, and in
+  # both pubspec floors together.
+  FLUTTER_VERSION: "3.44.4"
 
 jobs:
   # ── Checks (consolidated lint · typecheck · test · specs · ui audit) ──────
@@ -69,10 +72,20 @@ jobs:
           pnpm --filter @app/backend run typecheck
           pnpm --filter @app/web run typecheck
 
+      # Backend keeps `test:coverage` explicitly — its `test` script omits
+      # coverage, and the text reporter is useful in the log (there are no
+      # thresholds, so this is reporting, not a gate).
+      #
+      # Everything else goes through turbo, which discovers every package with
+      # a `test` script. The previous version named packages one by one and so
+      # never ran @app/ui's 852 tests — they were invisible for as long as they
+      # existed, and were in fact broken until #140 bumped vite/nuxt. An
+      # inverted filter cannot silently omit a package the way a hand-written
+      # list can.
       - name: Test
         run: |
           pnpm --filter @app/backend run test:coverage
-          pnpm --filter @app/web run test
+          pnpm exec turbo run test --filter='!@app/backend'
 
       - name: UI components audit
         run: pnpm --filter @app/ui audit:components
@@ -119,6 +132,59 @@ jobs:
         run: |
           git diff --exit-code -- packages/api-client-ts packages/api-client-dart \
             || (echo '::error::Generated clients are out of date. Run `pnpm spec:codegen` locally and commit the diff.' && exit 1)
+
+  # ── Flutter (analyze · test · goldens) ─────────────────────────────────────
+  # Nothing ran Flutter before this job existed: neither Flutter package has a
+  # package.json, so `turbo run test` cannot see them, and the only gate was a
+  # checkbox in the PR template. #138 merged 2977 lines of Flutter, 22 tests and
+  # 2 goldens with no check exercising any of it.
+  #
+  # No Node/pnpm needed — tokens.g.dart is committed, so nothing has to run
+  # `pnpm design:build` first.
+  flutter:
+    name: Flutter (analyze · test · goldens)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      # ui_flutter first: it is the dependency, and its goldens are where a
+      # token/theme regression surfaces.
+      - name: ui_flutter — analyze
+        working-directory: packages/ui_flutter
+        run: flutter pub get && flutter analyze
+
+      - name: ui_flutter — test (incl. goldens)
+        working-directory: packages/ui_flutter
+        run: flutter test
+
+      - name: mobile — analyze
+        working-directory: apps/mobile
+        run: flutter pub get && flutter analyze
+
+      - name: mobile — test
+        working-directory: apps/mobile
+        run: flutter test
+
+      # golden_toolkit writes pixel diffs to test/**/failures/. A golden
+      # failure you cannot see only tells you "pixels changed", which is not
+      # enough to decide whether to accept or fix.
+      - name: Upload golden failure diffs
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: golden-failures
+          path: |
+            packages/ui_flutter/test/**/failures/**
+            apps/mobile/test/**/failures/**
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ── Security (secrets + licenses + vulnerabilities) ────────────────────────
   security:

@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# Enforce Conventional Commits. `commitlint.config.mjs` is the rule set;
+# without this hook it was inert config — every scope outside `scope-enum`
+# (chore(tasks), ci(github), fix(security), …) landed unchallenged, so the
+# enum had drifted away from what the log actually contains.
+npx --no-install commitlint --edit "$1"

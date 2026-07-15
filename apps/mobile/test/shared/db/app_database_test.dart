@@ -22,4 +22,15 @@ void main() {
     final names = tables.map((r) => r.read<String>('name')).toSet();
     expect(names, contains('cached_courses'));
   });
+
+  test('onCreate builds every table', () async {
+    final tables = await db
+        .customSelect("SELECT name FROM sqlite_master WHERE type='table'")
+        .get();
+    final names = tables.map((r) => r.read<String>('name')).toSet();
+    expect(
+      names,
+      containsAll(<String>['cached_courses', 'cached_sections', 'cached_lessons']),
+    );
+  });
 }

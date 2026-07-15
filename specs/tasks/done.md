@@ -2,6 +2,31 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-16-002 — Drift branch review fixes: mutation-proof outbox tests, UTC normalization, docs correction, index (E15-F02-S01)
+
+- Created: 2026-07-16
+- Completed: 2026-07-16
+- Owner: claude
+- Spec: [docs/superpowers/specs/2026-07-15-e15-f02-s01-drift-schema-design.md](../../docs/superpowers/specs/2026-07-15-e15-f02-s01-drift-schema-design.md)
+- Result: (PR pending)
+- Goal: fix whole-branch review findings on `feat/e15-f02-s01-drift` before PR opens — every finding was a test that could not fail or documentation that contradicted the code, not a runtime bug.
+- Spec diff: none (docs + tests + a non-schema-version-bumping index)
+- Codegen impact: no
+- Sub-steps:
+  - [x] I1: `progress_outbox` "chronological" tests inserted rows already in order, so the default rowid scan passed them for free even with `ORDER BY` deleted. Rewrote both to insert out of order and assert full returned order.
+  - [x] I2: `_normalizeUtc` was stripped from `notes_outbox_dao.dart` and `bookmarks_outbox_dao.dart` with no test catching it (their tests only used `DateTime.utc(...)`, so `.toUtc()` was a no-op). Added a local-DateTime normalization test to each group, mirroring the existing `progress_outbox` one.
+  - [x] I3: `CachedCatalogDao` never normalized `cachedAt`/`updatedAt` to UTC despite both being documented TTL/staleness-comparison inputs for E18/E19. Added `.toUtc()` normalization at the write boundary (`upsertCourse`, `replaceOutline`) via small private helpers matching the outbox DAO style, plus a round-trip test.
+  - [x] I4: `bookmarks_outbox` was documented "APPEND-ONLY... cannot coalesce by key" while the code actually upserts on `localId`, coalescing create+update into a single `update` row with `serverId == null` at ENQUEUE time — not at drain, as the design doc's "E20 performs the collapse" claimed. Corrected `tables/bookmarks_outbox.dart`, `daos/bookmarks_outbox_dao.dart` (documented the real serverId-based drain rule), the design doc's "bookmark id problem" section and its Testing-table mutation row, and `docs/roadmap/tasks/E15-F02-S01.md`'s Notes. Added a test proving the enqueue-time collapse.
+  - [x] Added `@TableIndex` on `cached_lessons.courseId` and `cached_sections.courseId` — the "one indexed read rather than a join" comment on `CachedLessons.courseId` was false as shipped (zero indexes existed). No `schemaVersion` bump needed (still v1, pre-ship).
+  - [x] M1: renamed `cached_catalog_dao_test.dart`'s `replaceOutline is idempotent — re-running does not duplicate` (it passed even with `replaceOutline` reduced to a pure upsert — the real guard is the later "drops rows the server no longer returns" test) to `re-running replaceOutline with the same outline does not duplicate rows`.
+  - [x] M2: added a nonce round-trip test to `downloads_dao_test.dart` — the crypto-relevant `nonce` column was never written in any test, only asserted null.
+  - [x] Mutation proofs — deleted `..orderBy(...)` from `progress_outbox_dao.dart` (2 I1 tests failed), stripped `_normalizeUtc` from `notes_outbox_dao.dart` (I2 notes test failed) and `bookmarks_outbox_dao.dart` (I2 bookmarks test failed), stripped `.toUtc()` from `CachedCatalogDao.upsertCourse` (I3 test failed). All four reverted after confirming failure; suite green again after each revert.
+  - [x] `flutter analyze` clean; `flutter test` — 37/37 green.
+- Status: done
+- Notes:
+  - Constraints honored: no change to `build.yaml`, `schemaVersion` (still 1), or the crypto boundary; no sync/drain/collapse logic added — only documentation of the drain rule E20 must follow.
+  - `git status --short` on `docs/` showed both edited files as tracked (`M`, not untracked), so no `git add -f` was needed despite the global `docs/*` gitignore rule — they predate that rule.
+
 ## T-2026-07-16-001 — Drift local persistence: DownloadsDao + DI registration (E15-F02-S01)
 
 - Created: 2026-07-16

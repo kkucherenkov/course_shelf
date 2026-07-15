@@ -3139,6 +3139,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final CachedCatalogDao cachedCatalogDao = CachedCatalogDao(
     this as AppDatabase,
   );
+  late final ProgressOutboxDao progressOutboxDao = ProgressOutboxDao(
+    this as AppDatabase,
+  );
+  late final NotesOutboxDao notesOutboxDao = NotesOutboxDao(
+    this as AppDatabase,
+  );
+  late final BookmarksOutboxDao bookmarksOutboxDao = BookmarksOutboxDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3176,6 +3185,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       result: [TableUpdate('cached_lessons', kind: UpdateKind.delete)],
     ),
   ]);
+  @override
+  DriftDatabaseOptions get options =>
+      const DriftDatabaseOptions(storeDateTimeAsText: true);
 }
 
 typedef $$CachedCoursesTableCreateCompanionBuilder =

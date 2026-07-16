@@ -2,6 +2,21 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-17-001 — E17-F01 mobile widget catalog wave 2, 3 cards / 5 components
+
+- Created: 2026-07-17
+- Completed: 2026-07-17
+- Owner: claude
+- Result: [PR #149](https://github.com/kkucherenkov/course_shelf/pull/149) — branch `feat/e17-f01-wave-2`
+- Goal: port the final three E17-F01 mobile primitives to `app_ui` (Flutter), completing the feature. Same parallel fan-out as wave 1: three cards built by isolated worktree subagents (each briefed with the E17-F01-S02 button recipe), cherry-picked onto one integration branch, reviewed, and centrally verified.
+- Cards: E17-F01-S06 (AppDialog + AppBottomSheet), S08 (AppEmptyState + AppErrorState), S14 (AppRadioGroup).
+- Outcome: 5 components in `packages/ui_flutter` + Widgetbook catalog entries wired into `directories.dart`. `ui_flutter` 281 → 334 tests (widget + golden matrices — the 3 new suites plus wave-1); `apps/mobile` 60 → 61 tests (adds the wave-2 wiring assertion); `flutter analyze` clean in both. E17-F01 is now complete (S01–S14).
+- Sub-steps: all complete.
+- Notes:
+  - S08 uses `SemanticsRole.status`/`.alert` (mutually exclusive with `liveRegion` by Flutter's own assertion) for the polite-vs-assertive web `role` parity; S14 renders the group label as a visible legend + `SemanticsRole.radioGroup` and makes the row the sole pointer/semantics owner via `ExcludeSemantics`+`IgnorePointer`.
+  - During integration, normalized the S06 overlays golden path (was a nested `test/overlays/goldens/goldens/` because the golden test lived inside `goldens/`) to match every other component.
+  - Live Widgetbook pass (`pnpm dev:widgetbook`) not run — needs generated platform runners; the user checks the final result. Goldens are Flutter-vs-Flutter regression baselines, visually reviewed during integration.
+
 ## T-2026-07-16-009 — E17-F01 mobile widget catalog wave, 9 cards / 22 components
 
 - Created: 2026-07-16

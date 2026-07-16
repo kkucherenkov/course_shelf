@@ -31,6 +31,9 @@ dependencies:
     path: ../../packages/ui_flutter
   app_api_client:
     path: ../../packages/api-client-dart
+  drift: ^2.34.2
+  drift_flutter: ^0.3.1
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
@@ -44,6 +47,7 @@ dev_dependencies:
   mocktail: ^1.0.4
   built_collection: ">=5.1.1 <6.0.0"
   source_gen: ">=4.0.0 <5.0.0"
+  drift_dev: ^2.34.0
 
 flutter:
   uses-material-design: true

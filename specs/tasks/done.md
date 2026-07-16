@@ -8,7 +8,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Completed: 2026-07-16
 - Owner: claude
 - Spec: [docs/superpowers/specs/2026-07-16-e16-f01-s01-widgetbook-bootstrap-design.md](../../docs/superpowers/specs/2026-07-16-e16-f01-s01-widgetbook-bootstrap-design.md)
-- Result: PR (pending) — branch `feat/e16-f01-s01-widgetbook`
+- Result: [PR #145](https://github.com/kkucherenkov/course_shelf/pull/145) — branch `feat/e16-f01-s01-widgetbook`
 - Goal: a separately-runnable Widgetbook entrypoint catalogs mobile widgets, with one canary exercised across its states.
 - Acceptance:
   - `flutter run -t widgetbook/main.dart` shows the catalog (verified manually)

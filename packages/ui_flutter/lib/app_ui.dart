@@ -8,3 +8,6 @@ library;
 export 'src/theme/tokens.g.dart';
 export 'src/theme/app_theme.dart';
 export 'src/example/token_demo_screen.dart';
+export 'src/icons/icon_name.dart';
+export 'src/icons/icon_glyphs.dart';
+export 'src/icons/icon_cs.dart';

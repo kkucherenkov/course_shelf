@@ -44,4 +44,19 @@ void main() {
   test('catalog no longer registers the CanaryButton placeholder', () {
     expect(components().map((c) => c.name), isNot(contains('CanaryButton')));
   });
+
+  test('every catalogued component has a unique name', () {
+    final names = components().map((c) => c.name).toList();
+    expect(
+      names.toSet().length,
+      names.length,
+      reason: 'duplicate component name in the Widgetbook catalog',
+    );
+  });
+
+  test('the full E17-F01 component wave is wired in', () {
+    // IconCS + AppButton + AppIconButton + 7 fields + textarea + 4 containers
+    // + 3 feedback + 4 progress + badge + chip + avatar + no-permission.
+    expect(components().length, greaterThanOrEqualTo(24));
+  });
 }

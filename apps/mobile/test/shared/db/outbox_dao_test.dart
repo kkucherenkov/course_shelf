@@ -83,15 +83,17 @@ void main() {
     });
 
     test('pending is chronological across mixed local/UTC writes', () async {
-      // This machine's local zone is UTC+04:00 (`DateTime(..., 23)` is
-      // 19:00Z), so `earlyLocal` is the earlier instant even though its
-      // wall-clock hour (23) is numerically larger than `laterUtc`'s (21).
-      // Unnormalized, drift renders `earlyLocal` as
-      // "...T23:00:00.000 +04:00" and `laterUtc` as "...T21:00:00.000Z" —
-      // lexicographically "23" > "21", so `ORDER BY queued_at` would rank
-      // the later row first. This proves the write-boundary UTC
-      // normalization keeps that ordering chronological instead.
-      final earlyLocal = DateTime(2026, 7, 15, 23); // local, == 19:00Z
+      // The queue must come back ordered by real instant regardless of
+      // whether a row was written as a UTC or a local `DateTime`. Derive the
+      // local value from a fixed UTC instant via `.toLocal()` so "early is the
+      // earlier instant" holds in ANY ambient zone — hard-coding a wall-clock
+      // hour (the old `DateTime(..., 23)`) only read as earlier under a
+      // positive UTC offset and flipped to ['late', 'early'] at UTC, where CI
+      // runs. `earlyLocal` is still a genuine local (`isUtc == false`) write,
+      // so on a positive-offset machine an unnormalized store would render it
+      // "...T<hour> +HH:MM" and lexicographically sort it after `laterUtc`'s
+      // "...Z" — which the write-boundary UTC normalization is what prevents.
+      final earlyLocal = DateTime.utc(2026, 7, 15, 19).toLocal(); // 19:00Z
       final laterUtc = DateTime.utc(2026, 7, 15, 21); // 21:00Z
       // Enqueue the LATER row first and the EARLIER row second, so rowid
       // insertion order is the opposite of chronological order. If

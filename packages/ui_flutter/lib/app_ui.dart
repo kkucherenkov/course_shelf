@@ -55,3 +55,8 @@ export 'src/fields/app_radio.dart';
 export 'src/fields/app_radio_group.dart';
 export 'src/overlays/app_dialog.dart';
 export 'src/overlays/app_bottom_sheet.dart';
+export 'src/course/course_card_data.dart';
+export 'src/course/course_cover_backdrop.dart';
+export 'src/course/course_poster_card.dart';
+export 'src/course/course_wide_card.dart';
+export 'src/course/course_compact_row.dart';

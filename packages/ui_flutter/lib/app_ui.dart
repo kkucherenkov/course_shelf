@@ -24,6 +24,8 @@ export 'src/states/app_empty_state.dart';
 export 'src/states/app_error_state.dart';
 export 'src/progress/app_progress_linear.dart';
 export 'src/progress/app_progress_circle.dart';
+export 'src/progress/app_progress_badge_variant.dart';
+export 'src/progress/app_progress_badge.dart';
 export 'src/progress/app_spinner.dart';
 export 'src/progress/app_skeleton.dart';
 export 'src/fields/app_textarea.dart';

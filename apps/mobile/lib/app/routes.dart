@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:app_mobile/features/auth/presentation/phone_auth_screen.dart';
 import 'package:app_mobile/features/auth/presentation/sign_in_screen.dart';
 import 'package:app_mobile/features/auth/presentation/sign_up_screen.dart';
 import 'package:app_mobile/features/auth/presentation/welcome_screen.dart';
@@ -9,6 +10,7 @@ import 'package:app_mobile/features/settings/presentation/settings_screen.dart';
 abstract class AppRoutes {
   static const welcome = '/';
   static const signIn = '/sign-in';
+  static const phoneAuth = '/sign-in/phone';
   static const signUp = '/sign-up';
   static const settings = '/settings';
 }
@@ -27,6 +29,13 @@ Route<dynamic>? onGenerateRoute(RouteSettings settings) {
   if (name == AppRoutes.signIn) {
     return MaterialPageRoute<void>(
       builder: (_) => const SignInScreen(),
+      settings: settings,
+    );
+  }
+
+  if (name == AppRoutes.phoneAuth) {
+    return MaterialPageRoute<void>(
+      builder: (_) => const PhoneAuthScreen(),
       settings: settings,
     );
   }

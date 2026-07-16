@@ -2,6 +2,67 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-16-005 — email-primary mobile auth + OTP test coverage (card E15-F01-S03)
+
+- Created: 2026-07-16
+- Completed: 2026-07-16
+- Owner: claude
+- Spec: [docs/superpowers/specs/2026-07-16-e15-f01-s03-email-primary-auth-design.md](../../docs/superpowers/specs/2026-07-16-e15-f01-s03-email-primary-auth-design.md)
+- Result: PR (pending) — branch `feat/e15-f01-s03-email-primary-auth`
+- Goal: close E15-F01-S03. Phone-OTP runtime already shipped; real gaps were (1) zero OTP test coverage and (2) shipped UI led with phone-OTP, contradicting the closeout spec's email-primary decision. Flipped login to email-primary (web-mirror single screen), phone-OTP demoted to a secondary link; added OTP + wire + widget tests; removed vestigial `devCode`; corrected the card.
+- Spec diff: none
+- Codegen impact: no (slang i18n regen only; `strings*.g.dart` is gitignored)
+- Sub-steps:
+  - [x] tests: OTP `blocTest` cases (requestOtp/verifyOtp/resetToPhoneStep, otpSent/error, OtpError mapping) + `auth_api_test` (mocked Dio: send/verify paths, payloads, 400/410→OtpError, token persist) + `sign_in_screen_test` & `sign_up_screen_test` widget tests. Mobile suite 37 → 54.
+  - [x] cleanup: removed `devCode` from `AuthState` + `AuthCubit`; corrected the cubit doc comment (email primary)
+  - [x] i18n: added `signIn.phoneInstead`/`errorEmailInvalid`/`errorPasswordTooShort` + `signUp.errorNameRequired`/`errorEmailInvalid`/`errorPasswordTooShort`; renamed `welcome.continueWithPhone`→`getStarted` across en/el/ru/uk; regen slang
+  - [x] UI: extracted phone/OTP verbatim to `PhoneAuthScreen` (`/sign-in/phone`) + shared `AuthErrorBanner`/`AuthInfoBanner`; rewrote `SignInScreen` as email form; real email `SignUpScreen`; Welcome CTA label → `getStarted`; routes
+  - [x] verify: `flutter analyze` clean; `flutter test` 54/54; `pnpm check:i18n` exit 0 (mobile 4×89)
+  - [x] corrected card E15-F01-S03 + TODO.md row → done
+- Status: done
+- Notes:
+  - Deferred to E18-F03-S01 (unchanged): final login visual design, `SignInCubit`/first-user routing, rate-limit banner, keep-signed-in, forgot-password. Sign-up server-error mapping is minimal (`errorEmailTaken`) pending that redesign.
+  - Ran on the emulator/device: not done here — widget tests drive the screens (render/validate/submit/navigate), but the visual pass is the user's ("I'll check the final result").
+
+## T-2026-07-16-004 — patch CRITICAL websocket-driver advisory (CI security gate)
+
+- Created: 2026-07-16
+- Completed: 2026-07-16
+- Owner: claude
+- Result: PR #143 (merged) — commit 3323a0e
+- Goal: CI "Dependency vulnerability scan" failed on `CRITICAL websocket-driver@0.7.4` (GHSA-xv26-6w52-cph6 / CVE-2026-54466 — WebSocket length-header integer-precision parsing flaw, fixed in 0.7.5). Pulled in transitively: `firebase-admin@13.8.0 → @firebase/database → faye-websocket@0.11.4 → websocket-driver`. No direct dep to bump.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] traced the chain with `pnpm why`; confirmed patched version 0.7.5 via the advisory (affected `<0.7.5`; faye-websocket requires `>=0.5.1`, so satisfied)
+  - [x] added `pnpm.overrides` entry `"websocket-driver": ">=0.7.5"` (open-ended, matching the `shell-quote`/`next` security-remediation idiom); regenerated lockfile — 0.7.5 only, zero 0.7.4
+  - [x] reproduced the exact CI scan locally (`ghcr.io/google/osv-scanner:v2.3.8`, same jq gate): CRITICAL/HIGH list empty → gate passes; histogram LOW:7 MODERATE:34 (was CRITICAL:1 MODERATE:35)
+  - [x] `pnpm install --frozen-lockfile` in sync
+  - [x] commit + push
+- Status: done
+- Blockers: —
+
+## T-2026-07-16-003 — de-flake timezone-coupled outbox ordering test (E15-F02-S01)
+
+- Created: 2026-07-16
+- Completed: 2026-07-16
+- Owner: claude
+- Spec: [docs/roadmap/tasks/E15-F02-S01.md](../../docs/roadmap/tasks/E15-F02-S01.md)
+- Result: PR #143 (merged) — commit 5d1dc14
+- Goal: `progress_outbox pending is chronological across mixed local/UTC writes` (added under T-2026-07-16-002 / I1) hard-coded `DateTime(2026,7,15,23)` and a comment asserting "this machine's local zone is UTC+04:00". True on the dev box (+0400), false on CI (`/home/runner`, TZ=UTC), where `earlyLocal` becomes 23:00Z — genuinely _later_ than `laterUtc` 21:00Z — so `pending()` correctly returns `['late','early']` and the assertion fails. A real test defect, not a runtime bug: `_normalizeUtc` is correct and independently proven by the zone-independent `isUtc` test.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] reproduced: `TZ=UTC flutter test …` fails `['late','early']`; ambient `+0400` passes
+  - [x] derive the local fixture from a fixed instant (`DateTime.utc(2026,7,15,19).toLocal()`) so "early is earlier" holds in any ambient zone, while still exercising the local-write path (`isUtc == false`)
+  - [x] rewrote the comment to explain the zone-independence; kept the reversed insertion order that guards `ORDER BY`
+  - [x] `flutter analyze` clean; full file green under TZ=UTC, America/New_York (−5), Asia/Dubai (+4)
+  - [x] commit + PR (#143)
+- Status: done
+- Blockers: —
+- Notes:
+  - Did NOT run `dart format` on the file — local Dart 3.12 tall-style reflowed every `test(...)` callback, but CI pins Flutter 3.44.4 (Dart 3.9, old style) and runs no `dart format` gate. Kept the edit in the committed style; diff is the one comment block + one line.
+
 ## T-2026-07-16-002 — Drift branch review fixes: mutation-proof outbox tests, UTC normalization, docs correction, index (E15-F02-S01)
 
 - Created: 2026-07-16

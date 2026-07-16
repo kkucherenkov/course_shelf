@@ -2,6 +2,21 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-16-006 — bootstrap mobile Widgetbook catalog (card E16-F01-S01)
+
+- Created: 2026-07-16
+- Completed: 2026-07-16
+- Owner: claude
+- Spec: [docs/superpowers/specs/2026-07-16-e16-f01-s01-widgetbook-bootstrap-design.md](../../docs/superpowers/specs/2026-07-16-e16-f01-s01-widgetbook-bootstrap-design.md)
+- Result: [PR #145](https://github.com/kkucherenkov/course_shelf/pull/145) — branch `feat/e16-f01-s01-widgetbook`
+- Goal: a separately-runnable Widgetbook entrypoint catalogs mobile widgets, with one canary exercised across its states.
+- Acceptance:
+  - `flutter run -t widgetbook/main.dart` shows the catalog (verified manually)
+  - one canary (`CanaryButton`) has a use case per state (Enabled / Disabled)
+- Outcome: added `apps/mobile/widgetbook/main.dart` (thin entrypoint) + `lib/widgetbook/{canary_button,directories,widgetbook_app}.dart`; `widgetbook` promoted to a regular dep (catalog under `lib/`, tree-shaken from the release binary); `pnpm dev:widgetbook` script. Mobile suite 54 → 57; `flutter analyze` clean.
+- Sub-steps: all complete.
+- Status: done
+
 ## T-2026-07-16-005 — email-primary mobile auth + OTP test coverage (card E15-F01-S03)
 
 - Created: 2026-07-16

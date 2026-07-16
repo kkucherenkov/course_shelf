@@ -50,6 +50,8 @@ export 'src/fields/app_field_box.dart';
 export 'src/fields/app_text_field.dart';
 export 'src/fields/app_number_field.dart';
 export 'src/fields/app_search_field.dart';
+export 'src/fields/app_password_strength.dart';
+export 'src/fields/app_password_field.dart';
 export 'src/fields/app_select.dart';
 export 'src/fields/app_switch.dart';
 export 'src/fields/app_checkbox.dart';

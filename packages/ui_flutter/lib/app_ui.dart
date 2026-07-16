@@ -74,3 +74,5 @@ export 'src/bookmarks/app_note_editor.dart';
 export 'src/auth/app_sso_block.dart';
 export 'src/downloads/app_download_state.dart';
 export 'src/downloads/app_download_row.dart';
+export 'src/navigation/app_navigation_tab.dart';
+export 'src/navigation/app_navigation_shell.dart';

@@ -118,23 +118,42 @@ cd apps/mobile && flutter test test/path/to/file_test.dart
 pnpm e2e --grep "smoke"
 ```
 
-## Forgejo issues mirror
+## GitHub issues — card bookkeeping (REQUIRED)
 
-Every roadmap card in `docs/roadmap/tasks/` is mirrored as a Forgejo issue with title `[<card-id>] <title>`. The card stays the source of truth; the issue is a stable URL for cross-referencing.
+**GitHub is the sole repo.** Every roadmap card in `docs/roadmap/tasks/` is
+mirrored as GitHub issues titled `[<card-id>] <sub-step or title>`; each epic has
+an umbrella issue titled `[<epic-id>] <name>`. The card is the source of truth —
+issues are stable URLs for cross-referencing.
+
+> The retired Forgejo mirror's `pnpm issues:sync|map|lookup` scripts target
+> `scripts/seed-forgejo-issues.ts` and do **not** touch GitHub. Do not use them
+> for GitHub bookkeeping — use `gh` (below).
+
+**Look up a card's issues (GitHub-native).** Filter by the `[<card-id>]` _prefix_
+— a plain search also returns other cards' issues that merely _mention_ the id in
+their title (e.g. `[E18-F03-S01] … (from E15-F01-S03)` is E18's, not E15's):
 
 ```sh
-pnpm issues:sync                    # reconcile bodies + open/closed state with the cards
-pnpm issues:map                     # print full card-id → #N map
-pnpm issues:lookup -- E13-F02-S07   # print just one issue number (e.g. "55")
+gh issue list --state all --search "<card-id> in:title" \
+  --json number,title,state \
+  --jq '[.[] | select(.title | startswith("[<card-id>]"))]'
 ```
 
-When opening a PR for a card, **use Forgejo's auto-close keyword in the body** so the linked issue closes on merge — don't rely on `pnpm issues:sync` running afterwards:
+**Opening a PR for a card:** put a `Closes #N` line for **each** of the card's
+issues in the PR body. GitHub only recognises `#N` — `Closes <card-id>` does
+nothing, so the merge won't auto-close and you'll have to close by hand. `Closes`,
+`Fixes`, and `Resolves` all work; GitHub closes them when the PR merges to `main`.
 
-```
-Closes #55
+**If a PR already merged without `Closes #N`** (issues still open), the completion
+is real — close them and record it:
+
+```sh
+gh issue close <N> --reason completed --comment "Closed by PR #<pr> (<card-id>)."
 ```
 
-(Look up the number with `pnpm issues:lookup -- <card-id>`.) `Closes #N`, `Fixes #N`, and `Resolves #N` all work; Forgejo only closes the issue when the PR merges to the default branch.
+**When a card is marked ✅ Done** (see the task-stack rules), reconcile its issues
+in the same pass: confirm every story issue is closed, and once **all** cards
+under an epic are Done, close the epic's umbrella issue too.
 
 ## Commits
 

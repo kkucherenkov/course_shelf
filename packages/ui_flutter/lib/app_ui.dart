@@ -24,3 +24,4 @@ export 'src/progress/app_progress_linear.dart';
 export 'src/progress/app_progress_circle.dart';
 export 'src/progress/app_spinner.dart';
 export 'src/progress/app_skeleton.dart';
+export 'src/fields/app_textarea.dart';

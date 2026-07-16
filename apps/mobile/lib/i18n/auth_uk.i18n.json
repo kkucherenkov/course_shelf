@@ -2,7 +2,7 @@
   "welcome": {
     "headline": "Бронюйте що завгодно, коли завгодно",
     "subtitle": "Знаходьте і записуйтесь до найкращих фахівців.",
-    "continueWithPhone": "Продовжити з телефоном",
+    "getStarted": "Почати",
     "legalFootnote": "Продовжуючи, ви погоджуєтесь з нашими Умовами та Політикою конфіденційності."
   },
   "phone": {
@@ -38,8 +38,11 @@
     "passwordLabel": "Пароль",
     "passwordHint": "Ваш пароль",
     "submit": "Увійти",
+    "phoneInstead": "Увійти за телефоном",
     "noAccount": "Немає акаунту?",
     "signUpLink": "Зареєструватись",
+    "errorEmailInvalid": "Введіть коректний email.",
+    "errorPasswordTooShort": "Пароль має містити щонайменше 8 символів.",
     "errorInvalidCredentials": "Невірний email або пароль.",
     "errorGeneric": "Вхід не вдався: {error}"
   },
@@ -54,6 +57,9 @@
     "submit": "Створити акаунт",
     "hasAccount": "Вже є акаунт?",
     "signInLink": "Увійти",
+    "errorNameRequired": "Введіть ваше ім'я.",
+    "errorEmailInvalid": "Введіть коректний email.",
+    "errorPasswordTooShort": "Пароль має містити щонайменше 8 символів.",
     "errorEmailTaken": "Цей email вже зареєстрований.",
     "errorGeneric": "Реєстрація не вдалася: {error}"
   }

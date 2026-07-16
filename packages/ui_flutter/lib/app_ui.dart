@@ -15,4 +15,8 @@ export 'src/buttons/app_button_variant.dart';
 export 'src/buttons/app_button_style.dart';
 export 'src/buttons/app_button.dart';
 export 'src/buttons/app_icon_button.dart';
+export 'src/badge/app_badge_color.dart';
+export 'src/badge/app_badge_variant.dart';
+export 'src/badge/app_badge_style.dart';
+export 'src/badge/app_badge.dart';
 export 'src/states/app_no_permission.dart';

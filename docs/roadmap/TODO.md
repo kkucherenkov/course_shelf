@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `93 / 121` complete (update by hand or via a pre-commit hook).
+Progress: `102 / 121` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -142,15 +142,15 @@ Progress: `93 / 121` complete (update by hand or via a pre-commit hook).
 - [x] [E17-F01-S12](./tasks/E17-F01-S12.md) `A` — AppTextarea (Flutter) — multiline text input · ⇐ E16-F01-S01, E17-F01-S01
 - [x] [E17-F01-S13](./tasks/E17-F01-S13.md) `A` — AppNoPermission (Flutter) — permission-denied state · ⇐ E16-F01-S01, E17-F01-S01
 - [x] [E17-F01-S14](./tasks/E17-F01-S14.md) `A` — AppRadioGroup (Flutter) — radio group wrapper · ⇐ E16-F01-S01, E17-F01-S03
-- [ ] [E17-F02-S01](./tasks/E17-F02-S01.md) `A` — CourseCard (poster / wide / compact in Flutter) · ⇐ E17-F01-S01, E17-F01-S07
-- [ ] [E17-F02-S02](./tasks/E17-F02-S02.md) `A` — Mobile LessonRow including download state · ⇐ E17-F01-S01, E17-F01-S04, E17-F01-S07
-- [ ] [E17-F02-S03](./tasks/E17-F02-S03.md) `A` — Mobile-landscape PlayerChrome with edge gestures · ⇐ E17-F01-S01, E17-F01-S02
-- [ ] [E17-F02-S04](./tasks/E17-F02-S04.md) `A` — Bookmark, BookmarkAdd, NoteEditor (Flutter equivalents) · ⇐ E17-F01-S01, E17-F01-S02, E17-F01-S03
-- [ ] [E17-F02-S05](./tasks/E17-F02-S05.md) `A` — ProgressBadge (Flutter — ring/bar/pill) · ⇐ E17-F01-S01
-- [ ] [E17-F02-S06](./tasks/E17-F02-S06.md) `A` — DownloadRow (mobile-only) — full state machine · ⇐ E17-F01-S01, E17-F01-S07
-- [ ] [E17-F02-S07](./tasks/E17-F02-S07.md) `A` — NavigationShell (mobile — bottom tab bar with 5 tabs) · ⇐ E17-F01-S01
-- [ ] [E17-F02-S08](./tasks/E17-F02-S08.md) `A` — PasswordField (Flutter) — visibility toggle + strength meter · ⇐ E17-F01-S01, E17-F01-S03
-- [ ] [E17-F02-S09](./tasks/E17-F02-S09.md) `A` — SsoBlock (Flutter) — provider button list · ⇐ E17-F01-S02, E17-F01-S01
+- [x] [E17-F02-S01](./tasks/E17-F02-S01.md) `A` — CourseCard (poster / wide / compact in Flutter) · ⇐ E17-F01-S01, E17-F01-S07
+- [x] [E17-F02-S02](./tasks/E17-F02-S02.md) `A` — Mobile LessonRow including download state · ⇐ E17-F01-S01, E17-F01-S04, E17-F01-S07
+- [x] [E17-F02-S03](./tasks/E17-F02-S03.md) `A` — Mobile-landscape PlayerChrome with edge gestures · ⇐ E17-F01-S01, E17-F01-S02
+- [x] [E17-F02-S04](./tasks/E17-F02-S04.md) `A` — Bookmark, BookmarkAdd, NoteEditor (Flutter equivalents) · ⇐ E17-F01-S01, E17-F01-S02, E17-F01-S03
+- [x] [E17-F02-S05](./tasks/E17-F02-S05.md) `A` — ProgressBadge (Flutter — ring/bar/pill) · ⇐ E17-F01-S01
+- [x] [E17-F02-S06](./tasks/E17-F02-S06.md) `A` — DownloadRow (mobile-only) — full state machine · ⇐ E17-F01-S01, E17-F01-S07
+- [x] [E17-F02-S07](./tasks/E17-F02-S07.md) `A` — NavigationShell (mobile — bottom tab bar with 5 tabs) · ⇐ E17-F01-S01
+- [x] [E17-F02-S08](./tasks/E17-F02-S08.md) `A` — PasswordField (Flutter) — visibility toggle + strength meter · ⇐ E17-F01-S01, E17-F01-S03
+- [x] [E17-F02-S09](./tasks/E17-F02-S09.md) `A` — SsoBlock (Flutter) — provider button list · ⇐ E17-F01-S02, E17-F01-S01
 - [ ] [E17-F02-S10](./tasks/E17-F02-S10.md) `A` — AppBookmarkList (Flutter) — bookmark list with edit/delete · ⇐ E17-F02-S04
 - [ ] [E17-F02-S11](./tasks/E17-F02-S11.md) `A` — AppSectionHeader (Flutter) — collapsible section header · ⇐ E17-F02-S02
 

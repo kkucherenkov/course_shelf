@@ -36,3 +36,7 @@ export 'src/chip/app_chip_style.dart';
 export 'src/chip/app_chip.dart';
 export 'src/avatar/app_avatar_size.dart';
 export 'src/avatar/app_avatar.dart';
+export 'src/containers/app_card.dart';
+export 'src/containers/app_row.dart';
+export 'src/containers/app_tabs.dart';
+export 'src/containers/app_segmented.dart';

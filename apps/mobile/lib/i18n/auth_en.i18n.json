@@ -2,7 +2,7 @@
   "welcome": {
     "headline": "Book anything, anytime",
     "subtitle": "Find and book appointments with top-rated professionals.",
-    "continueWithPhone": "Continue with phone",
+    "getStarted": "Get started",
     "legalFootnote": "By continuing, you agree to our Terms and Privacy Policy."
   },
   "phone": {
@@ -38,8 +38,11 @@
     "passwordLabel": "Password",
     "passwordHint": "Your password",
     "submit": "Sign in",
+    "phoneInstead": "Sign in with phone instead",
     "noAccount": "No account?",
     "signUpLink": "Sign up",
+    "errorEmailInvalid": "Please enter a valid email.",
+    "errorPasswordTooShort": "Password must be at least 8 characters.",
     "errorInvalidCredentials": "Invalid email or password.",
     "errorGeneric": "Sign-in failed: {error}"
   },
@@ -54,6 +57,9 @@
     "submit": "Create account",
     "hasAccount": "Already have an account?",
     "signInLink": "Sign in",
+    "errorNameRequired": "Please enter your name.",
+    "errorEmailInvalid": "Please enter a valid email.",
+    "errorPasswordTooShort": "Password must be at least 8 characters.",
     "errorEmailTaken": "This email is already registered.",
     "errorGeneric": "Sign-up failed: {error}"
   }

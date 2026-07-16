@@ -39,7 +39,7 @@ class WelcomeScreen extends StatelessWidget {
               const Spacer(),
               FilledButton(
                 onPressed: () => Navigator.pushNamed(context, AppRoutes.signIn),
-                child: Text(t.continueWithPhone),
+                child: Text(t.getStarted),
               ),
               const SizedBox(height: 24),
               Text(

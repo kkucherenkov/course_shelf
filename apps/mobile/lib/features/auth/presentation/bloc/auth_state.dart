@@ -10,7 +10,6 @@ class AuthState extends Equatable {
     this.user,
     this.errorMessage,
     this.phone,
-    this.devCode,
   });
 
   final AuthStatus status;
@@ -18,26 +17,20 @@ class AuthState extends Equatable {
   final String? errorMessage;
   final String? phone;
 
-  /// Always empty since OTP is now handled server-side. Kept for schema
-  /// stability; the dev banner in [SignInScreen] no longer renders a code.
-  final String? devCode;
-
   AuthState copyWith({
     AuthStatus? status,
     AuthUser? user,
     String? errorMessage,
     String? phone,
-    String? devCode,
   }) {
     return AuthState(
       status: status ?? this.status,
       user: user ?? this.user,
       errorMessage: errorMessage,
       phone: phone ?? this.phone,
-      devCode: devCode ?? this.devCode,
     );
   }
 
   @override
-  List<Object?> get props => [status, user, errorMessage, phone, devCode];
+  List<Object?> get props => [status, user, errorMessage, phone];
 }

@@ -2,6 +2,22 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-17-002 — E17-F02 mobile composite widgets wave 1, 9 cards / 13 components
+
+- Created: 2026-07-17
+- Completed: 2026-07-17
+- Owner: claude
+- Result: [PR #150](https://github.com/kkucherenkov/course_shelf/pull/150) — branch `feat/e17-f02-wave-1`
+- Spec (design-gated trio): [docs/superpowers/specs/2026-07-17-e17-f02-trio-mobile-composites-design.md](../../docs/superpowers/specs/2026-07-17-e17-f02-trio-mobile-composites-design.md)
+- Goal: port the first nine E17-F02 mobile composite widgets to `app_ui` (Flutter), each consuming the E17-F01 primitives and catalogued in Widgetbook. Parallel fan-out: six web-twin cards built straight to code; three design-gated composites (S03/S06/S07 — a mobile interaction layer with no web twin) got an approved design first. Built by isolated worktree subagents, cherry-picked onto one branch, wired, and centrally verified.
+- Cards: S01 (CourseCard family ×3), S02 (LessonRow), S03 (PlayerChrome), S04 (Bookmark/BookmarkAdd/NoteEditor), S05 (ProgressBadge), S06 (DownloadRow), S07 (NavigationShell), S08 (PasswordField), S09 (SsoBlock).
+- Outcome: 13 components in `packages/ui_flutter` + Widgetbook catalog entries wired into `directories.dart`. `ui_flutter` 334 → 568 tests (widget + golden matrices); `apps/mobile` → 63 tests (adds the F02 wiring assertion, catalog count guard >= 44). `flutter analyze` clean in both.
+- Sub-steps: all complete.
+- Status: done
+- Notes:
+  - Follow-ups surfaced during the wave (not yet filed): (1) `AppRow` merges descendant semantics into one node — it lacks `explicitChildNodes: true` — so per-child semantic labels can't be isolated; low-risk a11y fix for whoever next touches `AppRow`. (2) None of the 5 navigation-tab glyphs have a filled variant (`IconCS.fill` only covers play/bookmark), so `AppNavigationShell` falls back to the outline glyph for the active tab — an icon-family expansion.
+  - Live Widgetbook pass (`pnpm dev:widgetbook`) not run — needs generated platform runners; the user checks the final result. Goldens are Flutter-vs-Flutter regression baselines, visually reviewed during integration.
+
 ## T-2026-07-17-001 — E17-F01 mobile widget catalog wave 2, 3 cards / 5 components
 
 - Created: 2026-07-17

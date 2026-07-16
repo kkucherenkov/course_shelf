@@ -2,6 +2,56 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-16-002 — Drift branch review fixes: mutation-proof outbox tests, UTC normalization, docs correction, index (E15-F02-S01)
+
+- Created: 2026-07-16
+- Completed: 2026-07-16
+- Owner: claude
+- Spec: [docs/superpowers/specs/2026-07-15-e15-f02-s01-drift-schema-design.md](../../docs/superpowers/specs/2026-07-15-e15-f02-s01-drift-schema-design.md)
+- Result: (PR pending)
+- Goal: fix whole-branch review findings on `feat/e15-f02-s01-drift` before PR opens — every finding was a test that could not fail or documentation that contradicted the code, not a runtime bug.
+- Spec diff: none (docs + tests + a non-schema-version-bumping index)
+- Codegen impact: no
+- Sub-steps:
+  - [x] I1: `progress_outbox` "chronological" tests inserted rows already in order, so the default rowid scan passed them for free even with `ORDER BY` deleted. Rewrote both to insert out of order and assert full returned order.
+  - [x] I2: `_normalizeUtc` was stripped from `notes_outbox_dao.dart` and `bookmarks_outbox_dao.dart` with no test catching it (their tests only used `DateTime.utc(...)`, so `.toUtc()` was a no-op). Added a local-DateTime normalization test to each group, mirroring the existing `progress_outbox` one.
+  - [x] I3: `CachedCatalogDao` never normalized `cachedAt`/`updatedAt` to UTC despite both being documented TTL/staleness-comparison inputs for E18/E19. Added `.toUtc()` normalization at the write boundary (`upsertCourse`, `replaceOutline`) via small private helpers matching the outbox DAO style, plus a round-trip test.
+  - [x] I4: `bookmarks_outbox` was documented "APPEND-ONLY... cannot coalesce by key" while the code actually upserts on `localId`, coalescing create+update into a single `update` row with `serverId == null` at ENQUEUE time — not at drain, as the design doc's "E20 performs the collapse" claimed. Corrected `tables/bookmarks_outbox.dart`, `daos/bookmarks_outbox_dao.dart` (documented the real serverId-based drain rule), the design doc's "bookmark id problem" section and its Testing-table mutation row, and `docs/roadmap/tasks/E15-F02-S01.md`'s Notes. Added a test proving the enqueue-time collapse.
+  - [x] Added `@TableIndex` on `cached_lessons.courseId` and `cached_sections.courseId` — the "one indexed read rather than a join" comment on `CachedLessons.courseId` was false as shipped (zero indexes existed). No `schemaVersion` bump needed (still v1, pre-ship).
+  - [x] M1: renamed `cached_catalog_dao_test.dart`'s `replaceOutline is idempotent — re-running does not duplicate` (it passed even with `replaceOutline` reduced to a pure upsert — the real guard is the later "drops rows the server no longer returns" test) to `re-running replaceOutline with the same outline does not duplicate rows`.
+  - [x] M2: added a nonce round-trip test to `downloads_dao_test.dart` — the crypto-relevant `nonce` column was never written in any test, only asserted null.
+  - [x] Mutation proofs — deleted `..orderBy(...)` from `progress_outbox_dao.dart` (2 I1 tests failed), stripped `_normalizeUtc` from `notes_outbox_dao.dart` (I2 notes test failed) and `bookmarks_outbox_dao.dart` (I2 bookmarks test failed), stripped `.toUtc()` from `CachedCatalogDao.upsertCourse` (I3 test failed). All four reverted after confirming failure; suite green again after each revert.
+  - [x] `flutter analyze` clean; `flutter test` — 37/37 green.
+- Status: done
+- Notes:
+  - Constraints honored: no change to `build.yaml`, `schemaVersion` (still 1), or the crypto boundary; no sync/drain/collapse logic added — only documentation of the drain rule E20 must follow.
+  - `git status --short` on `docs/` showed both edited files as tracked (`M`, not untracked), so no `git add -f` was needed despite the global `docs/*` gitignore rule — they predate that rule.
+
+## T-2026-07-16-001 — Drift local persistence: DownloadsDao + DI registration (E15-F02-S01)
+
+- Created: 2026-07-16
+- Completed: 2026-07-16
+- Owner: claude
+- Spec: [E15-F02-S01](../../docs/roadmap/tasks/E15-F02-S01.md)
+- Result: (PR pending)
+- Goal: close out E15-F02-S01 — local persistence for cache + outbox + downloads in `apps/mobile`. This task was the last of a six-task plan; tasks 1-5 landed the 7 tables and the cache/outbox DAOs (`CachedCatalogDao`, `ProgressOutboxDao`, `NotesOutboxDao`, `BookmarksOutboxDao`). This task adds `DownloadsDao`, registers `AppDatabase` in the get_it composition root, and closes out the card.
+- Spec diff: none (no OpenAPI/AsyncAPI change)
+- Codegen impact: no
+- Sub-steps:
+  - [x] failing test first: `apps/mobile/test/shared/db/downloads_dao_test.dart` (4 cases — round-trip defaults, upsert-advances-without-duplicating, byState filtering, remove-deletes)
+  - [x] `DownloadsDao` (`apps/mobile/lib/shared/db/daos/downloads_dao.dart`) — `upsert`, `byLessonId`, `byState`, `watch`, `remove`; holds no key material, only the per-file AES-GCM `nonce`
+  - [x] registered in `AppDatabase` (`daos:` list) and re-exported via `export ... show DownloadsDao` — a plain `import` doesn't propagate the type generated in a DAO's own `part` file to callers that only import `app_database.dart`
+  - [x] `AppDatabase` registered as a `registerLazySingleton<AppDatabase>(AppDatabase.open)` in `shared/di/injector.dart`
+  - [x] `dart run build_runner build --delete-conflicting-outputs` — clean, no `InvalidOutputException`
+  - [x] roadmap bookkeeping: `E15-F02-S01` → Done, `docs/roadmap/TODO.md` row ticked
+- Status: done
+- Notes:
+  - Security-critical: `downloaded_lessons` carries the per-file nonce but NOT the AES key — E19 keeps a device-bound key in `flutter_secure_storage`. The existing `app_database_test.dart` assertion that no column name contains `key` was left untouched and still passes.
+  - Deliberately did NOT add `.toUtc()` normalization to `DownloadsDao.upsert`, unlike the outbox DAOs (`ProgressOutboxDao._normalizeUtc`). Those normalize because drift's TEXT datetime encoding makes local/UTC `DateTime`s sort non-chronologically under `ORDER BY`, and the outbox queries order by timestamp. `DownloadsDao` has no such ordering contract in this story — added scope would be silent and unrequested. Flagging for whoever writes the E19 download-progress UI: if a query ever orders by `updatedAt`, revisit.
+  - Test-file gotcha not in the original brief: drift's top-level export collides with `flutter_test` on **both** `isNotNull` and `isNull` (the brief's sibling-pattern reference only needed to hide `isNotNull`); `downloads_dao_test.dart` uses both matchers, so the import is `hide isNotNull, isNull`.
+  - Whole suite: 27 pre-existing + 4 new = 31 tests, all green. `flutter analyze` clean.
+  - PR not yet opened — same holding pattern as T-2026-07-15-001, blocked on a separate decision the user is handling.
+
 ## T-2026-07-15-001 — Flutter design-system theme from generated tokens (E15-F01-S01, E15-F01-S02 bookkeeping)
 
 - Created: 2026-07-15

@@ -169,10 +169,15 @@ jobs:
       # to resolve — 449 analyzer errors. It must be generated before analyze.
       # Unlike freezed's output (auth_user.freezed.dart / .g.dart), which IS
       # committed, slang's is regenerated on demand.
-      - name: mobile — generate i18n (slang)
+      #
+      # Codegen order is load-bearing: slang_build_runner SKIPS generation, so
+      # build_runner never writes strings.g.dart — but it errors if the file is
+      # already there. build_runner first, then slang.
+      - name: mobile — codegen (drift, then slang i18n)
         working-directory: apps/mobile
         run: |
           flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
           dart run slang
 
       - name: mobile — analyze

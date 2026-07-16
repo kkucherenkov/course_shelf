@@ -2,7 +2,7 @@
   "welcome": {
     "headline": "Κλείστε οτιδήποτε, οποτεδήποτε",
     "subtitle": "Βρείτε και κλείστε ραντεβού με κορυφαίους επαγγελματίες.",
-    "continueWithPhone": "Συνέχεια με τηλέφωνο",
+    "getStarted": "Ας ξεκινήσουμε",
     "legalFootnote": "Συνεχίζοντας, αποδέχεστε τους Όρους και την Πολιτική Απορρήτου μας."
   },
   "phone": {
@@ -38,8 +38,11 @@
     "passwordLabel": "Κωδικός πρόσβασης",
     "passwordHint": "Ο κωδικός σας",
     "submit": "Είσοδος",
+    "phoneInstead": "Σύνδεση με τηλέφωνο",
     "noAccount": "Δεν έχετε λογαριασμό;",
     "signUpLink": "Εγγραφή",
+    "errorEmailInvalid": "Παρακαλώ εισάγετε ένα έγκυρο email.",
+    "errorPasswordTooShort": "Ο κωδικός πρέπει να έχει τουλάχιστον 8 χαρακτήρες.",
     "errorInvalidCredentials": "Λάθος email ή κωδικός πρόσβασης.",
     "errorGeneric": "Η είσοδος απέτυχε: {error}"
   },
@@ -54,6 +57,9 @@
     "submit": "Δημιουργία λογαριασμού",
     "hasAccount": "Έχετε ήδη λογαριασμό;",
     "signInLink": "Είσοδος",
+    "errorNameRequired": "Παρακαλώ εισάγετε το όνομά σας.",
+    "errorEmailInvalid": "Παρακαλώ εισάγετε ένα έγκυρο email.",
+    "errorPasswordTooShort": "Ο κωδικός πρέπει να έχει τουλάχιστον 8 χαρακτήρες.",
     "errorEmailTaken": "Αυτό το email χρησιμοποιείται ήδη.",
     "errorGeneric": "Η εγγραφή απέτυχε: {error}"
   }

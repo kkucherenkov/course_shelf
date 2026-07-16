@@ -2,7 +2,7 @@
   "welcome": {
     "headline": "Бронируйте всё, везде",
     "subtitle": "Найдите и запишитесь к лучшим специалистам.",
-    "continueWithPhone": "Продолжить по телефону",
+    "getStarted": "Начать",
     "legalFootnote": "Продолжая, вы соглашаетесь с условиями и политикой конфиденциальности."
   },
   "phone": {
@@ -38,8 +38,11 @@
     "passwordLabel": "Пароль",
     "passwordHint": "Ваш пароль",
     "submit": "Войти",
+    "phoneInstead": "Войти по телефону",
     "noAccount": "Нет аккаунта?",
     "signUpLink": "Зарегистрироваться",
+    "errorEmailInvalid": "Введите корректный email.",
+    "errorPasswordTooShort": "Пароль должен содержать не менее 8 символов.",
     "errorInvalidCredentials": "Неверный email или пароль.",
     "errorGeneric": "Ошибка входа: {error}"
   },
@@ -54,6 +57,9 @@
     "submit": "Создать аккаунт",
     "hasAccount": "Уже есть аккаунт?",
     "signInLink": "Войти",
+    "errorNameRequired": "Введите ваше имя.",
+    "errorEmailInvalid": "Введите корректный email.",
+    "errorPasswordTooShort": "Пароль должен содержать не менее 8 символов.",
     "errorEmailTaken": "Этот email уже зарегистрирован.",
     "errorGeneric": "Ошибка регистрации: {error}"
   }

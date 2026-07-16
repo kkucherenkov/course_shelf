@@ -2,6 +2,19 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-16-009 — E17-F01 mobile widget catalog wave, 9 cards / 22 components
+
+- Created: 2026-07-16
+- Completed: 2026-07-16
+- Owner: claude
+- Result: [PR #148](https://github.com/kkucherenkov/course_shelf/pull/148) — branch `feat/e17-f01-wave`
+- Goal: port the E17-F01 mobile primitive components to `app_ui` (Flutter), cataloguing each in Widgetbook. Executed as a parallel fan-out: nine cards built by isolated worktree subagents (each briefed with the E17-F01-S02 button recipe), cherry-picked onto one integration branch, reviewed, and centrally verified.
+- Cards: E17-F01-S03 (7 form fields), S04 (Card/Row/Tabs/Segmented), S05 (Banner/Toast/Alert), S07 (Progress×2/Spinner/Skeleton), S09 (Avatar + role badges), S10 (Chip), S11 (Badge), S12 (Textarea), S13 (NoPermission).
+- Outcome: 22 components in `packages/ui_flutter` + Widgetbook catalog entries wired into `directories.dart`. `ui_flutter` 47 → 281 tests (widget + golden matrices); `apps/mobile` → 60 tests (adds catalog-integrity tests); `flutter analyze` clean in both.
+- Sub-steps: all complete.
+- Status: done
+- Notes: live Widgetbook pass (`pnpm dev:widgetbook`) not run — needs generated platform runners; the user checks the final result. All goldens are Flutter-vs-Flutter regression baselines, visually reviewed during integration.
+
 ## T-2026-07-16-008 — AppButton + AppIconButton (card E17-F01-S02)
 
 - Created: 2026-07-16

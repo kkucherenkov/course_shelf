@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `80 / 121` complete (update by hand or via a pre-commit hook).
+Progress: `81 / 121` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -129,7 +129,7 @@ Progress: `80 / 121` complete (update by hand or via a pre-commit hook).
 ## E17 — Mobile widget catalog
 
 - [x] [E17-F01-S01](./tasks/E17-F01-S01.md) `A` — IconCS Flutter widget — port the 66 icons · ⇐ E16-F01-S01
-- [ ] [E17-F01-S02](./tasks/E17-F01-S02.md) `A` — AppButton, AppIconButton (Flutter) · ⇐ E16-F01-S01, E17-F01-S01
+- [x] [E17-F01-S02](./tasks/E17-F01-S02.md) `A` — AppButton, AppIconButton (Flutter) · ⇐ E16-F01-S01, E17-F01-S01
 - [ ] [E17-F01-S03](./tasks/E17-F01-S03.md) `A` — AppTextField, AppNumberField, AppSearchField, AppSelect, AppSwitch, AppCheckbox, AppRadio · ⇐ E16-F01-S01, E17-F01-S01
 - [ ] [E17-F01-S04](./tasks/E17-F01-S04.md) `A` — AppCard, AppRow, AppTabs, AppSegmented · ⇐ E16-F01-S01, E17-F01-S01
 - [ ] [E17-F01-S05](./tasks/E17-F01-S05.md) `A` — AppBanner, AppToast, AppAlert · ⇐ E16-F01-S01, E17-F01-S01

@@ -76,3 +76,6 @@ export 'src/downloads/app_download_state.dart';
 export 'src/downloads/app_download_row.dart';
 export 'src/navigation/app_navigation_tab.dart';
 export 'src/navigation/app_navigation_shell.dart';
+export 'src/player/app_player_chrome_state.dart';
+export 'src/player/app_player_scrubber.dart';
+export 'src/player/app_player_chrome.dart';

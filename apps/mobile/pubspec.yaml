@@ -34,6 +34,11 @@ dependencies:
   drift: ^2.34.2
   drift_flutter: ^0.3.1
   path_provider: ^2.1.6
+  # Dev-only Widgetbook catalog (widgetbook/main.dart). Declared as a regular
+  # dependency because the catalog code lives under lib/ (forced by
+  # always_use_package_imports + package-import testability); it is unreachable
+  # from lib/main.dart, so AOT tree-shaking strips it from the release binary.
+  widgetbook: ^3.14.3
 
 dev_dependencies:
   flutter_test:

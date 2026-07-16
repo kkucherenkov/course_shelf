@@ -1,5 +1,21 @@
 # Active tasks
 
+## T-2026-07-16-004 — patch CRITICAL websocket-driver advisory (CI security gate)
+
+- Created: 2026-07-16
+- Owner: claude
+- Goal: CI "Dependency vulnerability scan" failed on `CRITICAL websocket-driver@0.7.4` (GHSA-xv26-6w52-cph6 / CVE-2026-54466 — WebSocket length-header integer-precision parsing flaw, fixed in 0.7.5). Pulled in transitively: `firebase-admin@13.8.0 → @firebase/database → faye-websocket@0.11.4 → websocket-driver`. No direct dep to bump.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] traced the chain with `pnpm why`; confirmed patched version 0.7.5 via the advisory (affected `<0.7.5`; faye-websocket requires `>=0.5.1`, so satisfied)
+  - [x] added `pnpm.overrides` entry `"websocket-driver": ">=0.7.5"` (open-ended, matching the `shell-quote`/`next` security-remediation idiom); regenerated lockfile — 0.7.5 only, zero 0.7.4
+  - [x] reproduced the exact CI scan locally (`ghcr.io/google/osv-scanner:v2.3.8`, same jq gate): CRITICAL/HIGH list empty → gate passes; histogram LOW:7 MODERATE:34 (was CRITICAL:1 MODERATE:35)
+  - [x] `pnpm install --frozen-lockfile` in sync
+  - [ ] commit + push
+- Status: in-progress
+- Blockers: —
+
 ## T-2026-07-16-003 — de-flake timezone-coupled outbox ordering test (E15-F02-S01)
 
 - Created: 2026-07-16

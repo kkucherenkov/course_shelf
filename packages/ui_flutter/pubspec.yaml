@@ -10,6 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Renders the brand icon family from verbatim SVG markup (E17-F01-S01).
+  # A regular (not dev) dependency: IconCS lives in lib/ and needs it at runtime.
+  flutter_svg: ^2.0.9
 
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,25 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-16-007 — IconCS Flutter widget, 66-glyph brand icon family (card E17-F01-S01)
+
+- Created: 2026-07-16
+- Completed: 2026-07-16
+- Owner: claude
+- Spec: [docs/superpowers/specs/2026-07-16-e17-f01-s01-icon-cs-design.md](../../docs/superpowers/specs/2026-07-16-e17-f01-s01-icon-cs-design.md)
+- Result: [PR #146](https://github.com/kkucherenkov/course_shelf/pull/146) — branch `feat/e17-f01-s01-icon-cs`
+- Goal: the web `IconCS` component's 66 named glyphs, available in Flutter as a single `IconCS` widget in `app_ui`. First real component of E17 (Mobile widget catalog).
+- Acceptance:
+  - `IconCS(name: IconName.play, size: 16, fill: true)` renders the same glyph as web
+  - 66 named values in the `IconName` enum (incl. `at`, `banner`, `github`)
+- Decisions: rendered via **flutter_svg** from the web component's **verbatim** SVG markup (overrides the card's custom-painter suggestion — lowest-risk parity path); `currentColor` via a `srcIn` `ColorFilter` (`color` → `IconTheme` → `colorScheme.onSurface`); `fill` templates `play`/`bookmark` geometry; goldens are per-size grid sheets (`icon_grid_{16,20,24}` + `icon_grid_dark_24`), not 198 per-icon PNGs.
+- Outcome: `IconName` enum (66) + `kIconMarkup` + `buildIconSvg` + `IconCS` in `app_ui`; registered in the mobile Widgetbook catalog (gallery / sizes / fill). `ui_flutter` 15 → 30 tests, mobile 57 → 58; `flutter analyze` clean in both. `flutter_svg` added as a regular dep of `app_ui`.
+- Sub-steps: all complete.
+- Status: done
+- Notes:
+  - Visual pass in Widgetbook on a device/emulator (`pnpm dev:widgetbook`) not run here — needs generated platform runners (out of scope); the user checks the final result. Goldens are Flutter-vs-Flutter regression baselines.
+  - `pdf` glyph's `<text>` renders stably despite flutter_svg's limited `<text>` support — accepted per the design doc.
+
 ## T-2026-07-16-006 — bootstrap mobile Widgetbook catalog (card E16-F01-S01)
 
 - Created: 2026-07-16

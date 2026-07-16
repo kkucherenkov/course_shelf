@@ -60,3 +60,6 @@ export 'src/course/course_cover_backdrop.dart';
 export 'src/course/course_poster_card.dart';
 export 'src/course/course_wide_card.dart';
 export 'src/course/course_compact_row.dart';
+export 'src/lesson/lesson_row_state.dart';
+export 'src/lesson/lesson_download_state.dart';
+export 'src/lesson/app_lesson_row.dart';

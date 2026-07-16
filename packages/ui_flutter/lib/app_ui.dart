@@ -31,3 +31,6 @@ export 'src/feedback/app_alert.dart';
 export 'src/feedback/app_banner.dart';
 export 'src/feedback/app_toast_variant.dart';
 export 'src/feedback/app_toast.dart';
+export 'src/chip/app_chip_variant.dart';
+export 'src/chip/app_chip_style.dart';
+export 'src/chip/app_chip.dart';

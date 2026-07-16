@@ -2,6 +2,28 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-16-005 — email-primary mobile auth + OTP test coverage (card E15-F01-S03)
+
+- Created: 2026-07-16
+- Completed: 2026-07-16
+- Owner: claude
+- Spec: [docs/superpowers/specs/2026-07-16-e15-f01-s03-email-primary-auth-design.md](../../docs/superpowers/specs/2026-07-16-e15-f01-s03-email-primary-auth-design.md)
+- Result: PR (pending) — branch `feat/e15-f01-s03-email-primary-auth`
+- Goal: close E15-F01-S03. Phone-OTP runtime already shipped; real gaps were (1) zero OTP test coverage and (2) shipped UI led with phone-OTP, contradicting the closeout spec's email-primary decision. Flipped login to email-primary (web-mirror single screen), phone-OTP demoted to a secondary link; added OTP + wire + widget tests; removed vestigial `devCode`; corrected the card.
+- Spec diff: none
+- Codegen impact: no (slang i18n regen only; `strings*.g.dart` is gitignored)
+- Sub-steps:
+  - [x] tests: OTP `blocTest` cases (requestOtp/verifyOtp/resetToPhoneStep, otpSent/error, OtpError mapping) + `auth_api_test` (mocked Dio: send/verify paths, payloads, 400/410→OtpError, token persist) + `sign_in_screen_test` & `sign_up_screen_test` widget tests. Mobile suite 37 → 54.
+  - [x] cleanup: removed `devCode` from `AuthState` + `AuthCubit`; corrected the cubit doc comment (email primary)
+  - [x] i18n: added `signIn.phoneInstead`/`errorEmailInvalid`/`errorPasswordTooShort` + `signUp.errorNameRequired`/`errorEmailInvalid`/`errorPasswordTooShort`; renamed `welcome.continueWithPhone`→`getStarted` across en/el/ru/uk; regen slang
+  - [x] UI: extracted phone/OTP verbatim to `PhoneAuthScreen` (`/sign-in/phone`) + shared `AuthErrorBanner`/`AuthInfoBanner`; rewrote `SignInScreen` as email form; real email `SignUpScreen`; Welcome CTA label → `getStarted`; routes
+  - [x] verify: `flutter analyze` clean; `flutter test` 54/54; `pnpm check:i18n` exit 0 (mobile 4×89)
+  - [x] corrected card E15-F01-S03 + TODO.md row → done
+- Status: done
+- Notes:
+  - Deferred to E18-F03-S01 (unchanged): final login visual design, `SignInCubit`/first-user routing, rate-limit banner, keep-signed-in, forgot-password. Sign-up server-error mapping is minimal (`errorEmailTaken`) pending that redesign.
+  - Ran on the emulator/device: not done here — widget tests drive the screens (render/validate/submit/navigate), but the visual pass is the user's ("I'll check the final result").
+
 ## T-2026-07-16-004 — patch CRITICAL websocket-driver advisory (CI security gate)
 
 - Created: 2026-07-16

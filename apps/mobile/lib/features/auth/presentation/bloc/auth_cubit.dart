@@ -4,8 +4,9 @@ import 'package:app_mobile/features/auth/domain/auth_repository.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_state.dart';
 
 /// Manages sign-in / sign-up / session-restore flows.
-/// Presentation calls `requestOtp`, `verifyOtp`, `signOut`, `checkSession`.
-/// `signIn` / `signUp` (email+password) remain for dev tooling only.
+/// Email+password (`signIn` / `signUp`) is the primary path; phone-OTP
+/// (`requestOtp` / `verifyOtp`) is the secondary path. `signOut` and
+/// `checkSession` bracket the session lifecycle.
 class AuthCubit extends Cubit<AuthState> {
   AuthCubit(this._repository) : super(const AuthState());
 
@@ -31,7 +32,7 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(status: AuthStatus.authenticating, errorMessage: null));
     try {
       await _repository.requestOtp(phone: phone);
-      emit(state.copyWith(devCode: '', status: AuthStatus.otpSent, phone: phone));
+      emit(state.copyWith(status: AuthStatus.otpSent, phone: phone));
     } on OtpError {
       emit(state.copyWith(
         status: AuthStatus.error,

@@ -55,8 +55,27 @@ void main() {
   });
 
   test('the full E17-F01 component wave is wired in', () {
-    // IconCS + AppButton + AppIconButton + 7 fields + textarea + 4 containers
-    // + 3 feedback + 4 progress + badge + chip + avatar + no-permission.
-    expect(components().length, greaterThanOrEqualTo(24));
+    // Wave 1: IconCS + AppButton + AppIconButton + 7 fields + textarea
+    // + 4 containers + 3 feedback + 4 progress + badge + chip + avatar
+    // + no-permission (26). Wave 2 completes E17-F01 with overlays (dialog +
+    // bottom sheet), empty/error states, and the radio group (+5 = 31).
+    expect(components().length, greaterThanOrEqualTo(31));
   });
+
+  test(
+    'the E17-F01 wave-2 batch (overlays, states, radio group) is wired in',
+    () {
+      final names = components().map((c) => c.name).toSet();
+      expect(
+        names,
+        containsAll(<String>{
+          'AppDialog',
+          'AppBottomSheet',
+          'AppEmptyState',
+          'AppErrorState',
+          'AppRadioGroup',
+        }),
+      );
+    },
+  );
 }

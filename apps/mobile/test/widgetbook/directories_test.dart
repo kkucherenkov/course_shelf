@@ -78,4 +78,34 @@ void main() {
       );
     },
   );
+
+  test('the full E17-F02 composite wave is wired in', () {
+    // E17-F01 primitives (31) + E17-F02 composites: CourseCard family (3)
+    // + AppLessonRow + bookmarks (3) + AppProgressBadge + AppPasswordField
+    // + AppSsoBlock + AppDownloadRow + AppNavigationShell + AppPlayerChrome
+    // (13) = 44.
+    expect(components().length, greaterThanOrEqualTo(44));
+  });
+
+  test('the E17-F02 composite components are wired in', () {
+    final names = components().map((c) => c.name).toSet();
+    expect(
+      names,
+      containsAll(<String>{
+        'CoursePosterCard',
+        'CourseWideCard',
+        'CourseCompactRow',
+        'AppLessonRow',
+        'AppBookmark',
+        'AppBookmarkAdd',
+        'AppNoteEditor',
+        'AppProgressBadge',
+        'AppPasswordField',
+        'AppSsoBlock',
+        'AppDownloadRow',
+        'AppNavigationShell',
+        'AppPlayerChrome',
+      }),
+    );
+  });
 }

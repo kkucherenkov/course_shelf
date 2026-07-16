@@ -2,6 +2,25 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-16-008 — AppButton + AppIconButton (card E17-F01-S02)
+
+- Created: 2026-07-16
+- Completed: 2026-07-16
+- Owner: claude
+- Spec: [docs/superpowers/specs/2026-07-16-e17-f01-s02-app-button-design.md](../../docs/superpowers/specs/2026-07-16-e17-f01-s02-app-button-design.md)
+- Result: [PR #147](https://github.com/kkucherenkov/course_shelf/pull/147) — branch `feat/e17-f01-s02-app-button`
+- Goal: Flutter twins of the web AppButton + AppIconButton in `app_ui` — 4 variants × 3 sizes × states, token-driven. The shared recipe the E17-F01 component wave reuses; retires the E16 CanaryButton placeholder.
+- Acceptance:
+  - Widgetbook use case per state matches the bundle
+  - Uses `Tokens.*` (no hard-coded values; heights are a locally-owned scale, as the web owns `$btn-h-*`)
+- Decisions: Material `ButtonStyleButton` + `WidgetStateProperty`, ink ripple suppressed → flat web look with free focus/keyboard/semantics/disabled; flat token colour swap (`accentActive` on press), not a ripple; labels bind off `Theme.textTheme.labelLarge` (packaged sans), never the bare `AppTextStyles` family.
+- Outcome: `resolveAppButtonStyle` + `AppButton` + `AppIconButton` in `app_ui`; mobile Widgetbook catalog (Variants/Sizes/States/With icons) with CanaryButton removed. `ui_flutter` 30 → 47 tests (incl. `button_matrix_{light,dark}` goldens); mobile 58 → 58; `flutter analyze` clean in both.
+- Sub-steps: all complete.
+- Status: done
+- Notes:
+  - Font-binding fix caught by the golden — button labels were rendering as Ahem boxes because `AppTextStyles.*` carry the bare family; the theme's `labelLarge` is the only source of the packaged (prefixed) sans family.
+  - Live Widgetbook pass (`pnpm dev:widgetbook`) not run here — needs generated platform runners; the user checks the final result.
+
 ## T-2026-07-16-007 — IconCS Flutter widget, 66-glyph brand icon family (card E17-F01-S01)
 
 - Created: 2026-07-16

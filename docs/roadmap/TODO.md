@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `75 / 121` complete (update by hand or via a pre-commit hook).
+Progress: `79 / 121` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -124,7 +124,7 @@ Progress: `75 / 121` complete (update by hand or via a pre-commit hook).
 
 ## E16 — Widgetbook
 
-- [ ] [E16-F01-S01](./tasks/E16-F01-S01.md) `A` — widgetbook/main.dart + canary use case · ⇐ E15-F01-S01
+- [x] [E16-F01-S01](./tasks/E16-F01-S01.md) `A` — widgetbook/main.dart + canary use case · ⇐ E15-F01-S01
 
 ## E17 — Mobile widget catalog
 

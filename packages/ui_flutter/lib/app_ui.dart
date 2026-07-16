@@ -63,3 +63,7 @@ export 'src/course/course_compact_row.dart';
 export 'src/lesson/lesson_row_state.dart';
 export 'src/lesson/lesson_download_state.dart';
 export 'src/lesson/app_lesson_row.dart';
+export 'src/bookmarks/bookmark_draft.dart';
+export 'src/bookmarks/app_bookmark.dart';
+export 'src/bookmarks/app_bookmark_add.dart';
+export 'src/bookmarks/app_note_editor.dart';

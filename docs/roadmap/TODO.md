@@ -119,7 +119,7 @@ Progress: `75 / 121` complete (update by hand or via a pre-commit hook).
 
 - [x] [E15-F01-S01](./tasks/E15-F01-S01.md) `A` — Flutter bootstrap, theme from tokens · ⇐ E03-F01-S02
 - [x] [E15-F01-S02](./tasks/E15-F01-S02.md) `A` — Wire generated Dio client with bearer interceptor · ⇐ E02-F02-S03, E15-F01-S01
-- [ ] [E15-F01-S03](./tasks/E15-F01-S03.md) `A` — AuthCubit + AuthHttpClient (mobile sign-in/out) · ⇐ E15-F01-S02, E04-F02-S02
+- [x] [E15-F01-S03](./tasks/E15-F01-S03.md) `A` — AuthCubit + AuthHttpClient (mobile sign-in/out) · ⇐ E15-F01-S02, E04-F02-S02
 - [x] [E15-F02-S01](./tasks/E15-F02-S01.md) `A` — Drift schema + DAOs · ⇐ E15-F01-S01
 
 ## E16 — Widgetbook

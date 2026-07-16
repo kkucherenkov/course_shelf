@@ -4,7 +4,7 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 
 import 'package:app_ui/app_ui.dart';
 
-import '../../_support/fonts.dart';
+import '../_support/fonts.dart';
 
 Widget _label(String text) => Padding(
   padding: const EdgeInsets.only(top: 8, bottom: 4),

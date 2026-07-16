@@ -5,10 +5,13 @@ import 'package:app_mobile/widgetbook/avatar_catalog.dart';
 import 'package:app_mobile/widgetbook/badge_catalog.dart';
 import 'package:app_mobile/widgetbook/chip_catalog.dart';
 import 'package:app_mobile/widgetbook/containers_catalog.dart';
+import 'package:app_mobile/widgetbook/empty_error_catalog.dart';
 import 'package:app_mobile/widgetbook/feedback_catalog.dart';
 import 'package:app_mobile/widgetbook/fields_catalog.dart';
 import 'package:app_mobile/widgetbook/icon_cs_catalog.dart';
+import 'package:app_mobile/widgetbook/overlays_catalog.dart';
 import 'package:app_mobile/widgetbook/progress_catalog.dart';
+import 'package:app_mobile/widgetbook/radio_group_catalog.dart';
 import 'package:app_mobile/widgetbook/states_catalog.dart';
 import 'package:app_mobile/widgetbook/textarea_catalog.dart';
 
@@ -34,5 +37,8 @@ List<WidgetbookNode> buildWidgetbookDirectories() {
     buildChipComponent(),
     buildAvatarComponent(),
     buildNoPermissionComponent(),
+    ...buildEmptyErrorComponents(),
+    ...buildOverlayComponents(),
+    buildRadioGroupComponent(),
   ];
 }

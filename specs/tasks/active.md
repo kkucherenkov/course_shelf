@@ -18,11 +18,15 @@
 - Sub-steps:
   - [x] **Shell foundation (serial — blocks Home)**: `onRefresh` on `AppNavigationTab` + adaptive refresh in `AppNavigationShell`; `MainShell` in `apps/mobile`; `AuthGate._HomeScreen` → `MainShell`; pre-wire the `/forgot` + lesson routes so the parallel agents never both edit `routes.dart`
   - [x] **De-template (#156)**: `Appointments` → `CourseShelf`; the appointments nav tabs → the real five; phone-OTP stripped from `AuthState`/`AuthCubit`/`AuthRepository`/`auth_api`; `welcome_screen` + `phone_auth_screen` deleted
-  - [ ] E18-F01-S01 — `HomeCubit` (Loading | Loaded | Empty | Failed) + Home tab body
-  - [ ] E18-F03-S01 — rework the placeholder auth screens; add `forgot_screen`; `SignUpCubit` + `ForgotCubit` 3-step machines
+  - [x] E18-F01-S01 — `HomeCubit` (Loading | Loaded | Empty | Failed) + Home tab body
+  - [x] E18-F03-S01 — rework the placeholder auth screens; add `forgot_screen`; `SignUpCubit` + `ForgotCubit` 3-step machines
   - [x] E18-F02-S01 — `video_player` dependency; player BLoC; portrait tabs + landscape chrome; throttled 10s `progress_outbox` write
-- Status: in-progress
+- Status: in-progress — all three cards built + integrated on `feat/e18-wave-1`; awaiting PR + live Widgetbook pass
 - Blockers: —
+- Divergences filed as issues, not silently absorbed:
+  - **Password reset can't work against the current backend.** `auth.service.ts` has `emailAndPassword: { enabled, autoSignIn }` but no `sendResetPassword`, so Better Auth returns `RESET_PASSWORD_DISABLED`. The auth screens wire the canonical endpoints and surface the failure (web instead stubs it — `console.warn` + `{ok:true}`). Neither stack can actually reset a password. → new backend issue.
+  - **`WatchingOffline` is a flag, not a `PlayerStatus` member** (E18-F02-S01). The card lists it as a state; DESIGN_BRIEF §7.6 line 603 defines it as an indicator under the title shown _while playing_, so as an enum member "paused while offline" is unrepresentable. The BLoC follows the brief over the card.
+  - **`AppBrand` (E18-F03-S01) does not exist** in `ui_flutter`, and web has no `@app/ui` twin either (its `AuthBrand` is app-level). Built the mobile twin under `features/auth/presentation/widgets/`, not the catalog.
 
 ### What the roadmap got wrong about E18
 

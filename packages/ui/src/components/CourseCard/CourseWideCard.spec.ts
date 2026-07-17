@@ -19,27 +19,27 @@ describe('CourseWideCard', () => {
 
   it('renders title and instructor', () => {
     const wrapper = mount(CourseWideCard, { props: { course: base } });
-    expect(wrapper.find('.course-wide-card__title').text()).toBe('Advanced Vue Patterns');
-    expect(wrapper.find('.course-wide-card__instructor').text()).toBe('Jane Doe');
+    expect(wrapper.find('.app-course-wide-card__title').text()).toBe('Advanced Vue Patterns');
+    expect(wrapper.find('.app-course-wide-card__instructor').text()).toBe('Jane Doe');
   });
 
   it('renders completed/lessons count', () => {
     const wrapper = mount(CourseWideCard, { props: { course: base } });
-    expect(wrapper.find('.course-wide-card__meta-count').text()).toBe('4/12');
+    expect(wrapper.find('.app-course-wide-card__meta-count').text()).toBe('4/12');
   });
 
   // --- cover background ---
 
   it('uses COVER[accent] as background when course.cover is undefined', () => {
     const wrapper = mount(CourseWideCard, { props: { course: base } });
-    const thumb = wrapper.find('.course-wide-card__thumb');
+    const thumb = wrapper.find('.app-course-wide-card__thumb');
     expect(thumb.attributes('style')).toContain(COVER['teal']);
   });
 
   it('uses course.cover override when set', () => {
     const withCover: Course = { ...base, cover: 'url(/custom.jpg)' };
     const wrapper = mount(CourseWideCard, { props: { course: withCover } });
-    const thumb = wrapper.find('.course-wide-card__thumb');
+    const thumb = wrapper.find('.app-course-wide-card__thumb');
     expect(thumb.attributes('style')).toContain('url(');
   });
 
@@ -49,7 +49,7 @@ describe('CourseWideCard', () => {
     const wrapper = mount(CourseWideCard, {
       props: { course: base, resumeLabel: 'Resume 2:05' },
     });
-    const resume = wrapper.find('.course-wide-card__meta-resume');
+    const resume = wrapper.find('.app-course-wide-card__meta-resume');
     expect(resume.text()).toBe('Resume 2:05');
   });
 
@@ -57,18 +57,18 @@ describe('CourseWideCard', () => {
     const wrapper = mount(CourseWideCard, {
       props: { course: { ...base, completed: 4, lessons: 12 } },
     });
-    const resume = wrapper.find('.course-wide-card__meta-resume');
+    const resume = wrapper.find('.app-course-wide-card__meta-resume');
     expect(resume.text()).toBe('33%');
   });
 
   it('hides the instructor line when instructor is empty', () => {
     const wrapper = mount(CourseWideCard, { props: { course: { ...base, instructor: '' } } });
-    expect(wrapper.find('.course-wide-card__instructor').exists()).toBe(false);
+    expect(wrapper.find('.app-course-wide-card__instructor').exists()).toBe(false);
   });
 
   it('play icon is present in meta row', () => {
     const wrapper = mount(CourseWideCard, { props: { course: base } });
-    const metaIcon = wrapper.find('.course-wide-card__meta-icon');
+    const metaIcon = wrapper.find('.app-course-wide-card__meta-icon');
     expect(metaIcon.exists()).toBe(true);
     // IconCS renders as svg
     expect(wrapper.find('svg').exists()).toBe(true);
@@ -79,7 +79,7 @@ describe('CourseWideCard', () => {
   it('state=auto + completed===lessons → strip fill=100%', () => {
     const completed: Course = { ...base, completed: 12, lessons: 12 };
     const wrapper = mount(CourseWideCard, { props: { course: completed } });
-    const fill = wrapper.find('.course-wide-card__strip-fill');
+    const fill = wrapper.find('.app-course-wide-card__strip-fill');
     expect(fill.attributes('style')).toContain('width: 100%');
   });
 
@@ -87,7 +87,7 @@ describe('CourseWideCard', () => {
     const wrapper = mount(CourseWideCard, {
       props: { course: { ...base, completed: 6, lessons: 12 } },
     });
-    const fill = wrapper.find('.course-wide-card__strip-fill');
+    const fill = wrapper.find('.app-course-wide-card__strip-fill');
     expect(fill.attributes('style')).toContain('width: 50%');
   });
 
@@ -95,13 +95,13 @@ describe('CourseWideCard', () => {
     const wrapper = mount(CourseWideCard, {
       props: { course: { ...base, completed: 0, lessons: 12 } },
     });
-    const fill = wrapper.find('.course-wide-card__strip-fill');
+    const fill = wrapper.find('.app-course-wide-card__strip-fill');
     expect(fill.attributes('style')).toContain('width: 0%');
   });
 
   it('state=locked → strip fill=0%', () => {
     const wrapper = mount(CourseWideCard, { props: { course: base, state: 'locked' } });
-    const fill = wrapper.find('.course-wide-card__strip-fill');
+    const fill = wrapper.find('.app-course-wide-card__strip-fill');
     expect(fill.attributes('style')).toContain('width: 0%');
   });
 
@@ -109,7 +109,7 @@ describe('CourseWideCard', () => {
 
   it('has tabindex=0, role=button, aria-label=title on root', () => {
     const wrapper = mount(CourseWideCard, { props: { course: base } });
-    const root = wrapper.find('.course-wide-card');
+    const root = wrapper.find('.app-course-wide-card');
     expect(root.attributes('tabindex')).toBe('0');
     expect(root.attributes('role')).toBe('button');
     expect(root.attributes('aria-label')).toBe('Advanced Vue Patterns');
@@ -117,7 +117,7 @@ describe('CourseWideCard', () => {
 
   it('interactive=false renders presentational root (no role/tabindex/aria-label)', () => {
     const wrapper = mount(CourseWideCard, { props: { course: base, interactive: false } });
-    const root = wrapper.find('.course-wide-card');
+    const root = wrapper.find('.app-course-wide-card');
     expect(root.attributes('tabindex')).toBeUndefined();
     expect(root.attributes('role')).toBeUndefined();
     expect(root.attributes('aria-label')).toBeUndefined();
@@ -125,8 +125,8 @@ describe('CourseWideCard', () => {
 
   it('interactive=false does not emit click on click or Enter', async () => {
     const wrapper = mount(CourseWideCard, { props: { course: base, interactive: false } });
-    await wrapper.find('.course-wide-card').trigger('click');
-    await wrapper.find('.course-wide-card').trigger('keydown', { key: 'Enter' });
+    await wrapper.find('.app-course-wide-card').trigger('click');
+    await wrapper.find('.app-course-wide-card').trigger('keydown', { key: 'Enter' });
     expect(wrapper.emitted('click')).toBeUndefined();
   });
 
@@ -134,7 +134,7 @@ describe('CourseWideCard', () => {
 
   it('emits click with course on mouse click', async () => {
     const wrapper = mount(CourseWideCard, { props: { course: base } });
-    await wrapper.find('.course-wide-card').trigger('click');
+    await wrapper.find('.app-course-wide-card').trigger('click');
     expect(wrapper.emitted('click')).toHaveLength(1);
     const emitted = wrapper.emitted<Course[]>('click');
     expect(emitted?.[0]?.[0]).toStrictEqual(base);
@@ -142,19 +142,19 @@ describe('CourseWideCard', () => {
 
   it('emits click on Enter keydown', async () => {
     const wrapper = mount(CourseWideCard, { props: { course: base } });
-    await wrapper.find('.course-wide-card').trigger('keydown', { key: 'Enter' });
+    await wrapper.find('.app-course-wide-card').trigger('keydown', { key: 'Enter' });
     expect(wrapper.emitted('click')).toHaveLength(1);
   });
 
   it('emits click on Space keydown', async () => {
     const wrapper = mount(CourseWideCard, { props: { course: base } });
-    await wrapper.find('.course-wide-card').trigger('keydown', { key: ' ' });
+    await wrapper.find('.app-course-wide-card').trigger('keydown', { key: ' ' });
     expect(wrapper.emitted('click')).toHaveLength(1);
   });
 
   it('does not emit click on other keys', async () => {
     const wrapper = mount(CourseWideCard, { props: { course: base } });
-    await wrapper.find('.course-wide-card').trigger('keydown', { key: 'Tab' });
+    await wrapper.find('.app-course-wide-card').trigger('keydown', { key: 'Tab' });
     expect(wrapper.emitted('click')).toBeUndefined();
   });
 
@@ -162,13 +162,13 @@ describe('CourseWideCard', () => {
 
   it('renders skeleton variant when loading=true', () => {
     const wrapper = mount(CourseWideCard, { props: { course: base, loading: true } });
-    expect(wrapper.find('.course-wide-card--loading').exists()).toBe(true);
-    expect(wrapper.find('.course-wide-card__title').exists()).toBe(false);
+    expect(wrapper.find('.app-course-wide-card--loading').exists()).toBe(true);
+    expect(wrapper.find('.app-course-wide-card__title').exists()).toBe(false);
   });
 
   it('loading skeleton is not focusable', () => {
     const wrapper = mount(CourseWideCard, { props: { course: base, loading: true } });
-    const root = wrapper.find('.course-wide-card--loading');
+    const root = wrapper.find('.app-course-wide-card--loading');
     expect(root.attributes('tabindex')).toBeUndefined();
     expect(root.attributes('role')).toBeUndefined();
   });

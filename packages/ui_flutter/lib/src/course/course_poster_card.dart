@@ -263,7 +263,7 @@ class _CoursePosterCardState extends State<CoursePosterCard> {
 }
 
 /// Completed-badge / locked-scrim icon geometry — a locally-owned micro-scale
-/// mirroring the web `.course-poster-card__badge`/`__scrim` SCSS block (28px
+/// mirroring the web `.app-course-poster-card__badge`/`__scrim` SCSS block (28px
 /// circle, 16px check glyph, 20px lock glyph), all hard-coded there too.
 abstract final class _Badge {
   static const double diameter = 28;

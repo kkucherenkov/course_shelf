@@ -41,33 +41,33 @@
 <template>
   <div
     v-if="!loading"
-    class="course-wide-card"
+    class="app-course-wide-card"
     v-bind="interactiveAttrs"
     @click="handleActivate"
     @keydown="handleActivate"
   >
     <!-- thumb -->
-    <div class="course-wide-card__thumb" :style="coverStyle">
-      <span class="course-wide-card__initials" aria-hidden="true">{{ coverInitials }}</span>
-      <div class="course-wide-card__overlay" aria-hidden="true" />
-      <div class="course-wide-card__strip" aria-hidden="true">
-        <div class="course-wide-card__strip-fill" :style="{ width: `${pct}%` }" />
+    <div class="app-course-wide-card__thumb" :style="coverStyle">
+      <span class="app-course-wide-card__initials" aria-hidden="true">{{ coverInitials }}</span>
+      <div class="app-course-wide-card__overlay" aria-hidden="true" />
+      <div class="app-course-wide-card__strip" aria-hidden="true">
+        <div class="app-course-wide-card__strip-fill" :style="{ width: `${pct}%` }" />
       </div>
     </div>
 
     <!-- body -->
-    <div class="course-wide-card__body">
-      <p class="course-wide-card__title">
+    <div class="app-course-wide-card__body">
+      <p class="app-course-wide-card__title">
         {{ course.title }}
       </p>
-      <p v-if="course.instructor" class="course-wide-card__instructor">
+      <p v-if="course.instructor" class="app-course-wide-card__instructor">
         {{ course.instructor }}
       </p>
-      <div class="course-wide-card__meta">
-        <IconCS name="play" fill :size="12" class="course-wide-card__meta-icon" />
-        <span class="course-wide-card__meta-resume">{{ metaLabel }}</span>
-        <span class="course-wide-card__meta-sep" aria-hidden="true"> · </span>
-        <span class="course-wide-card__meta-count"
+      <div class="app-course-wide-card__meta">
+        <IconCS name="play" fill :size="12" class="app-course-wide-card__meta-icon" />
+        <span class="app-course-wide-card__meta-resume">{{ metaLabel }}</span>
+        <span class="app-course-wide-card__meta-sep" aria-hidden="true"> · </span>
+        <span class="app-course-wide-card__meta-count"
           >{{ course.completed }}/{{ course.lessons }}</span
         >
       </div>
@@ -75,18 +75,18 @@
   </div>
 
   <!-- loading skeleton -->
-  <div v-else class="course-wide-card course-wide-card--loading" aria-hidden="true">
+  <div v-else class="app-course-wide-card app-course-wide-card--loading" aria-hidden="true">
     <AppSkeleton width="80px" height="80px" radius="md" />
-    <div class="course-wide-card__body">
+    <div class="app-course-wide-card__body">
       <AppSkeleton width="75%" height="1em" radius="sm" />
       <AppSkeleton
-        class="course-wide-card__skeleton-instructor"
+        class="app-course-wide-card__skeleton-instructor"
         width="50%"
         height="0.875em"
         radius="sm"
       />
       <AppSkeleton
-        class="course-wide-card__skeleton-meta"
+        class="app-course-wide-card__skeleton-meta"
         width="60%"
         height="0.75em"
         radius="sm"
@@ -107,7 +107,7 @@
   $z-initials: 1;
   $z-strip: 2;
 
-  .course-wide-card {
+  .app-course-wide-card {
     display: flex;
     align-items: flex-start;
     gap: var(--space-3);

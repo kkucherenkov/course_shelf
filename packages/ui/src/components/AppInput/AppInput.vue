@@ -71,6 +71,14 @@
 </template>
 
 <style lang="scss" scoped>
+  // Control heights match the bundle's .btn-sm/default/lg and .input rules.
+  // The --space-* scale (0,4,8,12,16,24,32,48,64,96) has no matching step, so
+  // these are named SCSS variables per the stylelint rule's own guidance.
+  $input-height-sm: 28px;
+  $input-height-md: 36px;
+  $input-height-lg: 44px;
+  $input-height-md-compact: 30px;
+
   .app-input {
     display: block;
     width: 100%;
@@ -97,42 +105,40 @@
 
     &:disabled,
     &--disabled {
-      background: var(--surface-bg-muted);
-      color: var(--text-fg-disabled);
+      background: var(--surface-overlay);
+      color: var(--text-disabled);
       cursor: not-allowed;
 
       &::placeholder {
-        color: var(--text-fg-disabled);
+        color: var(--text-disabled);
       }
     }
 
     &--readonly {
-      background: var(--surface-bg-subtle);
+      background: var(--surface-raised);
       cursor: default;
     }
 
-    // Heights match the bundle's .btn-sm/default/lg and .input rules:
     // sm = 28px, md = 36px (default .input), lg = 44px.
-    // No --space-16/20/24 tokens exist; the scale tops out at --space-9 (96px).
     &--sm {
       padding: 0 var(--space-3);
       font-size: var(--text-sm);
-      height: 28px;
-      min-height: 28px;
+      height: $input-height-sm;
+      min-height: $input-height-sm;
     }
 
     &--md {
       padding: 0 var(--space-3);
       font-size: var(--text-md);
-      height: 36px;
-      min-height: 36px;
+      height: $input-height-md;
+      min-height: $input-height-md;
     }
 
     &--lg {
       padding: 0 var(--space-4);
       font-size: var(--text-md);
-      height: 44px;
-      min-height: 44px;
+      height: $input-height-lg;
+      min-height: $input-height-lg;
     }
   }
 
@@ -141,7 +147,7 @@
   // via :deep() — but since this is a single native <input> root there is no
   // child pierce needed; we address our own scoped class via a global ancestor.
   :global([data-density='compact']) .app-input--md {
-    height: 30px;
-    min-height: 30px;
+    height: $input-height-md-compact;
+    min-height: $input-height-md-compact;
   }
 </style>

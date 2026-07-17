@@ -84,11 +84,17 @@
   //   --primary-soft  → --brand-accent-soft
   //   --surface-2     → --surface-raised
   //   --d-fast        → --dur-fast
+  // 10px/6px fall between --space-* steps (8/12), so they are named SCSS
+  // variables holding the same literals.
+  $row-gap: 10px;
+  $row-inset: 10px;
+  $time-pad-inline: 6px;
+
   .app-bookmark {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-    padding: 10px;
+    gap: $row-gap;
+    padding: $row-inset;
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: background var(--dur-fast);
@@ -110,7 +116,7 @@
 
     &__time {
       flex-shrink: 0;
-      padding: 2px 6px;
+      padding: 2px $time-pad-inline;
       border-radius: var(--radius-sm);
       background: var(--brand-accent-soft);
       color: var(--brand-accent);
@@ -138,8 +144,8 @@
     }
 
     &__action {
-      width: 24px;
-      height: 24px;
+      width: var(--space-5);
+      height: var(--space-5);
       border-radius: var(--radius-sm);
       border: 0;
       background: transparent;

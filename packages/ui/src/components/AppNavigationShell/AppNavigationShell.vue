@@ -378,6 +378,14 @@
 </template>
 
 <style scoped lang="scss">
+  // Chrome metrics with no matching --space-* step (scale: 4/8/12/16/24/32/48/
+  // 64/96) — named SCSS variables holding the same literals.
+  $brand-mark-size: 28px;
+  $topbar-height: 56px;
+  $search-max-width: 420px;
+  $menu-min-width: 180px;
+  $tab-label-size: 10px;
+
   // ── Shell root ─────────────────────────────────────────────────────────────
   .app-navigation-shell {
     display: grid;
@@ -414,11 +422,11 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 28px;
-      height: 28px;
+      width: $brand-mark-size;
+      height: $brand-mark-size;
       border-radius: var(--radius-sm);
       background: var(--brand-accent);
-      color: white;
+      color: var(--brand-accent-fg);
       font-size: var(--text-xs);
       font-weight: var(--fw-bold);
       flex-shrink: 0;
@@ -521,7 +529,7 @@
       padding: var(--space-3) var(--space-4);
       border-bottom: 1px solid var(--border-default);
       background: var(--surface-overlay);
-      height: 56px;
+      height: $topbar-height;
       flex-shrink: 0;
     }
 
@@ -535,7 +543,7 @@
       align-items: center;
       gap: var(--space-2);
       flex: 1;
-      max-width: 420px;
+      max-width: $search-max-width;
       background: var(--surface-raised);
       border: 1px solid var(--border-default);
       border-radius: var(--radius-md);
@@ -566,8 +574,8 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 32px;
-      height: 32px;
+      width: var(--space-6);
+      height: var(--space-6);
       border-radius: var(--radius-md);
       background: transparent;
       border: none;
@@ -611,15 +619,18 @@
 
     &__menu {
       position: absolute;
-      top: calc(100% + 8px);
+      top: calc(100% + var(--space-2));
       right: 0;
-      z-index: 100;
-      min-width: 180px;
+      z-index: var(--z-dropdown);
+      min-width: $menu-min-width;
       background: var(--surface-overlay);
       border: 1px solid var(--border-default);
       border-radius: var(--radius-lg);
       padding: var(--space-1);
-      box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+      // Was `0 8px 24px rgb(0 0 0 / 12%)` — the same 0/8px/24px geometry the
+      // light --shadow-md ships, but theme-blind. --shadow-md is the menu
+      // elevation token and adapts to the dark palette.
+      box-shadow: var(--shadow-md);
     }
 
     &__menu-item {
@@ -690,8 +701,8 @@
       bottom: 0;
       left: 0;
       right: 0;
-      z-index: 50;
-      height: 64px;
+      z-index: var(--z-sticky);
+      height: var(--space-8);
       background: var(--surface-overlay);
       border-top: 1px solid var(--border-default);
       align-items: center;
@@ -725,7 +736,7 @@
     }
 
     &__tab-label {
-      font-size: 10px;
+      font-size: $tab-label-size;
       line-height: 1.2;
     }
   }
@@ -747,8 +758,9 @@
         display: flex;
       }
 
+      // Clears the fixed bottom-tab bar, whose height is the same --space-8.
       &__main {
-        padding-bottom: 64px;
+        padding-bottom: var(--space-8);
       }
     }
   }

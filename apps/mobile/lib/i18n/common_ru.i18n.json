@@ -1,21 +1,18 @@
 {
-  "appTitle": "Встречи",
-  "loading": "Загрузка\u2026",
+  "appTitle": "CourseShelf",
+  "loading": "Загрузка…",
   "retry": "Повторить",
+  "comingSoon": "Этот раздел CourseShelf ещё в разработке.",
   "localeEn": "Английский",
   "localeRu": "Русский",
   "localeEl": "Греческий",
   "localeUk": "Украинский",
   "shell": {
     "navHome": "Главная",
-    "navBookings": "Записи",
-    "navChat": "Чат",
-    "navProfile": "Профиль",
-    "navSos": "SOS",
-    "navBusiness": "Бизнес",
-    "navAriaLabel": "Основное",
-    "signIn": "Войти",
-    "signOut": "Выйти",
-    "drawerOpen": "Открыть меню"
+    "navBrowse": "Каталог",
+    "navDownloads": "Загрузки",
+    "navSearch": "Поиск",
+    "navSettings": "Настройки",
+    "navAriaLabel": "Основное"
   }
 }

@@ -2,35 +2,46 @@ import 'package:equatable/equatable.dart';
 
 import 'package:app_mobile/features/auth/domain/auth_user.dart';
 
-enum AuthStatus { unauthenticated, authenticating, authenticated, otpSent, error }
+enum AuthStatus {
+  /// Boot: the stored session has not been checked yet. Distinct from
+  /// [unauthenticated], which is a *resolved* answer — `AuthGate` shows a
+  /// splash here rather than flashing the sign-in screen for one frame.
+  unknown,
+
+  unauthenticated,
+
+  /// An interactive sign-in / sign-up is in flight. Deliberately NOT a
+  /// full-screen state: the auth screen stays mounted and renders its own
+  /// inline button spinner, so the form isn't torn down under the user.
+  authenticating,
+
+  authenticated,
+  error,
+}
 
 class AuthState extends Equatable {
   const AuthState({
-    this.status = AuthStatus.unauthenticated,
+    this.status = AuthStatus.unknown,
     this.user,
     this.errorMessage,
-    this.phone,
   });
 
   final AuthStatus status;
   final AuthUser? user;
   final String? errorMessage;
-  final String? phone;
 
   AuthState copyWith({
     AuthStatus? status,
     AuthUser? user,
     String? errorMessage,
-    String? phone,
   }) {
     return AuthState(
       status: status ?? this.status,
       user: user ?? this.user,
       errorMessage: errorMessage,
-      phone: phone ?? this.phone,
     );
   }
 
   @override
-  List<Object?> get props => [status, user, errorMessage, phone];
+  List<Object?> get props => [status, user, errorMessage];
 }

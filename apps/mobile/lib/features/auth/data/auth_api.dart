@@ -10,11 +10,6 @@ import 'package:app_mobile/shared/auth/token_storage.dart';
 ///
 /// Endpoint base: `/api/v1/auth/` — our namespace prefix keeps all routes
 /// under the versioned API path.
-///
-/// Phone + OTP is handled by the Better Auth `phoneNumber` plugin on the
-/// backend:
-///   POST /api/v1/auth/phone-number/send-otp   — triggers SMS delivery
-///   POST /api/v1/auth/phone-number/verify-otp — validates code, returns token
 class AuthApiImpl implements AuthRepository {
   AuthApiImpl({required Dio dio, required TokenStorage tokenStorage})
       : _dio = dio,
@@ -79,63 +74,6 @@ class AuthApiImpl implements AuthRepository {
     }
   }
 
-  @override
-  Future<void> requestOtp({required String phone}) async {
-    final digits = _normalisePhone(phone);
-    final phoneE164 = '+$digits';
-    try {
-      await _dio.post<void>(
-        '/api/v1/auth/phone-number/send-otp',
-        data: {'phoneNumber': phoneE164},
-      );
-    } on DioException catch (e) {
-      final statusCode = e.response?.statusCode ?? 0;
-      if (statusCode == 400) throw const OtpError(OtpErrorKind.invalid);
-      rethrow;
-    }
-  }
-
-  @override
-  Future<VerifyOtpResult> verifyOtp({
-    required String phone,
-    required String code,
-    required String name,
-  }) async {
-    final digits = _normalisePhone(phone);
-    final phoneE164 = '+$digits';
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/auth/phone-number/verify-otp',
-        data: {'phoneNumber': phoneE164, 'code': code},
-      );
-      return _handleOtpResponse(response.data);
-    } on DioException catch (e) {
-      final statusCode = e.response?.statusCode ?? 0;
-      if (statusCode == 400) throw const OtpError(OtpErrorKind.mismatch);
-      if (statusCode == 410) throw const OtpError(OtpErrorKind.expired);
-      rethrow;
-    }
-  }
-
-  VerifyOtpResult _handleOtpResponse(Map<String, dynamic>? data) {
-    if (data == null) throw Exception('Empty verify-otp response');
-    final token = data['token'] as String?;
-    if (token != null && token.isNotEmpty) {
-      _tokenStorage.write(token);
-    }
-    final userData = data['user'] as Map<String, dynamic>?;
-    if (userData == null) throw Exception('No user in verify-otp response');
-    return VerifyOtpResult(
-      user: AuthUser(
-        id: userData['id'] as String,
-        email: (userData['email'] as String?) ?? '',
-        name: (userData['name'] as String?) ?? '',
-        role: (userData['role'] as String?) ?? 'client',
-      ),
-      isNewUser: false,
-    );
-  }
-
   AuthUser _handleAuthResponse(Map<String, dynamic>? data) {
     if (data == null) throw Exception('Empty auth response');
     final token = data['token'] as String?;
@@ -152,13 +90,5 @@ class AuthApiImpl implements AuthRepository {
       name: (user['name'] as String?) ?? '',
       role: (user['role'] as String?) ?? 'client',
     );
-  }
-
-  String _normalisePhone(String raw) {
-    final digits = raw.replaceAll(RegExp(r'\D+'), '');
-    if (digits.length < 6) {
-      throw const OtpError(OtpErrorKind.invalid);
-    }
-    return digits;
   }
 }

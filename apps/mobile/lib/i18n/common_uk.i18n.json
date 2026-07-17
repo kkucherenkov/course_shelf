@@ -1,21 +1,18 @@
 {
-  "appTitle": "Appointments",
+  "appTitle": "CourseShelf",
   "loading": "Завантаження…",
   "retry": "Повторити",
+  "comingSoon": "Ця частина CourseShelf ще в розробці.",
   "localeEn": "Англійська",
   "localeRu": "Російська",
   "localeEl": "Грецька",
   "localeUk": "Українська",
   "shell": {
     "navHome": "Головна",
-    "navBookings": "Записи",
-    "navChat": "Чат",
-    "navProfile": "Профіль",
-    "navSos": "SOS",
-    "navBusiness": "Бізнес",
-    "navAriaLabel": "Основна навігація",
-    "signIn": "Увійти",
-    "signOut": "Вийти",
-    "drawerOpen": "Відкрити навігацію"
+    "navBrowse": "Каталог",
+    "navDownloads": "Завантаження",
+    "navSearch": "Пошук",
+    "navSettings": "Налаштування",
+    "navAriaLabel": "Основна навігація"
   }
 }

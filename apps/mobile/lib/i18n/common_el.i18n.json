@@ -1,21 +1,18 @@
 {
-  "appTitle": "Appointments",
+  "appTitle": "CourseShelf",
   "loading": "Φόρτωση…",
   "retry": "Επανάληψη",
+  "comingSoon": "Αυτό το μέρος του CourseShelf είναι ακόμη υπό κατασκευή.",
   "localeEn": "Αγγλικά",
   "localeRu": "Ρωσικά",
   "localeEl": "Ελληνικά",
   "localeUk": "Ουκρανικά",
   "shell": {
     "navHome": "Αρχική",
-    "navBookings": "Κρατήσεις",
-    "navChat": "Συνομιλία",
-    "navProfile": "Προφίλ",
-    "navSos": "SOS",
-    "navBusiness": "Επιχείρηση",
-    "navAriaLabel": "Κύρια πλοήγηση",
-    "signIn": "Είσοδος",
-    "signOut": "Αποσύνδεση",
-    "drawerOpen": "Άνοιγμα πλοήγησης"
+    "navBrowse": "Κατάλογος",
+    "navDownloads": "Λήψεις",
+    "navSearch": "Αναζήτηση",
+    "navSettings": "Ρυθμίσεις",
+    "navAriaLabel": "Κύρια πλοήγηση"
   }
 }

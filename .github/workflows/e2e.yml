@@ -16,10 +16,16 @@ name: E2E smoke
 #     this same production-shaped stack in the same image, reruns the suite
 #     with `--update-snapshots`, and commits the result back to the branch.
 
+# Runs on PRs — see quality.yml for the reasoning. The nightly cadence was a
+# Forgejo-era constraint (paid, shared self-hosted runner) that died with the
+# migration; this repo is public and the job takes ~6 minutes. A nightly
+# failure has no PR and no author attached to it, which is precisely why the
+# IBM Plex reflow (7eb328d) went unexplained for two days.
 on:
+  pull_request:
   workflow_dispatch:
   schedule:
-    # Nightly at 03:00 UTC — mirrors the Forgejo cadence.
+    # Kept: catches drift that isn't ours (base image, upstream deps).
     - cron: "0 3 * * *"
 
 concurrency:

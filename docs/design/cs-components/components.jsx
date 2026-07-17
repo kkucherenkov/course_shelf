@@ -617,17 +617,21 @@ const DownloadRow = ({
 }) => {
   const action =
     state === 'downloading' || state === 'queued' ? (
-      <div className="dl-action">
+      <button type="button" className="dl-action" aria-label={`Cancel download of ${lesson}`}>
         <Icon name="x" size={16} />
-      </div>
+      </button>
     ) : state === 'failed' ? (
-      <div className="dl-action error">
+      <button
+        type="button"
+        className="dl-action error"
+        aria-label={`Retry download of ${lesson}`}
+      >
         <Icon name="refresh" size={16} />
-      </div>
+      </button>
     ) : (
-      <div className="dl-action">
+      <button type="button" className="dl-action" aria-label={`More options for ${lesson}`}>
         <Icon name="more" size={16} />
-      </div>
+      </button>
     );
   return (
     <div className="dl">

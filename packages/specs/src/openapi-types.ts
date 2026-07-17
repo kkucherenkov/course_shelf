@@ -591,6 +591,34 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/courses/{id}/download-estimate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Total download size for a course
+     * @description Sums `Lesson.sizeBytes` (bytes) across every lesson in the course
+     *     the requester can access. Access is course-level (mirrors
+     *     `getCourse`/`getCourseOutline` — a READ grant on the course's
+     *     library), so the sum spans all lessons once the grant passes.
+     *
+     *     Note that per-lesson download STATE (queued/downloaded) is tracked
+     *     client-side, not here — this endpoint only reports the byte total
+     *     and lesson count so the UI can render the CTA label before
+     *     anything is downloaded.
+     */
+    get: operations['getCourseDownloadEstimate'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/courses/{id}/mark-complete': {
     parameters: {
       query?: never;
@@ -2808,6 +2836,15 @@ export interface components {
       lessonsCompleted: number;
       lessonsTotal: number;
     };
+    /** @description Aggregate download size for a course — the sum of Lesson.sizeBytes across the lessons the requester can access. Feeds the mobile course-detail "Download course · <size>" CTA. Per-lesson download state is client-side; this reports only the byte total and the number of lessons it spans. */
+    CourseDownloadEstimateDto: {
+      /** @description Server-generated cuid of the course this estimate is for. */
+      courseId: string;
+      /** @description Sum of Lesson.sizeBytes (bytes) across all accessible lessons in the course. */
+      totalBytes: number;
+      /** @description Number of lessons included in the byte sum. */
+      lessonCount: number;
+    };
     /**
      * @description URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens; cannot start or end with a hyphen. Unique within a library.
      * @example pragmatic-clean-architecture
@@ -4877,6 +4914,56 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['CourseOutlineDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have a READ grant for the course's library */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Course not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getCourseDownloadEstimate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the course. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Download estimate returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CourseDownloadEstimateDto'];
         };
       };
       /** @description Missing or invalid bearer token */

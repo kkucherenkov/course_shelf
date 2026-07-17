@@ -432,7 +432,7 @@
     &__no-permission {
       display: flex;
       justify-content: center;
-      padding: var(--space-12) 0;
+      padding: var(--space-8) 0;
     }
 
     // ── Skeleton ────────────────────────────────────────────────────────────
@@ -489,8 +489,12 @@
       flex-direction: column;
       justify-content: flex-start;
       overflow: hidden;
-      // Video canvas is inherently dark; AppPlayerChrome sets its own background
-      background: var(--surface-video);
+      // Letterbox filler around AppPlayerChrome, which paints its own dark stage.
+      // NOTE: was `var(--surface-video)`, which is not an emitted token — the whole
+      // declaration was invalid, so this column has been rendering transparent.
+      // `--surface-page` matches that effective rendering. The design intends a
+      // theme-independent dark letterbox here; that needs a real token (see report).
+      background: var(--surface-page);
 
       @media (width < 768px) {
         background: transparent;

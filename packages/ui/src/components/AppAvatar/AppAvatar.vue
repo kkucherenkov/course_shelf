@@ -51,14 +51,25 @@
 </template>
 
 <style scoped lang="scss">
+  // Avatar diameters and glyph sizes that fall between design-token steps.
+  // The scale is a bespoke ramp, not the spacing scale, so the off-step rungs
+  // live here as named variables (same literals as before — nothing moves).
+  $size-xs: 20px;
+  $size-lg: 40px;
+  $size-xl: 56px;
+  $initials-xs: 10px;
+  $initials-md: 13px;
+  $initials-lg: 15px;
+  $role-glyph: 7px;
+
   .app-avatar {
     position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    width: 32px;
-    height: 32px;
+    width: var(--space-6);
+    height: var(--space-6);
     border-radius: 50%;
     background: linear-gradient(135deg, var(--surface-overlay), var(--surface-raised));
     color: var(--text-fg);
@@ -80,44 +91,48 @@
     }
 
     &--xs {
-      width: 20px;
-      height: 20px;
-      font-size: 10px;
+      width: $size-xs;
+      height: $size-xs;
+      font-size: $initials-xs;
     }
     &--sm {
-      width: 24px;
-      height: 24px;
-      font-size: 11px;
+      width: var(--space-5);
+      height: var(--space-5);
+      font-size: var(--text-xs);
     }
     &--md {
-      width: 32px;
-      height: 32px;
-      font-size: 13px;
+      width: var(--space-6);
+      height: var(--space-6);
+      font-size: $initials-md;
     }
     &--lg {
-      width: 40px;
-      height: 40px;
-      font-size: 15px;
+      width: $size-lg;
+      height: $size-lg;
+      font-size: $initials-lg;
     }
     &--xl {
-      width: 56px;
-      height: 56px;
-      font-size: 18px;
+      width: $size-xl;
+      height: $size-xl;
+      font-size: var(--text-lg);
     }
 
     &__role {
       position: absolute;
       right: -2px;
       bottom: -2px;
-      width: 12px;
-      height: 12px;
+      width: var(--space-3);
+      height: var(--space-3);
       border-radius: 50%;
       border: 2px solid var(--surface-page);
-      font-size: 7px;
+      font-size: $role-glyph;
       display: grid;
       place-items: center;
       font-weight: var(--fw-bold);
-      color: white;
+      // The badge sits on a saturated accent/info fill, so it needs the
+      // theme's on-fill foreground rather than a fixed white: in light this
+      // resolves to #FFFFFF (unchanged), in dark it flips to the dark ink that
+      // stays legible on the lighter accent.
+      color: var(--brand-accent-fg);
       line-height: 1;
 
       &--admin {

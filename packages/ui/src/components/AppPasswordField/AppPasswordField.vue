@@ -130,7 +130,11 @@
 <style scoped lang="scss">
   // Tokens: --primary → --brand-accent; --surface-3 → --surface-overlay;
   // --status-warning-fg + --status-success-fg used for meter color steps.
+  // No --space-* step matches these, so they are named SCSS variables.
   $input-height: 36px;
+  $leading-icon-inset: 10px;
+  $input-pad-trailing: 36px;
+  $toggle-size: 28px;
 
   .app-password-field {
     display: flex;
@@ -145,7 +149,7 @@
 
     &__leading-icon {
       position: absolute;
-      left: 10px;
+      left: $leading-icon-inset;
       top: 50%;
       transform: translateY(-50%);
       color: var(--text-secondary);
@@ -156,7 +160,7 @@
     &__input {
       display: block;
       width: 100%;
-      padding: 0 36px 0 32px;
+      padding: 0 $input-pad-trailing 0 var(--space-6);
       height: $input-height;
       min-height: $input-height;
       background: var(--surface-surface);
@@ -182,8 +186,8 @@
 
       &--disabled,
       &:disabled {
-        background: var(--surface-bg-muted);
-        color: var(--text-fg-disabled);
+        background: var(--surface-overlay);
+        color: var(--text-disabled);
         cursor: not-allowed;
       }
     }
@@ -198,14 +202,14 @@
 
     &__toggle {
       position: absolute;
-      right: 4px;
+      right: var(--space-1);
       top: 50%;
       transform: translateY(-50%);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 28px;
-      height: 28px;
+      width: $toggle-size;
+      height: $toggle-size;
       padding: 0;
       border: none;
       border-radius: var(--radius-md);
@@ -239,7 +243,7 @@
     }
 
     &__meter-seg {
-      height: 4px;
+      height: var(--space-1);
       border-radius: 2px;
       background: var(--surface-overlay);
       transition: background var(--dur-fast) var(--ease-default);

@@ -19,28 +19,28 @@ describe('CoursePosterCard', () => {
 
   it('renders title and instructor', () => {
     const wrapper = mount(CoursePosterCard, { props: { course: base } });
-    expect(wrapper.find('.course-poster-card__title').text()).toBe('Advanced Vue Patterns');
-    expect(wrapper.find('.course-poster-card__instructor').text()).toBe('Jane Doe');
+    expect(wrapper.find('.app-course-poster-card__title').text()).toBe('Advanced Vue Patterns');
+    expect(wrapper.find('.app-course-poster-card__instructor').text()).toBe('Jane Doe');
   });
 
   it('hides the instructor line when instructor is empty', () => {
     const wrapper = mount(CoursePosterCard, { props: { course: { ...base, instructor: '' } } });
-    expect(wrapper.find('.course-poster-card__title').exists()).toBe(true);
-    expect(wrapper.find('.course-poster-card__instructor').exists()).toBe(false);
+    expect(wrapper.find('.app-course-poster-card__title').exists()).toBe(true);
+    expect(wrapper.find('.app-course-poster-card__instructor').exists()).toBe(false);
   });
 
   // --- cover background ---
 
   it('uses COVER[accent] as background when course.cover is undefined', () => {
     const wrapper = mount(CoursePosterCard, { props: { course: base } });
-    const cover = wrapper.find('.course-poster-card__cover');
+    const cover = wrapper.find('.app-course-poster-card__cover');
     expect(cover.attributes('style')).toContain(COVER['teal']);
   });
 
   it('uses course.cover override when set', () => {
     const withCover: Course = { ...base, cover: 'url(/custom.jpg)' };
     const wrapper = mount(CoursePosterCard, { props: { course: withCover } });
-    const cover = wrapper.find('.course-poster-card__cover');
+    const cover = wrapper.find('.app-course-poster-card__cover');
     expect(cover.attributes('style')).toContain('url(');
   });
 
@@ -49,21 +49,21 @@ describe('CoursePosterCard', () => {
   it('state=auto + completed===lessons → shows completed badge', () => {
     const completed: Course = { ...base, completed: 12, lessons: 12 };
     const wrapper = mount(CoursePosterCard, { props: { course: completed } });
-    expect(wrapper.find('.course-poster-card__badge--completed').exists()).toBe(true);
-    expect(wrapper.find('.course-poster-card__scrim').exists()).toBe(false);
+    expect(wrapper.find('.app-course-poster-card__badge--completed').exists()).toBe(true);
+    expect(wrapper.find('.app-course-poster-card__scrim').exists()).toBe(false);
   });
 
   it('state=auto + partial progress → shows progress strip', () => {
     const inProgress: Course = { ...base, completed: 4, lessons: 12 };
     const wrapper = mount(CoursePosterCard, { props: { course: inProgress } });
-    expect(wrapper.find('.course-poster-card__strip').exists()).toBe(true);
-    expect(wrapper.find('.course-poster-card__badge--completed').exists()).toBe(false);
+    expect(wrapper.find('.app-course-poster-card__strip').exists()).toBe(true);
+    expect(wrapper.find('.app-course-poster-card__badge--completed').exists()).toBe(false);
   });
 
   it('state=auto + zero progress → shows strip with 0% fill', () => {
     const notStarted: Course = { ...base, completed: 0, lessons: 12 };
     const wrapper = mount(CoursePosterCard, { props: { course: notStarted } });
-    const fill = wrapper.find('.course-poster-card__strip-fill');
+    const fill = wrapper.find('.app-course-poster-card__strip-fill');
     expect(fill.exists()).toBe(true);
     expect(fill.attributes('style')).toContain('width: 0%');
   });
@@ -72,23 +72,23 @@ describe('CoursePosterCard', () => {
     const wrapper = mount(CoursePosterCard, {
       props: { course: base, state: 'completed' },
     });
-    expect(wrapper.find('.course-poster-card__badge--completed').exists()).toBe(true);
+    expect(wrapper.find('.app-course-poster-card__badge--completed').exists()).toBe(true);
   });
 
   it('state=locked → shows scrim with lock icon', () => {
     const wrapper = mount(CoursePosterCard, {
       props: { course: base, state: 'locked' },
     });
-    expect(wrapper.find('.course-poster-card__scrim').exists()).toBe(true);
-    expect(wrapper.find('.course-poster-card__badge--completed').exists()).toBe(false);
-    expect(wrapper.find('.course-poster-card__strip').exists()).toBe(false);
+    expect(wrapper.find('.app-course-poster-card__scrim').exists()).toBe(true);
+    expect(wrapper.find('.app-course-poster-card__badge--completed').exists()).toBe(false);
+    expect(wrapper.find('.app-course-poster-card__strip').exists()).toBe(false);
   });
 
   it('state=not-started → shows strip with 0% fill', () => {
     const wrapper = mount(CoursePosterCard, {
       props: { course: base, state: 'not-started' },
     });
-    const fill = wrapper.find('.course-poster-card__strip-fill');
+    const fill = wrapper.find('.app-course-poster-card__strip-fill');
     expect(fill.attributes('style')).toContain('width: 0%');
   });
 
@@ -96,7 +96,7 @@ describe('CoursePosterCard', () => {
 
   it('has tabindex=0, role=button, aria-label=title on root', () => {
     const wrapper = mount(CoursePosterCard, { props: { course: base } });
-    const root = wrapper.find('.course-poster-card');
+    const root = wrapper.find('.app-course-poster-card');
     expect(root.attributes('tabindex')).toBe('0');
     expect(root.attributes('role')).toBe('button');
     expect(root.attributes('aria-label')).toBe('Advanced Vue Patterns');
@@ -104,7 +104,7 @@ describe('CoursePosterCard', () => {
 
   it('interactive=false renders presentational root (no role/tabindex/aria-label)', () => {
     const wrapper = mount(CoursePosterCard, { props: { course: base, interactive: false } });
-    const root = wrapper.find('.course-poster-card');
+    const root = wrapper.find('.app-course-poster-card');
     expect(root.attributes('tabindex')).toBeUndefined();
     expect(root.attributes('role')).toBeUndefined();
     expect(root.attributes('aria-label')).toBeUndefined();
@@ -112,8 +112,8 @@ describe('CoursePosterCard', () => {
 
   it('interactive=false does not emit click on click or Enter', async () => {
     const wrapper = mount(CoursePosterCard, { props: { course: base, interactive: false } });
-    await wrapper.find('.course-poster-card').trigger('click');
-    await wrapper.find('.course-poster-card').trigger('keydown', { key: 'Enter' });
+    await wrapper.find('.app-course-poster-card').trigger('click');
+    await wrapper.find('.app-course-poster-card').trigger('keydown', { key: 'Enter' });
     expect(wrapper.emitted('click')).toBeUndefined();
   });
 
@@ -121,7 +121,7 @@ describe('CoursePosterCard', () => {
 
   it('emits click with course on mouse click', async () => {
     const wrapper = mount(CoursePosterCard, { props: { course: base } });
-    await wrapper.find('.course-poster-card').trigger('click');
+    await wrapper.find('.app-course-poster-card').trigger('click');
     expect(wrapper.emitted('click')).toHaveLength(1);
     const emitted = wrapper.emitted<Course[]>('click');
     expect(emitted?.[0]?.[0]).toStrictEqual(base);
@@ -129,19 +129,19 @@ describe('CoursePosterCard', () => {
 
   it('emits click with course on Enter keydown', async () => {
     const wrapper = mount(CoursePosterCard, { props: { course: base } });
-    await wrapper.find('.course-poster-card').trigger('keydown', { key: 'Enter' });
+    await wrapper.find('.app-course-poster-card').trigger('keydown', { key: 'Enter' });
     expect(wrapper.emitted('click')).toHaveLength(1);
   });
 
   it('emits click with course on Space keydown', async () => {
     const wrapper = mount(CoursePosterCard, { props: { course: base } });
-    await wrapper.find('.course-poster-card').trigger('keydown', { key: ' ' });
+    await wrapper.find('.app-course-poster-card').trigger('keydown', { key: ' ' });
     expect(wrapper.emitted('click')).toHaveLength(1);
   });
 
   it('does not emit click on other keys', async () => {
     const wrapper = mount(CoursePosterCard, { props: { course: base } });
-    await wrapper.find('.course-poster-card').trigger('keydown', { key: 'Tab' });
+    await wrapper.find('.app-course-poster-card').trigger('keydown', { key: 'Tab' });
     expect(wrapper.emitted('click')).toBeUndefined();
   });
 
@@ -149,13 +149,13 @@ describe('CoursePosterCard', () => {
 
   it('renders skeleton variant when loading=true', () => {
     const wrapper = mount(CoursePosterCard, { props: { course: base, loading: true } });
-    expect(wrapper.find('.course-poster-card--loading').exists()).toBe(true);
-    expect(wrapper.find('.course-poster-card__title').exists()).toBe(false);
+    expect(wrapper.find('.app-course-poster-card--loading').exists()).toBe(true);
+    expect(wrapper.find('.app-course-poster-card__title').exists()).toBe(false);
   });
 
   it('loading skeleton is not focusable (no tabindex, no role=button)', () => {
     const wrapper = mount(CoursePosterCard, { props: { course: base, loading: true } });
-    const root = wrapper.find('.course-poster-card--loading');
+    const root = wrapper.find('.app-course-poster-card--loading');
     expect(root.attributes('tabindex')).toBeUndefined();
     expect(root.attributes('role')).toBeUndefined();
   });

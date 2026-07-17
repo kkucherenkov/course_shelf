@@ -4,7 +4,7 @@ exports[`AppScanProgress snapshots > Failed (errors=5) 1`] = `
 "<div data-v-040f2d69="" class="app-scan-progress app-scan-progress--failed" role="region" aria-label="Scan failed">
   <!-- Header row -->
   <div data-v-040f2d69="" class="app-scan-progress__header"><span data-v-040f2d69="" class="app-scan-progress__dot app-scan-progress__dot--failed" aria-hidden="true"></span><span data-v-040f2d69="" class="app-scan-progress__title">Scan failed&nbsp;·&nbsp;Computer Science</span><span data-v-040f2d69="" class="app-scan-progress__spacer" aria-hidden="true"></span><span data-v-040f2d69="" class="app-scan-progress__meta">37%&nbsp;·&nbsp;00:03:11</span>
-    <!--v-if--><button data-v-040f2d69="" type="button" class="app-scan-progress__btn app-scan-progress__btn--errors">2 errors</button>
+    <!--v-if--><button data-v-040f2d69="" type="button" class="app-scan-progress__btn app-scan-progress__btn--errors">5 errors</button>
   </div><!-- Progress bar -->
   <div data-v-040f2d69="" class="app-scan-progress__bar" role="progressbar" aria-valuenow="37" aria-valuemin="0" aria-valuemax="100">
     <div data-v-040f2d69="" class="app-scan-progress__bar-fill app-scan-progress__bar-fill--failed" style="width: 100%;"></div>

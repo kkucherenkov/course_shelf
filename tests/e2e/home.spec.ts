@@ -201,7 +201,7 @@ test.describe('home page — 1440x900', () => {
     // "Continue watching" shows ≥1 card after data loads
     const continueSection = page.locator('.page-home__row--continue');
     await expect(continueSection).toBeVisible();
-    await expect(continueSection.locator('.course-wide-card').first()).toBeVisible({
+    await expect(continueSection.locator('.app-course-wide-card').first()).toBeVisible({
       timeout: 8000,
     });
 

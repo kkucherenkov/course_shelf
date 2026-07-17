@@ -85,7 +85,7 @@ export const Sizes: Story = {
       return { args, sm, md, lg };
     },
     template: `
-      <div style="display:flex; gap: var(--space-12); align-items:center;">
+      <div style="display:flex; gap: var(--space-5); align-items:center;">
         <AppSwitch v-bind="args" v-model="sm" size="sm" />
         <AppSwitch v-bind="args" v-model="md" size="md" />
         <AppSwitch v-bind="args" v-model="lg" size="lg" />
@@ -104,7 +104,7 @@ export const Colors: Story = {
       return { args, primary, success, neutral };
     },
     template: `
-      <div style="display:flex; gap: var(--space-12); align-items:center;">
+      <div style="display:flex; gap: var(--space-5); align-items:center;">
         <AppSwitch v-bind="args" v-model="primary" color="primary" label="Primary" />
         <AppSwitch v-bind="args" v-model="success" color="success" label="Success" />
         <AppSwitch v-bind="args" v-model="neutral" color="neutral" label="Neutral" />

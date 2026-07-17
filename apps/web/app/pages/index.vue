@@ -269,7 +269,7 @@
   $page-max-w: 1440px;
 
   .page-home {
-    padding: 0 var(--space-6) var(--space-10);
+    padding: 0 var(--space-6) var(--space-8);
     max-width: $page-max-w;
     margin: 0 auto;
 

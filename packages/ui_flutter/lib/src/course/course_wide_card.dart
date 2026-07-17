@@ -260,7 +260,7 @@ class _CourseWideCardState extends State<CourseWideCard> {
 }
 
 /// Thumb geometry/icon size — a locally-owned micro-scale mirroring the web
-/// `.course-wide-card__thumb`/`__meta-icon` SCSS block (80px square, 12px
+/// `.app-course-wide-card__thumb`/`__meta-icon` SCSS block (80px square, 12px
 /// meta glyph), both hard-coded there too.
 abstract final class _Thumb {
   static const double size = 80;

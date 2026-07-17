@@ -47,9 +47,18 @@
   //   --d-slow     → --dur-slow         (ships as alias)
   //   --e-out      → --ease-out         (ships as alias)
   //   --e-io       → --ease-default     (ships as alias)
+
+  // Bar thickness — intrinsic geometry, named literal (same convention as
+  // AppScanProgress's $bar-height).
+  $bar-height: 4px;
+
+  // Ambient indeterminate loop — not an interaction transition, so it sits
+  // outside the --dur-* scale (which tops out at 400ms).
+  $slide-duration: 1.4s;
+
   .app-progress-linear {
     width: 100%;
-    height: 4px;
+    height: $bar-height;
     border-radius: 2px;
     background: var(--surface-overlay); // bundle --surface-3
     overflow: hidden;
@@ -69,7 +78,7 @@
     // Indeterminate: sliding stripe animation.
     &--indeterminate &__fill {
       width: 35%;
-      animation: app-progress-linear-slide 1.4s var(--ease-default) infinite; // bundle --e-io
+      animation: app-progress-linear-slide $slide-duration var(--ease-default) infinite; // bundle --e-io
     }
   }
 

@@ -1,4 +1,8 @@
 **/node_modules
+# Agent worktrees are full checkouts of this repo. Without this, a worktree
+# left on disk makes `pnpm format:check` fail on a second copy of every
+# generated file — a confusing local-only red that CI never sees.
+.claude/worktrees
 **/dist
 **/build
 **/.output

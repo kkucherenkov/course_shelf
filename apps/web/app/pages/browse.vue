@@ -167,8 +167,11 @@
 </template>
 
 <style scoped lang="scss">
+  // Max page width for the browse grid.
+  $page-max-width: 1280px;
+
   .page-browse {
-    max-width: 1280px;
+    max-width: $page-max-width;
     margin: 0 auto;
     padding: 0 var(--space-4) var(--space-8);
 

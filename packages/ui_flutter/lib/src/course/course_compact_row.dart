@@ -168,7 +168,7 @@ class _CourseCompactRowState extends State<CourseCompactRow> {
 }
 
 /// Thumb/bar geometry — a locally-owned micro-scale mirroring the web
-/// `.course-compact-row__thumb`/`__bar`/`__pct` SCSS block (32px thumb, 64px
+/// `.app-course-compact-row__thumb`/`__bar`/`__pct` SCSS block (32px thumb, 64px
 /// bar, 32px pct column), all hard-coded there too.
 abstract final class _Thumb {
   static const double size = 32;

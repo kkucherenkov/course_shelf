@@ -82,6 +82,14 @@ export interface OpacityFile {
   opacity: Record<string, DtcgLeaf>;
 }
 
+// Media-surface colours. Unlike `ColorFile`, these are NOT themed: video is dark
+// under every theme, so on-media white must stay white in light mode too. Emitted
+// once under `:root` alongside motion/space/zIndex/opacity — never per theme.
+// The group carries a `$description` key, so emitters must skip `$`-prefixed keys.
+export interface MediaFile {
+  media: Record<string, DtcgLeaf>;
+}
+
 export interface TokenBundle {
   color: ColorFile;
   typography: TypographyFile;
@@ -90,6 +98,7 @@ export interface TokenBundle {
   shadow: ShadowFile;
   motion: MotionFile;
   opacity: OpacityFile;
+  media: MediaFile;
 }
 
 export const BANNER = [

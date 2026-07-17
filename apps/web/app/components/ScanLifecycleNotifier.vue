@@ -217,7 +217,7 @@
   .scan-notifier-panel {
     &-enter-active,
     &-leave-active {
-      transition: opacity var(--dur-normal);
+      transition: opacity var(--dur-base);
     }
 
     &-enter-from,

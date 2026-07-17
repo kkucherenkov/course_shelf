@@ -209,8 +209,13 @@
 </template>
 
 <style lang="scss" scoped>
+  // Max page width for the single-column results list.
+  $page-max-width: 860px;
+  // Tight optical gap between title and breadcrumb; below the --space-* scale.
+  $item-body-gap: 3px;
+
   .page-search {
-    max-width: 860px;
+    max-width: $page-max-width;
     margin: 0 auto;
     padding: 0 var(--space-4) var(--space-8);
 
@@ -297,8 +302,8 @@
     }
 
     &__item-thumb {
-      width: 64px;
-      height: 48px;
+      width: var(--space-8);
+      height: var(--space-7);
       border-radius: var(--radius-sm);
       display: grid;
       place-items: center;
@@ -318,7 +323,7 @@
     &__item-initials {
       font-size: var(--text-xs);
       font-weight: var(--fw-bold);
-      color: white;
+      color: var(--brand-accent-fg);
       letter-spacing: 0.04em;
     }
 
@@ -326,7 +331,7 @@
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: $item-body-gap;
     }
 
     &__item-breadcrumb {

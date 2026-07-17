@@ -27,6 +27,11 @@
   //   --skeleton-shine  → --skeleton-shine  (ships as alias for --surface-skeleton-shine)
   //   CSS fallback: var(--skeleton-base, var(--surface-overlay)) in case alias not resolved.
   //   --e-io            → ease-in-out       (bundle uses ease-in-out; --ease-default is cubic-bezier)
+
+  // Ambient shimmer loop — not an interaction transition, so it sits outside
+  // the --dur-* scale (which tops out at 400ms).
+  $shimmer-duration: 1.4s;
+
   .app-skeleton {
     display: inline-block;
     background: linear-gradient(
@@ -36,7 +41,7 @@
       var(--skeleton-base, var(--surface-overlay))
     );
     background-size: 200% 100%;
-    animation: app-skeleton-pulse 1.4s ease-in-out infinite; // bundle skel-pulse
+    animation: app-skeleton-pulse $shimmer-duration ease-in-out infinite; // bundle skel-pulse
 
     &--sm {
       border-radius: var(--radius-sm);

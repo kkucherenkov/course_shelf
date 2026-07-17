@@ -85,18 +85,23 @@
   //   --primary-soft  → --brand-accent-soft
   //   --surface-2     → --surface-raised
   //   --border        → --border-default
+  // 10px/6px fall between --space-* steps (8/12), so they are named SCSS
+  // variables holding the same literals.
+  $row-pad-inline: 10px;
+  $time-pad-inline: 6px;
+
   .app-bookmark-add {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-2) 10px;
+    padding: var(--space-2) $row-pad-inline;
     background: var(--surface-raised);
     border: 1px dashed var(--border-default);
     border-radius: var(--radius-md);
 
     &__time {
       flex-shrink: 0;
-      padding: 2px 6px;
+      padding: 2px $time-pad-inline;
       border-radius: var(--radius-sm);
       background: var(--brand-accent-soft);
       color: var(--brand-accent);

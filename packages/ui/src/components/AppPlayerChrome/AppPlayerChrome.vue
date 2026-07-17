@@ -538,10 +538,19 @@
   $z-overlay: 1;
   $z-state: 2;
 
+  // Player-chrome metrics that fall between design-token steps. Same literals
+  // as before — these are named for intent, not rounded to the nearest token.
+  $control-gap: 6px;
+  $scrubber-bar-height: 3px;
+  $scrubber-thumb-size: 11px;
+  $chapter-tick-height: 9px;
+  $bookmark-offset: -4px;
+  $spinner-duration: 0.8s;
+
   .app-player-chrome {
     position: relative;
     aspect-ratio: 16 / 9;
-    background: #000;
+    background: var(--media-stage);
     border-radius: var(--radius-md);
     overflow: hidden;
 
@@ -553,10 +562,14 @@
     &__frame {
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, #1a1d22, #0a0c10);
+      background: linear-gradient(
+        135deg,
+        var(--media-placeholder-from),
+        var(--media-placeholder-to)
+      );
       display: grid;
       place-items: center;
-      color: rgba(255, 255, 255, 0.4);
+      color: var(--media-fg-faint);
       font-family: var(--font-mono);
       font-size: var(--text-xs);
     }
@@ -571,12 +584,12 @@
       padding: var(--space-4);
       background: linear-gradient(
         180deg,
-        rgba(0, 0, 0, 0.4) 0%,
+        var(--media-scrim-soft) 0%,
         transparent 30%,
         transparent 60%,
-        rgba(0, 0, 0, 0.6) 100%
+        var(--media-scrim-strong) 100%
       );
-      color: #fff;
+      color: var(--media-fg);
       transition: opacity var(--dur-base);
     }
 
@@ -593,14 +606,14 @@
 
     &__lesson-sub {
       font-size: var(--text-xs);
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--media-fg-tertiary);
       letter-spacing: 0.05em;
     }
 
     &__lesson-title {
       font-size: var(--text-sm);
       font-weight: 500;
-      color: #fff;
+      color: var(--media-fg);
     }
 
     &__top-actions {
@@ -618,24 +631,24 @@
     &__controls {
       display: flex;
       align-items: center;
-      gap: 6px;
-      color: #fff;
+      gap: $control-gap;
+      color: var(--media-fg);
     }
 
     &__btn {
-      width: 32px;
-      height: 32px;
+      width: var(--space-6);
+      height: var(--space-6);
       border-radius: var(--radius-sm);
       display: grid;
       place-items: center;
-      color: #fff;
+      color: var(--media-fg);
       background: transparent;
       border: 0;
       cursor: pointer;
       transition: background var(--dur-fast);
 
       &:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.15);
+        background: var(--media-fill-hover);
       }
 
       &:disabled {
@@ -660,7 +673,7 @@
       font-family: var(--font-mono);
       font-variant-numeric: tabular-nums;
       font-size: var(--text-sm);
-      color: rgba(255, 255, 255, 0.85);
+      color: var(--media-fg-secondary);
       padding: 0 var(--space-2);
     }
 
@@ -671,7 +684,7 @@
     // ---- Scrubber ----
     &__scrubber {
       position: relative;
-      height: 16px;
+      height: var(--space-4);
       cursor: pointer;
 
       &:focus-visible {
@@ -686,18 +699,18 @@
       position: absolute;
       left: 0;
       top: 50%;
-      height: 3px;
+      height: $scrubber-bar-height;
       transform: translateY(-50%);
       border-radius: 2px;
     }
 
     &__scrubber-track {
       right: 0;
-      background: rgba(255, 255, 255, 0.18);
+      background: var(--media-track);
     }
 
     &__scrubber-buf {
-      background: rgba(255, 255, 255, 0.35);
+      background: var(--media-track-buffered);
     }
 
     &__scrubber-played {
@@ -708,8 +721,8 @@
       position: absolute;
       top: 50%;
       transform: translate(-50%, -50%);
-      width: 11px;
-      height: 11px;
+      width: $scrubber-thumb-size;
+      height: $scrubber-thumb-size;
       border-radius: 50%;
       background: var(--brand-accent);
       pointer-events: none;
@@ -720,15 +733,15 @@
       top: 50%;
       transform: translate(-50%, -50%);
       width: 2px;
-      height: 9px;
-      background: #000;
+      height: $chapter-tick-height;
+      background: var(--media-stage);
       border-radius: 1px;
       pointer-events: none;
     }
 
     &__scrubber-bm {
       position: absolute;
-      top: -4px;
+      top: $bookmark-offset;
       transform: translateX(-50%);
       color: var(--status-info-fg);
       background: transparent;
@@ -751,8 +764,8 @@
       z-index: $z-state;
       display: grid;
       place-items: center;
-      background: rgba(0, 0, 0, 0.4);
-      color: #fff;
+      background: var(--media-scrim-soft);
+      color: var(--media-fg);
       gap: var(--space-2);
 
       &--column {
@@ -772,12 +785,12 @@
     }
 
     &__buffer-spinner {
-      width: 32px;
-      height: 32px;
+      width: var(--space-6);
+      height: var(--space-6);
       border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      border-top-color: #fff;
-      animation: app-player-chrome-spin 0.8s linear infinite;
+      border: 2px solid var(--media-border);
+      border-top-color: var(--media-fg);
+      animation: app-player-chrome-spin $spinner-duration linear infinite;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -796,8 +809,8 @@
       align-items: center;
       justify-content: center;
       gap: var(--space-3);
-      color: #fff;
-      background: rgba(0, 0, 0, 0.55);
+      color: var(--media-fg);
+      background: var(--media-scrim-medium);
     }
 
     &__end-countdown {
@@ -831,7 +844,7 @@
       right: var(--space-4);
       bottom: var(--space-2);
       height: 2px;
-      background: rgba(255, 255, 255, 0.18);
+      background: var(--media-track);
       border-radius: 1px;
     }
 

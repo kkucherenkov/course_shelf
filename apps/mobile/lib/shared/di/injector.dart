@@ -8,6 +8,9 @@ import 'package:app_mobile/features/auth/domain/auth_repository.dart';
 import 'package:app_mobile/features/auth/domain/instance_repository.dart';
 import 'package:app_mobile/features/auth/domain/library_repository.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
+import 'package:app_mobile/features/home/data/home_repository_impl.dart';
+import 'package:app_mobile/features/home/domain/home_repository.dart';
+import 'package:app_mobile/features/home/presentation/bloc/home_cubit.dart';
 import 'package:app_mobile/features/player/data/lesson_player_api.dart';
 import 'package:app_mobile/features/player/data/progress_outbox_recorder.dart';
 import 'package:app_mobile/features/player/data/video_player_adapter.dart';
@@ -56,6 +59,9 @@ void configureDependencies() {
     ..registerLazySingleton<LibraryRepository>(
       () => LibraryApiImpl(dio: getIt<Dio>()),
     )
+    ..registerLazySingleton<HomeRepository>(
+      () => HomeRepositoryImpl(getIt<Dio>()),
+    )
     ..registerLazySingleton<LessonPlayerRepository>(
       () => LessonPlayerApi(
         dio: getIt<Dio>(),
@@ -76,6 +82,7 @@ void configureDependencies() {
   // BlocProviders from `context.read<AuthCubit>()` plus the ports above.
   getIt
     ..registerFactory<AuthCubit>(() => AuthCubit(getIt<AuthRepository>()))
+    ..registerFactory<HomeCubit>(() => HomeCubit(getIt<HomeRepository>()))
     // A factory, and a fresh VideoPlayerAdapter per instance: the adapter owns
     // a platform controller that PlayerBloc.close() disposes, so a shared
     // singleton would hand the next lesson a disposed engine.

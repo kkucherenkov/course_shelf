@@ -11,6 +11,9 @@ import 'package:app_mobile/features/auth/domain/instance_config.dart';
 import 'package:app_mobile/features/auth/domain/instance_repository.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:app_mobile/features/auth/presentation/sign_in_screen.dart';
+import 'package:app_mobile/features/home/domain/home_repository.dart';
+import 'package:app_mobile/features/home/domain/home_summary.dart';
+import 'package:app_mobile/features/home/presentation/bloc/home_cubit.dart';
 import 'package:app_mobile/features/settings/presentation/settings_screen.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
 import 'package:app_mobile/main.dart';
@@ -22,7 +25,17 @@ class _MockAuthRepository extends Mock implements AuthRepository {}
 /// SSO row and the sign-up CTA (E18-F03-S01).
 class _MockInstanceRepository extends Mock implements InstanceRepository {}
 
+/// The shell mounts Home's cubit on an authenticated session (E18-F01-S01),
+/// so the real `App` pulls a HomeRepository out of the injector too.
+class _MockHomeRepository extends Mock implements HomeRepository {}
+
 const _user = AuthUser(id: 'u1', email: 'user@example.com', name: 'User');
+
+const _emptyHome = HomeSummary(
+  continueWatching: <ContinueWatchingCourse>[],
+  recentlyAdded: <RecentlyAddedCourse>[],
+  libraryCount: 0,
+);
 
 /// Pumps the real composition root — `App` resolves its own [AuthCubit] from
 /// the injector, so this exercises the same wiring `main()` ships rather than
@@ -40,18 +53,30 @@ Finder _tab(String label) => find.descendant(
 void main() {
   late _MockAuthRepository repository;
   late _MockInstanceRepository instanceRepository;
+  late _MockHomeRepository homeRepository;
 
   setUp(() async {
     await resetInjector();
     repository = _MockAuthRepository();
+
+    // Sign-in resolves the instance config (SSO row + sign-up CTA) and the
+    // first-user check from the injector (E18-F03-S01).
     instanceRepository = _MockInstanceRepository();
     when(
       () => instanceRepository.getInstanceConfig(),
     ).thenAnswer((_) async => InstanceConfig.defaults);
     when(() => instanceRepository.hasUsers()).thenAnswer((_) async => true);
+
+    // The shell provides Home's cubit and kicks off a load the moment an
+    // authenticated session mounts it. A fast, empty-summary repository lets
+    // that load — and the pull-to-refresh seam below — resolve immediately.
+    homeRepository = _MockHomeRepository();
+    when(homeRepository.fetchSummary).thenAnswer((_) async => _emptyHome);
+
     getIt
       ..registerFactory<AuthCubit>(() => AuthCubit(repository))
-      ..registerLazySingleton<InstanceRepository>(() => instanceRepository);
+      ..registerLazySingleton<InstanceRepository>(() => instanceRepository)
+      ..registerFactory<HomeCubit>(() => HomeCubit(homeRepository));
   });
 
   tearDown(resetInjector);

@@ -25,6 +25,7 @@ void main() {
       'Sizes',
       'States',
       'With icons',
+      'Icon-only & a11y',
     });
   });
 
@@ -110,8 +111,14 @@ void main() {
     );
   });
 
-  test('the E17-F02 wave-2 batch (bookmark list, section header) is wired in', () {
-    final names = components().map((c) => c.name).toSet();
-    expect(names, containsAll(<String>{'AppBookmarkList', 'AppSectionHeader'}));
-  });
+  test(
+    'the E17-F02 wave-2 batch (bookmark list, section header) is wired in',
+    () {
+      final names = components().map((c) => c.name).toSet();
+      expect(
+        names,
+        containsAll(<String>{'AppBookmarkList', 'AppSectionHeader'}),
+      );
+    },
+  );
 }

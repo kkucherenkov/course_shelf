@@ -13,6 +13,7 @@ WidgetbookComponent buildAppButtonComponent() {
       WidgetbookUseCase(name: 'Sizes', builder: _sizes),
       WidgetbookUseCase(name: 'States', builder: _states),
       WidgetbookUseCase(name: 'With icons', builder: _withIcons),
+      WidgetbookUseCase(name: 'Icon-only & a11y', builder: _accessibility),
     ],
   );
 }
@@ -87,6 +88,25 @@ Widget _withIcons(BuildContext context) => _column([
     iconTrailing: IconName.chevronRight,
     onPressed: () {},
   ),
+]);
+
+/// Icon- and child-only buttons carry no visible text, so they must be named
+/// with [AppButton.semanticLabel]. Toggle the OS screen reader (or Flutter's
+/// semantics debugger) over these to hear the announced name — including the
+/// loading button, whose spinner replaces every visible glyph.
+Widget _accessibility(BuildContext context) => _column([
+  AppButton(
+    iconLeading: IconName.play,
+    semanticLabel: 'Play',
+    onPressed: () {},
+  ),
+  AppButton(
+    variant: AppButtonVariant.destructive,
+    iconLeading: IconName.trash,
+    semanticLabel: 'Delete',
+    onPressed: () {},
+  ),
+  const AppButton(semanticLabel: 'Saving', loading: true, child: Text('Save')),
 ]);
 
 Widget _iconVariants(BuildContext context) => _wrap([

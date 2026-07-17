@@ -447,7 +447,7 @@ model AccessGrant {
   level      GrantLevel
   createdAt  DateTime        @default(now())
 
-  @@unique([userId, targetKind, libraryId, courseId], name: "uq_grant_target")
+  @@unique([userId, targetKind, libraryId, courseId], name: "uq_grant_target", map: "access_grant_uq_grant_target")
   @@index([userId])
   @@map("access_grant")
 }

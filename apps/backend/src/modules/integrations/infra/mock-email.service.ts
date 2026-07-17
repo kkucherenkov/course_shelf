@@ -24,9 +24,4 @@ export class MockEmailService implements IEmailService {
   sentTo(address: string): readonly SentEmail[] {
     return this.buffer.filter((e) => e.to === address);
   }
-
-  /** Expose entire ring buffer for the dev inspector endpoint. */
-  all(): readonly SentEmail[] {
-    return [...this.buffer];
-  }
 }

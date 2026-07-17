@@ -131,10 +131,7 @@
         <ul class="page-search__list" role="list">
           <li v-for="course in courses" :key="course.id" class="page-search__list-item">
             <NuxtLink :to="`/courses/${course.id}`" class="page-search__item">
-              <div
-                class="page-search__item-thumb page-search__item-thumb--course"
-                aria-hidden="true"
-              >
+              <div class="page-search__item-thumb" aria-hidden="true">
                 <span class="page-search__item-initials">
                   {{
                     course.title
@@ -173,10 +170,7 @@
               :to="`/courses/${lesson.courseId}/lessons/${lesson.id}`"
               class="page-search__item"
             >
-              <div
-                class="page-search__item-thumb page-search__item-thumb--lesson"
-                aria-hidden="true"
-              >
+              <div class="page-search__item-thumb" aria-hidden="true">
                 <span class="page-search__item-initials">
                   {{
                     lesson.courseTitle
@@ -309,15 +303,10 @@
       place-items: center;
       flex-shrink: 0;
       overflow: hidden;
-
-      &--course {
-        background: var(--brand-accent);
-      }
-
-      &--lesson {
-        background: var(--surface-overlay);
-        border: 1px solid var(--border-default);
-      }
+      // One empty-poster treatment for courses and lessons alike: the accent
+      // fill. White initials (--brand-accent-fg) pass contrast on it — the old
+      // light --surface-overlay lesson thumb failed that and has been removed.
+      background: var(--brand-accent);
     }
 
     &__item-initials {

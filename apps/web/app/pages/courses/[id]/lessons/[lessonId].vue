@@ -490,11 +490,9 @@
       justify-content: flex-start;
       overflow: hidden;
       // Letterbox filler around AppPlayerChrome, which paints its own dark stage.
-      // NOTE: was `var(--surface-video)`, which is not an emitted token — the whole
-      // declaration was invalid, so this column has been rendering transparent.
-      // `--surface-page` matches that effective rendering. The design intends a
-      // theme-independent dark letterbox here; that needs a real token (see report).
-      background: var(--surface-page);
+      // Theme-independent black stage — `--media-stage` (#000) is the media-surface
+      // token for the video plane, so the letterbox stays black in light mode too.
+      background: var(--media-stage);
 
       @media (width < 768px) {
         background: transparent;

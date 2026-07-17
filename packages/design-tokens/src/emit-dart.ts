@@ -222,6 +222,15 @@ export function emitDart(tokens: TokenBundle): string {
     if (key.startsWith('$')) continue;
     parts.push(`  static const double ${camel(key)} = ${dartDouble(leaf.$value)};`);
   }
+  // Media-surface colours are theme-INDEPENDENT — emitted once, like space/opacity,
+  // never per theme (mirrors emit-scss, which keeps `--media-*` under `:root` only).
+  // Video is dark under every theme, so on-media white must stay white in light mode
+  // too; a themed variant would make controls vanish into the footage.
+  parts.push('}', '', 'abstract final class AppMedia {');
+  for (const [key, leaf] of Object.entries(tokens.media.media)) {
+    if (key.startsWith('$')) continue;
+    parts.push(`  static const Color ${camel(key)} = ${colorToDart(leaf.$value.toString())};`);
+  }
   parts.push('}', '', 'abstract final class AppZIndex {');
   for (const [key, leaf] of Object.entries(tokens.motion.zIndex)) {
     if (key.startsWith('$')) continue;

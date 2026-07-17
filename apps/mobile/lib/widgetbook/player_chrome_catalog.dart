@@ -3,8 +3,9 @@ import 'package:widgetbook/widgetbook.dart';
 
 import 'package:app_ui/app_ui.dart';
 
-/// Widgetbook component cataloguing the `app_ui` [AppPlayerChrome] — the
-/// mobile-landscape video controls overlay (`docs/roadmap/tasks/E17-F02-S03.md`).
+/// Widgetbook component cataloguing the `app_ui` [AppPlayerChrome] — the video
+/// controls overlay in both its mobile-landscape (`19/9`) and portrait
+/// (`16/9`) contexts (`docs/roadmap/tasks/E17-F02-S03.md`).
 WidgetbookComponent buildPlayerChromeComponent() {
   return WidgetbookComponent(
     name: 'AppPlayerChrome',
@@ -16,6 +17,9 @@ WidgetbookComponent buildPlayerChromeComponent() {
       WidgetbookUseCase(name: 'Locked', builder: _locked),
       WidgetbookUseCase(name: 'End (up next)', builder: _end),
       WidgetbookUseCase(name: 'Minimal mode', builder: _minimal),
+      WidgetbookUseCase(name: 'Portrait · Playing', builder: _portraitPlaying),
+      WidgetbookUseCase(name: 'Portrait · Error', builder: _portraitError),
+      WidgetbookUseCase(name: 'Portrait · End', builder: _portraitEnd),
     ],
   );
 }
@@ -24,6 +28,18 @@ Widget _frame(Widget chrome) => Center(
   child: Padding(
     padding: const EdgeInsets.all(16),
     child: AspectRatio(aspectRatio: 19 / 9, child: chrome),
+  ),
+);
+
+/// The portrait context imposes its own `16/9` box, so the frame only caps the
+/// width to a phone-portrait measure and lets the chrome drive the height.
+Widget _portraitFrame(Widget chrome) => Center(
+  child: Padding(
+    padding: const EdgeInsets.all(16),
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 360),
+      child: chrome,
+    ),
   ),
 );
 
@@ -117,5 +133,49 @@ Widget _minimal(BuildContext context) => _frame(
     duration: Duration(minutes: 18, seconds: 24),
     bufferedFraction: 0.6,
     initiallyMinimal: true,
+  ),
+);
+
+Widget _portraitPlaying(BuildContext context) => _portraitFrame(
+  AppPlayerChrome(
+    state: AppPlayerChromeState.playing,
+    context: AppPlayerChromeContext.portrait,
+    sectionLabel: 'SECTION 04 · CONSENSUS',
+    lessonTitle: 'Lesson 12 · Quorum reads',
+    position: const Duration(minutes: 7, seconds: 43),
+    duration: const Duration(minutes: 18, seconds: 24),
+    bufferedFraction: 0.6,
+    bookmarkFractions: const <double>[0.58],
+    onPlayPause: () {},
+    onSeek: (double fraction) {},
+    onSettingsTap: () {},
+    onToggleFullscreen: () {},
+  ),
+);
+
+Widget _portraitError(BuildContext context) => _portraitFrame(
+  AppPlayerChrome(
+    state: AppPlayerChromeState.error,
+    context: AppPlayerChromeContext.portrait,
+    sectionLabel: 'SECTION 04 · CONSENSUS',
+    lessonTitle: 'Lesson 12 · Quorum reads',
+    position: const Duration(minutes: 7, seconds: 43),
+    duration: const Duration(minutes: 18, seconds: 24),
+    onRetry: () {},
+  ),
+);
+
+Widget _portraitEnd(BuildContext context) => _portraitFrame(
+  AppPlayerChrome(
+    state: AppPlayerChromeState.end,
+    context: AppPlayerChromeContext.portrait,
+    sectionLabel: 'SECTION 04 · CONSENSUS',
+    lessonTitle: 'Lesson 12 · Quorum reads',
+    position: const Duration(minutes: 18, seconds: 24),
+    duration: const Duration(minutes: 18, seconds: 24),
+    upNextEyebrow: 'Up next in 5s',
+    upNextTitle: 'Lesson 13 · Causal consistency',
+    onStay: () {},
+    onPlayNext: () {},
   ),
 );

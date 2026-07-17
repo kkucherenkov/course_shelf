@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:app_ui/src/icons/icon_cs.dart';
 import 'package:app_ui/src/icons/icon_name.dart';
 import 'package:app_ui/src/theme/app_theme.dart';
+import 'package:app_ui/src/theme/tokens.g.dart';
 
 /// Locally-owned on-video translucent-white literals for the scrubber's
 /// track/buffered fill — mirrors the web `.pc-scrubber-track` /
@@ -93,7 +94,9 @@ class AppPlayerScrubber extends StatelessWidget {
                         alpha: AppPlayerScrubberOpacity.buffered,
                       ),
                       playedColor: cs.primary,
-                      chapterColor: Colors.black,
+                      // `.pc-scrubber-chap { background: var(--media-stage) }` —
+                      // the tick notches back to the video plane colour.
+                      chapterColor: AppMedia.stage,
                     ),
                   ),
                 ),

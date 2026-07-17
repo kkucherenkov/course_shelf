@@ -11,7 +11,6 @@ import 'package:app_mobile/features/player/domain/video_playback_port.dart';
 import 'package:app_mobile/features/player/presentation/bloc/player_bloc.dart';
 import 'package:app_mobile/features/player/presentation/bloc/player_event.dart';
 import 'package:app_mobile/features/player/presentation/lesson_player_screen.dart';
-import 'package:app_mobile/features/player/presentation/widgets/portrait_player_stage.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
 import 'package:app_mobile/shared/db/app_database.dart';
 
@@ -78,7 +77,7 @@ void main() {
   ) async {
     await pumpPlayer(tester);
 
-    await tester.tap(find.byKey(PortraitPlayerStage.playPauseKey));
+    await tester.tap(find.byKey(AppPlayerChrome.playPauseKey));
     await settle(tester);
 
     // 12 seconds of playback, one tick per second, as the engine would report.
@@ -121,7 +120,7 @@ void main() {
   ) async {
     await pumpPlayer(tester);
 
-    await tester.tap(find.byKey(PortraitPlayerStage.playPauseKey));
+    await tester.tap(find.byKey(AppPlayerChrome.playPauseKey));
     await settle(tester);
 
     clock = clock.add(const Duration(seconds: 2));

@@ -9,7 +9,14 @@ const packagesRoot = path.resolve(specsRoot, '..');
 
 const bundle = path.resolve(specsRoot, 'dist/openapi.json');
 const tsOut = path.resolve(packagesRoot, 'api-client-ts/src/generated');
-const dartOut = path.resolve(packagesRoot, 'api-client-dart/lib/generated');
+// dart-dio emits a *complete* package (its own pubspec.yaml + lib/src/). Every
+// generated file self-imports `package:app_api_client/src/…`, which Dart's
+// package resolver maps to `<pkgRoot>/lib/src/…`. So the generated `lib/` MUST
+// be the package's real `lib/` — generate straight into the package root, not a
+// nested `lib/generated/` (that produced an unimportable double-nested package;
+// see #168). The hand-authored `pubspec.yaml` is preserved via
+// `.openapi-generator-ignore`.
+const dartOut = path.resolve(packagesRoot, 'api-client-dart');
 const openapiTypesOut = path.resolve(specsRoot, 'src/openapi-types.ts');
 
 if (!existsSync(bundle)) {
@@ -39,8 +46,23 @@ run(
     '-g dart-dio',
     `-o "${dartOut}"`,
     '--additional-properties=pubName=app_api_client,pubLibrary=app_api_client.api,nullableFields=true',
+    // `name` is a valid ScraperKind wire value, but as a Dart enum member it
+    // collides with built_value's reserved `EnumClass.name`, so build_runner
+    // can't compile the enum. Remap ONLY the Dart identifier — the wire value
+    // stays `name` via `@BuiltValueEnumConst(wireName: r'name')`, so this is
+    // NOT a wire-contract change. Applied globally, but ScraperKind is the only
+    // enum with a `name` member (verified against the bundle).
+    '--enum-name-mappings=name=nameKind',
   ].join(' '),
 );
+
+// The client uses built_value, which relies on generated `.g.dart` part
+// files (one per model + the serializers). openapi-generator does NOT run
+// build_runner, so without this step every `part '*.g.dart'` is missing and
+// the package won't compile. Generate the parts and commit them as artifacts.
+console.warn('[codegen] post: dart pub get + build_runner (emit built_value .g.dart parts)');
+run('dart pub get', dartOut);
+run('dart run build_runner build --delete-conflicting-outputs', dartOut);
 
 // The dart-dio template emits a fixed import block per *_api.dart
 // (Problem, built_value/json_object) regardless of whether the operations
@@ -49,7 +71,6 @@ run(
 // the unused directives — the source of truth stays the analyzer, no
 // in-repo suppressions, no template forks.
 console.warn('[codegen] post: dart fix --apply (strip generator-induced unused imports)');
-run('dart pub get', dartOut);
 run('dart fix --apply', dartOut);
 
 console.warn('[codegen] post: prettier on openapi-types.ts (stable diff across versions)');

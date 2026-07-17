@@ -147,7 +147,7 @@ class _LandscapePlayer extends StatelessWidget {
 
     return Scaffold(
       // `media.stage` (#000) behind the chrome's own letterbox.
-      backgroundColor: Colors.black,
+      backgroundColor: AppMedia.stage,
       body: Center(
         child: AppPlayerChrome(
           state: _chromeState(state.status),

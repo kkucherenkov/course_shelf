@@ -56,11 +56,7 @@ class PortraitPlayerStage extends StatelessWidget {
         // `media.stage` (#000) — the video plane. Deliberately NOT a themed
         // surface: `docs/design/shared/tokens.json` §media documents the media
         // ramp as theme-independent because video is dark under every theme.
-        // The Dart token emitter does not emit the media ramp yet (see the
-        // card report), so this mirrors `AppPlayerChrome`'s own
-        // `ColoredBox(color: Colors.black)` stage rather than inventing a
-        // different value.
-        color: Colors.black,
+        color: AppMedia.stage,
         child: Stack(
           fit: StackFit.expand,
           children: <Widget>[
@@ -92,7 +88,8 @@ class PortraitPlayerStage extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     return ColoredBox(
       key: errorKey,
-      color: Colors.black.withValues(alpha: AppOpacity.overlay),
+      // `.pc-state-overlay { background: var(--media-scrim-soft) }`.
+      color: AppMedia.scrimSoft,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

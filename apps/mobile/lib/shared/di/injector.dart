@@ -4,6 +4,11 @@ import 'package:get_it/get_it.dart';
 import 'package:app_mobile/features/auth/data/auth_api.dart';
 import 'package:app_mobile/features/auth/domain/auth_repository.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
+import 'package:app_mobile/features/player/data/lesson_player_api.dart';
+import 'package:app_mobile/features/player/data/progress_outbox_recorder.dart';
+import 'package:app_mobile/features/player/data/video_player_adapter.dart';
+import 'package:app_mobile/features/player/domain/lesson_player_repository.dart';
+import 'package:app_mobile/features/player/presentation/bloc/player_bloc.dart';
 import 'package:app_mobile/shared/auth/token_storage.dart';
 import 'package:app_mobile/shared/config/app_config.dart';
 import 'package:app_mobile/shared/db/app_database.dart';
@@ -37,17 +42,36 @@ void configureDependencies() {
     ..registerLazySingleton<AppDatabase>(AppDatabase.open);
 
   // ── Domain repository singletons ────────────────────────────────────────
-  getIt.registerLazySingleton<AuthRepository>(
-    () => AuthApiImpl(
-      dio: getIt<Dio>(),
-      tokenStorage: getIt<TokenStorage>(),
-    ),
-  );
+  getIt
+    ..registerLazySingleton<AuthRepository>(
+      () => AuthApiImpl(
+        dio: getIt<Dio>(),
+        tokenStorage: getIt<TokenStorage>(),
+      ),
+    )
+    ..registerLazySingleton<LessonPlayerRepository>(
+      () => LessonPlayerApi(
+        dio: getIt<Dio>(),
+        downloadsDao: DownloadsDao(getIt<AppDatabase>()),
+      ),
+    )
+    ..registerLazySingleton<LessonProgressRecorder>(
+      () => ProgressOutboxRecorder(ProgressOutboxDao(getIt<AppDatabase>())),
+    );
 
-  // ── Cubit factories ─────────────────────────────────────────────────────
-  getIt.registerFactory<AuthCubit>(
-    () => AuthCubit(getIt<AuthRepository>()),
-  );
+  // ── Cubit / Bloc factories ──────────────────────────────────────────────
+  getIt
+    ..registerFactory<AuthCubit>(() => AuthCubit(getIt<AuthRepository>()))
+    // A factory, and a fresh VideoPlayerAdapter per instance: the adapter owns
+    // a platform controller that PlayerBloc.close() disposes, so a shared
+    // singleton would hand the next lesson a disposed engine.
+    ..registerFactory<PlayerBloc>(
+      () => PlayerBloc(
+        repository: getIt<LessonPlayerRepository>(),
+        progressRecorder: getIt<LessonProgressRecorder>(),
+        playback: VideoPlayerAdapter(),
+      ),
+    );
 }
 
 /// Test-only reset hook. Call in `tearDown` to drop singletons between cases.

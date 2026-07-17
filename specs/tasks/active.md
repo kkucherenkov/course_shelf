@@ -20,7 +20,7 @@
   - [x] **De-template (#156)**: `Appointments` → `CourseShelf`; the appointments nav tabs → the real five; phone-OTP stripped from `AuthState`/`AuthCubit`/`AuthRepository`/`auth_api`; `welcome_screen` + `phone_auth_screen` deleted
   - [ ] E18-F01-S01 — `HomeCubit` (Loading | Loaded | Empty | Failed) + Home tab body
   - [ ] E18-F03-S01 — rework the placeholder auth screens; add `forgot_screen`; `SignUpCubit` + `ForgotCubit` 3-step machines
-  - [ ] E18-F02-S01 — `video_player` dependency; player BLoC; portrait tabs + landscape chrome; throttled 10s `progress_outbox` write
+  - [x] E18-F02-S01 — `video_player` dependency; player BLoC; portrait tabs + landscape chrome; throttled 10s `progress_outbox` write
 - Status: in-progress
 - Blockers: —
 

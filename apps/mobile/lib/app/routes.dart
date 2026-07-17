@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:app_mobile/features/auth/presentation/forgot_screen.dart';
 import 'package:app_mobile/features/auth/presentation/sign_in_screen.dart';
 import 'package:app_mobile/features/auth/presentation/sign_up_screen.dart';
+import 'package:app_mobile/features/course_detail/presentation/course_detail_screen.dart';
 import 'package:app_mobile/features/player/presentation/lesson_player_screen.dart';
 
 /// Named route constants.
@@ -26,6 +27,10 @@ abstract class AppRoutes {
   /// Lesson player — E18-F02-S01. Pass the lesson id as the route argument:
   /// `Navigator.pushNamed(context, AppRoutes.lesson, arguments: lessonId)`.
   static const lesson = '/lesson';
+
+  /// Course detail — E18-F01-S03. Pass the course id as the route argument:
+  /// `Navigator.pushNamed(context, AppRoutes.course, arguments: courseId)`.
+  static const course = '/course';
 }
 
 /// Route factory — maps route names to screen widgets.
@@ -64,6 +69,21 @@ Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     }
     return MaterialPageRoute<void>(
       builder: (_) => LessonPlayerScreen(lessonId: lessonId),
+      settings: settings,
+    );
+  }
+
+  if (name == AppRoutes.course) {
+    final courseId = settings.arguments;
+    if (courseId is! String) {
+      throw ArgumentError.value(
+        settings.arguments,
+        'arguments',
+        '${AppRoutes.course} requires the course id as a String argument',
+      );
+    }
+    return MaterialPageRoute<void>(
+      builder: (_) => CourseDetailScreen(courseId: courseId),
       settings: settings,
     );
   }

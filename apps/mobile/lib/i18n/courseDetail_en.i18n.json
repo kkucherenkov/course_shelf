@@ -1,0 +1,32 @@
+{
+  "back": "Back",
+  "more": "More options",
+  "primary": {
+    "start": "Start course",
+    "resume": "Resume",
+    "watchAgain": "Watch again",
+    "enroll": "Enroll to unlock"
+  },
+  "download": {
+    "cta": "Download course",
+    "ctaWithSize": "Download course · {size}"
+  },
+  "upNext": "Up next · {note}",
+  "progress": {
+    "completed": "Completed",
+    "ofLessons": "{completed} of {total} lessons"
+  },
+  "curriculum": {
+    "section": "Section",
+    "lesson": "lesson",
+    "lessons": "lessons"
+  },
+  "noAccess": {
+    "title": "This course is locked",
+    "message": "You don't have access to this course yet. Enroll to unlock it."
+  },
+  "error": {
+    "title": "Could not load this course",
+    "message": "Check your connection and try again."
+  }
+}

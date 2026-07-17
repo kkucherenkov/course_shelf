@@ -10,15 +10,22 @@
  *   - the email/password product routes and the admin + bearer plugins survive;
  *   - no phone/OTP route can be reintroduced unnoticed.
  *
- * The instance is built for real (no mocking of better-auth); only Prisma and
- * AppConfig are stubbed, since constructing the instance performs no I/O.
+ * They also pin GitHub #173 (wiring password reset): the `sendResetPassword`
+ * callback is present (without it Better Auth answers RESET_PASSWORD_DISABLED)
+ * and it delivers the reset URL through the EMAIL_PORT.
+ *
+ * The instance is built for real (no mocking of better-auth); Prisma and
+ * AppConfig are stubbed (constructing the instance performs no I/O) and the
+ * EMAIL_PORT is a real MockEmailService so delivery is observable.
  */
 import { describe, expect, it } from 'vitest';
 
+import { MockEmailService } from '../../modules/integrations/infra/mock-email.service';
 import { AuthService } from './auth.service';
 
 import type { AppConfig } from '../config/app-config';
 import type { PrismaService } from '../prisma/prisma.service';
+import type { I18nService } from 'nestjs-i18n';
 
 function makeConfig(): AppConfig {
   return {
@@ -35,10 +42,29 @@ function makePrisma(): PrismaService {
   return { user: { count: () => Promise.resolve(0) } } as unknown as PrismaService;
 }
 
-function bootService(): AuthService {
-  const service = new AuthService(makePrisma(), makeConfig());
+// Returns the i18n key verbatim so tests don't depend on locale-file contents;
+// the reset URL is concatenated by the callback, not interpolated by i18n.
+function makeI18n(): I18nService {
+  return { t: (key: string) => key } as unknown as I18nService;
+}
+
+function bootService(email: MockEmailService = new MockEmailService()): AuthService {
+  const service = new AuthService(makePrisma(), makeConfig(), email, makeI18n());
   service.onModuleInit();
   return service;
+}
+
+type ResetPasswordFn = (data: {
+  user: { email: string };
+  url: string;
+  token: string;
+}) => Promise<void>;
+
+function sendResetPassword(service: AuthService): ResetPasswordFn | undefined {
+  const options = service.auth.options as unknown as {
+    emailAndPassword?: { sendResetPassword?: ResetPasswordFn };
+  };
+  return options.emailAndPassword?.sendResetPassword;
 }
 
 function apiKeys(service: AuthService): string[] {
@@ -51,11 +77,12 @@ function pluginIds(service: AuthService): string[] {
 }
 
 describe('AuthService', () => {
-  it('constructs without an SMS port', () => {
-    // The phoneNumber plugin was the only consumer of SMS_PORT; AuthService now
-    // depends on Prisma + AppConfig alone.
+  it('constructs from Prisma, AppConfig, the email port and i18n', () => {
+    // The phoneNumber plugin was the only consumer of SMS_PORT (removed in
+    // #157). #173 added the EMAIL_PORT + I18nService dependencies to deliver
+    // the password-reset email, so the constructor now takes four args.
     expect(() => bootService()).not.toThrow();
-    expect(AuthService.length).toBe(2);
+    expect(AuthService.length).toBe(4);
   });
 
   it('keeps the email + password routes mobile and web depend on', () => {
@@ -95,6 +122,35 @@ describe('AuthService', () => {
     expect(apiKeys(service)).toContain('setRole');
     expect(apiKeys(service)).toContain('listUsers');
     expect(apiKeys(service)).toContain('banUser');
+  });
+
+  it('wires sendResetPassword so reset is enabled (not RESET_PASSWORD_DISABLED)', () => {
+    // Better Auth only honors requestPasswordReset/resetPassword when
+    // emailAndPassword.sendResetPassword is a function; otherwise the route
+    // logs "Reset password isn't enabled" and answers RESET_PASSWORD_DISABLED.
+    // The route key existing (asserted above) is necessary but NOT sufficient —
+    // this pins the callback that makes the route actually work (#173).
+    expect(typeof sendResetPassword(bootService())).toBe('function');
+  });
+
+  it('delivers the reset URL through the EMAIL_PORT', async () => {
+    const email = new MockEmailService();
+    const service = bootService(email);
+
+    const send = sendResetPassword(service);
+    expect(send).toBeDefined();
+
+    const url = 'http://localhost:3000/api/v1/auth/reset-password/tok-123?callbackURL=';
+    await send?.({ user: { email: 'reset@example.com' }, url, token: 'tok-123' });
+
+    const sent = email.sentTo('reset@example.com');
+    expect(sent).toHaveLength(1);
+    // The reset link must survive into the delivered body, both text and HTML.
+    expect(sent[0]?.text).toContain(url);
+    expect(sent[0]?.html).toContain(url);
+    expect(sent[0]?.subject).toBe('auth.resetPassword.subject');
+    // Nothing was sent to an unrelated address.
+    expect(email.sentTo('someone-else@example.com')).toHaveLength(0);
   });
 
   it('exposes no phone or OTP route', () => {

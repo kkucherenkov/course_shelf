@@ -10,7 +10,6 @@ import 'package:app_mobile/features/player/domain/video_playback_port.dart';
 import 'package:app_mobile/features/player/presentation/bloc/player_bloc.dart';
 import 'package:app_mobile/features/player/presentation/bloc/player_event.dart';
 import 'package:app_mobile/features/player/presentation/lesson_player_screen.dart';
-import 'package:app_mobile/features/player/presentation/widgets/portrait_player_stage.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
 
 import 'player_fakes.dart';
@@ -66,20 +65,23 @@ void main() {
   }
 
   group('portrait', () {
-    testWidgets('shows the 16:9 stage and all four tabs', (
+    testWidgets('shows the 16:9 chrome and all four tabs', (
       WidgetTester tester,
     ) async {
       await pumpPlayer(tester);
 
-      expect(find.byType(PortraitPlayerStage), findsOneWidget);
+      // Portrait composes the real AppPlayerChrome in its portrait context —
+      // no bespoke stage — so the 16:9 box comes from the component itself.
+      final AppPlayerChrome chrome = tester.widget<AppPlayerChrome>(
+        find.byType(AppPlayerChrome),
+      );
+      expect(chrome.context, AppPlayerChromeContext.portrait);
       expect(
-        tester.widget<AspectRatio>(
-          find.descendant(
-            of: find.byType(PortraitPlayerStage),
-            matching: find.byType(AspectRatio),
-          ),
-        ).aspectRatio,
-        16 / 9,
+        tester
+            .widgetList<AspectRatio>(find.byType(AspectRatio))
+            .any((AspectRatio a) => a.aspectRatio == 16 / 9),
+        isTrue,
+        reason: 'the portrait chrome must render a 16:9 stage',
       );
 
       for (final String label in <String>[
@@ -115,7 +117,7 @@ void main() {
       // `tester.tap` never touches the semantics layer, so a control can be
       // tappable and still unusable with a screen reader. Assert the semantics
       // node itself carries the label and the tap action.
-      expect(find.byKey(PortraitPlayerStage.playPauseKey), findsOneWidget);
+      expect(find.byKey(AppPlayerChrome.playPauseKey), findsOneWidget);
 
       final SemanticsNode node = tester.getSemantics(
         find.bySemanticsLabel('Play'),
@@ -167,18 +169,20 @@ void main() {
       );
       await _settle(tester);
 
-      expect(find.byKey(PortraitPlayerStage.bufferingKey), findsOneWidget);
+      expect(find.byKey(AppPlayerChrome.bufferingSpinnerKey), findsOneWidget);
     });
   });
 
   group('landscape', () {
-    testWidgets('swaps the portrait stage for the immersive chrome', (
+    testWidgets('swaps to the immersive landscape chrome', (
       WidgetTester tester,
     ) async {
       await pumpPlayer(tester, size: const Size(800, 400));
 
-      expect(find.byType(AppPlayerChrome), findsOneWidget);
-      expect(find.byType(PortraitPlayerStage), findsNothing);
+      final AppPlayerChrome chrome = tester.widget<AppPlayerChrome>(
+        find.byType(AppPlayerChrome),
+      );
+      expect(chrome.context, AppPlayerChromeContext.mobileLandscape);
       // The tab strip is portrait-only — landscape is full-bleed video.
       expect(find.text('Sections'), findsNothing);
     });

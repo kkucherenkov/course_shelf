@@ -5,6 +5,7 @@ import 'package:app_ui/src/buttons/app_button_variant.dart';
 import 'package:app_ui/src/buttons/app_icon_button.dart';
 import 'package:app_ui/src/icons/icon_cs.dart';
 import 'package:app_ui/src/icons/icon_name.dart';
+import 'package:app_ui/src/player/app_player_chrome_context.dart';
 import 'package:app_ui/src/player/app_player_chrome_state.dart';
 import 'package:app_ui/src/player/app_player_scrubber.dart';
 import 'package:app_ui/src/progress/app_spinner.dart';
@@ -27,14 +28,6 @@ abstract final class _OnVideo {
 
   /// The state-overlay `Icon ... size={28}` (alert / lock glyph).
   static const double stateIconSize = 28;
-
-  /// `.pc-state-overlay { background: rgba(0,0,0,0.4) }` — equal to
-  /// [AppOpacity.overlay]; named here for readability at each call site.
-  static const double scrimAlpha = AppOpacity.overlay;
-
-  /// `.pc-end-banner { background: rgba(0,0,0,0.55) }` — doesn't land on
-  /// any [AppOpacity] step.
-  static const double endScrimAlpha = 0.55;
 
   /// `.pc-btn:hover { background: rgba(255,255,255,.15) }` — the on-video
   /// hover/press fill [_OnVideoChrome] substitutes for
@@ -104,8 +97,9 @@ class _VideoPlaceholder extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          // Web: `linear-gradient(135deg, #1a1d22, #0a0c10)`.
-          colors: <Color>[Color(0xFF1A1D22), Color(0xFF0A0C10)],
+          // Web: `linear-gradient(135deg, var(--media-placeholder-from),
+          // var(--media-placeholder-to))`.
+          colors: <Color>[AppMedia.placeholderFrom, AppMedia.placeholderTo],
         ),
       ),
     );
@@ -124,9 +118,12 @@ String _formatDuration(Duration duration) {
   return '$minutes:${secs.toString().padLeft(2, '0')}';
 }
 
-/// The mobile-landscape video controls overlay — Flutter twin of the web
-/// `PlayerChrome`'s `mobile-landscape` context
-/// (`docs/design/cs-components/components.jsx` `§PlayerChrome`).
+/// The video controls overlay — Flutter twin of the web `PlayerChrome`
+/// (`docs/design/cs-components/components.jsx` `§PlayerChrome`). [context]
+/// selects the layout: the immersive
+/// [AppPlayerChromeContext.mobileLandscape] (`19/9`, edge hints,
+/// pinch-to-dismiss) or the embedded [AppPlayerChromeContext.portrait]
+/// (`16/9`, same transport minus the landscape-only gestures).
 ///
 /// Presentational and **controlled**: it never decodes video, only accepts
 /// an optional [videoSlot] (or renders a neutral gradient placeholder) that
@@ -155,6 +152,7 @@ class AppPlayerChrome extends StatefulWidget {
     required this.lessonTitle,
     required this.position,
     required this.duration,
+    this.context = AppPlayerChromeContext.mobileLandscape,
     this.videoSlot,
     this.bufferedFraction = 0,
     this.chapterFractions = const <double>[],
@@ -187,6 +185,14 @@ class AppPlayerChrome extends StatefulWidget {
   });
 
   final AppPlayerChromeState state;
+
+  /// Selects the aspect box and edge affordances: the immersive
+  /// [AppPlayerChromeContext.mobileLandscape] (`19/9`, double-tap edge hints,
+  /// pinch-to-dismiss) or the embedded [AppPlayerChromeContext.portrait]
+  /// (`16/9`, no edge hints — the same transport otherwise). Defaults to
+  /// mobile-landscape, the original single-context behaviour.
+  final AppPlayerChromeContext context;
+
   final String sectionLabel;
   final String lessonTitle;
   final Duration position;
@@ -274,8 +280,13 @@ class AppPlayerChrome extends StatefulWidget {
   /// Fires when the [AppPlayerChromeState.end] "play next" button is tapped.
   final VoidCallback? onPlayNext;
 
-  /// Web: `.pc-mobile-landscape { aspect-ratio: 19/9 }`.
-  static const double aspectRatio = 19 / 9;
+  /// Web: `.pc-mobile-landscape { aspect-ratio: 19/9 }` — the
+  /// [AppPlayerChromeContext.mobileLandscape] box.
+  static const double aspectRatioLandscape = 19 / 9;
+
+  /// Web: base `.pc { aspect-ratio: 16/9 }` — the
+  /// [AppPlayerChromeContext.portrait] box.
+  static const double aspectRatioPortrait = 16 / 9;
 
   /// Below this two-finger scale factor, a pinch reads as "pinch in" and
   /// fires [onDismissToPortrait] once per gesture — locally-owned; there is
@@ -347,6 +358,9 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
   }
 
   void _handleDoubleTap(double width) {
+    // Portrait has no edge-hint affordance and no skip gesture — the double
+    // tap is a landscape-only immersive control.
+    if (!_isLandscape) return;
     final double? dx = _pendingDoubleTapDx;
     if (dx == null || width <= 0) return;
     final bool isRight = dx > width / 2;
@@ -362,11 +376,23 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
   }
 
   void _handleScaleUpdate(ScaleUpdateDetails details) {
+    if (!_isLandscape) return;
     if (!_pinchFired && details.scale < AppPlayerChrome.pinchDismissThreshold) {
       _pinchFired = true;
       widget.onDismissToPortrait?.call();
     }
   }
+
+  /// The double-tap edge hints and the pinch-to-dismiss gesture are
+  /// landscape-only: the web draws the edge hints solely when
+  /// `isMobile` (`context === 'mobile-landscape'`), and pinching "out of
+  /// fullscreen" is meaningless in the already-portrait embedded stage.
+  bool get _isLandscape =>
+      widget.context == AppPlayerChromeContext.mobileLandscape;
+
+  double get _aspectRatio => _isLandscape
+      ? AppPlayerChrome.aspectRatioLandscape
+      : AppPlayerChrome.aspectRatioPortrait;
 
   double get _playedFraction {
     final int totalMs = widget.duration.inMilliseconds;
@@ -390,9 +416,10 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: AspectRatio(
-        aspectRatio: AppPlayerChrome.aspectRatio,
+        aspectRatio: _aspectRatio,
         child: ColoredBox(
-          color: Colors.black,
+          // `media.stage` (#000) — the video plane behind the letterbox.
+          color: AppMedia.stage,
           child: Stack(
             fit: StackFit.expand,
             children: <Widget>[
@@ -464,6 +491,9 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
   }
 
   Widget _buildEdgeHint(_EdgeHintSide side, Key key) {
+    // Edge hints are a mobile-landscape affordance only (web: rendered under
+    // `isMobile`). Portrait never shows them.
+    if (!_isLandscape) return const SizedBox.shrink();
     final bool active = _hintSide == side;
     return Positioned(
       left: side == _EdgeHintSide.left ? 0 : null,
@@ -505,7 +535,8 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
           color: Colors.white,
         );
     return ColoredBox(
-      color: Colors.black.withValues(alpha: _OnVideo.scrimAlpha),
+      // `.pc-state-overlay { background: var(--media-scrim-soft) }`.
+      color: AppMedia.scrimSoft,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -538,7 +569,8 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
           color: Colors.white,
         );
     return ColoredBox(
-      color: Colors.black.withValues(alpha: _OnVideo.scrimAlpha),
+      // `.pc-state-overlay { background: var(--media-scrim-soft) }`.
+      color: AppMedia.scrimSoft,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -573,7 +605,8 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
           color: Colors.white,
         );
     return ColoredBox(
-      color: Colors.black.withValues(alpha: _OnVideo.endScrimAlpha),
+      // `.pc-end-banner { background: var(--media-scrim-medium) }`.
+      color: AppMedia.scrimMedium,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -725,33 +758,39 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
               size: AppButtonSize.sm,
               onPressed: widget.onPlayPause,
             ),
-            const SizedBox(width: _OnVideo.controlGap),
-            AppIconButton(
-              key: AppPlayerChrome.previousKey,
-              name: IconName.prev,
-              semanticLabel: 'Previous lesson',
-              variant: AppButtonVariant.ghost,
-              size: AppButtonSize.sm,
-              onPressed: widget.onPrevious,
-            ),
-            const SizedBox(width: _OnVideo.controlGap),
-            AppIconButton(
-              key: AppPlayerChrome.nextKey,
-              name: IconName.next,
-              semanticLabel: 'Next lesson',
-              variant: AppButtonVariant.ghost,
-              size: AppButtonSize.sm,
-              onPressed: widget.onNext,
-            ),
-            const SizedBox(width: _OnVideo.controlGap),
-            AppIconButton(
-              key: AppPlayerChrome.volumeKey,
-              name: widget.isMuted ? IconName.volumeMute : IconName.volume,
-              semanticLabel: widget.isMuted ? 'Unmute' : 'Mute',
-              variant: AppButtonVariant.ghost,
-              size: AppButtonSize.sm,
-              onPressed: widget.onVolumeTap,
-            ),
+            // Portrait is too narrow for the full transport cluster (the web
+            // desktop context has desktop width to spare); it keeps just
+            // play/pause · time · fullscreen, with settings up in the top bar.
+            // Landscape shows prev/next/volume and the speed/subtitles cluster.
+            if (_isLandscape) ...<Widget>[
+              const SizedBox(width: _OnVideo.controlGap),
+              AppIconButton(
+                key: AppPlayerChrome.previousKey,
+                name: IconName.prev,
+                semanticLabel: 'Previous lesson',
+                variant: AppButtonVariant.ghost,
+                size: AppButtonSize.sm,
+                onPressed: widget.onPrevious,
+              ),
+              const SizedBox(width: _OnVideo.controlGap),
+              AppIconButton(
+                key: AppPlayerChrome.nextKey,
+                name: IconName.next,
+                semanticLabel: 'Next lesson',
+                variant: AppButtonVariant.ghost,
+                size: AppButtonSize.sm,
+                onPressed: widget.onNext,
+              ),
+              const SizedBox(width: _OnVideo.controlGap),
+              AppIconButton(
+                key: AppPlayerChrome.volumeKey,
+                name: widget.isMuted ? IconName.volumeMute : IconName.volume,
+                semanticLabel: widget.isMuted ? 'Unmute' : 'Mute',
+                variant: AppButtonVariant.ghost,
+                size: AppButtonSize.sm,
+                onPressed: widget.onVolumeTap,
+              ),
+            ],
             const SizedBox(width: AppSpacing.s2),
             Text(
               '${_formatDuration(widget.position)} / '
@@ -760,23 +799,27 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
               style: timeStyle,
             ),
             const Spacer(),
-            AppButton(
-              key: AppPlayerChrome.speedKey,
-              variant: AppButtonVariant.ghost,
-              size: AppButtonSize.sm,
-              onPressed: widget.onSpeedTap,
-              child: Text(widget.speedLabel, style: speedStyle),
-            ),
-            const SizedBox(width: _OnVideo.controlGap),
-            AppIconButton(
-              key: AppPlayerChrome.subtitlesKey,
-              name: IconName.subtitles,
-              semanticLabel: 'Subtitles',
-              variant: AppButtonVariant.ghost,
-              size: AppButtonSize.sm,
-              onPressed: widget.onSubtitlesTap,
-            ),
-            const SizedBox(width: _OnVideo.controlGap),
+            if (_isLandscape) ...<Widget>[
+              AppButton(
+                key: AppPlayerChrome.speedKey,
+                variant: AppButtonVariant.ghost,
+                size: AppButtonSize.sm,
+                // The visible speed (e.g. "1.0x") is also its accessible name.
+                semanticLabel: widget.speedLabel,
+                onPressed: widget.onSpeedTap,
+                child: Text(widget.speedLabel, style: speedStyle),
+              ),
+              const SizedBox(width: _OnVideo.controlGap),
+              AppIconButton(
+                key: AppPlayerChrome.subtitlesKey,
+                name: IconName.subtitles,
+                semanticLabel: 'Subtitles',
+                variant: AppButtonVariant.ghost,
+                size: AppButtonSize.sm,
+                onPressed: widget.onSubtitlesTap,
+              ),
+              const SizedBox(width: _OnVideo.controlGap),
+            ],
             AppIconButton(
               key: AppPlayerChrome.fullscreenKey,
               name: IconName.fullscreen,

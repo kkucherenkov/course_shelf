@@ -217,15 +217,67 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('a custom child keeps contributing the announced name', (
+    testWidgets('a custom-child button announces its semanticLabel', (
       tester,
     ) async {
       final handle = tester.ensureSemantics();
       await _pump(
         tester,
-        AppButton(onPressed: () {}, child: const Text('Custom')),
+        AppButton(
+          onPressed: () {},
+          semanticLabel: 'Bold',
+          child: const Text('B'),
+        ),
       );
-      expect(buttonNode().label, 'Custom');
+      // The glyph child ('B') is excluded from semantics; the button node is
+      // named by the supplied [semanticLabel], not by the visible child.
+      expect(buttonNode().label, 'Bold');
+      handle.dispose();
+    });
+
+    testWidgets('icon-only enabled node announces its semanticLabel', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        AppButton(
+          iconLeading: IconName.play,
+          semanticLabel: 'Play',
+          onPressed: () {},
+        ),
+      );
+      // The gap the tap-only tests missed: an icon-only button is a full,
+      // named, activatable button to assistive tech — not a nameless glyph.
+      expect(
+        buttonNode(),
+        matchesSemantics(
+          label: 'Play',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('semanticLabel overrides the visible label as the name', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        AppButton(
+          label: 'OK',
+          semanticLabel: 'Confirm order',
+          onPressed: () {},
+        ),
+      );
+      expect(find.text('OK'), findsOneWidget);
+      expect(buttonNode().label, 'Confirm order');
       handle.dispose();
     });
 
@@ -250,10 +302,7 @@ void main() {
           hasFocusAction: false,
         ),
       );
-      expect(
-        () => tester.semantics.tap(buttonFinder()),
-        throwsStateError,
-      );
+      expect(() => tester.semantics.tap(buttonFinder()), throwsStateError);
       forceSemanticTap(tester);
       await tester.pump();
       expect(taps, 0);
@@ -292,10 +341,7 @@ void main() {
         tester,
         AppButton(label: 'Save', loading: true, onPressed: () => taps++),
       );
-      expect(
-        () => tester.semantics.tap(buttonFinder()),
-        throwsStateError,
-      );
+      expect(() => tester.semantics.tap(buttonFinder()), throwsStateError);
       forceSemanticTap(tester);
       await tester.pump();
       expect(taps, 0);
@@ -303,21 +349,55 @@ void main() {
     });
 
     // `loading` swaps the whole content — label, custom child and icons — for
-    // the spinner, so a child-only button has no string left to announce: its
-    // name lived in a widget that is no longer mounted. [label] is the only
-    // name that survives the swap, hence the asymmetry pinned here. This is
-    // not a regression: before the honest-node fix, *every* loading button was
-    // nameless, this one included.
-    testWidgets('loading node falls back to nameless without a label', (
+    // the spinner, so no visible descendant is left to announce. Before this
+    // fix a child-only button therefore went nameless while loading (its name
+    // lived in the now-unmounted child). `semanticLabel` is required whenever
+    // `label` is null, so the loading node always has a string to announce —
+    // this pins that child-only loading buttons stay named.
+    testWidgets('child-only loading node still announces its semanticLabel', (
       tester,
     ) async {
       final handle = tester.ensureSemantics();
       await _pump(
         tester,
-        AppButton(loading: true, onPressed: () {}, child: const Text('Custom')),
+        AppButton(
+          loading: true,
+          semanticLabel: 'Saving',
+          onPressed: () {},
+          child: const Text('Save'),
+        ),
       );
-      expect(buttonNode().label, isEmpty);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(
+        buttonNode(),
+        matchesSemantics(
+          label: 'Saving',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: false,
+          isFocusable: false,
+          hasTapAction: false,
+          hasFocusAction: false,
+        ),
+      );
       handle.dispose();
+    });
+  });
+
+  group('AppButton assertions', () {
+    test('requires a semanticLabel when label is null', () {
+      expect(
+        () => AppButton(iconLeading: IconName.play, onPressed: () {}),
+        throwsAssertionError,
+      );
+      expect(
+        () => AppButton(onPressed: () {}, child: const Text('x')),
+        throwsAssertionError,
+      );
+    });
+
+    test('label alone satisfies the semanticLabel requirement', () {
+      expect(() => const AppButton(label: 'Save'), returnsNormally);
     });
   });
 }

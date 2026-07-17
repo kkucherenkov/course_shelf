@@ -29,6 +29,20 @@ Widget _card(String title, Widget chrome) => Padding(
   ),
 );
 
+Widget _portraitCard(String title, Widget chrome) => Padding(
+  padding: const EdgeInsets.only(bottom: 16),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: MainAxisSize.min,
+    children: <Widget>[
+      _label(title),
+      // A phone portrait width; the chrome imposes its own 16:9 box, so the
+      // height follows from the width.
+      SizedBox(width: 360, child: chrome),
+    ],
+  ),
+);
+
 Widget _matrix(ThemeData theme) {
   return MaterialApp(
     debugShowCheckedModeBanner: false,
@@ -127,6 +141,87 @@ Widget _matrix(ThemeData theme) {
   );
 }
 
+Widget _portraitMatrix(ThemeData theme) {
+  return MaterialApp(
+    debugShowCheckedModeBanner: false,
+    theme: theme,
+    home: Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              _portraitCard(
+                'playing',
+                const AppPlayerChrome(
+                  state: AppPlayerChromeState.playing,
+                  context: AppPlayerChromeContext.portrait,
+                  sectionLabel: 'SECTION 04 · CONSENSUS',
+                  lessonTitle: 'Lesson 12 · Quorum reads',
+                  position: Duration(minutes: 7, seconds: 43),
+                  duration: Duration(minutes: 18, seconds: 24),
+                  bufferedFraction: 0.6,
+                  bookmarkFractions: <double>[0.58],
+                ),
+              ),
+              _portraitCard(
+                'buffering',
+                const AppPlayerChrome(
+                  state: AppPlayerChromeState.buffering,
+                  context: AppPlayerChromeContext.portrait,
+                  sectionLabel: 'SECTION 04 · CONSENSUS',
+                  lessonTitle: 'Lesson 12 · Quorum reads',
+                  position: Duration(minutes: 7, seconds: 43),
+                  duration: Duration(minutes: 18, seconds: 24),
+                ),
+              ),
+              _portraitCard(
+                'error',
+                const AppPlayerChrome(
+                  state: AppPlayerChromeState.error,
+                  context: AppPlayerChromeContext.portrait,
+                  sectionLabel: 'SECTION 04 · CONSENSUS',
+                  lessonTitle: 'Lesson 12 · Quorum reads',
+                  position: Duration(minutes: 7, seconds: 43),
+                  duration: Duration(minutes: 18, seconds: 24),
+                ),
+              ),
+              _portraitCard(
+                'end',
+                const AppPlayerChrome(
+                  state: AppPlayerChromeState.end,
+                  context: AppPlayerChromeContext.portrait,
+                  sectionLabel: 'SECTION 04 · CONSENSUS',
+                  lessonTitle: 'Lesson 12 · Quorum reads',
+                  position: Duration(minutes: 18, seconds: 24),
+                  duration: Duration(minutes: 18, seconds: 24),
+                  upNextEyebrow: 'Up next in 5s',
+                  upNextTitle: 'Lesson 13 · Causal consistency',
+                ),
+              ),
+              _portraitCard(
+                'minimal',
+                const AppPlayerChrome(
+                  state: AppPlayerChromeState.playing,
+                  context: AppPlayerChromeContext.portrait,
+                  sectionLabel: 'SECTION 04 · CONSENSUS',
+                  lessonTitle: 'Lesson 12 · Quorum reads',
+                  position: Duration(minutes: 7, seconds: 43),
+                  duration: Duration(minutes: 18, seconds: 24),
+                  bufferedFraction: 0.6,
+                  initiallyMinimal: true,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 Future<void> _pumpMatrix(WidgetTester tester) =>
     tester.pump(const Duration(milliseconds: 32));
 
@@ -156,6 +251,30 @@ void main() {
     await screenMatchesGolden(
       tester,
       'app_player_chrome_matrix_dark',
+      customPump: _pumpMatrix,
+    );
+  });
+
+  testGoldens('AppPlayerChrome portrait — light', (tester) async {
+    await tester.pumpWidgetBuilder(
+      _portraitMatrix(AppTheme.light()),
+      surfaceSize: const Size(400, 1300),
+    );
+    await screenMatchesGolden(
+      tester,
+      'app_player_chrome_portrait_light',
+      customPump: _pumpMatrix,
+    );
+  });
+
+  testGoldens('AppPlayerChrome portrait — dark', (tester) async {
+    await tester.pumpWidgetBuilder(
+      _portraitMatrix(AppTheme.dark()),
+      surfaceSize: const Size(400, 1300),
+    );
+    await screenMatchesGolden(
+      tester,
+      'app_player_chrome_portrait_dark',
       customPump: _pumpMatrix,
     );
   });

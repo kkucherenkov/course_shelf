@@ -1,0 +1,14 @@
+# OpenAPI Generator Ignore
+# https://github.com/openapitools/openapi-generator
+#
+# The generator emits into this package's ROOT (see packages/specs/scripts/
+# codegen.ts) so that `package:app_api_client/…` resolves against the real
+# `lib/`. These hand-authored files must survive regeneration:
+
+# Preserve our dependency set (adds one_of + build_runner the template's own
+# pubspec would clobber) and pins built_value/generator versions for
+# build_runner. Regenerate lib/ via `pnpm spec:codegen`, never the pubspec.
+pubspec.yaml
+
+# Keep this ignore file itself.
+.openapi-generator-ignore

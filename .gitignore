@@ -49,7 +49,7 @@ packages/ui_flutter/pubspec.lock
 # never hand-edited — see CLAUDE.md). Reviewable as part of the spec PR.
 # Exception: the dart-dio generator's FILES manifest is non-idempotent
 # across runs, so we gitignore it to keep the codegen-drift CI guard reliable.
-packages/api-client-dart/lib/generated/.openapi-generator/FILES
+packages/api-client-dart/.openapi-generator/FILES
 
 # specs bundle artifact (regenerated)
 packages/specs/dist

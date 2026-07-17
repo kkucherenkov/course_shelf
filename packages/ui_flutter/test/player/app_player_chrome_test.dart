@@ -9,18 +9,27 @@ Future<void> _pump(
   WidgetTester tester,
   AppPlayerChrome chrome, {
   ThemeData? theme,
+  Size boxSize = const Size(700, 700 * 9 / 19),
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: theme ?? AppTheme.dark(),
       home: Scaffold(
         body: Center(
-          child: SizedBox(width: 700, height: 700 * 9 / 19, child: chrome),
+          child: SizedBox(
+            width: boxSize.width,
+            height: boxSize.height,
+            child: chrome,
+          ),
         ),
       ),
     ),
   );
 }
+
+/// A narrow portrait box — the embedded 16:9 stage width a phone would give it.
+Future<void> _pumpPortrait(WidgetTester tester, AppPlayerChrome chrome) =>
+    _pump(tester, chrome, boxSize: const Size(400, 400 * 9 / 16));
 
 // The key lives on the AppIconButton itself; the glyph is a descendant.
 IconCS _iconAt(WidgetTester tester, Key key) => tester.widget<IconCS>(
@@ -35,6 +44,7 @@ Future<void> _settleDoubleTapWindow(WidgetTester tester) =>
 
 AppPlayerChrome _chrome({
   AppPlayerChromeState state = AppPlayerChromeState.playing,
+  AppPlayerChromeContext context = AppPlayerChromeContext.mobileLandscape,
   Duration position = Duration.zero,
   Duration duration = const Duration(minutes: 1),
   double bufferedFraction = 0,
@@ -59,6 +69,7 @@ AppPlayerChrome _chrome({
 }) {
   return AppPlayerChrome(
     state: state,
+    context: context,
     sectionLabel: 'SECTION 04 · CONSENSUS',
     lessonTitle: 'Lesson 12 · Quorum reads',
     position: position,
@@ -331,6 +342,113 @@ void main() {
         ),
       );
       expect(find.byKey(const Key('customVideoSlot')), findsOneWidget);
+    });
+  });
+
+  group('AppPlayerChrome — portrait context', () {
+    AppPlayerChrome portrait({
+      AppPlayerChromeState state = AppPlayerChromeState.playing,
+      ValueChanged<int>? onSkip,
+      VoidCallback? onDismissToPortrait,
+    }) => _chrome(
+      state: state,
+      context: AppPlayerChromeContext.portrait,
+      onSkip: onSkip,
+      onDismissToPortrait: onDismissToPortrait,
+    );
+
+    testWidgets('renders a 16:9 box, not the 19:9 landscape one', (
+      tester,
+    ) async {
+      await _pumpPortrait(tester, portrait());
+      expect(
+        tester
+            .widgetList<AspectRatio>(find.byType(AspectRatio))
+            .any((AspectRatio a) => a.aspectRatio == 16 / 9),
+        isTrue,
+      );
+      expect(
+        tester
+            .widgetList<AspectRatio>(find.byType(AspectRatio))
+            .any((AspectRatio a) => a.aspectRatio == 19 / 9),
+        isFalse,
+      );
+    });
+
+    testWidgets('keeps play/pause · time · fullscreen · settings', (
+      tester,
+    ) async {
+      await _pumpPortrait(tester, portrait());
+      expect(find.byKey(AppPlayerChrome.playPauseKey), findsOneWidget);
+      expect(find.byKey(AppPlayerChrome.timeKey), findsOneWidget);
+      expect(find.byKey(AppPlayerChrome.fullscreenKey), findsOneWidget);
+      // Settings lives in the top bar, still reachable in portrait.
+      expect(find.byKey(AppPlayerChrome.settingsKey), findsOneWidget);
+      expect(find.byKey(AppPlayerChrome.scrubberKey), findsOneWidget);
+    });
+
+    testWidgets('drops the landscape-only transport cluster', (tester) async {
+      await _pumpPortrait(tester, portrait());
+      // Too narrow for prev/next/volume and the speed/subtitles cluster.
+      expect(find.byKey(AppPlayerChrome.previousKey), findsNothing);
+      expect(find.byKey(AppPlayerChrome.nextKey), findsNothing);
+      expect(find.byKey(AppPlayerChrome.volumeKey), findsNothing);
+      expect(find.byKey(AppPlayerChrome.speedKey), findsNothing);
+      expect(find.byKey(AppPlayerChrome.subtitlesKey), findsNothing);
+    });
+
+    testWidgets('double-tap does not skip and shows no edge hint', (
+      tester,
+    ) async {
+      final List<int> skips = <int>[];
+      await _pumpPortrait(tester, portrait(onSkip: skips.add));
+      final Rect area = tester.getRect(
+        find.byKey(AppPlayerChrome.videoAreaKey),
+      );
+      final Offset rightPoint = Offset(area.right - 12, area.center.dy);
+      await tester.tapAt(rightPoint);
+      await tester.pump(kDoubleTapMinTime);
+      await tester.tapAt(rightPoint);
+      await _settleDoubleTapWindow(tester);
+      expect(skips, isEmpty);
+      expect(find.byKey(AppPlayerChrome.rightHintKey), findsNothing);
+      expect(find.byKey(AppPlayerChrome.leftHintKey), findsNothing);
+    });
+
+    testWidgets('pinch-in does not fire onDismissToPortrait', (tester) async {
+      var dismissed = false;
+      await _pumpPortrait(
+        tester,
+        portrait(onDismissToPortrait: () => dismissed = true),
+      );
+      final Offset center = tester
+          .getRect(find.byKey(AppPlayerChrome.videoAreaKey))
+          .center;
+
+      final TestGesture g1 = await tester.startGesture(
+        center.translate(-40, 0),
+      );
+      final TestGesture g2 = await tester.startGesture(center.translate(40, 0));
+      await tester.pump(const Duration(milliseconds: 20));
+      await g1.moveTo(center.translate(-5, 0));
+      await g2.moveTo(center.translate(5, 0));
+      await tester.pump(const Duration(milliseconds: 20));
+      await g1.up();
+      await g2.up();
+      await tester.pump();
+
+      expect(dismissed, isFalse);
+    });
+
+    testWidgets('a single tap still toggles minimal mode', (tester) async {
+      await _pumpPortrait(tester, portrait());
+      expect(find.byKey(AppPlayerChrome.minimalScrubberKey), findsNothing);
+      final Rect area = tester.getRect(
+        find.byKey(AppPlayerChrome.videoAreaKey),
+      );
+      await tester.tapAt(area.center);
+      await _settleDoubleTapWindow(tester);
+      expect(find.byKey(AppPlayerChrome.minimalScrubberKey), findsOneWidget);
     });
   });
 }

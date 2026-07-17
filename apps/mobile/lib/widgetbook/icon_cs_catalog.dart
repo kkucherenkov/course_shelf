@@ -4,7 +4,7 @@ import 'package:widgetbook/widgetbook.dart';
 import 'package:app_ui/app_ui.dart';
 
 /// Widgetbook component cataloguing the `app_ui` [IconCS] brand icon family:
-/// the full 66-glyph gallery, the size matrix, and the fill toggle.
+/// the full 71-glyph gallery, the size matrix, and the fill toggle.
 WidgetbookComponent buildIconCsComponent() {
   return WidgetbookComponent(
     name: 'IconCS',

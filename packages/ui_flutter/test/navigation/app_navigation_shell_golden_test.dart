@@ -11,6 +11,7 @@ List<AppNavigationTab> _tabs() => const <AppNavigationTab>[
   AppNavigationTab(
     label: 'Home',
     icon: IconName.home,
+    filledIcon: IconName.homeFill,
     body: Padding(
       padding: EdgeInsets.all(16),
       child: Text('Continue watching…'),
@@ -19,21 +20,25 @@ List<AppNavigationTab> _tabs() => const <AppNavigationTab>[
   AppNavigationTab(
     label: 'Browse',
     icon: IconName.library,
+    filledIcon: IconName.libraryFill,
     body: SizedBox.shrink(),
   ),
   AppNavigationTab(
     label: 'Downloads',
     icon: IconName.download,
+    filledIcon: IconName.downloadFill,
     body: SizedBox.shrink(),
   ),
   AppNavigationTab(
     label: 'Search',
     icon: IconName.search,
+    filledIcon: IconName.searchFill,
     body: SizedBox.shrink(),
   ),
   AppNavigationTab(
     label: 'Settings',
     icon: IconName.settings,
+    filledIcon: IconName.settingsFill,
     body: SizedBox.shrink(),
   ),
 ];

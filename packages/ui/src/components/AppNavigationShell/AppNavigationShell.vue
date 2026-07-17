@@ -621,7 +621,12 @@
       position: absolute;
       top: calc(100% + var(--space-2));
       right: 0;
-      z-index: var(--z-dropdown);
+      // This menu is anchored inside the fixed bottom-tab bar (--z-sticky, 200)
+      // at xs widths, so a plain --z-dropdown (100) paints *under* the bar the
+      // user just tapped. It's a user-opened overlay, so it takes the next scale
+      // rung above sticky: --z-overlay (300) — the lowest layer that clears
+      // sticky chrome. A shared-scale rung, not a per-component magic number.
+      z-index: var(--z-overlay);
       min-width: $menu-min-width;
       background: var(--surface-overlay);
       border: 1px solid var(--border-default);

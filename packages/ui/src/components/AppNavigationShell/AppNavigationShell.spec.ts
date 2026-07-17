@@ -2,7 +2,28 @@ import { mount, flushPromises } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
 import AppNavigationShell from './AppNavigationShell.vue';
+import shellSource from './AppNavigationShell.vue?raw';
 import type { NavItem, ShellUser } from './AppNavigationShell.vue';
+
+// Shared z-index scale (docs/design/shared/tokens.json → --z-*). Kept here to
+// assert relative layering: the account menu is anchored in the fixed bottom-tab
+// bar, so its rung must outrank the bar's --z-sticky rung.
+const Z_SCALE: Record<string, number> = {
+  base: 0,
+  raised: 10,
+  dropdown: 100,
+  sticky: 200,
+  overlay: 300,
+  modal: 400,
+  toast: 500,
+  tooltip: 600,
+};
+
+/** Extract the `z-index: var(--z-<rung>)` token declared inside a `&__<block>` rule. */
+function zTokenFor(source: string, block: string): string | undefined {
+  const rule = new RegExp(String.raw`&__${block}\s*\{[\s\S]*?\}`).exec(source)?.[0];
+  return /z-index:\s*var\(--z-([a-z]+)\)/.exec(rule ?? '')?.[1];
+}
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -428,5 +449,28 @@ describe('AppNavigationShell', () => {
     await w.find('.app-navigation-shell__avatar-trigger').trigger('click');
     const items = w.findAll('[role="menuitem"]');
     expect(items.length).toBeGreaterThanOrEqual(4); // Profile, Settings, Theme, Sign out
+  });
+
+  // ── z-index layering (#160) ─────────────────────────────────────────────────
+  // The account menu is anchored inside the fixed bottom-tab bar at xs widths.
+  // Scoped SCSS is not applied under jsdom, so assert the layering against the
+  // token declared in source: the menu's rung must outrank the sticky bar's.
+
+  describe('z-index layering', () => {
+    const menuToken = zTokenFor(shellSource, 'menu');
+    const barToken = zTokenFor(shellSource, 'bottom-tabs');
+
+    it('the account menu uses a known z-index scale rung', () => {
+      expect(menuToken).toBeDefined();
+      expect(Z_SCALE[menuToken as string]).toBeTypeOf('number');
+    });
+
+    it('the bottom-tab bar uses --z-sticky', () => {
+      expect(barToken).toBe('sticky');
+    });
+
+    it('the open account menu outranks the bottom-tab bar', () => {
+      expect(Z_SCALE[menuToken as string]).toBeGreaterThan(Z_SCALE[barToken as string]);
+    });
   });
 });

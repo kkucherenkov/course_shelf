@@ -25,7 +25,7 @@
 - Blockers: —
 - Divergences filed as issues, not silently absorbed:
   - **Password reset can't work against the current backend.** `auth.service.ts` has `emailAndPassword: { enabled, autoSignIn }` but no `sendResetPassword`, so Better Auth returns `RESET_PASSWORD_DISABLED`. The auth screens wire the canonical endpoints and surface the failure (web instead stubs it — `console.warn` + `{ok:true}`). Neither stack can actually reset a password. → new backend issue.
-  - **`WatchingOffline` is a flag, not a `PlayerStatus` member** (E18-F02-S01). The card lists it as a state; DESIGN_BRIEF §7.6 line 603 defines it as an indicator under the title shown _while playing_, so as an enum member "paused while offline" is unrepresentable. The BLoC follows the brief over the card.
+  - **`WatchingOffline` is a flag, not a `PlayerStatus` member** (E18-F02-S01). The card lists it as a state; `DESIGN_BRIEF` §7.6 line 603 defines it as an indicator under the title shown while playing, so as an enum member "paused while offline" is unrepresentable. The BLoC follows the brief over the card.
   - **`AppBrand` (E18-F03-S01) does not exist** in `ui_flutter`, and web has no `@app/ui` twin either (its `AuthBrand` is app-level). Built the mobile twin under `features/auth/presentation/widgets/`, not the catalog.
 
 ### What the roadmap got wrong about E18

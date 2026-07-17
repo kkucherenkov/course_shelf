@@ -77,6 +77,13 @@ jobs:
 
       - name: Commit regenerated baselines
         run: |
+          # This job runs inside the playwright container, where the checkout is
+          # owned by a different uid than the process. Git's dubious-ownership
+          # guard then refuses to treat the workspace as a repo at all, so even
+          # `git config` dies with "fatal: not in a git directory" — the failure
+          # this workflow hit on its first real run. The e2e job below needs no
+          # such line because it runs directly on the runner.
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add packages/ui/test/__snapshots__

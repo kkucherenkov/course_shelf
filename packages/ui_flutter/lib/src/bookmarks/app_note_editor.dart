@@ -214,20 +214,17 @@ class _AppNoteEditorState extends State<AppNoteEditor> {
     required VoidCallback onPressed,
     required Widget child,
   }) {
-    return Semantics(
-      button: true,
-      enabled: enabled,
-      label: semanticLabel,
-      child: ExcludeSemantics(
-        child: AppButton(
-          variant: AppButtonVariant.ghost,
-          size: AppButtonSize.sm,
-          disabled: !enabled,
-          semanticLabel: semanticLabel,
-          onPressed: onPressed,
-          child: child,
-        ),
-      ),
+    // AppButton owns its own button/tap/focus/label semantics (via
+    // `semanticLabel`). An outer `Semantics(...) + ExcludeSemantics` wrapper
+    // used to strand the label on an action-less parent node — a named button
+    // no screen reader could activate (#176). Compose the button directly.
+    return AppButton(
+      variant: AppButtonVariant.ghost,
+      size: AppButtonSize.sm,
+      disabled: !enabled,
+      semanticLabel: semanticLabel,
+      onPressed: onPressed,
+      child: child,
     );
   }
 
@@ -293,10 +290,15 @@ class _AppNoteEditorState extends State<AppNoteEditor> {
             onPressed: _applyLink,
           ),
           const Spacer(),
+          // This wrapper legitimately adds `toggled` (which AppButton can't
+          // express), but it must also carry the tap action itself — otherwise
+          // ExcludeSemantics strips the button's action and leaves a
+          // named-but-inert node a screen reader can't activate (#176).
           Semantics(
             button: true,
             toggled: isView,
             label: isView ? 'Edit' : 'Preview',
+            onTap: _toggleMode,
             child: ExcludeSemantics(
               child: AppButton(
                 variant: AppButtonVariant.ghost,

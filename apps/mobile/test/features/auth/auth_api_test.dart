@@ -3,15 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:app_mobile/features/auth/data/auth_api.dart';
-import 'package:app_mobile/features/auth/domain/auth_repository.dart';
 import 'package:app_mobile/shared/auth/token_storage.dart';
 
 class _MockDio extends Mock implements Dio {}
 
 class _MockTokenStorage extends Mock implements TokenStorage {}
 
-/// Builds a `DioException` carrying [statusCode], the shape `AuthApiImpl`
-/// inspects to map transport failures onto [OtpError].
+/// Builds a `DioException` carrying [statusCode] — the shape `AuthApiImpl`
+/// inspects to tell "no session" apart from a transport failure.
 DioException _httpError(int statusCode) {
   final options = RequestOptions(path: '/x');
   return DioException(
@@ -35,107 +34,95 @@ void main() {
     dio = _MockDio();
     tokenStorage = _MockTokenStorage();
     api = AuthApiImpl(dio: dio, tokenStorage: tokenStorage);
+    when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+    when(() => tokenStorage.clear()).thenAnswer((_) async {});
   });
 
-  group('requestOtp', () {
-    const sendOtpPath = '/api/v1/auth/phone-number/send-otp';
+  group('signIn', () {
+    const signInPath = '/api/v1/auth/sign-in/email';
 
-    test('posts the E.164 phoneNumber to the send-otp endpoint', () async {
-      when(() => dio.post<void>(sendOtpPath, data: any(named: 'data')))
-          .thenAnswer((_) async => _ok<void>(null));
-
-      // Deliberately messy input — the impl must strip spaces/punctuation and
-      // re-prefix a single '+'.
-      await api.requestOtp(phone: '+357 99 123-456');
-
-      final data = verify(
-        () => dio.post<void>(sendOtpPath, data: captureAny(named: 'data')),
-      ).captured.single;
-      expect(data, {'phoneNumber': '+35799123456'});
-    });
-
-    test('maps a 400 to OtpError(invalid)', () async {
-      when(() => dio.post<void>(sendOtpPath, data: any(named: 'data')))
-          .thenThrow(_httpError(400));
-
-      await expectLater(
-        () => api.requestOtp(phone: '+35799123456'),
-        throwsA(
-          isA<OtpError>().having((e) => e.kind, 'kind', OtpErrorKind.invalid),
-        ),
-      );
-    });
-  });
-
-  group('verifyOtp', () {
-    const verifyOtpPath = '/api/v1/auth/phone-number/verify-otp';
-
-    test('posts phoneNumber+code, persists the token, returns the user',
+    test('posts the credentials, persists the token, returns the user',
         () async {
-      when(
-        () => dio.post<Map<String, dynamic>>(
-          verifyOtpPath,
-          data: any(named: 'data'),
-        ),
-      ).thenAnswer(
+      when(() => dio.post<Map<String, dynamic>>(signInPath,
+          data: any(named: 'data'))).thenAnswer(
         (_) async => _ok<Map<String, dynamic>>({
-          'token': 'tok-123',
+          'token': 'jwt-123',
           'user': {
             'id': 'u1',
-            'email': 'phone-35799123456@noreply.app.internal',
-            'name': 'Jane',
+            'email': 'user@example.com',
+            'name': 'User',
             'role': 'client',
           },
         }),
       );
-      when(() => tokenStorage.write(any())).thenAnswer((_) async {});
 
-      final result =
-          await api.verifyOtp(phone: '+35799123456', code: '123456', name: '');
-
-      expect(result.user.id, 'u1');
-      expect(result.user.name, 'Jane');
-      verify(() => tokenStorage.write('tok-123')).called(1);
+      final user = await api.signIn(
+        email: 'user@example.com',
+        password: 'password123',
+      );
 
       final data = verify(
         () => dio.post<Map<String, dynamic>>(
-          verifyOtpPath,
+          signInPath,
           data: captureAny(named: 'data'),
         ),
       ).captured.single;
-      expect(data, {'phoneNumber': '+35799123456', 'code': '123456'});
+      expect(data, {'email': 'user@example.com', 'password': 'password123'});
+      expect(user.id, 'u1');
+      verify(() => tokenStorage.write('jwt-123')).called(1);
     });
 
-    test('maps a 400 to OtpError(mismatch)', () async {
-      when(
-        () => dio.post<Map<String, dynamic>>(
-          verifyOtpPath,
-          data: any(named: 'data'),
-        ),
-      ).thenThrow(_httpError(400));
+    test('throws when the response carries no user', () async {
+      when(() => dio.post<Map<String, dynamic>>(signInPath,
+              data: any(named: 'data')))
+          .thenAnswer((_) async => _ok<Map<String, dynamic>>({}));
 
       await expectLater(
-        () => api.verifyOtp(phone: '+35799123456', code: '000000', name: ''),
-        throwsA(
-          isA<OtpError>().having((e) => e.kind, 'kind', OtpErrorKind.mismatch),
-        ),
+        () => api.signIn(email: 'user@example.com', password: 'password123'),
+        throwsA(isA<Exception>()),
       );
     });
+  });
 
-    test('maps a 410 to OtpError(expired)', () async {
-      when(
-        () => dio.post<Map<String, dynamic>>(
-          verifyOtpPath,
-          data: any(named: 'data'),
-        ),
-      ).thenThrow(_httpError(410));
+  group('getSession', () {
+    const sessionPath = '/api/v1/auth/get-session';
 
-      await expectLater(
-        () => api.verifyOtp(phone: '+35799123456', code: '000000', name: ''),
-        throwsA(
-          isA<OtpError>().having((e) => e.kind, 'kind', OtpErrorKind.expired),
-        ),
+    test('returns the user for a live session', () async {
+      when(() => dio.get<Map<String, dynamic>>(sessionPath)).thenAnswer(
+        (_) async => _ok<Map<String, dynamic>>({
+          'user': {'id': 'u1', 'email': 'user@example.com', 'name': 'User'},
+        }),
       );
+
+      final user = await api.getSession();
+
+      expect(user?.id, 'u1');
+      // Absent role falls back to the least-privileged default.
+      expect(user?.role, 'client');
+    });
+
+    test('maps a 401 to null rather than throwing', () async {
+      when(() => dio.get<Map<String, dynamic>>(sessionPath))
+          .thenThrow(_httpError(401));
+
+      expect(await api.getSession(), isNull);
+    });
+
+    test('rethrows a non-401 failure', () async {
+      when(() => dio.get<Map<String, dynamic>>(sessionPath))
+          .thenThrow(_httpError(500));
+
+      await expectLater(() => api.getSession(), throwsA(isA<DioException>()));
+    });
+  });
+
+  group('signOut', () {
+    test('clears the stored token even when the request fails', () async {
+      when(() => dio.post<void>('/api/v1/auth/sign-out'))
+          .thenThrow(_httpError(500));
+
+      await expectLater(() => api.signOut(), throwsA(isA<DioException>()));
+      verify(() => tokenStorage.clear()).called(1);
     });
   });
 }

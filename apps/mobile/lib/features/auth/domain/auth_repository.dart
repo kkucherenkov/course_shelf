@@ -1,13 +1,5 @@
 import 'package:app_mobile/features/auth/domain/auth_user.dart';
 
-/// Result of a phone-OTP verification.
-class VerifyOtpResult {
-  const VerifyOtpResult({required this.user, required this.isNewUser});
-
-  final AuthUser user;
-  final bool isNewUser;
-}
-
 /// Port — auth operations.  Implementations live in `data/`.
 abstract class AuthRepository {
   /// Authenticate with email + password. Returns the authenticated user.
@@ -27,27 +19,4 @@ abstract class AuthRepository {
 
   /// Fetch the current session. Returns null when no valid session exists.
   Future<AuthUser?> getSession();
-
-  /// Send a one-time code to the given phone number via SMS.
-  /// Throws [OtpError] on failure.
-  Future<void> requestOtp({required String phone});
-
-  /// Verify a 6-digit OTP against the stored code and sign in (or sign up
-  /// on first contact) with the derived email+password.
-  /// Throws [OtpError] on failure.
-  Future<VerifyOtpResult> verifyOtp({
-    required String phone,
-    required String code,
-    required String name,
-  });
-}
-
-enum OtpErrorKind { mismatch, expired, missing, invalid }
-
-class OtpError implements Exception {
-  const OtpError(this.kind);
-  final OtpErrorKind kind;
-
-  @override
-  String toString() => 'OtpError(${kind.name})';
 }

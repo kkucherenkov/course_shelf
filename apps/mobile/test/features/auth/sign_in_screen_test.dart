@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:app_mobile/app/routes.dart';
 import 'package:app_mobile/features/auth/domain/auth_repository.dart';
 import 'package:app_mobile/features/auth/domain/auth_user.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
-import 'package:app_mobile/features/auth/presentation/phone_auth_screen.dart';
 import 'package:app_mobile/features/auth/presentation/sign_in_screen.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
 import 'package:app_mobile/shared/di/injector.dart';
@@ -16,9 +17,12 @@ class _MockAuthRepository extends Mock implements AuthRepository {}
 const _user = AuthUser(id: 'u1', email: 'user@example.com', name: 'User');
 
 Widget _harness() => TranslationProvider(
-      child: const MaterialApp(
-        onGenerateRoute: onGenerateRoute,
-        home: SignInScreen(),
+      child: BlocProvider<AuthCubit>(
+        create: (_) => getIt<AuthCubit>(),
+        child: const MaterialApp(
+          onGenerateRoute: onGenerateRoute,
+          home: SignInScreen(),
+        ),
       ),
     );
 
@@ -40,8 +44,6 @@ void main() {
     expect(find.byKey(const ValueKey('signInEmailField')), findsOneWidget);
     expect(find.byKey(const ValueKey('signInPasswordField')), findsOneWidget);
     expect(find.byKey(const ValueKey('signInSubmit')), findsOneWidget);
-    // The phone path is present but secondary — a link, not the main form.
-    expect(find.byKey(const ValueKey('signInPhoneLink')), findsOneWidget);
   });
 
   testWidgets('invalid email blocks submit and shows a validation error',
@@ -95,15 +97,5 @@ void main() {
         password: 'password123',
       ),
     ).called(1);
-  });
-
-  testWidgets('the phone link routes to the secondary PhoneAuthScreen',
-      (tester) async {
-    await tester.pumpWidget(_harness());
-
-    await tester.tap(find.byKey(const ValueKey('signInPhoneLink')));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(PhoneAuthScreen), findsOneWidget);
   });
 }

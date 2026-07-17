@@ -6,21 +6,19 @@ import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:app_mobile/features/auth/presentation/widgets/auth_banners.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
-import 'package:app_mobile/shared/di/injector.dart';
 
-/// Primary sign-in path: email + password. Mirrors `apps/web` sign-in.
-/// The secondary phone-OTP path lives behind the "sign in with phone instead"
-/// link ([PhoneAuthScreen]); the final visual design lands in E18-F03-S01.
+/// Sign-in: email + password. Mirrors `apps/web` sign-in, and is the root of
+/// the unauthenticated stack (`cs-mobile-auth` renders it with `back={false}`).
+/// The final visual design lands in E18-F03-S01.
+///
+/// Reads the app-level [AuthCubit] provided above the `Navigator` in `App`
+/// rather than creating its own — a private instance would authenticate a
+/// session [AuthGate] cannot see.
 class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider<AuthCubit>(
-      create: (_) => getIt<AuthCubit>(),
-      child: const _EmailSignInView(),
-    );
-  }
+  Widget build(BuildContext context) => const _EmailSignInView();
 }
 
 class _EmailSignInView extends StatefulWidget {
@@ -154,16 +152,6 @@ class _EmailSignInViewState extends State<_EmailSignInView> {
                           : Text(t.submit),
                     ),
                     const SizedBox(height: 16),
-                    TextButton(
-                      key: const ValueKey('signInPhoneLink'),
-                      onPressed: isLoading
-                          ? null
-                          : () => Navigator.pushNamed(
-                                context,
-                                AppRoutes.phoneAuth,
-                              ),
-                      child: Text(t.phoneInstead),
-                    ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

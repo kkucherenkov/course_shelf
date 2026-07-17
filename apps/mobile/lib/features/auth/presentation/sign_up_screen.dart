@@ -5,21 +5,17 @@ import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:app_mobile/features/auth/presentation/widgets/auth_banners.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
-import 'package:app_mobile/shared/di/injector.dart';
 
 /// Email + password registration. Reached from the "no account? sign up" link
-/// on [SignInScreen]. New phone users are created on OTP verification instead,
-/// so this screen is the email counterpart. Final visual design: E18-F03-S01.
+/// on [SignInScreen]. Final visual design: E18-F03-S01.
+///
+/// Reads the app-level [AuthCubit] (provided above the `Navigator` in `App`)
+/// — see [SignInScreen] for why a pushed route must not own its own instance.
 class SignUpScreen extends StatelessWidget {
   const SignUpScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider<AuthCubit>(
-      create: (_) => getIt<AuthCubit>(),
-      child: const _EmailSignUpView(),
-    );
-  }
+  Widget build(BuildContext context) => const _EmailSignUpView();
 }
 
 class _EmailSignUpView extends StatefulWidget {

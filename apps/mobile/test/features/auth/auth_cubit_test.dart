@@ -20,40 +20,37 @@ void main() {
 
   group('checkSession', () {
     blocTest<AuthCubit, AuthState>(
-      'emits authenticating then authenticated when session exists',
+      'emits only authenticated when a session exists (no authenticating)',
       build: () {
         when(() => repository.getSession()).thenAnswer((_) async => _user);
         return AuthCubit(repository);
       },
       act: (cubit) => cubit.checkSession(),
       expect: () => <AuthState>[
-        const AuthState(status: AuthStatus.authenticating),
         const AuthState(status: AuthStatus.authenticated, user: _user),
       ],
     );
 
     blocTest<AuthCubit, AuthState>(
-      'emits authenticating then unauthenticated when no session',
+      'emits only unauthenticated when there is no session',
       build: () {
         when(() => repository.getSession()).thenAnswer((_) async => null);
         return AuthCubit(repository);
       },
       act: (cubit) => cubit.checkSession(),
       expect: () => <AuthState>[
-        const AuthState(status: AuthStatus.authenticating),
         const AuthState(status: AuthStatus.unauthenticated),
       ],
     );
 
     blocTest<AuthCubit, AuthState>(
-      'emits authenticating then unauthenticated on exception',
+      'emits only unauthenticated on exception',
       build: () {
         when(() => repository.getSession()).thenThrow(Exception('network'));
         return AuthCubit(repository);
       },
       act: (cubit) => cubit.checkSession(),
       expect: () => <AuthState>[
-        const AuthState(status: AuthStatus.authenticating),
         const AuthState(status: AuthStatus.unauthenticated),
       ],
     );
@@ -117,126 +114,6 @@ void main() {
       expect: () => <AuthState>[
         const AuthState(status: AuthStatus.unauthenticated),
       ],
-    );
-  });
-
-  group('requestOtp', () {
-    const phone = '+35799123456';
-
-    blocTest<AuthCubit, AuthState>(
-      'emits authenticating then otpSent (capturing the phone) on success',
-      build: () {
-        when(() => repository.requestOtp(phone: any(named: 'phone')))
-            .thenAnswer((_) async {});
-        return AuthCubit(repository);
-      },
-      act: (cubit) => cubit.requestOtp(phone: phone),
-      expect: () => <AuthState>[
-        const AuthState(status: AuthStatus.authenticating),
-        const AuthState(status: AuthStatus.otpSent, phone: phone),
-      ],
-    );
-
-    blocTest<AuthCubit, AuthState>(
-      'emits authenticating then error(invalid-phone) on OtpError',
-      build: () {
-        when(() => repository.requestOtp(phone: any(named: 'phone')))
-            .thenThrow(const OtpError(OtpErrorKind.invalid));
-        return AuthCubit(repository);
-      },
-      act: (cubit) => cubit.requestOtp(phone: phone),
-      expect: () => <AuthState>[
-        const AuthState(status: AuthStatus.authenticating),
-        const AuthState(
-          status: AuthStatus.error,
-          errorMessage: 'invalid-phone',
-        ),
-      ],
-    );
-  });
-
-  group('verifyOtp', () {
-    const phone = '+35799123456';
-
-    blocTest<AuthCubit, AuthState>(
-      'emits authenticating then authenticated on success',
-      build: () {
-        when(
-          () => repository.verifyOtp(
-            phone: any(named: 'phone'),
-            code: any(named: 'code'),
-            name: any(named: 'name'),
-          ),
-        ).thenAnswer(
-          (_) async => const VerifyOtpResult(user: _user, isNewUser: false),
-        );
-        return AuthCubit(repository);
-      },
-      act: (cubit) => cubit.verifyOtp(phone: phone, code: '123456', name: ''),
-      expect: () => <AuthState>[
-        const AuthState(status: AuthStatus.authenticating),
-        const AuthState(status: AuthStatus.authenticated, user: _user),
-      ],
-    );
-
-    blocTest<AuthCubit, AuthState>(
-      'emits authenticating then otpSent(otp-mismatch) on a mismatch OtpError',
-      build: () {
-        when(
-          () => repository.verifyOtp(
-            phone: any(named: 'phone'),
-            code: any(named: 'code'),
-            name: any(named: 'name'),
-          ),
-        ).thenThrow(const OtpError(OtpErrorKind.mismatch));
-        return AuthCubit(repository);
-      },
-      act: (cubit) => cubit.verifyOtp(phone: phone, code: '000000', name: ''),
-      expect: () => <AuthState>[
-        const AuthState(status: AuthStatus.authenticating),
-        const AuthState(
-          status: AuthStatus.otpSent,
-          errorMessage: 'otp-mismatch',
-          phone: phone,
-        ),
-      ],
-    );
-
-    blocTest<AuthCubit, AuthState>(
-      'maps an expired OtpError to otpSent(otp-expired)',
-      build: () {
-        when(
-          () => repository.verifyOtp(
-            phone: any(named: 'phone'),
-            code: any(named: 'code'),
-            name: any(named: 'name'),
-          ),
-        ).thenThrow(const OtpError(OtpErrorKind.expired));
-        return AuthCubit(repository);
-      },
-      act: (cubit) => cubit.verifyOtp(phone: phone, code: '000000', name: ''),
-      expect: () => <AuthState>[
-        const AuthState(status: AuthStatus.authenticating),
-        const AuthState(
-          status: AuthStatus.otpSent,
-          errorMessage: 'otp-expired',
-          phone: phone,
-        ),
-      ],
-    );
-  });
-
-  group('resetToPhoneStep', () {
-    blocTest<AuthCubit, AuthState>(
-      'clears back to the initial phone-entry state',
-      build: () => AuthCubit(repository),
-      seed: () => const AuthState(
-        status: AuthStatus.otpSent,
-        phone: '+35799123456',
-        errorMessage: 'otp-mismatch',
-      ),
-      act: (cubit) => cubit.resetToPhoneStep(),
-      expect: () => <AuthState>[const AuthState()],
     );
   });
 }

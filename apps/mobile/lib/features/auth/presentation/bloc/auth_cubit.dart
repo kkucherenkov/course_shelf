@@ -4,17 +4,24 @@ import 'package:app_mobile/features/auth/domain/auth_repository.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_state.dart';
 
 /// Manages sign-in / sign-up / session-restore flows.
-/// Email+password (`signIn` / `signUp`) is the primary path; phone-OTP
-/// (`requestOtp` / `verifyOtp`) is the secondary path. `signOut` and
-/// `checkSession` bracket the session lifecycle.
+/// Email+password (`signIn` / `signUp`) is the only credential path;
+/// `signOut` and `checkSession` bracket the session lifecycle.
+///
+/// Provided once, above the `MaterialApp`'s `Navigator` (see `App`), so that
+/// `AuthGate` and every pushed auth route share one instance: a `signIn` on a
+/// pushed route has to be the same session the gate is watching, or the gate
+/// never rebuilds into the shell.
 class AuthCubit extends Cubit<AuthState> {
   AuthCubit(this._repository) : super(const AuthState());
 
   final AuthRepository _repository;
 
   /// Called once on app boot to restore the existing session (if any).
+  ///
+  /// Stays on [AuthStatus.unknown] until it resolves rather than passing
+  /// through [AuthStatus.authenticating] — that status means "an interactive
+  /// credential submit is in flight", which a silent session restore is not.
   Future<void> checkSession() async {
-    emit(state.copyWith(status: AuthStatus.authenticating));
     try {
       final user = await _repository.getSession();
       if (user != null) {
@@ -25,57 +32,6 @@ class AuthCubit extends Cubit<AuthState> {
     } on Object {
       emit(const AuthState(status: AuthStatus.unauthenticated));
     }
-  }
-
-  /// Request a one-time code for [phone] via the backend SMS gateway.
-  Future<void> requestOtp({required String phone}) async {
-    emit(state.copyWith(status: AuthStatus.authenticating, errorMessage: null));
-    try {
-      await _repository.requestOtp(phone: phone);
-      emit(state.copyWith(status: AuthStatus.otpSent, phone: phone));
-    } on OtpError {
-      emit(state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'invalid-phone',
-      ));
-    } on Object catch (e) {
-      emit(state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: e.toString(),
-      ));
-    }
-  }
-
-  Future<void> verifyOtp({
-    required String phone,
-    required String code,
-    required String name,
-  }) async {
-    emit(state.copyWith(status: AuthStatus.authenticating, errorMessage: null));
-    try {
-      final result = await _repository.verifyOtp(
-        phone: phone,
-        code: code,
-        name: name,
-      );
-      emit(AuthState(status: AuthStatus.authenticated, user: result.user));
-    } on OtpError catch (e) {
-      emit(state.copyWith(
-        status: AuthStatus.otpSent,
-        errorMessage: 'otp-${e.kind.name}',
-        phone: phone,
-      ));
-    } on Object catch (e) {
-      emit(state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: e.toString(),
-      ));
-    }
-  }
-
-  /// Return to the phone-entry step.
-  void resetToPhoneStep() {
-    emit(const AuthState());
   }
 
   Future<void> signIn({

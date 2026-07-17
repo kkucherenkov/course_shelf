@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -14,10 +15,15 @@ class _MockAuthRepository extends Mock implements AuthRepository {}
 
 const _user = AuthUser(id: 'u1', email: 'user@example.com', name: 'Jane Doe');
 
+// SignUpScreen no longer owns an AuthCubit — `App` provides one above the
+// Navigator so the gate and the pushed auth routes share a single session.
 Widget _harness() => TranslationProvider(
-      child: const MaterialApp(
-        onGenerateRoute: onGenerateRoute,
-        home: SignUpScreen(),
+      child: BlocProvider<AuthCubit>(
+        create: (_) => getIt<AuthCubit>(),
+        child: const MaterialApp(
+          onGenerateRoute: onGenerateRoute,
+          home: SignUpScreen(),
+        ),
       ),
     );
 

@@ -1,3 +1,4 @@
+import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +7,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:app_mobile/app/routes.dart';
 import 'package:app_mobile/features/auth/domain/auth_repository.dart';
 import 'package:app_mobile/features/auth/domain/auth_user.dart';
+import 'package:app_mobile/features/auth/domain/instance_config.dart';
+import 'package:app_mobile/features/auth/domain/instance_repository.dart';
+import 'package:app_mobile/features/auth/domain/library_repository.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:app_mobile/features/auth/presentation/sign_up_screen.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
@@ -13,27 +17,48 @@ import 'package:app_mobile/shared/di/injector.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
 
+/// SignUpCubit resolves both of these from the injector (E18-F03-S01).
+class _MockInstanceRepository extends Mock implements InstanceRepository {}
+
+class _MockLibraryRepository extends Mock implements LibraryRepository {}
+
 const _user = AuthUser(id: 'u1', email: 'user@example.com', name: 'Jane Doe');
 
 // SignUpScreen no longer owns an AuthCubit — `App` provides one above the
 // Navigator so the gate and the pushed auth routes share a single session.
 Widget _harness() => TranslationProvider(
-      child: BlocProvider<AuthCubit>(
-        create: (_) => getIt<AuthCubit>(),
-        child: const MaterialApp(
-          onGenerateRoute: onGenerateRoute,
-          home: SignUpScreen(),
-        ),
-      ),
-    );
+  child: BlocProvider<AuthCubit>(
+    create: (_) => getIt<AuthCubit>(),
+    // The brand theme carries the AppSemanticColors extension that the
+    // app_ui components read; a bare MaterialApp has none and they throw.
+    // `App` supplies it in production.
+    child: MaterialApp(
+      theme: AppTheme.light(),
+      onGenerateRoute: onGenerateRoute,
+      home: const SignUpScreen(),
+    ),
+  ),
+);
 
 void main() {
   late _MockAuthRepository repository;
+  late _MockInstanceRepository instanceRepository;
+  late _MockLibraryRepository libraryRepository;
 
   setUp(() async {
     await resetInjector();
     repository = _MockAuthRepository();
-    getIt.registerFactory<AuthCubit>(() => AuthCubit(repository));
+    instanceRepository = _MockInstanceRepository();
+    libraryRepository = _MockLibraryRepository();
+    when(
+      () => instanceRepository.getInstanceConfig(),
+    ).thenAnswer((_) async => InstanceConfig.defaults);
+    when(() => instanceRepository.hasUsers()).thenAnswer((_) async => true);
+    getIt
+      ..registerFactory<AuthCubit>(() => AuthCubit(repository))
+      ..registerLazySingleton<AuthRepository>(() => repository)
+      ..registerLazySingleton<InstanceRepository>(() => instanceRepository)
+      ..registerLazySingleton<LibraryRepository>(() => libraryRepository);
   });
 
   tearDown(resetInjector);

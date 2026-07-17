@@ -2,7 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 
 import 'package:app_mobile/features/auth/data/auth_api.dart';
+import 'package:app_mobile/features/auth/data/instance_api.dart';
+import 'package:app_mobile/features/auth/data/library_api.dart';
 import 'package:app_mobile/features/auth/domain/auth_repository.dart';
+import 'package:app_mobile/features/auth/domain/instance_repository.dart';
+import 'package:app_mobile/features/auth/domain/library_repository.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:app_mobile/features/player/data/lesson_player_api.dart';
 import 'package:app_mobile/features/player/data/progress_outbox_recorder.dart';
@@ -44,10 +48,13 @@ void configureDependencies() {
   // ── Domain repository singletons ────────────────────────────────────────
   getIt
     ..registerLazySingleton<AuthRepository>(
-      () => AuthApiImpl(
-        dio: getIt<Dio>(),
-        tokenStorage: getIt<TokenStorage>(),
-      ),
+      () => AuthApiImpl(dio: getIt<Dio>(), tokenStorage: getIt<TokenStorage>()),
+    )
+    ..registerLazySingleton<InstanceRepository>(
+      () => InstanceApiImpl(dio: getIt<Dio>()),
+    )
+    ..registerLazySingleton<LibraryRepository>(
+      () => LibraryApiImpl(dio: getIt<Dio>()),
     )
     ..registerLazySingleton<LessonPlayerRepository>(
       () => LessonPlayerApi(
@@ -60,6 +67,13 @@ void configureDependencies() {
     );
 
   // ── Cubit / Bloc factories ──────────────────────────────────────────────
+  //
+  // AuthCubit is the session cubit. SignInCubit / SignUpCubit / ForgotCubit
+  // each need the *ambient* AuthCubit — the one `App` provides above the
+  // Navigator — and get_it cannot hand that out: AuthCubit is a factory, so
+  // `getIt` would mint a second session for them to authenticate while
+  // AuthGate watches the first. They are constructed in their screens'
+  // BlocProviders from `context.read<AuthCubit>()` plus the ports above.
   getIt
     ..registerFactory<AuthCubit>(() => AuthCubit(getIt<AuthRepository>()))
     // A factory, and a fresh VideoPlayerAdapter per instance: the adapter owns

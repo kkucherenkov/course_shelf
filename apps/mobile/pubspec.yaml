@@ -51,8 +51,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  # E18-F02-S01's card specifies `bloc_test + integration_test`; the first
-  # integration_test suite in the repo lives at integration_test/.
+  # integration_test suites live under integration_test/ (E18-F02-S01 player,
+  # E18-F03-S01 auth flows). They need a device/emulator to execute.
   integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0

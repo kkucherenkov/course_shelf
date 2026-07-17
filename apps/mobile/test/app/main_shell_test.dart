@@ -7,6 +7,8 @@ import 'package:app_mobile/app/main_shell.dart';
 import 'package:app_mobile/features/browse/presentation/browse_screen.dart';
 import 'package:app_mobile/features/auth/domain/auth_repository.dart';
 import 'package:app_mobile/features/auth/domain/auth_user.dart';
+import 'package:app_mobile/features/auth/domain/instance_config.dart';
+import 'package:app_mobile/features/auth/domain/instance_repository.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:app_mobile/features/auth/presentation/sign_in_screen.dart';
 import 'package:app_mobile/features/settings/presentation/settings_screen.dart';
@@ -15,6 +17,10 @@ import 'package:app_mobile/main.dart';
 import 'package:app_mobile/shared/di/injector.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
+
+/// SignInScreen resolves this from the injector to decide whether to show the
+/// SSO row and the sign-up CTA (E18-F03-S01).
+class _MockInstanceRepository extends Mock implements InstanceRepository {}
 
 const _user = AuthUser(id: 'u1', email: 'user@example.com', name: 'User');
 
@@ -27,17 +33,25 @@ Widget _harness() => TranslationProvider(child: const App());
 /// also renders as the app bar's large title when that tab is active — an
 /// unscoped `find.text('Home')` is ambiguous.
 Finder _tab(String label) => find.descendant(
-      of: find.byKey(const ValueKey<String>('appNavigationShellBottomBar')),
-      matching: find.text(label),
-    );
+  of: find.byKey(const ValueKey<String>('appNavigationShellBottomBar')),
+  matching: find.text(label),
+);
 
 void main() {
   late _MockAuthRepository repository;
+  late _MockInstanceRepository instanceRepository;
 
   setUp(() async {
     await resetInjector();
     repository = _MockAuthRepository();
-    getIt.registerFactory<AuthCubit>(() => AuthCubit(repository));
+    instanceRepository = _MockInstanceRepository();
+    when(
+      () => instanceRepository.getInstanceConfig(),
+    ).thenAnswer((_) async => InstanceConfig.defaults);
+    when(() => instanceRepository.hasUsers()).thenAnswer((_) async => true);
+    getIt
+      ..registerFactory<AuthCubit>(() => AuthCubit(repository))
+      ..registerLazySingleton<InstanceRepository>(() => instanceRepository);
   });
 
   tearDown(resetInjector);
@@ -47,8 +61,9 @@ void main() {
       when(() => repository.getSession()).thenAnswer((_) async => null);
     });
 
-    testWidgets('the gate opens on sign-in, not a welcome screen',
-        (tester) async {
+    testWidgets('the gate opens on sign-in, not a welcome screen', (
+      tester,
+    ) async {
       await tester.pumpWidget(_harness());
       await tester.pumpAndSettle();
 
@@ -96,14 +111,16 @@ void main() {
       when(() => repository.getSession()).thenAnswer((_) async => _user);
     });
 
-    testWidgets('a restored session lands on the shell, Home first',
-        (tester) async {
+    testWidgets('a restored session lands on the shell, Home first', (
+      tester,
+    ) async {
       await tester.pumpWidget(_harness());
       await tester.pumpAndSettle();
 
       expect(find.byType(MainShell), findsOneWidget);
       expect(
-        tester.widget<AppNavigationShell>(find.byType(AppNavigationShell))
+        tester
+            .widget<AppNavigationShell>(find.byType(AppNavigationShell))
             .currentIndex,
         0,
       );
@@ -125,8 +142,9 @@ void main() {
       expect(find.byType(BrowseTabBody), findsOneWidget);
     });
 
-    testWidgets('the Settings tab renders without a doubled app bar',
-        (tester) async {
+    testWidgets('the Settings tab renders without a doubled app bar', (
+      tester,
+    ) async {
       await tester.pumpWidget(_harness());
       await tester.pumpAndSettle();
 
@@ -177,8 +195,9 @@ void main() {
       }
     });
 
-    testWidgets('pulling down on Home runs the refresh seam end to end',
-        (tester) async {
+    testWidgets('pulling down on Home runs the refresh seam end to end', (
+      tester,
+    ) async {
       await tester.pumpWidget(_harness());
       await tester.pumpAndSettle();
 

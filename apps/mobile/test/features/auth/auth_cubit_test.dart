@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:app_mobile/features/auth/domain/auth_exception.dart';
 import 'package:app_mobile/features/auth/domain/auth_repository.dart';
 import 'package:app_mobile/features/auth/domain/auth_user.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
@@ -61,15 +62,11 @@ void main() {
       'emits authenticating then authenticated on success',
       build: () {
         when(
-          () => repository.signIn(
-            email: 'test@example.com',
-            password: 'pass',
-          ),
+          () => repository.signIn(email: 'test@example.com', password: 'pass'),
         ).thenAnswer((_) async => _user);
         return AuthCubit(repository);
       },
-      act: (cubit) =>
-          cubit.signIn(email: 'test@example.com', password: 'pass'),
+      act: (cubit) => cubit.signIn(email: 'test@example.com', password: 'pass'),
       expect: () => <AuthState>[
         const AuthState(status: AuthStatus.authenticating),
         const AuthState(status: AuthStatus.authenticated, user: _user),
@@ -87,8 +84,7 @@ void main() {
         ).thenThrow(Exception('bad credentials'));
         return AuthCubit(repository);
       },
-      act: (cubit) =>
-          cubit.signIn(email: 'x@x.com', password: 'wrong'),
+      act: (cubit) => cubit.signIn(email: 'x@x.com', password: 'wrong'),
       expect: () => <AuthState>[
         const AuthState(status: AuthStatus.authenticating),
         const AuthState(
@@ -96,6 +92,57 @@ void main() {
           errorMessage: 'Exception: bad credentials',
         ),
       ],
+    );
+
+    blocTest<AuthCubit, AuthState>(
+      'carries the Better Auth code through to the state',
+      build: () {
+        when(
+          () => repository.signIn(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          ),
+        ).thenThrow(
+          const AuthException(
+            code: AuthErrorCodes.invalidCredentials,
+            message: 'Invalid email or password',
+            statusCode: 401,
+          ),
+        );
+        return AuthCubit(repository);
+      },
+      act: (cubit) => cubit.signIn(email: 'x@x.com', password: 'wrong'),
+      skip: 1,
+      verify: (cubit) {
+        expect(cubit.state.status, AuthStatus.error);
+        expect(cubit.state.errorCode, AuthErrorCodes.invalidCredentials);
+        expect(cubit.state.retryAfterSeconds, isNull);
+      },
+    );
+
+    blocTest<AuthCubit, AuthState>(
+      'surfaces the 429 Retry-After so the screen can run a countdown',
+      build: () {
+        when(
+          () => repository.signIn(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          ),
+        ).thenThrow(
+          const AuthException(
+            message: 'Too many requests',
+            statusCode: 429,
+            retryAfterSeconds: 90,
+          ),
+        );
+        return AuthCubit(repository);
+      },
+      act: (cubit) => cubit.signIn(email: 'x@x.com', password: 'wrong'),
+      skip: 1,
+      verify: (cubit) {
+        expect(cubit.state.status, AuthStatus.error);
+        expect(cubit.state.retryAfterSeconds, 90);
+      },
     );
   });
 
@@ -106,10 +153,8 @@ void main() {
         when(() => repository.signOut()).thenAnswer((_) async {});
         return AuthCubit(repository);
       },
-      seed: () => const AuthState(
-        status: AuthStatus.authenticated,
-        user: _user,
-      ),
+      seed: () =>
+          const AuthState(status: AuthStatus.authenticated, user: _user),
       act: (cubit) => cubit.signOut(),
       expect: () => <AuthState>[
         const AuthState(status: AuthStatus.unauthenticated),

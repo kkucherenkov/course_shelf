@@ -20,8 +20,6 @@ model User {
   image               String?
   createdAt           DateTime
   updatedAt           DateTime
-  phoneNumber         String?   @unique
-  phoneNumberVerified Boolean?
   // Better Auth `admin` plugin
   role                String    @default("USER")
   banned              Boolean   @default(false)

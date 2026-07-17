@@ -1,24 +1,21 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { admin, bearer, phoneNumber } from 'better-auth/plugins';
+import { admin, bearer } from 'better-auth/plugins';
 
 import { AppConfig } from '../config/app-config';
 import { PrismaService } from '../prisma/prisma.service';
-import { SMS_PORT } from '../../modules/integrations/domain/sms.port';
 
-import type { ISmsService } from '../../modules/integrations/domain/sms.port';
 import type { Request } from 'express';
 
-// TS2742: the phoneNumber() plugin exposes zod v4 core internals in its
-// inferred return type. Casting through `unknown` to the base `betterAuth`
-// return type erases the un-nameable generic while keeping `handler` and
-// `api.getSession` — the only two methods this service and its callers use.
-function createInstance(
-  prisma: PrismaService,
-  config: AppConfig,
-  sms: ISmsService,
-): ReturnType<typeof betterAuth> {
+// TS2883/TS2322: the Better Auth plugins expose zod v4 core internals ($strip)
+// in the inferred return type, which cannot be named portably, while the
+// concrete `Auth<ConcreteOptions>` is not assignable to `Auth<BetterAuthOptions>`
+// (the generic is invariant). Annotating with the base `betterAuth` return type
+// and casting through `unknown` erases the un-nameable generic while keeping
+// `handler` and `api.getSession` — the only two methods this service and its
+// callers use.
+function createInstance(prisma: PrismaService, config: AppConfig): ReturnType<typeof betterAuth> {
   const { basePath, secret, baseUrl } = config.betterAuth;
   const instance = betterAuth({
     database: prismaAdapter(prisma, { provider: 'postgresql' }),
@@ -40,22 +37,7 @@ function createInstance(
         displayName: { type: 'string', required: false },
       },
     },
-    plugins: [
-      admin(),
-      bearer(),
-      phoneNumber({
-        sendOTP: async ({ phoneNumber: phone, code }) => {
-          await sms.sendOtp(phone, code);
-        },
-        // Required so the plugin creates a new user on first OTP verification.
-        // The email is a synthetic non-deliverable placeholder; the phone number
-        // is the primary credential. Users update their display name in /me.
-        signUpOnVerification: {
-          getTempEmail: (phone: string) => `phone-${phone.replace(/^\+/, '')}@noreply.app.internal`,
-          getTempName: (phone: string) => phone,
-        },
-      }),
-    ],
+    plugins: [admin(), bearer()],
     trustedOrigins: config.runtime.corsOrigins,
     databaseHooks: {
       user: {
@@ -87,11 +69,10 @@ export class AuthService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: AppConfig,
-    @Inject(SMS_PORT) private readonly sms: ISmsService,
   ) {}
 
   onModuleInit(): void {
-    this.instance = createInstance(this.prisma, this.config, this.sms);
+    this.instance = createInstance(this.prisma, this.config);
   }
 
   /**

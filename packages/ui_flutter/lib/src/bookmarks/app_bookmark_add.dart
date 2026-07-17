@@ -5,8 +5,10 @@ import 'package:app_ui/src/bookmarks/bookmark_draft.dart';
 import 'package:app_ui/src/bookmarks/bookmark_time.dart';
 import 'package:app_ui/src/buttons/app_button.dart';
 import 'package:app_ui/src/buttons/app_button_variant.dart';
+import 'package:app_ui/src/buttons/app_icon_button.dart';
 import 'package:app_ui/src/fields/app_field_box.dart';
 import 'package:app_ui/src/fields/app_field_size.dart';
+import 'package:app_ui/src/icons/icon_name.dart';
 import 'package:app_ui/src/theme/app_theme.dart';
 import 'package:app_ui/src/theme/tokens.g.dart';
 
@@ -15,9 +17,10 @@ import 'package:app_ui/src/theme/tokens.g.dart';
 ///
 /// A [time] chip, a bare label input (owns its text via an internal
 /// controller — unlike `AppTextField`, there is no visible field label here,
-/// matching the web's bare `<AppInput>`), and a Save [AppButton]. [onSave]
-/// fires with a [BookmarkDraft] (`time` + the trimmed label) and clears the
-/// input; [onCancel] fires (and also clears) on Escape.
+/// matching the web's bare `<AppInput>`), a cancel [AppIconButton], and a Save
+/// [AppButton]. [onSave] fires with a [BookmarkDraft] (`time` + the trimmed
+/// label) and clears the input; [onCancel] fires (and also clears) on either
+/// the cancel control or Escape.
 ///
 /// Deviations from the web `AppBookmarkAdd.vue` (documented, not
 /// oversights):
@@ -29,11 +32,28 @@ import 'package:app_ui/src/theme/tokens.g.dart';
 ///  - **Solid border, not dashed.** The web wrapper is `1px dashed`; this
 ///    package has no dashed-border primitive (out of this card's scope to
 ///    add one). Solid, same colour/width, is the closest approximation.
+///  - **A visible cancel control, which the web has no counterpart for.**
+///    The web offers cancel on Escape only — sound there, since a browser
+///    always has a keyboard. On a touch phone that makes `onCancel`
+///    unreachable, so the sole trigger would be dead code on this package's
+///    primary platform. The Escape binding is kept (external keyboards and
+///    tablets exist) and both paths route through the same handler; the
+///    icon-only control takes [cancelLabel] as its accessible name. A
+///    mobile-idiom divergence, not a parity break.
+///
+/// [submitting] gates cancel exactly as it gates Save: mid-save the row is
+/// inert (field disabled, Save spinning), and cancel cannot abort a request
+/// this widget has no handle on — firing [onCancel] then would tell the
+/// parent "dismissed" while the create still lands, orphaning a bookmark the
+/// user believes they discarded. The disabled field already denies focus, so
+/// Escape was inert while submitting regardless; the guard in the handler
+/// makes that explicit rather than emergent.
 class AppBookmarkAdd extends StatefulWidget {
   const AppBookmarkAdd({
     required this.time,
     this.submitting = false,
     this.placeholder = 'Add a label (optional)',
+    this.cancelLabel = 'Cancel adding bookmark',
     this.onSave,
     this.onCancel,
     super.key,
@@ -48,6 +68,9 @@ class AppBookmarkAdd extends StatefulWidget {
 
   /// Visible placeholder for the label input.
   final String placeholder;
+
+  /// Accessible name for the cancel control (it is icon-only).
+  final String cancelLabel;
 
   final ValueChanged<BookmarkDraft>? onSave;
   final VoidCallback? onCancel;
@@ -76,6 +99,7 @@ class _AppBookmarkAddState extends State<AppBookmarkAdd> {
   }
 
   void _handleCancel() {
+    if (widget.submitting) return;
     _controller.clear();
     widget.onCancel?.call();
   }
@@ -142,6 +166,15 @@ class _AppBookmarkAddState extends State<AppBookmarkAdd> {
               ),
             ),
             const SizedBox(width: AppSpacing.s2),
+            AppIconButton(
+              name: IconName.x,
+              semanticLabel: widget.cancelLabel,
+              variant: AppButtonVariant.ghost,
+              size: AppButtonSize.sm,
+              disabled: widget.submitting,
+              onPressed: _handleCancel,
+            ),
+            const SizedBox(width: AppSpacing.s1),
             AppButton(
               label: 'Save',
               variant: AppButtonVariant.primary,

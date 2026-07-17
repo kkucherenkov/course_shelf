@@ -101,5 +101,72 @@ void main() {
       final field = tester.widget<TextField>(find.byType(TextField));
       expect(field.enabled, isFalse);
     });
+
+    testWidgets('renders a cancel control with an accessible label', (
+      tester,
+    ) async {
+      await _pump(tester, const AppBookmarkAdd(time: 90));
+      expect(find.byType(AppIconButton), findsOneWidget);
+      expect(
+        tester.widget<AppIconButton>(find.byType(AppIconButton)).name,
+        IconName.x,
+      );
+      expect(find.bySemanticsLabel('Cancel adding bookmark'), findsOneWidget);
+    });
+
+    testWidgets('the cancel label is overridable', (tester) async {
+      await _pump(
+        tester,
+        const AppBookmarkAdd(time: 90, cancelLabel: 'Discard draft'),
+      );
+      expect(find.bySemanticsLabel('Discard draft'), findsOneWidget);
+    });
+
+    testWidgets('tapping cancel emits onCancel and clears the label', (
+      tester,
+    ) async {
+      var cancelled = 0;
+      await _pump(
+        tester,
+        AppBookmarkAdd(time: 90, onCancel: () => cancelled++),
+      );
+      await tester.enterText(find.byType(TextField), 'Discard me');
+      await tester.tap(find.byType(AppIconButton));
+      await tester.pump();
+      expect(cancelled, 1);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        '',
+      );
+    });
+
+    testWidgets('disables the cancel control while submitting', (tester) async {
+      var cancelled = 0;
+      await _pump(
+        tester,
+        AppBookmarkAdd(time: 90, submitting: true, onCancel: () => cancelled++),
+      );
+      expect(
+        tester.widget<AppIconButton>(find.byType(AppIconButton)).disabled,
+        isTrue,
+      );
+      await tester.tap(find.byType(AppIconButton), warnIfMissed: false);
+      await tester.pump();
+      expect(cancelled, 0);
+    });
+
+    testWidgets('does not emit onCancel on Escape while submitting', (
+      tester,
+    ) async {
+      var cancelled = 0;
+      await _pump(
+        tester,
+        AppBookmarkAdd(time: 90, submitting: true, onCancel: () => cancelled++),
+      );
+      await tester.tap(find.byType(TextField), warnIfMissed: false);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(cancelled, 0);
+    });
   });
 }

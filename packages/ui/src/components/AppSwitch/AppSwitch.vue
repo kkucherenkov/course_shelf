@@ -144,7 +144,11 @@
 
   .app-switch {
     display: inline-flex;
-    gap: var(--space-4);
+    // Pill-to-label gap. The mockup's `.switch` (docs/design/shared/tokens.css)
+    // sets `gap: 10px`; the port wrote `--space-4` (16px) under the phantom
+    // `--space-N == N*2px` scale, where it read as 8px — 2x the intent. Snapped
+    // to the nearest real-scale rung, `--space-2` (8px).
+    gap: var(--space-2);
     align-items: center;
     cursor: pointer;
 

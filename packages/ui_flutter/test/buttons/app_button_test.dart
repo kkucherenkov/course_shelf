@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app_ui/app_ui.dart';
@@ -154,6 +155,169 @@ void main() {
           reason: 'size ${entry.key.name}',
         );
       }
+    });
+  });
+
+  group('AppButton semantics', () {
+    /// Locates the button node by its `isButton` flag rather than by label:
+    /// naming is exactly what these tests pin down, so a label-based finder
+    /// would miss a nameless node and fail for the wrong reason. Nor can we
+    /// reach it with `tester.getSemantics(find.byType(AppButton))` — the
+    /// widget's outermost render object ([IgnorePointer]) contributes no node
+    /// of its own, so that call resolves to the enclosing *route* node.
+    SemanticsFinder buttonFinder() =>
+        find.semantics.byFlag(SemanticsFlag.isButton);
+
+    SemanticsNode buttonNode() => buttonFinder().evaluate().single;
+
+    /// [SemanticsController.tap] refuses to act on a node that advertises no
+    /// tap action, so it cannot tell "action absent" from "action present but
+    /// swallowed". `checkForAction: false` dispatches the action anyway,
+    /// proving the callback is genuinely unreachable rather than merely
+    /// unadvertised. `tester.tap` proves nothing here: it only drives the
+    /// hit-test path and stays green even against a node that offers no tap
+    /// action at all.
+    void forceSemanticTap(WidgetTester tester) {
+      tester.semantics.performAction(
+        buttonFinder(),
+        SemanticsAction.tap,
+        checkForAction: false,
+      );
+    }
+
+    testWidgets('enabled node is a labelled, focusable, tappable button', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _pump(tester, AppButton(label: 'Save', onPressed: () {}));
+      expect(
+        buttonNode(),
+        matchesSemantics(
+          label: 'Save',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('activating the node via semantics fires onPressed', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      var taps = 0;
+      await _pump(tester, AppButton(label: 'Save', onPressed: () => taps++));
+      tester.semantics.tap(buttonFinder());
+      await tester.pump();
+      expect(taps, 1);
+      handle.dispose();
+    });
+
+    testWidgets('a custom child keeps contributing the announced name', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        AppButton(onPressed: () {}, child: const Text('Custom')),
+      );
+      expect(buttonNode().label, 'Custom');
+      handle.dispose();
+    });
+
+    testWidgets('disabled node reports not-enabled and is not activatable', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      var taps = 0;
+      await _pump(
+        tester,
+        AppButton(label: 'Save', disabled: true, onPressed: () => taps++),
+      );
+      expect(
+        buttonNode(),
+        matchesSemantics(
+          label: 'Save',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: false,
+          isFocusable: false,
+          hasTapAction: false,
+          hasFocusAction: false,
+        ),
+      );
+      expect(
+        () => tester.semantics.tap(buttonFinder()),
+        throwsStateError,
+      );
+      forceSemanticTap(tester);
+      await tester.pump();
+      expect(taps, 0);
+      handle.dispose();
+    });
+
+    testWidgets('loading node reports not-enabled, unfocusable, action-less', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        AppButton(label: 'Save', loading: true, onPressed: () {}),
+      );
+      expect(
+        buttonNode(),
+        matchesSemantics(
+          label: 'Save',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: false,
+          isFocusable: false,
+          hasTapAction: false,
+          hasFocusAction: false,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('loading node cannot fire onPressed via semantics', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      var taps = 0;
+      await _pump(
+        tester,
+        AppButton(label: 'Save', loading: true, onPressed: () => taps++),
+      );
+      expect(
+        () => tester.semantics.tap(buttonFinder()),
+        throwsStateError,
+      );
+      forceSemanticTap(tester);
+      await tester.pump();
+      expect(taps, 0);
+      handle.dispose();
+    });
+
+    // `loading` swaps the whole content — label, custom child and icons — for
+    // the spinner, so a child-only button has no string left to announce: its
+    // name lived in a widget that is no longer mounted. [label] is the only
+    // name that survives the swap, hence the asymmetry pinned here. This is
+    // not a regression: before the honest-node fix, *every* loading button was
+    // nameless, this one included.
+    testWidgets('loading node falls back to nameless without a label', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        AppButton(loading: true, onPressed: () {}, child: const Text('Custom')),
+      );
+      expect(buttonNode().label, isEmpty);
+      handle.dispose();
     });
   });
 }

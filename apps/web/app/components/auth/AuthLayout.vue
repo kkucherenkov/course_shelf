@@ -35,13 +35,13 @@
       display: flex;
       flex-direction: column;
       min-width: 0;
-      background: var(--surface-bg);
-      padding: var(--space-8) var(--space-8) var(--space-12);
+      background: var(--surface-page);
+      padding: var(--space-8) var(--space-8) var(--space-9);
       overflow-y: auto;
     }
 
     &__brand {
-      margin-bottom: var(--space-10);
+      margin-bottom: var(--space-8);
     }
 
     &__form-content {

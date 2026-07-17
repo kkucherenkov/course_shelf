@@ -38,10 +38,10 @@ web/Storybook/Flutter artefacts.
 | [`cs-mobile-auth`](./cs-mobile-auth)                       | ✅ landed  | E18-F03-S01                             | `app.jsx`, `index.html`                   |
 | [`cs-mobile-home`](./cs-mobile-home)                       | ✅ landed  | E18-F01-S01                             | `app.jsx`, `index.html`                   |
 | [`cs-mobile-browse`](./cs-mobile-browse)                   | ⏳ partial | E18-F01-S02 (Stage B) — needs `app.jsx` | `index.html`, `styles.css`                |
-| [`cs-mobile-course-detail`](./cs-mobile-course-detail)     | ⏳ pending | E18-F01-S03 (Stage B)                   | _missing_                                 |
+| [`cs-mobile-course-detail`](./cs-mobile-course-detail)     | ✅ landed  | E18-F01-S03 (Stage B)                   | `app.jsx`, `index.html`                   |
 | [`cs-mobile-lesson-player`](./cs-mobile-lesson-player)     | ✅ landed  | E18-F02-S01                             | `app.jsx`, `index.html`                   |
-| [`cs-mobile-downloads`](./cs-mobile-downloads)             | ⏳ pending | E19-F01-S03 (Stage B)                   | _missing_                                 |
-| [`cs-mobile-search-settings`](./cs-mobile-search-settings) | ⏳ pending | E18-F03-S02 (Stage B)                   | _missing_                                 |
+| [`cs-mobile-downloads`](./cs-mobile-downloads)             | ✅ landed  | E19-F01-S03 (Stage B)                   | `app.jsx`, `index.html`                   |
+| [`cs-mobile-search-settings`](./cs-mobile-search-settings) | ✅ landed  | E18-F03-S02 (Stage B)                   | `app.jsx`, `index.html`                   |
 
 > **Note on `cs-foundation`.** The folder is `cs-foundation` (singular)
 > in the bundle even though `DESIGN_BRIEF.md §4` refers to it as

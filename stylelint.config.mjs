@@ -71,6 +71,8 @@ export default {
     '**/*.generated.{css,ts,scss}',
     'packages/ui/.storybook/preview-head.html',
     'specs/design/source-bundle/**',
+    // Reference-only design prototypes — own token namespace (var(--ui-*)), never bundled.
+    'docs/design/**',
   ],
   rules: {
     // CLAUDE.md: no !important in any SCSS source.

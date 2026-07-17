@@ -41,7 +41,9 @@ class AppButton extends StatelessWidget {
   final AppButtonSize size;
 
   /// Replaces the content with a spinner and blocks taps while keeping the
-  /// variant fill (the button still reads as active).
+  /// variant fill. Visually the button still reads as active; to assistive
+  /// technology it reports `enabled: false` and offers no tap action, since it
+  /// cannot in fact be activated.
   final bool loading;
 
   /// Fades the button and removes its callback.
@@ -88,6 +90,32 @@ class AppButton extends StatelessWidget {
     if (disabled) {
       button = Opacity(opacity: 0.45, child: button);
     }
+
+    if (loading) {
+      // Loading keeps the full-colour fill, so [onPressed] stays wired and the
+      // TextButton would still advertise `isEnabled` + a focus action while
+      // IgnorePointer silently swallows the tap: `ignoring: true` does not drop
+      // the subtree, it only sets `isBlockingUserActions`, which strips the
+      // actions but leaves `isEnabled` and `isFocusable` standing. Replace that
+      // lie with an honest node: a button that reports not-enabled.
+      //
+      // [label] is the only name that survives the content swap above — the
+      // spinner displaces the label, custom [child] and icons alike, so a
+      // child-only button has no string left to announce. Naming this node
+      // `label` is therefore the most that can be preserved, not a regression:
+      // before this branch existed every loading button was nameless.
+      return Semantics(
+        container: true,
+        button: true,
+        enabled: false,
+        label: label,
+        child: ExcludeSemantics(child: button),
+      );
+    }
+
+    // Enabled/disabled: the TextButton owns its semantics. `disabled` nulls
+    // onPressed, which is what turns `isEnabled` and the tap action off, and
+    // the visible label/child merges in as the accessible name.
     return button;
   }
 }

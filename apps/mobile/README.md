@@ -25,10 +25,10 @@ dart run build_runner build --delete-conflicting-outputs   # freezed / drift / j
 generate these — they are per-project secrets you must obtain from the Firebase
 console and drop in by hand:
 
-| Platform | File | Location |
-| -------- | ---- | -------- |
-| Android  | `google-services.json`      | `android/app/google-services.json` |
-| iOS      | `GoogleService-Info.plist`  | `ios/Runner/GoogleService-Info.plist` |
+| Platform | File                       | Location                              |
+| -------- | -------------------------- | ------------------------------------- |
+| Android  | `google-services.json`     | `android/app/google-services.json`    |
+| iOS      | `GoogleService-Info.plist` | `ios/Runner/GoogleService-Info.plist` |
 
 The Android file additionally needs the Google Services Gradle plugin wired
 (`com.google.gms.google-services`) and `firebase_options.dart` generated via

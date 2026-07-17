@@ -2,6 +2,33 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-17-008 — design bundles for blocked mobile stories (E18/E19)
+
+- Created: 2026-07-17
+- Completed: 2026-07-18
+- Owner: claude
+- Spec: [DESIGN_BRIEF.md](../../docs/design/DESIGN_BRIEF.md) §7.5 / §7.7 / §7.8
+- Goal: unblock E18-F01-S03, E19-F01-S03, E18-F03-S02 by producing the missing
+  `cs-mobile-*` mockup bundles via Open Design, matching the landed bundle style.
+- Result: bundles landed at `docs/design/{cs-mobile-course-detail,cs-mobile-downloads,cs-mobile-search-settings}/`
+  (`app.jsx` + `index.html`) + shared `cs-components` DownloadRow a11y fix
+  (`dl-action` → labelled `<button>`). Verified by rendering in Chromium: all
+  states present, downloads disclosure keyboard-toggles, DownloadRow controls
+  focusable/labelled, lesson-player + cs-components showcase no regression. GitHub:
+  design pre-step tasks #98/#128/#115 closed completed; story issues #97/#127/#114
+  unblocked (`blocked` label removed + comment). `docs/design/README.md` index
+  updated; three cards flipped 🚫 Blocked → ⬜ Not started. **No PR yet** — `docs/`
+  is gitignored; land in the next commit with `git add -f`.
+- Sub-steps:
+  - [x] cs-mobile-course-detail (E18-F01-S03) — OD run b1272736 + audit
+  - [x] cs-mobile-downloads (E19-F01-S03) — OD run 3204eaba + a11y audit
+  - [x] cs-mobile-search-settings (E18-F03-S02) — OD run d6c9596f + audit
+  - [x] shared DownloadRow a11y fix in cs-components + consumer re-verify
+  - [x] land bundles + update `docs/design/README.md` index
+  - [x] unblock the three cards + reconcile GitHub issues
+- Notes: course-detail card retains a spec-gap caveat for implementation
+  (`GET /courses/{id}/download-estimate` + a per-course size field on `CourseDto`).
+
 ## T-2026-07-17-007 — E18 wave 1: mobile tab shell + the three Stage A cards
 
 - Created: 2026-07-17

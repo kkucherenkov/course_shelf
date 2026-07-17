@@ -61,6 +61,7 @@ export default [
       'apps/mobile/**',
       'specs/design/source-bundle/**',
       'specs/architecture/**',
+      'docs/design/**',
       'apps/backend/prisma/seed.ts',
       'scripts/**',
     ],

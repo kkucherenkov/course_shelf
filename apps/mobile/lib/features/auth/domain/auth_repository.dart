@@ -1,13 +1,5 @@
 import 'package:app_mobile/features/auth/domain/auth_user.dart';
 
-/// Result of a phone-OTP verification.
-class VerifyOtpResult {
-  const VerifyOtpResult({required this.user, required this.isNewUser});
-
-  final AuthUser user;
-  final bool isNewUser;
-}
-
 /// Port — auth operations.  Implementations live in `data/`.
 abstract class AuthRepository {
   /// Authenticate with email + password. Returns the authenticated user.
@@ -28,26 +20,29 @@ abstract class AuthRepository {
   /// Fetch the current session. Returns null when no valid session exists.
   Future<AuthUser?> getSession();
 
-  /// Send a one-time code to the given phone number via SMS.
-  /// Throws [OtpError] on failure.
-  Future<void> requestOtp({required String phone});
+  /// Ask the server to email a password-reset link (Better Auth
+  /// `POST /request-password-reset`).
+  ///
+  /// Enumeration-safe by design: Better Auth answers `{status: true}` whether
+  /// or not the address exists, so a success here says nothing about the
+  /// account. It *does* throw when the server has no `sendResetPassword`
+  /// configured (`RESET_PASSWORD_DISABLED`) — see [ForgotCubit] for why that
+  /// case surfaces to the user instead of being swallowed.
+  Future<void> requestPasswordReset({required String email});
 
-  /// Verify a 6-digit OTP against the stored code and sign in (or sign up
-  /// on first contact) with the derived email+password.
-  /// Throws [OtpError] on failure.
-  Future<VerifyOtpResult> verifyOtp({
-    required String phone,
-    required String code,
-    required String name,
+  /// Complete a password reset with the token from the emailed link
+  /// (Better Auth `POST /reset-password`). Throws on an expired/invalid token.
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
   });
-}
 
-enum OtpErrorKind { mismatch, expired, missing, invalid }
-
-class OtpError implements Exception {
-  const OtpError(this.kind);
-  final OtpErrorKind kind;
-
-  @override
-  String toString() => 'OtpError(${kind.name})';
+  /// Verify an address with the 6-digit code from the sign-up email
+  /// (Better Auth `POST /email-otp/verify-email`). Throws on a wrong/expired
+  /// code.
+  ///
+  /// Only reachable when `instance.emailVerificationRequired` is true, which v1
+  /// ships false — and the endpoint requires the Better Auth `emailOTP` plugin,
+  /// which the backend does not currently enable. See [AuthApiImpl.verifyEmail].
+  Future<void> verifyEmail({required String email, required String code});
 }

@@ -18,6 +18,7 @@ class AppNavigationTab {
     required this.icon,
     required this.body,
     this.filledIcon,
+    this.onRefresh,
   });
 
   /// Rendered under the glyph in the bottom-tab bar and used as the
@@ -36,4 +37,15 @@ class AppNavigationTab {
 
   /// The tab's content, scrolled beneath the platform-adaptive app bar.
   final Widget body;
+
+  /// Pull-to-refresh for this tab. Null (the default) means the tab has no
+  /// refresh affordance at all — most don't.
+  ///
+  /// This lives on the tab rather than on [body] because the shell, not the
+  /// body, owns the scrollable: [body] is handed a `SliverToBoxAdapter` slot
+  /// inside the shell's `CustomScrollView`, so a body that wrapped itself in
+  /// a `RefreshIndicator` would be wrapping its own ancestor's scrollable —
+  /// which does nothing. Returning a future that completes when the reload is
+  /// done keeps the spinner up for exactly as long as the work takes.
+  final Future<void> Function()? onRefresh;
 }

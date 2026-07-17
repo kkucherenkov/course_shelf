@@ -16,13 +16,6 @@ export interface BetterAuthConfig {
   readonly basePath: string;
 }
 
-export interface SmsConfig {
-  readonly configured: boolean;
-  readonly accountSid: string;
-  readonly authToken: string;
-  readonly fromNumber: string;
-}
-
 export interface AppRuntimeConfig {
   readonly port: number;
   readonly nodeEnv: 'development' | 'production' | 'test';
@@ -67,8 +60,6 @@ export interface StreamingConfig {
 export type ProviderMode = 'mock' | 'real';
 
 export interface ProvidersConfig {
-  /** Which SMS backend to use. Defaults to 'mock'. */
-  readonly sms: ProviderMode;
   /** Which email backend to use. Defaults to 'mock'. */
   readonly email: ProviderMode;
   /** Which push backend to use. Defaults to 'mock'. */
@@ -149,18 +140,9 @@ export class AppConfig {
     };
   }
 
-  get sms(): SmsConfig {
-    const accountSid = this.config.get<string>('TWILIO_ACCOUNT_SID') ?? '';
-    const authToken = this.config.get<string>('TWILIO_AUTH_TOKEN') ?? '';
-    const fromNumber = this.config.get<string>('TWILIO_FROM') ?? '';
-    const configured = Boolean(accountSid && authToken && fromNumber);
-    return { configured, accountSid, authToken, fromNumber };
-  }
-
   /** Integration provider selection. All default to 'mock' — no env vars needed. */
   get providers(): ProvidersConfig {
     return {
-      sms: 'mock',
       email: 'mock',
       push: 'mock',
       storage: 'mock',

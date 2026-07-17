@@ -1,0 +1,20 @@
+{
+  "continueWatching": {
+    "heading": "Continue watching"
+  },
+  "recentlyAdded": {
+    "heading": "Recently added"
+  },
+  "quickLinks": {
+    "downloads": "Downloads",
+    "library": "Library"
+  },
+  "empty": {
+    "title": "Nothing here yet",
+    "message": "Add courses to a library and they will appear here."
+  },
+  "error": {
+    "title": "Could not load your home",
+    "message": "Check your connection and try again."
+  }
+}

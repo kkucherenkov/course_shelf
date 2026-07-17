@@ -35,6 +35,20 @@ List<AppNavigationTab> _tabs() => const <AppNavigationTab>[
   ),
 ];
 
+/// The same 5 tabs, but with [onRefresh] on the first (Home) — the only tab
+/// E18-F01-S01 asks to be refreshable. Not `const`: the callback is per-test.
+List<AppNavigationTab> _refreshableTabs({
+  required Future<void> Function() onRefresh,
+}) => <AppNavigationTab>[
+  AppNavigationTab(
+    label: 'Home',
+    icon: IconName.home,
+    onRefresh: onRefresh,
+    body: const Center(child: Text('Home body')),
+  ),
+  ..._tabs().skip(1),
+];
+
 // `ThemeData`'s `platform` defaults to `defaultTargetPlatform` at
 // CONSTRUCTION time (see `ThemeData._build`'s `platform ??=
 // defaultTargetPlatform`), which itself resolves
@@ -297,6 +311,134 @@ void main() {
         await _pump(tester, currentIndex: 0, onTabChanged: (_) {});
         expect(find.byType(SliverAppBar), findsOneWidget);
         expect(find.byType(CupertinoSliverNavigationBar), findsNothing);
+        debugDefaultTargetPlatformOverride = null;
+      });
+    });
+
+    // The shell owns a `CustomScrollView` per tab and hands the tab only a
+    // `SliverToBoxAdapter` slot, so a tab body physically cannot wrap its own
+    // scrollable in a `RefreshIndicator` — the scrollable is its ancestor, not
+    // its descendant. Pull-to-refresh therefore has to be the shell's to own
+    // (E18-F01-S01 requires it on Home). Adaptive, like the app bar above it.
+    group('pull-to-refresh', () {
+      testWidgets('Android wraps the tab scroll view in a RefreshIndicator '
+          'when onRefresh is set', (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        await _pump(
+          tester,
+          currentIndex: 0,
+          onTabChanged: (_) {},
+          tabs: _refreshableTabs(onRefresh: () async {}),
+        );
+        expect(find.byType(RefreshIndicator), findsOneWidget);
+        debugDefaultTargetPlatformOverride = null;
+      });
+
+      testWidgets('iOS uses a CupertinoSliverRefreshControl, not a '
+          'RefreshIndicator', (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        await _pump(
+          tester,
+          currentIndex: 0,
+          onTabChanged: (_) {},
+          tabs: _refreshableTabs(onRefresh: () async {}),
+        );
+        // `skipOffstage: false` is load-bearing: at rest the control has ZERO
+        // extent (it lives in the overscroll area above the viewport's leading
+        // edge and renders nothing until pulled), so the default finder skips
+        // it as offstage and reports the same "not found" a missing widget
+        // would. Without this flag the assertion cannot tell the two apart.
+        expect(
+          find.byType(CupertinoSliverRefreshControl, skipOffstage: false),
+          findsOneWidget,
+        );
+        expect(find.byType(RefreshIndicator), findsNothing);
+        debugDefaultTargetPlatformOverride = null;
+      });
+
+      // Both platforms: a `findsNothing` on the Cupertino control would pass
+      // vacuously on Android (where it never renders anyway), so assert the
+      // absence on the platform that COULD have produced one. `skipOffstage`
+      // stays false for the same reason as above — otherwise this guard is
+      // green whether or not the control is there.
+      for (final TargetPlatform platform in <TargetPlatform>[
+        TargetPlatform.android,
+        TargetPlatform.iOS,
+      ]) {
+        testWidgets('a tab with no onRefresh gets no refresh affordance '
+            '($platform)', (tester) async {
+          debugDefaultTargetPlatformOverride = platform;
+          await _pump(tester, currentIndex: 0, onTabChanged: (_) {});
+          expect(find.byType(RefreshIndicator, skipOffstage: false), findsNothing);
+          expect(
+            find.byType(CupertinoSliverRefreshControl, skipOffstage: false),
+            findsNothing,
+          );
+          debugDefaultTargetPlatformOverride = null;
+        });
+      }
+
+      testWidgets('dragging the tab body down fires onRefresh (Android)', (
+        tester,
+      ) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        var refreshed = 0;
+        await _pump(
+          tester,
+          currentIndex: 0,
+          onTabChanged: (_) {},
+          tabs: _refreshableTabs(onRefresh: () async => refreshed++),
+        );
+
+        await tester.fling(
+          find.text('Home body'),
+          const Offset(0, 300),
+          1000,
+        );
+        // Not `pumpAndSettle`: the indicator's spinner animates indefinitely
+        // while the refresh future is in flight, which never settles.
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(refreshed, 1);
+        debugDefaultTargetPlatformOverride = null;
+      });
+
+      testWidgets('refresh is per-tab: pulling Home never fires Browse\'s '
+          'onRefresh', (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        var home = 0;
+        var browse = 0;
+        await _pump(
+          tester,
+          currentIndex: 0,
+          onTabChanged: (_) {},
+          tabs: <AppNavigationTab>[
+            AppNavigationTab(
+              label: 'Home',
+              icon: IconName.home,
+              onRefresh: () async => home++,
+              body: const Center(child: Text('Home body')),
+            ),
+            AppNavigationTab(
+              label: 'Browse',
+              icon: IconName.library,
+              onRefresh: () async => browse++,
+              body: const Center(child: Text('Browse body')),
+            ),
+          ],
+        );
+
+        await tester.fling(
+          find.text('Home body'),
+          const Offset(0, 300),
+          1000,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(home, 1);
+        expect(browse, 0);
         debugDefaultTargetPlatformOverride = null;
       });
     });

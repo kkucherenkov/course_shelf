@@ -7,14 +7,19 @@
     | 'next'
     | 'prev'
     | 'home'
+    | 'home-fill'
     | 'library'
+    | 'library-fill'
     | 'search'
+    | 'search-fill'
     | 'settings'
+    | 'settings-fill'
     | 'check'
     | 'check-circle'
     | 'circle'
     | 'lock'
     | 'download'
+    | 'download-fill'
     | 'cloud'
     | 'cloud-down'
     | 'bookmark'
@@ -126,6 +131,14 @@
       <path d="M5 10v9a1 1 0 001 1h12a1 1 0 001-1v-9" />
     </template>
 
+    <!-- home-fill -->
+    <path
+      v-else-if="name === 'home-fill'"
+      d="M12 3.5L2.7 11.25h1.9v7.45a1.5 1.5 0 001.5 1.5h11.8a1.5 1.5 0 001.5-1.5v-7.45h1.9z"
+      fill="currentColor"
+      stroke="none"
+    />
+
     <!-- library -->
     <template v-else-if="name === 'library'">
       <rect x="3" y="4" width="4" height="16" rx="1" />
@@ -133,10 +146,46 @@
       <path d="M16 5l4 14" />
     </template>
 
+    <!-- library-fill -->
+    <template v-else-if="name === 'library-fill'">
+      <rect x="3" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none" />
+      <rect x="9" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none" />
+      <rect
+        x="15.8"
+        y="4.7"
+        width="3.4"
+        height="14.6"
+        rx="1"
+        transform="rotate(-16 17.5 12)"
+        fill="currentColor"
+        stroke="none"
+      />
+    </template>
+
     <!-- search -->
     <template v-else-if="name === 'search'">
       <circle cx="11" cy="11" r="6" />
       <path d="M16 16l4 4" />
+    </template>
+
+    <!-- search-fill -->
+    <template v-else-if="name === 'search-fill'">
+      <path
+        d="M11 4.25a6.75 6.75 0 110 13.5 6.75 6.75 0 010-13.5zm0 2.4a4.35 4.35 0 110 8.7 4.35 4.35 0 010-8.7z"
+        fill="currentColor"
+        fill-rule="evenodd"
+        stroke="none"
+      />
+      <rect
+        x="14.2"
+        y="16.4"
+        width="6.8"
+        height="2.4"
+        rx="1.2"
+        transform="rotate(45 17.6 17.6)"
+        fill="currentColor"
+        stroke="none"
+      />
     </template>
 
     <!-- settings -->
@@ -146,6 +195,15 @@
         d="M19 12c0 .5-.05 1-.13 1.5l2 1.5-2 3.5-2.4-1a7 7 0 01-2.6 1.5L13.5 22h-3l-.4-3a7 7 0 01-2.6-1.5l-2.4 1-2-3.5 2-1.5A7 7 0 015 12c0-.5.05-1 .13-1.5l-2-1.5 2-3.5 2.4 1A7 7 0 0110 5L10.5 2h3l.4 3a7 7 0 012.6 1.5l2.4-1 2 3.5-2 1.5c.08.5.13 1 .13 1.5z"
       />
     </template>
+
+    <!-- settings-fill -->
+    <path
+      v-else-if="name === 'settings-fill'"
+      d="M19 12c0 .5-.05 1-.13 1.5l2 1.5-2 3.5-2.4-1a7 7 0 01-2.6 1.5L13.5 22h-3l-.4-3a7 7 0 01-2.6-1.5l-2.4 1-2-3.5 2-1.5A7 7 0 015 12c0-.5.05-1 .13-1.5l-2-1.5 2-3.5 2.4 1A7 7 0 0110 5L10.5 2h3l.4 3a7 7 0 012.6 1.5l2.4-1 2 3.5-2 1.5c.08.5.13 1 .13 1.5zM12 9a3 3 0 110 6 3 3 0 010-6z"
+      fill="currentColor"
+      fill-rule="evenodd"
+      stroke="none"
+    />
 
     <!-- check -->
     <path v-else-if="name === 'check'" d="M5 12l5 5 9-11" />
@@ -170,6 +228,16 @@
       <path d="M12 4v12" />
       <path d="M7 11l5 5 5-5" />
       <path d="M5 20h14" />
+    </template>
+
+    <!-- download-fill -->
+    <template v-else-if="name === 'download-fill'">
+      <path
+        d="M10.6 4.7a1.4 1.4 0 012.8 0v6h4.2L12 16.4l-5.6-5.7h4.2z"
+        fill="currentColor"
+        stroke="none"
+      />
+      <rect x="4.5" y="18.9" width="15" height="2.2" rx="1.1" fill="currentColor" stroke="none" />
     </template>
 
     <!-- cloud -->

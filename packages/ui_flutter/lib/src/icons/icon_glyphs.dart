@@ -7,6 +7,13 @@ import 'package:app_ui/src/icons/icon_name.dart';
 /// dots); [IconCS] recolours the whole picture with a srcIn `ColorFilter`. The
 /// two fillable glyphs ([kFillableIcons]) carry a `__FILL__` sentinel that
 /// [buildIconSvg] resolves to `currentColor` (filled) or `none` (outline).
+///
+/// The five `*Fill` nav glyphs are solid silhouettes, so each of their elements
+/// must opt out of the envelope's `stroke="currentColor" stroke-width="1.5"`
+/// with an explicit `stroke="none"` — otherwise the silhouette is painted
+/// 0.75 units fatter than it was drawn. Where the outline's negative space
+/// carries meaning (the `search` lens, the `settings` centre) the hole is a
+/// second subpath punched out with `fill-rule="evenodd"`.
 const Map<IconName, String> kIconMarkup = {
   IconName.play: '<path d="M7 5l12 7-12 7V5z" fill="__FILL__"/>',
   IconName.pause:
@@ -15,11 +22,19 @@ const Map<IconName, String> kIconMarkup = {
   IconName.prev: '<path d="M19 5L9 12l10 7V5z"/><path d="M5 5v14"/>',
   IconName.home:
       '<path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 001 1h12a1 1 0 001-1v-9"/>',
+  IconName.homeFill:
+      '<path d="M12 3.5L2.7 11.25h1.9v7.45a1.5 1.5 0 001.5 1.5h11.8a1.5 1.5 0 001.5-1.5v-7.45h1.9z" fill="currentColor" stroke="none"/>',
   IconName.library:
       '<rect x="3" y="4" width="4" height="16" rx="1"/><rect x="9" y="4" width="4" height="16" rx="1"/><path d="M16 5l4 14"/>',
+  IconName.libraryFill:
+      '<rect x="3" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/><rect x="9" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/><rect x="15.8" y="4.7" width="3.4" height="14.6" rx="1" transform="rotate(-16 17.5 12)" fill="currentColor" stroke="none"/>',
   IconName.search: '<circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/>',
+  IconName.searchFill:
+      '<path d="M11 4.25a6.75 6.75 0 110 13.5 6.75 6.75 0 010-13.5zm0 2.4a4.35 4.35 0 110 8.7 4.35 4.35 0 010-8.7z" fill="currentColor" fill-rule="evenodd" stroke="none"/><rect x="14.2" y="16.4" width="6.8" height="2.4" rx="1.2" transform="rotate(45 17.6 17.6)" fill="currentColor" stroke="none"/>',
   IconName.settings:
       '<circle cx="12" cy="12" r="3"/><path d="M19 12c0 .5-.05 1-.13 1.5l2 1.5-2 3.5-2.4-1a7 7 0 01-2.6 1.5L13.5 22h-3l-.4-3a7 7 0 01-2.6-1.5l-2.4 1-2-3.5 2-1.5A7 7 0 015 12c0-.5.05-1 .13-1.5l-2-1.5 2-3.5 2.4 1A7 7 0 0110 5L10.5 2h3l.4 3a7 7 0 012.6 1.5l2.4-1 2 3.5-2 1.5c.08.5.13 1 .13 1.5z"/>',
+  IconName.settingsFill:
+      '<path d="M19 12c0 .5-.05 1-.13 1.5l2 1.5-2 3.5-2.4-1a7 7 0 01-2.6 1.5L13.5 22h-3l-.4-3a7 7 0 01-2.6-1.5l-2.4 1-2-3.5 2-1.5A7 7 0 015 12c0-.5.05-1 .13-1.5l-2-1.5 2-3.5 2.4 1A7 7 0 0110 5L10.5 2h3l.4 3a7 7 0 012.6 1.5l2.4-1 2 3.5-2 1.5c.08.5.13 1 .13 1.5zM12 9a3 3 0 110 6 3 3 0 010-6z" fill="currentColor" fill-rule="evenodd" stroke="none"/>',
   IconName.check: '<path d="M5 12l5 5 9-11"/>',
   IconName.checkCircle:
       '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
@@ -28,6 +43,8 @@ const Map<IconName, String> kIconMarkup = {
       '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>',
   IconName.download:
       '<path d="M12 4v12"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/>',
+  IconName.downloadFill:
+      '<path d="M10.6 4.7a1.4 1.4 0 012.8 0v6h4.2L12 16.4l-5.6-5.7h4.2z" fill="currentColor" stroke="none"/><rect x="4.5" y="18.9" width="15" height="2.2" rx="1.1" fill="currentColor" stroke="none"/>',
   IconName.cloud:
       '<path d="M7 18a4 4 0 010-8 5 5 0 019.6-1.5A4 4 0 0117 18H7z"/>',
   IconName.cloudDown:
@@ -118,6 +135,20 @@ const Map<IconName, String> kIconMarkup = {
 
 /// Glyphs whose interior is filled when `IconCS(fill: true)`.
 const Set<IconName> kFillableIcons = {IconName.play, IconName.bookmark};
+
+/// Maps each bottom-tab-bar outline glyph to its filled silhouette.
+///
+/// These are separate glyphs rather than an `IconCS(fill: true)` toggle: the
+/// five nav outlines are open stroked paths, so mechanically filling them
+/// paints garbage (a filled `search` collapses into a solid disc). Feed a
+/// value to `AppNavigationTab.filledIcon` to give a tab an active-state swap.
+const Map<IconName, IconName> kNavFilledIcons = {
+  IconName.home: IconName.homeFill,
+  IconName.library: IconName.libraryFill,
+  IconName.download: IconName.downloadFill,
+  IconName.search: IconName.searchFill,
+  IconName.settings: IconName.settingsFill,
+};
 
 /// Wraps a glyph's inner markup in the shared 24x24 stroke envelope and
 /// resolves the `__FILL__` sentinel. The result paints entirely in

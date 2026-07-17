@@ -31,26 +31,31 @@ List<AppNavigationTab> _tabs() => <AppNavigationTab>[
   AppNavigationTab(
     label: 'Home',
     icon: IconName.home,
+    filledIcon: IconName.homeFill,
     body: _tabBody('Home', 'Continue watching, recently added, quick links.'),
   ),
   AppNavigationTab(
     label: 'Browse',
     icon: IconName.library,
+    filledIcon: IconName.libraryFill,
     body: _tabBody('Browse', 'Catalog search and filters.'),
   ),
   AppNavigationTab(
     label: 'Downloads',
     icon: IconName.download,
+    filledIcon: IconName.downloadFill,
     body: _tabBody('Downloads', 'Lessons available offline.'),
   ),
   AppNavigationTab(
     label: 'Search',
     icon: IconName.search,
+    filledIcon: IconName.searchFill,
     body: _tabBody('Search', 'Search courses and lessons.'),
   ),
   AppNavigationTab(
     label: 'Settings',
     icon: IconName.settings,
+    filledIcon: IconName.settingsFill,
     body: _tabBody('Settings', 'Account, downloads, and preferences.'),
   ),
 ];

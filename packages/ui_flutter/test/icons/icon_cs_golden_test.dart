@@ -6,8 +6,10 @@ import 'package:app_ui/app_ui.dart';
 
 import '../_support/fonts.dart';
 
-/// Renders all 66 glyphs (plus the two filled variants) in a fixed grid so a
-/// single golden per size catches any regression across the whole family.
+/// Renders all 71 glyphs (plus the two filled variants) in a fixed grid so a
+/// single golden per size catches any regression across the whole family. The
+/// `*Fill` nav silhouettes sit next to their outline sibling in [IconName], so
+/// the grid pairs them for eyeballing.
 Widget _grid(double size, {required ThemeData theme}) {
   final cells = <Widget>[
     for (final name in IconName.values) IconCS(name: name, size: size),

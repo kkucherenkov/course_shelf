@@ -192,6 +192,16 @@ exports[`IconCS > renders download with valid SVG 1`] = `
 </svg>"
 `;
 
+exports[`IconCS > renders download-fill with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- download-fill -->
+  <path data-v-6f4b1ecb="" d="M10.6 4.7a1.4 1.4 0 012.8 0v6h4.2L12 16.4l-5.6-5.7h4.2z" fill="currentColor" stroke="none"></path>
+  <rect data-v-6f4b1ecb="" x="4.5" y="18.9" width="15" height="2.2" rx="1.1" fill="currentColor" stroke="none"></rect>
+</svg>"
+`;
+
 exports[`IconCS > renders edit with valid SVG 1`] = `
 "<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
   <!--v-if-->
@@ -293,6 +303,15 @@ exports[`IconCS > renders home with valid SVG 1`] = `
 </svg>"
 `;
 
+exports[`IconCS > renders home-fill with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- home-fill -->
+  <path data-v-6f4b1ecb="" d="M12 3.5L2.7 11.25h1.9v7.45a1.5 1.5 0 001.5 1.5h11.8a1.5 1.5 0 001.5-1.5v-7.45h1.9z" fill="currentColor" stroke="none"></path>
+</svg>"
+`;
+
 exports[`IconCS > renders info with valid SVG 1`] = `
 "<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
   <!--v-if-->
@@ -322,6 +341,17 @@ exports[`IconCS > renders library with valid SVG 1`] = `
   <rect data-v-6f4b1ecb="" x="3" y="4" width="4" height="16" rx="1"></rect>
   <rect data-v-6f4b1ecb="" x="9" y="4" width="4" height="16" rx="1"></rect>
   <path data-v-6f4b1ecb="" d="M16 5l4 14"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders library-fill with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- library-fill -->
+  <rect data-v-6f4b1ecb="" x="3" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"></rect>
+  <rect data-v-6f4b1ecb="" x="9" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"></rect>
+  <rect data-v-6f4b1ecb="" x="15.8" y="4.7" width="3.4" height="14.6" rx="1" transform="rotate(-16 17.5 12)" fill="currentColor" stroke="none"></rect>
 </svg>"
 `;
 
@@ -517,6 +547,16 @@ exports[`IconCS > renders search with valid SVG 1`] = `
 </svg>"
 `;
 
+exports[`IconCS > renders search-fill with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- search-fill -->
+  <path data-v-6f4b1ecb="" d="M11 4.25a6.75 6.75 0 110 13.5 6.75 6.75 0 010-13.5zm0 2.4a4.35 4.35 0 110 8.7 4.35 4.35 0 010-8.7z" fill="currentColor" fill-rule="evenodd" stroke="none"></path>
+  <rect data-v-6f4b1ecb="" x="14.2" y="16.4" width="6.8" height="2.4" rx="1.2" transform="rotate(45 17.6 17.6)" fill="currentColor" stroke="none"></rect>
+</svg>"
+`;
+
 exports[`IconCS > renders settings with valid SVG 1`] = `
 "<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
   <!--v-if-->
@@ -524,6 +564,15 @@ exports[`IconCS > renders settings with valid SVG 1`] = `
   <!-- settings -->
   <circle data-v-6f4b1ecb="" cx="12" cy="12" r="3"></circle>
   <path data-v-6f4b1ecb="" d="M19 12c0 .5-.05 1-.13 1.5l2 1.5-2 3.5-2.4-1a7 7 0 01-2.6 1.5L13.5 22h-3l-.4-3a7 7 0 01-2.6-1.5l-2.4 1-2-3.5 2-1.5A7 7 0 015 12c0-.5.05-1 .13-1.5l-2-1.5 2-3.5 2.4 1A7 7 0 0110 5L10.5 2h3l.4 3a7 7 0 012.6 1.5l2.4-1 2 3.5-2 1.5c.08.5.13 1 .13 1.5z"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders settings-fill with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- settings-fill -->
+  <path data-v-6f4b1ecb="" d="M19 12c0 .5-.05 1-.13 1.5l2 1.5-2 3.5-2.4-1a7 7 0 01-2.6 1.5L13.5 22h-3l-.4-3a7 7 0 01-2.6-1.5l-2.4 1-2-3.5 2-1.5A7 7 0 015 12c0-.5.05-1 .13-1.5l-2-1.5 2-3.5 2.4 1A7 7 0 0110 5L10.5 2h3l.4 3a7 7 0 012.6 1.5l2.4-1 2 3.5-2 1.5c.08.5.13 1 .13 1.5zM12 9a3 3 0 110 6 3 3 0 010-6z" fill="currentColor" fill-rule="evenodd" stroke="none"></path>
 </svg>"
 `;
 

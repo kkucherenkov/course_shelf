@@ -57,20 +57,19 @@ jobs:
       - name: Validate + bundle specs
         run: pnpm spec:validate && pnpm spec:bundle
 
-      - name: Lint (ESLint, backend + web in parallel)
-        run: |
-          set -e
-          pnpm --filter @app/backend run lint &
-          BACK_PID=$!
-          pnpm --filter @app/web run lint &
-          WEB_PID=$!
-          wait $BACK_PID
-          wait $WEB_PID
+      # Both go through turbo, which discovers every package with the script —
+      # for the same reason the Test step below does. Naming backend + web by
+      # hand silently skipped @app/ui, @app/specs, @app/api-client-ts and
+      # @app/design-tokens: @app/ui's `vue-tsc` had never run in CI, and was in
+      # fact failing (a spread-after-key in AppScanProgress.spec.ts overwrote
+      # errorsLabel, so a committed snapshot asserted "2 errors" for a fixture
+      # with errors: 5). An inverted filter cannot silently omit a package the
+      # way a hand-written list can.
+      - name: Lint (ESLint, every package)
+        run: pnpm exec turbo run lint
 
-      - name: Typecheck
-        run: |
-          pnpm --filter @app/backend run typecheck
-          pnpm --filter @app/web run typecheck
+      - name: Typecheck (every package)
+        run: pnpm exec turbo run typecheck
 
       # Backend keeps `test:coverage` explicitly — its `test` script omits
       # coverage, and the text reporter is useful in the log (there are no
@@ -92,6 +91,14 @@ jobs:
 
       - name: Design inventory audit
         run: pnpm design:audit
+
+      # stylelint ran nowhere before this — which is why ~195 violations
+      # accumulated across 28 files, and why dangling `var()` refs (an
+      # undefined token invalidates the whole declaration, so AuthLayout
+      # rendered with no padding at all) survived unnoticed. Needs
+      # `design:build` to have run first: token CSS is generated and gitignored.
+      - name: Stylelint
+        run: pnpm stylelint
 
       - name: Prettier check
         run: pnpm format:check

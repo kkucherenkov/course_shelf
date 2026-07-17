@@ -2,6 +2,57 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-17-004 — clear the three E17 follow-ups surfaced during the widget waves
+
+- Created: 2026-07-17
+- Completed: 2026-07-17
+- Owner: claude
+- Result: [PR #152](https://github.com/kkucherenkov/course_shelf/pull/152) — branch `fix/e17-followups`
+- Goal: close out the three defects/gaps the E17 fan-out agents surfaced but were
+  out of scope to fix in their own cards.
+- Outcome: **two of the three reported items were not bugs.** Verifying each claim
+  before fixing it is what surfaced two real defects nobody had reported.
+- Spec diff: none
+- Codegen impact: no
+- Design impact: 5 new filled glyphs in both `@app/ui` and `ui_flutter` — no new tokens
+- Tests: `ui_flutter` 611 → **630**; `@app/ui` **868** / 50 files; `apps/mobile` **64**.
+  All analyze-clean. No golden moved for either semantics fix; icon goldens moved as
+  expected and were inspected by eye.
+- Sub-steps:
+  - [x] `AppRow` — **not a bug, no code changed.** `Semantics` defaults to
+        `container: false` (annotates, does not merge) and real interactive
+        descendants keep their own nodes. The report's premise was also false —
+        `AppBookmark` does not compose `AppRow`.
+  - [x] `AppBookmarkAdd` — visible `×` control added, Escape binding retained.
+        Cancel is disabled mid-save: it cannot abort a request the widget has no
+        handle on, and firing `onCancel` mid-flight would orphan a bookmark the
+        user believes they discarded.
+  - [x] 5 filled nav glyphs drawn once, applied byte-identically to both stacks,
+        wired to `filledIcon`. Additive — the `fill:` / `kFillableIcons` toggle
+        still covers only `play`/`bookmark`.
+  - [x] **(found)** `AppIconButton` — `ExcludeSemantics` wrapped the whole
+        `TextButton`, discarding tap + focus, across all 11 components that
+        compose it. Fixed at the source; this was the true cause of the row
+        collapse that the `AppRow` report misattributed.
+  - [x] **(found)** `AppButton` — `loading` advertised `isEnabled` + `isFocusable`
+        with no tap action (`IgnorePointer` sets `isBlockingUserActions`, which
+        strips actions but not the flags). Now reports an honest not-enabled node.
+- Lesson worth keeping: `tester.tap` only drives hit-testing and never touches the
+  semantics layer. The pre-existing `fires onPressed on tap` test passed against a
+  button no screen-reader user could activate — the obvious test was structurally
+  blind to the bug. Semantics assertions need `tester.semantics.tap` /
+  `performAction`.
+- Follow-ups surfaced (not filed):
+  - An icon-only `AppButton` (icons but no `label`/`child`) is nameless even when
+    enabled — `IconCS` contributes no name. `AppIconButton` is the intended
+    icon-only control, so this is an edge case.
+  - A `child`-only `AppButton` stays nameless while loading — no string is
+    extractable from an arbitrary widget. Not a regression; pinned by a test.
+  - Repo-wide `pnpm stylelint:fix` fails with ~195 errors across ~20 files, and
+    `eslint --fix` rewrites `AppNavigationShell.vue` / `AppSwitch.vue` — all
+    pre-existing tree drift, none of it in files this task touched. Picked up as
+    [[T-2026-07-17-005]].
+
 ## T-2026-07-17-003 — E17-F02 mobile composites wave 2 — closes epic E17
 
 - Created: 2026-07-17

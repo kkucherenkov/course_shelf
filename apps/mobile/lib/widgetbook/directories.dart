@@ -3,6 +3,7 @@ import 'package:widgetbook/widgetbook.dart';
 import 'package:app_mobile/widgetbook/app_button_catalog.dart';
 import 'package:app_mobile/widgetbook/avatar_catalog.dart';
 import 'package:app_mobile/widgetbook/badge_catalog.dart';
+import 'package:app_mobile/widgetbook/bookmark_list_catalog.dart';
 import 'package:app_mobile/widgetbook/bookmarks_catalog.dart';
 import 'package:app_mobile/widgetbook/chip_catalog.dart';
 import 'package:app_mobile/widgetbook/containers_catalog.dart';
@@ -20,6 +21,7 @@ import 'package:app_mobile/widgetbook/player_chrome_catalog.dart';
 import 'package:app_mobile/widgetbook/progress_badge_catalog.dart';
 import 'package:app_mobile/widgetbook/progress_catalog.dart';
 import 'package:app_mobile/widgetbook/radio_group_catalog.dart';
+import 'package:app_mobile/widgetbook/section_header_catalog.dart';
 import 'package:app_mobile/widgetbook/sso_block_catalog.dart';
 import 'package:app_mobile/widgetbook/states_catalog.dart';
 import 'package:app_mobile/widgetbook/textarea_catalog.dart';
@@ -53,7 +55,9 @@ List<WidgetbookNode> buildWidgetbookDirectories() {
     // E17-F02 composites.
     ...buildCourseCardComponents(),
     buildLessonRowComponent(),
+    buildSectionHeaderComponent(),
     ...buildBookmarkComponents(),
+    buildBookmarkListComponent(),
     buildProgressBadgeComponent(),
     buildPasswordFieldComponent(),
     buildSsoBlockComponent(),

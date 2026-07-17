@@ -92,6 +92,16 @@
 </template>
 
 <style lang="scss" scoped>
+  // Badge circle and hairline progress strip — both sit between --space steps.
+  $badge-size: 28px;
+  $strip-height: 3px;
+  $skeleton-instructor-gap: 6px;
+
+  // Stacking context within the card (named vars — no raw ints).
+  $z-cover-overlay: 0;
+  $z-initials: 1;
+  $z-cover-top: 2;
+
   .course-poster-card {
     display: flex;
     flex-direction: column;
@@ -133,7 +143,7 @@
 
     &__initials {
       position: relative;
-      z-index: 1;
+      z-index: $z-initials;
       font-family: var(--font-sans);
       font-size: var(--text-3xl);
       font-weight: var(--fw-bold);
@@ -148,20 +158,20 @@
       position: absolute;
       inset: 0;
       background: linear-gradient(180deg, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.4) 100%);
-      z-index: 0;
+      z-index: $z-cover-overlay;
       pointer-events: none;
     }
 
     &__badge {
       position: absolute;
-      top: 8px;
-      right: 8px;
-      z-index: 2;
+      top: var(--space-2);
+      right: var(--space-2);
+      z-index: $z-cover-top;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 28px;
-      height: 28px;
+      width: $badge-size;
+      height: $badge-size;
       border-radius: var(--radius-pill);
       color: #fff;
 
@@ -173,7 +183,7 @@
     &__scrim {
       position: absolute;
       inset: 0;
-      z-index: 2;
+      z-index: $z-cover-top;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -186,9 +196,9 @@
       bottom: 0;
       left: 0;
       right: 0;
-      height: 3px;
+      height: $strip-height;
       background: rgba(255, 255, 255, 0.25);
-      z-index: 2;
+      z-index: $z-cover-top;
     }
 
     &__strip-fill {
@@ -227,7 +237,7 @@
     }
 
     &__skeleton-instructor {
-      margin-top: 6px;
+      margin-top: $skeleton-instructor-gap;
     }
   }
 </style>

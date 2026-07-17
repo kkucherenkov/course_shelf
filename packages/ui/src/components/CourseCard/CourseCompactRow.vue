@@ -69,6 +69,9 @@
 </template>
 
 <style lang="scss" scoped>
+  // Progress-bar thickness — a hairline that sits between --space steps.
+  $bar-height: 3px;
+
   .course-compact-row {
     display: flex;
     align-items: center;
@@ -95,8 +98,8 @@
 
     &__thumb {
       flex-shrink: 0;
-      width: 32px;
-      height: 32px;
+      width: var(--space-6);
+      height: var(--space-6);
       border-radius: var(--radius-sm);
     }
 
@@ -115,8 +118,8 @@
 
     &__bar {
       flex-shrink: 0;
-      width: 64px;
-      height: 3px;
+      width: var(--space-8);
+      height: $bar-height;
       border-radius: 2px;
       background: var(--surface-overlay);
       overflow: hidden;
@@ -134,7 +137,7 @@
       font-family: var(--font-mono);
       font-size: var(--text-xs);
       color: var(--text-secondary);
-      width: 32px;
+      width: var(--space-6);
       text-align: right;
     }
   }

@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import type {
   ColorFile,
+  MediaFile,
   MotionFile,
   OpacityFile,
   RadiusFile,
@@ -20,6 +21,7 @@ interface DocsTokensFile {
   motion: MotionFile['motion'];
   zIndex: MotionFile['zIndex'];
   opacity: OpacityFile['opacity'];
+  media: MediaFile['media'];
   typography: TypographyFile['typography'];
 }
 
@@ -38,5 +40,6 @@ export function loadTokens(repoRoot: string): TokenBundle {
     shadow: { shadow: raw.shadow },
     motion: { motion: raw.motion, zIndex: raw.zIndex },
     opacity: { opacity: raw.opacity },
+    media: { media: raw.media },
   };
 }

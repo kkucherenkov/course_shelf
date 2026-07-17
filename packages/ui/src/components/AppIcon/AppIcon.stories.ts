@@ -31,7 +31,7 @@ export const Sizes: Story = {
     components: { AppIcon },
     setup: () => ({ args }),
     template: `
-      <div style="display:flex; gap: var(--space-12); align-items:center;">
+      <div style="display:flex; gap: var(--space-5); align-items:center;">
         <AppIcon v-bind="args" size="xs" />
         <AppIcon v-bind="args" size="sm" />
         <AppIcon v-bind="args" size="md" />
@@ -51,10 +51,10 @@ export const ColorInheritance: Story = {
     components: { AppIcon },
     setup: () => ({ args }),
     template: `
-      <div style="display:flex; gap: var(--space-12); align-items:center;">
-        <span style="color: var(--color-brand-accent);"><AppIcon v-bind="args" /></span>
-        <span style="color: var(--color-status-success);"><AppIcon v-bind="args" /></span>
-        <span style="color: var(--color-status-danger);"><AppIcon v-bind="args" /></span>
+      <div style="display:flex; gap: var(--space-5); align-items:center;">
+        <span style="color: var(--color-accent);"><AppIcon v-bind="args" /></span>
+        <span style="color: var(--color-success);"><AppIcon v-bind="args" /></span>
+        <span style="color: var(--color-danger);"><AppIcon v-bind="args" /></span>
       </div>
     `,
   }),

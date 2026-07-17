@@ -15,27 +15,31 @@
 
 <style scoped lang="scss">
   // CSS-only spinner using currentColor so callers can paint it via color property.
+  // 650ms is a full-rotation cadence, not a UI transition — no --dur-* step
+  // matches (150/200/250/400), so it is a named SCSS variable.
+  $rotate-duration: 650ms;
+
   .app-spinner {
     display: inline-block;
     border: 2px solid currentcolor;
     border-right-color: transparent;
     border-radius: 50%;
-    animation: app-spinner-rotate 650ms linear infinite;
+    animation: app-spinner-rotate $rotate-duration linear infinite;
     flex-shrink: 0;
 
     &--sm {
-      width: 12px;
-      height: 12px;
+      width: var(--space-3);
+      height: var(--space-3);
     }
 
     &--md {
-      width: 16px;
-      height: 16px;
+      width: var(--space-4);
+      height: var(--space-4);
     }
 
     &--lg {
-      width: 24px;
-      height: 24px;
+      width: var(--space-5);
+      height: var(--space-5);
     }
   }
 

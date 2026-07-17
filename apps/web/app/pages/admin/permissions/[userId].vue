@@ -434,7 +434,7 @@
     }
 
     &__empty {
-      padding: var(--space-10) var(--space-4);
+      padding: var(--space-8) var(--space-4);
       text-align: center;
       color: var(--text-muted);
       display: flex;

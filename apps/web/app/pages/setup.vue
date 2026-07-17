@@ -92,17 +92,20 @@
 </template>
 
 <style lang="scss" scoped>
+  // Max readable width for the single-column setup card.
+  $card-max-width: 480px;
+
   .page-setup {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 100dvh;
     padding: var(--space-8);
-    background: var(--surface-bg);
+    background: var(--surface-page);
 
     &__card {
       width: 100%;
-      max-width: 480px;
+      max-width: $card-max-width;
       background: var(--surface-surface);
       border: 1px solid var(--border-default);
       border-radius: var(--radius-xl);

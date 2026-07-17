@@ -278,7 +278,7 @@
   .page-course-detail {
     max-width: $page-max-w;
     margin: 0 auto;
-    padding: 0 var(--space-6) var(--space-12);
+    padding: 0 var(--space-6) var(--space-8);
     display: flex;
     flex-direction: column;
     gap: var(--space-6);
@@ -286,7 +286,7 @@
     &__error-wrap {
       display: flex;
       justify-content: center;
-      padding: var(--space-12) 0;
+      padding: var(--space-8) 0;
     }
 
     &__load-error {

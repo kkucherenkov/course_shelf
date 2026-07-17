@@ -27,7 +27,7 @@
     color: var(--text-fg);
     font-family: var(--font-sans);
     font-weight: var(--fw-medium);
-    letter-spacing: var(--tracking-snug);
+    letter-spacing: var(--tracking-tight);
     line-height: var(--leading-normal);
 
     &--sm {
@@ -43,7 +43,9 @@
     }
 
     &__required {
-      color: var(--status-danger);
+      // --status-danger is not a shipped token; a foreground glyph takes the
+      // -fg triplet (same substitution as AppSelect / AppField).
+      color: var(--status-error-fg);
       font-weight: var(--fw-semibold);
     }
   }

@@ -186,7 +186,7 @@
     background: var(--surface-surface);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-xl);
+    box-shadow: var(--shadow-lg);
     z-index: calc(var(--z-modal) + 1);
     display: flex;
     flex-direction: column;
@@ -296,9 +296,9 @@
       cursor: pointer;
       border: 1px solid transparent;
       transition:
-        background 0.15s,
-        color 0.15s,
-        border-color 0.15s;
+        background var(--dur-fast),
+        color var(--dur-fast),
+        border-color var(--dur-fast);
 
       &:disabled {
         opacity: 0.45;
@@ -318,16 +318,18 @@
 
       &--danger {
         background: var(--status-error-soft);
-        color: var(--status-error);
+        color: var(--status-error-fg);
         border-color: transparent;
 
         &:not(:disabled):hover {
-          background: var(--status-error);
-          color: var(--color-white, #fff);
+          // Resting state is the soft tint; hover promotes to the solid fill,
+          // so the label flips to the contrasting (theme-aware) foreground.
+          background: var(--status-error-fg);
+          color: var(--text-inverse);
         }
 
         &:focus-visible {
-          outline: 2px solid var(--status-error);
+          outline: 2px solid var(--status-error-fg);
           outline-offset: 2px;
         }
       }

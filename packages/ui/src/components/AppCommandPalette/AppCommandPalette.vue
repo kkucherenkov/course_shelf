@@ -167,6 +167,10 @@
 </template>
 
 <style scoped lang="scss">
+  // Scroll cap for the results list — an intrinsic layout metric, named
+  // literal per the raw-px rule.
+  $list-max-height: 360px;
+
   .app-command-palette {
     display: flex;
     flex-direction: column;
@@ -191,7 +195,7 @@
       list-style: none;
       margin: 0;
       padding: 0;
-      max-height: 360px;
+      max-height: $list-max-height;
       overflow-y: auto;
     }
 

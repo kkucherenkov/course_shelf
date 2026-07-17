@@ -114,17 +114,33 @@
 <style lang="scss" scoped>
   // Size scale — track width × height × thumb diameter × thumb translate.
   // Kept as SCSS vars so the --size modifier stays a one-line override.
-  $track-width-sm: var(--space-10); // 20px
-  $track-width-md: var(--space-12); // 24px
-  $track-width-lg: var(--space-16); // 32px
+  // These are intrinsic component geometry, not layout rhythm, so they are
+  // named literals rather than --space-* steps (same convention as
+  // AppScanProgress's $dot-size / AppLessonRow's $num-col-w). They previously
+  // read the --space-* scale with px values in trailing comments — written
+  // against a phantom `--space-N == N * 2px` scale that this repo never
+  // emitted. Half the refs were dangling (no width at all) and the other half
+  // resolved to 2-4x the intended size. The px values below are that intent.
+  // Geometry invariant per size: track = inset + thumb + translate + inset,
+  // with $thumb-inset on both ends so the pill reads symmetric off and on.
+  $thumb-inset: 2px;
 
-  $track-height-sm: var(--space-6); // 12px
-  $track-height-md: var(--space-8); // 16px
-  $track-height-lg: var(--space-10); // 20px
+  $track-width-sm: 20px;
+  $track-width-md: 24px;
+  $track-width-lg: 32px;
 
-  $thumb-size-sm: var(--space-4); // 8px
-  $thumb-size-md: var(--space-5); // 10px
-  $thumb-size-lg: var(--space-6); // 12px
+  $track-height-sm: 12px;
+  $track-height-md: 16px;
+  $track-height-lg: 20px;
+
+  $thumb-size-sm: 8px;
+  $thumb-size-md: 10px;
+  $thumb-size-lg: 12px;
+
+  // translate = track - inset - thumb - inset
+  $thumb-travel-sm: 8px;
+  $thumb-travel-md: 10px;
+  $thumb-travel-lg: 16px;
 
   .app-switch {
     display: inline-flex;
@@ -170,7 +186,7 @@
     &__thumb {
       position: absolute;
       top: 50%;
-      left: var(--space-1);
+      left: $thumb-inset;
       background: var(--surface-surface);
       border-radius: var(--radius-pill);
       box-shadow: var(--shadow-sm);
@@ -201,7 +217,7 @@
 
       &.app-switch--checked .app-switch__thumb,
       .app-switch--checked .app-switch__thumb {
-        transform: translate(var(--space-4), -50%);
+        transform: translate($thumb-travel-sm, -50%);
       }
     }
 
@@ -218,7 +234,7 @@
 
       &.app-switch--checked .app-switch__thumb,
       .app-switch--checked .app-switch__thumb {
-        transform: translate(var(--space-5), -50%);
+        transform: translate($thumb-travel-md, -50%);
       }
     }
 
@@ -235,7 +251,7 @@
 
       &.app-switch--checked .app-switch__thumb,
       .app-switch--checked .app-switch__thumb {
-        transform: translate(var(--space-8), -50%);
+        transform: translate($thumb-travel-lg, -50%);
       }
     }
 
@@ -247,7 +263,9 @@
 
     &--checked.app-switch--color-success .app-switch__track,
     .app-switch--checked.app-switch--color-success .app-switch__track {
-      background: var(--status-success);
+      // Solid fill, matching the --brand-accent sibling above — so the -fg
+      // triplet, not the -soft tint.
+      background: var(--status-success-fg);
     }
 
     &--checked.app-switch--color-neutral .app-switch__track,

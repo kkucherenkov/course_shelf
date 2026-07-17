@@ -41,33 +41,33 @@
 <template>
   <div
     v-if="!loading"
-    class="course-wide-card"
+    class="app-course-wide-card"
     v-bind="interactiveAttrs"
     @click="handleActivate"
     @keydown="handleActivate"
   >
     <!-- thumb -->
-    <div class="course-wide-card__thumb" :style="coverStyle">
-      <span class="course-wide-card__initials" aria-hidden="true">{{ coverInitials }}</span>
-      <div class="course-wide-card__overlay" aria-hidden="true" />
-      <div class="course-wide-card__strip" aria-hidden="true">
-        <div class="course-wide-card__strip-fill" :style="{ width: `${pct}%` }" />
+    <div class="app-course-wide-card__thumb" :style="coverStyle">
+      <span class="app-course-wide-card__initials" aria-hidden="true">{{ coverInitials }}</span>
+      <div class="app-course-wide-card__overlay" aria-hidden="true" />
+      <div class="app-course-wide-card__strip" aria-hidden="true">
+        <div class="app-course-wide-card__strip-fill" :style="{ width: `${pct}%` }" />
       </div>
     </div>
 
     <!-- body -->
-    <div class="course-wide-card__body">
-      <p class="course-wide-card__title">
+    <div class="app-course-wide-card__body">
+      <p class="app-course-wide-card__title">
         {{ course.title }}
       </p>
-      <p v-if="course.instructor" class="course-wide-card__instructor">
+      <p v-if="course.instructor" class="app-course-wide-card__instructor">
         {{ course.instructor }}
       </p>
-      <div class="course-wide-card__meta">
-        <IconCS name="play" fill :size="12" class="course-wide-card__meta-icon" />
-        <span class="course-wide-card__meta-resume">{{ metaLabel }}</span>
-        <span class="course-wide-card__meta-sep" aria-hidden="true"> · </span>
-        <span class="course-wide-card__meta-count"
+      <div class="app-course-wide-card__meta">
+        <IconCS name="play" fill :size="12" class="app-course-wide-card__meta-icon" />
+        <span class="app-course-wide-card__meta-resume">{{ metaLabel }}</span>
+        <span class="app-course-wide-card__meta-sep" aria-hidden="true"> · </span>
+        <span class="app-course-wide-card__meta-count"
           >{{ course.completed }}/{{ course.lessons }}</span
         >
       </div>
@@ -75,18 +75,18 @@
   </div>
 
   <!-- loading skeleton -->
-  <div v-else class="course-wide-card course-wide-card--loading" aria-hidden="true">
+  <div v-else class="app-course-wide-card app-course-wide-card--loading" aria-hidden="true">
     <AppSkeleton width="80px" height="80px" radius="md" />
-    <div class="course-wide-card__body">
+    <div class="app-course-wide-card__body">
       <AppSkeleton width="75%" height="1em" radius="sm" />
       <AppSkeleton
-        class="course-wide-card__skeleton-instructor"
+        class="app-course-wide-card__skeleton-instructor"
         width="50%"
         height="0.875em"
         radius="sm"
       />
       <AppSkeleton
-        class="course-wide-card__skeleton-meta"
+        class="app-course-wide-card__skeleton-meta"
         width="60%"
         height="0.75em"
         radius="sm"
@@ -96,7 +96,18 @@
 </template>
 
 <style lang="scss" scoped>
-  .course-wide-card {
+  // Fixed thumbnail square and hairline progress strip — both sit between
+  // --space steps, so they stay as named literals.
+  $thumb-size: 80px;
+  $strip-height: 3px;
+  $skeleton-instructor-gap: 6px;
+
+  // Stacking context within the card (named vars — no raw ints).
+  $z-cover-overlay: 0;
+  $z-initials: 1;
+  $z-strip: 2;
+
+  .app-course-wide-card {
     display: flex;
     align-items: flex-start;
     gap: var(--space-3);
@@ -122,8 +133,8 @@
     &__thumb {
       flex-shrink: 0;
       position: relative;
-      width: 80px;
-      height: 80px;
+      width: $thumb-size;
+      height: $thumb-size;
       border-radius: var(--radius-md);
       overflow: hidden;
       display: flex;
@@ -133,11 +144,11 @@
 
     &__initials {
       position: relative;
-      z-index: 1;
+      z-index: $z-initials;
       font-family: var(--font-sans);
       font-size: var(--text-lg);
       font-weight: var(--fw-bold);
-      color: rgba(255, 255, 255, 0.85);
+      color: var(--media-fg-secondary);
       letter-spacing: var(--tracking-wide);
       line-height: 1;
       pointer-events: none;
@@ -147,8 +158,8 @@
     &__overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.4) 100%);
-      z-index: 0;
+      background: linear-gradient(180deg, transparent 50%, var(--media-scrim-soft) 100%);
+      z-index: $z-cover-overlay;
       pointer-events: none;
     }
 
@@ -157,9 +168,9 @@
       bottom: 0;
       left: 0;
       right: 0;
-      height: 3px;
-      background: rgba(255, 255, 255, 0.25);
-      z-index: 2;
+      height: $strip-height;
+      background: var(--media-track-cover);
+      z-index: $z-strip;
     }
 
     &__strip-fill {
@@ -201,8 +212,8 @@
     &__meta {
       display: flex;
       align-items: center;
-      gap: 4px;
-      margin-top: 4px;
+      gap: var(--space-1);
+      margin-top: var(--space-1);
       font-size: var(--text-sm);
       color: var(--text-secondary);
     }
@@ -227,11 +238,11 @@
     }
 
     &__skeleton-instructor {
-      margin-top: 6px;
+      margin-top: $skeleton-instructor-gap;
     }
 
     &__skeleton-meta {
-      margin-top: 8px;
+      margin-top: var(--space-2);
     }
   }
 </style>

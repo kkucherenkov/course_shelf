@@ -140,13 +140,13 @@
 
     &:disabled,
     &--disabled {
-      background: var(--surface-bg-muted);
-      color: var(--text-fg-disabled);
+      background: var(--surface-overlay);
+      color: var(--text-disabled);
       cursor: not-allowed;
     }
 
     &--readonly {
-      background: var(--surface-bg-subtle);
+      background: var(--surface-raised);
       cursor: default;
     }
 

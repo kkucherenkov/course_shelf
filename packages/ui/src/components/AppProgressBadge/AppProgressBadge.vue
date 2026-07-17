@@ -86,22 +86,27 @@
 <style scoped lang="scss">
   // bundle's --primary maps to --brand-accent; --surface-3 → --surface-overlay;
   // --success → --status-success-fg; --text-muted → --text-secondary
+  // 26px/22px fall between --space-* steps (24/32), so they are named SCSS
+  // variables holding the same literals.
+  $ring-inner-size: 26px;
+  $pill-height: 22px;
+
   .app-progress-badge {
     flex-shrink: 0;
 
     // Ring
     &--ring {
       position: relative;
-      width: 32px;
-      height: 32px;
+      width: var(--space-6);
+      height: var(--space-6);
       border-radius: 50%;
       display: inline-grid;
       place-items: center;
     }
 
     &__ring-inner {
-      width: 26px;
-      height: 26px;
+      width: $ring-inner-size;
+      height: $ring-inner-size;
       border-radius: 50%;
       background: var(--surface-surface);
       display: grid;
@@ -136,7 +141,7 @@
 
     &__bar-track {
       flex: 1 1 auto;
-      height: 4px;
+      height: var(--space-1);
       border-radius: 2px;
       background: var(--surface-overlay);
       overflow: hidden;
@@ -168,7 +173,7 @@
       align-items: center;
       gap: var(--space-1);
       padding: 0 var(--space-2);
-      height: 22px;
+      height: $pill-height;
       border-radius: var(--radius-pill);
       font-size: var(--text-xs);
       font-weight: var(--fw-medium);

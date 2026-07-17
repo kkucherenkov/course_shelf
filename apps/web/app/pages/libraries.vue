@@ -163,8 +163,15 @@
 </template>
 
 <style scoped lang="scss">
+  // Max page width for the single-column library list.
+  $page-max-width: 880px;
+  // Placeholder row height — matches the rendered library row.
+  $skeleton-height: 80px;
+  // Slow, non-distracting loading pulse; no --dur-* token is this long.
+  $skeleton-pulse-duration: 1.4s;
+
   .page-libraries {
-    max-width: 880px;
+    max-width: $page-max-width;
     margin: 0 auto;
     padding: 0 var(--space-4) var(--space-8);
 
@@ -226,10 +233,10 @@
     }
 
     &__skeleton {
-      height: 80px;
+      height: $skeleton-height;
       border-radius: var(--radius-md);
       background: var(--surface-raised);
-      animation: page-libraries-pulse 1.4s ease-in-out infinite;
+      animation: page-libraries-pulse $skeleton-pulse-duration ease-in-out infinite;
     }
 
     &__list {

@@ -248,11 +248,13 @@
     }
 
     &__mail-button {
+      $mail-button-height: 36px; // compact secondary action, below the 40px primary
+
       display: inline-flex;
       align-items: center;
       justify-content: center;
       width: 100%;
-      height: 36px;
+      height: $mail-button-height;
       padding: 0 var(--space-4);
       border-radius: var(--radius-md);
       border: 1px solid var(--border-default);

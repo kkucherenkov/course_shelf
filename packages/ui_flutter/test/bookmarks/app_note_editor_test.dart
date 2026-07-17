@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app_ui/app_ui.dart';
@@ -108,15 +107,15 @@ void main() {
           tester,
           const AppNoteEditor(modelValue: '', mode: AppNoteMode.view),
         );
-        final node = tester
-            .getSemantics(find.bySemanticsLabel('Edit'))
-            .getSemanticsData();
-        expect(node.label, 'Edit');
-        expect(node.hasFlag(SemanticsFlag.isButton), isTrue);
-        expect(node.hasFlag(SemanticsFlag.isToggled), isTrue);
         expect(
-          node.hasAction(SemanticsAction.tap),
-          isTrue,
+          tester.getSemantics(find.bySemanticsLabel('Edit')),
+          matchesSemantics(
+            label: 'Edit',
+            isButton: true,
+            hasToggledState: true,
+            isToggled: true,
+            hasTapAction: true,
+          ),
           reason: 'a screen reader must be able to activate the mode toggle',
         );
         handle.dispose();

@@ -2,6 +2,38 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-17-003 — E17-F02 mobile composites wave 2 — closes epic E17
+
+- Created: 2026-07-17
+- Completed: 2026-07-17
+- Owner: claude
+- Result: [PR #151](https://github.com/kkucherenkov/course_shelf/pull/151) — branch `feat/e17-f02-wave-2`
+- Cards: [E17-F02-S10](../../docs/roadmap/tasks/E17-F02-S10.md), [E17-F02-S11](../../docs/roadmap/tasks/E17-F02-S11.md)
+- Goal: close E17-F02 (and epic E17) with the two coverage-gap composites whose
+  `@app/ui` twins shipped without a mobile card. Both have web twins, so both
+  went straight to code under the standing design gate. Two isolated worktree
+  subagents, cherry-picked onto one branch, wired, centrally verified.
+- Acceptance:
+  - Widgetbook catalogues `AppBookmarkList` (empty / populated / add-row / read-only / adding)
+    and `AppSectionHeader` (open / closed / long title / singular count) — 46 components, names unique.
+  - Both mirror their `@app/ui` twins' contract in light and dark themes.
+- Spec diff: none
+- Codegen impact: no
+- Design impact: two new `ui_flutter` components — no new tokens
+- Tests: `ui_flutter` 568 → **611** (38 widget tests + 4 goldens); `apps/mobile` 63 → **64**;
+  both analyze-clean. Goldens visually confirmed to bind fonts from `textTheme`.
+- Sub-steps:
+  - [x] S10 `AppBookmarkList` — list + inline add row + empty state
+  - [x] S11 `AppSectionHeader` — collapsible header (count + duration)
+  - [x] wire both into the Widgetbook catalog
+  - [x] roadmap/TODO bookkeeping + close issues 82–89
+- Follow-ups surfaced (not filed):
+  - `AppRow` merges descendant semantics — lacks `explicitChildNodes: true`.
+  - None of the 5 nav-tab glyphs have a filled variant (`IconCS.fill` covers only play/bookmark).
+  - `AppBookmarkAdd` fires `onCancel` only on the Escape key — no visible cancel
+    affordance, so `onAddCancel` is unreachable on touch hardware. Inherited from
+    E17-F02-S04; matches the web, which has the same gap.
+
 ## T-2026-07-17-002 — E17-F02 mobile composite widgets wave 1, 9 cards / 13 components
 
 - Created: 2026-07-17

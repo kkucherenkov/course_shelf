@@ -83,8 +83,9 @@ void main() {
     // E17-F01 primitives (31) + E17-F02 composites: CourseCard family (3)
     // + AppLessonRow + bookmarks (3) + AppProgressBadge + AppPasswordField
     // + AppSsoBlock + AppDownloadRow + AppNavigationShell + AppPlayerChrome
-    // (13) = 44.
-    expect(components().length, greaterThanOrEqualTo(44));
+    // (13) = 44. Wave 2 closes the feature with the two coverage-gap
+    // composites — AppBookmarkList + AppSectionHeader (+2 = 46).
+    expect(components().length, greaterThanOrEqualTo(46));
   });
 
   test('the E17-F02 composite components are wired in', () {
@@ -107,5 +108,10 @@ void main() {
         'AppPlayerChrome',
       }),
     );
+  });
+
+  test('the E17-F02 wave-2 batch (bookmark list, section header) is wired in', () {
+    final names = components().map((c) => c.name).toSet();
+    expect(names, containsAll(<String>{'AppBookmarkList', 'AppSectionHeader'}));
   });
 }

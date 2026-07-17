@@ -1,7 +1,6 @@
 name: E2E smoke
 
-# GitHub-side twin of .forgejo/workflows/e2e.yml, adapted for GitHub-hosted
-# runners:
+# E2E smoke on GitHub-hosted runners:
 #   - Steps run directly on the ubuntu-latest VM, so `localhost` reaches the
 #     compose-published ports — no docker-bridge-gateway detection needed
 #     (compose.ci.yml's E2E_HOST defaults to localhost).
@@ -63,10 +62,9 @@ jobs:
       - name: Pull external images
         run: docker compose -f docker/compose.yml -f docker/compose.ci.yml pull --quiet redis otel-lgtm
 
-      # Same production-shaped stack as the Forgejo nightly: compose.ci.yml
-      # overrides the dev bind-mount services with real image builds.
-      # Explicit service list skips `proxy` and `storybook` (see the
-      # Forgejo twin for the full rationale).
+      # Production-shaped stack: compose.ci.yml overrides the dev bind-mount
+      # services with real image builds (see that file's header for the full
+      # rationale). Explicit service list skips `proxy` and `storybook`.
       - name: Bring up docker stack
         run: |
           docker compose -f docker/compose.yml -f docker/compose.ci.yml \

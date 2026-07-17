@@ -1,11 +1,14 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { admin, bearer } from 'better-auth/plugins';
+import { I18nService } from 'nestjs-i18n';
 
+import { EMAIL_PORT } from '../../modules/integrations/domain/email.port';
 import { AppConfig } from '../config/app-config';
 import { PrismaService } from '../prisma/prisma.service';
 
+import type { IEmailService } from '../../modules/integrations/domain/email.port';
 import type { Request } from 'express';
 
 // TS2883/TS2322: the Better Auth plugins expose zod v4 core internals ($strip)
@@ -15,7 +18,12 @@ import type { Request } from 'express';
 // and casting through `unknown` erases the un-nameable generic while keeping
 // `handler` and `api.getSession` — the only two methods this service and its
 // callers use.
-function createInstance(prisma: PrismaService, config: AppConfig): ReturnType<typeof betterAuth> {
+function createInstance(
+  prisma: PrismaService,
+  config: AppConfig,
+  email: IEmailService,
+  i18n: I18nService,
+): ReturnType<typeof betterAuth> {
   const { basePath, secret, baseUrl } = config.betterAuth;
   const instance = betterAuth({
     database: prismaAdapter(prisma, { provider: 'postgresql' }),
@@ -25,7 +33,26 @@ function createInstance(prisma: PrismaService, config: AppConfig): ReturnType<ty
     // Use UUID v4 for all IDs so they satisfy the OpenAPI `format: uuid`
     // contract and are consistent with seed data.
     advanced: { database: { generateId: () => crypto.randomUUID() } },
-    emailAndPassword: { enabled: true, autoSignIn: true },
+    emailAndPassword: {
+      enabled: true,
+      autoSignIn: true,
+      // Better Auth calls this with { user, url, token } when
+      // `requestPasswordReset` runs; without it the route answers
+      // RESET_PASSWORD_DISABLED (GitHub #173). Delivery goes through the
+      // EMAIL_PORT — MockEmailService in dev, a real SMTP adapter in prod.
+      // The reset URL is server-built by Better Auth, so it is concatenated
+      // verbatim rather than routed through i18n interpolation.
+      sendResetPassword: async ({ user, url }) => {
+        const subject = i18n.t('auth.resetPassword.subject');
+        const body = i18n.t('auth.resetPassword.body');
+        await email.send({
+          to: user.email,
+          subject,
+          text: `${body}\n\n${url}`,
+          html: `<p>${body}</p><p><a href="${url}">${url}</a></p>`,
+        });
+      },
+    },
     // Additional fields on the user model:
     //   - role: stored by the admin plugin for RBAC checks (defaultValue 'USER').
     //   - displayName: optional user-facing name separate from the auth name.
@@ -69,10 +96,12 @@ export class AuthService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: AppConfig,
+    @Inject(EMAIL_PORT) private readonly email: IEmailService,
+    private readonly i18n: I18nService,
   ) {}
 
   onModuleInit(): void {
-    this.instance = createInstance(this.prisma, this.config);
+    this.instance = createInstance(this.prisma, this.config, this.email, this.i18n);
   }
 
   /**

@@ -264,6 +264,24 @@ abstract final class AppOpacity {
   static const double dangerHover = 0.92;
 }
 
+abstract final class AppMedia {
+  static const Color stage = Color(0xFF000000);
+  static const Color placeholderFrom = Color(0xFF1A1D22);
+  static const Color placeholderTo = Color(0xFF0A0C10);
+  static const Color fg = Color(0xFFFFFFFF);
+  static const Color fgSecondary = Color(0xD9FFFFFF);
+  static const Color fgTertiary = Color(0xB3FFFFFF);
+  static const Color fgFaint = Color(0x66FFFFFF);
+  static const Color fillHover = Color(0x26FFFFFF);
+  static const Color border = Color(0x33FFFFFF);
+  static const Color track = Color(0x2EFFFFFF);
+  static const Color trackBuffered = Color(0x59FFFFFF);
+  static const Color trackCover = Color(0x40FFFFFF);
+  static const Color scrimSoft = Color(0x66000000);
+  static const Color scrimMedium = Color(0x8C000000);
+  static const Color scrimStrong = Color(0x99000000);
+}
+
 abstract final class AppZIndex {
   static const int base = 0;
   static const int raised = 10;

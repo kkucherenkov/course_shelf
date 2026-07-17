@@ -470,7 +470,13 @@ describe('AppNavigationShell', () => {
     });
 
     it('the open account menu outranks the bottom-tab bar', () => {
-      expect(Z_SCALE[menuToken as string]).toBeGreaterThan(Z_SCALE[barToken as string]);
+      const menuZ = Z_SCALE[menuToken as string];
+      const barZ = Z_SCALE[barToken as string];
+      // Guard the index lookups (both proven present by the tests above) so the
+      // comparison is over `number`, not `number | undefined`.
+      expect(menuZ).toBeTypeOf('number');
+      expect(barZ).toBeTypeOf('number');
+      expect(menuZ as number).toBeGreaterThan(barZ as number);
     });
   });
 });

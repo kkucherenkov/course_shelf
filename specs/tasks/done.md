@@ -2,6 +2,21 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-17-006 — drop the Forgejo residue and point the release lane at ghcr
+
+- Created: 2026-07-17
+- Completed: 2026-07-17
+- Owner: claude
+- Result: PR https://github.com/kkucherenkov/course_shelf/pull/155
+- Goal: Forgejo was dropped 2026-07-14 and the git remote went with it earlier the same day; clear what was left inside the repo.
+- Outcome:
+  - **The part that wasn't dead**: `docker/compose.release.yml` defaulted to `${REGISTRY:-code.homelab.local}`, so an unconfigured `docker compose -f docker/compose.release.yml up` — the self-hoster's entry point — pulled from a host that no longer exists. Now `ghcr.io`.
+  - That literal is **coupled** to `release.yml`, which sed-rewrites it when staging the release bundle; changing either side alone makes the sed silently no-op and ships unresolved placeholders. Both moved in one commit and both now carry a `⚠` comment. Verified by rendering the sed the way CI does → `ghcr.io/kkucherenkov/courseshelf-{backend,web}:0.2.0`, no placeholders surviving; the old pattern against the new compose leaves two, confirming the hazard was real.
+  - Deleted `.forgejo/workflows/` (5 files, 879 lines), `scripts/seed-forgejo-issues.ts` (555 lines), the `issues:sync|map|lookup` scripts, and the CLAUDE.md block warning not to use them.
+  - `README.md` / `README.ru.md` carried a mirror notice claiming development happens on Forgejo and _"issues and pull requests opened here are not monitored"_ — the exact inverse of reality, and the first thing a visitor reads.
+- Deliberately kept: dated records (`done.md`, `docs/superpowers/plans|specs/*`, and the ✅ Done cards E14-F01-S03 / E22-F01-S06 / E14-F04-S01 / E15-F01-S02) still reference the homelab, because that is what was true when they shipped. Seven `forgejo` mentions survive in live config as _why-this-exists_ rationale with no pointers to deleted files — filed as #165 rather than rewritten, since the constraint may or may not still apply.
+- Tests: `turbo run lint` 7/7; `pnpm format:check` clean; `pnpm install --frozen-lockfile` still resolves after the script removal.
+
 ## T-2026-07-17-005 — design-token hygiene: dangling refs, magic numbers, and the CI gates that let them rot
 
 - Created: 2026-07-17

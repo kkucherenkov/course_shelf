@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app_ui/app_ui.dart';
@@ -62,6 +63,62 @@ void main() {
             reason: label,
           );
         }
+        handle.dispose();
+      });
+
+      // Guards #176: the old `_toolButton` wrapped its AppButton in
+      // `Semantics(...) + ExcludeSemantics(child: AppButton)`, which stranded
+      // the label on an action-less parent — a named button a screen reader
+      // could not activate. `tester.tap` never caught it (it drives
+      // hit-testing, not the semantics layer). Assert the tap/focus actions
+      // ride on the SAME node as the label, in edit mode.
+      testWidgets('each toolbar tool is a tappable, focusable, named button in '
+          'edit mode', (tester) async {
+        final handle = tester.ensureSemantics();
+        await _pump(
+          tester,
+          AppNoteEditor(modelValue: '', mode: AppNoteMode.edit, onChanged: (_) {}),
+        );
+        for (final label in ['Bold', 'Italic', 'Heading', 'List', 'Link']) {
+          expect(
+            tester.getSemantics(find.bySemanticsLabel(label)),
+            matchesSemantics(
+              label: label,
+              isButton: true,
+              hasEnabledState: true,
+              isEnabled: true,
+              isFocusable: true,
+              hasTapAction: true,
+              hasFocusAction: true,
+            ),
+            reason: label,
+          );
+        }
+        handle.dispose();
+      });
+
+      // #176, same file: the Edit/Preview mode toggle used the identical
+      // wrapper (plus a `toggled` state), so it too was a named-but-inert
+      // control. It must carry the tap action on the toggled node.
+      testWidgets('the mode toggle is a tappable toggled button', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await _pump(
+          tester,
+          const AppNoteEditor(modelValue: '', mode: AppNoteMode.view),
+        );
+        final node = tester
+            .getSemantics(find.bySemanticsLabel('Edit'))
+            .getSemanticsData();
+        expect(node.label, 'Edit');
+        expect(node.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(node.hasFlag(SemanticsFlag.isToggled), isTrue);
+        expect(
+          node.hasAction(SemanticsAction.tap),
+          isTrue,
+          reason: 'a screen reader must be able to activate the mode toggle',
+        );
         handle.dispose();
       });
     });

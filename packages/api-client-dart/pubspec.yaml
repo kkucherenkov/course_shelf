@@ -12,6 +12,10 @@ dependencies:
   dio: ^5.7.0
   built_collection: ^5.1.1
   built_value: ^8.9.2
+  # Required by generated oneOf models (GrantTarget, BatchProgressItemResult)
+  # and the serializers barrel — dart-dio emits `one_of` usages for these.
+  one_of: ">=1.5.0 <2.0.0"
+  one_of_serializer: ">=1.5.0 <2.0.0"
   json_annotation: ^4.9.0
   meta: ^1.16.0
 

@@ -82,6 +82,14 @@ describe('AuthService', () => {
   it('keeps the admin and bearer plugins, and only those', () => {
     const service = bootService();
 
+    // Exact, not `toContain` — deliberately. This is how the phoneNumber
+    // plugin got here in the first place: E04-F02-S01 ("Configure Better Auth
+    // with bearer + admin plugins") shipped ✅ Done recording, as a footnote,
+    // "Deviation 3: an extra `phoneNumber` plugin is enabled on top of the
+    // card's three ... left as-is" — and it sat unnoticed until #157 removed
+    // it. An exact assertion is what would have surfaced that the day it
+    // landed. When SSO adds a plugin this test WILL fail; that failure is the
+    // point — extend the list on purpose. Do not loosen it to `toContain`.
     expect(pluginIds(service)).toEqual(['admin', 'bearer']);
     // admin() route surface used by the admin module's RBAC.
     expect(apiKeys(service)).toContain('setRole');

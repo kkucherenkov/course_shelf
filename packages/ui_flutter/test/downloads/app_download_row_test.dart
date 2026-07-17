@@ -151,14 +151,22 @@ void main() {
 
   group('AppDownloadRow — action affordance', () {
     // Asserts against the [AppIconButton]'s own `name`/`semanticLabel`
-    // properties rather than the rendered semantics tree: [AppRow]'s
-    // internal `Semantics` boundary does not set `explicitChildNodes: true`,
-    // so it folds every descendant node (leading glyph, both text lines, and
-    // the trailing button) into a single merged node — a pre-existing
-    // `AppRow` characteristic (see its own `selected` semantics test, which
-    // only inspects the row's own flags) that is out of scope to change from
-    // this card. Reading the button's own props is the exact, un-merged
-    // ground truth for "which action + label did this state wire up".
+    // properties: `name` picks a glyph, which has no semantics counterpart to
+    // read back (the glyph is deliberately excluded), so the widget's props
+    // stay the exact ground truth for "which action + label did this state
+    // wire up". The action's *reachability* is covered where it belongs, in
+    // app_icon_button_test.dart.
+    //
+    // This used to carry a note blaming [AppRow] for folding every descendant
+    // into one merged node. That was wrong. The collapse was an
+    // [AppIconButton] defect: it wrapped an `ExcludeSemantics`'d button in a
+    // non-boundary `Semantics`, contributing a node with no tap action that
+    // merged straight into the row — the whole row rendered as a single
+    // action-less node labelled "Quorum reads / Distributed Systems / 128 MB /
+    // Cancel download". [AppRow] correctly merges only its own non-boundary
+    // text descendants (one row, one node); now that [AppIconButton] lets its
+    // `TextButton` keep its own semantics boundary, the trailing button
+    // surfaces as a separate child node carrying focus + tap.
     AppIconButton actionButton(WidgetTester tester) =>
         tester.widget<AppIconButton>(find.byKey(AppDownloadRow.actionKey));
 

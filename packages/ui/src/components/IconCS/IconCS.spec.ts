@@ -9,14 +9,19 @@ const ALL_NAMES = [
   'next',
   'prev',
   'home',
+  'home-fill',
   'library',
+  'library-fill',
   'search',
+  'search-fill',
   'settings',
+  'settings-fill',
   'check',
   'check-circle',
   'circle',
   'lock',
   'download',
+  'download-fill',
   'cloud',
   'cloud-down',
   'bookmark',
@@ -106,5 +111,45 @@ describe('IconCS', () => {
   it('honours fill on bookmark', () => {
     const wrapper = mount(IconCS, { props: { name: 'bookmark', fill: true } });
     expect(wrapper.html()).toContain('currentColor');
+  });
+
+  describe('filled nav glyphs', () => {
+    const NAV_FILL_NAMES = [
+      'home-fill',
+      'library-fill',
+      'download-fill',
+      'search-fill',
+      'settings-fill',
+    ] as const;
+
+    // The <svg> envelope sets stroke="currentColor" stroke-width="1.5"; a
+    // silhouette that forgets stroke="none" is painted 0.75 units fatter than
+    // it was drawn.
+    it.each(NAV_FILL_NAMES)('%s paints solid and opts out of the envelope stroke', (name) => {
+      const wrapper = mount(IconCS, { props: { name } });
+      const shapes = wrapper.findAll('path, rect, circle');
+      expect(shapes.length).toBeGreaterThan(0);
+      for (const shape of shapes) {
+        expect(shape.attributes('fill')).toBe('currentColor');
+        expect(shape.attributes('stroke')).toBe('none');
+      }
+    });
+
+    // The outlines these replace are open stroked paths — mechanically filling
+    // them paints garbage, so each is a separately drawn closed silhouette.
+    it.each(NAV_FILL_NAMES)('%s ignores the fill prop', (name) => {
+      const outline = mount(IconCS, { props: { name } });
+      const filled = mount(IconCS, { props: { name, fill: true } });
+      expect(filled.html()).toBe(outline.html());
+    });
+
+    it('keeps the negative space that carries meaning', () => {
+      // search must read as a magnifier (lens hole + handle), not a disc;
+      // settings must keep the gear's centre hole.
+      for (const name of ['search-fill', 'settings-fill'] as const) {
+        const wrapper = mount(IconCS, { props: { name } });
+        expect(wrapper.find('path').attributes('fill-rule')).toBe('evenodd');
+      }
+    });
   });
 });

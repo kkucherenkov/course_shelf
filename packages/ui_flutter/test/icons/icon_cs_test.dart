@@ -6,8 +6,8 @@ import 'package:app_ui/app_ui.dart';
 
 void main() {
   group('IconName enum + glyph table', () {
-    test('has exactly 66 named glyphs', () {
-      expect(IconName.values.length, 66);
+    test('has exactly 71 named glyphs', () {
+      expect(IconName.values.length, 71);
     });
 
     test('every IconName resolves to inner SVG markup', () {
@@ -29,6 +29,33 @@ void main() {
       expect(IconName.moreH.token, 'more-h');
       expect(IconName.cornerDownRight.token, 'corner-down-right');
       expect(IconName.hardDrive.token, 'hard-drive');
+      expect(IconName.homeFill.token, 'home-fill');
+      expect(IconName.settingsFill.token, 'settings-fill');
+    });
+
+    test('every nav glyph has a filled counterpart', () {
+      expect(kNavFilledIcons, {
+        IconName.home: IconName.homeFill,
+        IconName.library: IconName.libraryFill,
+        IconName.download: IconName.downloadFill,
+        IconName.search: IconName.searchFill,
+        IconName.settings: IconName.settingsFill,
+      });
+    });
+
+    test('the filled nav glyphs opt out of the envelope stroke', () {
+      // The shared envelope sets stroke-width 1.5 on the root; a silhouette
+      // that forgets stroke="none" is painted 0.75 units fatter than drawn.
+      for (final name in kNavFilledIcons.values) {
+        final markup = kIconMarkup[name]!;
+        final elements = RegExp('<(path|rect|circle)').allMatches(markup).length;
+        expect(
+          'stroke="none"'.allMatches(markup).length,
+          elements,
+          reason: '$name has an element that the envelope would stroke',
+        );
+        expect(markup, contains('fill="currentColor"'));
+      }
     });
   });
 

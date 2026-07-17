@@ -59,15 +59,6 @@ export interface StreamingConfig {
 
 export type ProviderMode = 'mock' | 'real';
 
-export interface ProvidersConfig {
-  /** Which email backend to use. Defaults to 'mock'. */
-  readonly email: ProviderMode;
-  /** Which push backend to use. Defaults to 'mock'. */
-  readonly push: ProviderMode;
-  /** Which storage backend to use. Defaults to 'mock'. */
-  readonly storage: ProviderMode;
-}
-
 export interface ScrapersConfig {
   /** 'mock' swaps real adapters for fixture-backed ones (used in e2e/CI). Default 'real'. */
   readonly mode: ProviderMode;
@@ -137,15 +128,6 @@ export class AppConfig {
       secret: this.requireString('BETTER_AUTH_SECRET'),
       baseUrl: this.requireString('BETTER_AUTH_URL'),
       basePath: this.stringOrDefault('BETTER_AUTH_BASE_PATH', '/api/v1/auth'),
-    };
-  }
-
-  /** Integration provider selection. All default to 'mock' — no env vars needed. */
-  get providers(): ProvidersConfig {
-    return {
-      email: 'mock',
-      push: 'mock',
-      storage: 'mock',
     };
   }
 

@@ -223,6 +223,7 @@ class _AppNoteEditorState extends State<AppNoteEditor> {
           variant: AppButtonVariant.ghost,
           size: AppButtonSize.sm,
           disabled: !enabled,
+          semanticLabel: semanticLabel,
           onPressed: onPressed,
           child: child,
         ),
@@ -413,6 +414,7 @@ class _AppNoteEditorState extends State<AppNoteEditor> {
               AppButton(
                 variant: AppButtonVariant.ghost,
                 size: AppButtonSize.sm,
+                semanticLabel: 'Retry',
                 onPressed: widget.onRetry,
                 child: Text(
                   'Retry',

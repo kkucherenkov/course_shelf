@@ -764,6 +764,8 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
               key: AppPlayerChrome.speedKey,
               variant: AppButtonVariant.ghost,
               size: AppButtonSize.sm,
+              // The visible speed (e.g. "1.0x") is also its accessible name.
+              semanticLabel: widget.speedLabel,
               onPressed: widget.onSpeedTap,
               child: Text(widget.speedLabel, style: speedStyle),
             ),

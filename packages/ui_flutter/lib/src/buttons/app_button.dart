@@ -11,10 +11,17 @@ import 'package:app_ui/src/icons/icon_name.dart';
 /// leading/trailing [IconCS] glyphs, a full-width [block] mode, and [loading]
 /// / [disabled] states. Interaction is a flat token colour swap (no ripple);
 /// see [resolveAppButtonStyle].
+///
+/// The accessible name is [semanticLabel] when supplied, otherwise the visible
+/// [label]. Icon- and custom-[child]-only buttons carry no text to name them,
+/// so [semanticLabel] is required whenever [label] is null — the same contract
+/// [AppIconButton] enforces. The name rides on the button's own node in every
+/// state, including [loading], where the spinner displaces all visible content.
 class AppButton extends StatelessWidget {
   const AppButton({
     this.label,
     this.child,
+    this.semanticLabel,
     this.variant = AppButtonVariant.primary,
     this.size = AppButtonSize.md,
     this.loading = false,
@@ -30,12 +37,22 @@ class AppButton extends StatelessWidget {
              iconLeading != null ||
              iconTrailing != null,
          'AppButton needs a label, child, or icon to render',
+       ),
+       assert(
+         label != null || semanticLabel != null,
+         'AppButton needs a semanticLabel when label is null — an icon- or '
+         'child-only control has no visible text to name it',
        );
 
   final String? label;
 
   /// Custom label content; overrides [label] when both are set.
   final Widget? child;
+
+  /// Accessible name announced to assistive technology. Defaults to [label];
+  /// required when [label] is null (icon-/child-only buttons have no visible
+  /// text). Overrides the visible text when both are given.
+  final String? semanticLabel;
 
   final AppButtonVariant variant;
   final AppButtonSize size;
@@ -60,6 +77,10 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = resolveAppButtonStyle(context, variant, size, block: block);
 
+    // The name is [semanticLabel] when given, else the visible [label]; the
+    // assert guarantees at least one is non-null, so this never resolves null.
+    final String name = semanticLabel ?? label!;
+
     final Widget content = loading
         ? AppButtonSpinner(size: size)
         : Row(
@@ -81,7 +102,13 @@ class AppButton extends StatelessWidget {
     Widget button = TextButton(
       onPressed: disabled ? null : onPressed,
       style: style,
-      child: content,
+      // The name rides *inside* the button so it merges into the button's own
+      // node, exactly as [AppIconButton] does. Wrapping the TextButton from the
+      // outside would strand the name on a separate, action-less parent node.
+      // Excluding the content's own semantics keeps [name] authoritative — the
+      // decorative glyphs never leak in, and a noisy custom [child] cannot
+      // either — and guarantees an icon-only button is never nameless.
+      child: Semantics(label: name, excludeSemantics: true, child: content),
     );
 
     // Loading keeps full colour but must not be tappable.
@@ -97,18 +124,19 @@ class AppButton extends StatelessWidget {
       // IgnorePointer silently swallows the tap: `ignoring: true` does not drop
       // the subtree, it only sets `isBlockingUserActions`, which strips the
       // actions but leaves `isEnabled` and `isFocusable` standing. Replace that
-      // lie with an honest node: a button that reports not-enabled.
+      // lie with an honest node: a button that names itself and reports
+      // not-enabled.
       //
-      // [label] is the only name that survives the content swap above — the
-      // spinner displaces the label, custom [child] and icons alike, so a
-      // child-only button has no string left to announce. Naming this node
-      // `label` is therefore the most that can be preserved, not a regression:
-      // before this branch existed every loading button was nameless.
+      // The spinner displaces the visible label, custom [child] and icons
+      // alike, so no descendant is left to announce; [name] is the only string
+      // that survives the swap. Because [semanticLabel] is required whenever
+      // [label] is null, [name] is non-null here even for a child-only button —
+      // that is exactly the child-only-loading gap this fix closes.
       return Semantics(
         container: true,
         button: true,
         enabled: false,
-        label: label,
+        label: name,
         child: ExcludeSemantics(child: button),
       );
     }

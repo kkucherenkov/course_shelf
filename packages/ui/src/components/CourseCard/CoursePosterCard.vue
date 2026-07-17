@@ -147,7 +147,7 @@
       font-family: var(--font-sans);
       font-size: var(--text-3xl);
       font-weight: var(--fw-bold);
-      color: rgba(255, 255, 255, 0.85);
+      color: var(--media-fg-secondary);
       letter-spacing: var(--tracking-wide);
       line-height: 1;
       pointer-events: none;
@@ -157,7 +157,7 @@
     &__overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.4) 100%);
+      background: linear-gradient(180deg, transparent 50%, var(--media-scrim-soft) 100%);
       z-index: $z-cover-overlay;
       pointer-events: none;
     }
@@ -173,7 +173,7 @@
       width: $badge-size;
       height: $badge-size;
       border-radius: var(--radius-pill);
-      color: #fff;
+      color: var(--media-fg);
 
       &--completed {
         background: var(--status-success-fg);
@@ -187,8 +187,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.4);
-      color: #fff;
+      background: var(--media-scrim-soft);
+      color: var(--media-fg);
     }
 
     &__strip {
@@ -197,7 +197,7 @@
       left: 0;
       right: 0;
       height: $strip-height;
-      background: rgba(255, 255, 255, 0.25);
+      background: var(--media-track-cover);
       z-index: $z-cover-top;
     }
 

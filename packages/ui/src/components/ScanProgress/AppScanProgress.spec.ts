@@ -35,6 +35,7 @@ const baseRunningNoErrors = {
 };
 
 const baseSuccess = {
+  ...i18nProps,
   status: 'success' as const,
   courseName: 'Computer Science',
   percent: 100,
@@ -44,7 +45,6 @@ const baseSuccess = {
   updated: 12,
   errors: 0,
   errorsLabel: '0 errors',
-  ...i18nProps,
 };
 
 const baseSuccessWithErrors = {
@@ -54,6 +54,7 @@ const baseSuccessWithErrors = {
 };
 
 const baseFailed = {
+  ...i18nProps,
   status: 'failed' as const,
   courseName: 'Computer Science',
   percent: 37,
@@ -63,7 +64,6 @@ const baseFailed = {
   updated: 4,
   errors: 5,
   errorsLabel: '5 errors',
-  ...i18nProps,
 };
 
 // ---- Snapshot tests ----

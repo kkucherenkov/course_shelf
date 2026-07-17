@@ -16,10 +16,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   LocaleSettings.useDeviceLocale();
 
-  // Firebase — requires google-services.json (Android) / GoogleService-Info.plist (iOS).
-  // Run `flutterfire configure` to generate firebase_options.dart.
-  await Firebase.initializeApp();
-  await PushNotificationService.registerBackgroundHandler();
+  await bootstrapFirebase();
 
   configureDependencies();
 
@@ -36,6 +33,25 @@ Future<void> main() async {
     );
   } else {
     runApp(TranslationProvider(child: const App()));
+  }
+}
+
+/// Initialise Firebase (and its push background handler) if configuration is
+/// present, degrading to "push disabled" otherwise.
+///
+/// Firebase needs `google-services.json` (Android) / `GoogleService-Info.plist`
+/// (iOS) — run `flutterfire configure` to generate `firebase_options.dart`.
+/// When that config is absent (local dev without secrets, #177) or the plugin
+/// is unavailable (widget tests), `initializeApp` throws. Boot must survive
+/// that: the app runs fine without push, and crashing the whole process on
+/// missing optional config is the wrong trade. Prod ships real config, so this
+/// catch never fires there.
+Future<void> bootstrapFirebase() async {
+  try {
+    await Firebase.initializeApp();
+    await PushNotificationService.registerBackgroundHandler();
+  } catch (error) {
+    debugPrint('Firebase unavailable — push notifications disabled: $error');
   }
 }
 

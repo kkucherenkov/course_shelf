@@ -11,6 +11,9 @@ import 'package:app_mobile/features/auth/domain/library_repository.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:app_mobile/features/auth/presentation/sign_in_screen.dart';
 import 'package:app_mobile/features/auth/presentation/sign_up_screen.dart';
+import 'package:app_mobile/features/home/domain/home_repository.dart';
+import 'package:app_mobile/features/home/domain/home_summary.dart';
+import 'package:app_mobile/features/home/presentation/bloc/home_cubit.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
 import 'package:app_mobile/main.dart';
 import 'package:app_mobile/shared/di/injector.dart';
@@ -26,26 +29,41 @@ class _MockInstanceRepository extends Mock implements InstanceRepository {}
 
 class _MockLibraryRepository extends Mock implements LibraryRepository {}
 
+/// The wizard's final step adopts the session and mounts the shell, which
+/// resolves Home's cubit from the injector (E18-F01-S01). Stubbed empty so the
+/// flow reaches the shell without a live catalog fetch.
+class _MockHomeRepository extends Mock implements HomeRepository {}
+
 const _user = AuthUser(id: 'u1', email: 'jane@example.com', name: 'Jane');
+
+const _emptyHome = HomeSummary(
+  continueWatching: <ContinueWatchingCourse>[],
+  recentlyAdded: <RecentlyAddedCourse>[],
+  libraryCount: 0,
+);
 
 void main() {
   late _MockAuthRepository auth;
   late _MockInstanceRepository instance;
   late _MockLibraryRepository library;
+  late _MockHomeRepository home;
 
   setUp(() async {
     await resetInjector();
     auth = _MockAuthRepository();
     instance = _MockInstanceRepository();
     library = _MockLibraryRepository();
+    home = _MockHomeRepository();
     when(
       () => instance.getInstanceConfig(),
     ).thenAnswer((_) async => InstanceConfig.defaults);
+    when(home.fetchSummary).thenAnswer((_) async => _emptyHome);
     getIt
       ..registerFactory<AuthCubit>(() => AuthCubit(auth))
       ..registerLazySingleton<AuthRepository>(() => auth)
       ..registerLazySingleton<InstanceRepository>(() => instance)
-      ..registerLazySingleton<LibraryRepository>(() => library);
+      ..registerLazySingleton<LibraryRepository>(() => library)
+      ..registerFactory<HomeCubit>(() => HomeCubit(home));
   });
 
   tearDown(resetInjector);

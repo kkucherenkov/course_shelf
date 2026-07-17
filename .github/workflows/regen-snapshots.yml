@@ -84,7 +84,18 @@ jobs:
             echo "No baseline changes — nothing to commit."
           else
             git commit -m "chore(ui): regenerate Storybook visual snapshots from CI"
-            git push
+            # This job and `e2e` run in parallel and push to the same branch, so
+            # whoever lands second is rejected non-fast-forward and silently
+            # throws away a 20-minute capture (exit 128). Replay onto whatever
+            # arrived first — the two jobs stage disjoint paths
+            # (packages/ui/test/__snapshots__ vs tests/e2e), so this cannot conflict.
+            for attempt in 1 2 3; do
+              git pull --rebase origin "$GITHUB_REF_NAME" && git push && exit 0
+              echo "push attempt $attempt lost the race — retrying"
+              sleep 5
+            done
+            echo "::error::could not push regenerated baselines after 3 attempts"
+            exit 1
           fi
 
   e2e:
@@ -153,5 +164,13 @@ jobs:
             echo "No baseline changes — nothing to commit."
           else
             git commit -m "chore(e2e): regenerate Playwright visual baselines from CI"
-            git push
+            # See the storybook job — these two race on the same branch. Disjoint
+            # paths, so replaying onto the winner cannot conflict.
+            for attempt in 1 2 3; do
+              git pull --rebase origin "$GITHUB_REF_NAME" && git push && exit 0
+              echo "push attempt $attempt lost the race — retrying"
+              sleep 5
+            done
+            echo "::error::could not push regenerated baselines after 3 attempts"
+            exit 1
           fi

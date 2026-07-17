@@ -1,69 +1,61 @@
+import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:app_mobile/app/routes.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
-import 'package:app_mobile/features/auth/presentation/bloc/auth_state.dart';
-import 'package:app_mobile/features/auth/presentation/widgets/auth_banners.dart';
+import 'package:app_mobile/features/auth/presentation/bloc/sign_in_cubit.dart';
+import 'package:app_mobile/features/auth/presentation/bloc/sign_in_state.dart';
+import 'package:app_mobile/features/auth/presentation/widgets/auth_scaffold.dart';
+import 'package:app_mobile/features/auth/presentation/widgets/sso_providers.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
+import 'package:app_mobile/shared/di/injector.dart';
 
 /// Sign-in: email + password. Mirrors `apps/web` sign-in, and is the root of
 /// the unauthenticated stack (`cs-mobile-auth` renders it with `back={false}`).
-/// The final visual design lands in E18-F03-S01.
 ///
 /// Reads the app-level [AuthCubit] provided above the `Navigator` in `App`
 /// rather than creating its own — a private instance would authenticate a
-/// session [AuthGate] cannot see.
+/// session [AuthGate] cannot see. [SignInCubit] wraps it with the form state.
 class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => const _EmailSignInView();
+  Widget build(BuildContext context) {
+    return BlocProvider<SignInCubit>(
+      // AuthCubit comes from `context.read`, NOT from get_it: it is registered
+      // as a factory, so resolving it here would mint a second session and the
+      // gate would keep watching the first.
+      create: (_) => SignInCubit(
+        authCubit: context.read<AuthCubit>(),
+        instanceRepository: getIt(),
+      )..start(),
+      child: const _SignInView(),
+    );
+  }
 }
 
-class _EmailSignInView extends StatefulWidget {
-  const _EmailSignInView();
+class _SignInView extends StatelessWidget {
+  const _SignInView();
 
-  @override
-  State<_EmailSignInView> createState() => _EmailSignInViewState();
-}
-
-class _EmailSignInViewState extends State<_EmailSignInView> {
-  final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
-  bool _obscure = true;
-
-  /// Client-side validation message; takes precedence over the cubit's
-  /// server-side error until the next submit.
-  String? _localError;
-
-  @override
-  void dispose() {
-    _emailCtrl.dispose();
-    _passwordCtrl.dispose();
-    super.dispose();
+  /// Web formats the retry countdown as m:ss over a minute, else "{n}s".
+  String _formatRetry(int seconds) {
+    if (seconds >= 60) {
+      final m = seconds ~/ 60;
+      final s = seconds % 60;
+      return '$m:${s.toString().padLeft(2, '0')}';
+    }
+    return '${seconds}s';
   }
 
-  // Mirrors the web sign-in validation (email contains '@' & ≥5 chars;
-  // password ≥8) so the two platforms reject the same inputs.
-  bool _emailValid(String email) => email.contains('@') && email.length >= 5;
-  bool _passwordValid(String password) => password.length >= 8;
-
-  void _submit() {
+  String? _errorText(BuildContext context, SignInError error) {
     final t = context.t.auth.signIn;
-    final email = _emailCtrl.text.trim();
-    final password = _passwordCtrl.text;
-
-    if (!_emailValid(email)) {
-      setState(() => _localError = t.errorEmailInvalid);
-      return;
-    }
-    if (!_passwordValid(password)) {
-      setState(() => _localError = t.errorPasswordTooShort);
-      return;
-    }
-    setState(() => _localError = null);
-    context.read<AuthCubit>().signIn(email: email, password: password);
+    return switch (error) {
+      SignInError.emailInvalid => t.errorEmailInvalid,
+      SignInError.passwordTooShort => t.errorPasswordTooShort,
+      SignInError.invalidCredentials => t.errorInvalidCredentials,
+      SignInError.generic => t.errorInvalidCredentials,
+    };
   }
 
   @override
@@ -71,110 +63,190 @@ class _EmailSignInViewState extends State<_EmailSignInView> {
     final t = context.t.auth.signIn;
     final theme = Theme.of(context);
 
-    return BlocListener<AuthCubit, AuthState>(
-      listener: (context, state) {
-        if (state.status == AuthStatus.authenticated) {
-          // AuthGate rebuilds to the home stack; drop the pushed auth routes.
-          Navigator.popUntil(context, (route) => route.isFirst);
-        }
-      },
-      child: BlocBuilder<AuthCubit, AuthState>(
-        builder: (context, state) {
-          final isLoading = state.status == AuthStatus.authenticating;
-          // Local validation wins; otherwise surface a server-side failure.
-          final error = _localError ??
-              (state.status == AuthStatus.error
-                  ? t.errorInvalidCredentials
-                  : null);
+    return BlocBuilder<SignInCubit, SignInState>(
+      builder: (context, state) {
+        final cubit = context.read<SignInCubit>();
+        final error = state.errorMessage;
 
-          return Scaffold(
-            appBar: AppBar(),
-            body: SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+        return AuthScaffold(
+          // Root of the unauthenticated stack — nowhere to go back to.
+          showBack: false,
+          action: AppButton(
+            key: const ValueKey('signInSubmit'),
+            label: t.submit,
+            block: true,
+            loading: state.isPending,
+            // Web disables this while `!formValid`; mobile keeps it live and
+            // validates on submit — see SignInCubit for why.
+            disabled: state.isRateLimited,
+            iconTrailing: IconName.arrowRight,
+            onPressed: cubit.submit,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                t.eyebrow,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              Text(
+                t.title,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s2),
+              Text(
+                t.subtitle,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s6),
+
+              // Rate-limit wins over the generic error banner, as on web.
+              if (state.isRateLimited) ...[
+                AppBanner(
+                  key: const ValueKey('signInRateLimitBanner'),
+                  variant: AppFeedbackVariant.warning,
+                  body: t.errorRateLimit(
+                    time: _formatRetry(state.rateLimitSeconds ?? 0),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.s4),
+              ] else if (error != null) ...[
+                AppBanner(
+                  key: const ValueKey('signInErrorBanner'),
+                  variant: AppFeedbackVariant.error,
+                  body: _errorText(context, error),
+                ),
+                const SizedBox(height: AppSpacing.s4),
+              ],
+
+              AppTextField(
+                key: const ValueKey('signInEmailField'),
+                label: t.emailLabel,
+                value: state.email,
+                onChanged: cubit.setEmail,
+                type: AppTextFieldType.email,
+                placeholder: t.emailHint,
+                required: true,
+              ),
+              const SizedBox(height: AppSpacing.s4),
+              AppPasswordField(
+                key: const ValueKey('signInPasswordField'),
+                label: t.passwordLabel,
+                value: state.password,
+                onChanged: cubit.setPassword,
+                placeholder: t.passwordHint,
+                required: true,
+              ),
+              const SizedBox(height: AppSpacing.s4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: AppCheckbox(
+                      key: const ValueKey('signInKeepSignedIn'),
+                      value: state.keepSignedIn,
+                      label: t.keepSignedIn,
+                      onChanged: cubit.setKeepSignedIn,
+                    ),
+                  ),
+                  AppButton(
+                    key: const ValueKey('signInForgotLink'),
+                    label: t.forgotLink,
+                    variant: AppButtonVariant.ghost,
+                    size: AppButtonSize.sm,
+                    onPressed: () =>
+                        Navigator.pushNamed(context, AppRoutes.forgot),
+                  ),
+                ],
+              ),
+
+              // v1 ships `ssoProviders: []`, so this normally does not render.
+              if (state.config.ssoProviders.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.s5),
+                _Divider(label: context.t.auth.dividerOr),
+                const SizedBox(height: AppSpacing.s4),
+                AppSsoBlock(
+                  key: const ValueKey('signInSsoBlock'),
+                  providers: ssoProvidersFor(
+                    context,
+                    state.config.ssoProviders,
+                  ),
+                ),
+              ],
+
+              // Hidden when the instance has self-registration off.
+              if (state.config.selfRegistration) ...[
+                const SizedBox(height: AppSpacing.s5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      t.title,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    if (error != null) ...[
-                      AuthErrorBanner(message: error),
-                      const SizedBox(height: 16),
-                    ],
-                    TextField(
-                      key: const ValueKey('signInEmailField'),
-                      controller: _emailCtrl,
-                      keyboardType: TextInputType.emailAddress,
-                      autofillHints: const [AutofillHints.email],
-                      autocorrect: false,
-                      decoration: InputDecoration(
-                        labelText: t.emailLabel,
-                        hintText: t.emailHint,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      key: const ValueKey('signInPasswordField'),
-                      controller: _passwordCtrl,
-                      obscureText: _obscure,
-                      autofillHints: const [AutofillHints.password],
-                      decoration: InputDecoration(
-                        labelText: t.passwordLabel,
-                        hintText: t.passwordHint,
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscure
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                          ),
-                          onPressed: () =>
-                              setState(() => _obscure = !_obscure),
+                    Flexible(
+                      child: Text(
+                        t.noAccount,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 32),
-                    FilledButton(
-                      key: const ValueKey('signInSubmit'),
-                      onPressed: isLoading ? null : _submit,
-                      child: isLoading
-                          ? const SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(t.submit),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(t.noAccount),
-                        TextButton(
-                          key: const ValueKey('signInSignUpLink'),
-                          onPressed: isLoading
-                              ? null
-                              : () => Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.signUp,
-                                  ),
-                          child: Text(t.signUpLink),
-                        ),
-                      ],
+                    AppButton(
+                      key: const ValueKey('signInSignUpLink'),
+                      label: t.signUpLink,
+                      variant: AppButtonVariant.ghost,
+                      size: AppButtonSize.sm,
+                      onPressed: () =>
+                          Navigator.pushNamed(context, AppRoutes.signUp),
                     ),
                   ],
                 ),
+              ],
+
+              const SizedBox(height: AppSpacing.s4),
+              Text(
+                t.legalFootnote,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// "or" rule between the password form and the SSO block.
+class _Divider extends StatelessWidget {
+  const _Divider({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        const Expanded(child: Divider()),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
+          child: Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-          );
-        },
-      ),
+          ),
+        ),
+        const Expanded(child: Divider()),
+      ],
     );
   }
 }

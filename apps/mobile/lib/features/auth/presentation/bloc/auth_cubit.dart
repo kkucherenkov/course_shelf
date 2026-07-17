@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:app_mobile/features/auth/domain/auth_exception.dart';
 import 'package:app_mobile/features/auth/domain/auth_repository.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_state.dart';
 
@@ -34,19 +35,13 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signIn({required String email, required String password}) async {
     emit(state.copyWith(status: AuthStatus.authenticating, errorMessage: null));
     try {
       final user = await _repository.signIn(email: email, password: password);
       emit(AuthState(status: AuthStatus.authenticated, user: user));
     } on Object catch (e) {
-      emit(state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: e.toString(),
-      ));
+      emit(_errorStateFor(e));
     }
   }
 
@@ -64,11 +59,27 @@ class AuthCubit extends Cubit<AuthState> {
       );
       emit(AuthState(status: AuthStatus.authenticated, user: user));
     } on Object catch (e) {
-      emit(state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: e.toString(),
-      ));
+      emit(_errorStateFor(e));
     }
+  }
+
+  /// Keeps Better Auth's machine `code` and any `Retry-After` on the state when
+  /// the failure carried them, so screens can tell "wrong password" from "rate
+  /// limited" without parsing [AuthState.errorMessage].
+  AuthState _errorStateFor(Object error) {
+    if (error is AuthException) {
+      return state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: error.toString(),
+        errorCode: error.code,
+        retryAfterSeconds: error.retryAfterSeconds,
+        statusCode: error.statusCode,
+      );
+    }
+    return state.copyWith(
+      status: AuthStatus.error,
+      errorMessage: error.toString(),
+    );
   }
 
   Future<void> signOut() async {

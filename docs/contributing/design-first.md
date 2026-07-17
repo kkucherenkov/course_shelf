@@ -115,8 +115,8 @@ between macOS/Linux/Windows and a few-pixel size delta will fail every
 story. To regenerate after intentional design changes (or after env drift):
 
 1. Push your branch.
-2. Forgejo UI → **Actions** → "**Regenerate Storybook visual snapshots**" →
-   _Run workflow_ → pick the branch.
+2. GitHub UI → **Actions** → "**Regenerate visual snapshots**" →
+   _Run workflow_ → pick the branch (suite: `storybook`).
 3. The workflow drops the existing PNGs, captures fresh ones inside the
    Linux runner, and pushes a `chore(ui): regenerate Storybook visual
 snapshots from CI` commit back to the branch. CI re-runs and the

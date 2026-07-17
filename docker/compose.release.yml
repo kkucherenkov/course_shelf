@@ -1,7 +1,7 @@
 # Release deployment — pulls pre-built images from GitHub Container Registry.
 #
 # Usage:
-#   1. Download the artefacts attached to the GitHub/Forgejo release:
+#   1. Download the artefacts attached to the GitHub release:
 #        compose-release-vX.Y.Z.yml  (this file, with RELEASE_TAG pinned)
 #        .env.release.example
 #   2. Copy the env example to `.env` and fill the required values.
@@ -12,6 +12,12 @@
 # RELEASE_TAG defaults to `latest` when this file is committed; the release
 # workflow renders a per-tag copy where it points at the exact semver
 # (e.g. 0.2.0) and uploads that as a release asset.
+#
+# ⚠ The `${VAR:-default}` literals on the two `image:` lines below are
+# sed-rewritten verbatim by `.github/workflows/release.yml` ("Stage release
+# bundle" step) when it renders the bundle. Change a default here and you MUST
+# change the matching sed pattern there in the same commit — otherwise the sed
+# silently stops matching and the released compose ships unpinned.
 #
 # Layout mirrors compose.prod.yml — only the build sources are swapped for
 # pre-built images. centrifugo and proxy services run upstream images
@@ -86,7 +92,7 @@ services:
     networks: [cs-net]
 
   backend:
-    image: "${REGISTRY:-code.homelab.local}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-backend:${RELEASE_TAG:-latest}"
+    image: "${REGISTRY:-ghcr.io}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-backend:${RELEASE_TAG:-latest}"
     restart: unless-stopped
     depends_on:
       postgres: { condition: service_healthy }
@@ -120,7 +126,7 @@ services:
     networks: [cs-net]
 
   web:
-    image: "${REGISTRY:-code.homelab.local}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-web:${RELEASE_TAG:-latest}"
+    image: "${REGISTRY:-ghcr.io}/${REGISTRY_NAMESPACE:-kkucherenkov}/courseshelf-web:${RELEASE_TAG:-latest}"
     restart: unless-stopped
     depends_on:
       backend: { condition: service_started }

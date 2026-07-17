@@ -1,10 +1,9 @@
 name: Quality (on-demand)
 
-# GitHub-side twin of .forgejo/workflows/quality.yml — Storybook
-# visual-regression in the same jammy Playwright container the committed
-# baselines were captured in. The license check lives in ci.yml's security
-# job on this side (GitHub runners are free for public repos, so it can
-# afford to run per-push), leaving this workflow purely visual.
+# Storybook visual-regression in the same jammy Playwright container the
+# committed baselines were captured in. The license check lives in ci.yml's
+# security job (GitHub runners are free for public repos, so it can afford to
+# run per-push), leaving this workflow purely visual.
 
 # Runs on PRs. The nightly-only cadence was inherited from the Forgejo twin,
 # where minutes were paid and the runner was a shared homelab box. On GitHub

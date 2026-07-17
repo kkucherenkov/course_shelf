@@ -125,11 +125,7 @@ mirrored as GitHub issues titled `[<card-id>] <sub-step or title>`; each epic ha
 an umbrella issue titled `[<epic-id>] <name>`. The card is the source of truth —
 issues are stable URLs for cross-referencing.
 
-> The retired Forgejo mirror's `pnpm issues:sync|map|lookup` scripts target
-> `scripts/seed-forgejo-issues.ts` and do **not** touch GitHub. Do not use them
-> for GitHub bookkeeping — use `gh` (below).
-
-**Look up a card's issues (GitHub-native).** Filter by the `[<card-id>]` _prefix_
+**Look up a card's issues.** Filter by the `[<card-id>]` _prefix_
 — a plain search also returns other cards' issues that merely _mention_ the id in
 their title (e.g. `[E18-F03-S01] … (from E15-F01-S03)` is E18's, not E15's):
 

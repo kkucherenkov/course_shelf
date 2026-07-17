@@ -9,7 +9,6 @@ import 'package:app_mobile/features/player/presentation/bloc/player_event.dart';
 import 'package:app_mobile/features/player/presentation/bloc/player_state.dart';
 import 'package:app_mobile/features/player/presentation/widgets/player_settings_sheet.dart';
 import 'package:app_mobile/features/player/presentation/widgets/player_tab_panels.dart';
-import 'package:app_mobile/features/player/presentation/widgets/portrait_player_stage.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
 import 'package:app_mobile/shared/di/injector.dart';
 
@@ -152,6 +151,7 @@ class _LandscapePlayer extends StatelessWidget {
         child: AppPlayerChrome(
           state: _chromeState(state.status),
           sectionLabel: _sectionLabel(context, state),
+          // context defaults to mobileLandscape.
           lessonTitle: state.lesson?.title ?? '',
           position: state.position,
           duration: state.duration,
@@ -181,17 +181,6 @@ class _LandscapePlayer extends StatelessWidget {
       ),
     );
   }
-
-  /// [AppPlayerChrome] has no `loading` member — the screen is still resolving,
-  /// so `buffering` (its spinner state) is the honest mapping.
-  AppPlayerChromeState _chromeState(PlayerStatus status) => switch (status) {
-    PlayerStatus.loading || PlayerStatus.buffering =>
-      AppPlayerChromeState.buffering,
-    PlayerStatus.playing => AppPlayerChromeState.playing,
-    PlayerStatus.paused => AppPlayerChromeState.paused,
-    PlayerStatus.endOfLesson => AppPlayerChromeState.end,
-    PlayerStatus.error => AppPlayerChromeState.error,
-  };
 }
 
 // ── Portrait ────────────────────────────────────────────────────────────────
@@ -212,15 +201,35 @@ class _PortraitPlayer extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             _PortraitHeader(state: state),
-            PortraitPlayerStage(
-              state: state,
+            // The embedded 16:9 stage: the same catalog [AppPlayerChrome] the
+            // landscape path uses, switched to its portrait context. Landscape
+            // rotation swaps to the immersive 19:9 context via `onFullscreen`.
+            AppPlayerChrome(
+              context: AppPlayerChromeContext.portrait,
+              state: _chromeState(state.status),
+              sectionLabel: _sectionLabel(context, state),
+              lessonTitle: state.lesson?.title ?? '',
+              position: state.position,
+              duration: state.duration,
               videoSlot: _VideoSurface(state: state),
+              bufferedFraction: state.bufferedFraction,
+              bookmarkFractions: state.bookmarkFractions,
+              isMuted: state.isMuted,
+              speedLabel: '${state.speed}×',
+              errorMessage: context.t.player.streamError,
+              lockedMessage: context.t.player.noAccessBody,
+              retryLabel: context.t.player.retry,
+              stayLabel: context.t.player.stayHere,
+              playNextLabel: context.t.player.playNext,
               onPlayPause: () => bloc.add(const PlayerPlayPausePressed()),
-              onSeekFraction: (double fraction) =>
+              onSeek: (double fraction) =>
                   bloc.add(PlayerSeekRequested(state.duration * fraction)),
+              onVolumeTap: () => bloc.add(const PlayerMuteToggled()),
+              onSpeedTap: () => bloc.add(const PlayerSpeedChanged()),
+              onSettingsTap: () => _openSettings(context, state),
+              onToggleFullscreen: onFullscreen,
               onRetry: () => bloc.add(const PlayerRetryRequested()),
-              onFullscreen: onFullscreen,
-              onSettings: () => _openSettings(context, state),
+              onStay: () => bloc.add(const PlayerPlayPausePressed()),
             ),
             if (state.watchingOffline) const _OfflineIndicator(),
             _PortraitTabs(state: state),
@@ -437,6 +446,19 @@ class _VideoSurface extends StatelessWidget {
   Widget build(BuildContext context) =>
       context.read<PlayerBloc>().buildVideoSurface();
 }
+
+/// [AppPlayerChrome] has no `loading` member — the screen is still resolving,
+/// so `buffering` (its spinner state) is the honest mapping. Shared by both
+/// orientations so the portrait and landscape chrome read the bloc's status
+/// identically.
+AppPlayerChromeState _chromeState(PlayerStatus status) => switch (status) {
+  PlayerStatus.loading || PlayerStatus.buffering =>
+    AppPlayerChromeState.buffering,
+  PlayerStatus.playing => AppPlayerChromeState.playing,
+  PlayerStatus.paused => AppPlayerChromeState.paused,
+  PlayerStatus.endOfLesson => AppPlayerChromeState.end,
+  PlayerStatus.error => AppPlayerChromeState.error,
+};
 
 String _sectionLabel(BuildContext context, PlayerState state) {
   final String? sectionId = state.lesson?.sectionId;

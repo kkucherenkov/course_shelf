@@ -36,7 +36,7 @@
 <template>
   <div
     v-if="!loading"
-    class="course-compact-row"
+    class="app-course-compact-row"
     tabindex="0"
     role="button"
     :aria-label="course.title"
@@ -44,24 +44,24 @@
     @keydown="handleActivate"
   >
     <!-- thumb: accent block, no glyph -->
-    <div class="course-compact-row__thumb" :style="thumbStyle" aria-hidden="true" />
+    <div class="app-course-compact-row__thumb" :style="thumbStyle" aria-hidden="true" />
 
     <!-- title -->
-    <p class="course-compact-row__title">
+    <p class="app-course-compact-row__title">
       {{ course.title }}
     </p>
 
     <!-- progress bar -->
-    <div class="course-compact-row__bar" aria-hidden="true">
-      <div class="course-compact-row__bar-fill" :style="{ width: `${pct}%` }" />
+    <div class="app-course-compact-row__bar" aria-hidden="true">
+      <div class="app-course-compact-row__bar-fill" :style="{ width: `${pct}%` }" />
     </div>
 
     <!-- pct label -->
-    <span class="course-compact-row__pct">{{ pct }}%</span>
+    <span class="app-course-compact-row__pct">{{ pct }}%</span>
   </div>
 
   <!-- loading skeleton -->
-  <div v-else class="course-compact-row course-compact-row--loading" aria-hidden="true">
+  <div v-else class="app-course-compact-row app-course-compact-row--loading" aria-hidden="true">
     <AppSkeleton width="32px" height="32px" radius="sm" />
     <AppSkeleton width="120px" height="0.875em" radius="sm" />
     <AppSkeleton width="48px" height="0.75em" radius="sm" />
@@ -72,7 +72,7 @@
   // Progress-bar thickness — a hairline that sits between --space steps.
   $bar-height: 3px;
 
-  .course-compact-row {
+  .app-course-compact-row {
     display: flex;
     align-items: center;
     gap: var(--space-2);

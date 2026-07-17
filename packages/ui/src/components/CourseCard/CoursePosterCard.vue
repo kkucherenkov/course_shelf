@@ -37,52 +37,61 @@
 <template>
   <div
     v-if="!loading"
-    class="course-poster-card"
+    class="app-course-poster-card"
     v-bind="interactiveAttrs"
     @click="handleActivate"
     @keydown="handleActivate"
   >
-    <div class="course-poster-card__cover" :style="coverStyle">
-      <span class="course-poster-card__initials" aria-hidden="true">{{ coverInitials }}</span>
-      <div class="course-poster-card__overlay" aria-hidden="true" />
+    <div class="app-course-poster-card__cover" :style="coverStyle">
+      <span class="app-course-poster-card__initials" aria-hidden="true">{{ coverInitials }}</span>
+      <div class="app-course-poster-card__overlay" aria-hidden="true" />
 
       <!-- completed badge -->
       <div
         v-if="realState === 'completed'"
-        class="course-poster-card__badge course-poster-card__badge--completed"
+        class="app-course-poster-card__badge app-course-poster-card__badge--completed"
         aria-hidden="true"
       >
         <IconCS name="check" :size="16" />
       </div>
 
       <!-- locked scrim -->
-      <div v-else-if="realState === 'locked'" class="course-poster-card__scrim" aria-hidden="true">
+      <div
+        v-else-if="realState === 'locked'"
+        class="app-course-poster-card__scrim"
+        aria-hidden="true"
+      >
         <IconCS name="lock" :size="20" />
       </div>
 
       <!-- progress strip -->
-      <div v-else class="course-poster-card__strip" aria-hidden="true">
-        <div class="course-poster-card__strip-fill" :style="{ width: `${pct}%` }" />
+      <div v-else class="app-course-poster-card__strip" aria-hidden="true">
+        <div class="app-course-poster-card__strip-fill" :style="{ width: `${pct}%` }" />
       </div>
     </div>
 
-    <div class="course-poster-card__body">
-      <p class="course-poster-card__title">
+    <div class="app-course-poster-card__body">
+      <p class="app-course-poster-card__title">
         {{ course.title }}
       </p>
-      <p v-if="course.instructor" class="course-poster-card__instructor">
+      <p v-if="course.instructor" class="app-course-poster-card__instructor">
         {{ course.instructor }}
       </p>
     </div>
   </div>
 
   <!-- loading skeleton -->
-  <div v-else class="course-poster-card course-poster-card--loading" aria-hidden="true">
-    <AppSkeleton class="course-poster-card__cover-skeleton" width="100%" height="0" radius="md" />
-    <div class="course-poster-card__body">
+  <div v-else class="app-course-poster-card app-course-poster-card--loading" aria-hidden="true">
+    <AppSkeleton
+      class="app-course-poster-card__cover-skeleton"
+      width="100%"
+      height="0"
+      radius="md"
+    />
+    <div class="app-course-poster-card__body">
       <AppSkeleton width="80%" height="1em" radius="sm" />
       <AppSkeleton
-        class="course-poster-card__skeleton-instructor"
+        class="app-course-poster-card__skeleton-instructor"
         width="55%"
         height="0.875em"
         radius="sm"
@@ -102,7 +111,7 @@
   $z-initials: 1;
   $z-cover-top: 2;
 
-  .course-poster-card {
+  .app-course-poster-card {
     display: flex;
     flex-direction: column;
     border-radius: var(--radius-md);

@@ -404,7 +404,7 @@ const captures: Capture[] = [
     url: '/',
     session: userSession,
     mocks: mockHome,
-    waitFor: '.page-home .course-wide-card',
+    waitFor: '.page-home .app-course-wide-card',
     settleMs: 600,
   },
   {

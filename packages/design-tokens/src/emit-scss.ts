@@ -128,6 +128,14 @@ export function emitScss(tokens: TokenBundle): string {
     sections.push(`  --opacity-${kebab(key)}: ${leaf.$value.toString()};`);
   }
 
+  // Media-surface colours live under `:root` only — they must NOT be re-emitted per
+  // theme like `color.*`. Video is dark in every theme, so text and controls drawn on
+  // top of it stay white even in light mode; a themed variant would hide them.
+  for (const [key, leaf] of Object.entries(tokens.media.media)) {
+    if (key.startsWith('$')) continue;
+    sections.push(`  --media-${kebab(key)}: ${leaf.$value.toString()};`);
+  }
+
   for (const [roleKey, role] of Object.entries(tokens.typography.typography.role)) {
     if (roleKey.startsWith('$')) continue;
     const size = tokens.typography.typography.font.size[role.size]?.$value ?? '';

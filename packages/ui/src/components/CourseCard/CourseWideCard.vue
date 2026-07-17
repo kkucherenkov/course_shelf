@@ -148,7 +148,7 @@
       font-family: var(--font-sans);
       font-size: var(--text-lg);
       font-weight: var(--fw-bold);
-      color: rgba(255, 255, 255, 0.85);
+      color: var(--media-fg-secondary);
       letter-spacing: var(--tracking-wide);
       line-height: 1;
       pointer-events: none;
@@ -158,7 +158,7 @@
     &__overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.4) 100%);
+      background: linear-gradient(180deg, transparent 50%, var(--media-scrim-soft) 100%);
       z-index: $z-cover-overlay;
       pointer-events: none;
     }
@@ -169,7 +169,7 @@
       left: 0;
       right: 0;
       height: $strip-height;
-      background: rgba(255, 255, 255, 0.25);
+      background: var(--media-track-cover);
       z-index: $z-strip;
     }
 

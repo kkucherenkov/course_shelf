@@ -89,6 +89,7 @@ class _AppNavigationShellState extends State<AppNavigationShell> {
                         ? (widget.title ?? widget.tabs[i].label)
                         : widget.tabs[i].label,
                     body: widget.tabs[i].body,
+                    onRefresh: widget.tabs[i].onRefresh,
                   )
                 // Lazy first build: an unvisited tab is a zero-cost
                 // placeholder until [currentIndex] reaches it, at which
@@ -120,11 +121,13 @@ class _TabScrollView extends StatelessWidget {
     required this.isIOS,
     required this.title,
     required this.body,
+    this.onRefresh,
   });
 
   final bool isIOS;
   final String title;
   final Widget body;
+  final Future<void> Function()? onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -146,35 +149,52 @@ class _TabScrollView extends StatelessWidget {
           color: cs.onSurface,
         );
 
+    final Widget scrollView = CustomScrollView(
+      // A tab with pull-to-refresh must stay draggable even when its body is
+      // shorter than the viewport (an empty Home still has to be refreshable),
+      // so the scroll physics have to be always-scrollable. Without this the
+      // gesture is swallowed on exactly the states that most need a retry.
+      physics: onRefresh == null
+          ? null
+          : const AlwaysScrollableScrollPhysics(),
+      slivers: <Widget>[
+        if (isIOS)
+          CupertinoSliverNavigationBar(
+            largeTitle: Text(title, style: largeTitleStyle),
+            middle: Text(title, style: middleTitleStyle),
+            backgroundColor: cs.surface,
+            border: Border(bottom: BorderSide(color: cs.outline)),
+            // The shell is a tab root, not a pushed route — no back
+            // chevron.
+            automaticallyImplyLeading: false,
+            // Several tab scroll views can be mounted at once (lazy-built,
+            // then kept alive by the IndexedStack); disable hero-based
+            // route transitions so multiple same-tag nav bars never
+            // collide mid-transition. Tab switching is owned by
+            // IndexedStack, not Navigator push/pop, so no transition is
+            // needed anyway.
+            transitionBetweenRoutes: false,
+          )
+        else
+          SliverAppBar.large(
+            title: Text(title),
+            automaticallyImplyLeading: false,
+          ),
+        // iOS pulls to refresh with a sliver INSIDE the scroll view; Android
+        // wraps the scroll view from OUTSIDE (below). Two different insertion
+        // points, not a style swap — which is why the shell owns the choice
+        // and the caller only supplies the callback.
+        if (isIOS && onRefresh != null)
+          CupertinoSliverRefreshControl(onRefresh: onRefresh),
+        SliverToBoxAdapter(child: body),
+      ],
+    );
+
     return SafeArea(
       bottom: false,
-      child: CustomScrollView(
-        slivers: <Widget>[
-          if (isIOS)
-            CupertinoSliverNavigationBar(
-              largeTitle: Text(title, style: largeTitleStyle),
-              middle: Text(title, style: middleTitleStyle),
-              backgroundColor: cs.surface,
-              border: Border(bottom: BorderSide(color: cs.outline)),
-              // The shell is a tab root, not a pushed route — no back
-              // chevron.
-              automaticallyImplyLeading: false,
-              // Several tab scroll views can be mounted at once (lazy-built,
-              // then kept alive by the IndexedStack); disable hero-based
-              // route transitions so multiple same-tag nav bars never
-              // collide mid-transition. Tab switching is owned by
-              // IndexedStack, not Navigator push/pop, so no transition is
-              // needed anyway.
-              transitionBetweenRoutes: false,
-            )
-          else
-            SliverAppBar.large(
-              title: Text(title),
-              automaticallyImplyLeading: false,
-            ),
-          SliverToBoxAdapter(child: body),
-        ],
-      ),
+      child: (!isIOS && onRefresh != null)
+          ? RefreshIndicator(onRefresh: onRefresh!, child: scrollView)
+          : scrollView,
     );
   }
 }

@@ -28,14 +28,6 @@ abstract final class _OnVideo {
   /// The state-overlay `Icon ... size={28}` (alert / lock glyph).
   static const double stateIconSize = 28;
 
-  /// `.pc-state-overlay { background: rgba(0,0,0,0.4) }` — equal to
-  /// [AppOpacity.overlay]; named here for readability at each call site.
-  static const double scrimAlpha = AppOpacity.overlay;
-
-  /// `.pc-end-banner { background: rgba(0,0,0,0.55) }` — doesn't land on
-  /// any [AppOpacity] step.
-  static const double endScrimAlpha = 0.55;
-
   /// `.pc-btn:hover { background: rgba(255,255,255,.15) }` — the on-video
   /// hover/press fill [_OnVideoChrome] substitutes for
   /// `AppSemanticColors.raised` so ghost [AppIconButton]s read correctly
@@ -104,8 +96,9 @@ class _VideoPlaceholder extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          // Web: `linear-gradient(135deg, #1a1d22, #0a0c10)`.
-          colors: <Color>[Color(0xFF1A1D22), Color(0xFF0A0C10)],
+          // Web: `linear-gradient(135deg, var(--media-placeholder-from),
+          // var(--media-placeholder-to))`.
+          colors: <Color>[AppMedia.placeholderFrom, AppMedia.placeholderTo],
         ),
       ),
     );
@@ -392,7 +385,8 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
       child: AspectRatio(
         aspectRatio: AppPlayerChrome.aspectRatio,
         child: ColoredBox(
-          color: Colors.black,
+          // `media.stage` (#000) — the video plane behind the letterbox.
+          color: AppMedia.stage,
           child: Stack(
             fit: StackFit.expand,
             children: <Widget>[
@@ -505,7 +499,8 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
           color: Colors.white,
         );
     return ColoredBox(
-      color: Colors.black.withValues(alpha: _OnVideo.scrimAlpha),
+      // `.pc-state-overlay { background: var(--media-scrim-soft) }`.
+      color: AppMedia.scrimSoft,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -538,7 +533,8 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
           color: Colors.white,
         );
     return ColoredBox(
-      color: Colors.black.withValues(alpha: _OnVideo.scrimAlpha),
+      // `.pc-state-overlay { background: var(--media-scrim-soft) }`.
+      color: AppMedia.scrimSoft,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -573,7 +569,8 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
           color: Colors.white,
         );
     return ColoredBox(
-      color: Colors.black.withValues(alpha: _OnVideo.endScrimAlpha),
+      // `.pc-end-banner { background: var(--media-scrim-medium) }`.
+      color: AppMedia.scrimMedium,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

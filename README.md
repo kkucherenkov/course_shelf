@@ -9,7 +9,7 @@
 [![Node >=24](https://img.shields.io/badge/Node-%E2%89%A524-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![pnpm >=10](https://img.shields.io/badge/pnpm-%E2%89%A510-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
 
-> **Mirror notice** — development happens on a self-hosted Forgejo; github.com/kkucherenkov/course_shelf is a read-only push mirror. Issues and pull requests opened here are not monitored, and branches may be force-updated by the mirror sync. Release images are published both to the private homelab registry and publicly to `ghcr.io/kkucherenkov/courseshelf-{backend,web}`.
+> Release images are published to `ghcr.io/kkucherenkov/courseshelf-{backend,web}` — see [`docs/deployment.md`](docs/deployment.md).
 
 ---
 

@@ -6,10 +6,18 @@ name: Quality (on-demand)
 # job on this side (GitHub runners are free for public repos, so it can
 # afford to run per-push), leaving this workflow purely visual.
 
+# Runs on PRs. The nightly-only cadence was inherited from the Forgejo twin,
+# where minutes were paid and the runner was a shared homelab box. On GitHub
+# this repo is public, so minutes are free and this job takes ~3 minutes — and
+# nightly-only meant nothing looked at a pixel until after merge. That is how
+# `AppIcon` shipped rendering at 2-4x its intended size, how `AuthLayout`
+# shipped with no padding, and how bundling IBM Plex (7eb328d) silently
+# reflowed every page and sat red for two days, attributable to no PR.
 on:
+  pull_request:
   workflow_dispatch:
   schedule:
-    # Nightly at 03:30 UTC — after the e2e nightly, same as the Forgejo twin.
+    # Keep the nightly: it also catches drift from the base image, not just our diffs.
     - cron: "30 3 * * *"
 
 concurrency:

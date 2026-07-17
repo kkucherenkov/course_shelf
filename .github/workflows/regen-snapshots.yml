@@ -77,6 +77,13 @@ jobs:
 
       - name: Commit regenerated baselines
         run: |
+          # This job runs inside the playwright container, where the checkout is
+          # owned by a different uid than the process. Git's dubious-ownership
+          # guard then refuses to treat the workspace as a repo at all, so even
+          # `git config` dies with "fatal: not in a git directory" — the failure
+          # this workflow hit on its first real run. The e2e job below needs no
+          # such line because it runs directly on the runner.
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add packages/ui/test/__snapshots__
@@ -84,7 +91,18 @@ jobs:
             echo "No baseline changes — nothing to commit."
           else
             git commit -m "chore(ui): regenerate Storybook visual snapshots from CI"
-            git push
+            # This job and `e2e` run in parallel and push to the same branch, so
+            # whoever lands second is rejected non-fast-forward and silently
+            # throws away a 20-minute capture (exit 128). Replay onto whatever
+            # arrived first — the two jobs stage disjoint paths
+            # (packages/ui/test/__snapshots__ vs tests/e2e), so this cannot conflict.
+            for attempt in 1 2 3; do
+              git pull --rebase origin "$GITHUB_REF_NAME" && git push && exit 0
+              echo "push attempt $attempt lost the race — retrying"
+              sleep 5
+            done
+            echo "::error::could not push regenerated baselines after 3 attempts"
+            exit 1
           fi
 
   e2e:
@@ -153,5 +171,13 @@ jobs:
             echo "No baseline changes — nothing to commit."
           else
             git commit -m "chore(e2e): regenerate Playwright visual baselines from CI"
-            git push
+            # See the storybook job — these two race on the same branch. Disjoint
+            # paths, so replaying onto the winner cannot conflict.
+            for attempt in 1 2 3; do
+              git pull --rebase origin "$GITHUB_REF_NAME" && git push && exit 0
+              echo "push attempt $attempt lost the race — retrying"
+              sleep 5
+            done
+            echo "::error::could not push regenerated baselines after 3 attempts"
+            exit 1
           fi

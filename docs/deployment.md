@@ -3,7 +3,7 @@
 Two deployment paths are supported:
 
 1. **Pull a tagged release** (recommended). Download the artefact bundle
-   from the Forgejo Releases page, fill in `.env`, run
+   from the GitHub Releases page, fill in `.env`, run
    `docker compose pull && up -d`. No clone, no build — you only need a
    host with Docker.
 2. **Build from source**. Clone the repo, build images locally with
@@ -49,41 +49,18 @@ table in `.claude/CLAUDE.md`.
 
 ## Path 1 — pull a tagged release
 
-### Prerequisite: trust the registry on the deploy host
-
-Release images live on the homelab Forgejo registry at
-`code.homelab.local`, which is served over **plain HTTP** (Forgejo's
-`ROOT_URL` is `http://…`). The runner's dind already trusts it; the
-**deploy host** (the NAS where Dockge runs) is a separate daemon and
-must be told to trust it too. Add the registry to the host daemon's
-insecure list and restart docker:
-
-```jsonc
-// /etc/docker/daemon.json  (Synology: /var/packages/ContainerManager/etc/dockerd.json)
-{ "insecure-registries": ["code.homelab.local"] }
-```
-
-Then `sudo systemctl restart docker` (or restart the NAS docker
-package). Verify with
-`docker pull code.homelab.local/<owner>/courseshelf-backend:latest` — a
-clean pull (no `http: server gave HTTP response to HTTPS client`) means
-the host trusts the registry.
-
-> If you later put `code.homelab.local` behind Caddy with TLS (and route
-> `/v2/` to Forgejo), drop the `insecure-registries` entry — pulls then
-> work over HTTPS with no host change.
-
-If the packages are private on your Forgejo instance, also run
-`docker login code.homelab.local` once with a token that has
-`read:package`.
+Release images live on **GitHub Container Registry**
+(`ghcr.io/kkucherenkov/courseshelf-{backend,web}`) and are public — they
+pull over HTTPS with no `docker login` and no daemon configuration on the
+deploy host.
 
 ### Manual (docker compose)
 
-Open `http://code.homelab.local/<owner>/course_shelf/releases`, pick the
+Open `https://github.com/kkucherenkov/course_shelf/releases`, pick the
 release you want, and grab `courseshelf-release-vX.Y.Z.tar.gz`.
 
 ```sh
-curl -LO http://code.homelab.local/<owner>/course_shelf/releases/download/vX.Y.Z-release/courseshelf-release-vX.Y.Z.tar.gz
+curl -LO https://github.com/kkucherenkov/course_shelf/releases/download/vX.Y.Z-release/courseshelf-release-vX.Y.Z.tar.gz
 tar xzf courseshelf-release-vX.Y.Z.tar.gz
 # The bundle contains compose.yml + nginx-prod.conf (bind-mounted by the
 # proxy service) + .env.example + CHANGELOG.md + README.md. Don't move
@@ -111,29 +88,27 @@ it stores each stack under `/opt/stacks/<name>/` and runs
 build images, so it consumes the pre-built release images exactly like
 the manual path above.
 
-1. Complete the **registry-trust prerequisite** above on the NAS host —
-   Dockge shares that daemon, so without it every deploy fails at pull.
-2. In Dockge, **+ Compose** → name the stack `courseshelf`. Paste the
+1. In Dockge, **+ Compose** → name the stack `courseshelf`. Paste the
    contents of `docker/compose.release.yml` (or the pinned
    `compose-release-vX.Y.Z.yml` from the release bundle) into the editor.
-3. Add the bind-mounted proxy config as a second file in the stack:
+2. Add the bind-mounted proxy config as a second file in the stack:
    create `nginx-prod.conf` next to `compose.yml` (copy of
    `docker/nginx/prod.conf`) — the `proxy` service mounts it via
    `./nginx-prod.conf`.
-4. Fill the stack's **`.env`** from `.env.release.example`. Key values:
+3. Fill the stack's **`.env`** from `.env.release.example`. Key values:
 
    | Variable             | Value                                                                                           |
    | -------------------- | ----------------------------------------------------------------------------------------------- |
-   | `REGISTRY`           | `code.homelab.local`                                                                            |
+   | `REGISTRY`           | `ghcr.io`                                                                                       |
    | `REGISTRY_NAMESPACE` | `<owner>` (e.g. `kkucherenkov`)                                                                 |
    | `RELEASE_TAG`        | the version to run, e.g. `0.2.0`                                                                |
    | `PUBLIC_BASE_URL`    | how browsers reach the proxy, e.g. `http://<nas-ip>:8080`                                       |
    | `COURSES_PATH`       | host directory with your courses                                                                |
    | secrets              | `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `CENTRIFUGO_API_KEY`, `CENTRIFUGO_TOKEN_HMAC_SECRET` |
 
-5. **Deploy**. Dockge runs `docker compose pull && up -d`; Prisma
+4. **Deploy**. Dockge runs `docker compose pull && up -d`; Prisma
    migrations apply automatically in the backend entrypoint.
-6. **Update to a new release**: edit `RELEASE_TAG` in the stack's `.env`
+5. **Update to a new release**: edit `RELEASE_TAG` in the stack's `.env`
    → **Pull** → **Up** (or the restart action) in the Dockge UI. Roll
    back by setting the previous tag and pulling again — image tags are
    immutable, so `0.2.0` always resolves to the same build.

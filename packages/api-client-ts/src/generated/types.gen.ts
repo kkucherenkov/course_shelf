@@ -1164,6 +1164,24 @@ export type CourseProgress = {
 };
 
 /**
+ * Aggregate download size for a course — the sum of Lesson.sizeBytes across the lessons the requester can access. Feeds the mobile course-detail "Download course · <size>" CTA. Per-lesson download state is client-side; this reports only the byte total and the number of lessons it spans.
+ */
+export type CourseDownloadEstimateDto = {
+    /**
+     * Server-generated cuid of the course this estimate is for.
+     */
+    courseId: string;
+    /**
+     * Sum of Lesson.sizeBytes (bytes) across all accessible lessons in the course.
+     */
+    totalBytes: number;
+    /**
+     * Number of lessons included in the byte sum.
+     */
+    lessonCount: number;
+};
+
+/**
  * URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens; cannot start or end with a hyphen. Unique within a library.
  */
 export type CourseSlug = string;
@@ -2870,6 +2888,44 @@ export type GetCourseOutlineResponses = {
 };
 
 export type GetCourseOutlineResponse = GetCourseOutlineResponses[keyof GetCourseOutlineResponses];
+
+export type GetCourseDownloadEstimateData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the course.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/courses/{id}/download-estimate';
+};
+
+export type GetCourseDownloadEstimateErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have a READ grant for the course's library
+     */
+    403: Problem;
+    /**
+     * Course not found
+     */
+    404: Problem;
+};
+
+export type GetCourseDownloadEstimateError = GetCourseDownloadEstimateErrors[keyof GetCourseDownloadEstimateErrors];
+
+export type GetCourseDownloadEstimateResponses = {
+    /**
+     * Download estimate returned
+     */
+    200: CourseDownloadEstimateDto;
+};
+
+export type GetCourseDownloadEstimateResponse = GetCourseDownloadEstimateResponses[keyof GetCourseDownloadEstimateResponses];
 
 export type MarkCourseCompleteData = {
     body?: never;

@@ -51,6 +51,7 @@ export 'package:app_api_client/src/model/bookmark_dto.dart';
 export 'package:app_api_client/src/model/bookmark_list_dto.dart';
 export 'package:app_api_client/src/model/continue_watching_dto.dart';
 export 'package:app_api_client/src/model/continue_watching_item.dart';
+export 'package:app_api_client/src/model/course_download_estimate_dto.dart';
 export 'package:app_api_client/src/model/course_dto.dart';
 export 'package:app_api_client/src/model/course_level.dart';
 export 'package:app_api_client/src/model/course_list_dto.dart';

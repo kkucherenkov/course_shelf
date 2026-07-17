@@ -101,11 +101,18 @@
 </template>
 
 <style lang="scss" scoped>
+  // Chip metrics sit between --space-* steps (4/8/12…), so they are named
+  // SCSS variables holding the same literals.
+  $chip-gap: 6px;
+  $chip-height-sm: 18px;
+  $chip-height-md: 22px;
+  $chip-height-lg: 28px;
+
   .app-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    height: 22px;
+    gap: $chip-gap;
+    height: $chip-height-md;
     padding: 0 var(--space-2);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-pill);
@@ -113,7 +120,7 @@
     color: var(--text-fg);
     font-family: var(--font-sans);
     font-weight: var(--fw-medium);
-    font-size: 12px;
+    font-size: var(--text-sm);
     line-height: var(--leading-snug);
     text-decoration: none;
     cursor: pointer;
@@ -148,8 +155,10 @@
       cursor: pointer;
       transition: background-color var(--dur-fast) var(--ease-default);
 
+      // Was rgba(0, 0, 0, 0.08): a theme-blind tint that all but vanished on
+      // the dark palette. --surface-raised is the library's hover fill.
       &:hover {
-        background-color: rgba(0, 0, 0, 0.08);
+        background-color: var(--surface-raised);
       }
 
       &:focus-visible {
@@ -160,19 +169,19 @@
 
     /* ----- sizes ----- */
     &--sm {
-      height: 18px;
+      height: $chip-height-sm;
       padding: 0 var(--space-1);
       font-size: var(--text-xs);
     }
 
     &--md {
-      height: 22px;
+      height: $chip-height-md;
       padding: 0 var(--space-2);
-      font-size: 12px;
+      font-size: var(--text-sm);
     }
 
     &--lg {
-      height: 28px;
+      height: $chip-height-lg;
       padding: 0 var(--space-3);
       font-size: var(--text-md);
     }

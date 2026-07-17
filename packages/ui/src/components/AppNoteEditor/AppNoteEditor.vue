@@ -320,6 +320,17 @@
   //   --error       → --status-error-fg
   //   --warning     → --status-warning-fg
   //   --d-fast      → --dur-fast
+  // These metrics fall between --space-* steps (4/8/12/16/24), so they are
+  // named SCSS variables holding the same literals.
+  $toolbar-inset: 6px;
+  $tool-size: 28px;
+  $toggle-pad-inline: 10px;
+  $body-min-height: 120px;
+  $sync-gap: 6px;
+  $sync-pad-block: 6px;
+  $sync-pad-inline: 10px;
+  $retry-height: 22px;
+
   .app-note-editor {
     background: var(--surface-surface);
     border: 1px solid var(--border-default);
@@ -331,7 +342,7 @@
       display: flex;
       gap: var(--space-1);
       align-items: center;
-      padding: 6px;
+      padding: $toolbar-inset;
       border-bottom: 1px solid var(--border-default);
       transition: opacity var(--dur-fast);
     }
@@ -342,8 +353,8 @@
     }
 
     &__tool {
-      width: 28px;
-      height: 28px;
+      width: $tool-size;
+      height: $tool-size;
       border-radius: var(--radius-sm);
       display: grid;
       place-items: center;
@@ -373,8 +384,8 @@
     }
 
     &__toggle {
-      padding: 0 10px;
-      height: 28px;
+      padding: 0 $toggle-pad-inline;
+      height: $tool-size;
       border-radius: var(--radius-sm);
       background: transparent;
       border: 0;
@@ -394,7 +405,7 @@
 
     &__body {
       padding: var(--space-3);
-      min-height: 120px;
+      min-height: $body-min-height;
       font-size: var(--text-sm);
       line-height: 20px;
       color: var(--text-fg);
@@ -450,8 +461,8 @@
     &__sync {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
+      gap: $sync-gap;
+      padding: $sync-pad-block $sync-pad-inline;
       border-top: 1px solid var(--border-default);
       font-size: var(--text-xs);
       color: var(--text-secondary);
@@ -478,7 +489,7 @@
     &__retry {
       margin-left: auto;
       padding: 0 var(--space-2);
-      height: 22px;
+      height: $retry-height;
       border-radius: var(--radius-sm);
       background: transparent;
       border: 0;

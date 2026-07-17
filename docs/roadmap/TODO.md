@@ -6,7 +6,7 @@ Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
 
-Progress: `102 / 121` complete (update by hand or via a pre-commit hook).
+Progress: `104 / 121` complete (update by hand or via a pre-commit hook).
 
 ## E00 — Stage the design bundle
 
@@ -151,8 +151,8 @@ Progress: `102 / 121` complete (update by hand or via a pre-commit hook).
 - [x] [E17-F02-S07](./tasks/E17-F02-S07.md) `A` — NavigationShell (mobile — bottom tab bar with 5 tabs) · ⇐ E17-F01-S01
 - [x] [E17-F02-S08](./tasks/E17-F02-S08.md) `A` — PasswordField (Flutter) — visibility toggle + strength meter · ⇐ E17-F01-S01, E17-F01-S03
 - [x] [E17-F02-S09](./tasks/E17-F02-S09.md) `A` — SsoBlock (Flutter) — provider button list · ⇐ E17-F01-S02, E17-F01-S01
-- [ ] [E17-F02-S10](./tasks/E17-F02-S10.md) `A` — AppBookmarkList (Flutter) — bookmark list with edit/delete · ⇐ E17-F02-S04
-- [ ] [E17-F02-S11](./tasks/E17-F02-S11.md) `A` — AppSectionHeader (Flutter) — collapsible section header · ⇐ E17-F02-S02
+- [x] [E17-F02-S10](./tasks/E17-F02-S10.md) `A` — AppBookmarkList (Flutter) — bookmark list with edit/delete · ⇐ E17-F02-S04
+- [x] [E17-F02-S11](./tasks/E17-F02-S11.md) `A` — AppSectionHeader (Flutter) — collapsible section header · ⇐ E17-F02-S02
 
 ## E18 — Mobile features
 

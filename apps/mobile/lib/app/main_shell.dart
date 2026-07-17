@@ -2,11 +2,14 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:app_mobile/features/browse/presentation/bloc/browse_cubit.dart';
 import 'package:app_mobile/features/browse/presentation/browse_screen.dart';
 import 'package:app_mobile/features/downloads/presentation/downloads_screen.dart';
 import 'package:app_mobile/features/home/presentation/bloc/home_cubit.dart';
 import 'package:app_mobile/features/home/presentation/home_screen.dart';
+import 'package:app_mobile/features/search/presentation/bloc/search_cubit.dart';
 import 'package:app_mobile/features/search/presentation/search_screen.dart';
+import 'package:app_mobile/features/settings/presentation/bloc/settings_cubit.dart';
 import 'package:app_mobile/features/settings/presentation/settings_screen.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
 import 'package:app_mobile/shared/di/injector.dart';
@@ -72,7 +75,14 @@ class _MainShellState extends State<MainShell> {
           label: t.navBrowse,
           icon: IconName.library,
           filledIcon: IconName.libraryFill,
-          body: const BrowseTabBody(),
+          // BrowseCubit is provided here (not self-provided inside
+          // BrowseTabBody) for the same reason SearchCubit is below: a
+          // widget test can drive the body with its own
+          // `BlocProvider<BrowseCubit>.value` instead of standing up get_it.
+          body: BlocProvider<BrowseCubit>(
+            create: (_) => getIt<BrowseCubit>()..load(),
+            child: const BrowseTabBody(),
+          ),
         ),
         AppNavigationTab(
           label: t.navDownloads,
@@ -84,13 +94,28 @@ class _MainShellState extends State<MainShell> {
           label: t.navSearch,
           icon: IconName.search,
           filledIcon: IconName.searchFill,
-          body: const SearchTabBody(),
+          // SearchCubit is provided here (not self-provided inside
+          // SearchTabBody) so a widget test can drive the body with its own
+          // `BlocProvider<SearchCubit>.value` instead of standing up get_it —
+          // same shape as HomeCubit above. SearchQuickLinks is the no-results
+          // state's "Browse library" seam (mirrors HomeQuickLinks) rather
+          // than teaching Search the shell's tab order.
+          body: BlocProvider<SearchCubit>(
+            create: (_) => getIt<SearchCubit>(),
+            child: SearchQuickLinks(
+              openBrowse: () => _openTab(_browseTab),
+              child: const SearchTabBody(),
+            ),
+          ),
         ),
         AppNavigationTab(
           label: t.navSettings,
           icon: IconName.settings,
           filledIcon: IconName.settingsFill,
-          body: const SettingsTabBody(),
+          body: BlocProvider<SettingsCubit>(
+            create: (_) => getIt<SettingsCubit>(),
+            child: const SettingsTabBody(),
+          ),
         ),
       ],
     );

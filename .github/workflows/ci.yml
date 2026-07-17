@@ -2,8 +2,7 @@ name: CI
 
 # CI for github.com/kkucherenkov/course_shelf — the sole repo since the
 # self-hosted Forgejo was dropped on 2026-07-14. This file is the only CI that
-# runs; `.forgejo/workflows/` is dead and pending deletion, so do NOT keep this
-# in lockstep with it.
+# runs.
 #
 # Runners are free for public repos, so everything gates here: the consolidated
 # `checks` job, codegen drift with a full Flutter toolchain, the Flutter
@@ -28,8 +27,7 @@ env:
 
 jobs:
   # ── Checks (consolidated lint · typecheck · test · specs · ui audit) ──────
-  # Kept in lockstep with .forgejo/workflows/ci.yml — one job sharing one
-  # pnpm install + one design:build + one prisma generate.
+  # One job sharing one pnpm install + one design:build + one prisma generate.
   checks:
     name: Checks (lint · typecheck · test · specs · ui audit)
     runs-on: ubuntu-latest
@@ -242,8 +240,7 @@ jobs:
           head: ${{ github.event.pull_request.head.sha || github.sha }}
           extra_args: --only-verified
 
-      # Allowlist matches .forgejo/workflows/quality.yml (incl. the
-      # defensive MPL-2.0 entry for @axe-core/playwright).
+      # Allowlist includes a defensive MPL-2.0 entry for @axe-core/playwright.
       - name: License compliance check
         run: pnpm dlx license-checker --excludePrivatePackages --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;Python-2.0;CC-BY-3.0;CC-BY-4.0;MPL-2.0'
 

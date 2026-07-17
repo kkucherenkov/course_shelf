@@ -1,56 +1,24 @@
 # Cutting a release
 
-Pushing a tag matching `vMAJOR.MINOR.PATCH-release` triggers
-`.forgejo/workflows/release.yml`. The workflow builds and pushes two
-release images (backend, web) to the **homelab Forgejo container
-registry** (`code.homelab.local`), generates a
-Conventional-Commits-derived changelog, and creates a **Forgejo
-Release** (on the same host) with the changelog and a deploy-ready
-artefact bundle. The proxy and centrifugo services run upstream images
-directly and are not built by this pipeline.
+Pushing a tag matching `vMAJOR.MINOR.PATCH-release` to
+github.com/kkucherenkov/course_shelf triggers
+`.github/workflows/release.yml`. The workflow builds and pushes two
+release images (backend, web) to **GitHub Container Registry**
+(`ghcr.io/kkucherenkov/courseshelf-{backend,web}`), generates a
+Conventional-Commits-derived changelog, and creates a **GitHub
+Release** with the changelog and a deploy-ready artefact bundle. The
+proxy and centrifugo services run upstream images directly and are not
+built by this pipeline.
 
-## Public lane (GitHub mirror)
+## Registry credentials
 
-The same tag, once the push mirror syncs it to
-github.com/kkucherenkov/course_shelf, triggers the twin
-`.github/workflows/release.yml`: identical images to
-`ghcr.io/kkucherenkov/courseshelf-{backend,web}` (same four tags) and a
-**GitHub Release** with the identical bundle, except `compose.yml` is
-rendered with `REGISTRY=ghcr.io`. No secrets to manage — `GITHUB_TOKEN`
-covers both the ghcr push and the Release API. One tag push therefore
-cuts both releases; the homelab deploy keeps pulling from the LAN
-registry and never touches ghcr. Keep the two workflow files in
-lockstep when changing the bundle layout or tag policy.
+**Nothing to set up.** The workflow logs in to ghcr with the
+auto-provided `GITHUB_TOKEN`; `packages: write` in the workflow's
+`permissions` block covers both the image push and the Release API.
 
-> **Why the local registry**: the homelab is fully self-hosted — images
-> should never leave the LAN just to be pulled back onto it. The
-> act_runner's dind daemon is already started with
-> `--insecure-registry=code.homelab.local` (and resolves the host via
-> `extra_hosts`), so the push works over plain HTTP without any systemd
-> restart. The host daemon that runs the deploy (Dockge) needs the same
-> trust to pull — see [`deployment.md`](./deployment.md).
-
-## One-time setup: registry credentials
-
-The registry lives on the **same Forgejo instance** the runner belongs
-to, so the auto-provided `GITEA_TOKEN` authenticates the package push —
-**no manual secret is required** for the default path.
-
-If your Forgejo instance scopes package writes separately from the
-Actions token, create a PAT and wire it in:
-
-1. `http://code.homelab.local/<owner>/-/user/settings/applications` →
-   generate a token with the **`write:package`** scope.
-2. Add it as a secret at
-   `http://code.homelab.local/<owner>/course_shelf/settings/actions/secrets`
-   named `FORGEJO_PKG_TOKEN`. The workflow's login step prefers it over
-   `GITEA_TOKEN` when present.
-
-Packages published by the workflow appear under the owner's **Packages**
-tab on Forgejo. Whether the deploy host can pull them anonymously
-depends on the repo/package visibility on your instance — if private,
-the host runs `docker login code.homelab.local` once (see
-[`deployment.md`](./deployment.md)).
+Published images appear under the owner's **Packages** tab on GitHub and
+are public, so deploy hosts pull them anonymously — no `docker login` on
+the deploy side (see [`deployment.md`](./deployment.md)).
 
 ## Cutting the release
 
@@ -69,20 +37,19 @@ git push origin v0.2.0-release
 ```
 
 The push to `v0.2.0-release` triggers the workflow. Watch the run at
-`http://code.homelab.local/<owner>/course_shelf/actions`. End-to-end
-takes ~10–15 min for amd64-only builds (the image build is the long
-part; the push stays on the LAN).
+`https://github.com/kkucherenkov/course_shelf/actions`. End-to-end takes
+~10–15 min for amd64-only builds (the image build is the long part).
 
 ## What gets published
 
-### Images on the Forgejo registry
+### Images on ghcr.io
 
 For every release tag, two images are pushed under four tags each:
 
-| Image                                            | Source                    |
-| ------------------------------------------------ | ------------------------- |
-| `code.homelab.local/<owner>/courseshelf-backend` | `apps/backend/Dockerfile` |
-| `code.homelab.local/<owner>/courseshelf-web`     | `apps/web/Dockerfile`     |
+| Image                                 | Source                    |
+| ------------------------------------- | ------------------------- |
+| `ghcr.io/<owner>/courseshelf-backend` | `apps/backend/Dockerfile` |
+| `ghcr.io/<owner>/courseshelf-web`     | `apps/web/Dockerfile`     |
 
 Each image is tagged `:0.2.0`, `:0.2`, `:0`, and `:latest` — pin to the
 exact patch in production, use the floating tags for dev/staging if you
@@ -94,9 +61,9 @@ images directly (`nginxinc/nginx-unprivileged:1.27-alpine` and
 artefacts. They are pulled by `docker compose pull` like any other
 upstream image.
 
-### Release page on Forgejo
+### Release page on GitHub
 
-`http://code.homelab.local/<owner>/course_shelf/releases/tag/v0.2.0-release`
+`https://github.com/kkucherenkov/course_shelf/releases/tag/v0.2.0-release`
 gets:
 
 - `courseshelf-release-v0.2.0.tar.gz` — bundle with `compose.yml`,
@@ -140,7 +107,7 @@ git push origin v0.2.0-release
 **Don't** reuse a tag whose images are already published: the registry
 rejects overwrites for immutable tags, and the workflow will fail at
 push. If the run partially pushed (only one of the two images), delete
-those versions from the owner's **Packages** page on Forgejo, or bump
+those versions from the owner's **Packages** page on GitHub, or bump
 the patch number.
 
 ## Versioning policy

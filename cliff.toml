@@ -1,6 +1,6 @@
 # git-cliff config — Conventional Commits → release notes.
 #
-# Wired by `.forgejo/workflows/release.yml` and `pnpm release:notes`.
+# Wired by `.github/workflows/release.yml` and `pnpm release:notes`.
 # Groups by Conventional-Commit type (Features, Fixes, …) AND by the
 # scopes enforced in commitlint.config.mjs (backend, web, ui, specs, …)
 # so the changelog reads as "what changed where".

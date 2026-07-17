@@ -9,7 +9,7 @@
 [![Node >=24](https://img.shields.io/badge/Node-%E2%89%A524-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![pnpm >=10](https://img.shields.io/badge/pnpm-%E2%89%A510-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
 
-> **О зеркале** — разработка ведётся на self-hosted Forgejo; github.com/kkucherenkov/course_shelf — это push-зеркало только для чтения. Issues и pull requests здесь не отслеживаются, ветки могут быть принудительно перезаписаны синхронизацией зеркала. Релизные образы публикуются и в приватный реестр хоумлаба, и публично в `ghcr.io/kkucherenkov/courseshelf-{backend,web}`.
+> Релизные образы публикуются в `ghcr.io/kkucherenkov/courseshelf-{backend,web}` — см. [`docs/deployment.md`](docs/deployment.md).
 
 ---
 

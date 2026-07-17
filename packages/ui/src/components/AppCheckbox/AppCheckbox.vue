@@ -86,6 +86,11 @@
 </template>
 
 <style scoped lang="scss">
+  // Intrinsic control geometry — named literals, not --space-* steps.
+  // $box-size matches AppRadio's $circle-size so the two line up in a form.
+  $box-size: 18px;
+  $glyph-size: 12px;
+
   .app-checkbox {
     display: inline-flex;
     align-items: center;
@@ -98,8 +103,8 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      width: 18px;
-      height: 18px;
+      width: $box-size;
+      height: $box-size;
       border: 1.5px solid var(--border-strong);
       border-radius: var(--radius-sm);
       background: var(--surface-surface);
@@ -112,8 +117,8 @@
         color var(--dur-fast) var(--ease);
 
       svg {
-        width: 12px;
-        height: 12px;
+        width: $glyph-size;
+        height: $glyph-size;
       }
 
       &:focus-visible {

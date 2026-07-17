@@ -112,6 +112,22 @@
 </template>
 
 <style lang="scss" scoped>
+  // Control heights, mirroring AppInput / bundle .input. Intrinsic component
+  // geometry, so named literals rather than --space-* steps.
+  $control-height-sm: 28px;
+  $control-height-md: 36px;
+  $control-height-lg: 44px;
+  $control-height-compact: 30px;
+
+  // Chevron clearance = the caret's inset-inline-end (--space-3/4/6 per size)
+  // + the 12px glyph + an 8px gap, so the value text never runs under it.
+  // Previously var(--space-10/12/14) — a phantom scale this repo never
+  // emitted, so the declarations were invalid and every size fell back to the
+  // symmetric padding-inline, letting long values collide with the caret.
+  $chevron-clearance-sm: 32px; // 12 + 12 + 8
+  $chevron-clearance-md: 36px; // 16 + 12 + 8
+  $chevron-clearance-lg: 44px; // 24 + 12 + 8
+
   .app-select {
     position: relative;
     display: inline-flex;
@@ -122,7 +138,7 @@
       width: 100%;
       padding-block: var(--space-3);
       padding-inline: var(--space-4);
-      padding-inline-end: var(--space-12);
+      padding-inline-end: $chevron-clearance-md;
       border: 1px solid var(--border-default);
       border-radius: var(--radius-md);
       background: var(--surface-surface);
@@ -153,9 +169,9 @@
       }
 
       &:disabled {
-        color: var(--text-fg-disabled);
+        color: var(--text-disabled);
         cursor: not-allowed;
-        background: var(--surface-bg-subtle);
+        background: var(--surface-raised);
       }
     }
 
@@ -174,10 +190,10 @@
     /* ----- sizes — explicit pixel heights matching AppInput / bundle .input ----- */
     &--sm {
       .app-select__control {
-        height: 28px;
+        height: $control-height-sm;
         padding-block: 0;
         padding-inline: var(--space-3);
-        padding-inline-end: var(--space-10);
+        padding-inline-end: $chevron-clearance-sm;
         font-size: var(--text-sm);
       }
 
@@ -188,20 +204,20 @@
 
     &--md {
       .app-select__control {
-        height: 36px;
+        height: $control-height-md;
         padding-block: 0;
         padding-inline: var(--space-3);
-        padding-inline-end: var(--space-12);
+        padding-inline-end: $chevron-clearance-md;
         font-size: var(--text-md);
       }
     }
 
     &--lg {
       .app-select__control {
-        height: 44px;
+        height: $control-height-lg;
         padding-block: 0;
         padding-inline: var(--space-4);
-        padding-inline-end: var(--space-14);
+        padding-inline-end: $chevron-clearance-lg;
         font-size: var(--text-md);
       }
 
@@ -217,6 +233,6 @@
 
   // Compact density — mirrors [data-density="compact"] .input → 30px height.
   :global([data-density='compact']) .app-select--md .app-select__control {
-    height: 30px;
+    height: $control-height-compact;
   }
 </style>

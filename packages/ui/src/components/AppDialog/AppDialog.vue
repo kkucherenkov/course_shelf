@@ -99,6 +99,10 @@
 </template>
 
 <style scoped lang="scss">
+  // Panel widths — intrinsic layout metrics, named literals per the raw-px rule.
+  $panel-max-width-sm: 480px;
+  $panel-max-width-md: 640px;
+
   .app-dialog {
     padding: 0;
     border: none;
@@ -108,15 +112,19 @@
     overflow: visible;
 
     &::backdrop {
-      background: rgba(0, 0, 0, 0.5);
+      // Tokenised scrim, matching the app's own dialogs/sheets
+      // (AdminRemoveLibraryDialog, AdminAddLibrarySheet). Replaces a raw
+      // rgba(0, 0, 0, 0.5), so the scrim is now theme-aware instead of always
+      // pure black.
+      background: color-mix(in srgb, transparent, var(--surface-overlay) 50%);
       backdrop-filter: blur(2px);
     }
 
     &--sm .app-dialog__panel {
-      max-width: 480px;
+      max-width: $panel-max-width-sm;
     }
     &--md .app-dialog__panel {
-      max-width: 640px;
+      max-width: $panel-max-width-md;
     }
 
     &__panel {

@@ -157,7 +157,7 @@ export const ComposedWithAppField: Story = {
             />
           </template>
         </AppField>
-        <button type="button" @click="validate" style="align-self:flex-start; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); background: var(--brand-accent); color: var(--text-fg-inverse); border: 0; cursor: pointer;">
+        <button type="button" @click="validate" style="align-self:flex-start; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); background: var(--brand-accent); color: var(--text-inverse); border: 0; cursor: pointer;">
           Validate
         </button>
       </div>

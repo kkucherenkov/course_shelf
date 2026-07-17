@@ -157,6 +157,10 @@
   $dot-size: 8px;
   $bar-height: 4px;
 
+  // Ambient status loop — not an interaction transition, so it sits outside
+  // the --dur-* scale (which tops out at 400ms).
+  $pulse-duration: 2s;
+
   .app-scan-progress {
     display: flex;
     flex-direction: column;
@@ -182,7 +186,7 @@
 
       &--running {
         background: var(--status-info-fg);
-        animation: app-scan-progress-pulse 2s ease-in-out infinite;
+        animation: app-scan-progress-pulse $pulse-duration ease-in-out infinite;
 
         @media (prefers-reduced-motion: reduce) {
           animation: none;

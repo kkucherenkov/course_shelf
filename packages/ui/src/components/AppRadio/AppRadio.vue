@@ -98,6 +98,10 @@
 </template>
 
 <style scoped lang="scss">
+  // Intrinsic control geometry — named literals, not --space-* steps.
+  $circle-size: 18px;
+  $dot-size: 8px;
+
   .app-radio {
     display: inline-flex;
     align-items: center;
@@ -110,8 +114,8 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      width: 18px;
-      height: 18px;
+      width: $circle-size;
+      height: $circle-size;
       border: 1.5px solid var(--border-strong);
       border-radius: 50%;
       background: var(--surface-surface);
@@ -132,8 +136,8 @@
     }
 
     &__dot {
-      width: 8px;
-      height: 8px;
+      width: $dot-size;
+      height: $dot-size;
       border-radius: 50%;
       background: var(--brand-accent);
     }

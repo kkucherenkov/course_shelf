@@ -146,7 +146,7 @@
   //   --text-loud     → --text-fg
   //   --text-muted    → --text-secondary
   //   --text-subtle   → --text-tertiary
-  //   --success       → --feedback-success
+  //   --success       → --status-success-fg
   //   --d-fast        → --dur-fast
   // Leading lesson-number column width — named var, exempt from the raw-px rule.
   $num-col-w: 24px;
@@ -195,7 +195,7 @@
       color: var(--text-secondary);
 
       &[data-state='completed'] {
-        color: var(--feedback-success);
+        color: var(--status-success-fg);
       }
 
       &[data-state='current'] {

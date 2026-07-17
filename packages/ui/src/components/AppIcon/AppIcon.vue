@@ -26,34 +26,48 @@
 </template>
 
 <style lang="scss" scoped>
+  // Icon size ramp. Intrinsic glyph geometry rather than layout rhythm, so
+  // these are named literals rather than --space-* steps (same convention as
+  // AppScanProgress's $dot-size / AppLessonRow's $num-col-w).
+  // Previously the --space-* scale, written against a phantom
+  // `--space-N == N * 2px` scale this repo never emitted: xs/sm resolved to
+  // 32px/64px (2-4x intended) and md/lg/xl were dangling, so those three
+  // rendered with no width or height at all. The ramp below is the intent
+  // that the phantom scale encoded.
+  $size-xs: 12px;
+  $size-sm: 16px;
+  $size-md: 20px;
+  $size-lg: 24px;
+  $size-xl: 32px;
+
   .app-icon {
     display: inline-flex;
     flex-shrink: 0;
     color: currentcolor;
 
     &--xs {
-      width: var(--space-6);
-      height: var(--space-6);
+      width: $size-xs;
+      height: $size-xs;
     }
 
     &--sm {
-      width: var(--space-8);
-      height: var(--space-8);
+      width: $size-sm;
+      height: $size-sm;
     }
 
     &--md {
-      width: var(--space-10);
-      height: var(--space-10);
+      width: $size-md;
+      height: $size-md;
     }
 
     &--lg {
-      width: var(--space-12);
-      height: var(--space-12);
+      width: $size-lg;
+      height: $size-lg;
     }
 
     &--xl {
-      width: var(--space-16);
-      height: var(--space-16);
+      width: $size-xl;
+      height: $size-xl;
     }
   }
 </style>

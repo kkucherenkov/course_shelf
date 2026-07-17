@@ -1,21 +1,18 @@
 {
-  "appTitle": "Appointments",
-  "loading": "Loading\u2026",
+  "appTitle": "CourseShelf",
+  "loading": "Loading…",
   "retry": "Retry",
+  "comingSoon": "This part of CourseShelf is still being built.",
   "localeEn": "English",
   "localeRu": "Russian",
   "localeEl": "Greek",
   "localeUk": "Ukrainian",
   "shell": {
     "navHome": "Home",
-    "navBookings": "Bookings",
-    "navChat": "Chat",
-    "navProfile": "Profile",
-    "navSos": "SOS",
-    "navBusiness": "Business",
-    "navAriaLabel": "Primary",
-    "signIn": "Sign in",
-    "signOut": "Sign out",
-    "drawerOpen": "Open navigation"
+    "navBrowse": "Browse",
+    "navDownloads": "Downloads",
+    "navSearch": "Search",
+    "navSettings": "Settings",
+    "navAriaLabel": "Primary"
   }
 }

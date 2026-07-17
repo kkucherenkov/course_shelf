@@ -34,6 +34,14 @@ dependencies:
   drift: ^2.34.2
   drift_flutter: ^0.3.1
   path_provider: ^2.1.6
+  # The app's first and only playback engine (E18-F02-S01). Wraps ExoPlayer on
+  # Android and AVPlayer on iOS — the same delegate-to-the-platform stance as
+  # web's raw `<video>` element (`apps/web/app/composables/useLessonPlayer.ts`),
+  # so both clients accept the same formats and neither gets ahead of the
+  # other's real capability. Reached only through
+  # `features/player/domain/video_playback_port.dart`; it has no decoder under
+  # `flutter test`, so the port is what keeps PlayerBloc testable.
+  video_player: ^2.9.2
   # Dev-only Widgetbook catalog (widgetbook/main.dart). Declared as a regular
   # dependency because the catalog code lives under lib/ (forced by
   # always_use_package_imports + package-import testability); it is unreachable
@@ -42,6 +50,10 @@ dependencies:
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  # integration_test suites live under integration_test/ (E18-F02-S01 player,
+  # E18-F03-S01 auth flows). They need a device/emulator to execute.
+  integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   build_runner: ^2.4.13

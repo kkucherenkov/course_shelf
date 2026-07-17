@@ -538,6 +538,15 @@
   $z-overlay: 1;
   $z-state: 2;
 
+  // Player-chrome metrics that fall between design-token steps. Same literals
+  // as before — these are named for intent, not rounded to the nearest token.
+  $control-gap: 6px;
+  $scrubber-bar-height: 3px;
+  $scrubber-thumb-size: 11px;
+  $chapter-tick-height: 9px;
+  $bookmark-offset: -4px;
+  $spinner-duration: 0.8s;
+
   .app-player-chrome {
     position: relative;
     aspect-ratio: 16 / 9;
@@ -618,13 +627,13 @@
     &__controls {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: $control-gap;
       color: #fff;
     }
 
     &__btn {
-      width: 32px;
-      height: 32px;
+      width: var(--space-6);
+      height: var(--space-6);
       border-radius: var(--radius-sm);
       display: grid;
       place-items: center;
@@ -671,7 +680,7 @@
     // ---- Scrubber ----
     &__scrubber {
       position: relative;
-      height: 16px;
+      height: var(--space-4);
       cursor: pointer;
 
       &:focus-visible {
@@ -686,7 +695,7 @@
       position: absolute;
       left: 0;
       top: 50%;
-      height: 3px;
+      height: $scrubber-bar-height;
       transform: translateY(-50%);
       border-radius: 2px;
     }
@@ -708,8 +717,8 @@
       position: absolute;
       top: 50%;
       transform: translate(-50%, -50%);
-      width: 11px;
-      height: 11px;
+      width: $scrubber-thumb-size;
+      height: $scrubber-thumb-size;
       border-radius: 50%;
       background: var(--brand-accent);
       pointer-events: none;
@@ -720,7 +729,7 @@
       top: 50%;
       transform: translate(-50%, -50%);
       width: 2px;
-      height: 9px;
+      height: $chapter-tick-height;
       background: #000;
       border-radius: 1px;
       pointer-events: none;
@@ -728,7 +737,7 @@
 
     &__scrubber-bm {
       position: absolute;
-      top: -4px;
+      top: $bookmark-offset;
       transform: translateX(-50%);
       color: var(--status-info-fg);
       background: transparent;
@@ -772,12 +781,12 @@
     }
 
     &__buffer-spinner {
-      width: 32px;
-      height: 32px;
+      width: var(--space-6);
+      height: var(--space-6);
       border-radius: 50%;
       border: 2px solid rgba(255, 255, 255, 0.2);
       border-top-color: #fff;
-      animation: app-player-chrome-spin 0.8s linear infinite;
+      animation: app-player-chrome-spin $spinner-duration linear infinite;
     }
 
     @media (prefers-reduced-motion: reduce) {

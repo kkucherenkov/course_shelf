@@ -96,6 +96,17 @@
 </template>
 
 <style lang="scss" scoped>
+  // Fixed thumbnail square and hairline progress strip — both sit between
+  // --space steps, so they stay as named literals.
+  $thumb-size: 80px;
+  $strip-height: 3px;
+  $skeleton-instructor-gap: 6px;
+
+  // Stacking context within the card (named vars — no raw ints).
+  $z-cover-overlay: 0;
+  $z-initials: 1;
+  $z-strip: 2;
+
   .course-wide-card {
     display: flex;
     align-items: flex-start;
@@ -122,8 +133,8 @@
     &__thumb {
       flex-shrink: 0;
       position: relative;
-      width: 80px;
-      height: 80px;
+      width: $thumb-size;
+      height: $thumb-size;
       border-radius: var(--radius-md);
       overflow: hidden;
       display: flex;
@@ -133,7 +144,7 @@
 
     &__initials {
       position: relative;
-      z-index: 1;
+      z-index: $z-initials;
       font-family: var(--font-sans);
       font-size: var(--text-lg);
       font-weight: var(--fw-bold);
@@ -148,7 +159,7 @@
       position: absolute;
       inset: 0;
       background: linear-gradient(180deg, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.4) 100%);
-      z-index: 0;
+      z-index: $z-cover-overlay;
       pointer-events: none;
     }
 
@@ -157,9 +168,9 @@
       bottom: 0;
       left: 0;
       right: 0;
-      height: 3px;
+      height: $strip-height;
       background: rgba(255, 255, 255, 0.25);
-      z-index: 2;
+      z-index: $z-strip;
     }
 
     &__strip-fill {
@@ -201,8 +212,8 @@
     &__meta {
       display: flex;
       align-items: center;
-      gap: 4px;
-      margin-top: 4px;
+      gap: var(--space-1);
+      margin-top: var(--space-1);
       font-size: var(--text-sm);
       color: var(--text-secondary);
     }
@@ -227,11 +238,11 @@
     }
 
     &__skeleton-instructor {
-      margin-top: 6px;
+      margin-top: $skeleton-instructor-gap;
     }
 
     &__skeleton-meta {
-      margin-top: 8px;
+      margin-top: var(--space-2);
     }
   }
 </style>

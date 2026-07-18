@@ -2,6 +2,55 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-18-003 — E18-F01-S02 · Mobile Browse tab (Flutter)
+
+- Created: 2026-07-18
+- Completed: 2026-07-18
+- Owner: claude
+- Spec: [E18-F01-S02](../../docs/roadmap/tasks/E18-F01-S02.md) · design `docs/design/cs-mobile-browse/`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/181 (commit b6e2b33; design `572b0a2`)
+- Goal: Browse tab — poster grid (2/3-col), API-backed filter+sort bottom sheet, states.
+- Sub-steps:
+  - [x] design pre-step: hand-authored `cs-mobile-browse/app.jsx`, verified render (OD MCP down)
+  - [x] BrowseCubit + repo (`GET /courses` filter/sort + `GET /libraries`)
+  - [x] BrowseTabBody: grid + filter sheet + states; posters → course route
+  - [x] i18n + tests · flutter analyze clean · full suite 247/247
+- Notes: filters single-select per single-value API; mapping mirrors `apps/web` (omit-when-default).
+  Closes #94, #95, #96.
+
+## T-2026-07-18-002 — E18-F01-S03 · Mobile Course detail (spec-first)
+
+- Created: 2026-07-18
+- Completed: 2026-07-18
+- Owner: claude
+- Spec: [E18-F01-S03](../../docs/roadmap/tasks/E18-F01-S03.md) · design `docs/design/cs-mobile-course-detail/`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/181 (spec `7320eb1`, codegen `c7e9344`, backend `f47dc82`, mobile `b6e2b33`)
+- Goal: course-detail screen — hero, Resume/Start + Download CTA (size estimate), curriculum.
+- Sub-steps:
+  - [x] design pre-step (prior session)
+  - [x] spec: `GET /courses/{id}/download-estimate` + `CourseDownloadEstimateDto` → validate/bundle/codegen
+  - [x] backend: query/handler/controller + spec (4/4)
+  - [x] mobile: CourseDetailCubit + pushed-route screen (loading/loaded/noAccess/failed)
+  - [~] tap-to-download → **E19 seam** (DownloadsBloc absent; `TODO(E19)`)
+- Notes: resolved the spec caveat with a dedicated download-estimate endpoint (not a `CourseDto`
+  size field). ⚠️ Download **actions** deferred to E19 — **#101 stays open**. Closes #97, #99, #100.
+
+## T-2026-07-18-001 — E18-F03-S02 · Mobile Search + Settings tabs (Flutter)
+
+- Created: 2026-07-18
+- Completed: 2026-07-18
+- Owner: claude
+- Spec: [E18-F03-S02](../../docs/roadmap/tasks/E18-F03-S02.md) · design `docs/design/cs-mobile-search-settings/`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/181 (commit b6e2b33)
+- Goal: Search tab (recent / grouped results / no-match) + Settings (Profile·Appearance·Playback·Account + sign-out).
+- Sub-steps:
+  - [x] SearchCubit (debounced `/search`) + SettingsCubit (device prefs)
+  - [x] Search + Settings screens wired into the 5-tab shell
+  - [x] i18n (search + settings namespaces) + widget/bloc tests
+  - [x] flutter analyze clean · tests green
+- Notes: sign-out flow + language selector preserved; recents + device prefs in-memory
+  (`TODO(E18)` to persist — no `shared_preferences` yet). Closes #114, #116, #117.
+
 ## T-2026-07-17-008 — design bundles for blocked mobile stories (E18/E19)
 
 - Created: 2026-07-17

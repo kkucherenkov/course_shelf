@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.17.0
+  version: 0.18.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -2387,6 +2387,82 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+
+  /api/v1/courses/{id}/download-estimate:
+    get:
+      operationId: getCourseDownloadEstimate
+      summary: Total download size for a course
+      description: |
+        Sums `Lesson.sizeBytes` (bytes) across every lesson in the course
+        the requester can access. Access is course-level (mirrors
+        `getCourse`/`getCourseOutline` — a READ grant on the course's
+        library), so the sum spans all lessons once the grant passes.
+
+        Note that per-lesson download STATE (queued/downloaded) is tracked
+        client-side, not here — this endpoint only reports the byte total
+        and lesson count so the UI can render the CTA label before
+        anything is downloaded.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the course.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Download estimate returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CourseDownloadEstimateDto"
+              examples:
+                found:
+                  value:
+                    courseId: clxvcrs0000000000000000001
+                    totalBytes: 1288490188
+                    lessonCount: 42
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have a READ grant for the course's library
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not have access to this course.
+        "404":
+          description: Course not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No course with that id exists.
 
   /api/v1/courses/{id}/mark-complete:
     post:
@@ -6772,6 +6848,29 @@ components:
         percent: 0
         lessonsCompleted: 0
         lessonsTotal: 24
+
+    CourseDownloadEstimateDto:
+      type: object
+      required: [courseId, totalBytes, lessonCount]
+      additionalProperties: false
+      description: >-
+        Aggregate download size for a course — the sum of Lesson.sizeBytes
+        across the lessons the requester can access. Feeds the mobile
+        course-detail "Download course · <size>" CTA. Per-lesson download
+        state is client-side; this reports only the byte total and the
+        number of lessons it spans.
+      properties:
+        courseId:
+          type: string
+          description: Server-generated cuid of the course this estimate is for.
+        totalBytes:
+          type: integer
+          minimum: 0
+          description: Sum of Lesson.sizeBytes (bytes) across all accessible lessons in the course.
+        lessonCount:
+          type: integer
+          minimum: 0
+          description: Number of lessons included in the byte sum.
 
     CourseSlug:
       type: string

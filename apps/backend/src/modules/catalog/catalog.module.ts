@@ -76,6 +76,7 @@ import { ListCoursesHandler } from './application/queries/list-courses.handler';
 import { GetLessonHandler } from './application/queries/get-lesson.handler';
 import { GetContinueWatchingHandler } from './application/queries/get-continue-watching.handler';
 import { GetCourseOutlineHandler } from './application/queries/get-course-outline.handler';
+import { GetCourseDownloadEstimateHandler } from './application/queries/get-course-download-estimate.handler';
 import { GetRecentlyAddedHandler } from './application/queries/get-recently-added.handler';
 import { GetRecentlyCompletedHandler } from './application/queries/get-recently-completed.handler';
 import { GetYourWeekHandler } from './application/queries/get-your-week.handler';
@@ -167,6 +168,7 @@ import { IDENTIFY_TASK_REPOSITORY } from './domain/identify/identify-task.reposi
     GetLessonHandler,
     GetContinueWatchingHandler,
     GetCourseOutlineHandler,
+    GetCourseDownloadEstimateHandler,
     GetRecentlyAddedHandler,
     GetRecentlyCompletedHandler,
     GetYourWeekHandler,

@@ -1,0 +1,35 @@
+{
+  "filters": "Filters",
+  "filterCourses": "Filter courses",
+  "sortBy": "Sort by",
+  "changeSort": "Change sort order",
+  "sort": {
+    "recentlyWatched": "Recently watched",
+    "newest": "Newest",
+    "alphabetical": "Alphabetical"
+  },
+  "status": {
+    "label": "Status",
+    "all": "All",
+    "notStarted": "Not started",
+    "inProgress": "In progress",
+    "completed": "Completed"
+  },
+  "library": {
+    "label": "Library",
+    "all": "All"
+  },
+  "count": "{n} courses",
+  "clearAll": "Clear all",
+  "apply": "Apply",
+  "sheetTitle": "Filters & sort",
+  "empty": {
+    "title": "No courses match",
+    "message": "Nothing in your library fits these filters. Try clearing one to widen the results.",
+    "clearAll": "Clear all filters"
+  },
+  "error": {
+    "title": "Couldn’t load courses",
+    "message": "Something went wrong reaching the catalog. Check your connection and try again."
+  }
+}

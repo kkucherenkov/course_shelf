@@ -41,6 +41,7 @@ import 'package:app_api_client/src/model/bookmark_dto.dart';
 import 'package:app_api_client/src/model/bookmark_list_dto.dart';
 import 'package:app_api_client/src/model/continue_watching_dto.dart';
 import 'package:app_api_client/src/model/continue_watching_item.dart';
+import 'package:app_api_client/src/model/course_download_estimate_dto.dart';
 import 'package:app_api_client/src/model/course_dto.dart';
 import 'package:app_api_client/src/model/course_level.dart';
 import 'package:app_api_client/src/model/course_list_dto.dart';
@@ -159,6 +160,7 @@ part 'serializers.g.dart';
   BookmarkListDto,
   ContinueWatchingDto,
   ContinueWatchingItem,
+  CourseDownloadEstimateDto,
   CourseDto,
   CourseLevel,
   CourseListDto,

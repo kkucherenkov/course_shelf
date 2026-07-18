@@ -37,7 +37,7 @@ web/Storybook/Flutter artefacts.
 | [`cs-web-admin`](./cs-web-admin)                           | ✅ landed  | E14-F04-S01 (Stage B)                   | `app.jsx`, `screens.jsx`, components, CSS |
 | [`cs-mobile-auth`](./cs-mobile-auth)                       | ✅ landed  | E18-F03-S01                             | `app.jsx`, `index.html`                   |
 | [`cs-mobile-home`](./cs-mobile-home)                       | ✅ landed  | E18-F01-S01                             | `app.jsx`, `index.html`                   |
-| [`cs-mobile-browse`](./cs-mobile-browse)                   | ⏳ partial | E18-F01-S02 (Stage B) — needs `app.jsx` | `index.html`, `styles.css`                |
+| [`cs-mobile-browse`](./cs-mobile-browse)                   | ✅ landed  | E18-F01-S02 (Stage B)                   | `app.jsx`, `index.html`, CSS              |
 | [`cs-mobile-course-detail`](./cs-mobile-course-detail)     | ✅ landed  | E18-F01-S03 (Stage B)                   | `app.jsx`, `index.html`                   |
 | [`cs-mobile-lesson-player`](./cs-mobile-lesson-player)     | ✅ landed  | E18-F02-S01                             | `app.jsx`, `index.html`                   |
 | [`cs-mobile-downloads`](./cs-mobile-downloads)             | ✅ landed  | E19-F01-S03 (Stage B)                   | `app.jsx`, `index.html`                   |

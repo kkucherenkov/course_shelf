@@ -1,0 +1,25 @@
+{
+  "fieldPlaceholder": "Search courses, lessons…",
+  "clear": "Clear search",
+  "recent": {
+    "heading": "Recent",
+    "clear": "Clear",
+    "empty": "Your recent searches will show up here.",
+    "searchAgain": "Search “{term}” again",
+    "remove": "Remove “{term}” from recent searches"
+  },
+  "results": {
+    "coursesHeading": "Courses",
+    "lessonsHeading": "Lessons",
+    "lessonsCount": "{n} lessons"
+  },
+  "noResults": {
+    "title": "No results for “{query}”",
+    "message": "Nothing in your library matches that yet. Try a different term or browse the full catalog.",
+    "browseLibrary": "Browse library"
+  },
+  "error": {
+    "title": "Could not search",
+    "message": "Check your connection and try again."
+  }
+}

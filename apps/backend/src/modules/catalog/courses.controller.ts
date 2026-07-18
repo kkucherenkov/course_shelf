@@ -42,10 +42,12 @@ import {
 } from './application/queries/list-courses.query';
 import { GetCourseQuery } from './application/queries/get-course.query';
 import { GetCourseOutlineQuery } from './application/queries/get-course-outline.query';
+import { GetCourseDownloadEstimateQuery } from './application/queries/get-course-download-estimate.query';
 
 import type { SessionContext } from '../../common/auth/decorators';
 import type {
   CourseDto,
+  CourseDownloadEstimateDto,
   CourseListDto,
   CourseOutlineDto,
   UpdateCourseRequest,
@@ -111,6 +113,18 @@ export class CoursesController {
     const actor = session.user;
     return this.queryBus.execute<GetCourseOutlineQuery, CourseOutlineDto>(
       new GetCourseOutlineQuery(id, actor),
+    );
+  }
+
+  /** GET /api/v1/courses/:id/download-estimate */
+  @Get(':id/download-estimate')
+  async getCourseDownloadEstimate(
+    @Param('id') id: string,
+    @Session() session: SessionContext,
+  ): Promise<CourseDownloadEstimateDto> {
+    const actor = session.user;
+    return this.queryBus.execute<GetCourseDownloadEstimateQuery, CourseDownloadEstimateDto>(
+      new GetCourseDownloadEstimateQuery(id, actor),
     );
   }
 

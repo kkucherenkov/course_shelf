@@ -4,6 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:app_mobile/app/main_shell.dart';
+import 'package:app_mobile/features/browse/domain/browse_course.dart';
+import 'package:app_mobile/features/browse/domain/browse_filter.dart';
+import 'package:app_mobile/features/browse/domain/browse_repository.dart';
+import 'package:app_mobile/features/browse/presentation/bloc/browse_cubit.dart';
 import 'package:app_mobile/features/browse/presentation/browse_screen.dart';
 import 'package:app_mobile/features/auth/domain/auth_repository.dart';
 import 'package:app_mobile/features/auth/domain/auth_user.dart';
@@ -14,6 +18,9 @@ import 'package:app_mobile/features/auth/presentation/sign_in_screen.dart';
 import 'package:app_mobile/features/home/domain/home_repository.dart';
 import 'package:app_mobile/features/home/domain/home_summary.dart';
 import 'package:app_mobile/features/home/presentation/bloc/home_cubit.dart';
+import 'package:app_mobile/features/search/domain/search_repository.dart';
+import 'package:app_mobile/features/search/presentation/bloc/search_cubit.dart';
+import 'package:app_mobile/features/settings/presentation/bloc/settings_cubit.dart';
 import 'package:app_mobile/features/settings/presentation/settings_screen.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
 import 'package:app_mobile/main.dart';
@@ -28,6 +35,18 @@ class _MockInstanceRepository extends Mock implements InstanceRepository {}
 /// The shell mounts Home's cubit on an authenticated session (E18-F01-S01),
 /// so the real `App` pulls a HomeRepository out of the injector too.
 class _MockHomeRepository extends Mock implements HomeRepository {}
+
+/// The 5-tab `IndexedStack` mounts every body up front, Search included, so
+/// `SearchCubit` (and therefore `SearchRepository`) must be registered even
+/// though these tests never visit the Search tab.
+class _MockSearchRepository extends Mock implements SearchRepository {}
+
+/// `BrowseCubit` (and therefore `BrowseRepository`) must be registered for
+/// the same reason — plus the "tapping a tab switches the body" case below
+/// actually visits Browse and calls `BrowseCubit.load()` on mount.
+class _MockBrowseRepository extends Mock implements BrowseRepository {}
+
+class _FakeBrowseFilter extends Fake implements BrowseFilter {}
 
 const _user = AuthUser(id: 'u1', email: 'user@example.com', name: 'User');
 
@@ -51,6 +70,8 @@ Finder _tab(String label) => find.descendant(
 );
 
 void main() {
+  setUpAll(() => registerFallbackValue(_FakeBrowseFilter()));
+
   late _MockAuthRepository repository;
   late _MockInstanceRepository instanceRepository;
   late _MockHomeRepository homeRepository;
@@ -73,10 +94,22 @@ void main() {
     homeRepository = _MockHomeRepository();
     when(homeRepository.fetchSummary).thenAnswer((_) async => _emptyHome);
 
+    // Fast, empty catalog for the Browse tab's own load-on-mount.
+    final browseRepository = _MockBrowseRepository();
+    when(
+      () => browseRepository.fetchCourses(any()),
+    ).thenAnswer((_) async => <BrowseCourse>[]);
+    when(
+      browseRepository.fetchLibraries,
+    ).thenAnswer((_) async => <BrowseLibrary>[]);
+
     getIt
       ..registerFactory<AuthCubit>(() => AuthCubit(repository))
       ..registerLazySingleton<InstanceRepository>(() => instanceRepository)
-      ..registerFactory<HomeCubit>(() => HomeCubit(homeRepository));
+      ..registerFactory<HomeCubit>(() => HomeCubit(homeRepository))
+      ..registerFactory<SearchCubit>(() => SearchCubit(_MockSearchRepository()))
+      ..registerFactory<BrowseCubit>(() => BrowseCubit(browseRepository))
+      ..registerFactory<SettingsCubit>(SettingsCubit.new);
   });
 
   tearDown(resetInjector);
@@ -194,6 +227,11 @@ void main() {
       await tester.tap(_tab('Settings'));
       await tester.pumpAndSettle();
 
+      // The restructured Settings body (Profile/Appearance/Playback/Account
+      // sections above it) pushes the pinned Sign-out row below the default
+      // test viewport — scroll the shell's own CustomScrollView to reach it.
+      await tester.ensureVisible(find.byKey(const ValueKey('settingsSignOut')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('settingsSignOut')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('settingsSignOutConfirm')));

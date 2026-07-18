@@ -157,11 +157,11 @@ Progress: `104 / 121` complete (update by hand or via a pre-commit hook).
 ## E18 — Mobile features
 
 - [x] [E18-F01-S01](./tasks/E18-F01-S01.md) `A` — Stage A · Home tab (cs-mobile-home) · ⇐ E17-F02-S01, E17-F02-S07, E15-F02-S01, E14-F01-S01
-- [ ] [E18-F01-S02](./tasks/E18-F01-S02.md) `B` — Stage B · Browse tab (precede with cs-mobile-browse) · ⇐ E17-F02-S01, E17-F02-S07
-- [ ] [E18-F01-S03](./tasks/E18-F01-S03.md) `B` — Stage B · Mobile Course detail (precede with cs-mobile-course-detail) · ⇐ E17-F02-S01, E17-F02-S02, E17-F02-S07
+- [x] [E18-F01-S02](./tasks/E18-F01-S02.md) `B` — Stage B · Browse tab (precede with cs-mobile-browse) · ⇐ E17-F02-S01, E17-F02-S07
+- [x] [E18-F01-S03](./tasks/E18-F01-S03.md) `B` — Stage B · Mobile Course detail (precede with cs-mobile-course-detail) · ⇐ E17-F02-S01, E17-F02-S02, E17-F02-S07
 - [x] [E18-F02-S01](./tasks/E18-F02-S01.md) `A` — Stage A · Mobile player BLoC + portrait/landscape lesson screen · ⇐ E17-F02-S03, E17-F02-S04, E15-F02-S01
 - [x] [E18-F03-S01](./tasks/E18-F03-S01.md) `A` — Stage A · Mobile sign in / sign up / forgot (cs-mobile-auth) · ⇐ E15-F01-S03, E17-F02-S08, E17-F02-S09, E17-F01-S05, E14-F02-S01
-- [ ] [E18-F03-S02](./tasks/E18-F03-S02.md) `B` — Stage B · Search + Settings tabs (precede with cs-mobile-search-settings) · ⇐ E17-F02-S07
+- [x] [E18-F03-S02](./tasks/E18-F03-S02.md) `B` — Stage B · Search + Settings tabs (precede with cs-mobile-search-settings) · ⇐ E17-F02-S07
 
 ## E19 — Mobile offline
 

@@ -8,6 +8,12 @@ import 'package:app_mobile/features/auth/domain/auth_repository.dart';
 import 'package:app_mobile/features/auth/domain/instance_repository.dart';
 import 'package:app_mobile/features/auth/domain/library_repository.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
+import 'package:app_mobile/features/browse/data/browse_repository_impl.dart';
+import 'package:app_mobile/features/browse/domain/browse_repository.dart';
+import 'package:app_mobile/features/browse/presentation/bloc/browse_cubit.dart';
+import 'package:app_mobile/features/course_detail/data/course_detail_repository_impl.dart';
+import 'package:app_mobile/features/course_detail/domain/course_detail_repository.dart';
+import 'package:app_mobile/features/course_detail/presentation/bloc/course_detail_cubit.dart';
 import 'package:app_mobile/features/home/data/home_repository_impl.dart';
 import 'package:app_mobile/features/home/domain/home_repository.dart';
 import 'package:app_mobile/features/home/presentation/bloc/home_cubit.dart';
@@ -16,6 +22,10 @@ import 'package:app_mobile/features/player/data/progress_outbox_recorder.dart';
 import 'package:app_mobile/features/player/data/video_player_adapter.dart';
 import 'package:app_mobile/features/player/domain/lesson_player_repository.dart';
 import 'package:app_mobile/features/player/presentation/bloc/player_bloc.dart';
+import 'package:app_mobile/features/search/data/search_repository_impl.dart';
+import 'package:app_mobile/features/search/domain/search_repository.dart';
+import 'package:app_mobile/features/search/presentation/bloc/search_cubit.dart';
+import 'package:app_mobile/features/settings/presentation/bloc/settings_cubit.dart';
 import 'package:app_mobile/shared/auth/token_storage.dart';
 import 'package:app_mobile/shared/config/app_config.dart';
 import 'package:app_mobile/shared/db/app_database.dart';
@@ -62,6 +72,15 @@ void configureDependencies() {
     ..registerLazySingleton<HomeRepository>(
       () => HomeRepositoryImpl(getIt<Dio>()),
     )
+    ..registerLazySingleton<BrowseRepository>(
+      () => BrowseRepositoryImpl(getIt<Dio>()),
+    )
+    ..registerLazySingleton<CourseDetailRepository>(
+      () => CourseDetailRepositoryImpl(getIt<Dio>()),
+    )
+    ..registerLazySingleton<SearchRepository>(
+      () => SearchRepositoryImpl(getIt<Dio>()),
+    )
     ..registerLazySingleton<LessonPlayerRepository>(
       () => LessonPlayerApi(
         dio: getIt<Dio>(),
@@ -83,6 +102,12 @@ void configureDependencies() {
   getIt
     ..registerFactory<AuthCubit>(() => AuthCubit(getIt<AuthRepository>()))
     ..registerFactory<HomeCubit>(() => HomeCubit(getIt<HomeRepository>()))
+    ..registerFactory<BrowseCubit>(() => BrowseCubit(getIt<BrowseRepository>()))
+    ..registerFactory<CourseDetailCubit>(
+      () => CourseDetailCubit(getIt<CourseDetailRepository>()),
+    )
+    ..registerFactory<SearchCubit>(() => SearchCubit(getIt<SearchRepository>()))
+    ..registerFactory<SettingsCubit>(SettingsCubit.new)
     // A factory, and a fresh VideoPlayerAdapter per instance: the adapter owns
     // a platform controller that PlayerBloc.close() disposes, so a shared
     // singleton would hand the next lesson a disposed engine.

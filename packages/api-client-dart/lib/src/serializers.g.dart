@@ -38,6 +38,7 @@ Serializers _$serializers =
           ..add(BookmarkListDto.serializer)
           ..add(ContinueWatchingDto.serializer)
           ..add(ContinueWatchingItem.serializer)
+          ..add(CourseDownloadEstimateDto.serializer)
           ..add(CourseDto.serializer)
           ..add(CourseLevel.serializer)
           ..add(CourseListDto.serializer)

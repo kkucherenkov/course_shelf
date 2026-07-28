@@ -1,12 +1,27 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_mobile/features/settings/presentation/bloc/settings_cubit.dart';
 import 'package:app_mobile/features/settings/presentation/bloc/settings_state.dart';
+import 'package:app_mobile/shared/preferences/settings_preferences_store.dart';
 
 void main() {
-  test('starts with the documented defaults', () {
-    expect(SettingsCubit().state, const SettingsState());
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late SettingsPreferencesStore store;
+
+  Future<void> seed(Map<String, Object> values) async {
+    SharedPreferences.setMockInitialValues(values);
+    store = SettingsPreferencesStore(await SharedPreferences.getInstance());
+  }
+
+  setUp(() => seed(<String, Object>{}));
+
+  SettingsCubit build() => SettingsCubit(store);
+
+  test('starts from the store — defaults when empty', () {
+    expect(build().state, const SettingsState());
     const defaults = SettingsState();
     expect(defaults.theme, AppThemePreference.system);
     expect(defaults.textSize, TextSizePreference.defaultSize);
@@ -17,17 +32,34 @@ void main() {
     expect(defaults.wifiOnlyDownloads, isTrue);
   });
 
+  test('seeds initial state from previously persisted values', () async {
+    await seed(<String, Object>{
+      'pref.theme': 'dark',
+      'pref.reduceMotion': true,
+    });
+    final cubit = build();
+    expect(cubit.state.theme, AppThemePreference.dark);
+    expect(cubit.state.reduceMotion, isTrue);
+  });
+
+  test('a mutation is written back to the store', () async {
+    final cubit = build();
+    cubit.cycleTheme(); // system -> light
+    await Future<void>.delayed(Duration.zero); // let the async save settle
+    expect(store.load().theme, AppThemePreference.light);
+  });
+
   group('toggles flip in place and leave everything else untouched', () {
     blocTest<SettingsCubit, SettingsState>(
       'toggleReduceMotion',
-      build: SettingsCubit.new,
+      build: build,
       act: (cubit) => cubit.toggleReduceMotion(),
       expect: () => <SettingsState>[const SettingsState(reduceMotion: true)],
     );
 
     blocTest<SettingsCubit, SettingsState>(
       'toggleReduceMotion twice returns to false',
-      build: SettingsCubit.new,
+      build: build,
       act: (cubit) {
         cubit.toggleReduceMotion();
         cubit.toggleReduceMotion();
@@ -40,7 +72,7 @@ void main() {
 
     blocTest<SettingsCubit, SettingsState>(
       'toggleAutoplayNextLesson',
-      build: SettingsCubit.new,
+      build: build,
       act: (cubit) => cubit.toggleAutoplayNextLesson(),
       expect: () => <SettingsState>[
         const SettingsState(autoplayNextLesson: false),
@@ -49,7 +81,7 @@ void main() {
 
     blocTest<SettingsCubit, SettingsState>(
       'toggleWifiOnlyDownloads',
-      build: SettingsCubit.new,
+      build: build,
       act: (cubit) => cubit.toggleWifiOnlyDownloads(),
       expect: () => <SettingsState>[
         const SettingsState(wifiOnlyDownloads: false),
@@ -60,7 +92,7 @@ void main() {
   group('value rows cycle through their allowed values', () {
     blocTest<SettingsCubit, SettingsState>(
       'cycleTheme walks system -> light -> dark -> system',
-      build: SettingsCubit.new,
+      build: build,
       act: (cubit) {
         cubit.cycleTheme();
         cubit.cycleTheme();
@@ -75,7 +107,7 @@ void main() {
 
     blocTest<SettingsCubit, SettingsState>(
       'cycleTextSize walks default -> large -> small -> default',
-      build: SettingsCubit.new,
+      build: build,
       act: (cubit) {
         cubit.cycleTextSize();
         cubit.cycleTextSize();
@@ -90,7 +122,7 @@ void main() {
 
     blocTest<SettingsCubit, SettingsState>(
       'cycleSubtitles toggles off <-> english',
-      build: SettingsCubit.new,
+      build: build,
       act: (cubit) {
         cubit.cycleSubtitles();
         cubit.cycleSubtitles();
@@ -103,7 +135,7 @@ void main() {
 
     blocTest<SettingsCubit, SettingsState>(
       'cyclePlaybackSpeed walks the player speed ramp and wraps around',
-      build: SettingsCubit.new,
+      build: build,
       act: (cubit) {
         // Default is 1.0 — index 1 of [0.75, 1, 1.25, 1.5, 2] — so a full
         // walk starts at 1.25, not 0.75.

@@ -36,6 +36,7 @@ void main() {
     repository: repository,
     progressRecorder: recorder,
     playback: playback,
+    playbackPreferences: FakePlaybackPreferences(),
   );
 
   Future<void> pumpPlayer(

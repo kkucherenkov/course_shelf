@@ -34,6 +34,7 @@ dependencies:
   drift: ^2.34.2
   drift_flutter: ^0.3.1
   path_provider: ^2.1.6
+  shared_preferences: ^2.3.2
   # The app's first and only playback engine (E18-F02-S01). Wraps ExoPlayer on
   # Android and AVPlayer on iOS — the same delegate-to-the-platform stance as
   # web's raw `<video>` element (`apps/web/app/composables/useLessonPlayer.ts`),

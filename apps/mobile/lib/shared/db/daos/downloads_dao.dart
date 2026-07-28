@@ -20,22 +20,22 @@ class DownloadsDao extends DatabaseAccessor<AppDatabase>
   Future<void> upsert(DownloadedLessonsCompanion entry) =>
       into(downloadedLessons).insertOnConflictUpdate(entry);
 
-  Future<DownloadedLesson?> byLessonId(String lessonId) =>
-      (select(downloadedLessons)..where((t) => t.lessonId.equals(lessonId)))
-          .getSingleOrNull();
+  Future<DownloadedLesson?> byLessonId(String lessonId) => (select(
+    downloadedLessons,
+  )..where((t) => t.lessonId.equals(lessonId))).getSingleOrNull();
 
-  Future<List<DownloadedLesson>> byState(DownloadState state) =>
-      (select(downloadedLessons)..where((t) => t.state.equalsValue(state)))
-          .get();
+  Future<List<DownloadedLesson>> byState(DownloadState state) => (select(
+    downloadedLessons,
+  )..where((t) => t.state.equalsValue(state))).get();
 
   /// E19's per-item progress stream.
-  Stream<DownloadedLesson?> watch(String lessonId) =>
-      (select(downloadedLessons)..where((t) => t.lessonId.equals(lessonId)))
-          .watchSingleOrNull();
+  Stream<DownloadedLesson?> watch(String lessonId) => (select(
+    downloadedLessons,
+  )..where((t) => t.lessonId.equals(lessonId))).watchSingleOrNull();
 
   /// Cancel deletes the row — there is no terminal `cancelled` state because
   /// there is nothing left to resume from.
-  Future<void> remove(String lessonId) =>
-      (delete(downloadedLessons)..where((t) => t.lessonId.equals(lessonId)))
-          .go();
+  Future<void> remove(String lessonId) => (delete(
+    downloadedLessons,
+  )..where((t) => t.lessonId.equals(lessonId))).go();
 }

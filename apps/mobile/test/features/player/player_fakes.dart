@@ -140,8 +140,9 @@ class FakeLessonPlayerRepository implements LessonPlayerRepository {
   }
 
   @override
-  Future<List<LessonOutlineSection>> fetchCourseOutline(String courseId) async =>
-      sections;
+  Future<List<LessonOutlineSection>> fetchCourseOutline(
+    String courseId,
+  ) async => sections;
 
   @override
   Future<LessonVideoSource> resolveVideoSource(String lessonId) async {

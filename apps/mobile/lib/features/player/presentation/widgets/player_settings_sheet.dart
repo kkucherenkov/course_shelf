@@ -97,9 +97,7 @@ class PlayerSettingsSheet extends StatelessWidget {
     final Duration? remaining = sleepTimer;
     if (remaining == null) return false;
     final int index = kSleepTimerOptions.indexOf(option);
-    final Duration? previous = index > 0
-        ? kSleepTimerOptions[index - 1]
-        : null;
+    final Duration? previous = index > 0 ? kSleepTimerOptions[index - 1] : null;
     return remaining <= option && (previous == null || remaining > previous);
   }
 }

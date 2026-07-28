@@ -45,11 +45,9 @@ class LessonPlayerApi implements LessonPlayerRepository {
     final Response<Map<String, dynamic>> response = await _dio
         .get<Map<String, dynamic>>('/api/v1/courses/$courseId/outline');
     final Map<String, dynamic> json = _require(response.data);
-    final List<dynamic> sections = json['sections'] as List<dynamic>? ?? const <dynamic>[];
-    return sections
-        .cast<Map<String, dynamic>>()
-        .map(_sectionFromJson)
-        .toList();
+    final List<dynamic> sections =
+        json['sections'] as List<dynamic>? ?? const <dynamic>[];
+    return sections.cast<Map<String, dynamic>>().map(_sectionFromJson).toList();
   }
 
   @override
@@ -82,11 +80,9 @@ class LessonPlayerApi implements LessonPlayerRepository {
     final Response<Map<String, dynamic>> response = await _dio
         .get<Map<String, dynamic>>('/api/v1/lessons/$lessonId/bookmarks');
     final Map<String, dynamic> json = _require(response.data);
-    final List<dynamic> items = json['items'] as List<dynamic>? ?? const <dynamic>[];
-    return items
-        .cast<Map<String, dynamic>>()
-        .map(_bookmarkFromJson)
-        .toList();
+    final List<dynamic> items =
+        json['items'] as List<dynamic>? ?? const <dynamic>[];
+    return items.cast<Map<String, dynamic>>().map(_bookmarkFromJson).toList();
   }
 
   @override

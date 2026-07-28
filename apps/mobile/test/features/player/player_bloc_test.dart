@@ -77,7 +77,9 @@ void main() {
       },
       act: (PlayerBloc bloc) => bloc.add(const PlayerStarted('lesson-1')),
       verify: (_) {
-        expect(playback.seeks, <Duration>[const Duration(minutes: 4, seconds: 30)]);
+        expect(playback.seeks, <Duration>[
+          const Duration(minutes: 4, seconds: 30),
+        ]);
       },
     );
 
@@ -199,10 +201,10 @@ void main() {
       verify: (_) {
         // -10 from 4s clamps to 0; the following +10 is relative to that new
         // position, so it lands on 10s rather than back at 14s.
-        expect(
-          playback.seeks,
-          <Duration>[Duration.zero, const Duration(seconds: 10)],
-        );
+        expect(playback.seeks, <Duration>[
+          Duration.zero,
+          const Duration(seconds: 10),
+        ]);
       },
     );
 

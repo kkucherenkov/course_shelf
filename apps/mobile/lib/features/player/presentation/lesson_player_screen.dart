@@ -166,9 +166,8 @@ class _LandscapePlayer extends StatelessWidget {
           stayLabel: context.t.player.stayHere,
           playNextLabel: context.t.player.playNext,
           onPlayPause: () => bloc.add(const PlayerPlayPausePressed()),
-          onSeek: (double fraction) => bloc.add(
-            PlayerSeekRequested(state.duration * fraction),
-          ),
+          onSeek: (double fraction) =>
+              bloc.add(PlayerSeekRequested(state.duration * fraction)),
           onSkip: (int seconds) => bloc.add(PlayerSkipRequested(seconds)),
           onDismissToPortrait: onDismissToPortrait,
           onVolumeTap: () => bloc.add(const PlayerMuteToggled()),
@@ -401,7 +400,8 @@ class _PortraitTabBody extends StatelessWidget {
             label: draft.label,
           ),
         ),
-        onAddCancel: () => bloc.add(const PlayerBookmarkAddToggled(adding: false)),
+        onAddCancel: () =>
+            bloc.add(const PlayerBookmarkAddToggled(adding: false)),
       ),
       PlayerTab.materials => PlayerMaterialsPanel(
         state: state,
@@ -452,8 +452,8 @@ class _VideoSurface extends StatelessWidget {
 /// orientations so the portrait and landscape chrome read the bloc's status
 /// identically.
 AppPlayerChromeState _chromeState(PlayerStatus status) => switch (status) {
-  PlayerStatus.loading || PlayerStatus.buffering =>
-    AppPlayerChromeState.buffering,
+  PlayerStatus.loading ||
+  PlayerStatus.buffering => AppPlayerChromeState.buffering,
   PlayerStatus.playing => AppPlayerChromeState.playing,
   PlayerStatus.paused => AppPlayerChromeState.paused,
   PlayerStatus.endOfLesson => AppPlayerChromeState.end,

@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_mobile/features/search/domain/search_repository.dart';
 import 'package:app_mobile/features/search/domain/search_result.dart';
 import 'package:app_mobile/features/search/presentation/bloc/search_cubit.dart';
 import 'package:app_mobile/features/search/presentation/search_screen.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
+import 'package:app_mobile/shared/preferences/recent_searches_store.dart';
 
 class _MockSearchRepository extends Mock implements SearchRepository {}
 
@@ -39,9 +41,13 @@ void main() {
   late _MockSearchRepository repository;
   late SearchCubit cubit;
 
-  setUp(() {
+  setUp(() async {
     repository = _MockSearchRepository();
-    cubit = SearchCubit(repository);
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    cubit = SearchCubit(
+      repository,
+      RecentSearchesStore(await SharedPreferences.getInstance()),
+    );
   });
 
   tearDown(() async => cubit.close());

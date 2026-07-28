@@ -26,15 +26,10 @@ Future<void> main() async {
 
   const sentryDsn = String.fromEnvironment('SENTRY_DSN');
   if (sentryDsn.isNotEmpty) {
-    await SentryFlutter.init(
-      (options) {
-        options.dsn = sentryDsn;
-        options.tracesSampleRate = 0.2;
-      },
-      appRunner: () => runApp(
-        TranslationProvider(child: const App()),
-      ),
-    );
+    await SentryFlutter.init((options) {
+      options.dsn = sentryDsn;
+      options.tracesSampleRate = 0.2;
+    }, appRunner: () => runApp(TranslationProvider(child: const App())));
   } else {
     runApp(TranslationProvider(child: const App()));
   }

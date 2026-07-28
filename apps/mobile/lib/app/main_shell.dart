@@ -9,7 +9,6 @@ import 'package:app_mobile/features/home/presentation/bloc/home_cubit.dart';
 import 'package:app_mobile/features/home/presentation/home_screen.dart';
 import 'package:app_mobile/features/search/presentation/bloc/search_cubit.dart';
 import 'package:app_mobile/features/search/presentation/search_screen.dart';
-import 'package:app_mobile/features/settings/presentation/bloc/settings_cubit.dart';
 import 'package:app_mobile/features/settings/presentation/settings_screen.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
 import 'package:app_mobile/shared/di/injector.dart';
@@ -112,10 +111,10 @@ class _MainShellState extends State<MainShell> {
           label: t.navSettings,
           icon: IconName.settings,
           filledIcon: IconName.settingsFill,
-          body: BlocProvider<SettingsCubit>(
-            create: (_) => getIt<SettingsCubit>(),
-            child: const SettingsTabBody(),
-          ),
+          // SettingsCubit is provided once, above MaterialApp in `App`, because
+          // it also drives themeMode / text scale; the tab reads that same
+          // ambient instance.
+          body: const SettingsTabBody(),
         ),
       ],
     );

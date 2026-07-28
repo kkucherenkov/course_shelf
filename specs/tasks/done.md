@@ -2,6 +2,32 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-18-004 — Persist + honor device prefs & recents
+
+- Created: 2026-07-18
+- Completed: 2026-07-28
+- Owner: claude
+- Branch: `feat/mobile-persist-honor-prefs`
+- Spec: `docs/superpowers/specs/2026-07-18-persist-honor-device-prefs-design.md`
+- Plan: `docs/superpowers/plans/2026-07-18-persist-honor-device-prefs.md`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/183 (issue #182)
+- Goal: persist Settings device prefs + Search recents via `shared_preferences`,
+  and honor theme / text size / reduce-motion / playback speed / autoplay-next
+  app-wide.
+- Sub-steps:
+  - [x] Task 1 — `shared_preferences` stores (`ce2de17`)
+  - [x] Task 2 — persist `SettingsCubit` (`727905e`)
+  - [x] Task 3 — persist `SearchCubit` recents (`9ac9a1f`)
+  - [x] Task 4 — DI bootstrap + honor chrome prefs app-wide
+  - [x] Task 5 — player saved-speed + autoplay-next (`1c3c604`)
+  - [x] Task 6 — full-suite gate + archive (`flutter analyze` clean, 265 tests pass)
+- Notes: `subtitles` + `wifiOnlyDownloads` land persisted-but-inert on purpose —
+  no subtitle track exists yet, and Wi-Fi-only downloads wait on E19's
+  `DownloadsBloc` (#101). Lifting `SettingsCubit` above `MaterialApp` also
+  required registering the prefs stores in every harness that pumps the real
+  `App` (`app_theme_wiring`, `first_run_signup`, `search_screen`, the player
+  integration test) — the plan had only accounted for `main_shell_test`.
+
 ## T-2026-07-18-003 — E18-F01-S02 · Mobile Browse tab (Flutter)
 
 - Created: 2026-07-18

@@ -14,14 +14,14 @@ void main() {
   final now = DateTime.utc(2026, 7, 15);
 
   CachedCoursesCompanion course(String id) => CachedCoursesCompanion.insert(
-        id: id,
-        libraryId: 'lib1',
-        slug: 'slug-$id',
-        title: 'Course $id',
-        updatedAt: now,
-        cachedAt: now,
-        payload: '{"id":"$id"}',
-      );
+    id: id,
+    libraryId: 'lib1',
+    slug: 'slug-$id',
+    title: 'Course $id',
+    updatedAt: now,
+    cachedAt: now,
+    payload: '{"id":"$id"}',
+  );
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
@@ -84,35 +84,37 @@ void main() {
     expect(lessons.single.id, 'l1');
   });
 
-  test('re-running replaceOutline with the same outline does not duplicate rows',
-      () async {
-    await dao.upsertCourse(course('c1'));
-    Future<void> write() => dao.replaceOutline(
-          courseId: 'c1',
-          sections: [
-            CachedSectionsCompanion.insert(
-              id: 's1',
-              courseId: 'c1',
-              position: 0,
-              cachedAt: now,
-              payload: '{}',
-            ),
-          ],
-          lessons: [
-            CachedLessonsCompanion.insert(
-              id: 'l1',
-              sectionId: 's1',
-              courseId: 'c1',
-              position: 0,
-              cachedAt: now,
-              payload: '{}',
-            ),
-          ],
-        );
-    await write();
-    await write();
-    expect((await dao.lessonsForCourse('c1')).length, 1);
-  });
+  test(
+    're-running replaceOutline with the same outline does not duplicate rows',
+    () async {
+      await dao.upsertCourse(course('c1'));
+      Future<void> write() => dao.replaceOutline(
+        courseId: 'c1',
+        sections: [
+          CachedSectionsCompanion.insert(
+            id: 's1',
+            courseId: 'c1',
+            position: 0,
+            cachedAt: now,
+            payload: '{}',
+          ),
+        ],
+        lessons: [
+          CachedLessonsCompanion.insert(
+            id: 'l1',
+            sectionId: 's1',
+            courseId: 'c1',
+            position: 0,
+            cachedAt: now,
+            payload: '{}',
+          ),
+        ],
+      );
+      await write();
+      await write();
+      expect((await dao.lessonsForCourse('c1')).length, 1);
+    },
+  );
 
   test('deleting a course cascades to its lessons', () async {
     await dao.upsertCourse(course('c1'));
@@ -214,9 +216,9 @@ void main() {
     expect(lessons.single.id, 'l1');
 
     // Verify orphaned section is gone.
-    final sections = await (db.select(db.cachedSections)
-          ..where((t) => t.courseId.equals('c1')))
-        .get();
+    final sections = await (db.select(
+      db.cachedSections,
+    )..where((t) => t.courseId.equals('c1'))).get();
     expect(sections, hasLength(1));
     expect(sections.single.id, 's1');
   });

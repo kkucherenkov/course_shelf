@@ -8,6 +8,7 @@ import 'package:app_mobile/features/player/domain/lesson_player_repository.dart'
 import 'package:app_mobile/features/player/domain/video_playback_port.dart';
 import 'package:app_mobile/features/player/presentation/bloc/player_event.dart';
 import 'package:app_mobile/features/player/presentation/bloc/player_state.dart';
+import 'package:app_mobile/shared/preferences/playback_preferences.dart';
 
 /// How often a playing lesson's position reaches `progress_outbox`.
 ///
@@ -32,10 +33,12 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     required LessonPlayerRepository repository,
     required LessonProgressRecorder progressRecorder,
     required VideoPlaybackPort playback,
+    required PlaybackPreferences playbackPreferences,
     DateTime Function()? now,
   }) : _repository = repository,
        _recorder = progressRecorder,
        _playback = playback,
+       _prefs = playbackPreferences,
        _now = now ?? DateTime.now,
        super(const PlayerState()) {
     on<PlayerStarted>(_onStarted);
@@ -63,6 +66,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   final LessonPlayerRepository _repository;
   final LessonProgressRecorder _recorder;
   final VideoPlaybackPort _playback;
+  final PlaybackPreferences _prefs;
   final DateTime Function() _now;
 
   late final StreamSubscription<VideoPlaybackSnapshot> _snapshotSub;
@@ -113,7 +117,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
   // ── Loading ───────────────────────────────────────────────────────────────
 
-  Future<void> _onStarted(PlayerStarted event, Emitter<PlayerState> emit) async {
+  Future<void> _onStarted(
+    PlayerStarted event,
+    Emitter<PlayerState> emit,
+  ) async {
     _lessonId = event.lessonId;
     emit(const PlayerState());
     await _load(emit);
@@ -153,6 +160,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       );
       await _playback.open(source);
 
+      // Open at the user's saved playback rate (device preference).
+      final double savedSpeed = _prefs.playbackSpeed;
+      await _playback.setSpeed(savedSpeed);
+
       if (lesson.resumeAt > Duration.zero) {
         await _playback.seek(lesson.resumeAt);
       }
@@ -166,6 +177,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
           note: note,
           position: lesson.resumeAt,
           duration: lesson.duration,
+          speed: savedSpeed,
           watchingOffline: source.isOffline,
           clearError: true,
         ),
@@ -217,15 +229,55 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     );
 
     if (status == PlayerStatus.endOfLesson) {
-      // Web lets the tail position die with the page unless `beforeunload`
-      // fires. Flushing on `ended` is a deliberate improvement: it is the one
-      // position that decides whether the lesson reads as completed.
+      // Flush on `ended`: it is the one position that decides whether the
+      // lesson reads as completed.
       await _writeProgress(force: true);
+      // Honour the autoplay preference, read live so a mid-session toggle
+      // takes effect at the very next lesson boundary.
+      if (_prefs.autoplayNextLesson) {
+        final String? next = _nextLessonId();
+        if (next != null) await _advanceTo(next, emit);
+      }
       return;
     }
 
     if (status == PlayerStatus.playing) {
       await _writeProgress();
+    }
+  }
+
+  /// The next lesson to play after the current one, flattening the outline by
+  /// section then lesson position. Null when the current lesson is last or the
+  /// next one is locked.
+  String? _nextLessonId() {
+    final String? current = _lessonId;
+    if (current == null) return null;
+
+    final List<LessonOutlineSection> sections = <LessonOutlineSection>[
+      ...state.sections,
+    ]..sort((a, b) => a.position.compareTo(b.position));
+    final List<LessonOutlineEntry> ordered = <LessonOutlineEntry>[
+      for (final LessonOutlineSection s in sections)
+        ...(<LessonOutlineEntry>[...s.lessons]
+          ..sort((a, b) => a.position.compareTo(b.position))),
+    ];
+
+    final int index = ordered.indexWhere((e) => e.id == current);
+    if (index == -1 || index + 1 >= ordered.length) return null;
+    final LessonOutlineEntry next = ordered[index + 1];
+    if (next.state == LessonOutlineEntryState.locked) return null;
+    return next.id;
+  }
+
+  /// Loads [lessonId] fresh and plays it — the autoplay transition.
+  Future<void> _advanceTo(String lessonId, Emitter<PlayerState> emit) async {
+    _lessonId = lessonId;
+    emit(const PlayerState()); // loading for the new lesson
+    await _load(emit);
+    if (state.status == PlayerStatus.paused) {
+      _lastProgressWriteAt = _now();
+      await _playback.play();
+      emit(state.copyWith(status: PlayerStatus.playing));
     }
   }
 
@@ -309,14 +361,20 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     emit(state.copyWith(status: PlayerStatus.playing));
   }
 
-  Future<void> _onSeek(PlayerSeekRequested event, Emitter<PlayerState> emit) async {
+  Future<void> _onSeek(
+    PlayerSeekRequested event,
+    Emitter<PlayerState> emit,
+  ) async {
     if (!state.isReady) return;
     final Duration target = _clamp(event.position);
     await _playback.seek(target);
     emit(state.copyWith(position: target));
   }
 
-  Future<void> _onSkip(PlayerSkipRequested event, Emitter<PlayerState> emit) async {
+  Future<void> _onSkip(
+    PlayerSkipRequested event,
+    Emitter<PlayerState> emit,
+  ) async {
     if (!state.isReady) return;
     final Duration target = _clamp(
       state.position + Duration(seconds: event.seconds),
@@ -332,7 +390,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     return position;
   }
 
-  Future<void> _onSpeed(PlayerSpeedChanged event, Emitter<PlayerState> emit) async {
+  Future<void> _onSpeed(
+    PlayerSpeedChanged event,
+    Emitter<PlayerState> emit,
+  ) async {
     // Null means "advance to the next preset" — web's `chromeSpeed` cycles when
     // the control is tapped with the speed it already has.
     final double next = event.speed ?? _nextSpeed(state.speed);
@@ -346,7 +407,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     return kPlaybackSpeeds[(index + 1) % kPlaybackSpeeds.length];
   }
 
-  Future<void> _onMute(PlayerMuteToggled event, Emitter<PlayerState> emit) async {
+  Future<void> _onMute(
+    PlayerMuteToggled event,
+    Emitter<PlayerState> emit,
+  ) async {
     final bool muted = !state.isMuted;
     await _playback.setMuted(muted);
     emit(state.copyWith(isMuted: muted));
@@ -374,10 +438,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         position: event.position,
         label: event.label.isEmpty ? null : event.label,
       );
-      final List<LessonBookmark> next = <LessonBookmark>[
-        ...state.bookmarks,
-        created,
-      ]..sort((LessonBookmark a, LessonBookmark b) => a.position.compareTo(b.position));
+      final List<LessonBookmark> next =
+          <LessonBookmark>[...state.bookmarks, created]..sort(
+            (LessonBookmark a, LessonBookmark b) =>
+                a.position.compareTo(b.position),
+          );
       emit(state.copyWith(bookmarks: next, addingBookmark: false));
     } on Object {
       emit(state.copyWith(addingBookmark: false));

@@ -27,16 +27,18 @@ void main() {
           queuedAt: at,
         );
 
-    test('coalesces: two writes for one lesson leave a single newest row',
-        () async {
-      await db.progressOutboxDao.enqueue(entry('l1', 10, t0));
-      await db.progressOutboxDao.enqueue(entry('l1', 90, t1));
+    test(
+      'coalesces: two writes for one lesson leave a single newest row',
+      () async {
+        await db.progressOutboxDao.enqueue(entry('l1', 10, t0));
+        await db.progressOutboxDao.enqueue(entry('l1', 90, t1));
 
-      final pending = await db.progressOutboxDao.pending();
-      expect(pending.length, 1, reason: 'unique(lessonId) must coalesce');
-      expect(pending.single.positionSeconds, 90);
-      expect(pending.single.clientUpdatedAt, t1);
-    });
+        final pending = await db.progressOutboxDao.pending();
+        expect(pending.length, 1, reason: 'unique(lessonId) must coalesce');
+        expect(pending.single.positionSeconds, 90);
+        expect(pending.single.clientUpdatedAt, t1);
+      },
+    );
 
     test('keeps separate lessons separate', () async {
       await db.progressOutboxDao.enqueue(entry('l1', 10, t0));
@@ -51,8 +53,9 @@ void main() {
       // rows in insertion order (no working `ORDER BY`), this would produce
       // l249..l50 instead of l0..l199, and the assertion below would fail.
       for (var i = 249; i >= 0; i--) {
-        await db.progressOutboxDao
-            .enqueue(entry('l$i', i, t0.add(Duration(seconds: i))));
+        await db.progressOutboxDao.enqueue(
+          entry('l$i', i, t0.add(Duration(seconds: i))),
+        );
       }
       final page = await db.progressOutboxDao.pending();
       expect(page.length, 200, reason: '/progress/batch maxItems is 200');
@@ -181,37 +184,39 @@ void main() {
       );
     });
 
-    test('create then update on one localId collapses to a single row',
-        () async {
-      await db.bookmarksOutboxDao.enqueue(create('b1'));
-      await db.bookmarksOutboxDao.enqueue(
-        BookmarksOutboxCompanion.insert(
-          localId: 'b1',
-          lessonId: 'l1',
-          op: OutboxOp.update,
-          positionSeconds: const Value(99),
-          label: const Value('edited'),
-          clientUpdatedAt: t1,
-          queuedAt: t1,
-        ),
-      );
+    test(
+      'create then update on one localId collapses to a single row',
+      () async {
+        await db.bookmarksOutboxDao.enqueue(create('b1'));
+        await db.bookmarksOutboxDao.enqueue(
+          BookmarksOutboxCompanion.insert(
+            localId: 'b1',
+            lessonId: 'l1',
+            op: OutboxOp.update,
+            positionSeconds: const Value(99),
+            label: const Value('edited'),
+            clientUpdatedAt: t1,
+            queuedAt: t1,
+          ),
+        );
 
-      final pending = await db.bookmarksOutboxDao.pending();
-      expect(
-        pending.length,
-        1,
-        reason: 'the update overwrites the create at enqueue time',
-      );
-      final row = pending.single;
-      expect(row.op, OutboxOp.update);
-      expect(row.positionSeconds, 99);
-      expect(
-        row.serverId,
-        isNull,
-        reason:
-            'no create row survives to drain — it collapsed into this update',
-      );
-    });
+        final pending = await db.bookmarksOutboxDao.pending();
+        expect(
+          pending.length,
+          1,
+          reason: 'the update overwrites the create at enqueue time',
+        );
+        final row = pending.single;
+        expect(row.op, OutboxOp.update);
+        expect(row.positionSeconds, 99);
+        expect(
+          row.serverId,
+          isNull,
+          reason:
+              'no create row survives to drain — it collapsed into this update',
+        );
+      },
+    );
 
     test('a local DateTime is normalized to UTC on write', () async {
       final local = DateTime(2026, 7, 15, 11);

@@ -1,11 +1,13 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_mobile/features/search/domain/search_repository.dart';
 import 'package:app_mobile/features/search/domain/search_result.dart';
 import 'package:app_mobile/features/search/presentation/bloc/search_cubit.dart';
 import 'package:app_mobile/features/search/presentation/bloc/search_state.dart';
+import 'package:app_mobile/shared/preferences/recent_searches_store.dart';
 
 class _MockSearchRepository extends Mock implements SearchRepository {}
 
@@ -43,12 +45,45 @@ const _blank = SearchResults(
 const _pastDebounce = Duration(milliseconds: 350);
 
 void main() {
-  late _MockSearchRepository repository;
+  TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() => repository = _MockSearchRepository());
+  late _MockSearchRepository repository;
+  late RecentSearchesStore recentsStore;
+
+  Future<void> seedRecents(List<String> terms) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      if (terms.isNotEmpty) 'search.recents': terms,
+    });
+    recentsStore = RecentSearchesStore(await SharedPreferences.getInstance());
+  }
+
+  setUp(() async {
+    repository = _MockSearchRepository();
+    await seedRecents(<String>[]);
+  });
+
+  test('seeds recentSearches from the store on construction', () async {
+    await seedRecents(<String>['replication', 'raft']);
+    final cubit = SearchCubit(repository, recentsStore);
+    expect(cubit.state.recentSearches, <String>['replication', 'raft']);
+    await cubit.close();
+  });
+
+  test('a successful search persists the new recents list', () async {
+    when(
+      () => repository.search('raft', limit: 20),
+    ).thenAnswer((_) async => _populated);
+    final cubit = SearchCubit(repository, recentsStore);
+
+    await cubit.searchRecent('raft');
+    await Future<void>.delayed(Duration.zero); // let the async write settle
+
+    expect(recentsStore.read(), contains('raft'));
+    await cubit.close();
+  });
 
   test('starts in Recent with no query and no recents', () {
-    final cubit = SearchCubit(repository);
+    final cubit = SearchCubit(repository, recentsStore);
     expect(cubit.state, const SearchState());
     expect(cubit.state.status, SearchStatus.recent);
   });
@@ -56,7 +91,7 @@ void main() {
   group('queryChanged', () {
     blocTest<SearchCubit, SearchState>(
       'a query under 2 trimmed chars stays Recent and never hits the network',
-      build: () => SearchCubit(repository),
+      build: () => SearchCubit(repository, recentsStore),
       act: (cubit) => cubit.queryChanged('a'),
       expect: () => <SearchState>[
         const SearchState(status: SearchStatus.recent, query: 'a'),
@@ -68,7 +103,7 @@ void main() {
 
     blocTest<SearchCubit, SearchState>(
       'whitespace-only input (trims to 0 chars) stays Recent too',
-      build: () => SearchCubit(repository),
+      build: () => SearchCubit(repository, recentsStore),
       act: (cubit) => cubit.queryChanged('  '),
       expect: () => <SearchState>[
         const SearchState(status: SearchStatus.recent, query: '  '),
@@ -80,7 +115,7 @@ void main() {
       setUp: () => when(
         () => repository.search('flutter', limit: 20),
       ).thenAnswer((_) async => _populated),
-      build: () => SearchCubit(repository),
+      build: () => SearchCubit(repository, recentsStore),
       act: (cubit) async {
         cubit.queryChanged('flutter');
         await Future<void>.delayed(_pastDebounce);
@@ -101,7 +136,7 @@ void main() {
       setUp: () => when(
         () => repository.search('flutter', limit: 20),
       ).thenAnswer((_) async => _populated),
-      build: () => SearchCubit(repository),
+      build: () => SearchCubit(repository, recentsStore),
       act: (cubit) async {
         cubit.queryChanged('flu');
         cubit.queryChanged('flutt');
@@ -128,7 +163,7 @@ void main() {
       setUp: () => when(
         () => repository.search('kubernetes', limit: 20),
       ).thenAnswer((_) async => _blank),
-      build: () => SearchCubit(repository),
+      build: () => SearchCubit(repository, recentsStore),
       act: (cubit) async {
         cubit.queryChanged('kubernetes');
         await Future<void>.delayed(_pastDebounce);
@@ -149,7 +184,7 @@ void main() {
       setUp: () => when(
         () => repository.search('boom', limit: 20),
       ).thenThrow(Exception('network down')),
-      build: () => SearchCubit(repository),
+      build: () => SearchCubit(repository, recentsStore),
       act: (cubit) async {
         cubit.queryChanged('boom');
         await Future<void>.delayed(_pastDebounce);
@@ -166,7 +201,7 @@ void main() {
       setUp: () => when(
         () => repository.search('flutter', limit: 20),
       ).thenAnswer((_) async => _populated),
-      build: () => SearchCubit(repository),
+      build: () => SearchCubit(repository, recentsStore),
       act: (cubit) async {
         cubit.queryChanged('flutter');
         cubit.queryChanged('f');
@@ -187,7 +222,7 @@ void main() {
       setUp: () => when(
         () => repository.search('flutter', limit: 20),
       ).thenAnswer((_) async => _populated),
-      build: () => SearchCubit(repository),
+      build: () => SearchCubit(repository, recentsStore),
       act: (cubit) async {
         cubit.queryChanged('flutter');
         await Future<void>.delayed(_pastDebounce);
@@ -209,7 +244,7 @@ void main() {
       setUp: () => when(
         () => repository.search('flutter', limit: 20),
       ).thenAnswer((_) async => _populated),
-      build: () => SearchCubit(repository),
+      build: () => SearchCubit(repository, recentsStore),
       act: (cubit) => cubit.searchRecent('flutter'),
       expect: () => <SearchState>[
         const SearchState(status: SearchStatus.loading, query: 'flutter'),
@@ -233,7 +268,7 @@ void main() {
           lessons: const <SearchLessonHit>[],
         ),
       ),
-      build: () => SearchCubit(repository),
+      build: () => SearchCubit(repository, recentsStore),
       act: (cubit) async {
         await cubit.searchRecent('alpha');
         await cubit.searchRecent('beta');
@@ -246,7 +281,7 @@ void main() {
 
     blocTest<SearchCubit, SearchState>(
       'removeRecent drops a single term without touching the network',
-      build: () => SearchCubit(repository),
+      build: () => SearchCubit(repository, recentsStore),
       seed: () => const SearchState(recentSearches: <String>['alpha', 'beta']),
       act: (cubit) => cubit.removeRecent('alpha'),
       expect: () => <SearchState>[
@@ -256,7 +291,7 @@ void main() {
 
     blocTest<SearchCubit, SearchState>(
       'clearRecent empties the whole list',
-      build: () => SearchCubit(repository),
+      build: () => SearchCubit(repository, recentsStore),
       seed: () => const SearchState(recentSearches: <String>['alpha', 'beta']),
       act: (cubit) => cubit.clearRecent(),
       expect: () => <SearchState>[const SearchState()],
@@ -269,7 +304,7 @@ void main() {
       setUp: () => when(
         () => repository.search('flutter', limit: 20),
       ).thenThrow(Exception('boom')),
-      build: () => SearchCubit(repository),
+      build: () => SearchCubit(repository, recentsStore),
       act: (cubit) async {
         cubit.queryChanged('flutter');
         await Future<void>.delayed(_pastDebounce);
@@ -292,7 +327,7 @@ void main() {
     );
 
     test('does nothing before any query has reached the network', () async {
-      final cubit = SearchCubit(repository);
+      final cubit = SearchCubit(repository, recentsStore);
       await cubit.retry();
       expect(cubit.state, const SearchState());
       verifyNever(() => repository.search(any(), limit: any(named: 'limit')));

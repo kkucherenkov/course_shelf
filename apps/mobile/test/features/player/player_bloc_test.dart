@@ -13,12 +13,14 @@ void main() {
   late FakeLessonPlayerRepository repository;
   late FakeProgressRecorder recorder;
   late FakeVideoPlaybackPort playback;
+  late FakePlaybackPreferences prefs;
   late DateTime clock;
 
   setUp(() {
     repository = FakeLessonPlayerRepository();
     recorder = FakeProgressRecorder();
     playback = FakeVideoPlaybackPort();
+    prefs = FakePlaybackPreferences();
     clock = DateTime.utc(2026, 7, 17, 12);
   });
 
@@ -26,6 +28,7 @@ void main() {
     repository: repository,
     progressRecorder: recorder,
     playback: playback,
+    playbackPreferences: prefs,
     now: () => clock,
   );
 
@@ -74,7 +77,9 @@ void main() {
       },
       act: (PlayerBloc bloc) => bloc.add(const PlayerStarted('lesson-1')),
       verify: (_) {
-        expect(playback.seeks, <Duration>[const Duration(minutes: 4, seconds: 30)]);
+        expect(playback.seeks, <Duration>[
+          const Duration(minutes: 4, seconds: 30),
+        ]);
       },
     );
 
@@ -196,10 +201,10 @@ void main() {
       verify: (_) {
         // -10 from 4s clamps to 0; the following +10 is relative to that new
         // position, so it lands on 10s rather than back at 14s.
-        expect(
-          playback.seeks,
-          <Duration>[Duration.zero, const Duration(seconds: 10)],
-        );
+        expect(playback.seeks, <Duration>[
+          Duration.zero,
+          const Duration(seconds: 10),
+        ]);
       },
     );
 
@@ -458,6 +463,134 @@ void main() {
       verify: (PlayerBloc bloc) {
         expect(bloc.state.sleepTimer, isNull);
         expect(playback.calls, isNot(contains('pause')));
+      },
+    );
+  });
+
+  group('device preferences', () {
+    blocTest<PlayerBloc, PlayerState>(
+      'opens the lesson at the saved playback speed',
+      build: build,
+      setUp: () => prefs.playbackSpeed = 1.5,
+      act: (PlayerBloc bloc) => bloc.add(const PlayerStarted('lesson-1')),
+      verify: (PlayerBloc bloc) {
+        expect(bloc.state.speed, 1.5);
+        expect(playback.calls, contains('setSpeed:1.5'));
+      },
+    );
+
+    // A two-lesson course so there is a next lesson to advance to.
+    void seedTwoLessons() {
+      repository.lessonsById = <String, LessonPlayback>{
+        'lesson-1': fakeLesson,
+        'lesson-2': const LessonPlayback(
+          id: 'lesson-2',
+          courseId: 'course-1',
+          sectionId: 'section-1',
+          title: 'Quorum reads',
+          duration: Duration(minutes: 12),
+          resumeAt: Duration.zero,
+        ),
+      };
+      repository.sections = const <LessonOutlineSection>[
+        LessonOutlineSection(
+          id: 'section-1',
+          position: 0,
+          title: 'Replication',
+          totalDuration: Duration(minutes: 38),
+          lessons: <LessonOutlineEntry>[
+            LessonOutlineEntry(
+              id: 'lesson-1',
+              position: 0,
+              title: 'Leaderless replication',
+              duration: Duration(minutes: 26),
+              state: LessonOutlineEntryState.inProgress,
+            ),
+            LessonOutlineEntry(
+              id: 'lesson-2',
+              position: 1,
+              title: 'Quorum reads',
+              duration: Duration(minutes: 12),
+              state: LessonOutlineEntryState.notStarted,
+            ),
+          ],
+        ),
+      ];
+    }
+
+    blocTest<PlayerBloc, PlayerState>(
+      'auto-advances to the next lesson on completion when the pref is on',
+      build: build,
+      setUp: () {
+        prefs.autoplayNextLesson = true;
+        seedTwoLessons();
+      },
+      act: (PlayerBloc bloc) async {
+        bloc.add(const PlayerStarted('lesson-1'));
+        await Future<void>.delayed(Duration.zero);
+        playback.emit(playing(isCompleted: true));
+        await Future<void>.delayed(Duration.zero);
+      },
+      verify: (PlayerBloc bloc) {
+        expect(bloc.state.lesson?.id, 'lesson-2');
+        expect(bloc.state.status, PlayerStatus.playing);
+        expect(playback.opened.length, 2);
+      },
+    );
+
+    blocTest<PlayerBloc, PlayerState>(
+      'does not advance when the autoplay pref is off',
+      build: build,
+      setUp: () {
+        prefs.autoplayNextLesson = false;
+        seedTwoLessons();
+      },
+      act: (PlayerBloc bloc) async {
+        bloc.add(const PlayerStarted('lesson-1'));
+        await Future<void>.delayed(Duration.zero);
+        playback.emit(playing(isCompleted: true));
+        await Future<void>.delayed(Duration.zero);
+      },
+      verify: (PlayerBloc bloc) {
+        expect(bloc.state.lesson?.id, 'lesson-1');
+        expect(bloc.state.status, PlayerStatus.endOfLesson);
+        expect(playback.opened.length, 1);
+      },
+    );
+
+    blocTest<PlayerBloc, PlayerState>(
+      'stays on the end banner at the last lesson',
+      build: build,
+      setUp: () {
+        prefs.autoplayNextLesson = true;
+        // Only lesson-1 in the outline — nothing to advance to.
+        repository.sections = const <LessonOutlineSection>[
+          LessonOutlineSection(
+            id: 'section-1',
+            position: 0,
+            title: 'Replication',
+            totalDuration: Duration(minutes: 26),
+            lessons: <LessonOutlineEntry>[
+              LessonOutlineEntry(
+                id: 'lesson-1',
+                position: 0,
+                title: 'Leaderless replication',
+                duration: Duration(minutes: 26),
+                state: LessonOutlineEntryState.inProgress,
+              ),
+            ],
+          ),
+        ];
+      },
+      act: (PlayerBloc bloc) async {
+        bloc.add(const PlayerStarted('lesson-1'));
+        await Future<void>.delayed(Duration.zero);
+        playback.emit(playing(isCompleted: true));
+        await Future<void>.delayed(Duration.zero);
+      },
+      verify: (PlayerBloc bloc) {
+        expect(bloc.state.status, PlayerStatus.endOfLesson);
+        expect(playback.opened.length, 1);
       },
     );
   });

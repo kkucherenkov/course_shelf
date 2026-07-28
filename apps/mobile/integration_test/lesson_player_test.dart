@@ -40,6 +40,7 @@ void main() {
       repository: repository,
       progressRecorder: ProgressOutboxRecorder(ProgressOutboxDao(db)),
       playback: playback,
+      playbackPreferences: FakePlaybackPreferences(),
       now: () => clock,
     );
   });

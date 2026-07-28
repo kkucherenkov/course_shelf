@@ -1,19 +1,35 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:app_mobile/features/search/domain/search_repository.dart';
 import 'package:app_mobile/features/search/presentation/bloc/search_state.dart';
+import 'package:app_mobile/shared/preferences/recent_searches_store.dart';
 
 /// Drives the Search tab through Recent | Loading | Results | Empty | Failed.
 ///
-/// Recent searches are kept in-memory only for this card: there is no
-/// `shared_preferences` (or similar) dependency in `pubspec.yaml` yet.
-/// TODO(E18): persist recent searches.
+/// Recent searches are seeded from and persisted to [RecentSearchesStore]
+/// (device-local). They change on a successful search and on explicit
+/// clear/remove.
 class SearchCubit extends Cubit<SearchState> {
-  SearchCubit(this._repository) : super(const SearchState());
+  SearchCubit(this._repository, RecentSearchesStore recentsStore)
+    : _recentsStore = recentsStore,
+      super(SearchState(recentSearches: recentsStore.read()));
 
   final SearchRepository _repository;
+  final RecentSearchesStore _recentsStore;
+
+  @override
+  void onChange(Change<SearchState> change) {
+    super.onChange(change);
+    // Persist only when the recents list actually changed — not on every
+    // keystroke-driven status/query emit.
+    final List<String> next = change.nextState.recentSearches;
+    if (!listEquals(next, change.currentState.recentSearches)) {
+      _recentsStore.write(next);
+    }
+  }
 
   /// Mirrors the server's own gate (`packages/specs/openapi/openapi.yaml`:
   /// "Trimmed length must be >= 2"), so a shorter query never leaves the

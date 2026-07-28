@@ -50,9 +50,8 @@ void main() {
   group('load', () {
     blocTest<HomeCubit, HomeState>(
       'emits Loading then Loaded when either row has content',
-      setUp: () => when(repository.fetchSummary).thenAnswer(
-        (_) async => _populated,
-      ),
+      setUp: () =>
+          when(repository.fetchSummary).thenAnswer((_) async => _populated),
       build: () => HomeCubit(repository),
       act: (cubit) => cubit.load(),
       expect: () => <HomeState>[
@@ -63,7 +62,8 @@ void main() {
 
     blocTest<HomeCubit, HomeState>(
       'emits Empty — not Loaded — when both rows come back empty',
-      setUp: () => when(repository.fetchSummary).thenAnswer((_) async => _blank),
+      setUp: () =>
+          when(repository.fetchSummary).thenAnswer((_) async => _blank),
       build: () => HomeCubit(repository),
       act: (cubit) => cubit.load(),
       expect: () => <HomeState>[
@@ -102,9 +102,8 @@ void main() {
 
     blocTest<HomeCubit, HomeState>(
       'drops a stale summary on failure rather than showing it under an error',
-      setUp: () => when(repository.fetchSummary).thenAnswer(
-        (_) async => _populated,
-      ),
+      setUp: () =>
+          when(repository.fetchSummary).thenAnswer((_) async => _populated),
       build: () => HomeCubit(repository),
       act: (cubit) async {
         await cubit.load();
@@ -121,7 +120,8 @@ void main() {
   group('refresh', () {
     blocTest<HomeCubit, HomeState>(
       're-reads the repository and reports the new content',
-      setUp: () => when(repository.fetchSummary).thenAnswer((_) async => _blank),
+      setUp: () =>
+          when(repository.fetchSummary).thenAnswer((_) async => _blank),
       build: () => HomeCubit(repository),
       act: (cubit) async {
         await cubit.load();
@@ -138,9 +138,8 @@ void main() {
 
     blocTest<HomeCubit, HomeState>(
       'does not flash a skeleton over content already on screen',
-      setUp: () => when(repository.fetchSummary).thenAnswer(
-        (_) async => _populated,
-      ),
+      setUp: () =>
+          when(repository.fetchSummary).thenAnswer((_) async => _populated),
       build: () => HomeCubit(repository),
       act: (cubit) async {
         await cubit.load();
@@ -171,23 +170,26 @@ void main() {
       ],
     );
 
-    test('returns a future that only completes once the reload is done', () async {
-      final completer = Completer<HomeSummary>();
-      when(repository.fetchSummary).thenAnswer((_) => completer.future);
-      final cubit = HomeCubit(repository);
+    test(
+      'returns a future that only completes once the reload is done',
+      () async {
+        final completer = Completer<HomeSummary>();
+        when(repository.fetchSummary).thenAnswer((_) => completer.future);
+        final cubit = HomeCubit(repository);
 
-      var done = false;
-      // The shell keeps its RefreshIndicator spinning for exactly as long as
-      // this future is pending, so it must not complete early.
-      unawaited(cubit.refresh().then((_) => done = true));
-      await Future<void>.delayed(Duration.zero);
-      expect(done, isFalse, reason: 'refresh resolved before the fetch did');
+        var done = false;
+        // The shell keeps its RefreshIndicator spinning for exactly as long as
+        // this future is pending, so it must not complete early.
+        unawaited(cubit.refresh().then((_) => done = true));
+        await Future<void>.delayed(Duration.zero);
+        expect(done, isFalse, reason: 'refresh resolved before the fetch did');
 
-      completer.complete(_populated);
-      await Future<void>.delayed(Duration.zero);
-      expect(done, isTrue);
+        completer.complete(_populated);
+        await Future<void>.delayed(Duration.zero);
+        expect(done, isTrue);
 
-      await cubit.close();
-    });
+        await cubit.close();
+      },
+    );
   });
 }

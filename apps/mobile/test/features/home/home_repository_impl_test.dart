@@ -14,32 +14,32 @@ Response<Map<String, dynamic>> _ok(Map<String, dynamic>? body) =>
     );
 
 Map<String, dynamic> _cwItem() => <String, dynamic>{
-      'courseId': 'c1',
-      'courseTitle': 'Rust in anger',
-      'librarySlug': 'rust',
-      'percent': 30,
-      'lessonsCompleted': 3,
-      'lessonsTotal': 10,
-      'lastSeenAt': '2026-07-01T00:00:00.000Z',
-      'lastSeenLessonId': 'l7',
-    };
+  'courseId': 'c1',
+  'courseTitle': 'Rust in anger',
+  'librarySlug': 'rust',
+  'percent': 30,
+  'lessonsCompleted': 3,
+  'lessonsTotal': 10,
+  'lastSeenAt': '2026-07-01T00:00:00.000Z',
+  'lastSeenLessonId': 'l7',
+};
 
 Map<String, dynamic> _raItem() => <String, dynamic>{
-      'courseId': 'c2',
-      'courseTitle': 'Postgres internals',
-      'librarySlug': 'pg',
-      'lessonCount': 12,
-      'totalDurationSeconds': 3600,
-      'createdAt': '2026-07-02T00:00:00.000Z',
-    };
+  'courseId': 'c2',
+  'courseTitle': 'Postgres internals',
+  'librarySlug': 'pg',
+  'lessonCount': 12,
+  'totalDurationSeconds': 3600,
+  'createdAt': '2026-07-02T00:00:00.000Z',
+};
 
 Map<String, dynamic> _library(String id) => <String, dynamic>{
-      'id': id,
-      'name': 'lib-$id',
-      'rootPath': '/srv/$id',
-      'createdAt': '2026-01-01T00:00:00.000Z',
-      'updatedAt': '2026-01-01T00:00:00.000Z',
-    };
+  'id': id,
+  'name': 'lib-$id',
+  'rootPath': '/srv/$id',
+  'createdAt': '2026-01-01T00:00:00.000Z',
+  'updatedAt': '2026-01-01T00:00:00.000Z',
+};
 
 void main() {
   late _MockDio dio;
@@ -59,16 +59,18 @@ void main() {
         cwPath,
         queryParameters: any(named: 'queryParameters'),
       ),
-    ).thenAnswer((_) async => _ok(<String, dynamic>{'items': continueWatching}));
+    ).thenAnswer(
+      (_) async => _ok(<String, dynamic>{'items': continueWatching}),
+    );
     when(
       () => dio.get<Map<String, dynamic>>(
         raPath,
         queryParameters: any(named: 'queryParameters'),
       ),
     ).thenAnswer((_) async => _ok(<String, dynamic>{'items': recentlyAdded}));
-    when(() => dio.get<Map<String, dynamic>>(libPath)).thenAnswer(
-      (_) async => _ok(<String, dynamic>{'items': libraries}),
-    );
+    when(
+      () => dio.get<Map<String, dynamic>>(libPath),
+    ).thenAnswer((_) async => _ok(<String, dynamic>{'items': libraries}));
   }
 
   setUp(() {
@@ -100,38 +102,42 @@ void main() {
     expect(summary.isEmpty, isFalse);
   });
 
-  test('hits paths WITHOUT re-prefixing /api/v1 (Dio concatenates baseUrl)',
-      () async {
-    stub();
-    await repository.fetchSummary();
+  test(
+    'hits paths WITHOUT re-prefixing /api/v1 (Dio concatenates baseUrl)',
+    () async {
+      stub();
+      await repository.fetchSummary();
 
-    // A leading `/api/v1` here would resolve to `/api/v1/api/v1/...` — the
-    // auth_api.dart doubling bug. Assert the version-less paths explicitly.
-    verify(
-      () => dio.get<Map<String, dynamic>>(
-        cwPath,
-        queryParameters: any(named: 'queryParameters'),
-      ),
-    ).called(1);
-    verify(
-      () => dio.get<Map<String, dynamic>>(
-        raPath,
-        queryParameters: any(named: 'queryParameters'),
-      ),
-    ).called(1);
-    verify(() => dio.get<Map<String, dynamic>>(libPath)).called(1);
-  });
+      // A leading `/api/v1` here would resolve to `/api/v1/api/v1/...` — the
+      // auth_api.dart doubling bug. Assert the version-less paths explicitly.
+      verify(
+        () => dio.get<Map<String, dynamic>>(
+          cwPath,
+          queryParameters: any(named: 'queryParameters'),
+        ),
+      ).called(1);
+      verify(
+        () => dio.get<Map<String, dynamic>>(
+          raPath,
+          queryParameters: any(named: 'queryParameters'),
+        ),
+      ).called(1);
+      verify(() => dio.get<Map<String, dynamic>>(libPath)).called(1);
+    },
+  );
 
   test('asks for the same row limit web Home uses', () async {
     stub();
     await repository.fetchSummary();
 
-    final cwQuery = verify(
-      () => dio.get<Map<String, dynamic>>(
-        cwPath,
-        queryParameters: captureAny(named: 'queryParameters'),
-      ),
-    ).captured.single as Map<String, dynamic>;
+    final cwQuery =
+        verify(
+              () => dio.get<Map<String, dynamic>>(
+                cwPath,
+                queryParameters: captureAny(named: 'queryParameters'),
+              ),
+            ).captured.single
+            as Map<String, dynamic>;
     expect(cwQuery['limit'], 10);
   });
 
@@ -146,24 +152,26 @@ void main() {
     expect(summary.libraryCount, 1);
   });
 
-  test('throws when a 2xx carries no items array rather than faking empty Home',
-      () async {
-    stub();
-    when(
-      () => dio.get<Map<String, dynamic>>(
-        cwPath,
-        queryParameters: any(named: 'queryParameters'),
-      ),
-    ).thenAnswer((_) async => _ok(<String, dynamic>{}));
+  test(
+    'throws when a 2xx carries no items array rather than faking empty Home',
+    () async {
+      stub();
+      when(
+        () => dio.get<Map<String, dynamic>>(
+          cwPath,
+          queryParameters: any(named: 'queryParameters'),
+        ),
+      ).thenAnswer((_) async => _ok(<String, dynamic>{}));
 
-    expect(repository.fetchSummary(), throwsStateError);
-  });
+      expect(repository.fetchSummary(), throwsStateError);
+    },
+  );
 
   test('propagates transport failures so the cubit can show Failed', () async {
     stub();
-    when(() => dio.get<Map<String, dynamic>>(libPath)).thenThrow(
-      DioException(requestOptions: RequestOptions(path: libPath)),
-    );
+    when(
+      () => dio.get<Map<String, dynamic>>(libPath),
+    ).thenThrow(DioException(requestOptions: RequestOptions(path: libPath)));
 
     expect(repository.fetchSummary(), throwsA(isA<DioException>()));
   });

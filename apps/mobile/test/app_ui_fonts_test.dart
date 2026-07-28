@@ -32,9 +32,7 @@ Future<void> _loadFontsFromRealAssetBundle() async {
     final loader = FontLoader(family);
     for (final font in fonts) {
       final asset = (font as Map<String, dynamic>)['asset'] as String;
-      loader.addFont(
-        rootBundle.load(asset).then((ByteData data) => data),
-      );
+      loader.addFont(rootBundle.load(asset).then((ByteData data) => data));
     }
     await loader.load();
   }
@@ -44,7 +42,11 @@ Future<void> _loadFontsFromRealAssetBundle() async {
 /// width. Ahem (the test font Flutter substitutes for unresolved families)
 /// renders every glyph as a square equal to the font size, so 8 characters
 /// at 40px resolves to exactly 320.0 when the family did not resolve.
-double _widthOf(String family, {String text = 'MMMMiiii', double fontSize = 40}) {
+double _widthOf(
+  String family, {
+  String text = 'MMMMiiii',
+  double fontSize = 40,
+}) {
   final painter = TextPainter(
     text: TextSpan(
       text: text,

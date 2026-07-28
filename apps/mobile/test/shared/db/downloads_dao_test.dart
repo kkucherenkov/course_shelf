@@ -12,10 +12,7 @@ void main() {
   late AppDatabase db;
   final now = DateTime.utc(2026, 7, 15);
 
-  DownloadedLessonsCompanion entry(
-    String lessonId,
-    DownloadState state,
-  ) =>
+  DownloadedLessonsCompanion entry(String lessonId, DownloadState state) =>
       DownloadedLessonsCompanion.insert(
         lessonId: lessonId,
         state: state,

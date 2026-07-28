@@ -205,9 +205,7 @@ void main() {
 
     setUp(() {
       calls = <MethodCall>[];
-      TestDefaultBinaryMessengerBinding
-          .instance
-          .defaultBinaryMessenger
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(SystemChannels.platform, (
             MethodCall call,
           ) async {
@@ -227,7 +225,8 @@ void main() {
       expect(
         calls
             .where(
-              (MethodCall c) => c.method == 'SystemChrome.setEnabledSystemUIMode',
+              (MethodCall c) =>
+                  c.method == 'SystemChrome.setEnabledSystemUIMode',
             )
             .map((MethodCall c) => c.arguments)
             .last,
@@ -249,7 +248,8 @@ void main() {
       expect(
         calls
             .where(
-              (MethodCall c) => c.method == 'SystemChrome.setEnabledSystemUIMode',
+              (MethodCall c) =>
+                  c.method == 'SystemChrome.setEnabledSystemUIMode',
             )
             .map((MethodCall c) => c.arguments)
             .last,

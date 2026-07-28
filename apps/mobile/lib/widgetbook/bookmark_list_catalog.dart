@@ -36,25 +36,20 @@ Widget _frame(Widget child) => Center(
   ),
 );
 
-Widget _default(BuildContext context) => _frame(
-  const AppBookmarkList(bookmarks: _sample),
-);
+Widget _default(BuildContext context) =>
+    _frame(const AppBookmarkList(bookmarks: _sample));
 
-Widget _empty(BuildContext context) => _frame(
-  const AppBookmarkList(bookmarks: <BookmarkEntry>[]),
-);
+Widget _empty(BuildContext context) =>
+    _frame(const AppBookmarkList(bookmarks: <BookmarkEntry>[]));
 
-Widget _readOnly(BuildContext context) => _frame(
-  const AppBookmarkList(bookmarks: _sample, editable: false),
-);
+Widget _readOnly(BuildContext context) =>
+    _frame(const AppBookmarkList(bookmarks: _sample, editable: false));
 
-Widget _withAddRow(BuildContext context) => _frame(
-  const AppBookmarkList(bookmarks: _sample, addTime: 1024),
-);
+Widget _withAddRow(BuildContext context) =>
+    _frame(const AppBookmarkList(bookmarks: _sample, addTime: 1024));
 
-Widget _emptyWithAddRow(BuildContext context) => _frame(
-  const AppBookmarkList(bookmarks: <BookmarkEntry>[], addTime: 90),
-);
+Widget _emptyWithAddRow(BuildContext context) =>
+    _frame(const AppBookmarkList(bookmarks: <BookmarkEntry>[], addTime: 90));
 
 Widget _adding(BuildContext context) => _frame(
   const AppBookmarkList(bookmarks: _sample, addTime: 1024, adding: true),
@@ -96,11 +91,7 @@ class _InteractiveListState extends State<_InteractiveList> {
     setState(() {
       _items = <BookmarkEntry>[
         ..._items,
-        BookmarkEntry(
-          id: '${_nextId++}',
-          time: draft.time,
-          label: draft.label,
-        ),
+        BookmarkEntry(id: '${_nextId++}', time: draft.time, label: draft.label),
       ];
       _adding = false;
       _lastEvent = 'addSave(${draft.time}, "${draft.label}")';

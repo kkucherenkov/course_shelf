@@ -120,7 +120,8 @@ void main() {
       ..registerLazySingleton<InstanceRepository>(() => instanceRepository)
       ..registerFactory<HomeCubit>(() => HomeCubit(homeRepository))
       ..registerFactory<SearchCubit>(
-        () => SearchCubit(_MockSearchRepository(), getIt<RecentSearchesStore>()),
+        () =>
+            SearchCubit(_MockSearchRepository(), getIt<RecentSearchesStore>()),
       )
       ..registerFactory<BrowseCubit>(() => BrowseCubit(browseRepository))
       ..registerFactory<SettingsCubit>(

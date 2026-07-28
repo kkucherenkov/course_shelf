@@ -23,8 +23,7 @@ export 'package:app_mobile/shared/db/daos/bookmarks_outbox_dao.dart'
     show BookmarksOutboxDao;
 export 'package:app_mobile/shared/db/daos/cached_catalog_dao.dart'
     show CachedCatalogDao;
-export 'package:app_mobile/shared/db/daos/downloads_dao.dart'
-    show DownloadsDao;
+export 'package:app_mobile/shared/db/daos/downloads_dao.dart' show DownloadsDao;
 export 'package:app_mobile/shared/db/daos/notes_outbox_dao.dart'
     show NotesOutboxDao;
 export 'package:app_mobile/shared/db/daos/progress_outbox_dao.dart'
@@ -66,14 +65,14 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) => m.createAll(),
-        // No v1 -> v2 step yet: there is no v2. The hook exists so E19 can add
-        // one without restructuring.
-        onUpgrade: (m, from, to) async {},
-        beforeOpen: (details) async {
-          // Drift disables foreign keys by default; cached_sections and
-          // cached_lessons rely on them.
-          await customStatement('PRAGMA foreign_keys = ON');
-        },
-      );
+    onCreate: (m) => m.createAll(),
+    // No v1 -> v2 step yet: there is no v2. The hook exists so E19 can add
+    // one without restructuring.
+    onUpgrade: (m, from, to) async {},
+    beforeOpen: (details) async {
+      // Drift disables foreign keys by default; cached_sections and
+      // cached_lessons rely on them.
+      await customStatement('PRAGMA foreign_keys = ON');
+    },
+  );
 }

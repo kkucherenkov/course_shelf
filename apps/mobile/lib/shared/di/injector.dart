@@ -111,7 +111,8 @@ void configureDependencies() {
       () => CourseDetailCubit(getIt<CourseDetailRepository>()),
     )
     ..registerFactory<SearchCubit>(
-      () => SearchCubit(getIt<SearchRepository>(), getIt<RecentSearchesStore>()),
+      () =>
+          SearchCubit(getIt<SearchRepository>(), getIt<RecentSearchesStore>()),
     )
     ..registerFactory<SettingsCubit>(
       () => SettingsCubit(getIt<SettingsPreferencesStore>()),

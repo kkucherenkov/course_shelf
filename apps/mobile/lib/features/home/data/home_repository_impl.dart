@@ -45,12 +45,14 @@ class HomeRepositoryImpl implements HomeRepository {
     ).wait;
 
     return HomeSummary(
-      continueWatching: _items(cwResponse.data, '/home/continue-watching')
-          .map(_toContinueWatching)
-          .toList(),
-      recentlyAdded: _items(raResponse.data, '/home/recently-added')
-          .map(_toRecentlyAdded)
-          .toList(),
+      continueWatching: _items(
+        cwResponse.data,
+        '/home/continue-watching',
+      ).map(_toContinueWatching).toList(),
+      recentlyAdded: _items(
+        raResponse.data,
+        '/home/recently-added',
+      ).map(_toRecentlyAdded).toList(),
       libraryCount: _items(libResponse.data, '/libraries').length,
     );
   }

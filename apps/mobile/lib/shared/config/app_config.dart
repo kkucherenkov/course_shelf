@@ -11,7 +11,9 @@ class AppConfig {
 
     final host = _defaultHost();
     return AppConfig(
-      apiBaseUrl: apiOverride.isNotEmpty ? apiOverride : 'http://$host:3000/api/v1',
+      apiBaseUrl: apiOverride.isNotEmpty
+          ? apiOverride
+          : 'http://$host:3000/api/v1',
       authBaseUrl: authOverride.isNotEmpty ? authOverride : 'http://$host:3000',
     );
   }

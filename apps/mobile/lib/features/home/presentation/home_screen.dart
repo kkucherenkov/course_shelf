@@ -123,9 +123,9 @@ class _RowHeading extends StatelessWidget {
         label,
         // Derived from the theme, never a bare AppTextStyles.* — a raw style
         // carries no font family and falls through to the platform font.
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: AppFontWeight.semibold,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: AppFontWeight.semibold),
       ),
     );
   }
@@ -154,10 +154,8 @@ class _Carousel extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
         itemCount: itemCount,
         separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.s3),
-        itemBuilder: (BuildContext context, int index) => SizedBox(
-          width: itemWidth,
-          child: itemBuilder(context, index),
-        ),
+        itemBuilder: (BuildContext context, int index) =>
+            SizedBox(width: itemWidth, child: itemBuilder(context, index)),
       ),
     );
   }
@@ -214,10 +212,9 @@ class _ContinueWatchingRow extends StatelessWidget {
                 completed: course.lessonsCompleted,
                 accent: accentFromId(course.courseId),
               ),
-              onTap: (_) => Navigator.of(context).pushNamed(
-                AppRoutes.lesson,
-                arguments: course.lastSeenLessonId,
-              ),
+              onTap: (_) => Navigator.of(
+                context,
+              ).pushNamed(AppRoutes.lesson, arguments: course.lastSeenLessonId),
             );
           },
         ),

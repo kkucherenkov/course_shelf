@@ -27,12 +27,12 @@ class ContinueWatchingCourse extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        courseId,
-        courseTitle,
-        lessonsCompleted,
-        lessonsTotal,
-        lastSeenLessonId,
-      ];
+    courseId,
+    courseTitle,
+    lessonsCompleted,
+    lessonsTotal,
+    lastSeenLessonId,
+  ];
 }
 
 /// A newly-added course — the Home "Recently added" row.
@@ -76,6 +76,9 @@ class HomeSummary extends Equatable {
   bool get isEmpty => continueWatching.isEmpty && recentlyAdded.isEmpty;
 
   @override
-  List<Object?> get props =>
-      <Object?>[continueWatching, recentlyAdded, libraryCount];
+  List<Object?> get props => <Object?>[
+    continueWatching,
+    recentlyAdded,
+    libraryCount,
+  ];
 }

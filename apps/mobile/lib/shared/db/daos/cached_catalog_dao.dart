@@ -21,8 +21,7 @@ class CachedCatalogDao extends DatabaseAccessor<AppDatabase>
       into(cachedCourses).insertOnConflictUpdate(_normalizeCourseUtc(course));
 
   Future<CachedCourse?> courseById(String id) =>
-      (select(cachedCourses)..where((t) => t.id.equals(id)))
-          .getSingleOrNull();
+      (select(cachedCourses)..where((t) => t.id.equals(id))).getSingleOrNull();
 
   Future<List<CachedCourse>> allCourses() => select(cachedCourses).get();
 
@@ -40,10 +39,12 @@ class CachedCatalogDao extends DatabaseAccessor<AppDatabase>
     required List<CachedLessonsCompanion> lessons,
   }) {
     return transaction(() async {
-      await (delete(cachedLessons)..where((t) => t.courseId.equals(courseId)))
-          .go();
-      await (delete(cachedSections)..where((t) => t.courseId.equals(courseId)))
-          .go();
+      await (delete(
+        cachedLessons,
+      )..where((t) => t.courseId.equals(courseId))).go();
+      await (delete(
+        cachedSections,
+      )..where((t) => t.courseId.equals(courseId))).go();
       await batch((b) {
         b.insertAll(cachedSections, sections.map(_normalizeSectionUtc));
         b.insertAll(cachedLessons, lessons.map(_normalizeLessonUtc));

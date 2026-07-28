@@ -1,12 +1,11 @@
 import 'package:equatable/equatable.dart';
 
-/// Appearance theme preference. Display-only for this card — the app's real
-/// `ThemeMode` wiring (`App.themeMode` in `main.dart`) stays `ThemeMode.system`
-/// regardless; honouring this value app-wide is a follow-up.
+/// Appearance theme preference. Drives `App.themeMode` in `main.dart`, where
+/// the `SettingsCubit` sits above the `MaterialApp`.
 enum AppThemePreference { system, light, dark }
 
-/// Reading text-size preference. Display-only, same caveat as
-/// [AppThemePreference].
+/// Reading text-size preference. Applied app-wide as a `MediaQuery`
+/// `textScaler` override, same place as [AppThemePreference].
 enum TextSizePreference { small, defaultSize, large }
 
 /// Subtitle-track preference. Display-only — there is no real subtitle-track
@@ -16,13 +15,11 @@ enum SubtitlesPreference { off, english }
 /// Device-local Appearance/Playback preferences the Settings tab's toggles
 /// and value rows expose.
 ///
-/// In-memory only for this card: there is no `shared_preferences` (or
-/// similar) dependency in `pubspec.yaml` yet.
-/// TODO(E18): persist device preferences (needs shared_preferences).
-///
-/// Consuming these preferences elsewhere — actually honouring reduce-motion,
-/// autoplay, Wi-Fi-only downloads, etc. app-wide — is explicitly out of scope
-/// for this card.
+/// Persisted device-local via `SettingsPreferencesStore`. `theme`, `textSize`,
+/// `reduceMotion` are honoured app-wide in `App`; `playbackSpeed` and
+/// `autoplayNextLesson` are honoured by `PlayerBloc`. `subtitles` (no real
+/// subtitle track yet) and `wifiOnlyDownloads` (consumed by E19's
+/// `DownloadsBloc`) are persisted but not yet honoured anywhere.
 class SettingsState extends Equatable {
   const SettingsState({
     this.theme = AppThemePreference.system,

@@ -42,8 +42,7 @@ void main() {
     );
   });
 
-  test('cached_lessons and cached_sections are indexed on courseId',
-      () async {
+  test('cached_lessons and cached_sections are indexed on courseId', () async {
     // `lessonsForCourse` and `replaceOutline`'s deletes both filter on
     // courseId; without an index this is an unindexed table scan.
     final indexes = await db
@@ -58,10 +57,12 @@ void main() {
     // E19 keeps the device-bound AES key in flutter_secure_storage. A key
     // stored beside its own ciphertext is not encryption — this guards that
     // boundary against a well-meaning future column.
-    final cols =
-        await db.customSelect('PRAGMA table_info(downloaded_lessons)').get();
-    final names =
-        cols.map((r) => r.read<String>('name').toLowerCase()).toList();
+    final cols = await db
+        .customSelect('PRAGMA table_info(downloaded_lessons)')
+        .get();
+    final names = cols
+        .map((r) => r.read<String>('name').toLowerCase())
+        .toList();
     // Substring, not equality: a real leak would be named `encryption_key` or
     // `key_id`, not `key`.
     expect(names.where((n) => n.contains('key')), isEmpty);

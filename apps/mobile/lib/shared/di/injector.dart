@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_mobile/features/auth/data/auth_api.dart';
 import 'package:app_mobile/features/auth/data/instance_api.dart';
@@ -30,6 +31,9 @@ import 'package:app_mobile/shared/auth/token_storage.dart';
 import 'package:app_mobile/shared/config/app_config.dart';
 import 'package:app_mobile/shared/db/app_database.dart';
 import 'package:app_mobile/shared/network/api_client.dart';
+import 'package:app_mobile/shared/preferences/playback_preferences.dart';
+import 'package:app_mobile/shared/preferences/recent_searches_store.dart';
+import 'package:app_mobile/shared/preferences/settings_preferences_store.dart';
 
 /// Global service locator. All runtime dependencies register here; widgets
 /// resolve blocs via `BlocProvider(create: (_) => getIt<FooBloc>())` and
@@ -106,8 +110,13 @@ void configureDependencies() {
     ..registerFactory<CourseDetailCubit>(
       () => CourseDetailCubit(getIt<CourseDetailRepository>()),
     )
-    ..registerFactory<SearchCubit>(() => SearchCubit(getIt<SearchRepository>()))
-    ..registerFactory<SettingsCubit>(SettingsCubit.new)
+    ..registerFactory<SearchCubit>(
+      () =>
+          SearchCubit(getIt<SearchRepository>(), getIt<RecentSearchesStore>()),
+    )
+    ..registerFactory<SettingsCubit>(
+      () => SettingsCubit(getIt<SettingsPreferencesStore>()),
+    )
     // A factory, and a fresh VideoPlayerAdapter per instance: the adapter owns
     // a platform controller that PlayerBloc.close() disposes, so a shared
     // singleton would hand the next lesson a disposed engine.
@@ -116,7 +125,27 @@ void configureDependencies() {
         repository: getIt<LessonPlayerRepository>(),
         progressRecorder: getIt<LessonProgressRecorder>(),
         playback: VideoPlayerAdapter(),
+        playbackPreferences: getIt<PlaybackPreferences>(),
       ),
+    );
+}
+
+/// Registers `shared_preferences` and its stores. Async because
+/// `SharedPreferences.getInstance()` is — call with `await` after
+/// [configureDependencies] and before `runApp`.
+Future<void> bootstrapPreferences() async {
+  if (getIt.isRegistered<SharedPreferences>()) return;
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  getIt
+    ..registerSingleton<SharedPreferences>(prefs)
+    ..registerLazySingleton<SettingsPreferencesStore>(
+      () => SettingsPreferencesStore(getIt<SharedPreferences>()),
+    )
+    ..registerLazySingleton<PlaybackPreferences>(
+      () => getIt<SettingsPreferencesStore>(),
+    )
+    ..registerLazySingleton<RecentSearchesStore>(
+      () => RecentSearchesStore(getIt<SharedPreferences>()),
     );
 }
 

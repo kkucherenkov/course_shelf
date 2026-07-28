@@ -2,6 +2,7 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_mobile/app/main_shell.dart';
 import 'package:app_mobile/features/browse/domain/browse_course.dart';
@@ -25,6 +26,8 @@ import 'package:app_mobile/features/settings/presentation/settings_screen.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
 import 'package:app_mobile/main.dart';
 import 'package:app_mobile/shared/di/injector.dart';
+import 'package:app_mobile/shared/preferences/recent_searches_store.dart';
+import 'package:app_mobile/shared/preferences/settings_preferences_store.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
 
@@ -78,6 +81,8 @@ void main() {
 
   setUp(() async {
     await resetInjector();
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final prefs = await SharedPreferences.getInstance();
     repository = _MockAuthRepository();
 
     // Sign-in resolves the instance config (SSO row + sign-up CTA) and the
@@ -104,12 +109,24 @@ void main() {
     ).thenAnswer((_) async => <BrowseLibrary>[]);
 
     getIt
+      ..registerSingleton<SharedPreferences>(prefs)
+      ..registerLazySingleton<SettingsPreferencesStore>(
+        () => SettingsPreferencesStore(getIt<SharedPreferences>()),
+      )
+      ..registerLazySingleton<RecentSearchesStore>(
+        () => RecentSearchesStore(getIt<SharedPreferences>()),
+      )
       ..registerFactory<AuthCubit>(() => AuthCubit(repository))
       ..registerLazySingleton<InstanceRepository>(() => instanceRepository)
       ..registerFactory<HomeCubit>(() => HomeCubit(homeRepository))
-      ..registerFactory<SearchCubit>(() => SearchCubit(_MockSearchRepository()))
+      ..registerFactory<SearchCubit>(
+        () =>
+            SearchCubit(_MockSearchRepository(), getIt<RecentSearchesStore>()),
+      )
       ..registerFactory<BrowseCubit>(() => BrowseCubit(browseRepository))
-      ..registerFactory<SettingsCubit>(SettingsCubit.new);
+      ..registerFactory<SettingsCubit>(
+        () => SettingsCubit(getIt<SettingsPreferencesStore>()),
+      );
   });
 
   tearDown(resetInjector);

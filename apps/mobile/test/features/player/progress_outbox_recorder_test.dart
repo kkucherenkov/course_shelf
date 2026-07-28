@@ -55,6 +55,9 @@ void main() {
     // The table is keyed by lessonId precisely so an hour of 10s writes cannot
     // overflow `/progress/batch`'s maxItems: 200.
     expect(pending, hasLength(1));
-    expect(pending.single.positionSeconds, const Duration(minutes: 6).inSeconds);
+    expect(
+      pending.single.positionSeconds,
+      const Duration(minutes: 6).inSeconds,
+    );
   });
 }

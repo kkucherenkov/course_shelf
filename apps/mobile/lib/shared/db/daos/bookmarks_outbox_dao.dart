@@ -31,9 +31,9 @@ class BookmarksOutboxDao extends DatabaseAccessor<AppDatabase>
   Future<void> enqueue(BookmarksOutboxCompanion entry) =>
       into(bookmarksOutbox).insertOnConflictUpdate(_normalizeUtc(entry));
 
-  Future<List<BookmarksOutboxEntry>> pending() => (select(bookmarksOutbox)
-        ..orderBy([(t) => OrderingTerm(expression: t.queuedAt)]))
-      .get();
+  Future<List<BookmarksOutboxEntry>> pending() => (select(
+    bookmarksOutbox,
+  )..orderBy([(t) => OrderingTerm(expression: t.queuedAt)])).get();
 
   Future<void> clear(Iterable<String> localIds) =>
       (delete(bookmarksOutbox)..where((t) => t.localId.isIn(localIds))).go();

@@ -96,7 +96,9 @@ void main() {
   });
 
   group('loaded', () {
-    setUp(() => when(repository.fetchSummary).thenAnswer((_) async => _populated));
+    setUp(
+      () => when(repository.fetchSummary).thenAnswer((_) async => _populated),
+    );
 
     testWidgets('renders both carousels and the row headings', (tester) async {
       await cubit.load();
@@ -112,8 +114,9 @@ void main() {
       expect(find.byType(AppEmptyState), findsNothing);
     });
 
-    testWidgets('drops a whole row (header included) when it is empty',
-        (tester) async {
+    testWidgets('drops a whole row (header included) when it is empty', (
+      tester,
+    ) async {
       when(repository.fetchSummary).thenAnswer(
         (_) async => const HomeSummary(
           continueWatching: <ContinueWatchingCourse>[],
@@ -133,8 +136,9 @@ void main() {
       expect(find.byType(CoursePosterCard), findsOneWidget);
     });
 
-    testWidgets('quick links tap through to the shell callbacks',
-        (tester) async {
+    testWidgets('quick links tap through to the shell callbacks', (
+      tester,
+    ) async {
       await cubit.load();
       await pump(tester);
       await tester.pumpAndSettle();
@@ -149,8 +153,9 @@ void main() {
   });
 
   group('empty', () {
-    testWidgets('shows the empty surface but keeps the quick links',
-        (tester) async {
+    testWidgets('shows the empty surface but keeps the quick links', (
+      tester,
+    ) async {
       when(repository.fetchSummary).thenAnswer(
         (_) async => const HomeSummary(
           continueWatching: <ContinueWatchingCourse>[],
@@ -170,8 +175,9 @@ void main() {
       expect(find.byKey(const ValueKey('homeQuickLibrary')), findsOneWidget);
     });
 
-    testWidgets('Library quick link is disabled when there are no libraries',
-        (tester) async {
+    testWidgets('Library quick link is disabled when there are no libraries', (
+      tester,
+    ) async {
       when(repository.fetchSummary).thenAnswer(
         (_) async => const HomeSummary(
           continueWatching: <ContinueWatchingCourse>[],
@@ -204,8 +210,9 @@ void main() {
   });
 
   group('failed', () {
-    testWidgets('shows the error surface with a retry that re-fetches',
-        (tester) async {
+    testWidgets('shows the error surface with a retry that re-fetches', (
+      tester,
+    ) async {
       when(repository.fetchSummary).thenThrow(Exception('boom'));
       await cubit.load();
       await pump(tester);

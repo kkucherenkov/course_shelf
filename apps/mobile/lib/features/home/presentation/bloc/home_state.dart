@@ -10,10 +10,7 @@ import 'package:app_mobile/features/home/domain/home_summary.dart';
 enum HomeStatus { loading, loaded, empty, failed }
 
 class HomeState extends Equatable {
-  const HomeState({
-    this.status = HomeStatus.loading,
-    this.summary,
-  });
+  const HomeState({this.status = HomeStatus.loading, this.summary});
 
   final HomeStatus status;
 

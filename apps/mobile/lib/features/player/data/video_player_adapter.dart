@@ -77,8 +77,7 @@ class VideoPlayerAdapter implements VideoPlaybackPort {
   Future<void> pause() async => _controller?.pause();
 
   @override
-  Future<void> seek(Duration position) async =>
-      _controller?.seekTo(position);
+  Future<void> seek(Duration position) async => _controller?.seekTo(position);
 
   @override
   Future<void> setSpeed(double speed) async =>

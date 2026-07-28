@@ -16,9 +16,9 @@ class NotesOutboxDao extends DatabaseAccessor<AppDatabase>
   Future<void> enqueue(NotesOutboxCompanion entry) =>
       into(notesOutbox).insertOnConflictUpdate(_normalizeUtc(entry));
 
-  Future<List<NotesOutboxEntry>> pending() => (select(notesOutbox)
-        ..orderBy([(t) => OrderingTerm(expression: t.queuedAt)]))
-      .get();
+  Future<List<NotesOutboxEntry>> pending() => (select(
+    notesOutbox,
+  )..orderBy([(t) => OrderingTerm(expression: t.queuedAt)])).get();
 
   Future<void> clear(Iterable<String> lessonIds) =>
       (delete(notesOutbox)..where((t) => t.lessonId.isIn(lessonIds))).go();

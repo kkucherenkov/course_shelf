@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:app_mobile/features/player/domain/lesson_playback.dart';
 import 'package:app_mobile/features/player/domain/lesson_player_repository.dart';
 import 'package:app_mobile/features/player/domain/video_playback_port.dart';
+import 'package:app_mobile/shared/preferences/playback_preferences.dart';
 
 /// A [VideoPlaybackPort] with no platform behind it.
 ///
@@ -86,6 +87,20 @@ class FakeVideoPlaybackPort implements VideoPlaybackPort {
   }
 }
 
+/// A settable [PlaybackPreferences] for player tests.
+class FakePlaybackPreferences implements PlaybackPreferences {
+  FakePlaybackPreferences({
+    this.playbackSpeed = 1,
+    this.autoplayNextLesson = false,
+  });
+
+  @override
+  double playbackSpeed;
+
+  @override
+  bool autoplayNextLesson;
+}
+
 /// In-memory [LessonPlayerRepository].
 class FakeLessonPlayerRepository implements LessonPlayerRepository {
   FakeLessonPlayerRepository({
@@ -103,6 +118,10 @@ class FakeLessonPlayerRepository implements LessonPlayerRepository {
   List<LessonBookmark> bookmarks;
   String? note;
 
+  /// When set, [fetchLesson] returns the mapped lesson for a given id (falling
+  /// back to [lesson]); lets an autoplay test hand out distinct next lessons.
+  Map<String, LessonPlayback>? lessonsById;
+
   /// When set, [fetchLesson] throws it.
   Object? lessonError;
 
@@ -117,7 +136,7 @@ class FakeLessonPlayerRepository implements LessonPlayerRepository {
   @override
   Future<LessonPlayback> fetchLesson(String lessonId) async {
     if (lessonError != null) throw lessonError!;
-    return lesson;
+    return lessonsById?[lessonId] ?? lesson;
   }
 
   @override

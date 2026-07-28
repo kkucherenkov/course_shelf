@@ -7,7 +7,10 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'package:app_mobile/app/auth_gate.dart';
 import 'package:app_mobile/app/routes.dart';
+import 'package:app_mobile/app/theme_preferences.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
+import 'package:app_mobile/features/settings/presentation/bloc/settings_cubit.dart';
+import 'package:app_mobile/features/settings/presentation/bloc/settings_state.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
 import 'package:app_mobile/shared/di/injector.dart';
 import 'package:app_mobile/shared/notifications/push_notification_service.dart';
@@ -19,6 +22,7 @@ Future<void> main() async {
   await bootstrapFirebase();
 
   configureDependencies();
+  await bootstrapPreferences();
 
   const sentryDsn = String.fromEnvironment('SENTRY_DSN');
   if (sentryDsn.isNotEmpty) {
@@ -60,24 +64,40 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // The session cubit is provided ABOVE the MaterialApp on purpose: pushed
-    // routes are children of the MaterialApp's Navigator, not of `home:`, so a
-    // provider inside AuthGate would be invisible to /sign-up. One instance
-    // above the Navigator is what makes "sign in on any auth route → the gate
-    // rebuilds into the shell" work at all.
-    return BlocProvider<AuthCubit>(
-      create: (_) => getIt<AuthCubit>()..checkSession(),
-      child: MaterialApp(
-        onGenerateTitle: (context) => context.t.common.appTitle,
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.system,
-        locale: TranslationProvider.of(context).flutterLocale,
-        supportedLocales: AppLocaleUtils.supportedLocales,
-        localizationsDelegates: GlobalMaterialLocalizations.delegates,
-        // AuthGate is the home for the session-restore-on-boot flow.
-        home: const AuthGate(),
-        onGenerateRoute: onGenerateRoute,
+    // AuthCubit and SettingsCubit are provided ABOVE the MaterialApp on
+    // purpose: pushed routes are children of the MaterialApp's Navigator, not
+    // of `home:`, so a provider inside AuthGate would be invisible to
+    // /sign-up — and the SettingsCubit that drives themeMode / text scale must
+    // be the same instance the Settings tab mutates.
+    return MultiBlocProvider(
+      providers: <BlocProvider<dynamic>>[
+        BlocProvider<AuthCubit>(
+          create: (_) => getIt<AuthCubit>()..checkSession(),
+        ),
+        BlocProvider<SettingsCubit>(create: (_) => getIt<SettingsCubit>()),
+      ],
+      child: BlocBuilder<SettingsCubit, SettingsState>(
+        builder: (context, settings) => MaterialApp(
+          onGenerateTitle: (context) => context.t.common.appTitle,
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: themeModeFrom(settings.theme),
+          locale: TranslationProvider.of(context).flutterLocale,
+          supportedLocales: AppLocaleUtils.supportedLocales,
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          // Wraps the Navigator, so text scale + reduce-motion reach pushed
+          // routes (player, course detail) too — not just `home:`.
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(textScaleFrom(settings.textSize)),
+              disableAnimations: settings.reduceMotion,
+            ),
+            child: child!,
+          ),
+          // AuthGate is the home for the session-restore-on-boot flow.
+          home: const AuthGate(),
+          onGenerateRoute: onGenerateRoute,
+        ),
       ),
     );
   }

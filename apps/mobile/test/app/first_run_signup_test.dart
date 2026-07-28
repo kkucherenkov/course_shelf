@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_mobile/app/main_shell.dart';
 import 'package:app_mobile/features/auth/domain/auth_repository.dart';
@@ -14,9 +15,11 @@ import 'package:app_mobile/features/auth/presentation/sign_up_screen.dart';
 import 'package:app_mobile/features/home/domain/home_repository.dart';
 import 'package:app_mobile/features/home/domain/home_summary.dart';
 import 'package:app_mobile/features/home/presentation/bloc/home_cubit.dart';
+import 'package:app_mobile/features/settings/presentation/bloc/settings_cubit.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
 import 'package:app_mobile/main.dart';
 import 'package:app_mobile/shared/di/injector.dart';
+import 'package:app_mobile/shared/preferences/settings_preferences_store.dart';
 
 /// Headless twin of `integration_test/auth_flow_test.dart`'s first-user case.
 ///
@@ -50,6 +53,10 @@ void main() {
 
   setUp(() async {
     await resetInjector();
+    // `App` provides SettingsCubit above the MaterialApp (it drives themeMode
+    // and text scale), so pumping the real composition root needs the store.
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final prefs = await SharedPreferences.getInstance();
     auth = _MockAuthRepository();
     instance = _MockInstanceRepository();
     library = _MockLibraryRepository();
@@ -59,11 +66,18 @@ void main() {
     ).thenAnswer((_) async => InstanceConfig.defaults);
     when(home.fetchSummary).thenAnswer((_) async => _emptyHome);
     getIt
+      ..registerSingleton<SharedPreferences>(prefs)
+      ..registerLazySingleton<SettingsPreferencesStore>(
+        () => SettingsPreferencesStore(getIt<SharedPreferences>()),
+      )
       ..registerFactory<AuthCubit>(() => AuthCubit(auth))
       ..registerLazySingleton<AuthRepository>(() => auth)
       ..registerLazySingleton<InstanceRepository>(() => instance)
       ..registerLazySingleton<LibraryRepository>(() => library)
-      ..registerFactory<HomeCubit>(() => HomeCubit(home));
+      ..registerFactory<HomeCubit>(() => HomeCubit(home))
+      ..registerFactory<SettingsCubit>(
+        () => SettingsCubit(getIt<SettingsPreferencesStore>()),
+      );
   });
 
   tearDown(resetInjector);

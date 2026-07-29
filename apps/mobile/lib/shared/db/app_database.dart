@@ -61,14 +61,26 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.open() : super(driftDatabase(name: 'course_shelf'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
-    // No v1 -> v2 step yet: there is no v2. The hook exists so E19 can add
-    // one without restructuring.
-    onUpgrade: (m, from, to) async {},
+    // v1 -> v2 (E19-F01-S01): downloaded_lessons gains the queue columns.
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.addColumn(downloadedLessons, downloadedLessons.courseId);
+        await m.addColumn(downloadedLessons, downloadedLessons.attemptCount);
+        await m.addColumn(downloadedLessons, downloadedLessons.queuedAt);
+        await m.addColumn(downloadedLessons, downloadedLessons.nextAttemptAt);
+        // Pre-v2 rows have no queue position. `updatedAt` is the best proxy
+        // available and preserves their relative order.
+        await m.database.customStatement(
+          'UPDATE downloaded_lessons SET queued_at = updated_at '
+          'WHERE queued_at IS NULL',
+        );
+      }
+    },
     beforeOpen: (details) async {
       // Drift disables foreign keys by default; cached_sections and
       // cached_lessons rely on them.

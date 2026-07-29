@@ -2661,6 +2661,52 @@ class $DownloadedLessonsTable extends DownloadedLessons
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _courseIdMeta = const VerificationMeta(
+    'courseId',
+  );
+  @override
+  late final GeneratedColumn<String> courseId = GeneratedColumn<String>(
+    'course_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _attemptCountMeta = const VerificationMeta(
+    'attemptCount',
+  );
+  @override
+  late final GeneratedColumn<int> attemptCount = GeneratedColumn<int>(
+    'attempt_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _queuedAtMeta = const VerificationMeta(
+    'queuedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> queuedAt = GeneratedColumn<DateTime>(
+    'queued_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nextAttemptAtMeta = const VerificationMeta(
+    'nextAttemptAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> nextAttemptAt =
+      GeneratedColumn<DateTime>(
+        'next_attempt_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -2681,6 +2727,10 @@ class $DownloadedLessonsTable extends DownloadedLessons
     totalBytes,
     nonce,
     lastError,
+    courseId,
+    attemptCount,
+    queuedAt,
+    nextAttemptAt,
     updatedAt,
   ];
   @override
@@ -2738,6 +2788,36 @@ class $DownloadedLessonsTable extends DownloadedLessons
         lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
       );
     }
+    if (data.containsKey('course_id')) {
+      context.handle(
+        _courseIdMeta,
+        courseId.isAcceptableOrUnknown(data['course_id']!, _courseIdMeta),
+      );
+    }
+    if (data.containsKey('attempt_count')) {
+      context.handle(
+        _attemptCountMeta,
+        attemptCount.isAcceptableOrUnknown(
+          data['attempt_count']!,
+          _attemptCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('queued_at')) {
+      context.handle(
+        _queuedAtMeta,
+        queuedAt.isAcceptableOrUnknown(data['queued_at']!, _queuedAtMeta),
+      );
+    }
+    if (data.containsKey('next_attempt_at')) {
+      context.handle(
+        _nextAttemptAtMeta,
+        nextAttemptAt.isAcceptableOrUnknown(
+          data['next_attempt_at']!,
+          _nextAttemptAtMeta,
+        ),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -2785,6 +2865,22 @@ class $DownloadedLessonsTable extends DownloadedLessons
         DriftSqlType.string,
         data['${effectivePrefix}last_error'],
       ),
+      courseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}course_id'],
+      ),
+      attemptCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt_count'],
+      )!,
+      queuedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}queued_at'],
+      ),
+      nextAttemptAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}next_attempt_at'],
+      ),
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -2823,6 +2919,33 @@ class DownloadedLesson extends DataClass
   /// Why the last attempt failed — supports "deleted local file falls back
   /// gracefully and re-marks the download as failed".
   final String? lastError;
+
+  /// Parent course. Nullable because a lesson can be enqueued on its own;
+  /// `EnqueueCourse` and course-level cancel need it to group rows.
+  final String? courseId;
+
+  /// Failed attempts so far. Drives the `2^n` backoff — a backoff needs a
+  /// count to back off on.
+  final int attemptCount;
+
+  /// FIFO position in the queue. **Always write UTC** — see the ordering
+  /// warning in `downloads_dao.dart`; Drift's TEXT datetime encoding makes
+  /// `ORDER BY` lexicographic, so a column holding mixed offsets sorts wrong.
+  ///
+  /// Nullable so the v1 -> v2 migration can add it to a populated table; the
+  /// migration backfills existing rows from `updatedAt`, and the repository
+  /// always sets it on insert. SQLite sorts NULL first, which is the correct
+  /// fallback ordering anyway (an un-backfilled row is the oldest).
+  final DateTime? queuedAt;
+
+  /// Earliest UTC instant at which this row may be attempted again. Null means
+  /// "eligible now".
+  ///
+  /// Backoff is persisted rather than slept: `_drain` skips rows whose window
+  /// has not elapsed and moves to the next item. Sleeping inside the pump would
+  /// make one unreachable lesson freeze every healthy download behind it —
+  /// on a 40-lesson course enqueue, up to 5 attempts x 5 minutes each.
+  final DateTime? nextAttemptAt;
   final DateTime updatedAt;
   const DownloadedLesson({
     required this.lessonId,
@@ -2832,6 +2955,10 @@ class DownloadedLesson extends DataClass
     this.totalBytes,
     this.nonce,
     this.lastError,
+    this.courseId,
+    required this.attemptCount,
+    this.queuedAt,
+    this.nextAttemptAt,
     required this.updatedAt,
   });
   @override
@@ -2854,6 +2981,16 @@ class DownloadedLesson extends DataClass
     if (!nullToAbsent || lastError != null) {
       map['last_error'] = Variable<String>(lastError);
     }
+    if (!nullToAbsent || courseId != null) {
+      map['course_id'] = Variable<String>(courseId);
+    }
+    map['attempt_count'] = Variable<int>(attemptCount);
+    if (!nullToAbsent || queuedAt != null) {
+      map['queued_at'] = Variable<DateTime>(queuedAt);
+    }
+    if (!nullToAbsent || nextAttemptAt != null) {
+      map['next_attempt_at'] = Variable<DateTime>(nextAttemptAt);
+    }
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -2873,6 +3010,16 @@ class DownloadedLesson extends DataClass
       lastError: lastError == null && nullToAbsent
           ? const Value.absent()
           : Value(lastError),
+      courseId: courseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(courseId),
+      attemptCount: Value(attemptCount),
+      queuedAt: queuedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(queuedAt),
+      nextAttemptAt: nextAttemptAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextAttemptAt),
       updatedAt: Value(updatedAt),
     );
   }
@@ -2892,6 +3039,10 @@ class DownloadedLesson extends DataClass
       totalBytes: serializer.fromJson<int?>(json['totalBytes']),
       nonce: serializer.fromJson<Uint8List?>(json['nonce']),
       lastError: serializer.fromJson<String?>(json['lastError']),
+      courseId: serializer.fromJson<String?>(json['courseId']),
+      attemptCount: serializer.fromJson<int>(json['attemptCount']),
+      queuedAt: serializer.fromJson<DateTime?>(json['queuedAt']),
+      nextAttemptAt: serializer.fromJson<DateTime?>(json['nextAttemptAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -2908,6 +3059,10 @@ class DownloadedLesson extends DataClass
       'totalBytes': serializer.toJson<int?>(totalBytes),
       'nonce': serializer.toJson<Uint8List?>(nonce),
       'lastError': serializer.toJson<String?>(lastError),
+      'courseId': serializer.toJson<String?>(courseId),
+      'attemptCount': serializer.toJson<int>(attemptCount),
+      'queuedAt': serializer.toJson<DateTime?>(queuedAt),
+      'nextAttemptAt': serializer.toJson<DateTime?>(nextAttemptAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -2920,6 +3075,10 @@ class DownloadedLesson extends DataClass
     Value<int?> totalBytes = const Value.absent(),
     Value<Uint8List?> nonce = const Value.absent(),
     Value<String?> lastError = const Value.absent(),
+    Value<String?> courseId = const Value.absent(),
+    int? attemptCount,
+    Value<DateTime?> queuedAt = const Value.absent(),
+    Value<DateTime?> nextAttemptAt = const Value.absent(),
     DateTime? updatedAt,
   }) => DownloadedLesson(
     lessonId: lessonId ?? this.lessonId,
@@ -2929,6 +3088,12 @@ class DownloadedLesson extends DataClass
     totalBytes: totalBytes.present ? totalBytes.value : this.totalBytes,
     nonce: nonce.present ? nonce.value : this.nonce,
     lastError: lastError.present ? lastError.value : this.lastError,
+    courseId: courseId.present ? courseId.value : this.courseId,
+    attemptCount: attemptCount ?? this.attemptCount,
+    queuedAt: queuedAt.present ? queuedAt.value : this.queuedAt,
+    nextAttemptAt: nextAttemptAt.present
+        ? nextAttemptAt.value
+        : this.nextAttemptAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   DownloadedLesson copyWithCompanion(DownloadedLessonsCompanion data) {
@@ -2944,6 +3109,14 @@ class DownloadedLesson extends DataClass
           : this.totalBytes,
       nonce: data.nonce.present ? data.nonce.value : this.nonce,
       lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      courseId: data.courseId.present ? data.courseId.value : this.courseId,
+      attemptCount: data.attemptCount.present
+          ? data.attemptCount.value
+          : this.attemptCount,
+      queuedAt: data.queuedAt.present ? data.queuedAt.value : this.queuedAt,
+      nextAttemptAt: data.nextAttemptAt.present
+          ? data.nextAttemptAt.value
+          : this.nextAttemptAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -2958,6 +3131,10 @@ class DownloadedLesson extends DataClass
           ..write('totalBytes: $totalBytes, ')
           ..write('nonce: $nonce, ')
           ..write('lastError: $lastError, ')
+          ..write('courseId: $courseId, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('queuedAt: $queuedAt, ')
+          ..write('nextAttemptAt: $nextAttemptAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -2972,6 +3149,10 @@ class DownloadedLesson extends DataClass
     totalBytes,
     $driftBlobEquality.hash(nonce),
     lastError,
+    courseId,
+    attemptCount,
+    queuedAt,
+    nextAttemptAt,
     updatedAt,
   );
   @override
@@ -2985,6 +3166,10 @@ class DownloadedLesson extends DataClass
           other.totalBytes == this.totalBytes &&
           $driftBlobEquality.equals(other.nonce, this.nonce) &&
           other.lastError == this.lastError &&
+          other.courseId == this.courseId &&
+          other.attemptCount == this.attemptCount &&
+          other.queuedAt == this.queuedAt &&
+          other.nextAttemptAt == this.nextAttemptAt &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -2996,6 +3181,10 @@ class DownloadedLessonsCompanion extends UpdateCompanion<DownloadedLesson> {
   final Value<int?> totalBytes;
   final Value<Uint8List?> nonce;
   final Value<String?> lastError;
+  final Value<String?> courseId;
+  final Value<int> attemptCount;
+  final Value<DateTime?> queuedAt;
+  final Value<DateTime?> nextAttemptAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const DownloadedLessonsCompanion({
@@ -3006,6 +3195,10 @@ class DownloadedLessonsCompanion extends UpdateCompanion<DownloadedLesson> {
     this.totalBytes = const Value.absent(),
     this.nonce = const Value.absent(),
     this.lastError = const Value.absent(),
+    this.courseId = const Value.absent(),
+    this.attemptCount = const Value.absent(),
+    this.queuedAt = const Value.absent(),
+    this.nextAttemptAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -3017,6 +3210,10 @@ class DownloadedLessonsCompanion extends UpdateCompanion<DownloadedLesson> {
     this.totalBytes = const Value.absent(),
     this.nonce = const Value.absent(),
     this.lastError = const Value.absent(),
+    this.courseId = const Value.absent(),
+    this.attemptCount = const Value.absent(),
+    this.queuedAt = const Value.absent(),
+    this.nextAttemptAt = const Value.absent(),
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : lessonId = Value(lessonId),
@@ -3031,6 +3228,10 @@ class DownloadedLessonsCompanion extends UpdateCompanion<DownloadedLesson> {
     Expression<int>? totalBytes,
     Expression<Uint8List>? nonce,
     Expression<String>? lastError,
+    Expression<String>? courseId,
+    Expression<int>? attemptCount,
+    Expression<DateTime>? queuedAt,
+    Expression<DateTime>? nextAttemptAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
@@ -3042,6 +3243,10 @@ class DownloadedLessonsCompanion extends UpdateCompanion<DownloadedLesson> {
       if (totalBytes != null) 'total_bytes': totalBytes,
       if (nonce != null) 'nonce': nonce,
       if (lastError != null) 'last_error': lastError,
+      if (courseId != null) 'course_id': courseId,
+      if (attemptCount != null) 'attempt_count': attemptCount,
+      if (queuedAt != null) 'queued_at': queuedAt,
+      if (nextAttemptAt != null) 'next_attempt_at': nextAttemptAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -3055,6 +3260,10 @@ class DownloadedLessonsCompanion extends UpdateCompanion<DownloadedLesson> {
     Value<int?>? totalBytes,
     Value<Uint8List?>? nonce,
     Value<String?>? lastError,
+    Value<String?>? courseId,
+    Value<int>? attemptCount,
+    Value<DateTime?>? queuedAt,
+    Value<DateTime?>? nextAttemptAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
@@ -3066,6 +3275,10 @@ class DownloadedLessonsCompanion extends UpdateCompanion<DownloadedLesson> {
       totalBytes: totalBytes ?? this.totalBytes,
       nonce: nonce ?? this.nonce,
       lastError: lastError ?? this.lastError,
+      courseId: courseId ?? this.courseId,
+      attemptCount: attemptCount ?? this.attemptCount,
+      queuedAt: queuedAt ?? this.queuedAt,
+      nextAttemptAt: nextAttemptAt ?? this.nextAttemptAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -3097,6 +3310,18 @@ class DownloadedLessonsCompanion extends UpdateCompanion<DownloadedLesson> {
     if (lastError.present) {
       map['last_error'] = Variable<String>(lastError.value);
     }
+    if (courseId.present) {
+      map['course_id'] = Variable<String>(courseId.value);
+    }
+    if (attemptCount.present) {
+      map['attempt_count'] = Variable<int>(attemptCount.value);
+    }
+    if (queuedAt.present) {
+      map['queued_at'] = Variable<DateTime>(queuedAt.value);
+    }
+    if (nextAttemptAt.present) {
+      map['next_attempt_at'] = Variable<DateTime>(nextAttemptAt.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -3116,6 +3341,10 @@ class DownloadedLessonsCompanion extends UpdateCompanion<DownloadedLesson> {
           ..write('totalBytes: $totalBytes, ')
           ..write('nonce: $nonce, ')
           ..write('lastError: $lastError, ')
+          ..write('courseId: $courseId, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('queuedAt: $queuedAt, ')
+          ..write('nextAttemptAt: $nextAttemptAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -5189,6 +5418,10 @@ typedef $$DownloadedLessonsTableCreateCompanionBuilder =
       Value<int?> totalBytes,
       Value<Uint8List?> nonce,
       Value<String?> lastError,
+      Value<String?> courseId,
+      Value<int> attemptCount,
+      Value<DateTime?> queuedAt,
+      Value<DateTime?> nextAttemptAt,
       required DateTime updatedAt,
       Value<int> rowid,
     });
@@ -5201,6 +5434,10 @@ typedef $$DownloadedLessonsTableUpdateCompanionBuilder =
       Value<int?> totalBytes,
       Value<Uint8List?> nonce,
       Value<String?> lastError,
+      Value<String?> courseId,
+      Value<int> attemptCount,
+      Value<DateTime?> queuedAt,
+      Value<DateTime?> nextAttemptAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
     });
@@ -5247,6 +5484,26 @@ class $$DownloadedLessonsTableFilterComposer
 
   ColumnFilters<String> get lastError => $composableBuilder(
     column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get courseId => $composableBuilder(
+    column: $table.courseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get queuedAt => $composableBuilder(
+    column: $table.queuedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get nextAttemptAt => $composableBuilder(
+    column: $table.nextAttemptAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5300,6 +5557,26 @@ class $$DownloadedLessonsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get courseId => $composableBuilder(
+    column: $table.courseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get queuedAt => $composableBuilder(
+    column: $table.queuedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get nextAttemptAt => $composableBuilder(
+    column: $table.nextAttemptAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -5339,6 +5616,22 @@ class $$DownloadedLessonsTableAnnotationComposer
 
   GeneratedColumn<String> get lastError =>
       $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<String> get courseId =>
+      $composableBuilder(column: $table.courseId, builder: (column) => column);
+
+  GeneratedColumn<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get queuedAt =>
+      $composableBuilder(column: $table.queuedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get nextAttemptAt => $composableBuilder(
+    column: $table.nextAttemptAt,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
@@ -5391,6 +5684,10 @@ class $$DownloadedLessonsTableTableManager
                 Value<int?> totalBytes = const Value.absent(),
                 Value<Uint8List?> nonce = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
+                Value<String?> courseId = const Value.absent(),
+                Value<int> attemptCount = const Value.absent(),
+                Value<DateTime?> queuedAt = const Value.absent(),
+                Value<DateTime?> nextAttemptAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DownloadedLessonsCompanion(
@@ -5401,6 +5698,10 @@ class $$DownloadedLessonsTableTableManager
                 totalBytes: totalBytes,
                 nonce: nonce,
                 lastError: lastError,
+                courseId: courseId,
+                attemptCount: attemptCount,
+                queuedAt: queuedAt,
+                nextAttemptAt: nextAttemptAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -5413,6 +5714,10 @@ class $$DownloadedLessonsTableTableManager
                 Value<int?> totalBytes = const Value.absent(),
                 Value<Uint8List?> nonce = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
+                Value<String?> courseId = const Value.absent(),
+                Value<int> attemptCount = const Value.absent(),
+                Value<DateTime?> queuedAt = const Value.absent(),
+                Value<DateTime?> nextAttemptAt = const Value.absent(),
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => DownloadedLessonsCompanion.insert(
@@ -5423,6 +5728,10 @@ class $$DownloadedLessonsTableTableManager
                 totalBytes: totalBytes,
                 nonce: nonce,
                 lastError: lastError,
+                courseId: courseId,
+                attemptCount: attemptCount,
+                queuedAt: queuedAt,
+                nextAttemptAt: nextAttemptAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),

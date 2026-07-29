@@ -56,16 +56,19 @@ class HttpLessonByteSource implements LessonByteSource {
     );
   }
 
-  /// `Content-Range: bytes 100-102/900` -> 900. Falls back to `Content-Length`,
-  /// which is the whole resource only on a 200.
+  /// `Content-Range: bytes 100-102/900` -> 900. Falls back to `Content-Length`
+  /// only when there is no `Content-Range` at all — `Content-Length` on a 206
+  /// is the size of that chunk, not the resource.
   int? _totalFrom(Headers headers) {
     final String? contentRange = headers.value('content-range');
     if (contentRange != null) {
+      // Content-Range is authoritative once present. A `*` total means the
+      // server does not know the length; falling back to Content-Length here
+      // would return this chunk's size on a 206, which is not the total.
       final int slash = contentRange.lastIndexOf('/');
-      if (slash != -1) {
-        final String total = contentRange.substring(slash + 1);
-        if (total != '*') return int.tryParse(total);
-      }
+      if (slash == -1) return null;
+      final String total = contentRange.substring(slash + 1);
+      return total == '*' ? null : int.tryParse(total);
     }
     final String? contentLength = headers.value('content-length');
     return contentLength == null ? null : int.tryParse(contentLength);

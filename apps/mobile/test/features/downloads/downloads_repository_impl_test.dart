@@ -12,6 +12,7 @@ import 'package:app_mobile/features/downloads/data/downloads_repository_impl.dar
 import 'package:app_mobile/features/downloads/domain/download_item.dart';
 import 'package:app_mobile/features/downloads/domain/download_key_store.dart';
 import 'package:app_mobile/features/downloads/domain/download_scheduler_port.dart';
+import 'package:app_mobile/features/downloads/domain/downloads_repository.dart';
 import 'package:app_mobile/features/downloads/domain/encrypted_file_format.dart';
 import 'package:app_mobile/features/downloads/domain/lesson_byte_source.dart';
 import 'package:app_mobile/shared/db/app_database.dart';
@@ -196,7 +197,7 @@ void main() {
       Uint8List.fromList(List<int>.generate(length, (int i) => i % 251));
 
   // Collapses the persisted backoff to zero so a test's single
-  // `drainForTest()` pass can observe a retry without waiting out the real
+  // `drain()` pass can observe a retry without waiting out the real
   // window. The two tests that assert the production formula itself
   // construct `DownloadsRepositoryImpl` directly instead of going through
   // this helper, so they get the real default.
@@ -231,7 +232,7 @@ void main() {
     );
 
     await repo.enqueueLesson('l1', courseId: 'c1');
-    await repo.drainForTest();
+    await repo.drain();
 
     final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
     expect(row?.state, DownloadState.ready);
@@ -257,7 +258,7 @@ void main() {
     final DownloadsRepositoryImpl repo = build(script);
 
     await repo.enqueueLesson('l1');
-    await repo.drainForTest();
+    await repo.drain();
 
     expect(script.offsets.first, 0);
     expect(
@@ -278,7 +279,7 @@ void main() {
     );
 
     await repo.enqueueLesson('l1');
-    await repo.drainForTest();
+    await repo.drain();
 
     final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
     expect(row?.state, DownloadState.queued);
@@ -291,7 +292,7 @@ void main() {
     );
 
     await repo.enqueueLesson('l1');
-    await repo.drainForTest();
+    await repo.drain();
 
     final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
     expect(row?.state, DownloadState.failed);
@@ -307,7 +308,7 @@ void main() {
     final DownloadsRepositoryImpl repo = build(script);
 
     await repo.enqueueLesson('l1');
-    await repo.drainForTest();
+    await repo.drain();
 
     final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
     expect(row?.state, DownloadState.ready);
@@ -324,7 +325,7 @@ void main() {
     );
 
     await repo.enqueueLesson('l1');
-    await repo.drainForTest();
+    await repo.drain();
 
     final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
     expect(row?.state, DownloadState.ready);
@@ -352,7 +353,7 @@ void main() {
       );
 
       await repo.enqueueLesson('l1');
-      await repo.drainForTest();
+      await repo.drain();
       clock.stop();
 
       final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
@@ -387,7 +388,7 @@ void main() {
     // 'bad' is enqueued first, so FIFO puts it at the head of the queue.
     await repo.enqueueLesson('bad');
     await repo.enqueueLesson('good');
-    await repo.drainForTest();
+    await repo.drain();
 
     expect(
       (await db.downloadsDao.byLessonId('bad'))?.state,
@@ -407,7 +408,7 @@ void main() {
     );
 
     await repo.enqueueLesson('l1');
-    await repo.drainForTest();
+    await repo.drain();
     final String path = (await db.downloadsDao.byLessonId('l1'))!.filePath;
 
     await repo.cancel('l1');
@@ -423,7 +424,7 @@ void main() {
 
     await repo.enqueueLesson('l1');
     await repo.pause('l1');
-    await repo.drainForTest();
+    await repo.drain();
 
     final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
     expect(
@@ -447,7 +448,7 @@ void main() {
     // fresh lesson), so there is no need to pay for that turn.
     final String path = '${dir.path}/l1.csdl';
     await repo.cancel('l1');
-    await repo.drainForTest();
+    await repo.drain();
 
     expect(await db.downloadsDao.byLessonId('l1'), isNull);
     expect(
@@ -500,16 +501,51 @@ void main() {
 
       // Nothing is enqueued here — reconcileAfterRestart is the only thing
       // that puts this lesson back in front of the pump. If it only relabeled
-      // the row (the old `paused` behavior), `drainForTest` would find
+      // the row (the old `paused` behavior), `drain` would find
       // nothing queued and the row would still read `queued`/`paused`, never
       // `ready`.
       await repo.reconcileAfterRestart();
-      await repo.drainForTest();
+      await repo.drain();
 
       final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
       expect(row?.state, DownloadState.ready);
     },
   );
+
+  test('the background callback sequence completes a download through the port '
+      'alone', () async {
+    await db.downloadsDao.upsert(
+      DownloadedLessonsCompanion.insert(
+        lessonId: 'l1',
+        state: DownloadState.downloading,
+        filePath: '${dir.path}/l1.csdl',
+        updatedAt: DateTime.utc(2026, 7, 29),
+        queuedAt: Value<DateTime?>(DateTime.utc(2026, 7, 29)),
+      ),
+    );
+
+    // Deliberately typed as the *port*, and calling exactly the two methods
+    // `downloadsCallbackDispatcher` calls in that order. The Workmanager
+    // isolate resolves `getIt<DownloadsRepository>()` and never sees the
+    // concrete class, so a `drain` that lives only on the implementation is
+    // unreachable from the background path — that is the defect this pins,
+    // and dropping `drain()` from the port breaks this test at compile time.
+    final DownloadsRepository repo = build(
+      _ScriptedByteSource(payload: payload(EncryptedFileFormat.blockSize)),
+    );
+
+    await repo.reconcileAfterRestart();
+    await repo.drain();
+
+    final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+    expect(
+      row?.state,
+      DownloadState.ready,
+      reason:
+          'the OS window must be spent on the transfer, not on relabelling '
+          'the row and returning',
+    );
+  });
 
   test('enqueue asks the OS for a background window', () async {
     final DownloadsRepositoryImpl repo = build(
@@ -579,7 +615,7 @@ void main() {
           });
 
       await repo.enqueueLesson('l1');
-      await repo.drainForTest();
+      await repo.drain();
       await reachedReady.future;
       await subscription.cancel();
 
@@ -632,7 +668,7 @@ void main() {
 
       final DownloadsRepositoryImpl repo = build(fake);
       await repo.enqueueLesson('l1');
-      await repo.drainForTest();
+      await repo.drain();
 
       expect(
         observedIntermediateFlush,
@@ -667,7 +703,7 @@ void main() {
 
       repo = build(fake);
       await repo.enqueueLesson('l1');
-      await repo.drainForTest();
+      await repo.drain();
 
       final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
       expect(row?.state, DownloadState.paused);
@@ -709,7 +745,7 @@ void main() {
 
     online = true;
     await repo.resume('l1');
-    await repo.drainForTest();
+    await repo.drain();
 
     final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
     expect(row?.state, DownloadState.ready);
@@ -749,7 +785,7 @@ void main() {
     );
 
     await repo.resume('l1');
-    await repo.drainForTest();
+    await repo.drain();
 
     final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
     expect(row?.state, DownloadState.ready);
@@ -787,7 +823,7 @@ void main() {
       );
       expect(afterRetry?.state, DownloadState.queued);
 
-      await repo.drainForTest();
+      await repo.drain();
       expect(
         (await db.downloadsDao.byLessonId('l1'))?.state,
         DownloadState.ready,
@@ -827,7 +863,7 @@ void main() {
     );
 
     await repo.retry('l1');
-    await repo.drainForTest();
+    await repo.drain();
 
     final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
     expect(row?.state, DownloadState.ready);
@@ -865,7 +901,7 @@ void main() {
       // A regression back to the unbounded loop hangs `_drain` forever;
       // `.timeout` turns that into a fast, readable test failure instead of
       // stalling the whole suite.
-      await repo.drainForTest().timeout(const Duration(seconds: 5));
+      await repo.drain().timeout(const Duration(seconds: 5));
 
       final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
       expect(row?.state, DownloadState.failed);

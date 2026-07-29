@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app_ui/app_ui.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +28,14 @@ void downloadsCallbackDispatcher() {
   Workmanager().executeTask((String task, Map<String, dynamic>? input) async {
     if (task != kDownloadResumeTask) return true;
     configureDependencies();
-    await getIt<DownloadsRepository>().reconcileAfterRestart();
+    final DownloadsRepository downloads = getIt<DownloadsRepository>();
+    await downloads.reconcileAfterRestart();
+    // Awaited, and this is the whole point of the callback: reconcile only
+    // relabels the stranded rows and kicks the fire-and-forget pump. Returning
+    // here would report completion to the OS while the transfer it just
+    // started is still in flight, and the background execution session would
+    // be torn down under it.
+    await downloads.drain();
     return true;
   });
 }
@@ -38,6 +47,12 @@ Future<void> main() async {
   await bootstrapFirebase();
 
   configureDependencies();
+
+  // Resume-on-launch: an app kill leaves rows in `downloading`;
+  // reconcileAfterRestart re-queues them and kicks the pump. Deliberately not
+  // awaited — startup must not wait on the download queue.
+  unawaited(getIt<DownloadsRepository>().reconcileAfterRestart());
+
   await bootstrapPreferences();
 
   // Opportunistic only — foreground download plus resume-on-launch is what

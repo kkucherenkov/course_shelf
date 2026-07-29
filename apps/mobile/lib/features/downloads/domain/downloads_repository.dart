@@ -22,6 +22,19 @@ abstract class DownloadsRepository {
   /// resuming the transfer.
   Future<void> reconcileAfterRestart();
 
+  /// Runs the queue until nothing is eligible, then completes.
+  ///
+  /// On the port because a background-fetch handler must **await** it before
+  /// reporting completion to the OS, and that handler only ever sees this
+  /// interface — it resolves `getIt<DownloadsRepository>()` in a fresh isolate
+  /// with no access to the concrete class. [reconcileAfterRestart] only
+  /// relabels rows and kicks the pump, so returning right after it ends the
+  /// background execution session while the transfer it just started is still
+  /// in flight and the OS tears the isolate down mid-download.
+  ///
+  /// Doubles as the seam that lets a test await the pump instead of polling.
+  Future<void> drain();
+
   /// High-frequency progress for the active item plus the persisted rest.
   Stream<List<DownloadItem>> watchAll();
 

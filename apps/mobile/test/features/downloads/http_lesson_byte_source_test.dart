@@ -105,6 +105,60 @@ void main() {
     expect(response.totalBytes, 2);
   });
 
+  test(
+    'treats an unknown Content-Range total as null, not the chunk size',
+    () async {
+      // Content-Range is authoritative once present: a `*` total means the
+      // server does not know the resource length. A Content-Length header is
+      // deliberately included here too — on a 206 that header describes only
+      // this chunk, so falling back to it would silently persist the wrong
+      // total. Without this header the test would pass even against code that
+      // wrongly falls through to Content-Length.
+      adapter = RecordingHttpAdapter(
+        respond: (RequestOptions options) => options.path.contains('stream-url')
+            ? jsonUrl()
+            : ResponseBody(
+                Stream<Uint8List>.value(Uint8List.fromList(<int>[1, 2, 3])),
+                206,
+                headers: <String, List<String>>{
+                  'content-range': <String>['bytes 0-2/*'],
+                  'content-length': <String>['3'],
+                },
+              ),
+      );
+      dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000'))
+        ..httpClientAdapter = adapter;
+
+      final RangedResponse response = await HttpLessonByteSource(
+        dio: dio,
+      ).fetchFrom(lessonId: 'l1', offset: 0);
+
+      expect(response.totalBytes, isNull);
+    },
+  );
+
+  test('treats a malformed Content-Range total as null', () async {
+    adapter = RecordingHttpAdapter(
+      respond: (RequestOptions options) => options.path.contains('stream-url')
+          ? jsonUrl()
+          : ResponseBody(
+              Stream<Uint8List>.value(Uint8List.fromList(<int>[1, 2, 3])),
+              206,
+              headers: <String, List<String>>{
+                'content-range': <String>['bytes 0-2/abc'],
+              },
+            ),
+    );
+    dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000'))
+      ..httpClientAdapter = adapter;
+
+    final RangedResponse response = await HttpLessonByteSource(
+      dio: dio,
+    ).fetchFrom(lessonId: 'l1', offset: 0);
+
+    expect(response.totalBytes, isNull);
+  });
+
   test('resolves a relative signed URL against the Dio base', () async {
     await HttpLessonByteSource(dio: dio).fetchFrom(lessonId: 'l1', offset: 0);
 

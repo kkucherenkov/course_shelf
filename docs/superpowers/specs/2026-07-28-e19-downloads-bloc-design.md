@@ -190,10 +190,18 @@ empty `onUpgrade` hook.
 | `courseId` nullable | `EnqueueCourse` must group and cancel a whole course |
 | `attemptCount` default 0 | retry backoff needs a count to back off on |
 | `queuedAt` UTC | FIFO ordering |
+| `nextAttemptAt` UTC nullable | when a backed-off row becomes eligible again |
 
-`queuedAt` must be written UTC-normalized. `downloads_dao.dart:12-14` already
-warns that Drift's TEXT datetime encoding makes `ORDER BY` lexicographic, so a
-column holding mixed offsets sorts wrong.
+`queuedAt` and `nextAttemptAt` must both be written UTC-normalized.
+`downloads_dao.dart:12-14` already warns that Drift's TEXT datetime encoding
+makes `ORDER BY` lexicographic, so a column holding mixed offsets sorts wrong —
+and the same encoding governs the `nextAttemptAt <= now` comparison.
+
+**Backoff is persisted, not slept.** `nextQueued` filters out rows whose window
+has not elapsed and the pump moves on to the next item. An `await` inside the
+pump would mean one unreachable lesson freezes every healthy download behind it:
+on a 40-lesson course enqueue, lessons 4-40 would wait through lesson 3's five
+attempts. Serializing downloads is intended; serializing *failures* is not.
 
 ## File format
 
@@ -279,7 +287,7 @@ incoming `Range` into a block range, decrypts only those blocks, and answers
 
 | condition | behaviour |
 | --- | --- |
-| socket drop / timeout | `→ queued`, `attemptCount++`, backoff `2^n` capped at 5 min, 5 attempts then `failed` |
+| socket drop / timeout | `→ queued`, `attemptCount++`, `nextAttemptAt = now + 2^n` capped at 5 min, 5 attempts then `failed` |
 | `401` mid-transfer | re-mint the stream URL once and continue from `bytesDownloaded`; a second `401` → `failed` |
 | `416` | source changed server-side → discard, reset to 0, restart once |
 | `404` | lesson or file gone → `failed`, no retry |

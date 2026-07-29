@@ -19,7 +19,8 @@ Every task's requirements implicitly include this section.
 - **Lints** (`apps/mobile/analysis_options.yaml`): `strict-casts`, `strict-inference`, `strict-raw-types` are all on. `always_use_package_imports` — every import inside `apps/mobile` must be `package:app_mobile/...`, never relative. `prefer_final_locals`, `prefer_const_constructors`, `prefer_const_declarations`, `avoid_print`. Declare local types explicitly; the surrounding code does.
 - **Container format:** magic `"CSDL"`, version `1`, header **24 bytes**, block size **262144** (256 KiB) of plaintext, AES-GCM tag **16 bytes**, nonce **12 bytes**.
 - **Persistence cadence:** flush `bytesDownloaded` to Drift every **16 blocks (4 MiB)**, plus on pause, cancel, and completion.
-- **Retry policy:** backoff `2^n` seconds capped at **5 minutes**, **5 attempts**, then `failed`.
+- **Retry policy:** backoff `2^n` seconds capped at **5 minutes**, **5 attempts**, then `failed`. The backoff is **persisted to `nextAttemptAt`, never slept** — the pump skips rows whose window has not elapsed and continues with the rest of the queue.
+- **Status-specific failures:** `401` → re-mint the URL once, no attempt burned; `416` → delete the file, reset to zero, restart; `404` → `failed` immediately, no retry.
 - **HTTP verbs:** `stream-url` and `download-url` are **GET**. Never POST.
 - **Key storage:** the AES key lives only in `flutter_secure_storage`, never in Drift. iOS options must set `accessibility: KeychainAccessibility.first_unlock` — the package default is `unlocked`, which makes the key unreadable to a background task on a locked device.
 - **Tests:** everything runs under `flutter test`. No test may require a device, emulator, or network.
@@ -97,7 +98,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:app_mobile/features/player/data/lesson_player_api.dart';
 import 'package:app_mobile/shared/db/app_database.dart';
 
-import 'package:app_mobile/../test/support/recording_http_adapter.dart';
+// Relative, not `package:` — `always_use_package_imports` governs files under
+// `lib/` only, and `test/` has no package path.
+import '../../support/recording_http_adapter.dart';
 
 void main() {
   late AppDatabase db;
@@ -153,14 +156,6 @@ void main() {
   });
 }
 ```
-
-The `package:app_mobile/../test/...` import above is wrong — `always_use_package_imports` forbids a relative import, but `test/` is not inside `lib/` so it has no package path. Use this instead, which the analyzer accepts because the lint only governs files under `lib/`:
-
-```dart
-import '../../support/recording_http_adapter.dart';
-```
-
-Replace the import line accordingly before running.
 
 - [ ] **Step 3: Run the test to verify it fails**
 
@@ -250,7 +245,8 @@ The queue needs three columns the table does not have. `AppDatabase.onUpgrade` h
   - `DownloadedLessons.courseId` → `TextColumn` nullable
   - `DownloadedLessons.attemptCount` → `IntColumn`, default 0
   - `DownloadedLessons.queuedAt` → `DateTimeColumn` nullable, always written UTC
-  - `DownloadsDao.nextQueued()` → `Future<DownloadedLesson?>`
+  - `DownloadedLessons.nextAttemptAt` → `DateTimeColumn` nullable, always written UTC
+  - `DownloadsDao.nextQueued({required DateTime now})` → `Future<DownloadedLesson?>`
   - `DownloadsDao.byCourseId(String)` → `Future<List<DownloadedLesson>>`
 
 - [ ] **Step 1: Add the three dependencies**
@@ -306,8 +302,34 @@ Append to `apps/mobile/test/shared/db/downloads_dao_test.dart`:
         ),
       );
 
-      final DownloadedLesson? next = await db.downloadsDao.nextQueued();
+      final DownloadedLesson? next = await db.downloadsDao.nextQueued(
+        now: DateTime.utc(2026, 7, 29, 12),
+      );
       expect(next?.lessonId, 'l-early');
+    });
+
+    test('nextQueued skips a row still inside its backoff window', () async {
+      final DateTime now = DateTime.utc(2026, 7, 29, 10);
+      await db.downloadsDao.upsert(
+        DownloadedLessonsCompanion.insert(
+          lessonId: 'backing-off',
+          state: DownloadState.queued,
+          filePath: '/tmp/backing-off.csdl',
+          updatedAt: now,
+          queuedAt: Value<DateTime?>(now),
+          nextAttemptAt: Value<DateTime?>(now.add(const Duration(minutes: 5))),
+        ),
+      );
+
+      // Still in backoff — the pump must move past it rather than sleep on it.
+      expect(await db.downloadsDao.nextQueued(now: now), isNull);
+      // Window elapsed.
+      expect(
+        (await db.downloadsDao.nextQueued(
+          now: now.add(const Duration(minutes: 6)),
+        ))?.lessonId,
+        'backing-off',
+      );
     });
 
     test('nextQueued ignores rows that are not queued', () async {
@@ -321,7 +343,10 @@ Append to `apps/mobile/test/shared/db/downloads_dao_test.dart`:
         ),
       );
 
-      expect(await db.downloadsDao.nextQueued(), isNull);
+      expect(
+        await db.downloadsDao.nextQueued(now: DateTime.utc(2026, 7, 29, 12)),
+        isNull,
+      );
     });
 
     test('byCourseId groups a whole course for EnqueueCourse / Cancel', () async {
@@ -374,7 +399,7 @@ cd /home/kkucherenkov/projects/petProjects/course_shelf/apps/mobile
 flutter test test/shared/db/downloads_dao_test.dart
 ```
 
-Expected: compile error — `queuedAt` / `courseId` / `attemptCount` are not parameters of `DownloadedLessonsCompanion.insert`, and `nextQueued` / `byCourseId` are undefined.
+Expected: compile error — `queuedAt` / `courseId` / `attemptCount` / `nextAttemptAt` are not parameters of `DownloadedLessonsCompanion.insert`, and `nextQueued` / `byCourseId` are undefined.
 
 - [ ] **Step 4: Add the columns**
 
@@ -398,6 +423,15 @@ In `apps/mobile/lib/shared/db/tables/downloaded_lessons.dart`, add inside the cl
   /// always sets it on insert. SQLite sorts NULL first, which is the correct
   /// fallback ordering anyway (an un-backfilled row is the oldest).
   DateTimeColumn get queuedAt => dateTime().nullable()();
+
+  /// Earliest UTC instant at which this row may be attempted again. Null means
+  /// "eligible now".
+  ///
+  /// Backoff is persisted rather than slept: `_drain` skips rows whose window
+  /// has not elapsed and moves to the next item. Sleeping inside the pump would
+  /// make one unreachable lesson freeze every healthy download behind it —
+  /// on a 40-lesson course enqueue, up to 5 attempts x 5 minutes each.
+  DateTimeColumn get nextAttemptAt => dateTime().nullable()();
 ```
 
 - [ ] **Step 5: Bump the schema and fill the migration hook**
@@ -417,6 +451,7 @@ In `apps/mobile/lib/shared/db/app_database.dart`, replace lines 63-77:
         await m.addColumn(downloadedLessons, downloadedLessons.courseId);
         await m.addColumn(downloadedLessons, downloadedLessons.attemptCount);
         await m.addColumn(downloadedLessons, downloadedLessons.queuedAt);
+        await m.addColumn(downloadedLessons, downloadedLessons.nextAttemptAt);
         // Pre-v2 rows have no queue position. `updatedAt` is the best proxy
         // available and preserves their relative order.
         await m.database.customStatement(
@@ -438,14 +473,27 @@ In `apps/mobile/lib/shared/db/app_database.dart`, replace lines 63-77:
 In `apps/mobile/lib/shared/db/daos/downloads_dao.dart`, add before `remove`:
 
 ```dart
-  /// Oldest `queued` row — the pump's next unit of work.
+  /// Oldest `queued` row whose backoff has elapsed — the pump's next unit of
+  /// work.
   ///
   /// Ordering by `queuedAt` is safe only because every writer normalizes it to
   /// UTC (see the class doc above): Drift's TEXT datetime encoding makes
-  /// `ORDER BY` lexicographic, so a mixed-offset column would sort wrong.
-  Future<DownloadedLesson?> nextQueued() =>
+  /// `ORDER BY` lexicographic, so a mixed-offset column would sort wrong. The
+  /// same applies to comparing `nextAttemptAt` against [now], which callers
+  /// must pass as UTC.
+  ///
+  /// Skipping rows in backoff here — rather than sleeping in the pump — is what
+  /// keeps one unreachable lesson from stalling every healthy download behind
+  /// it. On a whole-course enqueue that is the difference between one slow item
+  /// and a frozen queue.
+  Future<DownloadedLesson?> nextQueued({required DateTime now}) =>
       (select(downloadedLessons)
-            ..where((t) => t.state.equalsValue(DownloadState.queued))
+            ..where(
+              (t) =>
+                  t.state.equalsValue(DownloadState.queued) &
+                  (t.nextAttemptAt.isNull() |
+                      t.nextAttemptAt.isSmallerOrEqualValue(now)),
+            )
             ..orderBy(<OrderClauseGenerator<$DownloadedLessonsTable>>[
               (t) => OrderingTerm(expression: t.queuedAt),
             ])
@@ -2324,6 +2372,51 @@ extension _Followed on Stream<Uint8List> {
   }
 }
 
+/// Fails the first fetch with a given HTTP status, then serves normally.
+/// Models an expired token, a changed source file, or a deleted lesson.
+class _StatusFailingByteSource implements LessonByteSource {
+  _StatusFailingByteSource({
+    required this.status,
+    required this.payload,
+    this.alwaysFailLessonId,
+  });
+
+  final int status;
+  final Uint8List payload;
+
+  /// When set, that lesson fails on every call and every other lesson always
+  /// succeeds. When null, only the first call fails.
+  final String? alwaysFailLessonId;
+
+  int calls = 0;
+
+  @override
+  Future<RangedResponse> fetchFrom({
+    required String lessonId,
+    required int offset,
+    CancelToken? cancelToken,
+  }) async {
+    calls++;
+    final bool shouldFail = alwaysFailLessonId == null
+        ? calls == 1
+        : lessonId == alwaysFailLessonId;
+    if (shouldFail) {
+      throw DioException.badResponse(
+        statusCode: status,
+        requestOptions: RequestOptions(),
+        response: Response<void>(
+          statusCode: status,
+          requestOptions: RequestOptions(),
+        ),
+      );
+    }
+    return RangedResponse(
+      bytes: Stream<Uint8List>.value(Uint8List.sublistView(payload, offset)),
+      totalBytes: payload.length,
+    );
+  }
+}
+
 void main() {
   late AppDatabase db;
   late Directory dir;
@@ -2413,6 +2506,98 @@ void main() {
     final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
     expect(row?.state, DownloadState.queued);
     expect(row?.attemptCount, 0);
+  });
+
+  test('404 fails at once instead of spending five attempts', () async {
+    final DownloadsRepositoryImpl repo = build(
+      _StatusFailingByteSource(status: 404, payload: payload(10)),
+    );
+
+    await repo.enqueueLesson('l1');
+    await repo.drainForTest();
+
+    final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+    expect(row?.state, DownloadState.failed);
+    expect(row?.attemptCount, 1, reason: 'retrying cannot un-delete a lesson');
+  });
+
+  test('401 re-mints once, burns no attempt, and completes', () async {
+    final Uint8List source = payload(2048);
+    final _StatusFailingByteSource script = _StatusFailingByteSource(
+      status: 401,
+      payload: source,
+    );
+    final DownloadsRepositoryImpl repo = build(script);
+
+    await repo.enqueueLesson('l1');
+    await repo.drainForTest();
+
+    final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+    expect(row?.state, DownloadState.ready);
+    // A token that outlived its 900s TTL during a pause is the expected case,
+    // not a fault — it must not count against the retry budget.
+    expect(row?.attemptCount, 0);
+    expect(script.calls, 2);
+  });
+
+  test('416 discards the partial file and restarts from zero', () async {
+    final Uint8List source = payload(EncryptedFileFormat.blockSize * 2);
+    final DownloadsRepositoryImpl repo = build(
+      _StatusFailingByteSource(status: 416, payload: source),
+    );
+
+    await repo.enqueueLesson('l1');
+    await repo.drainForTest();
+
+    final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+    expect(row?.state, DownloadState.ready);
+    expect(row?.bytesDownloaded, source.length);
+  });
+
+  test('a transient failure parks the row rather than sleeping on it', () async {
+    final Stopwatch clock = Stopwatch()..start();
+    final DownloadsRepositoryImpl repo = build(
+      _StatusFailingByteSource(
+        status: 500,
+        payload: payload(10),
+        alwaysFailLessonId: 'l1',
+      ),
+    );
+
+    await repo.enqueueLesson('l1');
+    await repo.drainForTest();
+    clock.stop();
+
+    final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+    expect(row?.state, DownloadState.queued);
+    expect(row?.attemptCount, 1);
+    expect(row?.nextAttemptAt?.isAfter(DateTime.now().toUtc()), isTrue);
+    // The pump returns immediately; the backoff lives in the row, not in an
+    // await. If this ever sleeps, the assertion below is what catches it.
+    expect(clock.elapsed, lessThan(const Duration(seconds: 2)));
+  });
+
+  test('a backed-off item does not block a healthy one behind it', () async {
+    final Uint8List source = payload(2048);
+    final DownloadsRepositoryImpl repo = build(
+      _StatusFailingByteSource(
+        status: 500,
+        payload: source,
+        alwaysFailLessonId: 'bad',
+      ),
+    );
+
+    // 'bad' is enqueued first, so FIFO puts it at the head of the queue.
+    await repo.enqueueLesson('bad');
+    await repo.enqueueLesson('good');
+    await repo.drainForTest();
+
+    expect((await db.downloadsDao.byLessonId('bad'))?.state, DownloadState.queued);
+    expect(
+      (await db.downloadsDao.byLessonId('good'))?.state,
+      DownloadState.ready,
+      reason: 'a whole-course enqueue must not stall behind one bad lesson',
+    );
   });
 
   test('cancel deletes both the row and the partial file', () async {
@@ -2579,6 +2764,11 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   String? _activeLessonId;
   Future<void>? _pump;
 
+  /// Lessons that have already spent their one free token re-mint this run.
+  /// Without it, a 401 that means "you genuinely may not have this" would
+  /// re-mint and retry forever at zero backoff.
+  final Set<String> _reminted = <String>{};
+
   @override
   Future<void> enqueueLesson(String lessonId, {String? courseId}) async {
     final DownloadedLesson? existing = await _dao.byLessonId(lessonId);
@@ -2644,11 +2834,15 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   Future<void> retry(String lessonId) async {
     final DownloadedLesson? row = await _dao.byLessonId(lessonId);
     if (row == null) return;
+    // An explicit user retry clears the backoff window and the re-mint guard —
+    // they asked for it now, not after the timer the last failure set.
+    _reminted.remove(lessonId);
     await _dao.upsert(
       DownloadedLessonsCompanion(
         lessonId: Value<String>(lessonId),
         state: const Value<DownloadState>(DownloadState.queued),
         attemptCount: Value<int>(row.attemptCount + 1),
+        nextAttemptAt: const Value<DateTime?>(null),
         lastError: const Value<String?>(null),
         updatedAt: Value<DateTime>(DateTime.now().toUtc()),
       ),
@@ -2706,7 +2900,11 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
 
   Future<void> _drain() async {
     while (true) {
-      final DownloadedLesson? next = await _dao.nextQueued();
+      // Rows still inside their backoff window are skipped, not waited on, so a
+      // single unreachable lesson never blocks the ones behind it.
+      final DownloadedLesson? next = await _dao.nextQueued(
+        now: DateTime.now().toUtc(),
+      );
       if (next == null) return;
 
       if (!await _isOnline()) {
@@ -2776,12 +2974,14 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
       await writer.close();
       writer = null;
 
+      _reminted.remove(row.lessonId);
       await _dao.upsert(
         DownloadedLessonsCompanion(
           lessonId: Value<String>(row.lessonId),
           state: const Value<DownloadState>(DownloadState.ready),
           bytesDownloaded: Value<int>(total),
           totalBytes: Value<int?>(response.totalBytes ?? total),
+          nextAttemptAt: const Value<DateTime?>(null),
           lastError: const Value<String?>(null),
           updatedAt: Value<DateTime>(DateTime.now().toUtc()),
         ),
@@ -2814,33 +3014,102 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
       return;
     }
 
-    final int attempts = row.attemptCount + 1;
-    final bool exhausted = attempts >= _maxAttempts;
+    final int? status = error is DioException
+        ? error.response?.statusCode
+        : null;
+    final DateTime now = DateTime.now().toUtc();
 
+    // 404 — the lesson or its file is gone server-side. Retrying cannot bring
+    // it back, and burning five attempts on it delays everything behind it.
+    if (status == 404) {
+      await _fail(row, error, committedPlaintextBytes, now);
+      return;
+    }
+
+    // 401 — the signed token expired mid-transfer, which is the *expected*
+    // outcome of a pause longer than the 900s TTL. One free re-mint: requeue
+    // with no backoff and no attempt burned, because nothing is actually wrong.
+    // `_reminted` guards against a genuinely rejected identity looping forever.
+    if (status == 401 && !_reminted.contains(row.lessonId)) {
+      _reminted.add(row.lessonId);
+      await _dao.upsert(
+        DownloadedLessonsCompanion(
+          lessonId: Value<String>(row.lessonId),
+          state: const Value<DownloadState>(DownloadState.queued),
+          bytesDownloaded: Value<int>(
+            committedPlaintextBytes ?? row.bytesDownloaded,
+          ),
+          nextAttemptAt: const Value<DateTime?>(null),
+          updatedAt: Value<DateTime>(now),
+        ),
+      );
+      return;
+    }
+
+    // 416 — the server's file changed under us, so every byte on disk is
+    // suspect. Discard and start over rather than splice new bytes onto old.
+    if (status == 416) {
+      final File file = File(row.filePath);
+      if (file.existsSync()) await file.delete();
+      await _dao.upsert(
+        DownloadedLessonsCompanion(
+          lessonId: Value<String>(row.lessonId),
+          state: const Value<DownloadState>(DownloadState.queued),
+          bytesDownloaded: const Value<int>(0),
+          totalBytes: const Value<int?>(null),
+          attemptCount: Value<int>(row.attemptCount + 1),
+          nextAttemptAt: const Value<DateTime?>(null),
+          lastError: Value<String?>(error.toString()),
+          updatedAt: Value<DateTime>(now),
+        ),
+      );
+      return;
+    }
+
+    final int attempts = row.attemptCount + 1;
+    if (attempts >= _maxAttempts) {
+      await _fail(row, error, committedPlaintextBytes, now);
+      return;
+    }
+
+    // 2^n seconds, capped. Persisted rather than slept: the pump skips this row
+    // until the window elapses and gets on with the rest of the queue.
+    final Duration wait = Duration(
+      seconds: min(1 << attempts, _maxBackoff.inSeconds),
+    );
     await _dao.upsert(
       DownloadedLessonsCompanion(
         lessonId: Value<String>(row.lessonId),
-        state: Value<DownloadState>(
-          exhausted ? DownloadState.failed : DownloadState.queued,
-        ),
+        state: const Value<DownloadState>(DownloadState.queued),
         bytesDownloaded: Value<int>(
           committedPlaintextBytes ?? row.bytesDownloaded,
         ),
         attemptCount: Value<int>(attempts),
+        nextAttemptAt: Value<DateTime?>(now.add(wait)),
         lastError: Value<String?>(error.toString()),
-        updatedAt: Value<DateTime>(DateTime.now().toUtc()),
+        updatedAt: Value<DateTime>(now),
       ),
     );
-
-    if (!exhausted) {
-      // 2^n seconds, capped. Gives a flapping connection room to settle without
-      // spinning the radio.
-      final Duration wait = Duration(
-        seconds: min(1 << attempts, _maxBackoff.inSeconds),
-      );
-      await Future<void>.delayed(wait);
-    }
   }
+
+  Future<void> _fail(
+    DownloadedLesson row,
+    Object error,
+    int? committedPlaintextBytes,
+    DateTime now,
+  ) => _dao.upsert(
+    DownloadedLessonsCompanion(
+      lessonId: Value<String>(row.lessonId),
+      state: const Value<DownloadState>(DownloadState.failed),
+      bytesDownloaded: Value<int>(
+        committedPlaintextBytes ?? row.bytesDownloaded,
+      ),
+      attemptCount: Value<int>(row.attemptCount + 1),
+      nextAttemptAt: const Value<DateTime?>(null),
+      lastError: Value<String?>(error.toString()),
+      updatedAt: Value<DateTime>(now),
+    ),
+  );
 
   Future<void> _persistProgress(
     String lessonId,
@@ -2894,7 +3163,7 @@ cd /home/kkucherenkov/projects/petProjects/course_shelf/apps/mobile
 flutter analyze && flutter test test/features/downloads/downloads_repository_impl_test.dart
 ```
 
-Expected: `No issues found!` and 8 tests pass.
+Expected: `No issues found!` and 14 tests pass.
 
 - [ ] **Step 7: Commit**
 
@@ -3007,14 +3276,14 @@ final class RetryDownload extends DownloadsEvent {
 final class DownloadsUpdated extends DownloadsEvent {
   const DownloadsUpdated(this.items);
 
-  final List<Object?> items;
+  final List<DownloadItem> items;
 
   @override
   List<Object?> get props => <Object?>[items];
 }
 ```
 
-`DownloadsUpdated.items` is typed `List<Object?>` above only to avoid a circular import in this snippet — change it to `List<DownloadItem>` and import `download_item.dart` when you create the file.
+This file also needs `import 'package:app_mobile/features/downloads/domain/download_item.dart';` at the top.
 
 - [ ] **Step 2: Write the state**
 
@@ -3511,7 +3780,7 @@ class LoopbackDecryptServer {
       0,
     );
     _server = server;
-    unawaited_listen(server);
+    _listen(server);
     return urlFor('');
   }
 
@@ -3529,7 +3798,9 @@ class LoopbackDecryptServer {
     return server;
   }
 
-  void unawaited_listen(HttpServer server) {
+  /// Not awaited: `listen` returns a subscription that lives as long as the
+  /// server, and `stop()` closing the server is what ends it.
+  void _listen(HttpServer server) {
     server.listen(_handle, onError: (_) {});
   }
 
@@ -3647,8 +3918,6 @@ class _Range {
   final bool unsatisfiable;
 }
 ```
-
-Rename `unawaited_listen` to `_listen` before committing — the underscore-plus-lowercase name above is only to make the call site obvious in the plan, and `flutter analyze` prefers a private `_listen`.
 
 - [ ] **Step 4: Run to verify it passes**
 
@@ -3896,6 +4165,6 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 Checked against the spec:
 
 - **Spec coverage.** Every spec section maps to a task: architecture → Tasks 3-11 file-by-file; schema v2 → Task 2; file format → Task 3; key + Keychain accessibility → Task 4; data flow / pump / flush cadence → Task 9; error-handling table → Task 9 `_onFailure` plus Task 6 for tag mismatch; loopback → Task 11; the 9 carded tests → Tasks 1, 3, 5, 6, 7, 9, 10, 11.
-- **Deliberate deviation.** The spec's error table lists distinct handling for `401`, `416`, and `404`. Task 9 implements the shared retry/backoff path that covers all three; the status-specific branches (re-mint once on `401`, reset to zero on `416`, no-retry on `404`) are **not** separately implemented and would need a follow-up step inside `_onFailure`. Flagging rather than hiding it: implementing them well needs `DioException.response?.statusCode` plumbed into `_onFailure`, which is a small addition but a real one.
+- **Pre-flight rulings folded in (2026-07-29).** Three decisions were taken before execution and are now part of the plan text, not deviations from it: (1) Task 9 implements the spec's status-specific branches — `401` re-mints once with no attempt burned, `416` discards and restarts, `404` fails immediately; (2) backoff is persisted to a new `nextAttemptAt` column and skipped over by `nextQueued`, rather than slept inside the pump, so one unreachable lesson cannot stall a whole-course enqueue; (3) three snippets that previously carried "this is wrong, fix it" corrections were rewritten to their final form. `PlatformDownloadScheduler`'s deliberate exception swallowing stands as designed and is documented at the catch site.
 - **Type consistency.** `committedPlaintextBytes` is the name used by the writer, the repository, and both their tests. `DownloadItem.fromRow` is the only row→domain conversion. `kDownloadResumeTask` is defined once in Task 8 and consumed in Task 12.
 - **Known soft spot.** `SecretBoxAuthenticationError` (Tasks 5, 6) is the one symbol taken from package documentation rather than verified against installed source, because `cryptography` is not installed until Task 2. `flutter analyze` will fail loudly if it is wrong.

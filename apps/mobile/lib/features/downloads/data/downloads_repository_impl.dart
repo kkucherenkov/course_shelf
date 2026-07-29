@@ -206,12 +206,18 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   Future<void> reconcileAfterRestart() async {
     // An app kill can only ever leave a row `downloading`. Nothing was
     // committed mid-block, so the file needs no repair — only the row does.
+    //
+    // Re-queued rather than paused: these were genuinely in flight when the
+    // process died, so resuming them is what "resume-on-launch" means. A
+    // download the user paused deliberately is already `paused`, not
+    // `downloading`, so this cannot override their intent.
     final List<DownloadedLesson> stranded = await _dao.byState(
       DownloadState.downloading,
     );
     for (final DownloadedLesson row in stranded) {
-      await _setState(row.lessonId, DownloadState.paused);
+      await _setState(row.lessonId, DownloadState.queued);
     }
+    if (stranded.isNotEmpty) _kick();
   }
 
   @override

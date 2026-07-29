@@ -41,8 +41,16 @@ Future<void> main() async {
   await bootstrapPreferences();
 
   // Opportunistic only — foreground download plus resume-on-launch is what
-  // guarantees completion. A platform that refuses this must not block startup.
-  await Workmanager().initialize(downloadsCallbackDispatcher);
+  // guarantees completion. A platform that refuses to register background work
+  // (an OS denial, a missing plugin, a desktop host) must not prevent the app
+  // from starting, so this failure is logged and swallowed like Firebase's.
+  try {
+    await Workmanager().initialize(downloadsCallbackDispatcher);
+  } catch (error) {
+    debugPrint(
+      'Workmanager init failed; background resume unavailable: $error',
+    );
+  }
 
   const sentryDsn = String.fromEnvironment('SENTRY_DSN');
   if (sentryDsn.isNotEmpty) {

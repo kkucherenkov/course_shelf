@@ -457,7 +457,7 @@ void main() {
     );
   });
 
-  test('reconcileAfterRestart moves a killed download to paused', () async {
+  test('reconcileAfterRestart re-queues a killed download', () async {
     await db.downloadsDao.upsert(
       DownloadedLessonsCompanion.insert(
         lessonId: 'l1',
@@ -468,13 +468,48 @@ void main() {
       ),
     );
 
+    // Offline, so the kicked pump's `_drain` sees the re-queued row but backs
+    // off before ever calling `_download` — this test is only about the state
+    // transition reconcileAfterRestart itself makes, not the pump picking it
+    // back up (that is the next test).
     await build(
       _ScriptedByteSource(payload: payload(1)),
+      online: false,
     ).reconcileAfterRestart();
 
     final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
-    expect(row?.state, DownloadState.paused);
+    expect(row?.state, DownloadState.queued);
   });
+
+  test(
+    'reconcileAfterRestart actually resumes the download, not just relabels it',
+    () async {
+      await db.downloadsDao.upsert(
+        DownloadedLessonsCompanion.insert(
+          lessonId: 'l1',
+          state: DownloadState.downloading,
+          filePath: '${dir.path}/l1.csdl',
+          updatedAt: DateTime.utc(2026, 7, 29),
+          queuedAt: Value<DateTime?>(DateTime.utc(2026, 7, 29)),
+        ),
+      );
+
+      final DownloadsRepositoryImpl repo = build(
+        _ScriptedByteSource(payload: payload(10)),
+      );
+
+      // Nothing is enqueued here — reconcileAfterRestart is the only thing
+      // that puts this lesson back in front of the pump. If it only relabeled
+      // the row (the old `paused` behavior), `drainForTest` would find
+      // nothing queued and the row would still read `queued`/`paused`, never
+      // `ready`.
+      await repo.reconcileAfterRestart();
+      await repo.drainForTest();
+
+      final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+      expect(row?.state, DownloadState.ready);
+    },
+  );
 
   test('enqueue asks the OS for a background window', () async {
     final DownloadsRepositoryImpl repo = build(

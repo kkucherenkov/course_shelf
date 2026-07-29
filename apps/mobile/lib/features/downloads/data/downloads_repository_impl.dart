@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
@@ -115,7 +116,33 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
 
   @override
   Future<void> resume(String lessonId) async {
-    await _setState(lessonId, DownloadState.queued);
+    final DownloadedLesson? row = await _dao.byLessonId(lessonId);
+    if (row == null) return;
+
+    // Same guard `retry()` needs, for the same reason: `ChunkedGcmWriter.
+    // resume` requires a block-aligned byte count and throws otherwise. A
+    // `ready` row's count is `finish()`'s exact total, tail included, so a
+    // `resume()` call racing a fast completion (or any other stale-UI call
+    // on an already-`ready` row) must restart from zero rather than hand a
+    // resume a count it cannot honor. The ordinary case — un-pausing a row
+    // genuinely mid-download — is always block-aligned already (see
+    // `retry()`'s doc) and is left untouched here.
+    final bool blockAligned =
+        row.bytesDownloaded % EncryptedFileFormat.blockSize == 0;
+
+    await _dao.updateFields(
+      DownloadedLessonsCompanion(
+        lessonId: Value<String>(lessonId),
+        state: const Value<DownloadState>(DownloadState.queued),
+        bytesDownloaded: blockAligned
+            ? const Value<int>.absent()
+            : const Value<int>(0),
+        totalBytes: blockAligned
+            ? const Value<int?>.absent()
+            : const Value<int?>(null),
+        updatedAt: Value<DateTime>(DateTime.now().toUtc()),
+      ),
+    );
     await _scheduler.ensureScheduled();
     _kick();
   }
@@ -125,6 +152,10 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     if (_activeLessonId == lessonId) {
       _activeCancel?.cancel('cancelled');
     }
+    // A lesson cancelled after a 401 re-mint and re-enqueued under the same
+    // id in this process must get its free re-mint back — the cancelled
+    // attempt never proved the identity is genuinely rejected.
+    _reminted.remove(lessonId);
     final DownloadedLesson? row = await _dao.byLessonId(lessonId);
     if (row != null) {
       final File file = File(row.filePath);
@@ -138,13 +169,29 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     final DownloadedLesson? row = await _dao.byLessonId(lessonId);
     if (row == null) return;
     // An explicit user retry clears the backoff window and the re-mint guard —
-    // they asked for it now, not after the timer the last failure set.
+    // they asked for it now, not after the timer the last failure set. It
+    // also resets the attempt budget to 0 rather than incrementing it: a
+    // `failed` row is already at the cap, so incrementing would give it
+    // exactly one more attempt before landing permanently stuck.
     _reminted.remove(lessonId);
+
+    // `ChunkedGcmWriter.resume` requires a block-aligned byte count and
+    // throws `ArgumentError` otherwise. A `ready` row's `bytesDownloaded` is
+    // `finish()`'s exact total, tail included — block-aligned only by
+    // coincidence — so retrying (or resuming) it must restart from zero
+    // rather than hand `resume` a count it cannot honor.
+    final bool blockAligned =
+        row.bytesDownloaded % EncryptedFileFormat.blockSize == 0;
+
     await _dao.updateFields(
       DownloadedLessonsCompanion(
         lessonId: Value<String>(lessonId),
         state: const Value<DownloadState>(DownloadState.queued),
-        attemptCount: Value<int>(row.attemptCount + 1),
+        bytesDownloaded: Value<int>(blockAligned ? row.bytesDownloaded : 0),
+        totalBytes: blockAligned
+            ? const Value<int?>.absent()
+            : const Value<int?>(null),
+        attemptCount: const Value<int>(0),
         nextAttemptAt: const Value<DateTime?>(null),
         lastError: const Value<String?>(null),
         updatedAt: Value<DateTime>(DateTime.now().toUtc()),
@@ -196,7 +243,30 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   // ── Pump ────────────────────────────────────────────────────────────────
 
   void _kick() {
-    _pump ??= _drain().whenComplete(() => _pump = null);
+    if (_pump != null) return;
+    final Future<void> pass = _drain();
+    _pump = pass;
+    // `pass` (not this chain's result) is what `_pump` holds and what
+    // `drainForTest` awaits, so a genuine bug there still surfaces to a test.
+    // This chain exists only to give production's fire-and-forget callers
+    // (`enqueueLesson`, `resume`, `retry` all call `_kick()` and walk away —
+    // only `drainForTest` awaits `_pump`) a terminal handler: without one, an
+    // error escaping `_drain` (`nextQueued`/`isOnline` throwing, or
+    // `_onFailure`'s own DB write failing) would be an unhandled error on a
+    // Future nobody in production is listening to. There is nothing more
+    // useful to do with it than log it and end this pass — the next
+    // `_kick()` starts a fresh one, and `reconcileAfterRestart` recovers
+    // anything left mid-flight.
+    pass
+        .catchError((Object error, StackTrace stackTrace) {
+          developer.log(
+            'Download pump pass failed',
+            error: error,
+            stackTrace: stackTrace,
+            name: 'DownloadsRepositoryImpl',
+          );
+        })
+        .whenComplete(() => _pump = null);
   }
 
   Future<void> _drain() async {
@@ -208,9 +278,15 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
       );
       if (next == null) return;
 
+      // Claimed here, before `isOnline()` — a real platform-channel round
+      // trip — rather than inside `_download`. A `cancel()`/`pause()` landing
+      // in that window must see this lesson as the active one.
+      _activeLessonId = next.lessonId;
+
       if (!await _isOnline()) {
         // Not an error: leave the row queued and burn no attempt. The scheduler
         // and resume-on-launch will come back to it.
+        _activeLessonId = null;
         return;
       }
 
@@ -221,12 +297,21 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   Future<void> _download(DownloadedLesson row) async {
     final CancelToken cancelToken = CancelToken();
     _activeCancel = cancelToken;
-    _activeLessonId = row.lessonId;
-
-    await _setState(row.lessonId, DownloadState.downloading);
 
     ChunkedGcmWriter? writer;
     try {
+      final int claimed = await _setState(
+        row.lessonId,
+        DownloadState.downloading,
+      );
+      if (claimed == 0) {
+        // The row vanished between being claimed (in `_drain`, above) and
+        // this write — `cancel()` deleted it in the window before the
+        // download actually started (`isOnline()` is a real platform-channel
+        // round trip). Nothing to download, and nothing has been opened yet.
+        return;
+      }
+
       final Uint8List key = await _keyStore.keyForDevice();
       final File file = File(row.filePath);
 
@@ -287,9 +372,21 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
         ),
       );
     } on Object catch (error) {
+      // Deliberately not `writer?.finish()`: that would seal the buffered
+      // partial block as block N, but the row persists the pre-flush
+      // block-aligned count, so the next attempt's `resume` truncates block N
+      // away and re-seals index N — same file nonce, same index, different
+      // plaintext. That is nonce reuse under one key, the one failure AES-GCM
+      // does not survive. The ordinary crash path is safe only because
+      // nothing seals a tail, so the re-fetched block is byte-identical.
       final int? committed = writer?.committedPlaintextBytes;
-      await writer?.finish().catchError((_) => 0);
-      await writer?.close();
+      try {
+        await writer?.close();
+      } on Object catch (_) {
+        // A close failure must not prevent the failure below from being
+        // recorded — that write is what lets the next pump pass (or
+        // reconcileAfterRestart) recover this lesson.
+      }
       await _onFailure(row, error, committed);
     } finally {
       _activeCancel = null;
@@ -354,17 +451,31 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
 
     // 416 — the server's file changed under us, so every byte on disk is
     // suspect. Discard and start over rather than splice new bytes onto old.
+    // Routed through the same attempts gate and backoff as everything else:
+    // a server that keeps answering 416 (a zero-length asset makes
+    // `Range: bytes=0-` unsatisfiable, which is exactly the state a restart
+    // produces) is a server-side fault, not a cheap retry, and without the
+    // gate this row would re-select itself at the FIFO head forever —
+    // `nextAttemptAt` stays null and `queuedAt` never moves — starving every
+    // healthy lesson behind it and never letting `_drain` return.
     if (status == 416) {
+      final int attempts = row.attemptCount + 1;
       final File file = File(row.filePath);
       if (file.existsSync()) await file.delete();
+
+      if (attempts >= _maxAttempts) {
+        await _fail(row, error, 0, now);
+        return;
+      }
+
       await _dao.updateFields(
         DownloadedLessonsCompanion(
           lessonId: Value<String>(row.lessonId),
           state: const Value<DownloadState>(DownloadState.queued),
           bytesDownloaded: const Value<int>(0),
           totalBytes: const Value<int?>(null),
-          attemptCount: Value<int>(row.attemptCount + 1),
-          nextAttemptAt: const Value<DateTime?>(null),
+          attemptCount: Value<int>(attempts),
+          nextAttemptAt: Value<DateTime?>(now.add(_backoff(attempts))),
           lastError: Value<String?>(error.toString()),
           updatedAt: Value<DateTime>(now),
         ),
@@ -428,7 +539,10 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     ),
   );
 
-  Future<void> _setState(String lessonId, DownloadState state) =>
+  /// Returns the number of rows affected — `0` means the row was gone
+  /// (`cancel()` deleted it), which `_download` uses to abort before opening
+  /// anything.
+  Future<int> _setState(String lessonId, DownloadState state) =>
       _dao.updateFields(
         DownloadedLessonsCompanion(
           lessonId: Value<String>(lessonId),

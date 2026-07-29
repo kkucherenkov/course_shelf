@@ -48,6 +48,16 @@ dependencies:
   # always_use_package_imports + package-import testability); it is unreachable
   # from lib/main.dart, so AOT tree-shaking strips it from the release binary.
   widgetbook: ^3.14.3
+  # AES-GCM for downloads-at-rest (E19-F01-S01). Pure Dart, so the block
+  # writer/reader are testable under `flutter test` with no platform channel.
+  cryptography: ^2.9.0
+  # Opportunistic background resume. Android registers a worker, iOS a
+  # BGAppRefreshTask; both only ever ask the queue to "resume what's
+  # unfinished". Neither carries a whole transfer — see the E19-F01-S01 design.
+  workmanager: ^0.9.0+3
+  # Lets the queue distinguish "offline" (stay queued, no attempt burned) from
+  # "failed" (count an attempt, back off).
+  connectivity_plus: ^7.3.1
 
 dev_dependencies:
   flutter_test:

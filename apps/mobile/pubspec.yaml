@@ -81,6 +81,10 @@ dev_dependencies:
   # app_database_migration_test.dart — drift's own onCreate always creates
   # the *current* schema, so a real v1 file has to be hand-built.
   sqlite3: ^3.5.0
+  # Faked in downloads_wiring_test.dart: resolving the real DownloadsRepository
+  # opens a real AppDatabase, which asks path_provider for a directory the
+  # instant it is constructed — no query has to run first.
+  path_provider_platform_interface: ^2.1.2
 
 flutter:
   uses-material-design: true

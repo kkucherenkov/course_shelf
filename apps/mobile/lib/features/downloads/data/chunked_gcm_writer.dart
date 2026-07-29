@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
@@ -11,6 +12,12 @@ import 'package:app_mobile/features/downloads/domain/encrypted_file_format.dart'
 /// Buffers incoming bytes and seals them one whole block at a time. A partial
 /// block is never written, which is what makes an app kill mid-block harmless:
 /// the file always ends on a block boundary, so there is nothing to repair.
+///
+/// [add] and [finish] are safe to call without awaiting each call in turn
+/// (e.g. `stream.listen(writer.add)`): calls are serialized internally on an
+/// internal queue, so two seals never race on the block counter that derives
+/// each block's nonce. Nonce reuse under one key is the one failure AES-GCM
+/// does not survive.
 class ChunkedGcmWriter {
   ChunkedGcmWriter._({
     required RandomAccessFile handle,
@@ -32,10 +39,20 @@ class ChunkedGcmWriter {
   int _committedBlocks;
   bool _finished = false;
 
-  /// Plaintext bytes sealed to disk so far. Always a whole multiple of
-  /// [EncryptedFileFormat.blockSize] until [finish] runs.
+  /// The real plaintext total once [finish] has run. `_seal` always counts a
+  /// whole block, including a short final one, so [committedPlaintextBytes]
+  /// would over-report after [finish] without this cached correction.
+  int? _finalPlaintextBytes;
+
+  /// Serializes [add]/[finish] bodies so concurrent, un-awaited calls cannot
+  /// both read `_committedBlocks` before either increments it.
+  Future<void> _writeLock = Future<void>.value();
+
+  /// Plaintext bytes sealed to disk so far. A whole multiple of
+  /// [EncryptedFileFormat.blockSize] until [finish] runs; from then on it is
+  /// the exact total [finish] returned, tail included.
   int get committedPlaintextBytes =>
-      _committedBlocks * EncryptedFileFormat.blockSize;
+      _finalPlaintextBytes ?? _committedBlocks * EncryptedFileFormat.blockSize;
 
   /// Starts a new container: writes the 24-byte header with a fresh random
   /// nonce, positioned to append block 0.
@@ -53,7 +70,12 @@ class ChunkedGcmWriter {
 
     await file.parent.create(recursive: true);
     final RandomAccessFile handle = await file.open(mode: FileMode.write);
-    await handle.writeFrom(EncryptedFileFormat.buildHeader(fileNonce));
+    try {
+      await handle.writeFrom(EncryptedFileFormat.buildHeader(fileNonce));
+    } catch (_) {
+      await handle.close();
+      rethrow;
+    }
 
     return ChunkedGcmWriter._(
       handle: handle,
@@ -70,6 +92,13 @@ class ChunkedGcmWriter {
   /// between a block write and the next 4 MiB flush — the excess is discarded
   /// and re-fetched. That is at most 4 MiB, and it is what removes the "is the
   /// file ahead of the row?" question entirely.
+  ///
+  /// Truncation only ever removes bytes. If the file is *shorter* than
+  /// [committedPlaintextBytes] implies — Drift's fsync can land before the
+  /// `.csdl` write reaches disk across a power cut — this throws instead of
+  /// letting `RandomAccessFile.truncate` zero-extend the file: a zero-filled
+  /// tail would be a structurally valid container that fails its MAC only at
+  /// playback, with no repair path, so the row would never re-fetch it.
   static Future<ChunkedGcmWriter> resume({
     required File file,
     required Uint8List key,
@@ -84,27 +113,46 @@ class ChunkedGcmWriter {
     }
 
     final RandomAccessFile handle = await file.open(mode: FileMode.append);
-    final Uint8List header = Uint8List(EncryptedFileFormat.headerLength);
-    await handle.setPosition(0);
-    await handle.readInto(header);
-    final Uint8List fileNonce = EncryptedFileFormat.readNonce(header);
+    try {
+      final Uint8List header = Uint8List(EncryptedFileFormat.headerLength);
+      await handle.setPosition(0);
+      await handle.readInto(header);
+      final Uint8List fileNonce = EncryptedFileFormat.readNonce(header);
 
-    final int blocks = EncryptedFileFormat.wholeBlocksIn(
-      committedPlaintextBytes,
-    );
-    await handle.truncate(EncryptedFileFormat.storedLengthFor(blocks));
-    await handle.setPosition(EncryptedFileFormat.storedLengthFor(blocks));
+      final int blocks = EncryptedFileFormat.wholeBlocksIn(
+        committedPlaintextBytes,
+      );
+      final int requiredLength = EncryptedFileFormat.storedLengthFor(blocks);
+      final int actualLength = await handle.length();
+      if (actualLength < requiredLength) {
+        throw FormatException(
+          'Container file is $actualLength bytes, shorter than the '
+          '$requiredLength bytes the committed row implies — the file is '
+          'truncated below what was recorded and cannot be resumed',
+        );
+      }
+      await handle.truncate(requiredLength);
+      await handle.setPosition(requiredLength);
 
-    return ChunkedGcmWriter._(
-      handle: handle,
-      secretKey: SecretKey(key),
-      fileNonce: fileNonce,
-      committedBlocks: blocks,
-    );
+      return ChunkedGcmWriter._(
+        handle: handle,
+        secretKey: SecretKey(key),
+        fileNonce: fileNonce,
+        committedBlocks: blocks,
+      );
+    } catch (_) {
+      await handle.close();
+      rethrow;
+    }
   }
 
   /// Buffers [chunk] and seals every whole block it completes.
-  Future<void> add(List<int> chunk) async {
+  ///
+  /// Safe to call without awaiting each call before the next (see the class
+  /// doc): the body runs on [_writeLock], so a second call queued while the
+  /// first is still mid-`await` in [_seal] runs only after the first's block
+  /// counter increment has landed.
+  Future<void> add(List<int> chunk) => _serialized(() async {
     if (_finished) {
       throw StateError('Writer already finished');
     }
@@ -126,11 +174,11 @@ class ChunkedGcmWriter {
         _buffer.add(Uint8List.sublistView(pending, consumed));
       }
     }
-  }
+  });
 
   /// Seals whatever partial block remains and returns the container's total
   /// plaintext length. Call exactly once, when the HTTP body ends.
-  Future<int> finish() async {
+  Future<int> finish() => _serialized(() async {
     if (_finished) {
       throw StateError('Writer already finished');
     }
@@ -140,15 +188,27 @@ class ChunkedGcmWriter {
       await _seal(tail);
       // _seal counted a whole block; correct to the real tail length.
       total =
-          (_committedBlocks - 1) * EncryptedFileFormat.blockSize +
-          tail.length;
+          (_committedBlocks - 1) * EncryptedFileFormat.blockSize + tail.length;
     }
+    _finalPlaintextBytes = total;
     _finished = true;
     await _handle.flush();
     return total;
-  }
+  });
 
   Future<void> close() => _handle.close();
+
+  /// Runs [action] after every previously queued [add]/[finish] call has
+  /// settled — success or failure — so calls issued without awaiting each
+  /// other still execute, and seal, one at a time.
+  Future<T> _serialized<T>(Future<T> Function() action) {
+    final Future<void> previous = _writeLock;
+    final Completer<void> released = Completer<void>();
+    _writeLock = released.future;
+    final Future<T> result = previous.then((_) => action());
+    result.whenComplete(released.complete);
+    return result;
+  }
 
   Future<void> _seal(Uint8List block) async {
     final SecretBox box = await _algorithm.encrypt(

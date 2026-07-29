@@ -20,6 +20,23 @@ class DownloadsDao extends DatabaseAccessor<AppDatabase>
   Future<void> upsert(DownloadedLessonsCompanion entry) =>
       into(downloadedLessons).insertOnConflictUpdate(entry);
 
+  /// Writes only the columns present on [entry] onto the row it identifies,
+  /// via a real `UPDATE ... WHERE lesson_id = ?` rather than [upsert]'s
+  /// `INSERT ... ON CONFLICT DO UPDATE`.
+  ///
+  /// The pump's state transitions and progress writes (queued -> downloading,
+  /// the 4 MiB flush, backoff bookkeeping) only ever touch a row already known
+  /// to exist and only ever carry the handful of columns that changed. Routing
+  /// them through [upsert] would validate the INSERT branch that never runs,
+  /// which demands every NOT NULL column — starting with `filePath` — even
+  /// though nothing is being inserted.
+  Future<void> updateFields(DownloadedLessonsCompanion entry) {
+    final String lessonId = entry.lessonId.value;
+    return (update(
+      downloadedLessons,
+    )..where((t) => t.lessonId.equals(lessonId))).write(entry);
+  }
+
   Future<DownloadedLesson?> byLessonId(String lessonId) => (select(
     downloadedLessons,
   )..where((t) => t.lessonId.equals(lessonId))).getSingleOrNull();
@@ -32,6 +49,10 @@ class DownloadsDao extends DatabaseAccessor<AppDatabase>
   Stream<DownloadedLesson?> watch(String lessonId) => (select(
     downloadedLessons,
   )..where((t) => t.lessonId.equals(lessonId))).watchSingleOrNull();
+
+  /// Every row, for the Downloads tab (E19-F01-S03).
+  Stream<List<DownloadedLesson>> watchAll() =>
+      select(downloadedLessons).watch();
 
   /// Oldest `queued` row whose backoff has elapsed — the pump's next unit of
   /// work.
@@ -62,10 +83,9 @@ class DownloadsDao extends DatabaseAccessor<AppDatabase>
 
   /// Every row belonging to one course — `EnqueueCourse` and course-level
   /// cancel operate on the group.
-  Future<List<DownloadedLesson>> byCourseId(String courseId) =>
-      (select(downloadedLessons)
-            ..where((t) => t.courseId.equals(courseId)))
-          .get();
+  Future<List<DownloadedLesson>> byCourseId(String courseId) => (select(
+    downloadedLessons,
+  )..where((t) => t.courseId.equals(courseId))).get();
 
   /// Cancel deletes the row — there is no terminal `cancelled` state because
   /// there is nothing left to resume from.

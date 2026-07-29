@@ -152,6 +152,17 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     final bool blockAligned =
         row.bytesDownloaded % EncryptedFileFormat.blockSize == 0;
 
+    // A row that backed off, was paused, and is now resumed would otherwise go
+    // back to `queued` carrying a stale future `nextAttemptAt`: `nextQueued`
+    // skips it, so the user taps Resume and nothing happens for up to 16
+    // seconds, with no state change to explain the wait. The re-mint budget
+    // comes back for the same reason — a pause outliving the 900s token TTL is
+    // the *expected* 401, and resume is the gesture that follows it.
+    //
+    // `attemptCount` is deliberately untouched: resetting the budget is
+    // `retry()`'s job, and un-pausing is not a fresh budget.
+    _reminted.remove(lessonId);
+
     await _dao.updateFields(
       DownloadedLessonsCompanion(
         lessonId: Value<String>(lessonId),
@@ -162,6 +173,7 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
         totalBytes: blockAligned
             ? const Value<int?>.absent()
             : const Value<int?>(null),
+        nextAttemptAt: const Value<DateTime?>(null),
         updatedAt: Value<DateTime>(DateTime.now().toUtc()),
       ),
     );

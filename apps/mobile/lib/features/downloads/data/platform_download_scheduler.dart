@@ -22,11 +22,15 @@ class PlatformDownloadScheduler implements DownloadSchedulerPort {
   Future<void> ensureScheduled() async {
     try {
       await _register();
-    } on Object {
+    } on Exception {
       // Swallowed by design. A platform that will not register background work
       // (an OS refusal, a missing plugin, a desktop host) must not fail the
       // enqueue: the foreground pump and resume-on-launch still complete the
       // download. Rethrowing would turn an optimization into a hard dependency.
+      //
+      // Deliberately `on Exception`, not `on Object`: an `Error` means this
+      // app's own wiring is broken, and that must surface rather than
+      // masquerade as background scheduling being unavailable.
     }
   }
 
@@ -34,8 +38,10 @@ class PlatformDownloadScheduler implements DownloadSchedulerPort {
   Future<void> cancelAll() async {
     try {
       await _cancel();
-    } on Object {
-      // Same rationale as ensureScheduled.
+    } on Exception {
+      // Same rationale as ensureScheduled: a platform that refuses to cancel
+      // must not fail the queue. Only platform exceptions are swallowed; errors
+      // indicating wiring bugs must surface for debugging.
     }
   }
 }

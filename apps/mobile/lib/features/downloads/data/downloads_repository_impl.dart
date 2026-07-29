@@ -156,12 +156,14 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     // id in this process must get its free re-mint back — the cancelled
     // attempt never proved the identity is genuinely rejected.
     _reminted.remove(lessonId);
-    final DownloadedLesson? row = await _dao.byLessonId(lessonId);
+    // Deletes the row and reads its `filePath` back in one round trip: a
+    // separate `SELECT` then `DELETE` would give the pump's own claim an
+    // extra async gap to race through before the row is actually gone.
+    final DownloadedLesson? row = await _dao.removeAndReturn(lessonId);
     if (row != null) {
       final File file = File(row.filePath);
       if (file.existsSync()) await file.delete();
     }
-    await _dao.remove(lessonId);
   }
 
   @override
@@ -300,15 +302,18 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
 
     ChunkedGcmWriter? writer;
     try {
-      final int claimed = await _setState(
+      // Compare-and-swap: only applies while the row is still `queued`. A
+      // `pause()`/`cancel()`/`retry()` landing in the window between `_drain`
+      // claiming this lesson (above) and this write — `isOnline()` is a real
+      // platform-channel round trip — has already moved the row somewhere
+      // else (or deleted it), so the swap affects 0 rows and this pass drops
+      // the claim instead of overwriting the user's intent or resurrecting a
+      // deleted row.
+      final int claimed = await _dao.claimForDownload(
         row.lessonId,
-        DownloadState.downloading,
+        DateTime.now().toUtc(),
       );
       if (claimed == 0) {
-        // The row vanished between being claimed (in `_drain`, above) and
-        // this write — `cancel()` deleted it in the window before the
-        // download actually started (`isOnline()` is a real platform-channel
-        // round trip). Nothing to download, and nothing has been opened yet.
         return;
       }
 

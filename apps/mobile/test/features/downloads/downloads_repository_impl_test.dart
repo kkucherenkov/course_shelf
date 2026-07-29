@@ -416,6 +416,47 @@ void main() {
     expect(File(path).existsSync(), isFalse);
   });
 
+  test('a pause landing before the claim is not overwritten', () async {
+    final DownloadsRepositoryImpl repo = build(
+      _ScriptedByteSource(payload: payload(2048)),
+    );
+
+    await repo.enqueueLesson('l1');
+    await repo.pause('l1');
+    await repo.drainForTest();
+
+    final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+    expect(
+      row?.state,
+      DownloadState.paused,
+      reason: "the pump must not overwrite the user's pause",
+    );
+    expect(row?.bytesDownloaded, 0, reason: 'nothing should have been fetched');
+  });
+
+  test('a cancel landing before the claim leaves no orphan file', () async {
+    final DownloadsRepositoryImpl repo = build(
+      _ScriptedByteSource(payload: payload(2048)),
+    );
+
+    await repo.enqueueLesson('l1');
+    // Computed, not read back from the DB: an extra `await` here (reading the
+    // row just written) gives the fire-and-forget pump one more event-loop
+    // turn to race ahead of `cancel()` below — `enqueueLesson`'s own path
+    // construction is deterministic (`'${dir.path}/$lessonId.csdl'` for a
+    // fresh lesson), so there is no need to pay for that turn.
+    final String path = '${dir.path}/l1.csdl';
+    await repo.cancel('l1');
+    await repo.drainForTest();
+
+    expect(await db.downloadsDao.byLessonId('l1'), isNull);
+    expect(
+      File(path).existsSync(),
+      isFalse,
+      reason: 'an aborted claim must not re-create the ciphertext file',
+    );
+  });
+
   test('reconcileAfterRestart moves a killed download to paused', () async {
     await db.downloadsDao.upsert(
       DownloadedLessonsCompanion.insert(

@@ -60,7 +60,7 @@ class LessonPlayerApi implements LessonPlayerRepository {
     }
 
     final Response<Map<String, dynamic>> response = await _dio
-        .post<Map<String, dynamic>>('/api/v1/lessons/$lessonId/stream-url');
+        .get<Map<String, dynamic>>('/api/v1/lessons/$lessonId/stream-url');
     final Map<String, dynamic> json = _require(response.data);
     return LessonVideoSource.network(_resolveUrl(json['url'] as String));
   }
@@ -132,7 +132,7 @@ class LessonPlayerApi implements LessonPlayerRepository {
     required String materialId,
   }) async {
     final Response<Map<String, dynamic>> response = await _dio
-        .post<Map<String, dynamic>>(
+        .get<Map<String, dynamic>>(
           '/api/v1/lessons/$lessonId/materials/$materialId/download-url',
         );
     return _resolveUrl(_require(response.data)['url'] as String);

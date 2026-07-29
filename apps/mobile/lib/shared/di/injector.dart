@@ -1,6 +1,11 @@
+import 'dart:io';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:workmanager/workmanager.dart';
 
 import 'package:app_mobile/features/auth/data/auth_api.dart';
 import 'package:app_mobile/features/auth/data/instance_api.dart';
@@ -15,6 +20,16 @@ import 'package:app_mobile/features/browse/presentation/bloc/browse_cubit.dart';
 import 'package:app_mobile/features/course_detail/data/course_detail_repository_impl.dart';
 import 'package:app_mobile/features/course_detail/domain/course_detail_repository.dart';
 import 'package:app_mobile/features/course_detail/presentation/bloc/course_detail_cubit.dart';
+import 'package:app_mobile/features/downloads/data/downloads_repository_impl.dart';
+import 'package:app_mobile/features/downloads/data/http_lesson_byte_source.dart';
+import 'package:app_mobile/features/downloads/data/loopback_decrypt_server.dart';
+import 'package:app_mobile/features/downloads/data/platform_download_scheduler.dart';
+import 'package:app_mobile/features/downloads/data/secure_download_key_store.dart';
+import 'package:app_mobile/features/downloads/domain/download_key_store.dart';
+import 'package:app_mobile/features/downloads/domain/download_scheduler_port.dart';
+import 'package:app_mobile/features/downloads/domain/downloads_repository.dart';
+import 'package:app_mobile/features/downloads/domain/lesson_byte_source.dart';
+import 'package:app_mobile/features/downloads/presentation/bloc/downloads_bloc.dart';
 import 'package:app_mobile/features/home/data/home_repository_impl.dart';
 import 'package:app_mobile/features/home/domain/home_repository.dart';
 import 'package:app_mobile/features/home/presentation/bloc/home_cubit.dart';
@@ -30,6 +45,7 @@ import 'package:app_mobile/features/settings/presentation/bloc/settings_cubit.da
 import 'package:app_mobile/shared/auth/token_storage.dart';
 import 'package:app_mobile/shared/config/app_config.dart';
 import 'package:app_mobile/shared/db/app_database.dart';
+import 'package:app_mobile/shared/db/tables/downloaded_lessons.dart';
 import 'package:app_mobile/shared/network/api_client.dart';
 import 'package:app_mobile/shared/preferences/playback_preferences.dart';
 import 'package:app_mobile/shared/preferences/recent_searches_store.dart';
@@ -93,6 +109,64 @@ void configureDependencies() {
     )
     ..registerLazySingleton<LessonProgressRecorder>(
       () => ProgressOutboxRecorder(ProgressOutboxDao(getIt<AppDatabase>())),
+    )
+    // Zero-argument constructor deliberately, not `SecureDownloadKeyStore()`
+    // with an explicit `FlutterSecureStorage` — the zero-arg form is what
+    // supplies `IOSOptions(accessibility: KeychainAccessibility.first_unlock)`.
+    // Passing a storage instance in would silently drop that option and make
+    // the download key unreadable to a background task on a locked device.
+    ..registerLazySingleton<DownloadKeyStore>(SecureDownloadKeyStore.new)
+    ..registerLazySingleton<LessonByteSource>(
+      () => HttpLessonByteSource(dio: getIt<Dio>()),
+    )
+    ..registerLazySingleton<DownloadSchedulerPort>(
+      () => PlatformDownloadScheduler(
+        // Registered as a one-off rather than periodic: the task's only job is
+        // to resume, and WorkManager's minimum periodic interval (15 min) is
+        // coarser than a download that may finish in seconds.
+        register: () => Workmanager().registerOneOffTask(
+          kDownloadResumeTask,
+          kDownloadResumeTask,
+          existingWorkPolicy: ExistingWorkPolicy.keep,
+          constraints: Constraints(networkType: NetworkType.connected),
+        ),
+        cancel: () => Workmanager().cancelByUniqueName(kDownloadResumeTask),
+      ),
+    )
+    ..registerLazySingleton<DownloadsRepository>(
+      () => DownloadsRepositoryImpl(
+        dao: DownloadsDao(getIt<AppDatabase>()),
+        byteSource: getIt<LessonByteSource>(),
+        keyStore: getIt<DownloadKeyStore>(),
+        scheduler: getIt<DownloadSchedulerPort>(),
+        downloadsDirectory: () async {
+          final Directory base = await getApplicationSupportDirectory();
+          return Directory('${base.path}/downloads');
+        },
+        // `checkConnectivity` returns the interfaces currently available; an
+        // empty list or `none` means offline. This only gates *starting* work —
+        // a connection that dies mid-transfer surfaces as a socket error and
+        // goes through the normal backoff.
+        isOnline: () async {
+          final List<ConnectivityResult> result = await Connectivity()
+              .checkConnectivity();
+          return result.any(
+            (ConnectivityResult r) => r != ConnectivityResult.none,
+          );
+        },
+      ),
+    )
+    ..registerLazySingleton<LoopbackDecryptServer>(
+      () => LoopbackDecryptServer(
+        resolveFile: (String lessonId) async {
+          final DownloadedLesson? row = await DownloadsDao(
+            getIt<AppDatabase>(),
+          ).byLessonId(lessonId);
+          if (row == null || row.state != DownloadState.ready) return null;
+          return File(row.filePath);
+        },
+        key: () => getIt<DownloadKeyStore>().keyForDevice(),
+      ),
     );
 
   // ── Cubit / Bloc factories ──────────────────────────────────────────────
@@ -127,6 +201,9 @@ void configureDependencies() {
         playback: VideoPlayerAdapter(),
         playbackPreferences: getIt<PlaybackPreferences>(),
       ),
+    )
+    ..registerFactory<DownloadsBloc>(
+      () => DownloadsBloc(getIt<DownloadsRepository>()),
     );
 }
 

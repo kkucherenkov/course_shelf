@@ -32,12 +32,14 @@ void main() {
     final Uint8List key = await store.keyForDevice();
 
     expect(key.length, 32);
-    final String written = verify(
-      () => storage.write(
-        key: any<String>(named: 'key'),
-        value: captureAny<String>(named: 'value'),
-      ),
-    ).captured.single as String;
+    final String written =
+        verify(
+              () => storage.write(
+                key: any<String>(named: 'key'),
+                value: captureAny<String>(named: 'value'),
+              ),
+            ).captured.single
+            as String;
     expect(base64Decode(written), key);
   });
 
@@ -62,6 +64,27 @@ void main() {
     when(
       () => storage.read(key: any<String>(named: 'key')),
     ).thenAnswer((_) async => base64Encode(<int>[1, 2, 3]));
+
+    final Uint8List key = await store.keyForDevice();
+
+    expect(key.length, 32);
+    verify(
+      () => storage.write(
+        key: any<String>(named: 'key'),
+        value: any<String>(named: 'value'),
+      ),
+    ).called(1);
+  });
+
+  test('regenerates when the stored value is not valid base64', () async {
+    // A corrupted store does not politely corrupt into something decodable.
+    // `!` is outside the base64 alphabet and the length is not a multiple of
+    // 4, so `base64Decode` throws `FormatException` rather than returning a
+    // short list — a different failure from the wrong-length case above, and
+    // one that escaped `keyForDevice` entirely.
+    when(
+      () => storage.read(key: any<String>(named: 'key')),
+    ).thenAnswer((_) async => 'not!base64!!');
 
     final Uint8List key = await store.keyForDevice();
 

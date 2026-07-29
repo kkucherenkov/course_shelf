@@ -33,12 +33,13 @@ class SecureDownloadKeyStore implements DownloadKeyStore {
   Future<Uint8List> keyForDevice() async {
     final String? existing = await _storage.read(key: _storageKey);
     if (existing != null) {
-      final Uint8List decoded = base64Decode(existing);
-      if (decoded.length == _keyLengthBytes) return decoded;
-      // A wrong-length value can only come from a corrupted store. Regenerating
-      // orphans any file encrypted under the old key — those rows fail their
-      // tag check and are re-marked `failed`, which is recoverable. Refusing to
-      // generate would instead break every future download forever.
+      final Uint8List? decoded = _tryDecode(existing);
+      if (decoded != null && decoded.length == _keyLengthBytes) return decoded;
+      // A value that is the wrong length, or not base64 at all, can only come
+      // from a corrupted store. Regenerating orphans any file encrypted under
+      // the old key — those rows fail their tag check and are re-marked
+      // `failed`, which is recoverable. Refusing to generate would instead
+      // break every future download forever.
     }
 
     final Uint8List fresh = Uint8List.fromList(
@@ -46,5 +47,19 @@ class SecureDownloadKeyStore implements DownloadKeyStore {
     );
     await _storage.write(key: _storageKey, value: base64Encode(fresh));
     return fresh;
+  }
+
+  /// `null` when [value] is not valid base64.
+  ///
+  /// Without this, `base64Decode` throws `FormatException` straight out of
+  /// [keyForDevice] — which is exactly the "break every future download
+  /// forever" outcome the regenerate path above exists to avoid, reached by a
+  /// different kind of corruption than a wrong length.
+  static Uint8List? _tryDecode(String value) {
+    try {
+      return base64Decode(value);
+    } on FormatException {
+      return null;
+    }
   }
 }

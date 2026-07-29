@@ -134,6 +134,57 @@ class _StatusFailingByteSource implements LessonByteSource {
   }
 }
 
+/// Models a lesson re-encoded between two fetches: the first response serves
+/// [before] and drops mid-stream, every later one serves [after], which is a
+/// different length. Both are advertised honestly via `totalBytes`, so the
+/// only signal that the resource changed is that number.
+class _ReencodedByteSource implements LessonByteSource {
+  _ReencodedByteSource({
+    required this.before,
+    required this.after,
+    required this.abortAfter,
+  });
+
+  final Uint8List before;
+  final Uint8List after;
+  final int abortAfter;
+
+  final List<int> offsets = <int>[];
+  int calls = 0;
+
+  @override
+  Future<RangedResponse> fetchFrom({
+    required String lessonId,
+    required int offset,
+    CancelToken? cancelToken,
+  }) async {
+    calls++;
+    offsets.add(offset);
+
+    if (calls == 1) {
+      return RangedResponse(
+        bytes:
+            Stream<Uint8List>.value(
+              Uint8List.sublistView(before, offset, abortAfter),
+            ).followedBy(
+              Stream<Uint8List>.error(
+                DioException.connectionError(
+                  requestOptions: RequestOptions(),
+                  reason: 'socket closed',
+                ),
+              ),
+            ),
+        totalBytes: before.length,
+      );
+    }
+
+    return RangedResponse(
+      bytes: Stream<Uint8List>.value(Uint8List.sublistView(after, offset)),
+      totalBytes: after.length,
+    );
+  }
+}
+
 /// Yields [payload] in fixed-size pieces rather than one `Stream.value`
 /// chunk, so the per-chunk mechanics (the flush cadence, progress ticks,
 /// mid-flight pause) are actually exercised instead of completing in one
@@ -331,6 +382,55 @@ void main() {
     expect(row?.state, DownloadState.ready);
     expect(row?.bytesDownloaded, source.length);
   });
+
+  test(
+    'a resume against a re-encoded lesson restarts instead of splicing',
+    () async {
+      // The old resource and the new one differ in length *and* in content, and
+      // the new one is longer — so the resume's `Range: bytes=<offset>-` is
+      // perfectly satisfiable and answers 206 with real bytes. Nothing but the
+      // advertised total distinguishes them: every block the pump seals passes
+      // its own MAC either way, because the pump is what seals them.
+      final Uint8List before = payload(EncryptedFileFormat.blockSize * 2);
+      final Uint8List after = Uint8List.fromList(
+        List<int>.generate(before.length + 1000, (int i) => (i * 7 + 3) % 251),
+      );
+      final _ReencodedByteSource script = _ReencodedByteSource(
+        before: before,
+        after: after,
+        // One whole block commits, the half block is discarded — so the second
+        // fetch resumes at a non-zero offset, which is the precondition for a
+        // splice.
+        abortAfter:
+            EncryptedFileFormat.blockSize + EncryptedFileFormat.blockSize ~/ 2,
+      );
+      final DownloadsRepositoryImpl repo = build(script);
+
+      await repo.enqueueLesson('l1');
+      await repo.drain().timeout(const Duration(seconds: 10));
+
+      expect(
+        script.offsets,
+        <int>[0, EncryptedFileFormat.blockSize, 0],
+        reason: 'the changed total must send the transfer back to byte 0',
+      );
+
+      final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+      expect(row?.state, DownloadState.ready);
+      expect(row?.bytesDownloaded, after.length);
+      expect(row?.totalBytes, after.length);
+
+      // The decisive assertion: the file holds the new payload end to end. A
+      // splice would decrypt cleanly into `before`'s first block followed by
+      // `after` from that offset on — same length, valid tags, wrong bytes.
+      final ChunkedGcmReader reader = await ChunkedGcmReader.open(
+        file: File(row!.filePath),
+        key: await _FixedKeyStore().keyForDevice(),
+      );
+      expect(await reader.read(0, reader.plaintextLength), after);
+      await reader.close();
+    },
+  );
 
   test(
     'a transient failure parks the row rather than sleeping on it',

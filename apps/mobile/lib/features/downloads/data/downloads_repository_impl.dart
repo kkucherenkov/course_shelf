@@ -18,6 +18,28 @@ import 'package:app_mobile/features/downloads/domain/lesson_byte_source.dart';
 import 'package:app_mobile/shared/db/app_database.dart';
 import 'package:app_mobile/shared/db/tables/downloaded_lessons.dart';
 
+/// The resource being resumed is not the one the bytes on disk came from.
+///
+/// Derived by the pump, never thrown by the byte source: it comes from
+/// comparing the length the server reports now against the one recorded when
+/// the transfer started. Its `toString()` is what lands in the row's
+/// `lastError`, so it names both numbers.
+class _ChangedResourceException implements Exception {
+  const _ChangedResourceException({
+    required this.expectedTotalBytes,
+    required this.servedTotalBytes,
+  });
+
+  final int expectedTotalBytes;
+  final int servedTotalBytes;
+
+  @override
+  String toString() =>
+      'Lesson source changed size mid-download: the partial file came from a '
+      '$expectedTotalBytes-byte resource, the server now serves '
+      '$servedTotalBytes bytes';
+}
+
 /// Serial download queue over Drift, the byte source, and the block writer.
 ///
 /// One active download at a time, FIFO by `queuedAt`. Parallel downloads thrash
@@ -357,6 +379,40 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
         cancelToken: cancelToken,
       );
 
+      // A resume sends `Range: bytes=<offset>-` with no validator — no
+      // `If-Range`, no ETag — so a lesson re-encoded between pause and resume
+      // splices its new bytes straight onto the old ones. Nothing downstream
+      // notices: every per-block MAC still verifies (the blocks are sealed
+      // here, not by the server), and the completion write overwrites
+      // `totalBytes` with the new total, so the planned pre-play size check
+      // passes too. The resource's own length is the only validator available
+      // without a new wire contract, so a changed one is treated exactly like
+      // a 416 — discard everything and start over. Restarting matters beyond
+      // the splice: `create()` mints a fresh `fileNonce`, whereas continuing
+      // into the existing container would re-seal block indices that the old
+      // nonce has already covered with different plaintext.
+      final int? expectedTotal = row.totalBytes;
+      final int? servedTotal = response.totalBytes;
+      if (row.bytesDownloaded > 0 &&
+          expectedTotal != null &&
+          servedTotal != null &&
+          servedTotal != expectedTotal) {
+        throw _ChangedResourceException(
+          expectedTotalBytes: expectedTotal,
+          servedTotalBytes: servedTotal,
+        );
+      }
+
+      // Recorded on the first response that knows it, not only on the 4 MiB
+      // flush: the check above can only fire against a total that was actually
+      // persisted, and `_onFailure` persists `bytesDownloaded` without ever
+      // persisting `totalBytes`. Without this, any transfer that dropped
+      // inside its first 4 MiB would resume with no recorded total and splice
+      // undetected.
+      if (expectedTotal == null && servedTotal != null) {
+        await _persistProgress(row.lessonId, startOffset, servedTotal);
+      }
+
       int lastFlushed = writer.committedPlaintextBytes;
       await for (final Uint8List chunk in response.bytes) {
         await writer.add(chunk);
@@ -473,8 +529,14 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
       return;
     }
 
-    // 416 — the server's file changed under us, so every byte on disk is
-    // suspect. Discard and start over rather than splice new bytes onto old.
+    // 416, or a resource whose length no longer matches the one the partial
+    // file came from — the server's file changed under us, so every byte on
+    // disk is suspect. Discard and start over rather than splice new bytes
+    // onto old. The two are the same condition seen from opposite sides: 416
+    // is the server saying the old offset is past the end of the new file, and
+    // a changed total is the new file still being long enough to answer at
+    // that offset with bytes from somewhere else entirely.
+    //
     // Routed through the same attempts gate and backoff as everything else:
     // a server that keeps answering 416 (a zero-length asset makes
     // `Range: bytes=0-` unsatisfiable, which is exactly the state a restart
@@ -482,7 +544,7 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     // gate this row would re-select itself at the FIFO head forever —
     // `nextAttemptAt` stays null and `queuedAt` never moves — starving every
     // healthy lesson behind it and never letting `_drain` return.
-    if (status == 416) {
+    if (status == 416 || error is _ChangedResourceException) {
       final int attempts = row.attemptCount + 1;
       final File file = File(row.filePath);
       if (file.existsSync()) await file.delete();

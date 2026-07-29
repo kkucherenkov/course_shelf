@@ -96,7 +96,9 @@ void main() {
   });
 
   test('a flipped byte fails authentication at that block', () async {
-    await writeFixture(EncryptedFileFormat.blockSize * 2);
+    final Uint8List source = await writeFixture(
+      EncryptedFileFormat.blockSize * 2,
+    );
 
     // Corrupt one byte inside block 1's ciphertext.
     final RandomAccessFile handle = await file.open(mode: FileMode.append);
@@ -110,11 +112,36 @@ void main() {
       key: key,
     );
 
-    // Block 0 is untouched and still readable — per-block tags localize damage.
-    expect((await reader.read(0, 16)).length, 16);
+    // Block 0 is untouched and still readable — per-block tags localize
+    // damage. Asserting byte equality (not just length) rules out a bug
+    // where block 0 decrypts to the wrong bytes while block 1 correctly
+    // throws.
+    expect(await reader.read(0, 16), Uint8List.sublistView(source, 0, 16));
     await expectLater(
       reader.read(EncryptedFileFormat.blockSize, 16),
       throwsA(isA<SecretBoxAuthenticationError>()),
+    );
+    await reader.close();
+  });
+
+  test('reads a range spanning three blocks', () async {
+    final Uint8List source = await writeFixture(
+      EncryptedFileFormat.blockSize * 3,
+    );
+
+    final ChunkedGcmReader reader = await ChunkedGcmReader.open(
+      file: file,
+      key: key,
+    );
+
+    // Starts in block 0, covers all of block 1, ends in block 2 — forces
+    // the interior-block branch in read() where from = 0 and to = block
+    // length.
+    const int start = 10;
+    const int end = EncryptedFileFormat.blockSize * 2 + 10;
+    expect(
+      await reader.read(start, end - start),
+      Uint8List.sublistView(source, start, end),
     );
     await reader.close();
   });

@@ -68,4 +68,108 @@ void main() {
     await db.downloadsDao.remove('l1');
     expect(await db.downloadsDao.byLessonId('l1'), isNull);
   });
+
+  group('queue columns (schema v2)', () {
+    test('nextQueued returns the oldest queued row, UTC-ordered', () async {
+      final DateTime early = DateTime.utc(2026, 7, 29, 8);
+      final DateTime late_ = DateTime.utc(2026, 7, 29, 9);
+
+      await db.downloadsDao.upsert(
+        DownloadedLessonsCompanion.insert(
+          lessonId: 'l-late',
+          state: DownloadState.queued,
+          filePath: '/tmp/l-late.csdl',
+          updatedAt: late_,
+          queuedAt: Value<DateTime?>(late_),
+        ),
+      );
+      await db.downloadsDao.upsert(
+        DownloadedLessonsCompanion.insert(
+          lessonId: 'l-early',
+          state: DownloadState.queued,
+          filePath: '/tmp/l-early.csdl',
+          updatedAt: early,
+          queuedAt: Value<DateTime?>(early),
+        ),
+      );
+
+      final DownloadedLesson? next = await db.downloadsDao.nextQueued(
+        now: DateTime.utc(2026, 7, 29, 12),
+      );
+      expect(next?.lessonId, 'l-early');
+    });
+
+    test('nextQueued skips a row still inside its backoff window', () async {
+      final DateTime now = DateTime.utc(2026, 7, 29, 10);
+      await db.downloadsDao.upsert(
+        DownloadedLessonsCompanion.insert(
+          lessonId: 'backing-off',
+          state: DownloadState.queued,
+          filePath: '/tmp/backing-off.csdl',
+          updatedAt: now,
+          queuedAt: Value<DateTime?>(now),
+          nextAttemptAt: Value<DateTime?>(now.add(const Duration(minutes: 5))),
+        ),
+      );
+
+      // Still in backoff — the pump must move past it rather than sleep on it.
+      expect(await db.downloadsDao.nextQueued(now: now), isNull);
+      // Window elapsed.
+      expect(
+        (await db.downloadsDao.nextQueued(
+          now: now.add(const Duration(minutes: 6)),
+        ))?.lessonId,
+        'backing-off',
+      );
+    });
+
+    test('nextQueued ignores rows that are not queued', () async {
+      await db.downloadsDao.upsert(
+        DownloadedLessonsCompanion.insert(
+          lessonId: 'l1',
+          state: DownloadState.ready,
+          filePath: '/tmp/l1.csdl',
+          updatedAt: DateTime.utc(2026, 7, 29),
+          queuedAt: Value<DateTime?>(DateTime.utc(2026, 7, 29)),
+        ),
+      );
+
+      expect(
+        await db.downloadsDao.nextQueued(now: DateTime.utc(2026, 7, 29, 12)),
+        isNull,
+      );
+    });
+
+    test('byCourseId groups a whole course for EnqueueCourse / Cancel', () async {
+      for (final String id in <String>['a', 'b']) {
+        await db.downloadsDao.upsert(
+          DownloadedLessonsCompanion.insert(
+            lessonId: id,
+            state: DownloadState.queued,
+            filePath: '/tmp/$id.csdl',
+            updatedAt: DateTime.utc(2026, 7, 29),
+            courseId: const Value<String?>('c1'),
+            queuedAt: Value<DateTime?>(DateTime.utc(2026, 7, 29)),
+          ),
+        );
+      }
+
+      final List<DownloadedLesson> rows = await db.downloadsDao.byCourseId('c1');
+      expect(rows.map((DownloadedLesson r) => r.lessonId), <String>['a', 'b']);
+    });
+
+    test('attemptCount defaults to 0', () async {
+      await db.downloadsDao.upsert(
+        DownloadedLessonsCompanion.insert(
+          lessonId: 'l1',
+          state: DownloadState.queued,
+          filePath: '/tmp/l1.csdl',
+          updatedAt: DateTime.utc(2026, 7, 29),
+        ),
+      );
+
+      final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+      expect(row?.attemptCount, 0);
+    });
+  });
 }

@@ -1,19 +1,44 @@
+import 'dart:async';
+
 import 'package:app_ui/app_ui.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:workmanager/workmanager.dart';
 
 import 'package:app_mobile/app/auth_gate.dart';
 import 'package:app_mobile/app/routes.dart';
 import 'package:app_mobile/app/theme_preferences.dart';
 import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
+import 'package:app_mobile/features/downloads/data/platform_download_scheduler.dart';
+import 'package:app_mobile/features/downloads/domain/downloads_repository.dart';
 import 'package:app_mobile/features/settings/presentation/bloc/settings_cubit.dart';
 import 'package:app_mobile/features/settings/presentation/bloc/settings_state.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
 import 'package:app_mobile/shared/di/injector.dart';
 import 'package:app_mobile/shared/notifications/push_notification_service.dart';
+
+/// Background entry point. Runs in its own isolate with no access to the
+/// running app's `get_it` graph, so it builds exactly what it needs and asks
+/// the queue to resume. Whatever window the OS grants is what it gets.
+@pragma('vm:entry-point')
+void downloadsCallbackDispatcher() {
+  Workmanager().executeTask((String task, Map<String, dynamic>? input) async {
+    if (task != kDownloadResumeTask) return true;
+    configureDependencies();
+    final DownloadsRepository downloads = getIt<DownloadsRepository>();
+    await downloads.reconcileAfterRestart();
+    // Awaited, and this is the whole point of the callback: reconcile only
+    // relabels the stranded rows and kicks the fire-and-forget pump. Returning
+    // here would report completion to the OS while the transfer it just
+    // started is still in flight, and the background execution session would
+    // be torn down under it.
+    await downloads.drain();
+    return true;
+  });
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +47,25 @@ Future<void> main() async {
   await bootstrapFirebase();
 
   configureDependencies();
+
+  // Resume-on-launch: an app kill leaves rows in `downloading`;
+  // reconcileAfterRestart re-queues them and kicks the pump. Deliberately not
+  // awaited — startup must not wait on the download queue.
+  unawaited(getIt<DownloadsRepository>().reconcileAfterRestart());
+
   await bootstrapPreferences();
+
+  // Opportunistic only — foreground download plus resume-on-launch is what
+  // guarantees completion. A platform that refuses to register background work
+  // (an OS denial, a missing plugin, a desktop host) must not prevent the app
+  // from starting, so this failure is logged and swallowed like Firebase's.
+  try {
+    await Workmanager().initialize(downloadsCallbackDispatcher);
+  } catch (error) {
+    debugPrint(
+      'Workmanager init failed; background resume unavailable: $error',
+    );
+  }
 
   const sentryDsn = String.fromEnvironment('SENTRY_DSN');
   if (sentryDsn.isNotEmpty) {

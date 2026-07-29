@@ -133,6 +133,60 @@ class _StatusFailingByteSource implements LessonByteSource {
   }
 }
 
+/// Yields [payload] in fixed-size pieces rather than one `Stream.value`
+/// chunk, so the per-chunk mechanics (the flush cadence, progress ticks,
+/// mid-flight pause) are actually exercised instead of completing in one
+/// step. [onBeforeChunk], when given, is awaited before each chunk is
+/// produced — since an `async*` generator only advances past a `yield` once
+/// its single subscriber asks for the next value, this lets a test
+/// deterministically observe (or act on) exactly what has been committed so
+/// far, with no reliance on real wall-clock timing.
+///
+/// Also honors [CancelToken] cancellation, mirroring what a real Dio stream
+/// does: once cancelled, the stream errors with the token's `cancelError`
+/// (type `cancel`) instead of continuing to emit, which is what lets a
+/// mid-flight `pause()`/`cancel()` actually stop the download rather than
+/// being silently overwritten once the fake source runs to completion.
+class _FlushObservingByteSource implements LessonByteSource {
+  _FlushObservingByteSource({
+    required this.payload,
+    required this.chunkSize,
+    this.onBeforeChunk,
+  });
+
+  final Uint8List payload;
+  final int chunkSize;
+  final Future<void> Function(int chunkIndex)? onBeforeChunk;
+
+  @override
+  Future<RangedResponse> fetchFrom({
+    required String lessonId,
+    required int offset,
+    CancelToken? cancelToken,
+  }) async {
+    return RangedResponse(
+      bytes: _chunks(offset, cancelToken),
+      totalBytes: payload.length,
+    );
+  }
+
+  Stream<Uint8List> _chunks(int offset, CancelToken? cancelToken) async* {
+    int index = 0;
+    int position = offset;
+    while (position < payload.length) {
+      final Future<void> Function(int)? hook = onBeforeChunk;
+      if (hook != null) await hook(index);
+      if (cancelToken?.isCancelled ?? false) {
+        throw cancelToken!.cancelError!;
+      }
+      final int end = (position + chunkSize).clamp(0, payload.length);
+      yield Uint8List.sublistView(payload, position, end);
+      position = end;
+      index++;
+    }
+  }
+}
+
 void main() {
   late AppDatabase db;
   late Directory dir;
@@ -420,20 +474,325 @@ void main() {
     );
   });
 
-  test('watch emits the item as it progresses', () async {
+  test(
+    'watch emits a downloading tick with non-zero bytes, then ready',
+    () async {
+      // Two chunks, so the in-memory `_progress` tick after the first one
+      // fires — with real bytes committed — before the row ever reaches
+      // `ready`. A single-chunk source (the DAO-only case the old version of
+      // this test used) can pass without `StreamGroup.merge` or a single
+      // `_progress.add` call ever being exercised.
+      final Uint8List source = payload(EncryptedFileFormat.blockSize * 2);
+      final DownloadsRepositoryImpl repo = build(
+        _FlushObservingByteSource(
+          payload: source,
+          chunkSize: EncryptedFileFormat.blockSize,
+        ),
+      );
+
+      final List<DownloadItem?> items = <DownloadItem?>[];
+      final Completer<void> reachedReady = Completer<void>();
+      final StreamSubscription<DownloadItem?> subscription = repo
+          .watch('l1')
+          .listen((DownloadItem? item) {
+            items.add(item);
+            if (item?.state == DownloadState.ready &&
+                !reachedReady.isCompleted) {
+              reachedReady.complete();
+            }
+          });
+
+      await repo.enqueueLesson('l1');
+      await repo.drainForTest();
+      await reachedReady.future;
+      await subscription.cancel();
+
+      expect(
+        items.any(
+          (DownloadItem? i) =>
+              i?.state == DownloadState.downloading &&
+              (i?.bytesDownloaded ?? 0) > 0,
+        ),
+        isTrue,
+        reason:
+            'a real in-flight progress tick must actually arrive, not just '
+            'the DAO half of the merged stream',
+      );
+      expect(items.last?.state, DownloadState.ready);
+      expect(items.last?.bytesDownloaded, source.length);
+    },
+  );
+
+  test(
+    'the 4 MiB flush cadence persists an intermediate byte count before completion',
+    () async {
+      // 17 one-block chunks: the 16th completes the flush threshold exactly,
+      // and the 17th is the short remainder that finishes the download. Every
+      // prior test's payload topped out at 3 blocks against a 16-block
+      // threshold, so `_persistProgress`'s flush branch never actually ran.
+      const int totalBlocks = 17;
+      final Uint8List source = payload(
+        EncryptedFileFormat.blockSize * totalBlocks,
+      );
+      bool observedIntermediateFlush = false;
+
+      final _FlushObservingByteSource fake = _FlushObservingByteSource(
+        payload: source,
+        chunkSize: EncryptedFileFormat.blockSize,
+        onBeforeChunk: (int index) async {
+          // About to yield the 17th (final) chunk: the prior 16 have already
+          // been committed and awaited by `_download`'s `await for`, so the
+          // flush this commit is named for must already be in the DB.
+          if (index == 16) {
+            final DownloadedLesson? row = await db.downloadsDao.byLessonId(
+              'l1',
+            );
+            expect(row?.bytesDownloaded, EncryptedFileFormat.blockSize * 16);
+            expect(row?.state, DownloadState.downloading);
+            observedIntermediateFlush = true;
+          }
+        },
+      );
+
+      final DownloadsRepositoryImpl repo = build(fake);
+      await repo.enqueueLesson('l1');
+      await repo.drainForTest();
+
+      expect(
+        observedIntermediateFlush,
+        isTrue,
+        reason: 'the flush assertion must actually have run',
+      );
+      final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+      expect(row?.state, DownloadState.ready);
+      expect(row?.bytesDownloaded, source.length);
+    },
+  );
+
+  test(
+    'pausing mid-flight parks the row with a block-aligned byte count',
+    () async {
+      final Uint8List source = payload(EncryptedFileFormat.blockSize * 3);
+      late DownloadsRepositoryImpl repo;
+
+      final _FlushObservingByteSource fake = _FlushObservingByteSource(
+        payload: source,
+        chunkSize: EncryptedFileFormat.blockSize,
+        onBeforeChunk: (int index) async {
+          // One whole block (chunk 0) is already committed. Pause before the
+          // second block arrives, while bytes are still (notionally) in
+          // flight, and prove the row lands on a block-aligned count rather
+          // than whatever the writer's internal buffer happened to hold.
+          if (index == 1) {
+            await repo.pause('l1');
+          }
+        },
+      );
+
+      repo = build(fake);
+      await repo.enqueueLesson('l1');
+      await repo.drainForTest();
+
+      final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+      expect(row?.state, DownloadState.paused);
+      expect(row?.bytesDownloaded, EncryptedFileFormat.blockSize);
+    },
+  );
+
+  test('pause parks a not-yet-started row', () async {
     final DownloadsRepositoryImpl repo = build(
-      _ScriptedByteSource(payload: payload(EncryptedFileFormat.blockSize)),
+      _ScriptedByteSource(payload: payload(10)),
+      online: false,
+    );
+    await repo.enqueueLesson('l1');
+
+    await repo.pause('l1');
+
+    final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+    expect(row?.state, DownloadState.paused);
+  });
+
+  test('resume requeues a paused row and the pump completes it', () async {
+    bool online = false;
+    final DownloadsRepositoryImpl repo = DownloadsRepositoryImpl(
+      dao: DownloadsDao(db),
+      byteSource: _ScriptedByteSource(payload: payload(10)),
+      keyStore: _FixedKeyStore(),
+      scheduler: scheduler,
+      downloadsDirectory: () async => dir,
+      isOnline: () async => online,
+      backoff: (_) => Duration.zero,
     );
 
-    final Future<List<DownloadItem?>> collected = repo
-        .watch('l1')
-        .take(2)
-        .toList();
-
     await repo.enqueueLesson('l1');
+    await repo.pause('l1');
+    expect(
+      (await db.downloadsDao.byLessonId('l1'))?.state,
+      DownloadState.paused,
+    );
+
+    online = true;
+    await repo.resume('l1');
     await repo.drainForTest();
 
-    final List<DownloadItem?> items = await collected;
-    expect(items.last?.lessonId, 'l1');
+    final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+    expect(row?.state, DownloadState.ready);
+    expect(
+      scheduler.scheduled,
+      greaterThan(1),
+      reason: 'resume asks for another background window too',
+    );
   });
+
+  test('resume on a non-block-aligned byte count restarts from zero instead of '
+      'throwing', () async {
+    // A stale UI call racing a fast completion (or any other call on an
+    // already-`ready` row) hits the same non-block-aligned count `retry()`
+    // guards against — `resume()` must not hand it to `ChunkedGcmWriter.
+    // resume` either.
+    const int oddCount = EncryptedFileFormat.blockSize + 777;
+    final String filePath = '${dir.path}/l1.csdl';
+    await db.downloadsDao.upsert(
+      DownloadedLessonsCompanion.insert(
+        lessonId: 'l1',
+        state: DownloadState.ready,
+        filePath: filePath,
+        updatedAt: DateTime.utc(2026, 7, 29),
+        queuedAt: Value<DateTime?>(DateTime.utc(2026, 7, 29)),
+        bytesDownloaded: const Value<int>(oddCount),
+        totalBytes: const Value<int?>(oddCount),
+      ),
+    );
+    await File(
+      filePath,
+    ).writeAsBytes(List<int>.filled(EncryptedFileFormat.headerLength + 100, 0));
+
+    final Uint8List source = payload(500);
+    final DownloadsRepositoryImpl repo = build(
+      _ScriptedByteSource(payload: source),
+    );
+
+    await repo.resume('l1');
+    await repo.drainForTest();
+
+    final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+    expect(row?.state, DownloadState.ready);
+    expect(row?.bytesDownloaded, source.length);
+  });
+
+  test(
+    'retry resets the attempt budget instead of incrementing past the cap',
+    () async {
+      await db.downloadsDao.upsert(
+        DownloadedLessonsCompanion.insert(
+          lessonId: 'l1',
+          state: DownloadState.failed,
+          filePath: '${dir.path}/l1.csdl',
+          updatedAt: DateTime.utc(2026, 7, 29),
+          queuedAt: Value<DateTime?>(DateTime.utc(2026, 7, 29)),
+          attemptCount: const Value<int>(5),
+        ),
+      );
+
+      final DownloadsRepositoryImpl repo = build(
+        _ScriptedByteSource(payload: payload(10)),
+      );
+      await repo.retry('l1');
+
+      final DownloadedLesson? afterRetry = await db.downloadsDao.byLessonId(
+        'l1',
+      );
+      expect(
+        afterRetry?.attemptCount,
+        0,
+        reason:
+            'a fresh retry gets a full budget, not one more increment past '
+            'the cap',
+      );
+      expect(afterRetry?.state, DownloadState.queued);
+
+      await repo.drainForTest();
+      expect(
+        (await db.downloadsDao.byLessonId('l1'))?.state,
+        DownloadState.ready,
+      );
+    },
+  );
+
+  test('retry on a non-block-aligned byte count restarts from zero instead of '
+      'throwing', () async {
+    // Mirrors what `finish()` actually persists for a `ready` row: the
+    // exact tail-included total, which is block-aligned only by
+    // coincidence.
+    const int oddCount = EncryptedFileFormat.blockSize + 777;
+    final String filePath = '${dir.path}/l1.csdl';
+    await db.downloadsDao.upsert(
+      DownloadedLessonsCompanion.insert(
+        lessonId: 'l1',
+        state: DownloadState.failed,
+        filePath: filePath,
+        updatedAt: DateTime.utc(2026, 7, 29),
+        queuedAt: Value<DateTime?>(DateTime.utc(2026, 7, 29)),
+        bytesDownloaded: const Value<int>(oddCount),
+        totalBytes: const Value<int?>(oddCount),
+      ),
+    );
+    // A stale file left on disk from whatever produced the non-aligned
+    // count. Without the fix, `_download` sees `bytesDownloaded > 0` and
+    // this file existing, and calls `ChunkedGcmWriter.resume` with a count
+    // that is not a whole number of blocks — which throws `ArgumentError`.
+    await File(
+      filePath,
+    ).writeAsBytes(List<int>.filled(EncryptedFileFormat.headerLength + 100, 0));
+
+    final Uint8List source = payload(500);
+    final DownloadsRepositoryImpl repo = build(
+      _ScriptedByteSource(payload: source),
+    );
+
+    await repo.retry('l1');
+    await repo.drainForTest();
+
+    final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+    expect(row?.state, DownloadState.ready);
+    expect(row?.bytesDownloaded, source.length);
+  });
+
+  test('watchAll reflects every row, oldest queuedAt first', () async {
+    final DownloadsRepositoryImpl repo = build(
+      _ScriptedByteSource(payload: payload(10)),
+      online: false,
+    );
+
+    await repo.enqueueLesson('a');
+    await repo.enqueueLesson('b');
+
+    final List<DownloadItem> rows = await repo.watchAll().first;
+    expect(rows.map((DownloadItem i) => i.lessonId).toList(), <String>[
+      'a',
+      'b',
+    ]);
+  });
+
+  test(
+    'a persistently-416 lesson reaches failed instead of hanging the queue',
+    () async {
+      final DownloadsRepositoryImpl repo = build(
+        _StatusFailingByteSource(
+          status: 416,
+          payload: payload(10),
+          alwaysFailLessonId: 'l1',
+        ),
+      );
+
+      await repo.enqueueLesson('l1');
+      // A regression back to the unbounded loop hangs `_drain` forever;
+      // `.timeout` turns that into a fast, readable test failure instead of
+      // stalling the whole suite.
+      await repo.drainForTest().timeout(const Duration(seconds: 5));
+
+      final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+      expect(row?.state, DownloadState.failed);
+    },
+  );
 }

@@ -30,7 +30,12 @@ class DownloadsDao extends DatabaseAccessor<AppDatabase>
   /// them through [upsert] would validate the INSERT branch that never runs,
   /// which demands every NOT NULL column — starting with `filePath` — even
   /// though nothing is being inserted.
-  Future<void> updateFields(DownloadedLessonsCompanion entry) {
+  ///
+  /// Returns the number of rows the `UPDATE` touched — `0` if the row was
+  /// deleted (by `cancel()`) between being claimed and this write, which is
+  /// what lets a caller detect that race and abort rather than downloading a
+  /// full lesson onto disk for a row nothing points at any more.
+  Future<int> updateFields(DownloadedLessonsCompanion entry) {
     final String lessonId = entry.lessonId.value;
     return (update(
       downloadedLessons,
@@ -50,9 +55,17 @@ class DownloadsDao extends DatabaseAccessor<AppDatabase>
     downloadedLessons,
   )..where((t) => t.lessonId.equals(lessonId))).watchSingleOrNull();
 
-  /// Every row, for the Downloads tab (E19-F01-S03).
+  /// Every row, for the Downloads tab (E19-F01-S03), oldest `queuedAt` first.
+  ///
+  /// Ordering by `queuedAt` is safe for the same reason [nextQueued] is (see
+  /// its doc): every writer normalizes it to UTC, so the TEXT-encoded column
+  /// sorts chronologically.
   Stream<List<DownloadedLesson>> watchAll() =>
-      select(downloadedLessons).watch();
+      (select(downloadedLessons)
+            ..orderBy(<OrderClauseGenerator<$DownloadedLessonsTable>>[
+              (t) => OrderingTerm(expression: t.queuedAt),
+            ]))
+          .watch();
 
   /// Oldest `queued` row whose backoff has elapsed — the pump's next unit of
   /// work.

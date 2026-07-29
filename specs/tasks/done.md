@@ -2,6 +2,55 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-29-001 — Ship the E19 resumable encrypted download queue
+
+- Created: 2026-07-29
+- Completed: 2026-07-29
+- Owner: claude
+- Branch: `feat/e19-downloads-bloc`
+- Card: [E19-F01-S01](../../docs/roadmap/tasks/E19-F01-S01.md)
+- Spec: `docs/superpowers/specs/2026-07-28-e19-downloads-bloc-design.md`
+- Plan: `docs/superpowers/plans/2026-07-29-e19-downloads-bloc.md`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/185 (closes #119-#123)
+- Goal: give `apps/mobile` a download queue that survives a pause, an app kill,
+  and a flaky connection, storing lesson video encrypted at rest and serving it
+  back to `video_player` without ever writing plaintext to disk.
+- Acceptance:
+  - pause / resume / retry all work, and a resume continues from the last
+    committed 256 KiB block rather than restarting
+  - an app kill re-queues the interrupted row on next launch and the pump
+    finishes it
+  - per-item progress is emitted as state
+- Spec diff: none
+- Codegen impact: no
+- Design impact: none
+- Tests: `bloc_test` + unit, all under plain `flutter test`. 265 → 372 (+107).
+  The carded `integration_test simulating a flaky network` was **not** written:
+  this host has no emulator and cannot build iOS, so it could never have run.
+  Flakiness is modelled with a scripted byte source and a mocked Dio adapter
+  instead.
+- Sub-steps:
+  - [x] events: `EnqueueLesson`, `EnqueueCourse`, `Pause`, `Resume`, `Cancel`, `Retry`
+  - [x] file writer with byte-range continuation
+  - [x] device-bound key in secure storage
+  - [x] background scheduling (Android `workmanager`, iOS `BGProcessingTaskRequest`)
+- Status: done
+
+**This entry was reconstructed at completion.** The CLAUDE.md task-stack rule
+requires pushing an entry to `active.md` _before_ coding starts; that step was
+skipped at session start, so the stack never reflected this work while it was in
+flight. Recorded here rather than quietly backdated.
+
+**Carried forward** — six follow-ups are listed in the PR body. The two worth
+landing before the Downloads UI (E19-F01-S03): wire `wifiOnlyDownloads`, since
+resume-on-launch can now start an 800 MB download over cellular; and pin
+`Accept-Ranges` in the spec or a backend test, since the Range support this
+feature depends on is an implementation contract that nothing in CI defends.
+
+**Unverifiable on the build host:** the iOS background half was written against
+the installed plugin's Swift source and reviewed by reading, never executed. It
+needs a real device pass before anyone relies on iOS background resume.
+
 ## T-2026-07-18-004 — Persist + honor device prefs & recents
 
 - Created: 2026-07-18

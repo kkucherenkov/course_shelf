@@ -49,12 +49,16 @@ void main() {
   tearDown(() => queue.close());
 
   blocTest<DownloadsBloc, DownloadsState>(
-    'start reconciles a killed download and subscribes',
+    'start reconciles a killed download before subscribing',
     build: () => DownloadsBloc(repository),
     act: (DownloadsBloc bloc) => bloc.add(const DownloadsStarted()),
     verify: (_) {
-      verify(() => repository.reconcileAfterRestart()).called(1);
-      verify(() => repository.watchAll()).called(1);
+      // Order is the point: subscribing first would briefly surface a row that
+      // an app kill left in `downloading` but that nothing is actually running.
+      verifyInOrder(<void Function()>[
+        () => repository.reconcileAfterRestart(),
+        () => repository.watchAll(),
+      ]);
     },
   );
 

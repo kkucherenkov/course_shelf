@@ -27,7 +27,7 @@ void main() {
     await expectLater(scheduler.ensureScheduled(), completes);
   });
 
-  test('cancelAll delegates and swallows failures', () async {
+  test('cancelAll delegates to the platform', () async {
     int cancelled = 0;
     final DownloadSchedulerPort scheduler = PlatformDownloadScheduler(
       register: () async {},
@@ -36,5 +36,27 @@ void main() {
 
     await scheduler.cancelAll();
     expect(cancelled, 1);
+  });
+
+  test('a cancellation failure never propagates', () async {
+    final DownloadSchedulerPort scheduler = PlatformDownloadScheduler(
+      register: () async {},
+      cancel: () async => throw Exception('no platform channel'),
+    );
+
+    // Same rationale as ensureScheduled: background scheduling is opportunistic,
+    // so a platform that refuses to cancel must not fail the queue.
+    await expectLater(scheduler.cancelAll(), completes);
+  });
+
+  test('a programming error surfaces rather than being swallowed', () async {
+    final DownloadSchedulerPort scheduler = PlatformDownloadScheduler(
+      register: () async => throw StateError('wiring bug'),
+      cancel: () async {},
+    );
+
+    // Errors indicate this app's wiring is broken, not that the platform
+    // refused. They must surface so breakage is caught in testing.
+    await expectLater(scheduler.ensureScheduled(), throwsStateError);
   });
 }

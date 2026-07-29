@@ -242,8 +242,8 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
         rows.map(DownloadItem.fromRow).toList(growable: false),
   );
 
-  /// Test seam — awaits the pump so a test does not have to poll.
-  Future<void> drainForTest() async {
+  @override
+  Future<void> drain() async {
     _kick();
     await _pump;
   }
@@ -254,11 +254,11 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     if (_pump != null) return;
     final Future<void> pass = _drain();
     _pump = pass;
-    // `pass` (not this chain's result) is what `_pump` holds and what
-    // `drainForTest` awaits, so a genuine bug there still surfaces to a test.
+    // `pass` (not this chain's result) is what `_pump` holds and what `drain`
+    // awaits, so a genuine bug there still surfaces to its caller.
     // This chain exists only to give production's fire-and-forget callers
     // (`enqueueLesson`, `resume`, `retry` all call `_kick()` and walk away —
-    // only `drainForTest` awaits `_pump`) a terminal handler: without one, an
+    // only `drain` awaits `_pump`) a terminal handler: without one, an
     // error escaping `_drain` (`nextQueued`/`isOnline` throwing, or
     // `_onFailure`'s own DB write failing) would be an unhandled error on a
     // Future nobody in production is listening to. There is nothing more

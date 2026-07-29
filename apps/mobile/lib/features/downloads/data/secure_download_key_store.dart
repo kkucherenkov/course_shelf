@@ -14,7 +14,7 @@ class SecureDownloadKeyStore implements DownloadKeyStore {
   SecureDownloadKeyStore([FlutterSecureStorage? storage])
     : _storage = storage ?? const FlutterSecureStorage(iOptions: _iosOptions);
 
-  /// A `BGAppRefreshTask` can fire while the device is locked. The package
+  /// A `BGProcessingTask` can fire while the device is locked. The package
   /// default is `KeychainAccessibility.unlocked`, which would make the key
   /// unreadable exactly then — the download would stall with no error and no
   /// way to diagnose it from Dart. `first_unlock` keeps it readable after the

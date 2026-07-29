@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart'
+    show MissingPluginException, PlatformException;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app_mobile/features/downloads/data/platform_download_scheduler.dart';
@@ -15,15 +17,31 @@ void main() {
     expect(registered, 1);
   });
 
-  test('a registration failure never propagates', () async {
+  test('a platform refusal to register never propagates', () async {
     final DownloadSchedulerPort scheduler = PlatformDownloadScheduler(
-      register: () async => throw Exception('no platform channel'),
+      register: () async => throw PlatformException(
+        code: '1',
+        message: 'BGTaskScheduler refused the identifier',
+      ),
       cancel: () async {},
     );
 
     // Background scheduling is opportunistic. Foreground download plus
     // resume-on-launch already guarantee completion, so a platform that refuses
-    // to register must not take the queue down with it.
+    // to register must not take the queue down with it. It is logged rather
+    // than silent — see `_logRefusal`.
+    await expectLater(scheduler.ensureScheduled(), completes);
+  });
+
+  test('a missing plugin implementation never propagates', () async {
+    final DownloadSchedulerPort scheduler = PlatformDownloadScheduler(
+      register: () async =>
+          throw MissingPluginException('no implementation for workmanager'),
+      cancel: () async {},
+    );
+
+    // A host with no workmanager implementation at all (desktop, a widget
+    // test) is the same class of "the platform cannot do this" as a refusal.
     await expectLater(scheduler.ensureScheduled(), completes);
   });
 
@@ -38,10 +56,11 @@ void main() {
     expect(cancelled, 1);
   });
 
-  test('a cancellation failure never propagates', () async {
+  test('a platform refusal to cancel never propagates', () async {
     final DownloadSchedulerPort scheduler = PlatformDownloadScheduler(
       register: () async {},
-      cancel: () async => throw Exception('no platform channel'),
+      cancel: () async =>
+          throw PlatformException(code: '99', message: 'unsupported'),
     );
 
     // Same rationale as ensureScheduled: background scheduling is opportunistic,
@@ -58,5 +77,37 @@ void main() {
     // Errors indicate this app's wiring is broken, not that the platform
     // refused. They must surface so breakage is caught in testing.
     await expectLater(scheduler.ensureScheduled(), throwsStateError);
+  });
+
+  test('a plain Exception surfaces rather than being swallowed', () async {
+    final DownloadSchedulerPort scheduler = PlatformDownloadScheduler(
+      register: () async => throw Exception('not a platform refusal'),
+      cancel: () async {},
+    );
+
+    // The catch is narrowed to genuine platform refusals. Anything else — an
+    // `UnsupportedError` from asking a platform for a task it does not
+    // implement, a bug in the closure the injector supplies — used to be
+    // indistinguishable from "background scheduling is unavailable" and
+    // vanished. It must propagate now.
+    await expectLater(
+      scheduler.ensureScheduled(),
+      throwsA(
+        isA<Exception>().having(
+          (Exception e) => e.toString(),
+          'message',
+          contains('not a platform refusal'),
+        ),
+      ),
+    );
+  });
+
+  test('a non-refusal error from cancelAll surfaces too', () async {
+    final DownloadSchedulerPort scheduler = PlatformDownloadScheduler(
+      register: () async {},
+      cancel: () async => throw UnsupportedError('not on this platform'),
+    );
+
+    await expectLater(scheduler.cancelAll(), throwsUnsupportedError);
   });
 }

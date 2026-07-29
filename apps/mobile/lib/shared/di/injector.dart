@@ -121,15 +121,7 @@ void configureDependencies() {
     )
     ..registerLazySingleton<DownloadSchedulerPort>(
       () => PlatformDownloadScheduler(
-        // Registered as a one-off rather than periodic: the task's only job is
-        // to resume, and WorkManager's minimum periodic interval (15 min) is
-        // coarser than a download that may finish in seconds.
-        register: () => Workmanager().registerOneOffTask(
-          kDownloadResumeTask,
-          kDownloadResumeTask,
-          existingWorkPolicy: ExistingWorkPolicy.keep,
-          constraints: Constraints(networkType: NetworkType.connected),
-        ),
+        register: registerDownloadResumeTask,
         cancel: () => Workmanager().cancelByUniqueName(kDownloadResumeTask),
       ),
     )
@@ -205,6 +197,52 @@ void configureDependencies() {
     ..registerFactory<DownloadsBloc>(
       () => DownloadsBloc(getIt<DownloadsRepository>()),
     );
+}
+
+/// Asks the OS for a future window in which to resume unfinished downloads.
+///
+/// Split by platform because the two `workmanager` backends are not
+/// interchangeable here.
+///
+/// On Android, `registerOneOffTask` enqueues a real WorkManager job that
+/// survives process death, which is exactly what is wanted. A one-off rather
+/// than periodic: the task's only job is to resume, and WorkManager's minimum
+/// periodic interval (15 min) is coarser than a download that may finish in
+/// seconds. `ExistingWorkPolicy.keep` makes repeated enqueues idempotent.
+///
+/// On iOS the same call does something entirely different, and not what this
+/// port promises: `WorkmanagerPlugin.registerOneOffTask`
+/// (workmanager_apple 0.9.1+2, `ios/Sources/workmanager_apple/
+/// WorkmanagerPlugin.swift:155-184`) never touches `BGTaskScheduler` — it
+/// calls `UIApplication.beginBackgroundTask` and runs the Dart callback
+/// *immediately* on an `OperationQueue`. That is a ~30s extension of the
+/// current session, granted while the app is still in the foreground, and it
+/// would spin up a second Flutter engine running the download pump alongside
+/// the foreground one on every enqueue. `registerProcessingTask` is the call
+/// that submits a `BGProcessingTaskRequest` (`WorkmanagerPlugin.swift:209-227`
+/// -> `scheduleBackgroundProcessingTask`, lines 119-139), which is what
+/// `ios/Runner/Info.plist`'s `BGTaskSchedulerPermittedIdentifiers` and
+/// `AppDelegate.swift`'s `registerBGProcessingTask` call are wired for. It
+/// throws `UnsupportedError` on Android, so the branch is required in both
+/// directions.
+///
+/// `NetworkType.connected` becomes `requiresNetworkConnectivity` on the
+/// `BGProcessingTaskRequest`; charging is left unset, so
+/// `requiresExternalPower` is false and the task can run on battery.
+Future<void> registerDownloadResumeTask() {
+  if (Platform.isIOS) {
+    return Workmanager().registerProcessingTask(
+      kDownloadResumeTask,
+      kDownloadResumeTask,
+      constraints: Constraints(networkType: NetworkType.connected),
+    );
+  }
+  return Workmanager().registerOneOffTask(
+    kDownloadResumeTask,
+    kDownloadResumeTask,
+    existingWorkPolicy: ExistingWorkPolicy.keep,
+    constraints: Constraints(networkType: NetworkType.connected),
+  );
 }
 
 /// Registers `shared_preferences` and its stores. Async because

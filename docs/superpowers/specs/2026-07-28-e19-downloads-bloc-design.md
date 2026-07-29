@@ -287,7 +287,7 @@ incoming `Range` into a block range, decrypts only those blocks, and answers
 
 | condition | behaviour |
 | --- | --- |
-| socket drop / timeout | `→ queued`, `attemptCount++`, `nextAttemptAt = now + 2^n` capped at 5 min, 5 attempts then `failed` |
+| socket drop / timeout | `→ queued`, `attemptCount++`, `nextAttemptAt = now + 2^n` seconds — the whole ladder is 2s, 4s, 8s, 16s, because the 5th attempt fails the row instead of backing off. There is no minutes-scale cap; one would be unreachable. |
 | `401` mid-transfer | re-mint the stream URL once and continue from `bytesDownloaded`; a second `401` → `failed` |
 | `416` | source changed server-side → discard, reset to 0, restart once |
 | `404` | lesson or file gone → `failed`, no retry |

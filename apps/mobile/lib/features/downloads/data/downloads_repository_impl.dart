@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:io';
-import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:async/async.dart' show StreamGroup;
@@ -67,13 +66,17 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   static const int _flushEveryBlocks = 16;
 
   static const int _maxAttempts = 5;
-  static const Duration _maxBackoff = Duration(minutes: 5);
 
-  /// 2^n seconds, capped at 5 minutes. Injected so tests can collapse the
-  /// window to zero without the production policy changing — a flapping
-  /// connection still gets room to settle rather than spinning the radio.
+  /// 2^n seconds. Only attempts 1 through 4 ever reach here — the 5th fails
+  /// the row outright — so the whole ladder is 2s, 4s, 8s, 16s and there is no
+  /// ceiling to apply. (An earlier `min(..., 5 minutes)` documented a cap that
+  /// `_maxAttempts` makes unreachable.)
+  ///
+  /// Injected so tests can collapse the window to zero without the production
+  /// policy changing — a flapping connection still gets room to settle rather
+  /// than spinning the radio.
   static Duration _defaultBackoff(int attempt) =>
-      Duration(seconds: min(1 << attempt, _maxBackoff.inSeconds));
+      Duration(seconds: 1 << attempt);
 
   final DownloadsDao _dao;
   final LessonByteSource _byteSource;
@@ -506,9 +509,10 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     // A dropped socket, timeout, or DNS failure never reached the server, so
     // it carries no HTTP status and cannot be a 401/404/416. It is still a
     // transient failure like any other 5xx: it falls through to the same
-    // persisted 2^n backoff below, capped at 5 minutes, 5 attempts — a
-    // flapping connection gets room to settle rather than spinning the radio
-    // in a tight retry loop against a host that keeps refusing it.
+    // persisted 2^n backoff below — 2s, 4s, 8s, 16s, then `failed` on the 5th
+    // attempt — so a flapping connection gets room to settle rather than
+    // spinning the radio in a tight retry loop against a host that keeps
+    // refusing it.
     final int? status = error is DioException
         ? error.response?.statusCode
         : null;

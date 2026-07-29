@@ -435,6 +435,76 @@ void main() {
     expect(row?.bytesDownloaded, 0, reason: 'nothing should have been fetched');
   });
 
+  test(
+    'a retry landing inside the claim window is not run on a stale row',
+    () async {
+      // `retry()` sets the row back to `queued`, which is exactly what
+      // `claimForDownload`'s compare-and-swap matches — so unlike pause and
+      // cancel, a retry in the claim window does *not* lose the race, and the
+      // pump proceeds. What it must not do is proceed on the snapshot `_drain`
+      // selected before the retry landed.
+      const int oddCount = EncryptedFileFormat.blockSize + 777;
+      final String filePath = '${dir.path}/l1.csdl';
+      await db.downloadsDao.upsert(
+        DownloadedLessonsCompanion.insert(
+          lessonId: 'l1',
+          state: DownloadState.queued,
+          filePath: filePath,
+          updatedAt: DateTime.utc(2026, 7, 29),
+          queuedAt: Value<DateTime?>(DateTime.utc(2026, 7, 29)),
+          // The stale snapshot's values: a non-block-aligned count that
+          // `ChunkedGcmWriter.resume` refuses, and an attempt budget one short
+          // of the cap.
+          bytesDownloaded: const Value<int>(oddCount),
+          totalBytes: const Value<int?>(oddCount),
+          attemptCount: const Value<int>(3),
+        ),
+      );
+      await File(filePath).writeAsBytes(
+        List<int>.filled(EncryptedFileFormat.headerLength + 100, 0),
+      );
+
+      final Uint8List source = payload(500);
+      late DownloadsRepositoryImpl repo;
+      bool retried = false;
+      repo = DownloadsRepositoryImpl(
+        dao: DownloadsDao(db),
+        byteSource: _ScriptedByteSource(payload: source),
+        keyStore: _FixedKeyStore(),
+        scheduler: scheduler,
+        downloadsDirectory: () async => dir,
+        // `isOnline()` is the real async gap between `_drain` selecting the row
+        // and `_download` claiming it — the exact window the production comment
+        // is about — so the retry is injected here rather than raced on a timer.
+        isOnline: () async {
+          if (!retried) {
+            retried = true;
+            await repo.retry('l1');
+          }
+          return true;
+        },
+        backoff: (_) => Duration.zero,
+      );
+
+      await repo.drain().timeout(const Duration(seconds: 5));
+
+      expect(retried, isTrue, reason: 'the retry must actually have been made');
+      final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+      // On the stale snapshot `bytesDownloaded` is still `oddCount` and the file
+      // still exists, so `ChunkedGcmWriter.resume` throws `ArgumentError`; the
+      // stale `attemptCount` of 3 then makes that failure the 4th, and the
+      // identical second pass the 5th — the row lands `failed` having never
+      // fetched a byte.
+      expect(row?.state, DownloadState.ready);
+      expect(row?.bytesDownloaded, source.length);
+      expect(
+        row?.attemptCount,
+        0,
+        reason: "the fresh row's zeroed attempt budget is what must be used",
+      );
+    },
+  );
+
   test('a cancel landing before the claim leaves no orphan file', () async {
     final DownloadsRepositoryImpl repo = build(
       _ScriptedByteSource(payload: payload(2048)),

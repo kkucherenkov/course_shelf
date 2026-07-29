@@ -302,26 +302,39 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     }
   }
 
-  Future<void> _download(DownloadedLesson row) async {
+  Future<void> _download(DownloadedLesson selected) async {
     final CancelToken cancelToken = CancelToken();
     _activeCancel = cancelToken;
 
     ChunkedGcmWriter? writer;
+    DownloadedLesson row = selected;
     try {
       // Compare-and-swap: only applies while the row is still `queued`. A
-      // `pause()`/`cancel()`/`retry()` landing in the window between `_drain`
-      // claiming this lesson (above) and this write — `isOnline()` is a real
-      // platform-channel round trip — has already moved the row somewhere
-      // else (or deleted it), so the swap affects 0 rows and this pass drops
-      // the claim instead of overwriting the user's intent or resurrecting a
-      // deleted row.
+      // `pause()` (moves it to `paused`) or a `cancel()` (deletes it) landing
+      // in the window between `_drain` claiming this lesson (above) and this
+      // write — `isOnline()` is a real platform-channel round trip — affects 0
+      // rows, and this pass drops the claim instead of overwriting the user's
+      // intent or resurrecting a deleted row.
       final int claimed = await _dao.claimForDownload(
-        row.lessonId,
+        selected.lessonId,
         DateTime.now().toUtc(),
       );
       if (claimed == 0) {
         return;
       }
+
+      // A `retry()` in that same window is *not* excluded: it sets the row
+      // back to `queued`, which is exactly what the swap matches, so the claim
+      // succeeds over it. Re-reading here is what makes that harmless —
+      // `selected` is a pre-retry snapshot whose `bytesDownloaded` may be the
+      // non-block-aligned `finish()` total retry has since reset to 0, and
+      // whose `attemptCount` retry has since zeroed. Everything below uses the
+      // fresh copy, so no path can run on a stale snapshot.
+      final DownloadedLesson? claimedRow = await _dao.byLessonId(
+        selected.lessonId,
+      );
+      if (claimedRow == null) return;
+      row = claimedRow;
 
       final Uint8List key = await _keyStore.keyForDevice();
       final File file = File(row.filePath);

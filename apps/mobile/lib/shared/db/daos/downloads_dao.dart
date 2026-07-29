@@ -45,9 +45,15 @@ class DownloadsDao extends DatabaseAccessor<AppDatabase>
   /// Claims a queued row for the pump, returning the number of rows affected.
   ///
   /// A compare-and-swap on `state`: the transition only applies while the row
-  /// is still `queued`. Anything that moved it in the meantime — a pause, a
-  /// cancel that deleted it, an explicit retry — yields 0 and tells the
-  /// caller to drop this claim rather than overwrite the user's intent.
+  /// is still `queued`. A pause (which moves it to `paused`) or a cancel
+  /// (which deletes it) landing in the meantime yields 0 and tells the caller
+  /// to drop this claim rather than overwrite the user's intent.
+  ///
+  /// An explicit `retry()` is **not** in that set — it puts the row back to
+  /// `queued`, which is precisely what this matches, so the claim succeeds
+  /// over it and returns 1. The caller is responsible for re-reading the row
+  /// after a successful claim so it does not proceed on the pre-retry snapshot
+  /// (see `DownloadsRepositoryImpl._download`).
   Future<int> claimForDownload(String lessonId, DateTime now) =>
       (update(downloadedLessons)..where(
             (t) =>

@@ -69,8 +69,10 @@ class DownloadedLessons extends Table {
   ///
   /// Backoff is persisted rather than slept: `_drain` skips rows whose window
   /// has not elapsed and moves to the next item. Sleeping inside the pump would
-  /// make one unreachable lesson freeze every healthy download behind it —
-  /// on a 40-lesson course enqueue, up to 5 attempts x 5 minutes each.
+  /// make one unreachable lesson freeze every healthy download behind it — the
+  /// ladder is 2s, 4s, 8s, 16s before the 5th attempt fails the row, so on a
+  /// 40-lesson course enqueue that is half a minute of dead queue per bad
+  /// lesson, serialized.
   DateTimeColumn get nextAttemptAt => dateTime().nullable()();
 
   DateTimeColumn get updatedAt => dateTime()();

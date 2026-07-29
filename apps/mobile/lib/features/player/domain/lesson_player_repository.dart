@@ -11,7 +11,7 @@ abstract interface class LessonPlayerRepository {
   /// `GET /api/v1/courses/{id}/outline` — the Sections tab.
   Future<List<LessonOutlineSection>> fetchCourseOutline(String courseId);
 
-  /// A ready local download when one exists, else `POST /lessons/{id}/stream-url`.
+  /// A ready local download when one exists, else `GET /lessons/{id}/stream-url`.
   Future<LessonVideoSource> resolveVideoSource(String lessonId);
 
   /// `GET /api/v1/lessons/{lessonId}/bookmarks`.

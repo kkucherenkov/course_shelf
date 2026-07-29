@@ -141,4 +141,34 @@ void main() {
   test('binds loopback only', () async {
     expect(server.urlFor('l1').host, '127.0.0.1');
   });
+
+  test(
+    'a corrupt block mid-stream truncates the response instead of hanging',
+    () async {
+      // Corrupt one byte inside block 1's ciphertext, after the fixture (and
+      // the server pointed at it) already exist.
+      final RandomAccessFile handle = await file.open(mode: FileMode.append);
+      await handle.setPosition(EncryptedFileFormat.storedOffsetOf(1) + 42);
+      await handle.writeByte(0xFF);
+      await handle.close();
+
+      // Range starts in block 0 (so headers + some bytes go out fine) and
+      // extends into the corrupted block 1.
+      final HttpClientResponse response = await get(
+        server.urlFor('l1'),
+        range: 'bytes=0-${EncryptedFileFormat.blockSize + 100}',
+      );
+
+      expect(response.statusCode, 206);
+      await expectLater(
+        response.fold<List<int>>(
+          <int>[],
+          (List<int> acc, List<int> chunk) => acc..addAll(chunk),
+        ),
+        throwsA(anything),
+        reason: 'a truncated body must surface as an error, not a hang',
+      );
+    },
+    timeout: const Timeout(Duration(seconds: 10)),
+  );
 }

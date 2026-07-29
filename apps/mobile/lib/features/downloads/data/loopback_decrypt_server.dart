@@ -69,8 +69,17 @@ class LoopbackDecryptServer {
 
   /// Not awaited: `listen` returns a subscription that lives as long as the
   /// server, and `stop()` closing the server is what ends it.
+  ///
+  /// `_handle`'s returned `Future` is deliberately not awaited either — one
+  /// slow or failing request must not block the next connection — so its
+  /// errors (e.g. a corrupt block mid-stream, rethrown after the response is
+  /// closed early) are caught here instead. Left uncaught, they would become
+  /// unhandled `Future` rejections that answer to nothing in particular,
+  /// rather than being contained to the one request that failed.
   void _listen(HttpServer server) {
-    server.listen(_handle, onError: (_) {});
+    server.listen((HttpRequest request) {
+      _handle(request).catchError((Object _, StackTrace _) {});
+    }, onError: (_) {});
   }
 
   Future<void> _handle(HttpRequest request) async {
@@ -133,11 +142,30 @@ class LoopbackDecryptServer {
       }
 
       int cursor = start;
-      while (cursor <= end) {
-        final int take = min(_chunkSize, end - cursor + 1);
-        response.add(await reader.read(cursor, take));
-        await response.flush();
-        cursor += take;
+      try {
+        while (cursor <= end) {
+          final int take = min(_chunkSize, end - cursor + 1);
+          response.add(await reader.read(cursor, take));
+          await response.flush();
+          cursor += take;
+        }
+      } on Object {
+        // Headers (and Content-Length) are already on the wire, so the status
+        // cannot be changed. Close early instead: the client sees a body
+        // shorter than promised and surfaces a playback error, rather than
+        // waiting forever for bytes a corrupt block will never produce.
+        //
+        // `close()` itself throws here — dart:io's own Content-Length check
+        // fires because fewer bytes went out than the header promised, which
+        // is exactly the truncation we are deliberately causing — so that
+        // exception is expected and swallowed rather than left to shadow the
+        // real cause below.
+        try {
+          await response.close();
+        } on Object {
+          // Expected: see comment above.
+        }
+        rethrow;
       }
       await response.close();
     } finally {

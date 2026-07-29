@@ -16,9 +16,10 @@ abstract class DownloadsRepository {
 
   Future<void> retry(String lessonId);
 
-  /// Called once at startup. Any row left `downloading` by an app kill is
-  /// reconciled to `paused`; nothing was committed mid-block, so no file
-  /// repair is needed.
+  /// Called once at startup (and from the background resume task). Any row
+  /// left `downloading` by an app kill is re-queued and the pump kicked;
+  /// nothing was committed mid-block, so no file repair is needed — only
+  /// resuming the transfer.
   Future<void> reconcileAfterRestart();
 
   /// High-frequency progress for the active item plus the persisted rest.

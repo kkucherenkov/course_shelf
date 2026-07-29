@@ -42,6 +42,25 @@ class DownloadsDao extends DatabaseAccessor<AppDatabase>
     )..where((t) => t.lessonId.equals(lessonId))).write(entry);
   }
 
+  /// Claims a queued row for the pump, returning the number of rows affected.
+  ///
+  /// A compare-and-swap on `state`: the transition only applies while the row
+  /// is still `queued`. Anything that moved it in the meantime — a pause, a
+  /// cancel that deleted it, an explicit retry — yields 0 and tells the
+  /// caller to drop this claim rather than overwrite the user's intent.
+  Future<int> claimForDownload(String lessonId, DateTime now) =>
+      (update(downloadedLessons)..where(
+            (t) =>
+                t.lessonId.equals(lessonId) &
+                t.state.equalsValue(DownloadState.queued),
+          ))
+          .write(
+            DownloadedLessonsCompanion(
+              state: const Value<DownloadState>(DownloadState.downloading),
+              updatedAt: Value<DateTime>(now),
+            ),
+          );
+
   Future<DownloadedLesson?> byLessonId(String lessonId) => (select(
     downloadedLessons,
   )..where((t) => t.lessonId.equals(lessonId))).getSingleOrNull();
@@ -105,4 +124,18 @@ class DownloadsDao extends DatabaseAccessor<AppDatabase>
   Future<void> remove(String lessonId) => (delete(
     downloadedLessons,
   )..where((t) => t.lessonId.equals(lessonId))).go();
+
+  /// Deletes the row and returns what was deleted, in one round trip.
+  ///
+  /// `cancel()` needs the deleted row's `filePath` to clean up the
+  /// ciphertext. A separate `SELECT` first (then a `DELETE`) would cost an
+  /// extra async gap for the pump to race ahead in between: `claimForDownload`
+  /// only has to lose to a row that is *already gone*, and every await this
+  /// method doesn't need is time the pump's own claim can slip through in.
+  Future<DownloadedLesson?> removeAndReturn(String lessonId) async {
+    final List<DownloadedLesson> rows = await (delete(
+      downloadedLessons,
+    )..where((t) => t.lessonId.equals(lessonId))).goAndReturn();
+    return rows.isEmpty ? null : rows.single;
+  }
 }

@@ -120,10 +120,29 @@ real iOS mechanism is `URLSession` with a background configuration, which is
 native code behind a platform channel and unreachable from `dio`.
 
 **Chosen:** foreground download is the primary path. `DownloadSchedulerPort`
-abstracts the platform; Android registers a `workmanager` worker and iOS a
-`BGAppRefreshTask`, each doing "resume whatever is unfinished" in whatever window
-the OS grants. Resume-on-launch guarantees eventual completion regardless. This
+abstracts the platform; Android registers a one-off `workmanager` worker and iOS
+submits a **`BGProcessingTaskRequest`** — via `Workmanager().registerProcessingTask`,
+not `registerOneOffTask`, which on iOS never reaches `BGTaskScheduler` at all
+(it takes a `UIApplication.beginBackgroundTask` extension of the *current*
+session and runs the callback immediately; see
+`workmanager_apple/ios/Sources/workmanager_apple/WorkmanagerPlugin.swift:155-184`).
+Each does "resume whatever is unfinished" in whatever window the OS grants. This
 honours the card's own hedge, "subject to platform background limits."
+
+Resume-on-launch is what actually guarantees eventual completion, and it does so
+in two places:
+
+- `main()` fires `getIt<DownloadsRepository>().reconcileAfterRestart()`
+  **unawaited** immediately after `configureDependencies()`, so an app kill's
+  stranded `downloading` rows are re-queued and the pump kicked without startup
+  ever waiting on the download queue.
+- the Workmanager callback awaits `reconcileAfterRestart()` **and then
+  `drain()`** before returning to the OS, so the granted window is spent on the
+  transfer rather than on relabelling rows and handing the window straight back.
+
+Both go through the `DownloadsRepository` port — which is why `drain()` is
+declared there: the background isolate has no access to the running app's
+`get_it` graph and never sees the implementation type.
 
 Rejected: full native background transfer (correct, but none of it can be
 compiled or verified on this host, and the iOS half cannot even be type-checked);
@@ -164,7 +183,7 @@ features/downloads/
 │   ├── chunked_gcm_writer.dart         append-only encrypting writer
 │   ├── chunked_gcm_reader.dart         random-access decrypting reader
 │   ├── secure_download_key_store.dart  flutter_secure_storage impl
-│   ├── platform_download_scheduler.dart workmanager / BGAppRefreshTask
+│   ├── platform_download_scheduler.dart workmanager one-off (Android) / BGProcessingTask (iOS)
 │   └── loopback_decrypt_server.dart    127.0.0.1 HttpServer, plaintext ranges
 └── presentation/bloc/{downloads_bloc,downloads_event,downloads_state}.dart
 ```
@@ -221,21 +240,30 @@ offset 24  block 0: ciphertext(≤blockSize) ‖ tag(16B)
   encryption").
 - **Keychain accessibility** — the iOS store must be opened with
   `KeychainAccessibility.first_unlock`. The default,
-  `kSecAttrAccessibleWhenUnlocked`, makes the key unreadable to a
-  `BGAppRefreshTask` that fires while the device is locked, and the download
-  would stall silently.
+  `kSecAttrAccessibleWhenUnlocked`, makes the key unreadable to a background
+  task that fires while the device is locked, and the download would stall
+  silently.
 - **Nonce** — `nonce(i) = fileNonce XOR bigEndian96(i)`. Distinct `i` yields a
   distinct nonce within a file; the random 96-bit `fileNonce` separates files.
-  Mirrored into the existing `nonce` blob column so the row is self-describing.
+  The `fileNonce` lives in the container header and **nowhere else**. The
+  pre-staged `downloaded_lessons.nonce` blob column is never written and is
+  vestigial: the header is what both the reader and the resuming writer already
+  read, so a second copy buys nothing and risks the two disagreeing — a restart
+  that mints a fresh nonce (416, or a resource whose length changed) would have
+  to keep them in step for no gain.
 - **`bytesDownloaded` counts plaintext bytes, whole blocks only.** Partial
   trailing blocks are never committed.
 
 ## Data flow
 
 **Enqueue.** `EnqueueLesson` upserts `state=queued, queuedAt=nowUtc,
-filePath=<appSupport>/downloads/<lessonId>.csdl`. `EnqueueCourse` reuses the
-existing `fetchCourseOutline` to expand into per-lesson enqueues, skipping
-anything already `ready`. Both then kick the pump.
+filePath=<appSupport>/downloads/<lessonId>.csdl`. `EnqueueCourse(courseId,
+lessonIds)` takes the lesson ids **from its caller** and expands them into
+per-lesson enqueues, skipping anything already `ready`. Both then kick the pump.
+
+It deliberately does not call `fetchCourseOutline` itself: catalog fetching in
+the download repository would give the port two jobs and a second reason to
+change, and the caller (course detail) already has the outline on screen.
 
 **Pump** — serial, oldest `queuedAt` first:
 
@@ -268,11 +296,19 @@ would make a progress bar jump.
 **Lifecycle:**
 
 - `Pause` — cancel via `CancelToken`, seal whole blocks, persist, `→ paused`
+- `Resume` — `→ queued`, clearing `nextAttemptAt` and the free-re-mint guard so
+  a row that backed off before it was paused starts now rather than after a
+  stale window. `attemptCount` is left alone; resuming is not a fresh budget.
 - `Cancel` — cancel, delete the file, `DownloadsDao.remove`. Cancel has no
   terminal state by design; there is nothing left to resume from.
-- `Retry` — `attemptCount++`, `→ queued`
-- **App kill** — on init, any row still `downloading` reconciles to `paused`.
-  Nothing was committed mid-block, so no file repair is needed.
+- `Retry` — `→ queued` with `attemptCount` **reset to 0** and `nextAttemptAt` /
+  `lastError` / the re-mint guard cleared. Not `attemptCount++`: a `failed` row
+  is already at the cap, so incrementing would buy it exactly one more attempt
+  before sticking permanently.
+- **App kill** — on init, any row still `downloading` reconciles to **`queued`**
+  (not `paused` — these were genuinely in flight, and resuming them is what
+  "resume-on-launch" means; a deliberate pause already reads `paused`). Nothing
+  was committed mid-block, so no file repair is needed.
 - **Offline** (`connectivity_plus`) — stop pumping, stay `queued`, do not burn an
   attempt
 
@@ -285,16 +321,20 @@ incoming `Range` into a block range, decrypts only those blocks, and answers
 
 ## Error handling
 
+This table describes **what ships**, not what would be ideal; the last three
+rows say so explicitly.
+
 | condition | behaviour |
 | --- | --- |
 | socket drop / timeout | `→ queued`, `attemptCount++`, `nextAttemptAt = now + 2^n` seconds — the whole ladder is 2s, 4s, 8s, 16s, because the 5th attempt fails the row instead of backing off. There is no minutes-scale cap; one would be unreachable. |
-| `401` mid-transfer | re-mint the stream URL once and continue from `bytesDownloaded`; a second `401` → `failed` |
-| `416` | source changed server-side → discard, reset to 0, restart once |
+| `401` mid-transfer | one free re-mint per lesson per process run: `→ queued` from `bytesDownloaded` with no backoff and no attempt burned, because a pause outliving the 900s token TTL is the expected case. A second `401` has spent that budget and falls through to the transient row above — it costs an attempt like any other failure, rather than failing the row outright. `cancel()`, `retry()`, `resume()` and a successful completion each hand the free re-mint back. |
+| `416` | the resumed offset is past the end of the server's file → delete the partial file, reset `bytesDownloaded`/`totalBytes`, `→ queued`. Counted against the same 5-attempt budget and given the same backoff: a zero-length asset makes even `bytes=0-` unsatisfiable, and without the gate that row would re-select itself at the FIFO head forever and starve the queue. |
+| response total ≠ recorded total | the lesson was re-encoded between attempts, so the bytes on disk came from a different resource. Handled exactly like `416` — which also forces the restart through `create()` and a fresh `fileNonce`, rather than re-sealing block indices the old nonce already covered. |
 | `404` | lesson or file gone → `failed`, no retry |
-| disk full | `failed` with `lastError`, no retry — retrying cannot create space |
 | offline | not an error; stays `queued`, no attempt counted |
-| GCM tag mismatch on read | `failed` + `lastError`; the block index localizes the damage |
-| local file deleted | reader throws → row re-marked `failed`, matching the carded acceptance |
+| disk full | **not special-cased.** There is no `FileSystemException` branch: a full disk takes the transient row above, so it spends 5 attempts and 30s of waiting before reaching `failed`. Retrying cannot create space, so a dedicated branch would be an improvement — it is not what ships. |
+| GCM tag mismatch on read | the loopback server logs it and truncates the response body (status and `Content-Length` are already on the wire, so a short body is the only signal left). **It does not touch the row.** Re-marking the download belongs to E19-F01-S02's pre-play integrity check (#126). |
+| local file deleted | the loopback server answers `404`. **It does not touch the row** either — same owner as the line above, E19-F01-S02 / #126. |
 
 ## Testing
 
@@ -312,8 +352,10 @@ All under `flutter test`; no device required.
 5. `DownloadsBloc` — `bloc_test` per event (`EnqueueLesson`, `EnqueueCourse`,
    `Pause`, `Resume`, `Cancel`, `Retry`) against `FakeDownloadScheduler` and a
    fake repository
-6. app-kill recovery — seed a `downloading` row, init, assert reconciliation to
-   `paused`
+6. app-kill recovery — seed a `downloading` row, then run the background
+   callback's own sequence (`reconcileAfterRestart()` then `drain()`) through
+   the `DownloadsRepository` port, and assert the row reaches `ready`. Asserting
+   only the relabel would pass against a reconcile that never resumes anything
 7. loopback server — real HTTP `Range` requests against a real fixture on
    `127.0.0.1`. This is a server we own, so there is no flakiness to simulate.
 8. Drift v1→v2 migration test

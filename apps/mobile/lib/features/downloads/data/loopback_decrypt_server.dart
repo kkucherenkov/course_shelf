@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
@@ -76,11 +77,32 @@ class LoopbackDecryptServer {
   /// closed early) are caught here instead. Left uncaught, they would become
   /// unhandled `Future` rejections that answer to nothing in particular,
   /// rather than being contained to the one request that failed.
+  ///
+  /// Contained, but not silent: this is the only place an error from the whole
+  /// playback-serving path can surface at all. A failed MAC, secure storage
+  /// refusing the key, a file deleted mid-read — the client sees a 500 or a
+  /// truncated body and nothing else, so without this log there is no way to
+  /// tell those apart from a device.
   void _listen(HttpServer server) {
-    server.listen((HttpRequest request) {
-      _handle(request).catchError((Object _, StackTrace _) {});
-    }, onError: (_) {});
+    server.listen(
+      (HttpRequest request) {
+        _handle(request).catchError((Object error, StackTrace stackTrace) {
+          _log('Loopback request failed', error, stackTrace);
+        });
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        _log('Loopback server socket error', error, stackTrace);
+      },
+    );
   }
+
+  void _log(String message, Object error, StackTrace stackTrace) =>
+      developer.log(
+        message,
+        error: error,
+        stackTrace: stackTrace,
+        name: 'LoopbackDecryptServer',
+      );
 
   Future<void> _handle(HttpRequest request) async {
     final HttpResponse response = request.response;

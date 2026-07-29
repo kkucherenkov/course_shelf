@@ -141,6 +141,11 @@ void main() {
   Uint8List payload(int length) =>
       Uint8List.fromList(List<int>.generate(length, (int i) => i % 251));
 
+  // Collapses the persisted backoff to zero so a test's single
+  // `drainForTest()` pass can observe a retry without waiting out the real
+  // window. The two tests that assert the production formula itself
+  // construct `DownloadsRepositoryImpl` directly instead of going through
+  // this helper, so they get the real default.
   DownloadsRepositoryImpl build(
     LessonByteSource source, {
     bool online = true,
@@ -151,6 +156,7 @@ void main() {
     scheduler: scheduler,
     downloadsDirectory: () async => dir,
     isOnline: () async => online,
+    backoff: (_) => Duration.zero,
   );
 
   setUp(() async {
@@ -275,12 +281,20 @@ void main() {
     'a transient failure parks the row rather than sleeping on it',
     () async {
       final Stopwatch clock = Stopwatch()..start();
-      final DownloadsRepositoryImpl repo = build(
-        _StatusFailingByteSource(
+      // Constructed directly, without the `build()` helper's zero-backoff
+      // override, so this genuinely proves the persisted 2^n window rather
+      // than a window that was collapsed to nothing.
+      final DownloadsRepositoryImpl repo = DownloadsRepositoryImpl(
+        dao: DownloadsDao(db),
+        byteSource: _StatusFailingByteSource(
           status: 500,
           payload: payload(10),
           alwaysFailLessonId: 'l1',
         ),
+        keyStore: _FixedKeyStore(),
+        scheduler: scheduler,
+        downloadsDirectory: () async => dir,
+        isOnline: () async => true,
       );
 
       await repo.enqueueLesson('l1');
@@ -299,12 +313,21 @@ void main() {
 
   test('a backed-off item does not block a healthy one behind it', () async {
     final Uint8List source = payload(2048);
-    final DownloadsRepositoryImpl repo = build(
-      _StatusFailingByteSource(
+    // Constructed directly, without the `build()` helper's zero-backoff
+    // override, so 'bad' genuinely lands in a future backoff window — the
+    // property this test exists to prove only means something if the skip
+    // is real.
+    final DownloadsRepositoryImpl repo = DownloadsRepositoryImpl(
+      dao: DownloadsDao(db),
+      byteSource: _StatusFailingByteSource(
         status: 500,
         payload: source,
         alwaysFailLessonId: 'bad',
       ),
+      keyStore: _FixedKeyStore(),
+      scheduler: scheduler,
+      downloadsDirectory: () async => dir,
+      isOnline: () async => true,
     );
 
     // 'bad' is enqueued first, so FIFO puts it at the head of the queue.

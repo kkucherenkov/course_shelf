@@ -29,12 +29,14 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     required DownloadSchedulerPort scheduler,
     required Future<Directory> Function() downloadsDirectory,
     required Future<bool> Function() isOnline,
+    Duration Function(int attempt) backoff = _defaultBackoff,
   }) : _dao = dao,
        _byteSource = byteSource,
        _keyStore = keyStore,
        _scheduler = scheduler,
        _downloadsDirectory = downloadsDirectory,
-       _isOnline = isOnline;
+       _isOnline = isOnline,
+       _backoff = backoff;
 
   /// Blocks between Drift flushes. 16 x 256 KiB = 4 MiB — per-block would be
   /// ~3200 SQLite transactions for an 800 MB video to save at most 256 KiB of
@@ -44,12 +46,19 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   static const int _maxAttempts = 5;
   static const Duration _maxBackoff = Duration(minutes: 5);
 
+  /// 2^n seconds, capped at 5 minutes. Injected so tests can collapse the
+  /// window to zero without the production policy changing — a flapping
+  /// connection still gets room to settle rather than spinning the radio.
+  static Duration _defaultBackoff(int attempt) =>
+      Duration(seconds: min(1 << attempt, _maxBackoff.inSeconds));
+
   final DownloadsDao _dao;
   final LessonByteSource _byteSource;
   final DownloadKeyStore _keyStore;
   final DownloadSchedulerPort _scheduler;
   final Future<Directory> Function() _downloadsDirectory;
   final Future<bool> Function() _isOnline;
+  final Duration Function(int attempt) _backoff;
 
   final StreamController<DownloadItem> _progress =
       StreamController<DownloadItem>.broadcast();
@@ -306,41 +315,11 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
     }
 
     // A dropped socket, timeout, or DNS failure never reached the server, so
-    // it carries no HTTP status and cannot be a 401/404/416 — it is a network
-    // blip, not evidence the lesson or the ciphertext is bad. It still burns
-    // an attempt, so a permanently unreachable host eventually lands in
-    // `failed` rather than spinning the pump forever on the same lesson, but
-    // it skips the backoff window: unlike a genuine server rejection, a
-    // dropped socket is likely to clear on the very next attempt, and a
-    // persisted wait here would stall the resume this brief's writer/reader
-    // design exists to make cheap.
-    if (error is DioException && error.type != DioExceptionType.badResponse) {
-      final int attempts = row.attemptCount + 1;
-      if (attempts >= _maxAttempts) {
-        await _fail(
-          row,
-          error,
-          committedPlaintextBytes,
-          DateTime.now().toUtc(),
-        );
-        return;
-      }
-      await _dao.updateFields(
-        DownloadedLessonsCompanion(
-          lessonId: Value<String>(row.lessonId),
-          state: const Value<DownloadState>(DownloadState.queued),
-          bytesDownloaded: Value<int>(
-            committedPlaintextBytes ?? row.bytesDownloaded,
-          ),
-          attemptCount: Value<int>(attempts),
-          nextAttemptAt: const Value<DateTime?>(null),
-          lastError: Value<String?>(error.toString()),
-          updatedAt: Value<DateTime>(DateTime.now().toUtc()),
-        ),
-      );
-      return;
-    }
-
+    // it carries no HTTP status and cannot be a 401/404/416. It is still a
+    // transient failure like any other 5xx: it falls through to the same
+    // persisted 2^n backoff below, capped at 5 minutes, 5 attempts — a
+    // flapping connection gets room to settle rather than spinning the radio
+    // in a tight retry loop against a host that keeps refusing it.
     final int? status = error is DioException
         ? error.response?.statusCode
         : null;
@@ -399,11 +378,9 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
       return;
     }
 
-    // 2^n seconds, capped. Persisted rather than slept: the pump skips this row
-    // until the window elapses and gets on with the rest of the queue.
-    final Duration wait = Duration(
-      seconds: min(1 << attempts, _maxBackoff.inSeconds),
-    );
+    // Persisted rather than slept: the pump skips this row until the window
+    // elapses and gets on with the rest of the queue.
+    final Duration wait = _backoff(attempts);
     await _dao.updateFields(
       DownloadedLessonsCompanion(
         lessonId: Value<String>(row.lessonId),

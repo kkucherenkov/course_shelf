@@ -926,6 +926,99 @@ void main() {
     );
   });
 
+  test('resume clears the backoff window but not the attempt budget', () async {
+    // A row that failed, backed off, and was then paused — the ordinary
+    // sequence behind "I tapped Resume and nothing happened". Five minutes
+    // is far past anything the real 2s..16s ladder produces, so a stale
+    // window cannot expire during the test and let it pass by accident.
+    final DateTime backedOffUntil = DateTime.now().toUtc().add(
+      const Duration(minutes: 5),
+    );
+    await db.downloadsDao.upsert(
+      DownloadedLessonsCompanion.insert(
+        lessonId: 'l1',
+        state: DownloadState.paused,
+        filePath: '${dir.path}/l1.csdl',
+        updatedAt: DateTime.utc(2026, 7, 29),
+        queuedAt: Value<DateTime?>(DateTime.utc(2026, 7, 29)),
+        attemptCount: const Value<int>(2),
+        nextAttemptAt: Value<DateTime?>(backedOffUntil),
+        lastError: const Value<String?>('socket closed'),
+      ),
+    );
+
+    final Uint8List source = payload(500);
+    final DownloadsRepositoryImpl repo = build(
+      _ScriptedByteSource(payload: source),
+    );
+
+    await repo.resume('l1');
+    final DownloadedLesson? afterResume = await db.downloadsDao.byLessonId(
+      'l1',
+    );
+    expect(afterResume?.nextAttemptAt, isNull);
+    expect(
+      afterResume?.attemptCount,
+      2,
+      reason: 'resuming is not a fresh budget — that is retry()\'s job',
+    );
+
+    await repo.drain().timeout(const Duration(seconds: 5));
+
+    final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
+    expect(
+      row?.state,
+      DownloadState.ready,
+      reason:
+          'the pump must pick it up now, not after the window the last '
+          'failure set',
+    );
+  });
+
+  test('resume hands back the one free token re-mint', () async {
+    // Every fetch 401s, so the only thing that varies is how many the pump is
+    // willing to make. A five-minute backoff parks the row after the first
+    // *counted* failure, which is what makes each `drain()` below a single
+    // observable round of "free re-mint, then one real attempt".
+    final _StatusFailingByteSource script = _StatusFailingByteSource(
+      status: 401,
+      payload: payload(10),
+      alwaysFailLessonId: 'l1',
+    );
+    final DownloadsRepositoryImpl repo = DownloadsRepositoryImpl(
+      dao: DownloadsDao(db),
+      byteSource: script,
+      keyStore: _FixedKeyStore(),
+      scheduler: scheduler,
+      downloadsDirectory: () async => dir,
+      isOnline: () async => true,
+      backoff: (_) => const Duration(minutes: 5),
+    );
+
+    await repo.enqueueLesson('l1');
+    await repo.drain().timeout(const Duration(seconds: 5));
+    expect(
+      script.calls,
+      2,
+      reason: 'one free re-mint, then one attempt that counts',
+    );
+
+    // A pause long enough to outlive the 900s token TTL is exactly when the
+    // next 401 is expected rather than suspicious, and resume is the gesture
+    // that follows it — so the re-mint budget resets with the backoff window.
+    await repo.pause('l1');
+    await repo.resume('l1');
+    await repo.drain().timeout(const Duration(seconds: 5));
+
+    expect(
+      script.calls,
+      4,
+      reason:
+          'without the re-mint reset the second round makes one call, not '
+          'two',
+    );
+  });
+
   test('resume on a non-block-aligned byte count restarts from zero instead of '
       'throwing', () async {
     // A stale UI call racing a fast completion (or any other call on an

@@ -84,6 +84,10 @@ class LoopbackDecryptServer {
 
   Future<void> _handle(HttpRequest request) async {
     final HttpResponse response = request.response;
+    // Sent on every response — including 401/404/416 — per the brief.
+    // Setting it once here, before any status branch, means no later branch
+    // can forget it.
+    response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
 
     if (request.uri.queryParameters['t'] != _token) {
       response.statusCode = HttpStatus.unauthorized;
@@ -98,19 +102,30 @@ class LoopbackDecryptServer {
       return;
     }
 
-    final File? file = await _resolveFile(segments[1]);
-    if (file == null || !file.existsSync()) {
-      response.statusCode = HttpStatus.notFound;
-      await response.close();
-      return;
-    }
-
-    final ChunkedGcmReader reader = await ChunkedGcmReader.open(
-      file: file,
-      key: await _key(),
-    );
-
+    // Everything below this point can throw during setup — a resolver
+    // failure, `_key()` (secure storage unavailable), or
+    // `ChunkedGcmReader.open()` (a corrupt container header, or the file
+    // vanishing between the `existsSync()` check and the open call below,
+    // i.e. a delete racing this request) — or mid-stream, if a block fails
+    // its MAC. Either way the response must get *some* status and be closed,
+    // not left open forever waiting for bytes that are never coming.
+    //
+    // dart:io's `HttpResponse` does not expose a way to ask "have headers
+    // already gone out?", so `responseStarted` tracks that explicitly: it
+    // flips right before the real status/headers are written for the actual
+    // body, which is the last point a fresh status code is still possible.
+    ChunkedGcmReader? reader;
+    bool responseStarted = false;
     try {
+      final File? file = await _resolveFile(segments[1]);
+      if (file == null || !file.existsSync()) {
+        response.statusCode = HttpStatus.notFound;
+        await response.close();
+        return;
+      }
+
+      reader = await ChunkedGcmReader.open(file: file, key: await _key());
+
       final int total = reader.plaintextLength;
       final _Range? range = _parseRange(
         request.headers.value(HttpHeaders.rangeHeader),
@@ -127,7 +142,6 @@ class LoopbackDecryptServer {
       final int start = range?.start ?? 0;
       final int end = range?.end ?? total - 1;
 
-      response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
       response.headers.contentType = ContentType('video', 'mp4');
       response.headers.set(HttpHeaders.contentLengthHeader, end - start + 1);
 
@@ -141,35 +155,40 @@ class LoopbackDecryptServer {
         );
       }
 
+      // Status and headers for the real body are now on the wire: a later
+      // failure can only truncate the body, not re-answer with a fresh
+      // status.
+      responseStarted = true;
       int cursor = start;
-      try {
-        while (cursor <= end) {
-          final int take = min(_chunkSize, end - cursor + 1);
-          response.add(await reader.read(cursor, take));
-          await response.flush();
-          cursor += take;
-        }
-      } on Object {
-        // Headers (and Content-Length) are already on the wire, so the status
-        // cannot be changed. Close early instead: the client sees a body
-        // shorter than promised and surfaces a playback error, rather than
-        // waiting forever for bytes a corrupt block will never produce.
-        //
-        // `close()` itself throws here — dart:io's own Content-Length check
-        // fires because fewer bytes went out than the header promised, which
-        // is exactly the truncation we are deliberately causing — so that
-        // exception is expected and swallowed rather than left to shadow the
-        // real cause below.
-        try {
-          await response.close();
-        } on Object {
-          // Expected: see comment above.
-        }
-        rethrow;
+      while (cursor <= end) {
+        final int take = min(_chunkSize, end - cursor + 1);
+        response.add(await reader.read(cursor, take));
+        await response.flush();
+        cursor += take;
       }
       await response.close();
+    } on Object {
+      try {
+        if (!responseStarted) {
+          // Nothing has been written yet, so a real status is still
+          // possible — a setup failure must not answer with silence.
+          response.statusCode = HttpStatus.internalServerError;
+        }
+        // If streaming had already started, the status and Content-Length
+        // are already on the wire and cannot change: closing short of that
+        // promised length is the signal instead. A body shorter than
+        // Content-Length reads as truncated, which both ExoPlayer and
+        // AVPlayer treat as a decode error rather than a hang.
+        await response.close();
+      } on Object {
+        // close() itself throws the same Content-Length-mismatch exception
+        // in the mid-stream case (dart:io validates bytes written against
+        // the header it already sent) — expected, and must not mask the
+        // original error below.
+      }
+      rethrow;
     } finally {
-      await reader.close();
+      await reader?.close();
     }
   }
 

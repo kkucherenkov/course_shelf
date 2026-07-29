@@ -11,6 +11,7 @@ import 'package:app_mobile/features/downloads/domain/encrypted_file_format.dart'
 void main() {
   late Directory dir;
   late File file;
+  late File corruptFile;
   late LoopbackDecryptServer server;
   late Uint8List source;
 
@@ -21,6 +22,10 @@ void main() {
   setUp(() async {
     dir = await Directory.systemTemp.createTemp('csdl_server');
     file = File('${dir.path}/l1.csdl');
+    // Not written here — only the "corrupt header" test populates this, with
+    // a bad magic, so a fresh empty File exists for every other test's
+    // resolver to safely ignore.
+    corruptFile = File('${dir.path}/corrupt.csdl');
 
     final Random random = Random(7);
     source = Uint8List.fromList(
@@ -38,7 +43,11 @@ void main() {
     await writer.close();
 
     server = LoopbackDecryptServer(
-      resolveFile: (String lessonId) async => lessonId == 'l1' ? file : null,
+      resolveFile: (String lessonId) async {
+        if (lessonId == 'l1') return file;
+        if (lessonId == 'corrupt') return corruptFile;
+        return null;
+      },
       key: () async => key,
     );
     await server.start();
@@ -111,6 +120,7 @@ void main() {
     );
 
     expect(response.statusCode, 416);
+    expect(response.headers.value(HttpHeaders.acceptRangesHeader), 'bytes');
   });
 
   test('404 for an unknown lesson', () async {
@@ -118,6 +128,7 @@ void main() {
     final HttpClientResponse response = await get(url.replace(path: '/l/nope'));
 
     expect(response.statusCode, 404);
+    expect(response.headers.value(HttpHeaders.acceptRangesHeader), 'bytes');
   });
 
   test('401 without the session token', () async {
@@ -127,6 +138,7 @@ void main() {
     final HttpClientResponse response = await get(url);
 
     expect(response.statusCode, 401);
+    expect(response.headers.value(HttpHeaders.acceptRangesHeader), 'bytes');
   });
 
   test('401 with a wrong token', () async {
@@ -136,6 +148,7 @@ void main() {
     final HttpClientResponse response = await get(url);
 
     expect(response.statusCode, 401);
+    expect(response.headers.value(HttpHeaders.acceptRangesHeader), 'bytes');
   });
 
   test('binds loopback only', () async {
@@ -168,6 +181,25 @@ void main() {
         throwsA(anything),
         reason: 'a truncated body must surface as an error, not a hang',
       );
+    },
+    timeout: const Timeout(Duration(seconds: 10)),
+  );
+
+  test(
+    'a corrupt container header answers with an error, not a hang',
+    () async {
+      // Wrong magic: ChunkedGcmReader.open() throws a FormatException before
+      // any status or header for the real body is written. Without the
+      // setup-phase guard, this exception has nowhere to go but the response
+      // never being closed.
+      await corruptFile.writeAsBytes(
+        Uint8List(EncryptedFileFormat.headerLength),
+      );
+
+      final HttpClientResponse response = await get(server.urlFor('corrupt'));
+
+      expect(response.statusCode, 500);
+      expect(response.headers.value(HttpHeaders.acceptRangesHeader), 'bytes');
     },
     timeout: const Timeout(Duration(seconds: 10)),
   );

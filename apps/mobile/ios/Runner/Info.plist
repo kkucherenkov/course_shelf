@@ -4,6 +4,25 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Background download resume (E19). The identifier is the value of
+	     `kDownloadResumeTask` in
+	     lib/features/downloads/data/platform_download_scheduler.dart and must
+	     match it verbatim: BGTaskScheduler rejects a submit for an identifier
+	     that is not listed here, and AppDelegate.swift registers the launch
+	     handler for this same string. `processing` is the background mode a
+	     BGProcessingTaskRequest requires.
+
+	     Note: on iOS 13+ the presence of BGTaskSchedulerPermittedIdentifiers
+	     disables the legacy performFetchWithCompletionHandler / background
+	     fetch path. Nothing in this app uses it. -->
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>course-shelf.downloads.resume</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>processing</string>
+	</array>
 	<!-- App Transport Security. NSAllowsLocalNetworking permits the plain-HTTP
 	     local-dev backend (http://localhost:3000, http://<lan-ip>:3000) that
 	     serves lesson video streams to video_player during development. It is

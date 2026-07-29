@@ -48,6 +48,17 @@ dependencies:
   # always_use_package_imports + package-import testability); it is unreachable
   # from lib/main.dart, so AOT tree-shaking strips it from the release binary.
   widgetbook: ^3.14.3
+  # AES-GCM for downloads-at-rest (E19-F01-S01). Pure Dart, so the block
+  # writer/reader are testable under `flutter test` with no platform channel.
+  cryptography: ^2.9.0
+  # Opportunistic background resume. Android registers a worker, iOS a
+  # BGAppRefreshTask; both only ever ask the queue to "resume what's
+  # unfinished". Neither carries a whole transfer — see the E19-F01-S01 design.
+  workmanager: ^0.9.0+3
+  # Lets the queue distinguish "offline" (stay queued, no attempt burned) from
+  # "failed" (count an attempt, back off).
+  connectivity_plus: ^7.3.1
+  async: ^2.13.1
 
 dev_dependencies:
   flutter_test:
@@ -66,6 +77,14 @@ dev_dependencies:
   built_collection: ">=5.1.1 <6.0.0"
   source_gen: ">=4.0.0 <5.0.0"
   drift_dev: ^2.34.0
+  # Builds a raw pre-migration (v1) sqlite fixture in
+  # app_database_migration_test.dart — drift's own onCreate always creates
+  # the *current* schema, so a real v1 file has to be hand-built.
+  sqlite3: ^3.5.0
+  # Faked in downloads_wiring_test.dart: resolving the real DownloadsRepository
+  # opens a real AppDatabase, which asks path_provider for a directory the
+  # instant it is constructed — no query has to run first.
+  path_provider_platform_interface: ^2.1.2
 
 flutter:
   uses-material-design: true

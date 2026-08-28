@@ -7,6 +7,9 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
-    include: ['src/**/*.spec.ts'],
+    // `.storybook/` is included for visual-report.spec.ts — the drift-report
+    // helpers are CI plumbing, so they live beside the test-runner config they
+    // serve rather than in the published `src/` surface.
+    include: ['src/**/*.spec.ts', '.storybook/**/*.spec.ts'],
   },
 });

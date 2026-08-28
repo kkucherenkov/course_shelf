@@ -81,6 +81,7 @@ Class | Method | HTTP request | Description
 [*AccountApi*](doc/AccountApi.md) | [**signOutOtherSessions**](doc/AccountApi.md#signoutothersessions) | **POST** /api/v1/me/sign-out-others | Sign out from every device EXCEPT the current session
 [*AccountApi*](doc/AccountApi.md) | [**updateMe**](doc/AccountApi.md#updateme) | **PATCH** /api/v1/me | Patch the calling user&#39;s own profile
 [*AdminApi*](doc/AdminApi.md) | [**applyIdentifyResult**](doc/AdminApi.md#applyidentifyresult) | **POST** /api/v1/admin/identify-tasks/{id}/apply | Apply a proposed identify task to its course
+[*AdminApi*](doc/AdminApi.md) | [**createBackup**](doc/AdminApi.md#createbackup) | **POST** /api/v1/admin/backups | Create a metadata database snapshot and return a signed download URL
 [*AdminApi*](doc/AdminApi.md) | [**discardIdentifyTask**](doc/AdminApi.md#discardidentifytask) | **POST** /api/v1/admin/identify-tasks/{id}/discard | Discard a proposed identify task
 [*AdminApi*](doc/AdminApi.md) | [**getAdminDashboard**](doc/AdminApi.md#getadmindashboard) | **GET** /api/v1/admin/dashboard | Operational snapshot for the admin dashboard
 [*AdminApi*](doc/AdminApi.md) | [**getAdminHasUsers**](doc/AdminApi.md#getadminhasusers) | **GET** /api/v1/admin/has-users | Indicate whether any users exist in the platform
@@ -144,6 +145,7 @@ Class | Method | HTTP request | Description
 [*LearningApi*](doc/LearningApi.md) | [**updateBookmark**](doc/LearningApi.md#updatebookmark) | **PATCH** /api/v1/bookmarks/{id} | Update a bookmark&#39;s position or label
 [*LearningApi*](doc/LearningApi.md) | [**upsertNote**](doc/LearningApi.md#upsertnote) | **PUT** /api/v1/notes | Upsert the requester&#39;s note for a lesson
 [*MaintenanceApi*](doc/MaintenanceApi.md) | [**startBackfillMetadata**](doc/MaintenanceApi.md#startbackfillmetadata) | **POST** /api/v1/admin/maintenance/backfill-metadata | Trigger a background metadata backfill across the library
+[*OpsApi*](doc/OpsApi.md) | [**createBackup**](doc/OpsApi.md#createbackup) | **POST** /api/v1/admin/backups | Create a metadata database snapshot and return a signed download URL
 [*OpsApi*](doc/OpsApi.md) | [**ping**](doc/OpsApi.md#ping) | **GET** /api/v1/ping | Verify the bearer token resolves a session
 [*RealtimeApi*](doc/RealtimeApi.md) | [**issueRealtimeToken**](doc/RealtimeApi.md#issuerealtimetoken) | **POST** /api/v1/realtime/token | Issue a short-lived Centrifugo connection token
 [*ScrapersApi*](doc/ScrapersApi.md) | [**listScrapers**](doc/ScrapersApi.md#listscrapers) | **GET** /api/v1/admin/scrapers | List available metadata scrapers
@@ -172,6 +174,7 @@ Class | Method | HTTP request | Description
  - [ApplyIdentifyRequest](doc/ApplyIdentifyRequest.md)
  - [BackfillJobAccepted](doc/BackfillJobAccepted.md)
  - [BackfillMetadataRequest](doc/BackfillMetadataRequest.md)
+ - [BackupCreatedDto](doc/BackupCreatedDto.md)
  - [BatchProgressItemAccepted](doc/BatchProgressItemAccepted.md)
  - [BatchProgressItemForbidden](doc/BatchProgressItemForbidden.md)
  - [BatchProgressItemResult](doc/BatchProgressItemResult.md)

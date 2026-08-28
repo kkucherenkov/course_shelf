@@ -31,6 +31,7 @@ import 'package:app_api_client/src/model/admin_user_role.dart';
 import 'package:app_api_client/src/model/apply_identify_request.dart';
 import 'package:app_api_client/src/model/backfill_job_accepted.dart';
 import 'package:app_api_client/src/model/backfill_metadata_request.dart';
+import 'package:app_api_client/src/model/backup_created_dto.dart';
 import 'package:app_api_client/src/model/batch_progress_item_accepted.dart';
 import 'package:app_api_client/src/model/batch_progress_item_forbidden.dart';
 import 'package:app_api_client/src/model/batch_progress_item_result.dart';
@@ -150,6 +151,7 @@ part 'serializers.g.dart';
   ApplyIdentifyRequest,
   BackfillJobAccepted,
   BackfillMetadataRequest,
+  BackupCreatedDto,
   BatchProgressItemAccepted,
   BatchProgressItemForbidden,
   BatchProgressItemResult,

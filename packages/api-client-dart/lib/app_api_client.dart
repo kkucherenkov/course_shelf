@@ -41,6 +41,7 @@ export 'package:app_api_client/src/model/admin_user_role.dart';
 export 'package:app_api_client/src/model/apply_identify_request.dart';
 export 'package:app_api_client/src/model/backfill_job_accepted.dart';
 export 'package:app_api_client/src/model/backfill_metadata_request.dart';
+export 'package:app_api_client/src/model/backup_created_dto.dart';
 export 'package:app_api_client/src/model/batch_progress_item_accepted.dart';
 export 'package:app_api_client/src/model/batch_progress_item_forbidden.dart';
 export 'package:app_api_client/src/model/batch_progress_item_result.dart';

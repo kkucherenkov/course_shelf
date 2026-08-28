@@ -25,6 +25,7 @@ Serializers _$serializers =
           ..add(ApplyIdentifyRequest.serializer)
           ..add(BackfillJobAccepted.serializer)
           ..add(BackfillMetadataRequest.serializer)
+          ..add(BackupCreatedDto.serializer)
           ..add(BatchProgressItemAccepted.serializer)
           ..add(BatchProgressItemAcceptedStatusEnum.serializer)
           ..add(BatchProgressItemForbidden.serializer)

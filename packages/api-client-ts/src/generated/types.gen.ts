@@ -1716,6 +1716,36 @@ export type ScanError = {
 export type ScanStatus = 'running' | 'succeeded' | 'failed' | 'cancelled';
 
 /**
+ * A completed metadata-database snapshot plus the short-lived signed URL for downloading it. Shaped after `MaterialDownloadUrlDto` — the extra fields describe the archive itself so the caller can show what it got without a second request.
+ */
+export type BackupCreatedDto = {
+    /**
+     * Identifier of the archive on the server. Unguessable on its own, but possession of the id is not sufficient to download — the signed token is still required.
+     */
+    id: string;
+    /**
+     * When the dump completed.
+     */
+    createdAt: string;
+    /**
+     * Size of the archive on disk, in bytes.
+     */
+    sizeBytes: number;
+    /**
+     * Same-origin relative path carrying the signed token as the `token` query parameter, so a plain `<a href download>` works without an Authorization header. This route is intentionally absent from this specification (opaque byte stream).
+     */
+    url: string;
+    /**
+     * Opaque signed token. Same compact `header.payload.signature` shape as the streaming tokens, but signed with a key derived under a different HKDF info string, so a stream token can never be replayed against a backup and vice versa. Round-trip untouched.
+     */
+    token: string;
+    /**
+     * When the token stops being accepted. The archive stays on disk after this moment — expiry revokes the link, not the file.
+     */
+    expiresAt: string;
+};
+
+/**
  * Short-lived signed URL for streaming a lesson video.
  */
 export type StreamUrlDto = {
@@ -2023,6 +2053,39 @@ export type GetAdminDashboardResponses = {
 };
 
 export type GetAdminDashboardResponse = GetAdminDashboardResponses[keyof GetAdminDashboardResponses];
+
+export type CreateBackupData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/backups';
+};
+
+export type CreateBackupErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * The backup could not be produced — `pg_dump` is missing from the image, its major version does not match the server, it exited non-zero, or it exceeded the configured timeout.
+     */
+    503: Problem;
+};
+
+export type CreateBackupError = CreateBackupErrors[keyof CreateBackupErrors];
+
+export type CreateBackupResponses = {
+    /**
+     * Archive written; the URL is valid until `expiresAt`
+     */
+    201: BackupCreatedDto;
+};
+
+export type CreateBackupResponse = CreateBackupResponses[keyof CreateBackupResponses];
 
 export type ListAdminScansData = {
     body?: never;

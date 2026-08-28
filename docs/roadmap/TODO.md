@@ -5,8 +5,10 @@ Tick the box (`- [ ]` → `- [x]`) when the task is done; the task file's
 Status field changes to ✅ Done at the same time.
 
 Legend: **A** = implementable now from the bundle · **B** = needs design pre-step.
+A row marked ❌ is cancelled — the card records why, and it is out of the
+denominator below.
 
-Progress: `104 / 121` complete (update by hand or via a pre-commit hook).
+Progress: `113 / 119` complete — 121 cards, 2 cancelled (update by hand).
 
 ## E00 — Stage the design bundle
 
@@ -186,13 +188,13 @@ Progress: `104 / 121` complete (update by hand or via a pre-commit hook).
 - [x] [E22-F01-S02](./tasks/E22-F01-S02.md) `A` — ci.yml with parallel jobs per app/package · ⇐ E22-F01-S01
 - [x] [E22-F01-S03](./tasks/E22-F01-S03.md) `A` — Storybook test-runner job · ⇐ E22-F01-S01, E12-F01-S01
 - [ ] [E22-F01-S04](./tasks/E22-F01-S04.md) `A` — Visual regression (Storybook test-runner snapshots) + manual approval label · ⇐ E22-F01-S03
-- [ ] [E22-F01-S05](./tasks/E22-F01-S05.md) `A` — Flutter golden test job · ⇐ E22-F01-S01, E16-F01-S01
+- [x] [E22-F01-S05](./tasks/E22-F01-S05.md) `A` — Flutter golden test job · ⇐ E22-F01-S01, E16-F01-S01
 - [x] [E22-F01-S06](./tasks/E22-F01-S06.md) `A` — release.yml — build + publish API+web Docker image to GHCR · ⇐ E22-F01-S02
 
 ## E23 — Distribution & docs
 
-- [ ] [E23-F01-S01](./tasks/E23-F01-S01.md) `A` — Multi-stage Dockerfile (api + built web SPA) · ⇐ E22-F01-S06
-- [ ] [E23-F01-S02](./tasks/E23-F01-S02.md) `A` — docker-compose.yml (sqlite default) + docker-compose.postgres.yml · ⇐ E23-F01-S01
+- ❌ [E23-F01-S01](./tasks/E23-F01-S01.md) `A` — Multi-stage Dockerfile (api + built web SPA) · ⇐ E22-F01-S06 · **cancelled** — superseded by the two-image + nginx-proxy topology
+- ❌ [E23-F01-S02](./tasks/E23-F01-S02.md) `A` — docker-compose.yml (sqlite default) + docker-compose.postgres.yml · ⇐ E23-F01-S01 · **cancelled** — no SQLite backend exists; postgres-only
 - [x] [E23-F02-S01](./tasks/E23-F02-S01.md) `A` — Top-level README + quickstart + screenshots · ⇐ E14-F03-S01, E18-F02-S01
 - [ ] [E23-F02-S02](./tasks/E23-F02-S02.md) `A` — Seed ADRs (10 entries) · ⇐ E04-F02-S03
 - [x] [E23-F02-S03](./tasks/E23-F02-S03.md) `A` — Contributor docs covering the spec-first and design-first workflows · ⇐ E14-F01-S01

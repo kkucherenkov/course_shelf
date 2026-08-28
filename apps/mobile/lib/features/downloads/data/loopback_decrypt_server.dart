@@ -30,6 +30,13 @@ class LoopbackDecryptServer {
   final Future<Uint8List> Function() _key;
 
   HttpServer? _server;
+  /// In-flight (or completed) [start] call. `start()` is now reached from
+  /// `resolveVideoSource`, which two overlapping lesson opens can enter at
+  /// once; a plain `if (_server != null)` check lets both past the guard and
+  /// binds two sockets, orphaning the first with no reference to close it
+  /// while `urlFor` hands out the second's port. Memoising the future makes
+  /// every concurrent caller await the same bind.
+  Future<Uri>? _starting;
   late final String _token = _mintToken();
 
   Uri urlFor(String lessonId) {
@@ -43,8 +50,20 @@ class LoopbackDecryptServer {
     );
   }
 
-  Future<Uri> start() async {
-    if (_server != null) return urlFor('');
+  Future<Uri> start() {
+    // Cleared on failure so a transient bind error (a port grab, a sandbox
+    // hiccup) does not memoise a permanently-rejected future and disable
+    // offline playback for the rest of the run.
+    return _starting ??= _bind().onError<Object>((
+      Object error,
+      StackTrace stackTrace,
+    ) {
+      _starting = null;
+      Error.throwWithStackTrace(error, stackTrace);
+    });
+  }
+
+  Future<Uri> _bind() async {
     final HttpServer server = await HttpServer.bind(
       InternetAddress.loopbackIPv4,
       0,
@@ -57,6 +76,9 @@ class LoopbackDecryptServer {
   Future<void> stop() async {
     final HttpServer? server = _server;
     _server = null;
+    // Cleared too, or a `start()` after `stop()` would replay the memoised
+    // future and hand back the closed server's port.
+    _starting = null;
     await server?.close(force: true);
   }
 

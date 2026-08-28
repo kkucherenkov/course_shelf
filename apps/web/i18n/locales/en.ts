@@ -112,6 +112,10 @@ export default {
       errorGeneric: 'Something went wrong. Please try again.',
       errorEmailTaken: 'An account with this email already exists.',
       errorLibraryPath: 'Could not register the library. Check the path and try again.',
+      errorCodeInvalid: "That code doesn't match. Check it and try again.",
+      errorCodeExpired: 'That code has expired. Request a new one.',
+      errorCodeAttempts: 'Too many attempts. Request a new code.',
+      errorResend: 'Could not send a new code. Try again in a moment.',
     },
     forgot: {
       title: 'Forgot your password?',
@@ -134,6 +138,7 @@ export default {
       updateButton: 'Update password & sign in',
       errorPasswordMismatch: 'Passwords do not match.',
       errorTokenMissing: 'Reset token is missing. Please request a new reset link.',
+      errorTokenInvalid: 'This reset link is no longer valid. Request a new one.',
       errorGeneric: 'Something went wrong. Please try again.',
     },
     reset: {

@@ -46,6 +46,15 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.59.1-jammy
     timeout-minutes: 20
 
+    # GitHub's default shell inside a container job is `sh -e {0}`, not bash —
+    # so `set -o pipefail` dies with "Illegal option". Every other workflow gets
+    # bash for free because its jobs run directly on ubuntu-latest; this one is
+    # the exception. Setting it once at the job level rather than per-step so a
+    # future step cannot re-acquire the same bug.
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - uses: actions/checkout@v6
 

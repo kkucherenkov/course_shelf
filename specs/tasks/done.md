@@ -1,64 +1,40 @@
 # Done tasks
 
-## T-2026-08-28-001 — fix three critical audit findings (auth recovery, offline playback, realtime grant)
+_Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
-- Created: 2026-08-28
+## T-2026-08-29-003 — E23-F02-S02 · seed the ADR log with ten entries
+
+- Created: 2026-08-29
 - Owner: claude
-- Spec: audit of 2026-08-28 (dnote `course_shelf` #5–#11); tuxedo +course_shelf #1, #2, #6
-- Goal: three shipped-but-non-functional surfaces start doing what they claim.
-- Spec diff: none — `/api/v1/auth/*` is a Better Auth catch-all deliberately
-  absent from `openapi.yaml`, and the Centrifugo change only _removes_ a grant.
+- Branch: `docs/seed-adrs`
+- Card: [E23-F02-S02](../../docs/roadmap/tasks/E23-F02-S02.md)
+- Goal: record the _why_ of ten load-bearing decisions so they stop being
+  re-litigated, and correct the one the roadmap has backwards.
+- Spec diff: none
 - Codegen impact: no
 - Sub-steps:
-  - [x] backend: drop the `notifications:user:{userId}` grant — no such channel
-        in `asyncapi/centrifugo.yaml`, no publisher; push goes through FCM
-  - [x] backend: pin the class of bug with a test that reads `centrifugo.yaml`
-        and fails on any granted channel the spec does not declare
-  - [x] backend: register `emailOTP({ overrideDefaultEmailVerification: true })` + `requireEmailVerification` / `sendOnSignUp` off `AUTH_EMAIL_VERIFICATION`
-  - [x] web: replace the `forgotPassword` / `resetPassword` / `verifyEmail`
-        stubs (all three resolved `{ ok: true }` without a request) with the
-        real Better Auth calls; add `resendVerificationCode`
-  - [x] web: rewrite the forgot-password e2e, which was written against the stub
-  - [x] mobile: serve a `ready` download through `LoopbackDecryptServer`
-        instead of handing `video_player` raw AES-GCM ciphertext
-  - [x] mobile: plaintext-length integrity check before playing offline, with
-        a fallback that re-marks the row `failed`
-  - [x] review follow-ups: Android loopback cleartext allowance, `disableSignUp`
-        on the OTP plugin, idempotent `LoopbackDecryptServer.start()`,
-        code-based (translated) auth error messages
-- Status: ✅ done
-- Completed: 2026-08-28
-- Result: https://github.com/kkucherenkov/course_shelf/pull/187 (closes #124, #125, #126)
-- Blockers: —
-- Review findings addressed (`/code-review high`):
-  - **HIGH** Android had no cleartext allowance for `127.0.0.1`, so every
-    offline play would have thrown `CLEARTEXT communication ... not permitted`
-    (targetSdk ≥ 28 defaults to `cleartextTrafficPermitted="false"` for all
-    hosts). Added a loopback-scoped `network_security_config.xml`; iOS already
-    had `NSAllowsLocalNetworking`.
-  - **MEDIUM (security)** `emailOTP()` registers public routes as soon as it
-    exists, and `POST /sign-in/email-otp` _creates_ a user with
-    `emailVerified: true` when none matches — bypassing the wizard, the
-    password policy and `requireEmailVerification`, and taking ADMIN from the
-    first-user hook on a fresh instance. Closed with `disableSignUp: true`,
-    pinned by a test.
-  - **LOW** `LoopbackDecryptServer.start()` was check-then-act; two overlapping
-    lesson opens bound two sockets and orphaned the first. Memoised the bind
-    future (cleared on failure and on `stop()`), with a concurrency test.
-  - **LOW** Raw Better Auth English messages were rendered to users. Now mapped
-    from `result.code` to translated keys (en + ru), matching `onAccountSubmit`.
-- Notes:
-  - Backend 1549 ✅ / web 183 ✅ / mobile 376 ✅ / e2e 28 ✅. The two failing e2e
-    specs (`smoke`, `csp`) need the backend on :3000 — the Docker stack is down
-    on this machine, and both failures predate this work.
-  - Local Flutter was 3.41.9 against a `>=3.44.0` pubspec; upgraded to 3.47.2
-    to run the mobile suite at all.
-  - CI on #187 was red on `Security` until the advisory backlog was cleared
-    separately in https://github.com/kkucherenkov/course_shelf/pull/188 — an
-    unchanged `pnpm-lock.yaml` against a month of new advisories, unrelated to
-    this work. `main` was merged in afterwards; #187 went 8/8.
+  - [x] ten ADRs under `docs/adr/`, MADR 4.0, each grounded in the tree
+  - [x] ADR-0008 rewritten from the carded "SQLite default" to Postgres-only
+  - [x] index table in `docs/adr/README.md`
+  - [x] relative-link check (34 links resolve)
+- Completed: 2026-08-29
+- Result: https://github.com/kkucherenkov/course_shelf/pull/195
+- Status: done
 
-_Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
+**ADR-0008 is a reversal, not a record.** The card asked for "SQLite default,
+Postgres opt-in"; the tree is Postgres-only (`provider = "postgresql"`,
+`@prisma/adapter-pg`, `postgres:18.1-alpine` in all five compose files, 15
+migrations, and a schema using `@db.Decimal(3, 2)`, two `Json` columns and a
+descending index). Card E23-F01-S02 was cancelled on the same grounds in #193.
+The ADR records the reversal and its cost rather than documenting a superseded
+plan as current.
+
+**Deviation — no code-header backlinks.** `docs/adr/README.md` asks for
+`// See docs/adr/NNNN-….md` in the files each ADR governs. Skipped: a dozen
+source-file edits for a docs card, better folded into the next change to each.
+
+`adr` was added to commitlint's `scope-enum` (which already carries `roadmap`
+and `plans`) so the commit could name its own scope.
 
 ## T-2026-08-29-002 — E22-F01-S01 · reusable `setup-cs` composite action
 
@@ -141,6 +117,64 @@ a symptom fix.
 **Left open deliberately.** `ROADMAP.md`'s Gantt marks all 121 rows `:active`,
 the 113 finished ones included, so it tracks nothing. Not folded in — it is a
 rewrite of a different file with a different failure mode.
+
+## T-2026-08-28-001 — fix three critical audit findings (auth recovery, offline playback, realtime grant)
+
+- Created: 2026-08-28
+- Owner: claude
+- Spec: audit of 2026-08-28 (dnote `course_shelf` #5–#11); tuxedo +course_shelf #1, #2, #6
+- Goal: three shipped-but-non-functional surfaces start doing what they claim.
+- Spec diff: none — `/api/v1/auth/*` is a Better Auth catch-all deliberately
+  absent from `openapi.yaml`, and the Centrifugo change only _removes_ a grant.
+- Codegen impact: no
+- Sub-steps:
+  - [x] backend: drop the `notifications:user:{userId}` grant — no such channel
+        in `asyncapi/centrifugo.yaml`, no publisher; push goes through FCM
+  - [x] backend: pin the class of bug with a test that reads `centrifugo.yaml`
+        and fails on any granted channel the spec does not declare
+  - [x] backend: register `emailOTP({ overrideDefaultEmailVerification: true })` + `requireEmailVerification` / `sendOnSignUp` off `AUTH_EMAIL_VERIFICATION`
+  - [x] web: replace the `forgotPassword` / `resetPassword` / `verifyEmail`
+        stubs (all three resolved `{ ok: true }` without a request) with the
+        real Better Auth calls; add `resendVerificationCode`
+  - [x] web: rewrite the forgot-password e2e, which was written against the stub
+  - [x] mobile: serve a `ready` download through `LoopbackDecryptServer`
+        instead of handing `video_player` raw AES-GCM ciphertext
+  - [x] mobile: plaintext-length integrity check before playing offline, with
+        a fallback that re-marks the row `failed`
+  - [x] review follow-ups: Android loopback cleartext allowance, `disableSignUp`
+        on the OTP plugin, idempotent `LoopbackDecryptServer.start()`,
+        code-based (translated) auth error messages
+- Status: ✅ done
+- Completed: 2026-08-28
+- Result: https://github.com/kkucherenkov/course_shelf/pull/187 (closes #124, #125, #126)
+- Blockers: —
+- Review findings addressed (`/code-review high`):
+  - **HIGH** Android had no cleartext allowance for `127.0.0.1`, so every
+    offline play would have thrown `CLEARTEXT communication ... not permitted`
+    (targetSdk ≥ 28 defaults to `cleartextTrafficPermitted="false"` for all
+    hosts). Added a loopback-scoped `network_security_config.xml`; iOS already
+    had `NSAllowsLocalNetworking`.
+  - **MEDIUM (security)** `emailOTP()` registers public routes as soon as it
+    exists, and `POST /sign-in/email-otp` _creates_ a user with
+    `emailVerified: true` when none matches — bypassing the wizard, the
+    password policy and `requireEmailVerification`, and taking ADMIN from the
+    first-user hook on a fresh instance. Closed with `disableSignUp: true`,
+    pinned by a test.
+  - **LOW** `LoopbackDecryptServer.start()` was check-then-act; two overlapping
+    lesson opens bound two sockets and orphaned the first. Memoised the bind
+    future (cleared on failure and on `stop()`), with a concurrency test.
+  - **LOW** Raw Better Auth English messages were rendered to users. Now mapped
+    from `result.code` to translated keys (en + ru), matching `onAccountSubmit`.
+- Notes:
+  - Backend 1549 ✅ / web 183 ✅ / mobile 376 ✅ / e2e 28 ✅. The two failing e2e
+    specs (`smoke`, `csp`) need the backend on :3000 — the Docker stack is down
+    on this machine, and both failures predate this work.
+  - Local Flutter was 3.41.9 against a `>=3.44.0` pubspec; upgraded to 3.47.2
+    to run the mobile suite at all.
+  - CI on #187 was red on `Security` until the advisory backlog was cleared
+    separately in https://github.com/kkucherenkov/course_shelf/pull/188 — an
+    unchanged `pnpm-lock.yaml` against a month of new advisories, unrelated to
+    this work. `main` was merged in afterwards; #187 went 8/8.
 
 ## T-2026-07-29-001 — E19-F01-S01 · DownloadsBloc with resumable encrypted downloads
 
@@ -744,6 +778,24 @@ Not in this wave, and why: **E18-F01-S02** (Browse) needs a design pre-step — 
   - GOTCHA: the e2e foundations baseline must be captured against the production stack — dev renders the canvas 50px taller (10986 vs prod 10936). The +121px vs the old 10815 baseline is real: the canvas now renders the 11 new accent swatches + xs/xl/2xl radii.
   - Follow-ups (not blocking): E15-F01-S01 theme-from-tokens is now unblocked (`tokens.g.dart` carries the full scale); the 4 missing/partial `cs-mobile-*` mockups gate 4 Stage-B stories.
 
+## T-2026-07-14-003 — triage + fix first CodeQL findings (10 alerts) (github#1)
+
+- Created: 2026-07-14
+- Completed: 2026-07-14
+- Owner: claude
+- Spec: https://github.com/kkucherenkov/course_shelf/security/code-scanning (first CodeQL run after the repo went public)
+- Result: merged via github.com PR #1 (`21ccce5`) — the first PR to land on GitHub as the main repository
+- Goal: every alert either fixed at the root or dismissed with a recorded justification.
+- Spec diff: none (no OpenAPI/AsyncAPI change)
+- Codegen impact: no
+- Sub-steps:
+  - [x] #3–#6 (high, `js/insecure-temporary-file`): streaming spec fixtures moved from pid-predictable names in shared `os.tmpdir()` into a `mkdtempSync` dir (mode 0700, unpredictable name); recursive cleanup also covers the `.cache.vtt` sibling — 21/21 green
+  - [x] #2/#9 (medium, shell-injection family, `contract-test.ts`): `execSync(string)` → `spawnSync('docker', args)` — env-provided base URL is a single argv entry, never shell-parsed
+  - [x] #10 (medium, `js/indirect-command-line-injection`, `diff.ts`): `execSync` git show → `spawnSync('git', ['show', …])` via a `gitShow` helper; `--base` CLI value never shell-parsed; verified (script runs, exits 2 on missing oasdiff as designed)
+  - [x] #1 (high, `js/insecure-helmet-configuration`): dismissed — flagged branch is the dev-only helmet config; production branch three lines above ships the full CSP; CSP stays off in dev for Vite HMR/Storybook (documented in main.ts)
+  - [x] #7/#8 (medium, `js/file-access-to-http`): dismissed — uploading local roadmap-card content to the Forgejo issue API is the seed script's purpose
+- Status: done
+
 ## T-2026-07-14-002 — public GitHub repo + ghcr release lane (github#237)
 
 - Created: 2026-07-14
@@ -771,24 +823,6 @@ Not in this wave, and why: **E18-F01-S02** (Browse) needs a design pre-step — 
 - Status: done
 - Notes:
   - Forgejo homelab/mirror direction abandoned 2026-07-14 — GitHub is now the sole repo. Optional non-blocking follow-up cleanup: `.forgejo/workflows/`, the Forgejo issues mirror (`pnpm issues:*`), Dockge/LAN deploy, and CLAUDE.md Forgejo references.
-
-## T-2026-07-14-003 — triage + fix first CodeQL findings (10 alerts) (github#1)
-
-- Created: 2026-07-14
-- Completed: 2026-07-14
-- Owner: claude
-- Spec: https://github.com/kkucherenkov/course_shelf/security/code-scanning (first CodeQL run after the repo went public)
-- Result: merged via github.com PR #1 (`21ccce5`) — the first PR to land on GitHub as the main repository
-- Goal: every alert either fixed at the root or dismissed with a recorded justification.
-- Spec diff: none (no OpenAPI/AsyncAPI change)
-- Codegen impact: no
-- Sub-steps:
-  - [x] #3–#6 (high, `js/insecure-temporary-file`): streaming spec fixtures moved from pid-predictable names in shared `os.tmpdir()` into a `mkdtempSync` dir (mode 0700, unpredictable name); recursive cleanup also covers the `.cache.vtt` sibling — 21/21 green
-  - [x] #2/#9 (medium, shell-injection family, `contract-test.ts`): `execSync(string)` → `spawnSync('docker', args)` — env-provided base URL is a single argv entry, never shell-parsed
-  - [x] #10 (medium, `js/indirect-command-line-injection`, `diff.ts`): `execSync` git show → `spawnSync('git', ['show', …])` via a `gitShow` helper; `--base` CLI value never shell-parsed; verified (script runs, exits 2 on missing oasdiff as designed)
-  - [x] #1 (high, `js/insecure-helmet-configuration`): dismissed — flagged branch is the dev-only helmet config; production branch three lines above ships the full CSP; CSP stays off in dev for Vite HMR/Storybook (documented in main.ts)
-  - [x] #7/#8 (medium, `js/file-access-to-http`): dismissed — uploading local roadmap-card content to the Forgejo issue API is the seed script's purpose
-- Status: done
 
 ## T-2026-07-14-001 — fix broken `--` arg-forwarding patterns (CLAUDE.md + issues:lookup) (#235)
 
@@ -1069,6 +1103,19 @@ Not in this wave, and why: **E18-F01-S02** (Browse) needs a design pre-step — 
 - Gates: backend 1537 passed / 2 skipped; `tsc --noEmit` clean (17 pre-existing `exactOptionalPropertyTypes` violations fixed); ESLint clean (pre-existing `boundaries` deprecation warnings only); `spec:validate/bundle/codegen` no drift; `nest build` successful (DI compilation verified).
 - Status: done
 
+## T-2026-05-24-001 — Stage 2 scraper: fix SSRF IPv4-mapped IPv6 + wrong JSON-LD node fallback + missing .code assertions
+
+- Created: 2026-05-24
+- Completed: 2026-05-24
+- Owner: claude
+- PR: feat/stage2-scraper-port (single commit, no push)
+- Goal: Three code-quality fixes found during review of scraper foundation.
+- Sub-steps:
+  - [x] **Fix 1 (Critical)** — Block IPv4-mapped IPv6 in `ipIsBlocked` + tests
+  - [x] **Fix 2 (Important)** — Drop wrong-node JSON-LD fallback in `fromJsonLd` + test
+  - [x] **Fix 3 (Minor)** — Add `.code` assertions to `scraper.errors.spec.ts`
+- Status: done
+
 ## T-2026-05-23-002 — Stage 2 scraper port (#209)
 
 - Created: 2026-05-23
@@ -1098,19 +1145,6 @@ Not in this wave, and why: **E18-F01-S02** (Browse) needs a design pre-step — 
 - Sub-steps: Slices 1–9 complete — Prisma schema + migration + `course.json` v2 + shared VO; domain aggregates + ports + Course extension; Prisma adapters; OpenAPI + regen clients; CQRS upsert/set/list/get + extended update-course-metadata; catalog-entities controllers + PATCH /courses/{id}; run-scan integration + MetadataLinker + AsyncAPI backfill channel; backfill CLI + admin maintenance endpoint; regression sweep + format.
 - Status: done
 
-## T-2026-05-24-001 — Stage 2 scraper: fix SSRF IPv4-mapped IPv6 + wrong JSON-LD node fallback + missing .code assertions
-
-- Created: 2026-05-24
-- Completed: 2026-05-24
-- Owner: claude
-- PR: feat/stage2-scraper-port (single commit, no push)
-- Goal: Three code-quality fixes found during review of scraper foundation.
-- Sub-steps:
-  - [x] **Fix 1 (Critical)** — Block IPv4-mapped IPv6 in `ipIsBlocked` + tests
-  - [x] **Fix 2 (Important)** — Drop wrong-node JSON-LD fallback in `fromJsonLd` + test
-  - [x] **Fix 3 (Minor)** — Add `.code` assertions to `scraper.errors.spec.ts`
-- Status: done
-
 ## T-2026-05-20-001 — Bookkeeping catch-up: archive 4 shipped cards (#none)
 
 - Created: 2026-05-20
@@ -1128,24 +1162,6 @@ Not in this wave, and why: **E18-F01-S02** (Browse) needs a design pre-step — 
   - Drift type A (hidden-shipped) and type B (TODO/spec mismatch) returned zero hits across all 115 cards on the 2026-05-20 audit — so the actual misalignment is narrow (the 4 cards already listed). No active mitigation needed beyond this batch.
 
 ---
-
-## T-2026-05-04-002 — Release pipeline + image-pulling compose (E22-F01-S06, #109)
-
-- Created: 2026-05-04
-- Completed: 2026-05-04
-- Owner: claude
-- Spec: `docs/roadmap/tasks/E22-F01-S06.md` (Forgejo #109)
-- Result: shipped via PR #190 — `842d3e7 chore(ci): release pipeline + image-pulling compose (E22-F01-S06) (#190)`. Bookkeeping (this archive entry + spec status flip + TODO row + GHCR-vs-Forgejo design note) caught up 2026-05-20.
-- Outcome:
-  - Tag-triggered workflow at `.forgejo/workflows/release.yml` — pattern `v*.*.*-release` only. Builds `courseshelf-backend` + `courseshelf-web` (amd64), tags each as `:M.m.p`, `:M.m`, `:M`, `:latest`, pushes to GHCR. Proxy + centrifugo run upstream images directly.
-  - `docker/compose.release.yml` — image-pulling variant; templates Centrifugo entirely via `CENTRIFUGO_*` env vars (cleaner than envsubst on `config.json`). Sits alongside the existing build-locally `compose.prod.yml`.
-  - `APP_VERSION` baked into both Dockerfiles (`apps/backend/Dockerfile:97`, `apps/web/Dockerfile:72`) and propagated via `--build-arg` from the workflow.
-  - `cliff.toml` + `pnpm release:notes` → Conventional-Commits changelog. Workflow downloads + installs git-cliff inline; tag pattern matches the release tag pattern.
-  - `.env.release.example` — full operator env contract (image source, public URL, postgres, better-auth, centrifugo).
-  - `docs/release.md` (runbook) + `docs/deployment.md` restructure — registry-pull is now the primary deployment path; build-from-source moved to secondary.
-- Lessons / follow-ups:
-  - **Registry deviation**: spec called for Forgejo OCI at `code.homelab.local`; impl went to GHCR because the homelab Forgejo registry doesn't terminate TLS and the act_runner's container init can't apply the `insecure-registries` workaround. Documented as a "Design decision" section in `E22-F01-S06.md`. Forgejo OCI migration is deferred until the homelab gets a working cert.
-  - **Bookkeeping drift**: the card stayed `in-progress` in `active.md` for 16 days after PR #190 merged. Worth a cleanup pass on any other cards where impl shipped but bookkeeping didn't follow.
 
 ## T-2026-05-11-001 — README screenshots for Stage A web (#200)
 
@@ -1231,6 +1247,24 @@ Not in this wave, and why: **E18-F01-S02** (Browse) needs a design pre-step — 
 - Deferred: full prod-stack `compose.prod.yml up -d --build` e2e — local subagent hit token/time limits during nuxt+nest build; covered by per-service smoke + `compose config` validation; full e2e exercises in Forgejo CI on PR open + the next real release tag.
 - Follow-ups (out of scope): `.env.release.example` line 18 still has `REGISTRY=code.homelab.local` (pre-existing stale value from before the GHCR migration); `docs/release.md` "End-to-end takes ~10–15 min" timing estimate would be ~5–10 min after this change (cosmetic).
 
+## T-2026-05-04-002 — Release pipeline + image-pulling compose (E22-F01-S06, #109)
+
+- Created: 2026-05-04
+- Completed: 2026-05-04
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E22-F01-S06.md` (Forgejo #109)
+- Result: shipped via PR #190 — `842d3e7 chore(ci): release pipeline + image-pulling compose (E22-F01-S06) (#190)`. Bookkeeping (this archive entry + spec status flip + TODO row + GHCR-vs-Forgejo design note) caught up 2026-05-20.
+- Outcome:
+  - Tag-triggered workflow at `.forgejo/workflows/release.yml` — pattern `v*.*.*-release` only. Builds `courseshelf-backend` + `courseshelf-web` (amd64), tags each as `:M.m.p`, `:M.m`, `:M`, `:latest`, pushes to GHCR. Proxy + centrifugo run upstream images directly.
+  - `docker/compose.release.yml` — image-pulling variant; templates Centrifugo entirely via `CENTRIFUGO_*` env vars (cleaner than envsubst on `config.json`). Sits alongside the existing build-locally `compose.prod.yml`.
+  - `APP_VERSION` baked into both Dockerfiles (`apps/backend/Dockerfile:97`, `apps/web/Dockerfile:72`) and propagated via `--build-arg` from the workflow.
+  - `cliff.toml` + `pnpm release:notes` → Conventional-Commits changelog. Workflow downloads + installs git-cliff inline; tag pattern matches the release tag pattern.
+  - `.env.release.example` — full operator env contract (image source, public URL, postgres, better-auth, centrifugo).
+  - `docs/release.md` (runbook) + `docs/deployment.md` restructure — registry-pull is now the primary deployment path; build-from-source moved to secondary.
+- Lessons / follow-ups:
+  - **Registry deviation**: spec called for Forgejo OCI at `code.homelab.local`; impl went to GHCR because the homelab Forgejo registry doesn't terminate TLS and the act_runner's container init can't apply the `insecure-registries` workaround. Documented as a "Design decision" section in `E22-F01-S06.md`. Forgejo OCI migration is deferred until the homelab gets a working cert.
+  - **Bookkeeping drift**: the card stayed `in-progress` in `active.md` for 16 days after PR #190 merged. Worth a cleanup pass on any other cards where impl shipped but bookkeeping didn't follow.
+
 ## T-2026-05-04-001 — Scan parser hardening on a real library (#188)
 
 - Created: 2026-05-04
@@ -1246,18 +1280,6 @@ Not in this wave, and why: **E18-F01-S02** (Browse) needs a design pre-step — 
   - Acknowledged trade-off pinned by a regression test: siblings like `1 Урок`, `2 Урок`, … now collapse to a single section `Урок` (one course in the corpus). The win on space-as-separator everywhere else outweighs the collision; documented in `parseFolderName`'s spec.
   - Repeatable harness: `scripts/diagnose-scan-parsers.ts` (no DB / no HTTP / no ffmpeg) — `node --experimental-strip-types scripts/diagnose-scan-parsers.ts [path]` produces a structured before/after report. Surfaced longer-tail items left as separate stories: `.url` / `.ac3` / Udemy `.zip|.html|.cs|.js` source archives still emit `unsupported-extension` ScanErrors.
 - Verified: backend `pnpm test` 963 ✅, ESLint clean on touched files, Prettier ✅, diagnostic re-run on the live library shows 1 238 ordinaled sections (was 790) and 5 906 recognised videos (was 5 866).
-
-## T-2026-05-01-004 — README quickstart + screenshots scaffold (E23-F02-S01)
-
-- Created: 2026-05-01
-- Completed: 2026-05-01
-- Owner: claude
-- Spec: `docs/roadmap/tasks/E23-F02-S01.md`
-- Outcome:
-  - Top-level `README.md` + `README.ru.md` Quick Start rewritten as five concrete steps (prereqs → clone/install/generate → docker → verify → first sign-in → mobile) tuned for the under-15-minute target. Health-check uses `:8080` (proxy origin) instead of bypassing to `:3000`. Storybook URL added to the at-a-glance table.
-  - New `docs/screenshots/` directory with a colocated `README.md` documenting the capture flow, conventions (1440×900 web, default device frame mobile, light theme default, PNG), and a file index.
-  - README's Screenshots section lists the planned captures and points readers at the directory README. Image embeds are intentionally deferred — they'll be dropped in by the user once their stack reseeds (during this work the proxy was returning 502 because the backend container was reinstalling deps, so live captures weren't possible).
-- Verified: `pnpm spec:validate` ✅, `pnpm design:build` ✅ (web TS + ui TS + mobile Dart emitted).
 
 ## T-2026-05-01-005 — Browse half: filters + sort (E14-F01-S02 partial)
 
@@ -1275,6 +1297,18 @@ Not in this wave, and why: **E18-F01-S02** (Browse) needs a design pre-step — 
   - **Instructor** filter — `Course` aggregate has no `instructor` field yet.
   - **Bottom-sheet UX** at xs/sm — chip row wraps but doesn't morph into a sheet; deferred to design polish once `cs-web-browse-search` is signed off.
 
+## T-2026-05-01-004 — README quickstart + screenshots scaffold (E23-F02-S01)
+
+- Created: 2026-05-01
+- Completed: 2026-05-01
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E23-F02-S01.md`
+- Outcome:
+  - Top-level `README.md` + `README.ru.md` Quick Start rewritten as five concrete steps (prereqs → clone/install/generate → docker → verify → first sign-in → mobile) tuned for the under-15-minute target. Health-check uses `:8080` (proxy origin) instead of bypassing to `:3000`. Storybook URL added to the at-a-glance table.
+  - New `docs/screenshots/` directory with a colocated `README.md` documenting the capture flow, conventions (1440×900 web, default device frame mobile, light theme default, PNG), and a file index.
+  - README's Screenshots section lists the planned captures and points readers at the directory README. Image embeds are intentionally deferred — they'll be dropped in by the user once their stack reseeds (during this work the proxy was returning 502 because the backend container was reinstalling deps, so live captures weren't possible).
+- Verified: `pnpm spec:validate` ✅, `pnpm design:build` ✅ (web TS + ui TS + mobile Dart emitted).
+
 ## T-2026-05-01-003 — Contributor runbooks (E23-F02-S03)
 
 - Created: 2026-05-01
@@ -1285,15 +1319,6 @@ Not in this wave, and why: **E18-F01-S02** (Browse) needs a design pre-step — 
   - `docs/contributing/spec-first.md` — copy-pasteable runbook. Worked example (`GET /libraries/{id}/recent-scans`) walks edit YAML → `pnpm spec:codegen` → CQRS handler + controller + tests → SPA composable → commit pattern (codegen as its own commit).
   - `docs/contributing/design-first.md` — parallel runbook for UI. Walks bundle layout (`docs/design/<area>/`) → tokens (`pnpm design:build`) → catalog component Storybook-first → page composition with `@app/ui` primitives + `@app/api-client-ts` composables.
   - Both include a before-you-merge checklist and a pitfalls section calling out things that have actually broken in this repo (editing generated files, hex colors in scss, `<UButton>` direct imports, skipping bundle step).
-
-## T-2026-05-01-001 — Storybook test-runner CI job (E22-F01-S03)
-
-- Created: 2026-05-01
-- Completed: 2026-05-01
-- Owner: claude
-- Spec: `docs/roadmap/tasks/E22-F01-S03.md`
-- Outcome: new `ui-storybook` job in `.forgejo/workflows/ci.yml` — installs Playwright chromium, builds the static Storybook bundle, and runs `@storybook/test-runner` against all 279 stories across 50 components. Fails on render errors and failed `play()` interactions, which is the card's stated acceptance.
-- Side note: the existing `parameters.a11y.test = 'error'` global gate in `.storybook/preview.ts` would have failed this job out of the gate (73 stories have axe violations). Added a `STORYBOOK_A11Y_LEVEL` env var override (default stays `'error'` for `pnpm storybook` and any unset env); the CI job sets `STORYBOOK_A11Y_LEVEL=todo` so a11y becomes warn-only. Fixing the underlying violations is its own work.
 
 ## T-2026-05-01-002 — CSP + Helmet hardening (E21-F02-S02)
 
@@ -1307,14 +1332,14 @@ Not in this wave, and why: **E18-F01-S02** (Browse) needs a design pre-step — 
   - **e2e** (`tests/e2e/csp.spec.ts`) — Playwright spec asserts the secure-header set on `/` (always) and `/api/v1/*` (when backend runs in production mode; skipped otherwise) — the card's stated test acceptance.
   - **`vue/no-v-html`** — already at level 2 via the recommended Vue ESLint preset; the existing AppNoteEditor v-html carries an explicit eslint-disable. No new rule needed.
 
-## T-2026-04-28-002 — Group course materials by section in the right-rail
+## T-2026-05-01-001 — Storybook test-runner CI job (E22-F01-S03)
 
-- Created: 2026-04-28
-- Completed: 2026-04-28
-- Result: PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/178 — three commits (spec codegen, backend, web).
+- Created: 2026-05-01
+- Completed: 2026-05-01
 - Owner: claude
-- Spec: ad-hoc UX polish on top of E14-F01-S03 — no roadmap card.
-- Outcome: `CourseMaterialItem` gained required `sectionId` + `sectionTitle` and a documented sort contract — `getCourseOutline` returns the flat materials list ordered by `(section.position, lesson.position, material.id)` so consecutive items belong to the same section. `GetCourseOutlineHandler` does the cross-section sort + decoration in step 7; lessons with an unknown `sectionId` (data anomaly — Section is a child aggregate of Course so it should be unreachable) sort to the end with `+∞`. `CourseMaterialsRail.vue` groups consecutive items by `sectionId` and renders a small uppercase caption per cluster, but only when the rail spans 2+ sections so single-section courses stay visually quiet. +1 backend handler test (cross-section ordering with mixed-input fixture); web tests 153/153.
+- Spec: `docs/roadmap/tasks/E22-F01-S03.md`
+- Outcome: new `ui-storybook` job in `.forgejo/workflows/ci.yml` — installs Playwright chromium, builds the static Storybook bundle, and runs `@storybook/test-runner` against all 279 stories across 50 components. Fails on render errors and failed `play()` interactions, which is the card's stated acceptance.
+- Side note: the existing `parameters.a11y.test = 'error'` global gate in `.storybook/preview.ts` would have failed this job out of the gate (73 stories have axe violations). Added a `STORYBOOK_A11Y_LEVEL` env var override (default stays `'error'` for `pnpm storybook` and any unset env); the CI job sets `STORYBOOK_A11Y_LEVEL=todo` so a11y becomes warn-only. Fixing the underlying violations is its own work.
 
 ## T-2026-04-29-061 — Stage B Admin section (E14-F04-S01)
 
@@ -1333,15 +1358,6 @@ Not in this wave, and why: **E18-F01-S02** (Browse) needs a design pre-step — 
 - Test totals at end: backend 853 / 855 (+50 across the chunks); web 101 / 101 (+58 across the chunks); UI 835 / 835 (chunk 0 only); 333 i18n keys × 2 web locales (was 195).
 - Side-effect fixes that landed alongside this card: PR #163 also delivered the dependency E13-F02-S07. PR #166 fixed Forgejo's squash-merge dropping spec source. Backend `exactOptionalPropertyTypes` strict-mode patches across multiple admin specs (chunk 3) — conditional spread instead of `undefined`-passthrough; defensive `[0]?.x` array indexing in unit tests. Backend `prisma.session.deleteMany` on `banned: true` so kicked users lose authentication immediately (chunk 3).
 - Notes / deferred: PATCH /libraries/{id}, DELETE /libraries/{id}, and removing users (vs banning) are all "Coming soon" toasts in the UI; the underlying endpoints aren't specced yet. Dashboard "Last scan" stat card shows `Library {libraryId.slice(0,8)}…` because `latestScan` from `/admin/dashboard` doesn't carry a library name (the recent-scans table below it covers the human-readable label). Activity column ("X libraries · Y min watched") on the Users page is dropped — we don't yet aggregate per-user grant counts and minutes-watched on the API.
-
-## T-2026-04-28-001 — AppScanProgress (E13-F02-S07)
-
-- Created: 2026-04-28
-- Completed: 2026-04-28
-- Result: single feat commit on `feat/scan-progress-ui-component`
-- Owner: claude
-- Spec: `docs/roadmap/tasks/E13-F02-S07.md`
-- Outcome: `packages/ui/src/components/ScanProgress/AppScanProgress.vue` — presentational live-scan indicator. Status dot (pulse animation for running, reduced-motion respected), progress bar, 4-stat grid, current-file line with ellipsis truncation and title tooltip. Props-in/events-out, no router/store/i18n calls. Exported as `AppScanProgress` + `ScanStatus` type from `@app/ui`. 25 new tests (5 snapshots + 2 event + 6 conditional + 12 status-class); suite 810 → 835 total.
 
 ## T-2026-04-29-060 — Stage A Course detail page (E14-F01-S03) — bookkeeping
 
@@ -1375,6 +1391,24 @@ Not in this wave, and why: **E18-F01-S02** (Browse) needs a design pre-step — 
 - Outcome: ships `/dev/foundations` — 17-section design-system canvas (Color / Typography / Spacing / Radius / Motion / Buttons / Inputs / Cards / Rows / Tabs+Segmented / Feedback / Overlays / Progress / Empty States / Skeleton / Avatar / Chips). Each section shows `@app/ui` components in their full variant × size × state matrix. `__tokens.vue` replaced with a redirect to `/dev/foundations` (backward-compat). `/dev/foundations` added to `PUBLIC_ROUTES` so visual-regression e2e runs without a token. Playwright full-page baselines at 1440×900 light + dark committed.
 - Notes / deferred:
   - Mobile (`Tokens.theme.fromMode` + Widgetbook) deferred per user directive; noted in PR description.
+
+## T-2026-04-28-002 — Group course materials by section in the right-rail
+
+- Created: 2026-04-28
+- Completed: 2026-04-28
+- Result: PR http://code.homelab.local/kkucherenkov/course_shelf/pulls/178 — three commits (spec codegen, backend, web).
+- Owner: claude
+- Spec: ad-hoc UX polish on top of E14-F01-S03 — no roadmap card.
+- Outcome: `CourseMaterialItem` gained required `sectionId` + `sectionTitle` and a documented sort contract — `getCourseOutline` returns the flat materials list ordered by `(section.position, lesson.position, material.id)` so consecutive items belong to the same section. `GetCourseOutlineHandler` does the cross-section sort + decoration in step 7; lessons with an unknown `sectionId` (data anomaly — Section is a child aggregate of Course so it should be unreachable) sort to the end with `+∞`. `CourseMaterialsRail.vue` groups consecutive items by `sectionId` and renders a small uppercase caption per cluster, but only when the rail spans 2+ sections so single-section courses stay visually quiet. +1 backend handler test (cross-section ordering with mixed-input fixture); web tests 153/153.
+
+## T-2026-04-28-001 — AppScanProgress (E13-F02-S07)
+
+- Created: 2026-04-28
+- Completed: 2026-04-28
+- Result: single feat commit on `feat/scan-progress-ui-component`
+- Owner: claude
+- Spec: `docs/roadmap/tasks/E13-F02-S07.md`
+- Outcome: `packages/ui/src/components/ScanProgress/AppScanProgress.vue` — presentational live-scan indicator. Status dot (pulse animation for running, reduced-motion respected), progress bar, 4-stat grid, current-file line with ellipsis truncation and title tooltip. Props-in/events-out, no router/store/i18n calls. Exported as `AppScanProgress` + `ScanStatus` type from `@app/ui`. 25 new tests (5 snapshots + 2 event + 6 conditional + 12 status-class); suite 810 → 835 total.
 
 ## T-2026-04-27-053 — Home page Stage A · web + Playwright half (E14-F01-S01 part 2 of 2)
 

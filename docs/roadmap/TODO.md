@@ -8,7 +8,7 @@ Legend: **A** = implementable now from the bundle · **B** = needs design pre-st
 A row marked ❌ is cancelled — the card records why, and it is out of the
 denominator below.
 
-Progress: `114 / 119` complete — 121 cards, 2 cancelled (update by hand).
+Progress: `115 / 119` complete — 121 cards, 2 cancelled (update by hand).
 
 ## E00 — Stage the design bundle
 
@@ -196,7 +196,7 @@ Progress: `114 / 119` complete — 121 cards, 2 cancelled (update by hand).
 - ❌ [E23-F01-S01](./tasks/E23-F01-S01.md) `A` — Multi-stage Dockerfile (api + built web SPA) · ⇐ E22-F01-S06 · **cancelled** — superseded by the two-image + nginx-proxy topology
 - ❌ [E23-F01-S02](./tasks/E23-F01-S02.md) `A` — docker-compose.yml (sqlite default) + docker-compose.postgres.yml · ⇐ E23-F01-S01 · **cancelled** — no SQLite backend exists; postgres-only
 - [x] [E23-F02-S01](./tasks/E23-F02-S01.md) `A` — Top-level README + quickstart + screenshots · ⇐ E14-F03-S01, E18-F02-S01
-- [ ] [E23-F02-S02](./tasks/E23-F02-S02.md) `A` — Seed ADRs (10 entries) · ⇐ E04-F02-S03
+- [x] [E23-F02-S02](./tasks/E23-F02-S02.md) `A` — Seed ADRs (10 entries) · ⇐ E04-F02-S03
 - [x] [E23-F02-S03](./tasks/E23-F02-S03.md) `A` — Contributor docs covering the spec-first and design-first workflows · ⇐ E14-F01-S01
 
 ## E24 — Realtime / Centrifugo

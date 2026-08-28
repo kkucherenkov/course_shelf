@@ -105,6 +105,7 @@ void configureDependencies() {
       () => LessonPlayerApi(
         dio: getIt<Dio>(),
         downloadsDao: DownloadsDao(getIt<AppDatabase>()),
+        loopback: getIt<LoopbackDecryptServer>(),
       ),
     )
     ..registerLazySingleton<LessonProgressRecorder>(

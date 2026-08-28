@@ -1,5 +1,10 @@
-import 'package:dio/dio.dart';
+import 'dart:io';
 
+import 'package:dio/dio.dart';
+import 'package:drift/drift.dart' show Value;
+
+import 'package:app_mobile/features/downloads/data/loopback_decrypt_server.dart';
+import 'package:app_mobile/features/downloads/domain/encrypted_file_format.dart';
 import 'package:app_mobile/features/player/domain/lesson_playback.dart';
 import 'package:app_mobile/features/player/domain/lesson_player_repository.dart';
 import 'package:app_mobile/shared/db/app_database.dart';
@@ -25,12 +30,17 @@ import 'package:app_mobile/shared/db/tables/downloaded_lessons.dart';
 /// interceptor supplying the bearer token. Every route below already exists in
 /// `packages/specs/openapi/openapi.yaml` — this card's `Spec diff` is `none`.
 class LessonPlayerApi implements LessonPlayerRepository {
-  LessonPlayerApi({required Dio dio, required DownloadsDao downloadsDao})
-    : _dio = dio,
-      _downloadsDao = downloadsDao;
+  LessonPlayerApi({
+    required Dio dio,
+    required DownloadsDao downloadsDao,
+    required LoopbackDecryptServer loopback,
+  }) : _dio = dio,
+       _downloadsDao = downloadsDao,
+       _loopback = loopback;
 
   final Dio _dio;
   final DownloadsDao _downloadsDao;
+  final LoopbackDecryptServer _loopback;
 
   @override
   Future<LessonPlayback> fetchLesson(String lessonId) async {
@@ -56,13 +66,60 @@ class LessonPlayerApi implements LessonPlayerRepository {
     // "Watching offline" indicator (DESIGN_BRIEF §7.6).
     final DownloadedLesson? download = await _downloadsDao.byLessonId(lessonId);
     if (download != null && download.state == DownloadState.ready) {
-      return LessonVideoSource.localFile(download.filePath);
+      final Uri? local = await _localSourceFor(download);
+      if (local != null) return LessonVideoSource.localFile(local.toString());
+      // Fall through: the row said `ready` but the file behind it is gone or
+      // truncated. `_localSourceFor` has re-marked it `failed`; playing from
+      // the network beats refusing to play at all.
     }
 
     final Response<Map<String, dynamic>> response = await _dio
         .get<Map<String, dynamic>>('/api/v1/lessons/$lessonId/stream-url');
     final Map<String, dynamic> json = _require(response.data);
     return LessonVideoSource.network(_resolveUrl(json['url'] as String));
+  }
+
+  /// Loopback URL serving [row]'s decrypted plaintext, or `null` when the file
+  /// no longer backs the row.
+  ///
+  /// `filePath` holds AES-GCM ciphertext (see `DownloadedLessons`), which
+  /// `video_player` cannot open — handing it the path plays nothing. The
+  /// container is served instead through [LoopbackDecryptServer], which
+  /// decrypts a block at a time and never puts plaintext on disk.
+  ///
+  /// The size check is the integrity gate E19-F01-S02 asks for. It compares
+  /// *plaintext* lengths, not file sizes: `totalBytes` counts plaintext bytes
+  /// while the file on disk carries a 24-byte header and a 16-byte tag per
+  /// block, so comparing `length()` against `totalBytes` would fail every
+  /// intact download. A mismatch means a truncated or externally modified
+  /// container; a missing file means the OS reclaimed it. Both re-mark the row
+  /// `failed`, which is what puts it back on the downloads screen as
+  /// retryable rather than leaving a `ready` row that can never play.
+  Future<Uri?> _localSourceFor(DownloadedLesson row) async {
+    final File file = File(row.filePath);
+    if (await file.exists()) {
+      final int? expected = row.totalBytes;
+      final int actual = EncryptedFileFormat.plaintextLengthFor(
+        await file.length(),
+      );
+      if (expected == null || actual == expected) {
+        // Idempotent: returns immediately once the server is already bound.
+        await _loopback.start();
+        return _loopback.urlFor(row.lessonId);
+      }
+    }
+
+    await _downloadsDao.updateFields(
+      DownloadedLessonsCompanion(
+        lessonId: Value<String>(row.lessonId),
+        state: const Value<DownloadState>(DownloadState.failed),
+        lastError: const Value<String?>(
+          'Downloaded file is missing or does not match its recorded size',
+        ),
+        updatedAt: Value<DateTime>(DateTime.now().toUtc()),
+      ),
+    );
+    return null;
   }
 
   /// The backend returns a same-origin relative path so it never has to know

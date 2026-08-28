@@ -1,13 +1,23 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:app_mobile/features/downloads/data/loopback_decrypt_server.dart';
 import 'package:app_mobile/features/player/data/lesson_player_api.dart';
 import 'package:app_mobile/shared/db/app_database.dart';
 
 // Relative, not `package:` — `always_use_package_imports` governs files under
 // `lib/` only, and `test/` has no package path.
 import '../../support/recording_http_adapter.dart';
+
+// Never reached: both tests hit the network branch (no `downloaded_lessons`
+// row), so the server is never started and nothing resolves a file.
+LoopbackDecryptServer _unusedLoopback() => LoopbackDecryptServer(
+  resolveFile: (String _) async => null,
+  key: () async => Uint8List(32),
+);
 
 void main() {
   late AppDatabase db;
@@ -39,6 +49,7 @@ void main() {
     final LessonPlayerApi api = LessonPlayerApi(
       dio: dio,
       downloadsDao: DownloadsDao(db),
+      loopback: _unusedLoopback(),
     );
 
     await api.resolveVideoSource('l1');
@@ -51,6 +62,7 @@ void main() {
     final LessonPlayerApi api = LessonPlayerApi(
       dio: dio,
       downloadsDao: DownloadsDao(db),
+      loopback: _unusedLoopback(),
     );
 
     await api.issueMaterialDownloadUrl(lessonId: 'l1', materialId: 'm1');

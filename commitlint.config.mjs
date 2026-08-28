@@ -26,6 +26,7 @@ export default {
         'tasks',
         'roadmap',
         'plans',
+        'adr',
         'security',
       ],
     ],

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { createAuthClient } from 'better-auth/vue';
+import { emailOTPClient } from 'better-auth/client/plugins';
 // useRuntimeConfig is a Nuxt auto-import; explicit import keeps the test
 // environment able to resolve it through the #imports shim.
 import { useRuntimeConfig } from '#imports';
@@ -23,22 +24,37 @@ function hasStorage(): boolean {
   return typeof localStorage !== 'undefined';
 }
 
+/**
+ * Builds the Better Auth client.
+ *
+ * Kept as its own function so the store can type `_authClient` off *this*
+ * call's inferred return type: the plugin methods (`emailOtp.*`) exist only
+ * there, and the bare `ReturnType<typeof createAuthClient>` erases them.
+ */
+function createClient() {
+  const { public: pub } = useRuntimeConfig();
+  return createAuthClient({
+    baseURL: `${pub.authBaseUrl}/api/v1/auth`,
+    // The server replaces Better Auth's default verification *link* with a
+    // 6-digit OTP (`emailOTP({ overrideDefaultEmailVerification: true })`),
+    // which is what `pages/sign-up.vue` step 2 asks for. Without this plugin
+    // the client has no `emailOtp.*` methods to call it with.
+    plugins: [emailOTPClient()],
+    fetchOptions: {
+      // Keep credentials for same-origin dev; bearer token is sent via the
+      // Authorization header by the api.client plugin, not cookies.
+      credentials: 'include',
+    },
+  });
+}
+
 export const useAuthStore = defineStore('auth', () => {
   // Lazily created Better Auth client. Scoped to the store instance so that
   // test environments can reset it by calling `setActivePinia(createPinia())`.
-  let _authClient: ReturnType<typeof createAuthClient> | null = null;
+  let _authClient: ReturnType<typeof createClient> | null = null;
 
-  function getAuthClient(): ReturnType<typeof createAuthClient> {
-    if (_authClient) return _authClient;
-    const { public: pub } = useRuntimeConfig();
-    _authClient = createAuthClient({
-      baseURL: `${pub.authBaseUrl}/api/v1/auth`,
-      fetchOptions: {
-        // Keep credentials for same-origin dev; bearer token is sent via the
-        // Authorization header by the api.client plugin, not cookies.
-        credentials: 'include',
-      },
-    });
+  function getAuthClient(): ReturnType<typeof createClient> {
+    _authClient ??= createClient();
     return _authClient;
   }
 
@@ -248,37 +264,152 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * Verify an email address with a 6-digit code sent during sign-up.
-   * STUB — Better Auth's email-verification SDK path needs to be wired here.
-   * Flag: requires authClient.emailVerification or equivalent Better Auth call.
+   * Verify an email address with the 6-digit code mailed during sign-up.
+   *
+   * `email` is required by the endpoint (the code alone does not identify an
+   * account) and the sign-up wizard has it on screen. The server signs the
+   * user in on success (`autoSignInAfterVerification`), so the resulting
+   * `set-auth-token` header is captured exactly as sign-in does — the wizard's
+   * next step registers a library, which is an authenticated call.
    */
-  // eslint-disable-next-line unicorn/consistent-function-scoping
-  function verifyEmail(_code: string): Promise<{ ok: boolean; error?: string }> {
-    console.warn('[auth] verifyEmail is a stub — wire Better Auth email verification');
-    return Promise.resolve({ ok: true });
+  async function verifyEmail(
+    code: string,
+    email: string,
+  ): Promise<{ ok: boolean; error?: string; code?: string }> {
+    error.value = null;
+    isPending.value = true;
+
+    let capturedToken: string | null = null;
+
+    try {
+      const auth = getAuthClient();
+      const result = await auth.emailOtp.verifyEmail(
+        { email, otp: code },
+        {
+          onSuccess(ctx: { response: Response }) {
+            const raw = ctx.response.headers.get('set-auth-token');
+            if (raw) capturedToken = raw;
+          },
+        },
+      );
+
+      if (result.error) {
+        const message = result.error.message ?? 'Verification failed';
+        error.value = message;
+        return { ok: false, error: message, code: result.error.code };
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (capturedToken !== null) {
+        token.value = capturedToken;
+        if (hasStorage()) {
+          localStorage.setItem(TOKEN_STORAGE_KEY, capturedToken);
+        }
+      }
+
+      await refresh();
+      return { ok: true };
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : 'Unexpected error';
+      error.value = message;
+      return { ok: false, error: message };
+    } finally {
+      isPending.value = false;
+    }
   }
 
   /**
-   * Initiate a password-reset flow by sending a reset link to the given email.
-   * STUB — requires Better Auth's `requestPasswordReset` or equivalent.
+   * Re-send the sign-up verification code, for the wizard's "resend" affordance.
    */
-  // eslint-disable-next-line unicorn/consistent-function-scoping
-  function forgotPassword(_email: string): Promise<{ ok: boolean; error?: string }> {
-    console.warn('[auth] forgotPassword is a stub — wire Better Auth password reset request');
-    return Promise.resolve({ ok: true });
+  async function resendVerificationCode(email: string): Promise<{ ok: boolean; error?: string }> {
+    try {
+      const auth = getAuthClient();
+      const result = await auth.emailOtp.sendVerificationOtp({
+        email,
+        type: 'email-verification',
+      });
+      if (result.error) {
+        return { ok: false, error: result.error.message ?? 'Could not resend the code' };
+      }
+      return { ok: true };
+    } catch (error_) {
+      return {
+        ok: false,
+        error: error_ instanceof Error ? error_.message : 'Unexpected error',
+      };
+    }
   }
 
   /**
-   * Complete a password reset using a token (from the ?token= URL param) and the new password.
-   * STUB — requires Better Auth's `resetPassword` or equivalent.
+   * Initiate a password reset by mailing a reset link to `email`.
+   *
+   * `redirectTo` is where Better Auth sends the user from that link, with
+   * `?token=` appended (or `?error=INVALID_TOKEN`). `/forgot` reads exactly
+   * that query param to switch itself to the reset step, so the link has to
+   * come back to the same page rather than a dedicated route.
+   *
+   * A non-existent address still answers 200 — Better Auth does not disclose
+   * whether an account exists, and neither does this.
    */
-  // eslint-disable-next-line unicorn/consistent-function-scoping
-  function resetPassword(
-    _newPassword: string,
-    _token: string,
-  ): Promise<{ ok: boolean; error?: string }> {
-    console.warn('[auth] resetPassword is a stub — wire Better Auth password reset completion');
-    return Promise.resolve({ ok: true });
+  async function forgotPassword(email: string): Promise<{ ok: boolean; error?: string }> {
+    error.value = null;
+    isPending.value = true;
+
+    try {
+      const auth = getAuthClient();
+      // `location` unguarded: the app is `ssr: false`, so this only ever runs
+      // in a browser.
+      const result = await auth.requestPasswordReset({
+        email,
+        redirectTo: `${globalThis.location.origin}/forgot`,
+      });
+
+      if (result.error) {
+        const message = result.error.message ?? 'Could not send the reset email';
+        error.value = message;
+        return { ok: false, error: message };
+      }
+      return { ok: true };
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : 'Unexpected error';
+      error.value = message;
+      return { ok: false, error: message };
+    } finally {
+      isPending.value = false;
+    }
+  }
+
+  /**
+   * Complete a password reset with the `?token=` from the emailed link.
+   *
+   * No session is established here: Better Auth's `/reset-password` returns
+   * `{ status }` only, so the page sends the user on to sign in with the new
+   * password.
+   */
+  async function resetPassword(
+    newPassword: string,
+    resetToken: string,
+  ): Promise<{ ok: boolean; error?: string; code?: string }> {
+    error.value = null;
+    isPending.value = true;
+
+    try {
+      const auth = getAuthClient();
+      const result = await auth.resetPassword({ newPassword, token: resetToken });
+
+      if (result.error) {
+        const message = result.error.message ?? 'Could not reset the password';
+        error.value = message;
+        return { ok: false, error: message, code: result.error.code };
+      }
+      return { ok: true };
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : 'Unexpected error';
+      error.value = message;
+      return { ok: false, error: message };
+    } finally {
+      isPending.value = false;
+    }
   }
 
   /**
@@ -328,6 +459,7 @@ export const useAuthStore = defineStore('auth', () => {
     refresh,
     clear,
     verifyEmail,
+    resendVerificationCode,
     forgotPassword,
     resetPassword,
     changePassword,

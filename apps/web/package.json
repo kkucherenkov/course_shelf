@@ -27,7 +27,7 @@
     "@tailwindcss/vite": "^4.2.4",
     "better-auth": "^1.6.23",
     "centrifuge": "^5.5.3",
-    "nuxt": "^4.4.0",
+    "nuxt": "^4.5.1",
     "pinia": "^3.0.4",
     "tailwindcss": "^4.2.0",
     "vue": "^3.5.13",

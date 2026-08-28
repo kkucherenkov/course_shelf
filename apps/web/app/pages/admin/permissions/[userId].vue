@@ -1,5 +1,9 @@
 <script setup lang="ts">
   import { computed, provide, ref, toRef } from 'vue';
+  // Explicit: Nuxt 4.5 no longer surfaces auto-imports to template
+  // expressions during `nuxt typecheck`, and `navigateTo` is called from the
+  // template below. Same `#imports` idiom as `stores/auth.ts`.
+  import { navigateTo } from '#imports';
   import { AppBanner } from '@app/ui';
   import type { CourseDto, AccessGrantDto } from '@app/api-client-ts';
   import { listCourses, client } from '@app/api-client-ts';

@@ -25,7 +25,6 @@ permissions:
   packages: write
 
 env:
-  NODE_VERSION: "24"
   REGISTRY: ghcr.io
   REGISTRY_NAMESPACE: kkucherenkov
 
@@ -64,15 +63,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       # ─── Toolchain ───────────────────────────────────────────────────────
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-cs
 
       - name: Spec validate
         run: pnpm spec:validate

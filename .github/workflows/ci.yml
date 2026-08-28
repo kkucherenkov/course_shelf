@@ -17,13 +17,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  NODE_VERSION: "24"
-  # Must match the version goldens are generated with — golden PNGs are
-  # rendering-engine artefacts, so a version skew fails them for reasons that
-  # have nothing to do with the code. Bump here, in .claude/CLAUDE.md, and in
-  # both pubspec floors together.
-  FLUTTER_VERSION: "3.44.4"
+# Node and Flutter versions live in .github/actions/setup-cs/action.yml — the
+# `env:` block that used to hold them could not reach the four other workflow
+# files that hardcoded the same numbers.
 
 jobs:
   # ── Checks (consolidated lint · typecheck · test · specs · ui audit) ──────
@@ -36,15 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-cs
 
       - name: Prisma generate
         run: pnpm --filter @app/backend prisma:generate
@@ -115,20 +103,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v6
+      - uses: ./.github/actions/setup-cs
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+          flutter: "true"
 
       # `openapi-generator-cli` fetches its Java jar from Maven Central on
       # every run, and Sonatype answers 403 often enough to red a required
@@ -176,10 +153,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup-cs
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+          node: "false"
+          flutter: "true"
 
       # ui_flutter first: it is the dependency, and its goldens are where a
       # token/theme regression surfaces.
@@ -240,15 +217,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-cs
 
       - name: Secret scanning
         # Pinned release tag (not @main) — supply-chain hygiene for an

@@ -8,7 +8,7 @@ Legend: **A** = implementable now from the bundle · **B** = needs design pre-st
 A row marked ❌ is cancelled — the card records why, and it is out of the
 denominator below.
 
-Progress: `113 / 119` complete — 121 cards, 2 cancelled (update by hand).
+Progress: `114 / 119` complete — 121 cards, 2 cancelled (update by hand).
 
 ## E00 — Stage the design bundle
 
@@ -184,7 +184,7 @@ Progress: `113 / 119` complete — 121 cards, 2 cancelled (update by hand).
 
 ## E22 — CI/CD
 
-- [ ] [E22-F01-S01](./tasks/E22-F01-S01.md) `A` — Reusable setup action (Node + pnpm + Flutter cache) · ⇐ E01-F02-S01
+- [x] [E22-F01-S01](./tasks/E22-F01-S01.md) `A` — Reusable setup action (Node + pnpm + Flutter cache) · ⇐ E01-F02-S01
 - [x] [E22-F01-S02](./tasks/E22-F01-S02.md) `A` — ci.yml with parallel jobs per app/package · ⇐ E22-F01-S01
 - [x] [E22-F01-S03](./tasks/E22-F01-S03.md) `A` — Storybook test-runner job · ⇐ E22-F01-S01, E12-F01-S01
 - [ ] [E22-F01-S04](./tasks/E22-F01-S04.md) `A` — Visual regression (Storybook test-runner snapshots) + manual approval label · ⇐ E22-F01-S03

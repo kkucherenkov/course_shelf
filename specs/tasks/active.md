@@ -26,7 +26,7 @@
   - [x] review follow-ups: Android loopback cleartext allowance, `disableSignUp`
         on the OTP plugin, idempotent `LoopbackDecryptServer.start()`,
         code-based (translated) auth error messages
-- Status: in-progress
+- Status: in-progress (PR https://github.com/kkucherenkov/course_shelf/pull/187)
 - Blockers: —
 - Review findings addressed (`/code-review high`):
   - **HIGH** Android had no cleartext allowance for `127.0.0.1`, so every

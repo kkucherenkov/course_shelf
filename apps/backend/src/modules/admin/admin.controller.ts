@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
 import { AdminGuard } from '../../common/auth/admin.guard';
@@ -7,10 +7,14 @@ import { GetAdminUserQuery } from './application/queries/get-admin-user.query';
 import { ListAdminLibrariesQuery } from './application/queries/list-admin-libraries.query';
 import { ListAdminScansQuery } from './application/queries/list-admin-scans.query';
 import { ListAdminUsersQuery } from './application/queries/list-admin-users.query';
+import { CreateBackupCommand } from './application/commands/create-backup.command';
 import { UpdateAdminUserCommand } from './application/commands/update-admin-user.command';
+import { Session } from '../../common/auth/decorators';
 
+import type { SessionContext } from '../../common/auth/decorators';
 import type {
   AdminDashboardDto,
+  BackupCreatedDto,
   AdminLibraryListDto,
   AdminScanListDto,
   AdminUpdateUserRequest,
@@ -74,6 +78,22 @@ export class AdminController {
   ): Promise<AdminUserListItem> {
     return this.commandBus.execute<UpdateAdminUserCommand, AdminUserListItem>(
       new UpdateAdminUserCommand(id, body),
+    );
+  }
+
+  /**
+   * The archive is produced synchronously — the metadata database is small and
+   * `pg_dump` finishes in well under the request timeout. If it ever stops
+   * being small, this becomes a job with a Centrifugo progress channel, the
+   * shape `startBackfillMetadata` already uses.
+   *
+   * The download itself is AdminBackupController's route, which is not behind
+   * AdminGuard; see that file for why.
+   */
+  @Post('backups')
+  createBackup(@Session() session: SessionContext): Promise<BackupCreatedDto> {
+    return this.commandBus.execute<CreateBackupCommand, BackupCreatedDto>(
+      new CreateBackupCommand(session.user.id),
     );
   }
 }

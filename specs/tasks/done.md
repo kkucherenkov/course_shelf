@@ -60,6 +60,47 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-07-29-001 — E19-F01-S01 · DownloadsBloc with resumable encrypted downloads
+
+- Created: 2026-07-29
+- Completed: 2026-07-29
+- Owner: claude
+- Branch: `feat/e19-downloads-bloc`
+- Spec: `docs/roadmap/tasks/E19-F01-S01.md`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/185 (closes #119, #120, #121, #122, #123)
+- Goal: a download queue that survives an app kill — resumable byte-range
+  transfers into an AES-GCM container whose key never sits beside the ciphertext.
+- Sub-steps:
+  - [x] events: `EnqueueLesson`, `EnqueueCourse`, `Pause`, `Resume`, `Cancel`, `Retry`
+  - [x] file writer with byte-range continuation
+  - [x] device-bound key in secure storage (`flutter_secure_storage`)
+  - [x] background scheduling — `workmanager` (Android), `BGTaskScheduler` (iOS)
+- Notes:
+  - **Archived retroactively (2026-08-29).** This work never went on the task
+    stack while it was in flight; the card and the merged PR are the record.
+    Reconstructed here so `done.md` stops disagreeing with the roadmap, and
+    because the deviations below are the kind that get re-litigated by whoever
+    picks up E19 next.
+  - Two claims in the card's original Notes were wrong and were corrected in the
+    same PR: `Range` **is** supported (`streaming.controller.ts` implements 200 /
+    206 / `multipart/byteranges` / 416 / 400 and sets `Accept-Ranges`), and the
+    stream-token TTL is 900 s, not the 5 minutes the note claimed. The Range
+    route is exempt from OpenAPI validation, so that contract is
+    implementation-only — nothing in CI would catch its removal.
+  - **Deviation — tests.** The card asked for an `integration_test` simulating a
+    flaky network. No emulator on the build host and no iOS build, so it could
+    be written but never run; delivered as `bloc_test` plus unit tests over a
+    scripted byte source and a mocked Dio adapter (107 tests, 265 → 372).
+  - **Deviation — video only.** `getMaterialStream` sends whole files with no
+    Range support, so materials need a different download path.
+  - **Deviation — iOS unverifiable.** `workmanager_apple`'s `registerOneOffTask`
+    never reaches `BGTaskScheduler`, so iOS routes through
+    `registerProcessingTask`. None of the iOS half could be compiled or run on
+    the build host — written against the plugin's Swift source and reviewed by
+    reading.
+  - The follow-up this left open is #101 (tap-to-download on course detail),
+    which was blocked on `DownloadsBloc` existing and is now unblocked.
+
 ## T-2026-07-18-004 — Persist + honor device prefs & recents
 
 - Created: 2026-07-18

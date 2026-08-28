@@ -4,6 +4,25 @@ A short, dated write-up of any non-obvious decision that shapes the codebase.
 ADRs exist because git history records the _what_ but not the _why_, and issues
 get closed. An ADR survives both.
 
+## Index
+
+| ADR | Decision | Tags |
+| --- | --- | --- |
+| [0001](0001-monorepo-pnpm-turborepo.md) | Monorepo on pnpm workspaces + Turborepo | infra |
+| [0002](0002-spec-first-openapi.md) | OpenAPI is the source of truth, not the code | contracts |
+| [0003](0003-cqrs-without-event-sourcing.md) | CQRS over state-stored data; no event store | backend |
+| [0004](0004-better-auth-bearer-tokens.md) | Better Auth, bearer tokens for both clients | security |
+| [0005](0005-nuxt-spa-no-ssr.md) | Nuxt as an SPA (`ssr: false`) | frontend |
+| [0006](0006-bloc-on-mobile.md) | BLoC + get_it, feature-first layering | mobile |
+| [0007](0007-storybook-and-widgetbook.md) | Storybook and Widgetbook as the two catalogs | design-system |
+| [0008](0008-postgres-only.md) | Postgres only — the SQLite default was dropped | persistence |
+| [0009](0009-progressive-streaming-no-hls.md) | Progressive streaming with Range; HLS deferred | streaming |
+| [0010](0010-design-bundle-tokens-source-of-truth.md) | `tokens.json` generates all three platforms | design-system |
+
+All ten were written together on 2026-08-29 and are **retroactive**: they record
+decisions already load-bearing in the codebase, not new proposals. Each says so,
+and points at the card or commit where the decision was actually made.
+
 ## When to write one
 
 Write an ADR for any decision that:

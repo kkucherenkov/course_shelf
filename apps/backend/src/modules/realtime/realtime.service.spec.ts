@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+
 import * as jwt from 'jsonwebtoken';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -14,6 +17,22 @@ const config = {
 } as unknown as AppConfig;
 
 const user: SessionUser = { id: 'user-abc-123', role: 'student' };
+
+/// Walks up from the working directory to the monorepo root. `tsconfig` builds
+/// this package as CommonJS while vitest transforms it to ESM, so neither
+/// `import.meta.url` (rejected by tsc) nor `__dirname` (undefined at runtime)
+/// can name the file — but the spec's path from the repo root is fixed.
+function findSpec(): string {
+  const relative = 'packages/specs/asyncapi/centrifugo.yaml';
+  let directory = process.cwd();
+  for (;;) {
+    const candidate = path.resolve(directory, relative);
+    if (existsSync(candidate)) return candidate;
+    const parent = path.dirname(directory);
+    if (parent === directory) throw new Error(`${relative} not found above ${process.cwd()}`);
+    directory = parent;
+  }
+}
 
 describe('RealtimeService', () => {
   let service: RealtimeService;
@@ -46,15 +65,34 @@ describe('RealtimeService', () => {
     const { token } = service.issueToken(user);
     const payload = jwt.verify(token, SECRET) as jwt.JwtPayload;
     const channels: string[] = payload['channels'];
-    const expected = [
-      'system:health',
-      `progress:user:${user.id}`,
-      `notifications:user:${user.id}`,
-      `scans:user:${user.id}`,
-    ];
+    const expected = ['system:health', `progress:user:${user.id}`, `scans:user:${user.id}`];
     expect(channels).toHaveLength(expected.length);
     for (const ch of expected) {
       expect(channels).toContain(ch);
+    }
+  });
+
+  // The grant list is a standing subscription right. Nothing else compares it
+  // against the contract, so a channel could be — and was — pre-authorised in
+  // every token while never existing in the spec at all.
+  it('grants only channels declared in the AsyncAPI spec', () => {
+    const declared = [
+      ...readFileSync(findSpec(), 'utf8').matchAll(/^\s+address:\s*"?([^"\n]+?)"?\s*$/gm),
+    ].flatMap((match) => match[1] ?? []);
+    expect(declared.length).toBeGreaterThan(0);
+
+    // A `{param}` placeholder stands for exactly one channel segment.
+    const patterns = declared.map(
+      (address) => new RegExp(`^${address.replaceAll(/\{[^}]+\}/g, '[^:]+')}$`),
+    );
+
+    const { token } = service.issueToken(user);
+    const channels: string[] = (jwt.verify(token, SECRET) as jwt.JwtPayload)['channels'];
+    for (const channel of channels) {
+      expect(
+        patterns.some((pattern) => pattern.test(channel)),
+        `${channel} is granted but not declared in centrifugo.yaml`,
+      ).toBe(true);
     }
   });
 

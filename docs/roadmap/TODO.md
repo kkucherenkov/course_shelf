@@ -166,7 +166,7 @@ Progress: `104 / 121` complete (update by hand or via a pre-commit hook).
 ## E19 — Mobile offline
 
 - [x] [E19-F01-S01](./tasks/E19-F01-S01.md) `A` — DownloadsBloc with resumable encrypted downloads · ⇐ E18-F02-S01, E15-F02-S01
-- [ ] [E19-F01-S02](./tasks/E19-F01-S02.md) `A` — Offline-first lesson resolution · ⇐ E19-F01-S01
+- [x] [E19-F01-S02](./tasks/E19-F01-S02.md) `A` — Offline-first lesson resolution · ⇐ E19-F01-S01
 - [ ] [E19-F01-S03](./tasks/E19-F01-S03.md) `B` — Stage B · Downloads tab UI (precede with cs-mobile-downloads) · ⇐ E19-F01-S01, E17-F02-S06
 
 ## E20 — Mobile sync

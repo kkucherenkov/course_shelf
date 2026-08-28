@@ -9,13 +9,13 @@ enum LessonVideoSourceKind { network, localFile }
 
 /// A resolved, playable lesson source.
 ///
-/// NOTE — E19 seam. `downloaded_lessons.filePath` points at an **AES-GCM
-/// encrypted** file (see the table's own doc comment), so a [localFile] source
-/// is not something `video_player` can open as-is: E19-F01-S01 owns the
-/// device-bound key and the decrypting read path. This card wires the
-/// *detection* and the resulting state, per its acceptance ("Offline
-/// indicator ... (from E19)"); until E19 lands, no `downloaded_lessons` row is
-/// ever written, so [resolve] always takes the network branch.
+/// NOTE — [uri] is a URL for **both** kinds. `downloaded_lessons.filePath`
+/// points at an **AES-GCM encrypted** file (see the table's own doc comment),
+/// which `video_player` cannot open, so a [localFile] source carries the
+/// `LoopbackDecryptServer` URL that streams the decrypted plaintext from
+/// `127.0.0.1` instead of the on-disk path. The kind is kept separate purely
+/// because it drives the "Watching offline" indicator — no byte leaves the
+/// device on that branch.
 class LessonVideoSource extends Equatable {
   const LessonVideoSource.network(this.uri)
     : kind = LessonVideoSourceKind.network;
@@ -23,7 +23,7 @@ class LessonVideoSource extends Equatable {
   const LessonVideoSource.localFile(this.uri)
     : kind = LessonVideoSourceKind.localFile;
 
-  /// A network URL, or an absolute on-device path for [localFile].
+  /// A network URL — the origin's stream URL, or the loopback decrypt URL.
   final String uri;
   final LessonVideoSourceKind kind;
 

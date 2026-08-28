@@ -141,18 +141,44 @@
 
   async function onVerifySubmit(): Promise<void> {
     step2Error.value = '';
-    const result = await authStore.verifyEmail(fullCode.value);
+    const result = await authStore.verifyEmail(fullCode.value, email.value);
     if (!result.ok) {
-      step2Error.value = result.error ?? t('pages.signUp.errorGeneric');
+      // Matched on `code`, not `error`: the message Better Auth returns is a
+      // server-side English string ("Invalid OTP"), which would land in the UI
+      // untranslated. `onAccountSubmit` above sets the same precedent.
+      step2Error.value = verifyErrorMessage(result.code);
       return;
     }
     currentStep.value = 'library';
   }
 
-  function onResend(): void {
+  async function onResend(): Promise<void> {
     if (resendCountdown.value > 0) return;
-    // Stub: real impl would call authClient.emailVerification.send().
+    // The countdown starts on the attempt, not on its outcome: it exists to
+    // rate-limit the button, and a failed send that leaves it clickable is
+    // exactly the case that would hammer the mail port.
     startResendCountdown();
+    const result = await authStore.resendVerificationCode(email.value);
+    if (!result.ok) {
+      step2Error.value = t('pages.signUp.errorResend');
+    }
+  }
+
+  function verifyErrorMessage(code: string | undefined): string {
+    switch (code) {
+      case AUTH_ERROR_CODES.INVALID_OTP: {
+        return t('pages.signUp.errorCodeInvalid');
+      }
+      case AUTH_ERROR_CODES.OTP_EXPIRED: {
+        return t('pages.signUp.errorCodeExpired');
+      }
+      case AUTH_ERROR_CODES.TOO_MANY_ATTEMPTS: {
+        return t('pages.signUp.errorCodeAttempts');
+      }
+      default: {
+        return t('pages.signUp.errorGeneric');
+      }
+    }
   }
 
   // Going back to fix the email must not leave a stale code or a running

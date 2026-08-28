@@ -2,6 +2,7 @@
   import { AppField, AppInput, AppButton, AppBanner, AppPasswordField } from '@app/ui';
   import { ref, computed } from 'vue';
 
+  import { AUTH_ERROR_CODES } from '~/constants/authErrorCodes';
   import { useAuthStore } from '~/stores/auth';
   import { useFirstRun } from '~/composables/useFirstRun';
 
@@ -41,7 +42,9 @@
     errorMsg.value = '';
     const result = await authStore.forgotPassword(enteredEmail.value);
     if (!result.ok) {
-      errorMsg.value = result.error ?? t('pages.forgot.errorGeneric');
+      // Never `result.error`: Better Auth's message is an untranslated
+      // server-side English string.
+      errorMsg.value = t('pages.forgot.errorGeneric');
       return;
     }
     currentStep.value = 'sent';
@@ -61,10 +64,19 @@
     }
     const result = await authStore.resetPassword(newPassword.value, resetToken.value);
     if (!result.ok) {
-      errorMsg.value = result.error ?? t('pages.forgot.errorGeneric');
+      // A dead link is the one failure worth naming: it tells the user to
+      // request a new one instead of retyping the same password.
+      errorMsg.value =
+        result.code === AUTH_ERROR_CODES.INVALID_TOKEN ||
+        result.code === AUTH_ERROR_CODES.TOKEN_EXPIRED
+          ? t('pages.forgot.errorTokenInvalid')
+          : t('pages.forgot.errorGeneric');
       return;
     }
-    await navigateTo('/');
+    // `/reset-password` establishes no session, so the app root would only
+    // bounce an anonymous visitor back to the auth pages. Send them straight
+    // to sign-in to use the password they just set.
+    await navigateTo('/sign-in');
   }
 
   const mailtoLink = computed(() => `mailto:${enteredEmail.value}`);

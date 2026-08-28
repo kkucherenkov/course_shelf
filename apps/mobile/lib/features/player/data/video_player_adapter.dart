@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:video_player/video_player.dart';
@@ -127,15 +126,11 @@ typedef VideoPlayerControllerFactory =
     VideoPlayerController Function(LessonVideoSource source);
 
 VideoPlayerController _defaultFactory(LessonVideoSource source) {
-  return switch (source.kind) {
-    LessonVideoSourceKind.network => VideoPlayerController.networkUrl(
-      Uri.parse(source.uri),
-    ),
-    // E19 owns making this path playable — `downloaded_lessons.filePath` is
-    // AES-GCM ciphertext today, so this branch is unreachable until it lands a
-    // decrypting read path (no row is ever written before then).
-    LessonVideoSourceKind.localFile => VideoPlayerController.file(
-      File(source.uri),
-    ),
-  };
+  // Both kinds are URLs. A `localFile` source is *not* a path: the download on
+  // disk is AES-GCM ciphertext, so `LessonPlayerApi` hands back a
+  // `LoopbackDecryptServer` URL on 127.0.0.1 that serves the decrypted bytes
+  // (with Range support) without ever writing plaintext to disk.
+  // `VideoPlayerController.file` would hand the plugin the ciphertext and play
+  // nothing. The kind still differs because it drives the offline indicator.
+  return VideoPlayerController.networkUrl(Uri.parse(source.uri));
 }

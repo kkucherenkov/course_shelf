@@ -27,7 +27,7 @@ import type { AppConfig } from '../config/app-config';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { I18nService } from 'nestjs-i18n';
 
-function makeConfig(): AppConfig {
+function makeConfig(emailVerificationRequired = false): AppConfig {
   return {
     betterAuth: {
       secret: 'test-secret-value-at-least-32-chars-long',
@@ -35,6 +35,7 @@ function makeConfig(): AppConfig {
       basePath: '/api/v1/auth',
     },
     runtime: { corsOrigins: ['http://localhost:3001'] },
+    instance: { selfRegistration: true, emailVerificationRequired, ssoProviders: [] },
   } as unknown as AppConfig;
 }
 
@@ -48,10 +49,48 @@ function makeI18n(): I18nService {
   return { t: (key: string) => key } as unknown as I18nService;
 }
 
-function bootService(email: MockEmailService = new MockEmailService()): AuthService {
-  const service = new AuthService(makePrisma(), makeConfig(), email, makeI18n());
+function bootService(
+  email: MockEmailService = new MockEmailService(),
+  emailVerificationRequired = false,
+): AuthService {
+  const service = new AuthService(
+    makePrisma(),
+    makeConfig(emailVerificationRequired),
+    email,
+    makeI18n(),
+  );
   service.onModuleInit();
   return service;
+}
+
+type SendVerificationOTPFn = (data: { email: string; otp: string; type: string }) => Promise<void>;
+
+function sendVerificationOTP(service: AuthService): SendVerificationOTPFn | undefined {
+  const options = service.auth.options as unknown as {
+    plugins?: { id: string; options?: { sendVerificationOTP?: SendVerificationOTPFn } }[];
+  };
+  return (options.plugins ?? []).find((plugin) => plugin.id === 'email-otp')?.options
+    ?.sendVerificationOTP;
+}
+
+function emailOtpOptions(service: AuthService): { disableSignUp?: boolean } | undefined {
+  const options = service.auth.options as unknown as {
+    plugins?: { id: string; options?: { disableSignUp?: boolean } }[];
+  };
+  return (options.plugins ?? []).find((plugin) => plugin.id === 'email-otp')?.options;
+}
+
+function emailAndPassword(service: AuthService): { requireEmailVerification?: boolean } {
+  return (
+    service.auth.options as unknown as {
+      emailAndPassword?: { requireEmailVerification?: boolean };
+    }
+  ).emailAndPassword!;
+}
+
+function emailVerification(service: AuthService): { sendOnSignUp?: boolean } {
+  return (service.auth.options as unknown as { emailVerification?: { sendOnSignUp?: boolean } })
+    .emailVerification!;
 }
 
 type ResetPasswordFn = (data: {
@@ -117,7 +156,10 @@ describe('AuthService', () => {
     // it. An exact assertion is what would have surfaced that the day it
     // landed. When SSO adds a plugin this test WILL fail; that failure is the
     // point — extend the list on purpose. Do not loosen it to `toContain`.
-    expect(pluginIds(service)).toEqual(['admin', 'bearer']);
+    // email-otp joined the list on purpose: `GET /admin/instance` advertises
+    // `emailVerificationRequired` and `pages/sign-up.vue` draws a 6-digit step
+    // for it, which needs `/email-otp/*` to exist to mean anything.
+    expect(pluginIds(service)).toEqual(['admin', 'bearer', 'email-otp']);
     // admin() route surface used by the admin module's RBAC.
     expect(apiKeys(service)).toContain('setRole');
     expect(apiKeys(service)).toContain('listUsers');
@@ -153,9 +195,52 @@ describe('AuthService', () => {
     expect(email.sentTo('someone-else@example.com')).toHaveLength(0);
   });
 
+  it('delivers the sign-up verification code through the EMAIL_PORT', async () => {
+    const email = new MockEmailService();
+    const service = bootService(email);
+
+    const send = sendVerificationOTP(service);
+    expect(send).toBeDefined();
+
+    await send?.({ email: 'verify@example.com', otp: '123456', type: 'email-verification' });
+
+    const sent = email.sentTo('verify@example.com');
+    expect(sent).toHaveLength(1);
+    // The code is the whole point of the mail — it must survive into both bodies.
+    expect(sent[0]?.text).toContain('123456');
+    expect(sent[0]?.html).toContain('123456');
+    expect(sent[0]?.subject).toBe('auth.verifyEmail.subject');
+  });
+
+  // Email OTP is a verification step, never a way in. With sign-up left
+  // enabled, `POST /sign-in/email-otp` creates a missing user with
+  // `emailVerified: true` and mints a session for it — no password, no wizard,
+  // and on an empty instance the first-user hook hands that account ADMIN.
+  it('never lets email OTP create an account', () => {
+    expect(emailOtpOptions(bootService())?.disableSignUp).toBe(true);
+  });
+
+  // The three halves of one toggle: `GET /admin/instance` tells the SPA to draw
+  // the 6-digit step, `sendOnSignUp` puts a code in the inbox, and
+  // `requireEmailVerification` is what makes skipping it impossible. Any one of
+  // them alone is a flow that looks wired and is not.
+  it('leaves verification off by default', () => {
+    const service = bootService();
+    expect(emailAndPassword(service).requireEmailVerification).toBe(false);
+    expect(emailVerification(service).sendOnSignUp).toBe(false);
+  });
+
+  it('requires and mails verification when AUTH_EMAIL_VERIFICATION is on', () => {
+    const service = bootService(new MockEmailService(), true);
+    expect(emailAndPassword(service).requireEmailVerification).toBe(true);
+    expect(emailVerification(service).sendOnSignUp).toBe(true);
+  });
+
   it('exposes no phone or OTP route', () => {
     const service = bootService();
 
+    // `phone-number` is the plugin #157 removed. The email OTP plugin is a
+    // different surface entirely — none of the keys below are its routes.
     expect(pluginIds(service)).not.toContain('phone-number');
     for (const endpoint of [
       'signInPhoneNumber',

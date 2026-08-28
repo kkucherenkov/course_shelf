@@ -72,6 +72,47 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/backups': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create a metadata database snapshot and return a signed download URL
+     * @description Runs `pg_dump` against the metadata database and writes a single
+     *     compressed archive to the server's backup directory, then returns a
+     *     short-lived signed URL for downloading it. Admin only.
+     *
+     *     The archive is `pg_dump --format=custom`, so it carries the schema and
+     *     the data together and is restored with `pg_restore` — no separate
+     *     schema export is needed.
+     *
+     *     **Course media is not included.** Only the metadata database is dumped;
+     *     the video and material files under `COURSES_PATH` are the operator's
+     *     to back up. A restored database referencing files that are no longer on
+     *     disk will surface as missing lessons, not as a corrupt install.
+     *
+     *     The download itself is **not described in this specification**, for the
+     *     same reason the lesson-streaming routes are not: it returns an opaque
+     *     byte stream, and the `url` in the response is what the client follows.
+     *     See `docs/adr/0002-spec-first-openapi.md`.
+     *
+     *     `pg_dump` refuses to dump a server newer than itself. When the bundled
+     *     client's major version does not match the server's, this endpoint fails
+     *     with 503 and a problem detail naming both versions rather than writing a
+     *     partial archive.
+     */
+    post: operations['createBackup'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/scans': {
     parameters: {
       query?: never;
@@ -3367,6 +3408,43 @@ export interface components {
      */
     ScanStatus: 'running' | 'succeeded' | 'failed' | 'cancelled';
     /**
+     * @description A completed metadata-database snapshot plus the short-lived signed URL for downloading it. Shaped after `MaterialDownloadUrlDto` — the extra fields describe the archive itself so the caller can show what it got without a second request.
+     * @example {
+     *       "id": "20260829T014500-3f9a2c1b8e7d4a6f",
+     *       "createdAt": "2026-08-29T01:45:00Z",
+     *       "sizeBytes": 4718592,
+     *       "url": "/api/v1/admin/backups/20260829T014500-3f9a2c1b8e7d4a6f/download?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkJLUCIsInYiOjF9.eyJzdWIiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwiYmlkIjoiMjAyNjA4MjlUMDE0NTAwLTNmOWEyYzFiOGU3ZDRhNmYiLCJzY3AiOiJiYWNrdXAiLCJleHAiOjE3NzIzMzA1MDAsImlhdCI6MTc3MjMzMDIwMH0.Qm9ndXNTaWduYXR1cmVGb3JEb2NzT25seU5vdFJlYWw",
+     *       "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkJLUCIsInYiOjF9.eyJzdWIiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwiYmlkIjoiMjAyNjA4MjlUMDE0NTAwLTNmOWEyYzFiOGU3ZDRhNmYiLCJzY3AiOiJiYWNrdXAiLCJleHAiOjE3NzIzMzA1MDAsImlhdCI6MTc3MjMzMDIwMH0.Qm9ndXNTaWduYXR1cmVGb3JEb2NzT25seU5vdFJlYWw",
+     *       "expiresAt": "2026-08-29T01:50:00Z"
+     *     }
+     */
+    BackupCreatedDto: {
+      /** @description Identifier of the archive on the server. Unguessable on its own, but possession of the id is not sufficient to download — the signed token is still required. */
+      id: string;
+      /**
+       * Format: date-time
+       * @description When the dump completed.
+       */
+      createdAt: string;
+      /**
+       * Format: int64
+       * @description Size of the archive on disk, in bytes.
+       */
+      sizeBytes: number;
+      /**
+       * Format: uri-reference
+       * @description Same-origin relative path carrying the signed token as the `token` query parameter, so a plain `<a href download>` works without an Authorization header. This route is intentionally absent from this specification (opaque byte stream).
+       */
+      url: string;
+      /** @description Opaque signed token. Same compact `header.payload.signature` shape as the streaming tokens, but signed with a key derived under a different HKDF info string, so a stream token can never be replayed against a backup and vice versa. Round-trip untouched. */
+      token: string;
+      /**
+       * Format: date-time
+       * @description When the token stops being accepted. The archive stays on disk after this moment — expiry revokes the link, not the file.
+       */
+      expiresAt: string;
+    };
+    /**
      * @description Short-lived signed URL for streaming a lesson video.
      * @example {
      *       "url": "/api/v1/stream/lessons/clxvles0000000000000000001?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibGVzc29uSWQiOiJjbHh2bGVzMDAwMDAwMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzQ1NTc0NDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
@@ -3725,6 +3803,53 @@ export interface operations {
       };
       /** @description Caller is authenticated but not an administrator */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  createBackup: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Archive written; the URL is valid until `expiresAt` */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BackupCreatedDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description The backup could not be produced — `pg_dump` is missing from the image, its major version does not match the server, it exited non-zero, or it exceeded the configured timeout. */
+      503: {
         headers: {
           [name: string]: unknown;
         };

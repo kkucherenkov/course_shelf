@@ -6,8 +6,10 @@ import { GetAdminUserQuery } from './application/queries/get-admin-user.query';
 import { ListAdminLibrariesQuery } from './application/queries/list-admin-libraries.query';
 import { ListAdminScansQuery } from './application/queries/list-admin-scans.query';
 import { ListAdminUsersQuery } from './application/queries/list-admin-users.query';
+import { CreateBackupCommand } from './application/commands/create-backup.command';
 import { UpdateAdminUserCommand } from './application/commands/update-admin-user.command';
 
+import type { SessionContext } from '../../common/auth/decorators';
 import type { CommandBus, QueryBus } from '@nestjs/cqrs';
 
 function makeQueryBus(): QueryBus {
@@ -261,6 +263,45 @@ describe('AdminController', () => {
       const result = await controller.updateUser('user-42', { role: 'admin' });
 
       expect(result).toBe(updatedItem);
+    });
+  });
+
+  describe('POST /admin/backups', () => {
+    it('dispatches CreateBackupCommand carrying the calling admin id', async () => {
+      const commandBus = makeCommandBus();
+      const controller = makeController(makeQueryBus(), commandBus);
+
+      await controller.createBackup({
+        user: { id: 'usr_admin_1' },
+      } as unknown as SessionContext);
+
+      expect(commandBus.execute).toHaveBeenCalledOnce();
+      const command = vi.mocked(commandBus.execute).mock.calls[0]?.[0] as CreateBackupCommand;
+      expect(command).toBeInstanceOf(CreateBackupCommand);
+      // The id ends up in the token's `sub` claim, so a leaked link is
+      // attributable to whoever minted it.
+      expect(command.userId).toBe('usr_admin_1');
+    });
+
+    it('returns the DTO resolved by the CommandBus', async () => {
+      const dto = {
+        id: '20260829T014500-3f9a2c1b8e7d4a6f',
+        createdAt: '2026-08-29T01:45:00.000Z',
+        sizeBytes: 4_718_592,
+        url: '/api/v1/admin/backups/20260829T014500-3f9a2c1b8e7d4a6f/download?token=t',
+        token: 't',
+        expiresAt: '2026-08-29T01:50:00.000Z',
+      };
+      const commandBus = {
+        execute: vi.fn().mockResolvedValue(dto),
+      } as unknown as CommandBus;
+      const controller = makeController(makeQueryBus(), commandBus);
+
+      const result = await controller.createBackup({
+        user: { id: 'usr_admin_1' },
+      } as unknown as SessionContext);
+
+      expect(result).toBe(dto);
     });
   });
 });

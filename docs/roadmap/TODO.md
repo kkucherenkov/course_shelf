@@ -8,7 +8,7 @@ Legend: **A** = implementable now from the bundle · **B** = needs design pre-st
 A row marked ❌ is cancelled — the card records why, and it is out of the
 denominator below.
 
-Progress: `115 / 119` complete — 121 cards, 2 cancelled (update by hand).
+Progress: `116 / 119` complete — 121 cards, 2 cancelled (update by hand).
 
 ## E00 — Stage the design bundle
 
@@ -178,7 +178,7 @@ Progress: `115 / 119` complete — 121 cards, 2 cancelled (update by hand).
 ## E21 — Admin & operations
 
 - [x] [E21-F01-S01](./tasks/E21-F01-S01.md) `A` — GET /admin/dashboard aggregator · ⇐ E10-F01-S01, E07-F01-S01
-- [ ] [E21-F01-S02](./tasks/E21-F01-S02.md) `A` — POST /admin/backups (DB snapshot archive) · ⇐ E04-F02-S03
+- [x] [E21-F01-S02](./tasks/E21-F01-S02.md) `A` — POST /admin/backups (DB snapshot archive) · ⇐ E04-F02-S03
 - [x] [E21-F02-S01](./tasks/E21-F02-S01.md) `A` — Rate limit on Better Auth sign-in · ⇐ E04-F02-S03
 - [x] [E21-F02-S02](./tasks/E21-F02-S02.md) `A` — CSP + secure headers (Helmet) tuned for SPA + bearer · ⇐ E11-F01-S01
 

@@ -2,6 +2,45 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-29-004 — E21-F01-S02 · POST /admin/backups
+
+- Created: 2026-08-29
+- Owner: claude
+- Branch: `feat/admin-backups`
+- Card: [E21-F01-S02](../../docs/roadmap/tasks/E21-F01-S02.md)
+- Goal: an admin can take a metadata-database snapshot and download it from a
+  link that does not need an `Authorization` header.
+- Spec diff: `openapi.yaml` — `POST /api/v1/admin/backups` + `BackupCreatedDto`
+- Codegen impact: yes
+- Design impact: none — no backup surface exists in the design bundle or in any
+  web card, so this is API-only.
+- Decisions taken with the user before coding:
+  - `pg_dump` via `execFile`, with `postgresql18-client` added to the backend
+    runtime image (it is not there today) and an explicit version gate rather
+    than a silently partial archive.
+  - A separate `BackupTokenSigner` in the admin domain rather than extending
+    `StreamTokenSigner` (wrong bounded context) or refactoring it (live
+    security path).
+- Sub-steps:
+  - [x] spec: `POST /api/v1/admin/backups`, `BackupCreatedDto`, 503 cases
+  - [x] `pnpm spec:validate && spec:bundle && spec:codegen`
+  - [x] `BackupTokenSigner` + errors
+  - [x] `pg_dump` adapter with version gate, timeout and retention prune
+  - [x] `CreateBackupHandler` + controller route + binary download route
+  - [x] `postgresql18-client` + `/data/backups` in `apps/backend/Dockerfile`
+  - [x] tests — 46 new; backend suite 1598 passed / 2 skipped
+- Completed: 2026-08-29
+- Result: https://github.com/kkucherenkov/course_shelf/pull/196
+- Status: done
+
+**Not verified locally.** Docker is unavailable in this environment, so the
+image change (`apk add postgresql18-client`) was never built. The package's
+presence in alpine 3.23/3.24 `main` was confirmed from the Alpine package index.
+CI's e2e job builds the image — that is the real check.
+
+**Deviation — API only.** No backup surface exists in the design bundle or in
+any web card, so nothing consumes `createBackup` yet.
+
 ## T-2026-08-29-003 — E23-F02-S02 · seed the ADR log with ten entries
 
 - Created: 2026-08-29

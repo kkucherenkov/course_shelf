@@ -2,6 +2,44 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-29-005 — E22-F01-S04 · visual-drift PR comment + visual-approved gate
+
+- Created: 2026-08-29
+- Completed: 2026-08-29
+- Owner: claude
+- Branch: `ci/visual-regression-approval`
+- Card: [E22-F01-S04](../../docs/roadmap/tasks/E22-F01-S04.md)
+- Result: https://github.com/kkucherenkov/course_shelf/pull/197
+- Goal: turn "pixels changed" into a reviewable decision — say which stories
+  moved, hand over the images, and let an author approve an intentional diff
+  without regenerating baselines.
+- Spec diff: none
+- Codegen impact: no
+- Design impact: none
+- Tests: 7 unit tests on the drift-report helpers; `@app/ui` suite green at 878;
+  `actionlint` clean; the embedded `github-script` body syntax-checked with
+  `node --check`.
+- Sub-steps:
+  - [x] test-runner records `{story, diffPercent}` as NDJSON and re-throws
+  - [x] `visual-diffs` artifact + one in-place-edited PR comment
+  - [x] `visual-approved` label gate, `labeled`/`unlabeled` in the triggers
+  - [x] label created; PR template row added
+- Status: done
+
+**Deviation — table and link, not thumbnails.** GitHub markdown embeds neither
+artifact images nor `data:` URIs. Inline thumbnails would need the PNGs pushed
+to a branch for `raw.githubusercontent` URLs — permanent junk commits plus
+`contents: write` on a fork-triggerable workflow. Put to the user before
+implementing.
+
+**Deviation — the gate is not "required" yet.** `main` has no branch protection
+(`branches/main/protection` → 404), so nothing is required on any PR. The logic
+is correct once protection is on; that is a settings change, not code.
+
+**Not a masked failure.** `continue-on-error` on the test-runner step is
+re-raised by the Verdict step, which fails unconditionally when the drift report
+is empty — a broken Storybook build is not something the label may wave past.
+
 ## T-2026-08-29-004 — E21-F01-S02 · POST /admin/backups
 
 - Created: 2026-08-29

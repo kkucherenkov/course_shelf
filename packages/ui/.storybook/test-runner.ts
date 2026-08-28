@@ -5,6 +5,8 @@ import type { TestRunnerConfig } from '@storybook/test-runner';
 import { waitForPageReady } from '@storybook/test-runner';
 import { toMatchImageSnapshot } from 'jest-image-snapshot';
 
+import { parseDiffPercent, recordDrift, resetReport } from './visual-report';
+
 /**
  * Storybook test-runner config for self-hosted visual regression.
  *
@@ -37,6 +39,9 @@ const config: TestRunnerConfig = {
     if (REGEN_MODE) {
       mkdirSync(SNAPSHOTS_DIR, { recursive: true });
     }
+    // Start each run from an empty report — a stale file from a previous run
+    // would name stories that are fine now.
+    resetReport();
   },
 
   async postVisit(page, context) {
@@ -59,18 +64,27 @@ const config: TestRunnerConfig = {
       return;
     }
 
-    // @ts-expect-error — extended via setup()
-    expect(image).toMatchImageSnapshot({
-      customSnapshotsDir: SNAPSHOTS_DIR,
-      customSnapshotIdentifier: context.id,
-      // 2 % accommodates headless-Chromium anti-aliasing jitter on
-      // SVG icons (the IconCS grid story regularly drifts 1.0–1.7 %
-      // between identical runs on the same runner). A real visual
-      // regression on a 232×376 component is typically >5 % — we'd
-      // still catch those.
-      failureThreshold: 0.02,
-      failureThresholdType: 'percent',
-    });
+    try {
+      // @ts-expect-error — extended via setup()
+      expect(image).toMatchImageSnapshot({
+        customSnapshotsDir: SNAPSHOTS_DIR,
+        customSnapshotIdentifier: context.id,
+        // 2 % accommodates headless-Chromium anti-aliasing jitter on
+        // SVG icons (the IconCS grid story regularly drifts 1.0–1.7 %
+        // between identical runs on the same runner). A real visual
+        // regression on a 232×376 component is typically >5 % — we'd
+        // still catch those.
+        failureThreshold: 0.02,
+        failureThresholdType: 'percent',
+      });
+    } catch (error) {
+      // Record, then re-throw. The job still fails on drift exactly as before —
+      // this only makes the failure legible to the workflow that builds the PR
+      // comment. Swallowing it here would turn a gate into a report.
+      const message = error instanceof Error ? error.message : String(error);
+      recordDrift({ story: context.id, diffPercent: parseDiffPercent(message) });
+      throw error;
+    }
   },
 };
 

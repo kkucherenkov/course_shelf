@@ -12,12 +12,24 @@ name: Quality (on-demand)
 # `AppIcon` shipped rendering at 2-4x its intended size, how `AuthLayout`
 # shipped with no padding, and how bundling IBM Plex (7eb328d) silently
 # reflowed every page and sat red for two days, attributable to no PR.
+#
+# When a diff IS intentional (a token change, a deliberate restyle), the author
+# adds the `visual-approved` label and the job goes green without touching the
+# baselines. `labeled`/`unlabeled` are in the trigger list because the default
+# `pull_request` types do not include them — without those, applying the label
+# would change nothing until the next push.
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_dispatch:
   schedule:
     # Keep the nightly: it also catches drift from the base image, not just our diffs.
     - cron: "30 3 * * *"
+
+# `pull-requests: write` is for the drift comment. Everything else stays read.
+permissions:
+  contents: read
+  pull-requests: write
 
 concurrency:
   group: quality-${{ github.ref }}
@@ -34,6 +46,15 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.59.1-jammy
     timeout-minutes: 20
 
+    # GitHub's default shell inside a container job is `sh -e {0}`, not bash —
+    # so `set -o pipefail` dies with "Illegal option". Every other workflow gets
+    # bash for free because its jobs run directly on ubuntu-latest; this one is
+    # the exception. Setting it once at the job level rather than per-step so a
+    # future step cannot re-acquire the same bug.
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - uses: actions/checkout@v6
 
@@ -47,5 +68,122 @@ jobs:
           STORYBOOK_A11Y_LEVEL: todo
         run: pnpm --filter @app/ui storybook:build
 
+      # `continue-on-error` here is NOT a masked failure: the "Verdict" step
+      # below re-raises it. It exists so the two steps in between (artifact +
+      # PR comment) still run when stories drift — which is precisely when
+      # their output is worth having.
+      #
+      # The verdict distinguishes the two ways this step can fail:
+      #   drift        → report file has entries → gated on the label
+      #   anything else → report file empty → fails unconditionally,
+      #                   because a broken Storybook build or a crashed
+      #                   test-runner is not something a label should wave past.
       - name: Run Storybook test-runner
+        id: visual
+        continue-on-error: true
         run: pnpm --filter @app/ui test:visual:ci
+
+      - name: Collect drift report
+        id: drift
+        run: |
+          set -euo pipefail
+          report=packages/ui/visual-report.ndjson
+          if [ -s "$report" ]; then
+            echo "count=$(wc -l < "$report" | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          else
+            echo "count=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload diff images
+        if: steps.drift.outputs.count != '0'
+        uses: actions/upload-artifact@v5
+        with:
+          name: visual-diffs
+          path: packages/ui/test/__snapshots__/__diff_output__/**
+          if-no-files-found: warn
+          retention-days: 14
+
+      # One comment per PR, edited in place. A new comment per push would bury
+      # the PR under near-identical tables on a branch that pushes ten times.
+      - name: Comment the drift on the PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v9
+        env:
+          DRIFT_COUNT: ${{ steps.drift.outputs.count }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            const MARKER = '<!-- visual-regression-report -->';
+            const count = Number(process.env.DRIFT_COUNT);
+            const labels = context.payload.pull_request.labels.map((l) => l.name);
+            const approved = labels.includes('visual-approved');
+
+            let body;
+            if (count === 0) {
+              body = `${MARKER}\n### Visual regression: no drift\n\nEvery Storybook story matches its committed baseline.`;
+            } else {
+              const rows = fs
+                .readFileSync('packages/ui/visual-report.ndjson', 'utf8')
+                .split('\n')
+                .filter(Boolean)
+                .map((line) => JSON.parse(line))
+                .sort((a, b) => (b.diffPercent ?? 0) - (a.diffPercent ?? 0))
+                .map((r) => `| \`${r.story}\` | ${r.diffPercent === null ? 'n/a' : `${r.diffPercent.toFixed(2)} %`} |`)
+                .join('\n');
+
+              const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+              body = [
+                MARKER,
+                `### Visual regression: ${count} ${count === 1 ? 'story' : 'stories'} drifted`,
+                '',
+                '| Story | Diff |',
+                '| --- | --- |',
+                rows,
+                '',
+                `[Download the diff images](${runUrl}#artifacts) — the \`visual-diffs\` artifact holds a side-by-side PNG per story.`,
+                '',
+                approved
+                  ? '**Approved** via the `visual-approved` label — this check is green. Remember to regenerate the baselines (Actions → *Regenerate visual snapshots*, suite `storybook`) so the next PR compares against the new look.'
+                  : 'If this is intentional, add the **`visual-approved`** label to this PR — the check re-runs on label change and goes green. If it is not, fix the component; do not regenerate baselines to hide it.',
+              ].join('\n');
+            }
+
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const existing = comments.find((c) => c.body?.startsWith(MARKER));
+
+            if (existing) {
+              await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body });
+            } else if (count > 0) {
+              // Do not open a "no drift" comment on a PR that never drifted —
+              // that is noise on every green PR in the repository.
+              await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
+            }
+
+      - name: Verdict
+        env:
+          VISUAL_OUTCOME: ${{ steps.visual.outcome }}
+          DRIFT_COUNT: ${{ steps.drift.outputs.count }}
+          APPROVED: ${{ contains(github.event.pull_request.labels.*.name, 'visual-approved') }}
+        run: |
+          set -euo pipefail
+          if [ "$VISUAL_OUTCOME" = "success" ]; then
+            echo "No visual drift."
+            exit 0
+          fi
+
+          if [ "$DRIFT_COUNT" = "0" ]; then
+            echo "::error::The Storybook test-runner failed without reporting any image drift — this is a build or runner failure, not a visual change. The visual-approved label does not apply."
+            exit 1
+          fi
+
+          if [ "$APPROVED" = "true" ]; then
+            echo "::warning::${DRIFT_COUNT} story/stories drifted; accepted via the visual-approved label. Regenerate the baselines before merging so the next PR compares against the new look."
+            exit 0
+          fi
+
+          echo "::error::${DRIFT_COUNT} story/stories drifted from their baselines. See the PR comment and the visual-diffs artifact. Add the visual-approved label if the change is intentional."
+          exit 1

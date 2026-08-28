@@ -60,6 +60,52 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-29-002 — E22-F01-S01 · reusable `setup-cs` composite action
+
+- Created: 2026-08-29
+- Completed: 2026-08-29
+- Owner: claude
+- Branch: `ci/setup-cs-composite-action`
+- Card: [E22-F01-S01](../../docs/roadmap/tasks/E22-F01-S01.md)
+- Result: https://github.com/kkucherenkov/course_shelf/pull/194
+- Goal: one place that installs the CourseShelf toolchain, so the Node and
+  Flutter versions stop being copy-pasted across five workflow files.
+- Spec diff: none
+- Codegen impact: no
+- Design impact: none
+- Tests: `actionlint` (it resolves `uses: ./...` against the action's declared
+  inputs — verified by deliberately misspelling `flutter`, which is rejected
+  with the available-input list) plus the PR's own CI run, which exercises
+  every touched job through the new action.
+- Sub-steps:
+  - [x] `.github/actions/setup-cs/action.yml` — pnpm + Node, optional Flutter,
+        then `pnpm install --frozen-lockfile`
+  - [x] replaced 9 setup preambles across `ci.yml` (4 jobs), `quality.yml`,
+        `e2e.yml`, `regen-snapshots.yml` (2 jobs) and `release.yml`
+  - [x] deleted the `NODE_VERSION` / `FLUTTER_VERSION` workflow `env`
+  - [x] `actionlint` clean apart from one pre-existing SC2016 info
+- Status: done
+
+**What the card was worth, and what it was not.** The acceptance line names
+`~/.pnpm-store`, `~/.pub-cache` and the Flutter SDK — all three were already
+cached before this task. `actions/setup-node`'s `cache: pnpm` covers the store,
+and `subosito/flutter-action`'s `cache: true` already implied the pub cache: it
+gates that step on `pub-cache == '' && cache == 'true'` (`action.yaml:132`).
+Nothing here adds caching.
+
+The real defect was version drift. Node was a literal `"24"` in `quality.yml`,
+`e2e.yml` and both `regen-snapshots.yml` jobs, and `${{ env.NODE_VERSION }}` in
+`ci.yml` and `release.yml` — workflow `env` does not cross files, so Node could
+not be bumped in one place. `FLUTTER_VERSION` carried the constraint that it
+must match the version the goldens were rendered with, stated two files away
+from the workflow that regenerates them. Versions now live only in the action's
+input defaults.
+
+**Deviations.** Nine of the ten jobs use the action; `codeql.yml` builds its
+database from source and needs no toolchain. The action also runs
+`pnpm install --frozen-lockfile`, folded in rather than exposed as an input
+nobody would set to `false`.
+
 ## T-2026-08-29-001 — reconcile roadmap card bookkeeping with the tree
 
 - Created: 2026-08-29

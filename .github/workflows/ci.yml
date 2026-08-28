@@ -130,6 +130,28 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # `openapi-generator-cli` fetches its Java jar from Maven Central on
+      # every run, and Sonatype answers 403 often enough to red a required
+      # check on a PR that never touched a spec (seen on #189, docs-only):
+      #
+      #   Download 7.21.0 ...
+      #   Download failed, because of: "Request failed with status code 403"
+      #   Error: Unable to access jarfile .../openapi-generator-cli-7.21.0.jar
+      #
+      # Caching it needs `storageDir` in `packages/specs/openapitools.json`
+      # first: the default is `<package>/versions` inside
+      # `node_modules/.pnpm/@openapitools+openapi-generator-cli@<version>_<hash>/`,
+      # a path whose hash moves with the lockfile and which
+      # `pnpm install` recreates empty anyway — nothing stable to key a cache
+      # on. `restore-keys` is deliberately absent: an older jar restored under
+      # a new version's key is not a cache hit, it is the wrong generator
+      # silently producing a drift failure.
+      - name: Cache the openapi-generator jar
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/openapi-generator-cli
+          key: openapi-generator-${{ hashFiles('packages/specs/openapitools.json') }}
+
       - name: Regenerate clients
         run: pnpm spec:codegen
 

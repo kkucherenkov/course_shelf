@@ -1,7 +1,7 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { admin, bearer } from 'better-auth/plugins';
+import { admin, bearer, emailOTP } from 'better-auth/plugins';
 import { I18nService } from 'nestjs-i18n';
 
 import { EMAIL_PORT } from '../../modules/integrations/domain/email.port';
@@ -25,6 +25,12 @@ function createInstance(
   i18n: I18nService,
 ): ReturnType<typeof betterAuth> {
   const { basePath, secret, baseUrl } = config.betterAuth;
+  // The same toggle `GET /admin/instance` advertises to the SPA, which is what
+  // makes the sign-up wizard draw its 6-digit step. Wiring it here too is what
+  // makes that step mean something: with it off, nothing below changes any
+  // behaviour; with it on, sign-up mails an OTP and an unverified account
+  // cannot sign in.
+  const { emailVerificationRequired } = config.instance;
   const instance = betterAuth({
     database: prismaAdapter(prisma, { provider: 'postgresql' }),
     secret,
@@ -52,6 +58,17 @@ function createInstance(
           html: `<p>${body}</p><p><a href="${url}">${url}</a></p>`,
         });
       },
+      requireEmailVerification: emailVerificationRequired,
+    },
+    emailVerification: {
+      // Without this the wizard's step 2 would have no code to verify — the
+      // OTP has to be in the user's inbox before they are asked for it.
+      sendOnSignUp: emailVerificationRequired,
+      // Verification is the last gate before the wizard's library step, which
+      // is an authenticated call. `requireEmailVerification` means sign-up's
+      // `autoSignIn` produced no session, so verifying has to produce one or
+      // the user lands on step 3 signed out.
+      autoSignInAfterVerification: true,
     },
     // Additional fields on the user model:
     //   - role: stored by the admin plugin for RBAC checks (defaultValue 'USER').
@@ -64,7 +81,38 @@ function createInstance(
         displayName: { type: 'string', required: false },
       },
     },
-    plugins: [admin(), bearer()],
+    plugins: [
+      admin(),
+      bearer(),
+      // `overrideDefaultEmailVerification` replaces Better Auth's default
+      // verification *link* with a 6-digit OTP, which is the surface
+      // `pages/sign-up.vue` already draws.
+      //
+      // `disableSignUp` is load-bearing, not tidiness. The plugin's routes are
+      // public and exist as soon as it is registered, and with sign-up left
+      // enabled `POST /sign-in/email-otp` *creates* a user with
+      // `emailVerified: true` when none matches the address — bypassing the
+      // sign-up wizard, the password policy and `requireEmailVerification`,
+      // and, on a fresh instance, taking `role: 'ADMIN'` from the
+      // first-user hook below. It also makes
+      // `/email-otp/send-verification-otp` mail a code to addresses with no
+      // account at all. Email OTP is only ever a *verification* step here, so
+      // both are closed.
+      emailOTP({
+        overrideDefaultEmailVerification: true,
+        disableSignUp: true,
+        sendVerificationOTP: async ({ email: to, otp }) => {
+          const subject = i18n.t('auth.verifyEmail.subject');
+          const body = i18n.t('auth.verifyEmail.body');
+          await email.send({
+            to,
+            subject,
+            text: `${body}\n\n${otp}`,
+            html: `<p>${body}</p><p><strong>${otp}</strong></p>`,
+          });
+        },
+      }),
+    ],
     trustedOrigins: config.runtime.corsOrigins,
     databaseHooks: {
       user: {

@@ -65,6 +65,27 @@ void main() {
     return request.close();
   }
 
+  // `resolveVideoSource` calls `start()` on every offline play, so two
+  // overlapping lesson opens race it. A check-then-act guard binds two sockets
+  // and orphans the first with no reference left to close it.
+  test('concurrent start() calls bind exactly one socket', () async {
+    // setUp already started this one; stop first so both calls below race the
+    // same cold start.
+    await server.stop();
+
+    final List<Uri> bound = await Future.wait<Uri>(<Future<Uri>>[
+      server.start(),
+      server.start(),
+      server.start(),
+    ]);
+
+    expect(bound.map((Uri uri) => uri.port).toSet(), hasLength(1));
+    // The one socket that did get bound is the one being served from.
+    final HttpClientResponse response = await get(server.urlFor('l1'));
+    expect(response.statusCode, 200);
+    await response.drain<void>();
+  });
+
   test('serves the whole file with 200 and Accept-Ranges', () async {
     final HttpClientResponse response = await get(server.urlFor('l1'));
 

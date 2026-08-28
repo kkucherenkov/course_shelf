@@ -13,6 +13,7 @@ from any working directory.
 Run: python3 docs/roadmap/tools/generate.py
 """
 
+import sys
 from pathlib import Path
 from textwrap import dedent
 from datetime import datetime
@@ -2690,7 +2691,35 @@ def write_readme():
 # Run                                                                        #
 # -------------------------------------------------------------------------- #
 
+def refuse_if_seeded():
+    """Refuse to overwrite hand-maintained cards.
+
+    This script is a one-shot seeder. Every function it calls is an
+    unconditional `write_text`, so a second run resets all 121 cards to
+    `Status: ⬜ Not started`, wipes every `Completed` / `Result` / deviation note
+    written since, and rewrites TODO.md's progress line back to `0 / 121`. The
+    cards are the source of truth now — the registry in this file is a snapshot
+    of what they said on the day they were generated.
+
+    Nothing here is recoverable from the registry, only from git.
+    """
+    seeded = [
+        p for p in TASKS.glob("*.md")
+        if "**Status:** ⬜ Not started" not in p.read_text()
+    ]
+    if seeded and "--force" not in sys.argv:
+        raise SystemExit(
+            f"refusing to run: {len(seeded)} of {len(list(TASKS.glob('*.md')))} "
+            f"cards in {TASKS} carry hand-written status/notes that this script "
+            f"would overwrite.\n"
+            f"The cards are the source of truth; edit them directly.\n"
+            f"To reseed anyway (destroys that record — commit first): "
+            f"--force"
+        )
+
+
 if __name__ == "__main__":
+    refuse_if_seeded()
     write_tasks()
     write_todo()
     write_roadmap()

@@ -1,3 +1,6 @@
+import os from 'node:os';
+import path from 'node:path';
+
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
@@ -55,6 +58,62 @@ export interface StreamingConfig {
    * Env: STREAM_TOKEN_TTL_SECONDS.
    */
   readonly ttlSeconds: number;
+}
+
+export interface BackupsConfig {
+  /**
+   * Master key passed to HKDF as IKM. Re-uses BETTER_AUTH_SECRET, exactly as
+   * `StreamingConfig` does — the info string below is what separates the two
+   * derived subkeys.
+   */
+  readonly secret: string;
+  /**
+   * Directory the dump archives are written to.
+   * Default: `<os.tmpdir()>/courseshelf-backups`.
+   *
+   * The default is deliberately ephemeral: it is writable everywhere (dev host,
+   * container, CI) so the endpoint never fails on a permissions problem the
+   * operator did not choose. An operator who wants archives to survive a
+   * restart points BACKUP_DIR at a mounted volume.
+   * Env: BACKUP_DIR.
+   */
+  readonly dir: string;
+  /**
+   * Path to the `pg_dump` binary. Default: 'pg_dump' (resolved via PATH).
+   * Env: PG_DUMP_PATH.
+   */
+  readonly pgDumpPath: string;
+  /**
+   * Wall-clock timeout for one `pg_dump` invocation, in milliseconds.
+   * Default: 300000 (5 min). The metadata database is small; this is a
+   * runaway guard, not a budget.
+   * Env: BACKUP_TIMEOUT_MS.
+   */
+  readonly timeoutMs: number;
+  /**
+   * HKDF info string for the backup download token. Deliberately different
+   * from the streaming one, so a stream token can never be replayed against a
+   * backup. Changing it rotates the subkey and invalidates outstanding links.
+   * Default: "courseshelf:backup-token:v1".
+   * Env: BACKUP_TOKEN_HKDF_INFO.
+   */
+  readonly hkdfInfo: string;
+  /**
+   * TTL for a backup download link, in seconds. Default: 300 (5 min) — same
+   * reasoning as material downloads: a click resolves immediately, so a long
+   * TTL only widens the window in which a leaked URL still works.
+   * Env: BACKUP_TOKEN_TTL_SECONDS.
+   */
+  readonly ttlSeconds: number;
+  /**
+   * How long an archive stays on disk. Archives older than this are deleted
+   * when a new backup is taken. Default: 168 (7 days).
+   *
+   * Without this the directory grows without bound — a scheduled backup would
+   * eventually fill the volume.
+   * Env: BACKUP_RETENTION_HOURS.
+   */
+  readonly retentionHours: number;
 }
 
 export type ProviderMode = 'mock' | 'real';
@@ -186,6 +245,19 @@ export class AppConfig {
    */
   get thumbnailJpegQuality(): number {
     return this.numberOrDefault('THUMBNAIL_JPEG_QUALITY', 30);
+  }
+
+  get backups(): BackupsConfig {
+    return {
+      dir: this.stringOrDefault('BACKUP_DIR', path.join(os.tmpdir(), 'courseshelf-backups')),
+      pgDumpPath: this.stringOrDefault('PG_DUMP_PATH', 'pg_dump'),
+      timeoutMs: this.numberOrDefault('BACKUP_TIMEOUT_MS', 300_000),
+      // Same IKM as `streaming`, different info — see BackupsConfig.hkdfInfo.
+      secret: this.requireString('BETTER_AUTH_SECRET'),
+      hkdfInfo: this.stringOrDefault('BACKUP_TOKEN_HKDF_INFO', 'courseshelf:backup-token:v1'),
+      ttlSeconds: this.numberOrDefault('BACKUP_TOKEN_TTL_SECONDS', 300),
+      retentionHours: this.numberOrDefault('BACKUP_RETENTION_HOURS', 168),
+    };
   }
 
   get streaming(): StreamingConfig {

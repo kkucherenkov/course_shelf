@@ -9,8 +9,9 @@
 #   contained directory tree at `/app` with workspace symlinks inlined and
 #   devDependencies stripped.
 #
-#   Stage 3 (runtime) is a slim alpine with node + ffmpeg + the deployed
-#   tree. Entrypoint runs `prisma migrate deploy` then `node dist/main.js`.
+#   Stage 3 (runtime) is a slim alpine with node + ffmpeg + pg_dump + the
+#   deployed tree. Entrypoint runs `prisma migrate deploy` then
+#   `node dist/main.js`.
 #
 # Build:    docker build -f apps/backend/Dockerfile -t courseshelf/backend:latest .
 # (build context = repo root so the Dockerfile can see every workspace package)
@@ -86,7 +87,16 @@ FROM node:24-alpine AS runtime
 # ffmpeg ships ffprobe — the catalog scanner uses it to read video metadata.
 # openssl + libc6-compat are required by Prisma's alpine query engine.
 # tini forwards signals so SIGTERM stops the Nest app cleanly.
-RUN apk add --no-cache ffmpeg openssl libc6-compat tini
+#
+# postgresql18-client ships pg_dump for POST /api/v1/admin/backups. The major
+# is pinned deliberately: pg_dump refuses to dump a server newer than itself,
+# and compose runs postgres 18.1. `postgresql-client` (unversioned) would
+# float to whatever major the base image's alpine release carries and would
+# start failing at some future base bump, in a way that only shows up when an
+# admin tries to take a backup. The endpoint compares the two majors at
+# request time and answers 503 rather than writing a partial archive, so a
+# mismatch is loud — but the pin is what stops it happening.
+RUN apk add --no-cache ffmpeg openssl libc6-compat tini postgresql18-client
 
 WORKDIR /app
 
@@ -98,7 +108,12 @@ ARG APP_VERSION=0.0.0-dev
 
 ENV NODE_ENV=production \
     PORT=3000 \
-    APP_VERSION=${APP_VERSION}
+    APP_VERSION=${APP_VERSION} \
+    # AppConfig's default is an os.tmpdir() path so the endpoint works on a bare
+    # dev host. In the image the directory below is created and owned by `node`,
+    # so point at it — and mount a volume there if archives should outlive the
+    # container.
+    BACKUP_DIR=/data/backups
 
 COPY --from=deploy /app/ ./
 
@@ -106,7 +121,8 @@ COPY --from=deploy /app/ ./
 # the SPA. Override via the `COURSES_PATH` host bind in compose. The
 # chown lets the non-root `node` user write thumbnails next to videos
 # when the host bind doesn't override ownership.
-RUN mkdir -p /data/courses && chown -R node:node /app /data/courses
+RUN mkdir -p /data/courses /data/backups \
+    && chown -R node:node /app /data/courses /data/backups
 
 EXPOSE 3000
 

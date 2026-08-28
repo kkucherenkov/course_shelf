@@ -78,7 +78,12 @@ export function registerOpenApiValidator(app: INestApplication, nodeEnv: string)
       // both keeps this resilient.
       // `/v1/stream/materials/` is also exempt: same rationale as the video
       // stream endpoint — raw binary response with no OpenAPI JSON schema.
-      ignorePaths: /\/v1\/(?:auth(?:\/|$)|stream\/lessons\/|stream\/materials\/)/,
+      // `/v1/admin/backups/<id>/download` is exempt for the same reason:
+      // an opaque `application/octet-stream` body. Note the alternative is
+      // written to match only the download sub-route — `POST /v1/admin/backups`
+      // itself IS in the spec and must stay validated.
+      ignorePaths:
+        /\/v1\/(?:auth(?:\/|$)|stream\/lessons\/|stream\/materials\/|admin\/backups\/[^/]+\/download)/,
     }),
   );
 

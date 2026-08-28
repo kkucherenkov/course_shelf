@@ -1,0 +1,66 @@
+name: Set up CourseShelf toolchain
+description: >
+  pnpm + Node (and optionally Flutter) with every cache wired, plus
+  `pnpm install --frozen-lockfile`. The single source of truth for which
+  toolchain versions CI runs on.
+
+# Why this exists: the same five-line pnpm/Node preamble was pasted into eight
+# jobs across five workflow files, with the Node version written as a literal
+# "24" in four of them and as `env.NODE_VERSION` in the other four. Workflow
+# `env` does not cross files, so there was no way to bump Node once — and a
+# half-applied bump fails as a version skew somewhere unrelated.
+#
+# Versions live here, in the `inputs` defaults below, and nowhere else.
+
+inputs:
+  node:
+    description: Install pnpm + Node and run `pnpm install --frozen-lockfile`.
+    required: false
+    default: "true"
+  flutter:
+    description: Install the Flutter SDK (with SDK + pub caches).
+    required: false
+    default: "false"
+  node-version:
+    description: Node major version. Override only for a deliberate matrix.
+    required: false
+    default: "24"
+  flutter-version:
+    description: >
+      Flutter version. Must match the version the goldens were generated with —
+      golden PNGs are rendering-engine artefacts, so a version skew fails them
+      for reasons that have nothing to do with the code. Bump here, in
+      `.claude/CLAUDE.md`, and in both pubspec floors together.
+    required: false
+    default: "3.44.4"
+
+runs:
+  using: composite
+  steps:
+    # Order is load-bearing: `setup-node`'s `cache: pnpm` shells out to pnpm to
+    # locate the store, so pnpm has to be on PATH before it runs.
+    - if: inputs.node == 'true'
+      uses: pnpm/action-setup@v6
+
+    - if: inputs.node == 'true'
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+
+    # `pub-cache` is stated explicitly even though `cache: true` already implies
+    # it (flutter-action gates it on `pub-cache == '' && cache == 'true'`).
+    # Spelling it out decouples the two, so turning the SDK cache off later does
+    # not silently drop the pub cache with it.
+    - if: inputs.flutter == 'true'
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ inputs.flutter-version }}
+        cache: true
+        pub-cache: true
+
+    # Every job that sets up Node then runs exactly this, so it is folded in
+    # rather than exposed as an input nobody would ever set to false.
+    - if: inputs.node == 'true'
+      shell: bash
+      run: pnpm install --frozen-lockfile

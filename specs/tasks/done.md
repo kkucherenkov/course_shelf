@@ -60,6 +60,42 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-29-001 — reconcile roadmap card bookkeeping with the tree
+
+- Created: 2026-08-29
+- Completed: 2026-08-29
+- Owner: claude
+- Branch: `chore/roadmap-bookkeeping` (stacked on `chore/backfill-card-results`)
+- Spec: tuxedo `+course_shelf` #16, #18; dnote `course_shelf` #11 (audit 2026-08-28)
+- Result: https://github.com/kkucherenkov/course_shelf/pull/192
+- Goal: make `docs/roadmap/` agree with the repository, and stop the one script
+  that would silently undo it.
+- Spec diff: none
+- Codegen impact: no
+- Design impact: none
+- Sub-steps:
+  - [x] E22-F01-S05 -> ✅ Done (job in `ci.yml:163-225` since `c10cc64`), with
+        the colocated-goldens and skipped-setup-action deviations recorded
+  - [x] E23-F01-S01 / E23-F01-S02 -> ❌ Cancelled with reasons on the cards
+  - [x] `❌ Cancelled` added to the status legend on all 121 cards; TODO.md
+        drops cancelled rows from the denominator instead of faking a tick
+  - [x] progress `104 / 121` -> `113 / 119`, cross-checked against the cards
+  - [x] corrected false claims on E02-F01-S02, E03-F01-S01, E08-F02-S02,
+        E22-F01-S06, E20-F01-S01 and twelve E17 sibling cards
+  - [x] `tools/generate.py` refuses to reseed over hand-written status
+- Status: done
+
+**Why the generator guard is part of this task.** Every writer in
+`docs/roadmap/tools/generate.py` is an unconditional `write_text`. Running it
+resets all 121 cards to `⬜ Not started` and rewrites the progress line to
+`0 / 121` — it would have undone this task, #191, and every deviation note
+either of them wrote. Correcting the cards without disarming it would have been
+a symptom fix.
+
+**Left open deliberately.** `ROADMAP.md`'s Gantt marks all 121 rows `:active`,
+the 113 finished ones included, so it tracks nothing. Not folded in — it is a
+rewrite of a different file with a different failure mode.
+
 ## T-2026-07-29-001 — E19-F01-S01 · DownloadsBloc with resumable encrypted downloads
 
 - Created: 2026-07-29

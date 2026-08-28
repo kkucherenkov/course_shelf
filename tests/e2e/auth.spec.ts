@@ -8,7 +8,8 @@
  *     (admin promotion itself is server-side since #226 — not observable here)
  *  2. Second-user signup → standard wizard, no first-run framing
  *  3. Sign-in error → error banner shown
- *  4. Forgot-password full flow (email → sent → reset)
+ *  4. Forgot-password full flow (email → sent → reset), asserting the real
+ *     Better Auth routes are called
  *  5. Sign-up disabled → empty state on /sign-up; sign-in hides CTA
  */
 
@@ -273,12 +274,20 @@ test('forgot-password full flow: email → confirmation → reset', async ({ pag
   await mockHasUsers(page, true);
   await mockInstance(page);
 
-  // Mock the forgot-password endpoint
+  // Recorded rather than blanket-mocked: this flow used to be two client-side
+  // stubs that resolved `{ ok: true }` without any request at all, and the
+  // page looked identical either way. Asserting the exact Better Auth routes
+  // and bodies is what tells a stub apart from a wired call.
+  const requests: { url: string; body: unknown }[] = [];
   await page.route('**/api/v1/auth/**', (route) => {
+    requests.push({
+      url: new URL(route.request().url()).pathname,
+      body: route.request().postDataJSON() as unknown,
+    });
     void route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ success: true }),
+      body: JSON.stringify({ status: true }),
     });
   });
 
@@ -292,8 +301,16 @@ test('forgot-password full flow: email → confirmation → reset', async ({ pag
   await page.locator('button[type="submit"]').click();
 
   // Step 2: confirmation card
-  // forgotPassword is a stub → returns ok:true, advances to 'sent' step
   await expect(page.locator('text=/Check your email/i')).toBeVisible({ timeout: 8000 });
+
+  expect(requests).toHaveLength(1);
+  expect(requests[0]?.url).toBe('/api/v1/auth/request-password-reset');
+  // `redirectTo` has to come back to /forgot — that page reads `?token=` to
+  // switch itself to the reset step, so a link anywhere else dead-ends.
+  expect(requests[0]?.body).toMatchObject({
+    email: 'user@example.com',
+    redirectTo: expect.stringContaining('/forgot') as unknown as string,
+  });
 
   // The "Open mail app" button should link to mailto:
   const mailBtn = page.locator('a[href^="mailto:"]');
@@ -313,8 +330,18 @@ test('forgot-password full flow: email → confirmation → reset', async ({ pag
   await passwordInputs.nth(0).fill('NewStrongPass-2026!');
   await passwordInputs.nth(1).fill('NewStrongPass-2026!');
 
+  requests.length = 0;
   await page.locator('button[type="submit"]').click();
-  // resetPassword stub returns ok:true → navigateTo('/') happens
+
+  // Reset establishes no session, so the page hands the user to sign-in with
+  // the password they just set rather than to an app root that would bounce
+  // them straight back.
+  await page.waitForURL('**/sign-in', { timeout: 8000 });
+  expect(requests.map((request) => request.url)).toContain('/api/v1/auth/reset-password');
+  expect(requests[0]?.body).toMatchObject({
+    newPassword: 'NewStrongPass-2026!',
+    token: 'reset-token-abc',
+  });
 });
 
 // ── Test 5: Sign-up disabled ──────────────────────────────────────────────────

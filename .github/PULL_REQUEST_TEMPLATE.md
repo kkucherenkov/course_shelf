@@ -24,6 +24,9 @@ entry or its `specs/tasks/done.md` archive row. -->
 - [ ] Updated `specs/design/tokens/*.json` and ran `pnpm design:build`
 - [ ] Added or updated Storybook story + `.spec.ts`
 - [ ] Screenshots / screen-recording attached below
+- [ ] Storybook visual regression is green, **or** the drift is intentional and
+      this PR carries the `visual-approved` label (the check posts a comment
+      listing which stories moved and links the diff images)
 - [ ] N/A — no UI change
 
 ## i18n

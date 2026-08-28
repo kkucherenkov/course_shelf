@@ -26,6 +26,8 @@ coverage
 # jest-image-snapshot writes diff PNGs here on local runs; they're
 # byproducts, not baselines.
 **/__snapshots__/__diff_output__/
+# Drift log written by packages/ui/.storybook/test-runner.ts, consumed by CI.
+packages/ui/visual-report.ndjson
 
 # tooling
 .DS_Store

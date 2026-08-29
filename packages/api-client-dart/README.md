@@ -83,6 +83,7 @@ Class | Method | HTTP request | Description
 [*AdminApi*](doc/AdminApi.md) | [**applyIdentifyResult**](doc/AdminApi.md#applyidentifyresult) | **POST** /api/v1/admin/identify-tasks/{id}/apply | Apply a proposed identify task to its course
 [*AdminApi*](doc/AdminApi.md) | [**createBackup**](doc/AdminApi.md#createbackup) | **POST** /api/v1/admin/backups | Create a metadata database snapshot and return a signed download URL
 [*AdminApi*](doc/AdminApi.md) | [**discardIdentifyTask**](doc/AdminApi.md#discardidentifytask) | **POST** /api/v1/admin/identify-tasks/{id}/discard | Discard a proposed identify task
+[*AdminApi*](doc/AdminApi.md) | [**downloadBackup**](doc/AdminApi.md#downloadbackup) | **GET** /api/v1/admin/backups/{id}/download | Download a backup archive with a signed link
 [*AdminApi*](doc/AdminApi.md) | [**getAdminDashboard**](doc/AdminApi.md#getadmindashboard) | **GET** /api/v1/admin/dashboard | Operational snapshot for the admin dashboard
 [*AdminApi*](doc/AdminApi.md) | [**getAdminHasUsers**](doc/AdminApi.md#getadminhasusers) | **GET** /api/v1/admin/has-users | Indicate whether any users exist in the platform
 [*AdminApi*](doc/AdminApi.md) | [**getAdminInstance**](doc/AdminApi.md#getadmininstance) | **GET** /api/v1/admin/instance | Public instance configuration (self-registration, email verification, SSO providers)
@@ -152,6 +153,9 @@ Class | Method | HTTP request | Description
 [*ScrapersApi*](doc/ScrapersApi.md) | [**scrapeCoursePreview**](doc/ScrapersApi.md#scrapecoursepreview) | **POST** /api/v1/admin/courses/{id}/scrape-preview | Preview scraped metadata for a course
 [*StreamingApi*](doc/StreamingApi.md) | [**issueMaterialDownloadUrl**](doc/StreamingApi.md#issuematerialdownloadurl) | **GET** /api/v1/lessons/{lessonId}/materials/{materialId}/download-url | Mint a short-lived signed URL to download a lesson material
 [*StreamingApi*](doc/StreamingApi.md) | [**issueStreamUrl**](doc/StreamingApi.md#issuestreamurl) | **GET** /api/v1/lessons/{id}/stream-url | Mint a short-lived signed URL for a lesson video
+[*StreamingApi*](doc/StreamingApi.md) | [**streamLessonSubtitle**](doc/StreamingApi.md#streamlessonsubtitle) | **GET** /api/v1/stream/lessons/{id}/subtitles/{language} | Serve a lesson&#39;s subtitle track as WebVTT
+[*StreamingApi*](doc/StreamingApi.md) | [**streamLessonVideo**](doc/StreamingApi.md#streamlessonvideo) | **GET** /api/v1/stream/lessons/{id} | Stream a lesson&#39;s video, with byte-range support
+[*StreamingApi*](doc/StreamingApi.md) | [**streamMaterial**](doc/StreamingApi.md#streammaterial) | **GET** /api/v1/stream/materials/{materialId} | Download a lesson material
 [*SystemApi*](doc/SystemApi.md) | [**getHealth**](doc/SystemApi.md#gethealth) | **GET** /api/v1/health | Service health probe
 
 

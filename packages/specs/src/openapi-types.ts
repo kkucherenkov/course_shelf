@@ -113,6 +113,35 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/backups/{id}/download': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Download a backup archive with a signed link
+     * @description Serves the archive `POST /api/v1/admin/backups` produced.
+     *
+     *     Anonymous by design: the link is followed by a browser navigation or a
+     *     `curl`, neither of which carries the admin session. Authorisation is the
+     *     signed `token`, bound to `(backupId, expiresAt)` with a 5-minute TTL —
+     *     deliberately short, because a leaked URL is a database dump.
+     *
+     *     The token is verified **before** the filesystem is touched, so an
+     *     unauthenticated caller cannot probe which backup ids exist by response
+     *     timing or error shape.
+     */
+    get: operations['downloadBackup'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/scans': {
     parameters: {
       query?: never;
@@ -950,6 +979,88 @@ export interface paths {
      *     the lesson video and the material/subtitle blobs separately.
      */
     get: operations['getLesson'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/stream/lessons/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Stream a lesson's video, with byte-range support
+     * @description Progressive HTTP delivery — no HLS, no DASH, no transcoding
+     *     (ADR-0009). Honours `Range`, so seeking is a 206 rather than a
+     *     re-download.
+     *
+     *     Authenticated by the `token` query parameter minted by
+     *     `GET /api/v1/lessons/{id}/stream-url`, not by a session: a `<video>`
+     *     element cannot send an Authorization header. The token is bound to
+     *     `(userId, lessonId, expiresAt)` and lives 15 minutes by default.
+     *
+     *     Responds with `Cross-Origin-Resource-Policy: cross-origin` so the SPA
+     *     can embed it from the proxy origin, the bare Nuxt origin, or a
+     *     production domain.
+     */
+    get: operations['streamLessonVideo'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/stream/lessons/{id}/subtitles/{language}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Serve a lesson's subtitle track as WebVTT
+     * @description Always `text/vtt`, whatever the source was: an `.srt` sidecar is
+     *     converted on the fly and the result cached next to it as
+     *     `*.cache.vtt` (which the scanner then knows to ignore).
+     *
+     *     Same token as the video endpoint — a `<track>` element cannot send an
+     *     Authorization header either.
+     */
+    get: operations['streamLessonSubtitle'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/stream/materials/{materialId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Download a lesson material
+     * @description Serves a course material (PDF, slides, an image) as an attachment.
+     *
+     *     Uses a **material-scoped** token from
+     *     `GET /api/v1/lessons/{lessonId}/materials/{materialId}/download-url`,
+     *     distinct from the video token: it embeds the owning `lessonId`, and the
+     *     handler re-checks that the material still belongs to that lesson —
+     *     token binding plus a database check, rather than either alone.
+     */
+    get: operations['streamMaterial'];
     put?: never;
     post?: never;
     delete?: never;
@@ -3859,6 +3970,52 @@ export interface operations {
       };
     };
   };
+  downloadBackup: {
+    parameters: {
+      query: {
+        /** @description Signed backup token, valid for `BACKUP_TOKEN_TTL_SECONDS`. */
+        token: string;
+      };
+      header?: never;
+      path: {
+        /** @description Backup id from the create response. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The compressed `pg_dump` archive. */
+      200: {
+        headers: {
+          /** @description `attachment; filename="..."`. */
+          'Content-Disposition'?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/octet-stream': string;
+        };
+      };
+      /** @description Token missing, malformed, expired, or bound to another backup. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description No such backup, or the archive is gone from disk. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
   listAdminScans: {
     parameters: {
       query?: {
@@ -5618,6 +5775,168 @@ export interface operations {
         };
       };
       /** @description Lesson not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  streamLessonVideo: {
+    parameters: {
+      query: {
+        /** @description Signed stream token from `issueStreamUrl`. */
+        token: string;
+      };
+      header?: {
+        /** @description Standard byte range, e.g. `bytes=0-1048575`. */
+        Range?: string;
+      };
+      path: {
+        /** @description Lesson cuid. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The whole file, when no `Range` was requested. */
+      200: {
+        headers: {
+          /** @description Always `bytes`. */
+          'Accept-Ranges'?: string;
+          'Content-Length'?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/octet-stream': string;
+        };
+      };
+      /** @description The requested byte range. */
+      206: {
+        headers: {
+          /** @description e.g. `bytes 0-1048575/73400320`. */
+          'Content-Range'?: string;
+          'Accept-Ranges'?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/octet-stream': string;
+        };
+      };
+      /** @description Token missing, malformed, expired, or bound to another lesson. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description No such lesson, or its file is missing on disk. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description The `Range` header asks for bytes outside the file. */
+      416: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  streamLessonSubtitle: {
+    parameters: {
+      query: {
+        token: string;
+      };
+      header?: never;
+      path: {
+        /** @description Lesson cuid. */
+        id: string;
+        /** @description Language code as discovered by the scan, e.g. `en`. */
+        language: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The subtitle track. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'text/vtt': string;
+        };
+      };
+      /** @description Token missing, malformed, expired, or bound to another lesson. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description No such lesson, or no subtitle in that language. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  streamMaterial: {
+    parameters: {
+      query: {
+        /** @description Signed material token from `issueMaterialDownloadUrl`. */
+        token: string;
+      };
+      header?: never;
+      path: {
+        /** @description Material cuid. */
+        materialId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The material bytes. */
+      200: {
+        headers: {
+          /** @description `attachment; filename="..."`, using the material's label. */
+          'Content-Disposition'?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/octet-stream': string;
+        };
+      };
+      /** @description Token missing, malformed, expired, or bound to another material. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description No such material, or its file is missing on disk. */
       404: {
         headers: {
           [name: string]: unknown;

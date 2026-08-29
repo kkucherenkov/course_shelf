@@ -2,6 +2,47 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-29-006 — E19-F01-S03 · Downloads tab UI, plus the entry point it needed
+
+- Created: 2026-08-29
+- Completed: 2026-08-29
+- Owner: claude
+- Branch: `feat/downloads-tab-ui`
+- Cards: [E19-F01-S03](../../docs/roadmap/tasks/E19-F01-S03.md) and the last
+  open sub-step of [E18-F01-S03](../../docs/roadmap/tasks/E18-F01-S03.md) (#101)
+- Result: https://github.com/kkucherenkov/course_shelf/pull/198
+- Goal: a Downloads tab that shows the real queue, and a way to put something
+  in it.
+- Spec diff: none
+- Codegen impact: no (Drift/slang regeneration only)
+- Design impact: implements `docs/design/cs-mobile-downloads/`
+- Tests: 399 pass (+20). `integration_test` not written — no emulator on this
+  host, the constraint E19-F01-S01 already recorded.
+- Sub-steps:
+  - [x] `downloaded_lessons` v2 -> v3: `lesson_title` / `course_title`
+  - [x] `DeviceStorage` port + `disk_space_plus` adapter
+  - [x] bloc: grouping, storage, connectivity, delete-course
+  - [x] screen: storage bar, offline banner, three sections, per-course
+        delete-all, empty state
+  - [x] course detail: per-lesson tap-to-download + course-level CTA
+  - [x] `DownloadsBloc` provided above the MaterialApp
+  - [x] four locales, `pnpm check:i18n` green
+- Status: done
+
+**Two blockers found before anything could be built.** `EnqueueLesson` /
+`EnqueueCourse` were dispatched from nowhere, so the tab could only ever have
+been empty; and there is no local catalog to read titles from — `cached_lessons`
+/ `cached_courses` exist but `CachedCatalogDao` has no callers at all. The first
+pulled #101 into this task; the second is why the queue row now carries its own
+display names.
+
+**Not verified.** `disk_space_plus` has native code on both platforms and was
+never executed here. `pubspec.lock` was resolved under local Flutter 3.47 while
+CI pins 3.44, moving seven SDK-pinned transitive packages; CI's `flutter pub
+get` is the check.
+
+**Worth a native review.** The Greek and Ukrainian strings are mine.
+
 ## T-2026-08-29-005 — E22-F01-S04 · visual-drift PR comment + visual-approved gate
 
 - Created: 2026-08-29

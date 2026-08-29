@@ -11,8 +11,17 @@
       label?: string;
       /** When true (default) the hover action row is rendered. */
       editable?: boolean;
+      /** Accessible name for the edit action; override to translate. */
+      editLabel?: string;
+      /** Accessible name for the delete action; override to translate. */
+      deleteLabel?: string;
     }>(),
-    { label: '', editable: true },
+    {
+      label: '',
+      editable: true,
+      editLabel: 'Edit bookmark',
+      deleteLabel: 'Delete bookmark',
+    },
   );
 
   const emit = defineEmits<{
@@ -61,7 +70,7 @@
       <button
         type="button"
         class="app-bookmark__action"
-        aria-label="Edit bookmark"
+        :aria-label="editLabel"
         @click.stop="emit('edit')"
       >
         <IconCS name="edit" :size="14" />
@@ -69,7 +78,7 @@
       <button
         type="button"
         class="app-bookmark__action"
-        aria-label="Delete bookmark"
+        :aria-label="deleteLabel"
         @click.stop="emit('delete')"
       >
         <IconCS name="trash" :size="14" />

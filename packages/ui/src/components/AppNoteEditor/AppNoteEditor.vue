@@ -16,6 +16,31 @@
       debounceMs?: number;
       /** Visible while editing. */
       placeholder?: string;
+      /**
+       * Every other string the component renders. English defaults keep it
+       * rendering identically without any; `@app/ui` never calls `t()` itself
+       * — it has no locale and must not acquire one.
+       */
+      syncingLabel?: string;
+      savedLabel?: string;
+      failedLabel?: string;
+      offlineLabel?: string;
+      toolbarLabel?: string;
+      boldLabel?: string;
+      italicLabel?: string;
+      headingLabel?: string;
+      listLabel?: string;
+      linkLabel?: string;
+      previewLabel?: string;
+      editLabel?: string;
+      textareaLabel?: string;
+      /**
+       * Renders the "saved N ago" suffix. A callback rather than a set of
+       * strings because the component owns the ticking clock but not the
+       * language: only the consumer knows how its locale pluralises a count of
+       * seconds. Returning `null` drops the suffix entirely.
+       */
+      formatSavedAt?: (savedAt: Date | number) => string | null;
     }>(),
     {
       mode: 'edit',
@@ -23,6 +48,20 @@
       savedAt: undefined,
       debounceMs: 600,
       placeholder: 'Write a note in Markdown — # heading, **bold**, *italic*, - list',
+      syncingLabel: 'Syncing…',
+      savedLabel: 'Saved',
+      failedLabel: 'Failed — retrying',
+      offlineLabel: 'Offline — queued',
+      toolbarLabel: 'Note formatting',
+      boldLabel: 'Bold',
+      italicLabel: 'Italic',
+      headingLabel: 'Heading',
+      listLabel: 'List',
+      linkLabel: 'Link',
+      previewLabel: 'Preview',
+      editLabel: 'Edit',
+      textareaLabel: 'Note text',
+      formatSavedAt: undefined,
     },
   );
 
@@ -182,14 +221,18 @@
 
   const syncLabel = computed(() => {
     void tickRef.value;
-    if (props.syncState === 'syncing') return 'Syncing…';
-    if (props.syncState === 'failed') return 'Failed — retrying';
-    if (props.syncState === 'offline') return 'Offline — queued';
-    if (!props.savedAt) return 'Saved';
-    return `Saved · ${formatAgo(props.savedAt)}`;
+    if (props.syncState === 'syncing') return props.syncingLabel;
+    if (props.syncState === 'failed') return props.failedLabel;
+    if (props.syncState === 'offline') return props.offlineLabel;
+    if (!props.savedAt) return props.savedLabel;
+    // `defineProps` defaults are hoisted out of setup(), so they cannot
+    // reference a function declared here — the fallback lives at the call
+    // site instead.
+    const ago = (props.formatSavedAt ?? defaultFormatSavedAt)(props.savedAt);
+    return ago === null ? props.savedLabel : `${props.savedLabel} · ${ago}`;
   });
 
-  function formatAgo(at: Date | number): string {
+  function defaultFormatSavedAt(at: Date | number): string {
     const ms = typeof at === 'number' ? Date.now() - at : Date.now() - at.getTime();
     const seconds = Math.max(0, Math.floor(ms / 1000));
     if (seconds < 5) return 'just now';
@@ -212,11 +255,11 @@
 
 <template>
   <div class="app-note-editor" :data-mode="mode">
-    <div class="app-note-editor__toolbar" role="toolbar" aria-label="Note formatting">
+    <div class="app-note-editor__toolbar" role="toolbar" :aria-label="toolbarLabel">
       <button
         type="button"
         class="app-note-editor__tool"
-        aria-label="Bold"
+        :aria-label="boldLabel"
         :disabled="mode === 'view'"
         @click="applyWrap('**')"
       >
@@ -225,7 +268,7 @@
       <button
         type="button"
         class="app-note-editor__tool"
-        aria-label="Italic"
+        :aria-label="italicLabel"
         :disabled="mode === 'view'"
         @click="applyWrap('*')"
       >
@@ -234,7 +277,7 @@
       <button
         type="button"
         class="app-note-editor__tool"
-        aria-label="Heading"
+        :aria-label="headingLabel"
         :disabled="mode === 'view'"
         @click="applyLinePrefix('# ')"
       >
@@ -243,7 +286,7 @@
       <button
         type="button"
         class="app-note-editor__tool"
-        aria-label="List"
+        :aria-label="listLabel"
         :disabled="mode === 'view'"
         @click="applyLinePrefix('- ')"
       >
@@ -252,7 +295,7 @@
       <button
         type="button"
         class="app-note-editor__tool"
-        aria-label="Link"
+        :aria-label="linkLabel"
         :disabled="mode === 'view'"
         @click="applyLink"
       >
@@ -265,7 +308,7 @@
         :aria-pressed="mode === 'view' ? 'true' : 'false'"
         @click="toggleMode"
       >
-        {{ mode === 'edit' ? 'Preview' : 'Edit' }}
+        {{ mode === 'edit' ? previewLabel : editLabel }}
       </button>
     </div>
 
@@ -275,7 +318,7 @@
       class="app-note-editor__body app-note-editor__body--edit"
       :value="modelValue"
       :placeholder="placeholder"
-      aria-label="Note text"
+      :aria-label="textareaLabel"
       spellcheck="true"
       @input="onInput"
     />

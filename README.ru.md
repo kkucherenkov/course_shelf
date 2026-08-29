@@ -288,20 +288,21 @@ scripts/            setup.sh + вспомогательные скрипты
 
 ## Документация
 
-| Тема                                                         | Файл                                                             |
-| ------------------------------------------------------------ | ---------------------------------------------------------------- |
-| **Как пользоваться CourseShelf (пользователи, админы)**      | [`docs/user-guide.md`](docs/user-guide.md)                       |
-| **Архитектура системы (разработчики, архитекторы)**          | [`docs/architecture.md`](docs/architecture.md)                   |
-| Записи архитектурных решений (ADR)                           | [`docs/adr/`](docs/adr/)                                         |
-| Бэкенд, CQRS, Prisma, соглашения API                         | [`.claude/docs/handbook.md`](.claude/docs/handbook.md)           |
-| Система дизайна, @app/ui, токены, BEM                        | [`.claude/docs/design-system.md`](.claude/docs/design-system.md) |
-| i18n в вебе, мобильном приложении и бэкенде                  | [`.claude/docs/i18n.md`](.claude/docs/i18n.md)                   |
-| Пирамида тестирования, критерии готовности, чеклист PR       | [`.claude/docs/testing.md`](.claude/docs/testing.md)             |
-| Безопасность, наблюдаемость, доступность, производительность | [`.claude/docs/security.md`](.claude/docs/security.md)           |
-| Миграция функционала из другого проекта                      | [`.claude/docs/migration.md`](.claude/docs/migration.md)         |
-| Правила проекта (канонические, расширение данного README)    | [`.claude/CLAUDE.md`](.claude/CLAUDE.md)                         |
-| Рабочий процесс дизайна и реестр компонентов                 | [`specs/design/README.md`](specs/design/README.md)               |
-| Подробности о Docker-стеке                                   | [`docker/README.md`](docker/README.md)                           |
+| Тема                                                         | Файл                                                                   |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| **Как пользоваться CourseShelf (пользователи, админы)**      | [`docs/user-guide.md`](docs/user-guide.md)                             |
+| **Архитектура системы (разработчики, архитекторы)**          | [`docs/architecture.md`](docs/architecture.md)                         |
+| Записи архитектурных решений (ADR)                           | [`docs/adr/`](docs/adr/)                                               |
+| **Развёртывание релиза на NAS (UGREEN + Dockge)**            | [`docs/deploy-ugreen-nas-dockge.md`](docs/deploy-ugreen-nas-dockge.md) |
+| Бэкенд, CQRS, Prisma, соглашения API                         | [`.claude/docs/handbook.md`](.claude/docs/handbook.md)                 |
+| Система дизайна, @app/ui, токены, BEM                        | [`.claude/docs/design-system.md`](.claude/docs/design-system.md)       |
+| i18n в вебе, мобильном приложении и бэкенде                  | [`.claude/docs/i18n.md`](.claude/docs/i18n.md)                         |
+| Пирамида тестирования, критерии готовности, чеклист PR       | [`.claude/docs/testing.md`](.claude/docs/testing.md)                   |
+| Безопасность, наблюдаемость, доступность, производительность | [`.claude/docs/security.md`](.claude/docs/security.md)                 |
+| Миграция функционала из другого проекта                      | [`.claude/docs/migration.md`](.claude/docs/migration.md)               |
+| Правила проекта (канонические, расширение данного README)    | [`.claude/CLAUDE.md`](.claude/CLAUDE.md)                               |
+| Рабочий процесс дизайна и реестр компонентов                 | [`specs/design/README.md`](specs/design/README.md)                     |
+| Подробности о Docker-стеке                                   | [`docker/README.md`](docker/README.md)                                 |
 
 ## Участие в проекте
 

@@ -407,13 +407,38 @@ server that decrypts on demand, so the video player and every other process on
 the device only ever see plaintext bytes in transit, never a plaintext file.
 
 **Writes** — three outbox tables (`progress_outbox`, `notes_outbox`,
-`bookmarks_outbox`) with a shared `outbox_op` shape. Playback writes enqueue
-locally and return immediately.
+`bookmarks_outbox`) with a shared `outbox_op` shape. **Every** write queues,
+online or not: playback progress through `ProgressOutboxRecorder`, notes and
+bookmarks through `OutboxLessonPlayerRepository`, which decorates the player's
+repository so writes queue and reads pass through. One write path instead of
+two, and the UI never waits on a round trip.
 
-**The drain does not exist yet.** `E20-F01-S01` (`SyncBloc`) is the single
-unstarted card in the roadmap. Until it lands, `POST /api/v1/progress/batch` has
-a complete backend implementation and no caller, and offline writes are
-recorded and never sent. This is the one functional gap in the product.
+Coalescing happens at enqueue time, not at drain. Progress and notes collapse
+per lesson (`PK(lessonId)`); bookmarks collapse per bookmark (`PK(localId)`),
+because a lesson can carry many.
+
+**The drain** is `SyncRepository`, oldest-first on `queuedAt` — which is why
+the DAOs normalise every write to UTC, Drift's TEXT datetime encoding giving
+local and UTC values different string shapes and so a non-chronological
+`ORDER BY`. The rules live on the DAOs themselves; the one worth knowing is
+that bookmarks key off `serverId`, not `op`: a create collapsed with a
+subsequent update leaves an `update` row the server has never seen, so `op`
+alone cannot say whether to POST or PATCH.
+
+**`SyncBloc` decides when.** Four triggers — a false→true connectivity edge
+(which drains immediately, not on the next tick), app resume, a 5-minute tick,
+and manual, including the nudge every enqueue sends. Overlapping triggers are
+dropped rather than queued: each one means "drain whatever is queued now", so
+a dropped trigger loses no work, and a minute offline cannot build a backlog
+that all fires at once on reconnect. State is exposed both as the bloc's own
+`SyncState` and as a `Stream<SyncState>` through `RepositoryProvider`.
+
+One asymmetry to know about: a bookmark created offline is handed back with a
+client-side `localId` because the server assigns the real one. Until the next
+`fetchBookmarks` it carries an id the server does not know. Deleting it in that
+window is handled — the outbox collapses create+delete and drops both — but
+reconciling local and server ids on refetch needs an id map the schema does not
+have.
 
 ---
 
@@ -587,8 +612,11 @@ Ordered by consequence. Full evidence in
 
 1. **`main` is unprotected.** No required status checks. Every gate below is
    advisory. Fix this first; it makes all the others enforceable.
-2. **Offline writes never sync.** `SyncBloc` (`E20-F01-S01`) is unbuilt. Three
-   outbox tables fill and never drain; `POST /progress/batch` has no caller.
+2. **No `integration_test` anywhere on mobile.** The sync engine, the download
+   queue and offline playback are all covered by unit and bloc tests only —
+   there is no emulator on the dev host and none in CI, so nothing exercises
+   them against a real platform. `disk_space_plus`'s native code has still
+   never run.
 3. **Four gates documented but disarmed** — Storybook a11y is downgraded to
    notes via `STORYBOOK_A11Y_LEVEL: todo` (~75 stories would fail);
    `pnpm check:i18n` runs in no workflow; `pnpm spec:contract-test` runs in no

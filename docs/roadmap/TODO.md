@@ -8,7 +8,7 @@ Legend: **A** = implementable now from the bundle · **B** = needs design pre-st
 A row marked ❌ is cancelled — the card records why, and it is out of the
 denominator below.
 
-Progress: `118 / 119` complete — 121 cards, 2 cancelled (update by hand).
+Progress: `119 / 119` complete — 121 cards, 2 cancelled (update by hand).
 
 ## E00 — Stage the design bundle
 
@@ -173,7 +173,7 @@ Progress: `118 / 119` complete — 121 cards, 2 cancelled (update by hand).
 
 ## E20 — Mobile sync
 
-- [ ] [E20-F01-S01](./tasks/E20-F01-S01.md) `A` — SyncBloc with connectivity + ticker triggers · ⇐ E19-F01-S01
+- [x] [E20-F01-S01](./tasks/E20-F01-S01.md) `A` — SyncBloc with connectivity + ticker triggers · ⇐ E19-F01-S01
 
 ## E21 — Admin & operations
 

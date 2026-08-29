@@ -16,6 +16,32 @@ import { test, expect } from '@playwright/test';
 
 const backendUrl = process.env.E2E_BACKEND_URL ?? 'http://localhost:3000';
 
+/**
+ * Set by `.github/workflows/e2e.yml`, where `compose.ci.yml` boots the
+ * production nginx image and the backend with `NODE_ENV=production`.
+ *
+ * Without it these tests skipped whenever a CSP header was missing — which is
+ * correct locally (Nuxt dev serves the SPA with no nginx in front, and Helmet
+ * keeps CSP off outside production) and useless in CI, where a missing header
+ * is exactly the regression the card asked this suite to catch. A skip and a
+ * pass are indistinguishable in the report, so the one run that could fail
+ * never did.
+ */
+const expectCsp = process.env.E2E_EXPECT_CSP === '1';
+
+/** Skip locally, fail in CI — a missing header there is a real regression. */
+function requireCsp(csp: string | undefined, what: string): void {
+  if (csp) return;
+  if (expectCsp) {
+    throw new Error(
+      `${what} served no Content-Security-Policy. The CI stack runs the ` +
+        'production nginx image and NODE_ENV=production, so the header must ' +
+        'be present — this is a regression, not a dev-mode difference.',
+    );
+  }
+  test.skip(true, `${what}: CSP off by design outside the production stack.`);
+}
+
 function assertSecureHeaders(headers: Record<string, string>): void {
   const csp = headers['content-security-policy'];
   expect(csp, 'Content-Security-Policy must be present').toBeTruthy();
@@ -47,14 +73,9 @@ function assertSecureHeaders(headers: Record<string, string>): void {
 test('SPA `/` carries the secure-header set', async ({ request }) => {
   const res = await request.get('/');
   expect(res.ok()).toBeTruthy();
-  // Mirror the backend skip below: in dev (Nuxt dev server) there's no
-  // nginx in front of the SPA, so no CSP header is emitted by design.
-  // The CI run (compose.ci.yml builds the prod nginx image) is the
-  // canonical place this assertion lands — locally we don't false-fail.
-  const csp = res.headers()['content-security-policy'];
-  if (!csp) {
-    test.skip(true, 'web running in Nuxt dev mode; nginx CSP off by design.');
-  }
+  // In dev (Nuxt dev server) there's no nginx in front of the SPA, so no CSP
+  // header is emitted by design. In CI there is, and its absence is a bug.
+  requireCsp(res.headers()['content-security-policy'], 'SPA `/`');
   assertSecureHeaders(res.headers());
 });
 
@@ -62,11 +83,8 @@ test('backend `/api/v1/*` carries the secure-header set in production mode', asy
   request,
 }) => {
   const res = await request.get(`${backendUrl}/api/v1/health`);
-  // Helmet keeps CSP off in non-production. Skip the assertion in dev runs
-  // so this test doesn't false-fail the local watch loop.
-  const csp = res.headers()['content-security-policy'];
-  if (!csp) {
-    test.skip(true, 'backend not running with NODE_ENV=production; CSP off by design.');
-  }
+  // Helmet keeps CSP off outside production, so a local watch loop must not
+  // false-fail. The CI stack does run production — there it must be present.
+  requireCsp(res.headers()['content-security-policy'], 'backend `/api/v1/*`');
   assertSecureHeaders(res.headers());
 });

@@ -45,7 +45,7 @@ class LessonPlayerApi implements LessonPlayerRepository {
   @override
   Future<LessonPlayback> fetchLesson(String lessonId) async {
     final Response<Map<String, dynamic>> response = await _dio
-        .get<Map<String, dynamic>>('/api/v1/lessons/$lessonId');
+        .get<Map<String, dynamic>>('/lessons/$lessonId');
     final Map<String, dynamic> json = _require(response.data);
     return _lessonFromJson(json);
   }
@@ -53,7 +53,7 @@ class LessonPlayerApi implements LessonPlayerRepository {
   @override
   Future<List<LessonOutlineSection>> fetchCourseOutline(String courseId) async {
     final Response<Map<String, dynamic>> response = await _dio
-        .get<Map<String, dynamic>>('/api/v1/courses/$courseId/outline');
+        .get<Map<String, dynamic>>('/courses/$courseId/outline');
     final Map<String, dynamic> json = _require(response.data);
     final List<dynamic> sections =
         json['sections'] as List<dynamic>? ?? const <dynamic>[];
@@ -74,7 +74,7 @@ class LessonPlayerApi implements LessonPlayerRepository {
     }
 
     final Response<Map<String, dynamic>> response = await _dio
-        .get<Map<String, dynamic>>('/api/v1/lessons/$lessonId/stream-url');
+        .get<Map<String, dynamic>>('/lessons/$lessonId/stream-url');
     final Map<String, dynamic> json = _require(response.data);
     return LessonVideoSource.network(_resolveUrl(json['url'] as String));
   }
@@ -135,7 +135,7 @@ class LessonPlayerApi implements LessonPlayerRepository {
   @override
   Future<List<LessonBookmark>> fetchBookmarks(String lessonId) async {
     final Response<Map<String, dynamic>> response = await _dio
-        .get<Map<String, dynamic>>('/api/v1/lessons/$lessonId/bookmarks');
+        .get<Map<String, dynamic>>('/lessons/$lessonId/bookmarks');
     final Map<String, dynamic> json = _require(response.data);
     final List<dynamic> items =
         json['items'] as List<dynamic>? ?? const <dynamic>[];
@@ -150,7 +150,7 @@ class LessonPlayerApi implements LessonPlayerRepository {
   }) async {
     final Response<Map<String, dynamic>> response = await _dio
         .post<Map<String, dynamic>>(
-          '/api/v1/lessons/$lessonId/bookmarks',
+          '/lessons/$lessonId/bookmarks',
           data: <String, dynamic>{
             'positionSeconds': position.inSeconds,
             'label': ?label,
@@ -161,13 +161,13 @@ class LessonPlayerApi implements LessonPlayerRepository {
 
   @override
   Future<void> deleteBookmark(String bookmarkId) =>
-      _dio.delete<void>('/api/v1/bookmarks/$bookmarkId');
+      _dio.delete<void>('/bookmarks/$bookmarkId');
 
   @override
   Future<String?> fetchNote(String lessonId) async {
     try {
       final Response<Map<String, dynamic>> response = await _dio
-          .get<Map<String, dynamic>>('/api/v1/notes/$lessonId');
+          .get<Map<String, dynamic>>('/notes/$lessonId');
       return response.data?['body'] as String?;
     } on DioException catch (error) {
       // A lesson with no note yet is the normal case, not a failure.
@@ -179,7 +179,7 @@ class LessonPlayerApi implements LessonPlayerRepository {
   @override
   Future<void> saveNote({required String lessonId, required String body}) =>
       _dio.put<void>(
-        '/api/v1/notes',
+        '/notes',
         data: <String, dynamic>{'lessonId': lessonId, 'body': body},
       );
 
@@ -190,7 +190,7 @@ class LessonPlayerApi implements LessonPlayerRepository {
   }) async {
     final Response<Map<String, dynamic>> response = await _dio
         .get<Map<String, dynamic>>(
-          '/api/v1/lessons/$lessonId/materials/$materialId/download-url',
+          '/lessons/$lessonId/materials/$materialId/download-url',
         );
     return _resolveUrl(_require(response.data)['url'] as String);
   }

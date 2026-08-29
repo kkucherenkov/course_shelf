@@ -22,7 +22,7 @@ class HttpLessonByteSource implements LessonByteSource {
     // a pause longer than that would otherwise present a dead token and 401.
     final Response<Map<String, dynamic>> minted = await _dio
         .get<Map<String, dynamic>>(
-          '/api/v1/lessons/$lessonId/stream-url',
+          '/lessons/$lessonId/stream-url',
           cancelToken: cancelToken,
         );
     final Map<String, dynamic>? body = minted.data;

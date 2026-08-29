@@ -1,0 +1,50 @@
+{
+  "chip": {
+    "remove": "Remove"
+  },
+  "lessonRow": {
+    "materials": "Materials available",
+    "downloaded": "Downloaded",
+    "downloading": "Downloading",
+    "download": "Download lesson",
+    "downloadFailed": "Download failed",
+    "loading": "Loading lesson"
+  },
+  "noteEditor": {
+    "bold": "Bold",
+    "italic": "Italic",
+    "heading": "Heading",
+    "list": "List",
+    "link": "Link",
+    "retry": "Retry"
+  },
+  "playerChrome": {
+    "settings": "Settings",
+    "prevLesson": "Previous lesson",
+    "nextLesson": "Next lesson",
+    "subtitles": "Subtitles",
+    "fullscreen": "Fullscreen"
+  },
+  "bookmark": {
+    "edit": "Edit bookmark",
+    "delete": "Delete bookmark",
+    "addGroup": "Add bookmark",
+    "save": "Save"
+  },
+  "numberField": {
+    "decrement": "Decrement",
+    "increment": "Increment"
+  },
+  "sso": {
+    "group": "Sign in with"
+  },
+  "downloadRow": {
+    "progress": "Download progress"
+  },
+  "progressBadge": {
+    "done": "Done",
+    "locked": "Locked",
+    "notStarted": "—",
+    "progress": "$completed of $total"
+  }
+}

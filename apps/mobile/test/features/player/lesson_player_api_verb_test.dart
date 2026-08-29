@@ -36,7 +36,11 @@ void main() {
         },
       ),
     );
-    dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000'))
+    // The base the app actually runs with: `AppConfig.apiBaseUrl` ends in
+    // `/api/v1`. Building it without that here is what let #172's doubling
+    // bug survive in this file — the assertions below read `uri`, the
+    // resolved URL, not `path`, the argument, for the same reason.
+    dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000/api/v1'))
       ..httpClientAdapter = adapter;
   });
 
@@ -55,7 +59,7 @@ void main() {
     await api.resolveVideoSource('l1');
 
     expect(adapter.lastRequest.method, 'GET');
-    expect(adapter.lastRequest.path, '/api/v1/lessons/l1/stream-url');
+    expect(adapter.lastRequest.uri.path, '/api/v1/lessons/l1/stream-url');
   });
 
   test('issueMaterialDownloadUrl issues GET, not POST', () async {
@@ -69,7 +73,7 @@ void main() {
 
     expect(adapter.lastRequest.method, 'GET');
     expect(
-      adapter.lastRequest.path,
+      adapter.lastRequest.uri.path,
       '/api/v1/lessons/l1/materials/m1/download-url',
     );
   });

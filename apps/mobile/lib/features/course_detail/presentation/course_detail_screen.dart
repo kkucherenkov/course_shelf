@@ -631,6 +631,12 @@ class _SectionBlock extends StatelessWidget {
               children: <Widget>[
                 for (final CourseDetailLesson lesson in section.lessons)
                   AppLessonRow(
+                    materialsLabel: context.t.ui.lessonRow.materials,
+                    downloadedLabel: context.t.ui.lessonRow.downloaded,
+                    downloadingLabel: context.t.ui.lessonRow.downloading,
+                    downloadLabel: context.t.ui.lessonRow.download,
+                    downloadFailedLabel: context.t.ui.lessonRow.downloadFailed,
+                    loadingLabel: context.t.ui.lessonRow.loading,
                     key: ValueKey<String>('courseDetailLesson_${lesson.id}'),
                     num: lesson.position,
                     title: lesson.title,

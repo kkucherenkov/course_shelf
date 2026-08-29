@@ -32,6 +32,8 @@ class AppNumberField extends StatefulWidget {
     this.step = 1,
     this.focusNode,
     this.autofocus = false,
+    this.decrementLabel = 'Decrement',
+    this.incrementLabel = 'Increment',
     super.key,
   });
 
@@ -46,6 +48,12 @@ class AppNumberField extends StatefulWidget {
   final bool required;
   final bool disabled;
   final bool readOnly;
+
+  /// Copy the consumer can translate. The English default keeps the widget
+  /// rendering identically without one; `app_ui` never looks up a translation
+  /// itself — it has no locale and must not acquire one.
+  final String decrementLabel;
+  final String incrementLabel;
   final AppFieldSize size;
   final num? min;
   final num? max;
@@ -163,7 +171,7 @@ class _AppNumberFieldState extends State<AppNumberField> {
         children: <Widget>[
           AppIconButton(
             name: IconName.minus,
-            semanticLabel: 'Decrement',
+            semanticLabel: widget.decrementLabel,
             variant: AppButtonVariant.ghost,
             size: stepperSize,
             disabled: widget.disabled || widget.readOnly || _atMin,
@@ -201,7 +209,7 @@ class _AppNumberFieldState extends State<AppNumberField> {
           const SizedBox(width: AppSpacing.s1),
           AppIconButton(
             name: IconName.plus,
-            semanticLabel: 'Increment',
+            semanticLabel: widget.incrementLabel,
             variant: AppButtonVariant.ghost,
             size: stepperSize,
             disabled: widget.disabled || widget.readOnly || _atMax,

@@ -41,6 +41,8 @@ class AppBookmark extends StatelessWidget {
     this.onSelect,
     this.onEdit,
     this.onDelete,
+    this.editLabel = 'Edit bookmark',
+    this.deleteLabel = 'Delete bookmark',
     super.key,
   });
 
@@ -56,6 +58,12 @@ class AppBookmark extends StatelessWidget {
   final VoidCallback? onSelect;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+
+  /// Copy the consumer can translate. The English default keeps the widget
+  /// rendering identically without one; `app_ui` never looks up a translation
+  /// itself — it has no locale and must not acquire one.
+  final String editLabel;
+  final String deleteLabel;
 
   /// Web parity row padding/gap (`10px`); not a spacing-scale step.
   static const double _rowPad = 10;
@@ -122,7 +130,7 @@ class AppBookmark extends StatelessWidget {
                 children: <Widget>[
                   AppIconButton(
                     name: IconName.edit,
-                    semanticLabel: 'Edit bookmark',
+                    semanticLabel: editLabel,
                     variant: AppButtonVariant.ghost,
                     size: AppButtonSize.sm,
                     onPressed: onEdit,
@@ -130,7 +138,7 @@ class AppBookmark extends StatelessWidget {
                   const SizedBox(width: AppSpacing.s1),
                   AppIconButton(
                     name: IconName.trash,
-                    semanticLabel: 'Delete bookmark',
+                    semanticLabel: deleteLabel,
                     variant: AppButtonVariant.ghost,
                     size: AppButtonSize.sm,
                     onPressed: onDelete,

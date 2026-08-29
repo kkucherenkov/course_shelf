@@ -54,6 +54,7 @@ class PlayerSettingsSheet extends StatelessWidget {
             children: <Widget>[
               for (final double option in kPlaybackSpeeds)
                 AppChip(
+                  removeLabel: context.t.ui.chip.remove,
                   key: speedKey(option),
                   label: '$option×',
                   selected: option == speed,
@@ -69,6 +70,7 @@ class PlayerSettingsSheet extends StatelessWidget {
             runSpacing: AppSpacing.s2,
             children: <Widget>[
               AppChip(
+                removeLabel: context.t.ui.chip.remove,
                 key: sleepTimerOffKey,
                 label: context.t.player.sleepTimerOff,
                 selected: sleepTimer == null,
@@ -76,6 +78,7 @@ class PlayerSettingsSheet extends StatelessWidget {
               ),
               for (final Duration option in kSleepTimerOptions)
                 AppChip(
+                  removeLabel: context.t.ui.chip.remove,
                   key: sleepKey(option),
                   label: context.t.player.sleepTimerMinutes(
                     n: option.inMinutes,

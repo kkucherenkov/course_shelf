@@ -18,6 +18,8 @@
       disabled?: boolean;
       /** If set, chip renders as a NuxtLink instead of a button. */
       to?: RouteLocationRaw;
+      /** Accessible name; override to translate. */
+      removeLabel?: string;
     }>(),
     {
       label: undefined,
@@ -28,6 +30,7 @@
       selected: false,
       disabled: false,
       to: undefined,
+      removeLabel: 'Remove',
     },
   );
 
@@ -90,7 +93,7 @@
       class="app-chip__remove"
       role="button"
       tabindex="0"
-      aria-label="Remove"
+      :aria-label="removeLabel"
       @click="handleRemove"
       @keydown.enter.prevent="handleRemove"
       @keydown.space.prevent="handleRemove"

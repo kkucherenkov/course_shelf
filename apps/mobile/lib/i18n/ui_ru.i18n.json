@@ -1,0 +1,50 @@
+{
+  "chip": {
+    "remove": "Удалить"
+  },
+  "lessonRow": {
+    "materials": "Есть материалы",
+    "downloaded": "Загружено",
+    "downloading": "Загрузка",
+    "download": "Скачать урок",
+    "downloadFailed": "Ошибка загрузки",
+    "loading": "Загрузка урока"
+  },
+  "noteEditor": {
+    "bold": "Полужирный",
+    "italic": "Курсив",
+    "heading": "Заголовок",
+    "list": "Список",
+    "link": "Ссылка",
+    "retry": "Повторить"
+  },
+  "playerChrome": {
+    "settings": "Настройки",
+    "prevLesson": "Предыдущий урок",
+    "nextLesson": "Следующий урок",
+    "subtitles": "Субтитры",
+    "fullscreen": "Во весь экран"
+  },
+  "bookmark": {
+    "edit": "Изменить закладку",
+    "delete": "Удалить закладку",
+    "addGroup": "Добавить закладку",
+    "save": "Сохранить"
+  },
+  "numberField": {
+    "decrement": "Уменьшить",
+    "increment": "Увеличить"
+  },
+  "sso": {
+    "group": "Войти через"
+  },
+  "downloadRow": {
+    "progress": "Прогресс загрузки"
+  },
+  "progressBadge": {
+    "done": "Готово",
+    "locked": "Заблокировано",
+    "notStarted": "—",
+    "progress": "$completed из $total"
+  }
+}

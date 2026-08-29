@@ -557,4 +557,46 @@ export default {
       dismissAria: 'Dismiss scan notification',
     },
   },
+  /**
+   * Copy for `@app/ui` components. The design package ships English defaults
+   * and never calls `t()` itself — it has no locale — so every string it
+   * renders is passed down from here.
+   */
+  ui: {
+    chip: { remove: 'Remove' },
+    lessonRow: { loading: 'Loading lesson', materials: 'Materials available' },
+    bookmark: {
+      edit: 'Edit bookmark',
+      delete: 'Delete bookmark',
+      addGroup: 'Add bookmark',
+    },
+    sso: { group: 'Sign in with' },
+    nav: {
+      primary: 'Primary navigation',
+      admin: 'Admin',
+      adminNav: 'Admin navigation',
+      userMenu: 'User menu',
+      bottom: 'Bottom navigation',
+    },
+    noteEditor: {
+      syncing: 'Syncing…',
+      saved: 'Saved',
+      failed: 'Failed — retrying',
+      offline: 'Offline — queued',
+      toolbar: 'Note formatting',
+      bold: 'Bold',
+      italic: 'Italic',
+      heading: 'Heading',
+      list: 'List',
+      link: 'Link',
+      preview: 'Preview',
+      edit: 'Edit',
+      textarea: 'Note text',
+      agoJustNow: 'just now',
+      agoSeconds: '{n}s ago',
+      agoMinutes: '{n}m ago',
+      agoHours: '{n}h ago',
+      agoDays: '{n}d ago',
+    },
+  },
 } as const;

@@ -12,7 +12,14 @@
     iconName: IconName;
   }
 
-  defineProps<{ providers: SsoProvider[] }>();
+  withDefaults(
+    defineProps<{
+      providers: SsoProvider[];
+      /** Accessible name for the provider group; override to translate. */
+      groupLabel?: string;
+    }>(),
+    { groupLabel: 'Sign in with' },
+  );
 
   const emit = defineEmits<{ select: [providerId: string] }>();
 
@@ -22,7 +29,7 @@
 </script>
 
 <template>
-  <div v-if="providers.length > 0" class="app-sso-block" role="group" aria-label="Sign in with">
+  <div v-if="providers.length > 0" class="app-sso-block" role="group" :aria-label="groupLabel">
     <AppButton
       v-for="provider in providers"
       :key="provider.id"

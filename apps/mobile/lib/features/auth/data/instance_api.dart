@@ -35,9 +35,20 @@ class InstanceApiImpl implements InstanceRepository {
         emailVerificationRequired:
             (data['emailVerificationRequired'] as bool?) ??
             InstanceConfig.defaults.emailVerificationRequired,
+        // The wire shape is a list of OBJECTS (`{id, label, iconName}`), not
+        // of strings. This used to `.cast<String>()`, which throws on the
+        // first element — swallowed by the `on Object` below, so the symptom
+        // would not have been a crash but a silent fallback to
+        // `InstanceConfig.defaults` for the WHOLE config the moment an
+        // operator configured a provider, quietly flipping `selfRegistration`
+        // back to `true`. Invisible in v1 only because the array is always
+        // empty and an empty cast succeeds.
         ssoProviders:
-            (data['ssoProviders'] as List<dynamic>?)?.cast<String>().toList() ??
-            const <String>[],
+            (data['ssoProviders'] as List<dynamic>?)
+                ?.map(SsoProviderConfig.tryParse)
+                .nonNulls
+                .toList() ??
+            const <SsoProviderConfig>[],
       );
     } on Object {
       return InstanceConfig.defaults;

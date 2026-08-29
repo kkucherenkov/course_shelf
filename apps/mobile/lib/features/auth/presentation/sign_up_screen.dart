@@ -244,7 +244,7 @@ class _AccountStep extends StatelessWidget {
             AppSsoBlock(
               semanticsLabel: context.t.ui.sso.group,
               key: const ValueKey('signUpSsoBlock'),
-              providers: ssoProvidersFor(context, state.config.ssoProviders),
+              providers: ssoProvidersFor(state.config.ssoProviders),
             ),
           ],
           const SizedBox(height: AppSpacing.s5),

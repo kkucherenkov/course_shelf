@@ -43,7 +43,8 @@ void main() {
       () async {
         final adapter = _CapturingAdapter(
           '{"selfRegistration":true,"emailVerificationRequired":true,'
-          '"ssoProviders":["google"]}',
+          '"ssoProviders":[{"id":"google","label":"Continue with Google",'
+          '"iconName":"mail"}]}',
         );
         final api = InstanceApiImpl(dio: _dioWith(adapter));
 
@@ -54,7 +55,13 @@ void main() {
           'http://host:3000/api/v1/admin/instance',
         );
         expect(config.emailVerificationRequired, isTrue);
-        expect(config.ssoProviders, ['google']);
+        // The wire shape is objects, not strings — the old fixture sent
+        // `["google"]`, which the spec never allowed, and the parser's
+        // `.cast<String>()` happened to accept.
+        expect(config.ssoProviders, hasLength(1));
+        expect(config.ssoProviders.single.id, 'google');
+        expect(config.ssoProviders.single.label, 'Continue with Google');
+        expect(config.ssoProviders.single.iconName, 'mail');
       },
     );
 

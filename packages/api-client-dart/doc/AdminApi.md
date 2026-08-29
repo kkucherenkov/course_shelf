@@ -12,6 +12,7 @@ Method | HTTP request | Description
 [**applyIdentifyResult**](AdminApi.md#applyidentifyresult) | **POST** /api/v1/admin/identify-tasks/{id}/apply | Apply a proposed identify task to its course
 [**createBackup**](AdminApi.md#createbackup) | **POST** /api/v1/admin/backups | Create a metadata database snapshot and return a signed download URL
 [**discardIdentifyTask**](AdminApi.md#discardidentifytask) | **POST** /api/v1/admin/identify-tasks/{id}/discard | Discard a proposed identify task
+[**downloadBackup**](AdminApi.md#downloadbackup) | **GET** /api/v1/admin/backups/{id}/download | Download a backup archive with a signed link
 [**getAdminDashboard**](AdminApi.md#getadmindashboard) | **GET** /api/v1/admin/dashboard | Operational snapshot for the admin dashboard
 [**getAdminHasUsers**](AdminApi.md#getadminhasusers) | **GET** /api/v1/admin/has-users | Indicate whether any users exist in the platform
 [**getAdminInstance**](AdminApi.md#getadmininstance) | **GET** /api/v1/admin/instance | Public instance configuration (self-registration, email verification, SSO providers)
@@ -155,6 +156,51 @@ Name | Type | Description  | Notes
 
  - **Content-Type**: Not defined
  - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **downloadBackup**
+> Uint8List downloadBackup(id, token)
+
+Download a backup archive with a signed link
+
+Serves the archive `POST /api/v1/admin/backups` produced.  Anonymous by design: the link is followed by a browser navigation or a `curl`, neither of which carries the admin session. Authorisation is the signed `token`, bound to `(backupId, expiresAt)` with a 5-minute TTL — deliberately short, because a leaked URL is a database dump.  The token is verified **before** the filesystem is touched, so an unauthenticated caller cannot probe which backup ids exist by response timing or error shape. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getAdminApi();
+final String id = id_example; // String | Backup id from the create response.
+final String token = token_example; // String | Signed backup token, valid for `BACKUP_TOKEN_TTL_SECONDS`.
+
+try {
+    final response = api.downloadBackup(id, token);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling AdminApi->downloadBackup: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Backup id from the create response. | 
+ **token** | **String**| Signed backup token, valid for `BACKUP_TOKEN_TTL_SECONDS`. | 
+
+### Return type
+
+[**Uint8List**](Uint8List.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/octet-stream, application/problem+json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

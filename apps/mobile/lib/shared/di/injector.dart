@@ -102,8 +102,13 @@ void configureDependencies() {
     ..registerLazySingleton<BrowseRepository>(
       () => BrowseRepositoryImpl(getIt<Dio>()),
     )
+    // The cache turns a failed outline fetch into a readable screen — the
+    // read half of the offline pair E20 completed on the write side.
     ..registerLazySingleton<CourseDetailRepository>(
-      () => CourseDetailRepositoryImpl(getIt<Dio>()),
+      () => CourseDetailRepositoryImpl(
+        getIt<Dio>(),
+        cache: CachedCatalogDao(getIt<AppDatabase>()),
+      ),
     )
     ..registerLazySingleton<SearchRepository>(
       () => SearchRepositoryImpl(getIt<Dio>()),

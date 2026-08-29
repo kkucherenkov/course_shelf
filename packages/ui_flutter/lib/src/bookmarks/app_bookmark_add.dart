@@ -56,6 +56,8 @@ class AppBookmarkAdd extends StatefulWidget {
     this.cancelLabel = 'Cancel adding bookmark',
     this.onSave,
     this.onCancel,
+    this.semanticsLabel = 'Add bookmark',
+    this.saveLabel = 'Save',
     super.key,
   });
 
@@ -71,6 +73,12 @@ class AppBookmarkAdd extends StatefulWidget {
 
   /// Accessible name for the cancel control (it is icon-only).
   final String cancelLabel;
+
+  /// Copy the consumer can translate. The English default keeps the widget
+  /// rendering identically without one; `app_ui` never looks up a translation
+  /// itself — it has no locale and must not acquire one.
+  final String semanticsLabel;
+  final String saveLabel;
 
   final ValueChanged<BookmarkDraft>? onSave;
   final VoidCallback? onCancel;
@@ -121,7 +129,7 @@ class _AppBookmarkAddState extends State<AppBookmarkAdd> {
 
     return Semantics(
       container: true,
-      label: 'Add bookmark',
+      label: widget.semanticsLabel,
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: 10,
@@ -176,7 +184,7 @@ class _AppBookmarkAddState extends State<AppBookmarkAdd> {
             ),
             const SizedBox(width: AppSpacing.s1),
             AppButton(
-              label: 'Save',
+              label: widget.saveLabel,
               variant: AppButtonVariant.primary,
               size: AppButtonSize.sm,
               loading: widget.submitting,

@@ -75,8 +75,12 @@ jobs:
       - name: UI components audit
         run: pnpm --filter @app/ui audit:components
 
+      # `--strict`: the inventory in specs/design/README.md must match the code.
+      # It ran report-only for months and always passed, which taught readers to
+      # skip it while 37 Vue and 17 Flutter components went undocumented — see
+      # docs/audit/2026-08-29-plan-vs-code.md §5.
       - name: Design inventory audit
-        run: pnpm design:audit
+        run: pnpm design:audit --strict
 
       # Key parity across the locales each app ships (mobile: 4, web: 2). The
       # gate existed as a checkbox in the PR template and nowhere else, so

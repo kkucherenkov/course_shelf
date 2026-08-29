@@ -81,90 +81,83 @@ token JSON. No Tailwind class names in tokens.
 - Include both a light and a dark rendering of each screen (either two files
   or a `[data-theme='dark']` variant in the same file).
 
-### Component inventory to use
+### Component inventory
 
-Primitives: AppButton, AppBadge, AppChip, AppInput, AppSelect, AppSwitch,
-AppTextarea, AppField, AppLabel, AppCard, AppIcon.
-Compositions: page hero, pricing card, feature list, empty state, skeleton,
-master card, service row.
+Every component in `@app/ui` (Vue) and `app_ui` (Flutter), with the platforms
+that actually have it. **Generated facts, not aspirations** — `pnpm design:audit`
+fails when a mark here disagrees with the code, so a `—` means the component is
+genuinely absent on that platform, not that nobody updated the row.
 
-If a new primitive is needed, name it `App<Name>` and add a one-line entry to
-the inventory so it flows into the Storybook pipeline.
+The Vue set is the folders under `packages/ui/src/components/`. The Flutter set
+is every non-private widget class exported from `packages/ui_flutter/lib/app_ui.dart`
+— that package groups several widgets per directory, so its folder names are not
+component names.
 
-### Output format
+| Category   | Component             | Vue (`@app/ui`) | Flutter (`app_ui`) |
+| ---------- | --------------------- | --------------- | ------------------ |
+| Auth       | `AppSsoBlock`         | ✓               | ✓                  |
+| Catalog    | `AppDownloadRow`      | —               | ✓                  |
+| Catalog    | `AppLessonRow`        | ✓               | ✓                  |
+| Catalog    | `AppSectionHeader`    | ✓               | ✓                  |
+| Catalog    | `CourseCard`          | ✓               | —                  |
+| Catalog    | `CourseCompactRow`    | —               | ✓                  |
+| Catalog    | `CourseCoverBackdrop` | —               | ✓                  |
+| Catalog    | `CoursePosterCard`    | —               | ✓                  |
+| Catalog    | `CourseProgressStrip` | —               | ✓                  |
+| Catalog    | `CourseWideCard`      | —               | ✓                  |
+| Feedback   | `AppAlert`            | ✓               | ✓                  |
+| Feedback   | `AppBadge`            | ✓               | ✓                  |
+| Feedback   | `AppBanner`           | ✓               | ✓                  |
+| Feedback   | `AppChip`             | ✓               | ✓                  |
+| Feedback   | `AppEmptyState`       | ✓               | ✓                  |
+| Feedback   | `AppErrorState`       | ✓               | ✓                  |
+| Feedback   | `AppNoPermission`     | ✓               | ✓                  |
+| Feedback   | `AppProgressBadge`    | ✓               | ✓                  |
+| Feedback   | `AppProgressCircle`   | ✓               | ✓                  |
+| Feedback   | `AppProgressLinear`   | ✓               | ✓                  |
+| Feedback   | `AppSkeleton`         | ✓               | ✓                  |
+| Feedback   | `AppSpinner`          | ✓               | ✓                  |
+| Feedback   | `AppToast`            | ✓               | ✓                  |
+| Feedback   | `ScanProgress`        | ✓               | —                  |
+| Forms      | `AppButton`           | ✓               | ✓                  |
+| Forms      | `AppButtonSpinner`    | —               | ✓                  |
+| Forms      | `AppCheckbox`         | ✓               | ✓                  |
+| Forms      | `AppField`            | ✓               | —                  |
+| Forms      | `AppFieldBox`         | —               | ✓                  |
+| Forms      | `AppFieldFrame`       | —               | ✓                  |
+| Forms      | `AppIconButton`       | ✓               | ✓                  |
+| Forms      | `AppInput`            | ✓               | —                  |
+| Forms      | `AppLabel`            | ✓               | —                  |
+| Forms      | `AppNumberField`      | ✓               | ✓                  |
+| Forms      | `AppPasswordField`    | ✓               | ✓                  |
+| Forms      | `AppRadio`            | ✓               | ✓                  |
+| Forms      | `AppRadioGroup`       | ✓               | ✓                  |
+| Forms      | `AppSearchField`      | ✓               | ✓                  |
+| Forms      | `AppSelect`           | ✓               | ✓                  |
+| Forms      | `AppSwitch`           | ✓               | ✓                  |
+| Forms      | `AppTextField`        | ✓               | ✓                  |
+| Forms      | `AppTextarea`         | ✓               | ✓                  |
+| Learning   | `AppBookmark`         | ✓               | ✓                  |
+| Learning   | `AppBookmarkAdd`      | ✓               | ✓                  |
+| Learning   | `AppBookmarkList`     | ✓               | ✓                  |
+| Learning   | `AppNoteEditor`       | ✓               | ✓                  |
+| Media      | `AppAvatar`           | ✓               | ✓                  |
+| Media      | `AppIcon`             | ✓               | —                  |
+| Media      | `IconCS`              | ✓               | ✓                  |
+| Navigation | `AppNavigationShell`  | ✓               | ✓                  |
+| Navigation | `AppSegmentedItem`    | ✓               | —                  |
+| Navigation | `AppTab`              | ✓               | —                  |
+| Overlay    | `AppBottomSheet`      | —               | ✓                  |
+| Overlay    | `AppCommandPalette`   | ✓               | —                  |
+| Overlay    | `AppDialog`           | ✓               | ✓                  |
+| Player     | `AppPlayerChrome`     | ✓               | ✓                  |
+| Player     | `AppPlayerScrubber`   | —               | ✓                  |
+| Surface    | `AppCard`             | ✓               | ✓                  |
+| Surface    | `AppRow`              | ✓               | ✓                  |
+| Surface    | `AppSegmented`        | ✓               | ✓                  |
+| Surface    | `AppTabs`             | ✓               | ✓                  |
 
-Return a single zip-ready bundle with this structure:
-
-  design-bundle/
-    shared/
-      tokens.json        # the single DTCG token file
-      tokens.css         # CSS preview consumed by docs/design/index.html
-    mockups/
-      home.tsx
-      sign-in.tsx
-      …
-    README.md    # list of screens, design decisions, open questions
+> `pnpm design:audit` cross-checks this table against the code and runs
+> `--strict` in CI, so a new component without a row here fails the build. Add
+> the row in the same PR as the component.
 ```
-
-</details>
-
-### Loading the bundle into the repo
-
-1. Unpack into the repo:
-   - `shared/tokens.json` → `docs/design/shared/tokens.json` (overwrite).
-   - `shared/tokens.css` → `docs/design/shared/tokens.css` (overwrite).
-   - `mockups/*.tsx` → `specs/design/mockups/`.
-   - `README.md` → `specs/design/mockups/README.md` (append).
-2. Regenerate artefacts:
-   ```sh
-   pnpm design:build
-   ```
-   This emits `tokens.generated.css`, `design-tokens.generated.ts`, and
-   `tokens.g.dart`. Commit the generated files alongside the source.
-3. Verify in Storybook (`pnpm storybook`) — every primitive should pick up
-   the new palette without code changes. If a component still renders old
-   colours, it's using a literal instead of a token — fix the component, not
-   the token.
-4. For each new screen, push a task to `specs/tasks/active.md` using the
-   template at `specs/tasks/templates/feature.md`.
-
-### If the design doesn't match the expected shape
-
-Don't patch JSON by hand. Go back to Claude Design with the specific gap
-("`shadow.dark` variants missing", "mockups use raw hex in the footer") and
-ask for a corrected bundle. The prompt above is the contract — any drift from
-it should be fixed at the source.
-
-## Extracting tokens from design files
-
-1. Export the Figma / Penpot tokens plugin output as JSON.
-2. Merge into `docs/design/shared/tokens.json` under the right top-level group:
-   - `color.*` — semantic colour roles (brand, surface, border, text, status).
-   - `typography.*` — font families, weights, sizes, tracking, leading, roles.
-   - `space` — spacing scale (4 px grid).
-   - `radius` — border-radius scale.
-   - `shadow.*` — box-shadow presets, themed light + dark.
-   - `motion.{duration,easing,lift}` + `zIndex`.
-   - `opacity.*` — opacity presets.
-3. All values use the DTCG `{ "$value": ..., "$type": ... }` shape.
-   Themeable tokens use `{ "light": {...}, "dark": {...} }`.
-4. Run `pnpm design:build` and commit the generated artefacts.
-
-## Component inventory
-
-| Category | Component     | Vue (`@app/ui`) | Flutter (`app_ui`) |
-| -------- | ------------- | --------------- | ------------------ |
-| Feedback | `AppBadge`    | ✓               | —                  |
-| Forms    | `AppButton`   | ✓               | —                  |
-| Surface  | `AppCard`     | ✓               | —                  |
-| Feedback | `AppChip`     | ✓               | —                  |
-| Forms    | `AppField`    | ✓               | —                  |
-| Media    | `AppIcon`     | ✓               | —                  |
-| Forms    | `AppInput`    | ✓               | —                  |
-| Forms    | `AppLabel`    | ✓               | —                  |
-| Forms    | `AppSelect`   | ✓               | —                  |
-| Forms    | `AppSwitch`   | ✓               | —                  |
-| Forms    | `AppTextarea` | ✓               | —                  |
-
-> The `pnpm design:audit` script cross-checks this table against the actual
-> component folders. Run it before shipping new components.

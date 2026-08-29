@@ -2,6 +2,105 @@
 
 Greenfield monorepo. Three apps, one backend, one auth system, one source of truth for every wire contract, one design system.
 
+## Working agreement (read before anything else)
+
+Five rules that govern _how_ you work here, independent of what you are
+building. They apply to every task, including one-line fixes.
+
+### 1. Answer in Russian
+
+All prose addressed to the maintainer is in **Russian**. Code, identifiers,
+file paths, commit messages, code comments, and everything committed to this
+repository stay in **English** — the codebase has one language and it is not
+the conversation's.
+
+### 2. Plan before you touch anything
+
+Every task starts with a plan, not an edit. Read the code the change
+touches, trace the real flow end to end, then say what you intend to do
+before doing it. For anything larger than a one-line fix, that plan becomes
+an entry at the top of `specs/tasks/active.md` (see **Task stack** below)
+_before_ the first edit — not after.
+
+If the task is ambiguous, if there is an architectural fork, or if a library
+has to be chosen, ask **first**. A plan built on a guess costs more than the
+question.
+
+### 3. Update the documentation in the same pass
+
+A change is not done when the code works. If the change alters behaviour,
+structure, contracts, or setup, the docs that describe it change **in the
+same commit or PR**:
+
+| You changed                                                           | Update                                                                        |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| A route or channel                                                    | `packages/specs/` **first** (spec-first loop below)                           |
+| Architecture, a bounded context, a data flow                          | `docs/architecture.md`, and an ADR under `docs/adr/` if the _decision_ is new |
+| User-visible behaviour, admin flows, folder/`course.json` conventions | `docs/user-guide.md`                                                          |
+| Setup, ports, versions, env vars                                      | `README.md` **and** `README.ru.md` (they are kept in sync)                    |
+| A CI gate, a script, a command                                        | the section of `.claude/CLAUDE.md` or `README.md` that names it               |
+| A story's status                                                      | its card in `docs/roadmap/tasks/`, `TODO.md`, and `specs/tasks/done.md`       |
+
+**Never leave a document asserting something that is no longer true.** A
+stale claim is worse than no claim — see
+`docs/audit/2026-08-29-plan-vs-code.md` for what a repository looks like when
+this rule is skipped for a few months.
+
+### 4. Long-term memory lives in `dnote` and `tuxedo`, not in the chat
+
+Both are host-side CLIs, not repo dependencies. Two roles, no overlap:
+
+| Tool     | Holds                                                        | Test                 |
+| -------- | ------------------------------------------------------------ | -------------------- |
+| `tuxedo` | **what still has to be done** — open tasks, deadlines        | a verb in the future |
+| `dnote`  | **what was learned** — gotchas, rationale, invariants, links | a fact in the past   |
+
+Project key for both: `+course_shelf` / book `course_shelf`.
+
+```sh
+tuxedo add "TEXT +course_shelf @backend due next friday"
+tuxedo list --json          # N shifts after done/del/archive — re-list before mutating
+dnote find "keyword" -b course_shelf
+dnote add course_shelf -c "TEXT"
+```
+
+**Open a task** when the maintainer asks for something not being done right
+now, when you find a defect or debt outside the current change (a task, never
+a silent fix), or when you are blocked. Not for what you finish in the same
+reply.
+
+**Write a note** only when it will outlive the session **and** cannot be
+derived from the repo: why a fork was resolved the way it was, a toolchain
+gotcha whose workaround is not obvious from the code, an invariant whose
+violation breaks something non-obviously. Never a retelling of the diff, the
+file layout, git history, or this file. `dnote find` first — edit an existing
+note instead of adding a duplicate.
+
+### 5. Record every change in the dnote changelog
+
+One dedicated note holds the project's change history, newest first.
+
+```sh
+dnote find "CHANGELOG course_shelf"   # locate it — the id is stable but find is safer
+dnote view <id>                        # read the current body
+dnote edit <id> -c "<new entry>
+
+<existing body>"                       # prepend; dnote edit replaces the whole body
+```
+
+One entry per landed change, in this format:
+
+```
+YYYY-MM-DD · Что сделали — кратко, по сути изменений.
+```
+
+Substance, not ceremony: what changed and why it matters, not which files were
+touched. This is separate from `specs/tasks/done.md` (per-task record, with
+sub-steps and PR links) and from the knowledge notes in rule 4 — the changelog
+is the flat chronology you read to answer "what happened to this project?".
+
+Append before you report the work as finished.
+
 ## Layout
 
 ```

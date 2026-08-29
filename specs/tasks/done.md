@@ -2,6 +2,37 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-29-013 — Audit items 15 & 16 · the last undocumented routes
+
+- Created: 2026-08-29
+- Completed: 2026-08-29
+- Owner: claude
+- Branch: `spec/document-binary-routes`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/206
+- Cards: none (audit remediation — §7)
+- Spec diff: 4 new path items
+- Codegen impact: yes — landed in its own commit
+- Design impact: no
+- Sub-steps:
+  - [x] `GET /stream/lessons/{id}` with 200/206/401/404/416 and `Range`
+  - [x] `GET /stream/lessons/{id}/subtitles/{language}` as `text/vtt`
+  - [x] `GET /stream/materials/{materialId}`
+  - [x] `GET /admin/backups/{id}/download`
+  - [x] regenerate both clients
+  - [x] 16 — record why thresholds are not added
+  - [x] docs: architecture §3.1 and §18, the audit's §7
+- Status: done
+
+**Why the validator exemption stays.** `validateResponses` is on outside
+production and throws 400 on a mismatch, so un-exempting these would push a
+video stream through a JSON response validator in every dev run. The
+spec-first rule is about describing the contract — which they now do.
+
+**Item 16 needed no code.** The defect was the README's false "coverage
+enforcement" claim, deleted in #199. `.claude/CLAUDE.md` explicitly says not to
+tune a threshold number that will rot in a greenfield, so adding one would have
+been the worse half of "pick one".
+
 ## T-2026-08-29-012 — Audit items 13 & 14 · wire what was built and never connected
 
 - Created: 2026-08-29

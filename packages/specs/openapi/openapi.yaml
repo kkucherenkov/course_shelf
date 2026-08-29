@@ -450,6 +450,62 @@ paths:
                     status: 503
                     detail: "pg_dump was not found. Install postgresql-client in the backend image or set PG_DUMP_PATH."
 
+  /api/v1/admin/backups/{id}/download:
+    get:
+      operationId: downloadBackup
+      summary: Download a backup archive with a signed link
+      description: |
+        Serves the archive `POST /api/v1/admin/backups` produced.
+
+        Anonymous by design: the link is followed by a browser navigation or a
+        `curl`, neither of which carries the admin session. Authorisation is the
+        signed `token`, bound to `(backupId, expiresAt)` with a 5-minute TTL —
+        deliberately short, because a leaked URL is a database dump.
+
+        The token is verified **before** the filesystem is touched, so an
+        unauthenticated caller cannot probe which backup ids exist by response
+        timing or error shape.
+      tags: [admin]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Backup id from the create response.
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Signed backup token, valid for `BACKUP_TOKEN_TTL_SECONDS`.
+      responses:
+        "200":
+          description: The compressed `pg_dump` archive.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              description: '`attachment; filename="..."`.'
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Token missing, malformed, expired, or bound to another backup.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: No such backup, or the archive is gone from disk.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
   /api/v1/admin/scans:
     get:
       operationId: listAdminScans
@@ -3402,6 +3458,212 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No lesson with that id exists.
+
+  # ── Binary streaming endpoints ──────────────────────────────────────────────
+  #
+  # These serve raw bytes, not JSON, and are reached with a signed query-param
+  # token rather than a session — `<video src>` and `<a download>` cannot carry
+  # an Authorization header. They were the last routes in the service with no
+  # path item here, which made `.claude/CLAUDE.md`'s "never introduce an HTTP
+  # route without updating openapi.yaml" carry four standing exceptions.
+  #
+  # `express-openapi-validator` still skips them at runtime (see
+  # `apps/backend/src/common/openapi/openapi-validator.middleware.ts`): outside
+  # production it validates responses too, and streaming a video through a JSON
+  # response validator is not something to attempt. Documenting them is about
+  # the contract and the generated clients, not about that middleware.
+
+  /api/v1/stream/lessons/{id}:
+    get:
+      operationId: streamLessonVideo
+      summary: Stream a lesson's video, with byte-range support
+      description: |
+        Progressive HTTP delivery — no HLS, no DASH, no transcoding
+        (ADR-0009). Honours `Range`, so seeking is a 206 rather than a
+        re-download.
+
+        Authenticated by the `token` query parameter minted by
+        `GET /api/v1/lessons/{id}/stream-url`, not by a session: a `<video>`
+        element cannot send an Authorization header. The token is bound to
+        `(userId, lessonId, expiresAt)` and lives 15 minutes by default.
+
+        Responds with `Cross-Origin-Resource-Policy: cross-origin` so the SPA
+        can embed it from the proxy origin, the bare Nuxt origin, or a
+        production domain.
+      tags: [Streaming]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Lesson cuid.
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Signed stream token from `issueStreamUrl`.
+        - name: Range
+          in: header
+          required: false
+          schema:
+            type: string
+          description: "Standard byte range, e.g. `bytes=0-1048575`."
+      responses:
+        "200":
+          description: The whole file, when no `Range` was requested.
+          headers:
+            Accept-Ranges:
+              schema:
+                type: string
+              description: Always `bytes`.
+            Content-Length:
+              schema:
+                type: integer
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "206":
+          description: The requested byte range.
+          headers:
+            Content-Range:
+              schema:
+                type: string
+              description: "e.g. `bytes 0-1048575/73400320`."
+            Accept-Ranges:
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Token missing, malformed, expired, or bound to another lesson.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: No such lesson, or its file is missing on disk.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "416":
+          description: The `Range` header asks for bytes outside the file.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /api/v1/stream/lessons/{id}/subtitles/{language}:
+    get:
+      operationId: streamLessonSubtitle
+      summary: Serve a lesson's subtitle track as WebVTT
+      description: |
+        Always `text/vtt`, whatever the source was: an `.srt` sidecar is
+        converted on the fly and the result cached next to it as
+        `*.cache.vtt` (which the scanner then knows to ignore).
+
+        Same token as the video endpoint — a `<track>` element cannot send an
+        Authorization header either.
+      tags: [Streaming]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Lesson cuid.
+        - name: language
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Language code as discovered by the scan, e.g. `en`."
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The subtitle track.
+          content:
+            text/vtt:
+              schema:
+                type: string
+        "401":
+          description: Token missing, malformed, expired, or bound to another lesson.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: No such lesson, or no subtitle in that language.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /api/v1/stream/materials/{materialId}:
+    get:
+      operationId: streamMaterial
+      summary: Download a lesson material
+      description: |
+        Serves a course material (PDF, slides, an image) as an attachment.
+
+        Uses a **material-scoped** token from
+        `GET /api/v1/lessons/{lessonId}/materials/{materialId}/download-url`,
+        distinct from the video token: it embeds the owning `lessonId`, and the
+        handler re-checks that the material still belongs to that lesson —
+        token binding plus a database check, rather than either alone.
+      tags: [Streaming]
+      security: []
+      parameters:
+        - name: materialId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Material cuid.
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Signed material token from `issueMaterialDownloadUrl`.
+      responses:
+        "200":
+          description: The material bytes.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              description: '`attachment; filename="..."`, using the material''s label.'
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Token missing, malformed, expired, or bound to another material.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: No such material, or its file is missing on disk.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 
   /api/v1/lessons/{id}/stream-url:
     get:

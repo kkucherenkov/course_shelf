@@ -2087,6 +2087,45 @@ export type CreateBackupResponses = {
 
 export type CreateBackupResponse = CreateBackupResponses[keyof CreateBackupResponses];
 
+export type DownloadBackupData = {
+    body?: never;
+    path: {
+        /**
+         * Backup id from the create response.
+         */
+        id: string;
+    };
+    query: {
+        /**
+         * Signed backup token, valid for `BACKUP_TOKEN_TTL_SECONDS`.
+         */
+        token: string;
+    };
+    url: '/api/v1/admin/backups/{id}/download';
+};
+
+export type DownloadBackupErrors = {
+    /**
+     * Token missing, malformed, expired, or bound to another backup.
+     */
+    401: Problem;
+    /**
+     * No such backup, or the archive is gone from disk.
+     */
+    404: Problem;
+};
+
+export type DownloadBackupError = DownloadBackupErrors[keyof DownloadBackupErrors];
+
+export type DownloadBackupResponses = {
+    /**
+     * The compressed `pg_dump` archive.
+     */
+    200: Blob | File;
+};
+
+export type DownloadBackupResponse = DownloadBackupResponses[keyof DownloadBackupResponses];
+
 export type ListAdminScansData = {
     body?: never;
     path?: never;
@@ -3438,6 +3477,138 @@ export type GetLessonResponses = {
 };
 
 export type GetLessonResponse = GetLessonResponses[keyof GetLessonResponses];
+
+export type StreamLessonVideoData = {
+    body?: never;
+    headers?: {
+        /**
+         * Standard byte range, e.g. `bytes=0-1048575`.
+         */
+        Range?: string;
+    };
+    path: {
+        /**
+         * Lesson cuid.
+         */
+        id: string;
+    };
+    query: {
+        /**
+         * Signed stream token from `issueStreamUrl`.
+         */
+        token: string;
+    };
+    url: '/api/v1/stream/lessons/{id}';
+};
+
+export type StreamLessonVideoErrors = {
+    /**
+     * Token missing, malformed, expired, or bound to another lesson.
+     */
+    401: Problem;
+    /**
+     * No such lesson, or its file is missing on disk.
+     */
+    404: Problem;
+    /**
+     * The `Range` header asks for bytes outside the file.
+     */
+    416: Problem;
+};
+
+export type StreamLessonVideoError = StreamLessonVideoErrors[keyof StreamLessonVideoErrors];
+
+export type StreamLessonVideoResponses = {
+    /**
+     * The whole file, when no `Range` was requested.
+     */
+    200: Blob | File;
+    /**
+     * The requested byte range.
+     */
+    206: Blob | File;
+};
+
+export type StreamLessonVideoResponse = StreamLessonVideoResponses[keyof StreamLessonVideoResponses];
+
+export type StreamLessonSubtitleData = {
+    body?: never;
+    path: {
+        /**
+         * Lesson cuid.
+         */
+        id: string;
+        /**
+         * Language code as discovered by the scan, e.g. `en`.
+         */
+        language: string;
+    };
+    query: {
+        token: string;
+    };
+    url: '/api/v1/stream/lessons/{id}/subtitles/{language}';
+};
+
+export type StreamLessonSubtitleErrors = {
+    /**
+     * Token missing, malformed, expired, or bound to another lesson.
+     */
+    401: Problem;
+    /**
+     * No such lesson, or no subtitle in that language.
+     */
+    404: Problem;
+};
+
+export type StreamLessonSubtitleError = StreamLessonSubtitleErrors[keyof StreamLessonSubtitleErrors];
+
+export type StreamLessonSubtitleResponses = {
+    /**
+     * The subtitle track.
+     */
+    200: string;
+};
+
+export type StreamLessonSubtitleResponse = StreamLessonSubtitleResponses[keyof StreamLessonSubtitleResponses];
+
+export type StreamMaterialData = {
+    body?: never;
+    path: {
+        /**
+         * Material cuid.
+         */
+        materialId: string;
+    };
+    query: {
+        /**
+         * Signed material token from `issueMaterialDownloadUrl`.
+         */
+        token: string;
+    };
+    url: '/api/v1/stream/materials/{materialId}';
+};
+
+export type StreamMaterialErrors = {
+    /**
+     * Token missing, malformed, expired, or bound to another material.
+     */
+    401: Problem;
+    /**
+     * No such material, or its file is missing on disk.
+     */
+    404: Problem;
+};
+
+export type StreamMaterialError = StreamMaterialErrors[keyof StreamMaterialErrors];
+
+export type StreamMaterialResponses = {
+    /**
+     * The material bytes.
+     */
+    200: Blob | File;
+};
+
+export type StreamMaterialResponse = StreamMaterialResponses[keyof StreamMaterialResponses];
 
 export type IssueStreamUrlData = {
     body?: never;

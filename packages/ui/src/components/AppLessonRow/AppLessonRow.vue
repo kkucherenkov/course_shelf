@@ -26,6 +26,10 @@
       progress?: number;
       /** Skeleton variant. */
       loading?: boolean;
+      /** Accessible name; override to translate. */
+      loadingLabel?: string;
+      /** Accessible name; override to translate. */
+      materialsLabel?: string;
     }>(),
     {
       state: 'not-started',
@@ -33,6 +37,8 @@
       current: false,
       progress: 0,
       loading: false,
+      loadingLabel: 'Loading lesson',
+      materialsLabel: 'Materials available',
     },
   );
 
@@ -82,7 +88,7 @@
     v-if="loading"
     class="app-lesson-row app-lesson-row--loading"
     :aria-busy="true"
-    aria-label="Loading lesson"
+    :aria-label="loadingLabel"
   >
     <AppSkeleton width="24px" height="12px" />
     <AppSkeleton width="18px" height="18px" radius="pill" />
@@ -129,7 +135,7 @@
         v-if="materials"
         name="pdf"
         :size="14"
-        title="Materials available"
+        :title="materialsLabel"
         class="app-lesson-row__materials"
       />
       <span class="app-lesson-row__duration">{{ formattedDuration }}</span>

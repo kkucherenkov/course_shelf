@@ -12,10 +12,13 @@
       submitting?: boolean;
       /** Visible placeholder for the label input. */
       placeholder?: string;
+      /** Accessible name for the group; override to translate. */
+      groupLabel?: string;
     }>(),
     {
       submitting: false,
       placeholder: 'Add a label (optional)',
+      groupLabel: 'Add bookmark',
     },
   );
 
@@ -64,7 +67,7 @@
 </script>
 
 <template>
-  <div class="app-bookmark-add" role="group" aria-label="Add bookmark">
+  <div class="app-bookmark-add" role="group" :aria-label="groupLabel">
     <span class="app-bookmark-add__time">{{ formattedTime }}</span>
     <AppInput
       v-model="label"

@@ -53,7 +53,7 @@ do run.
 | Root `README.md` / `.ru.md` | ~~❌ 6 false claims + version drift~~ → **fixed** |
 | `.claude/CLAUDE.md` issue-mirroring rule | ❌ 46 of 121 cards mirrored |
 | `docs/troubleshooting.md` | ⚠ one entry points at a non-existent file |
-| CI gates | ~~❌ 4 documented, not enforced~~ → 2 armed (i18n, roadmap), a11y + contract-test remain |
+| CI gates | ~~❌ 4 documented, not enforced~~ → 3 armed (i18n, roadmap, ffmpeg); a11y and contract-test remain |
 | `main` branch protection | ❌ absent |
 
 ## What was verified, and how
@@ -369,10 +369,10 @@ Ordered by *damage if left alone*, not by effort.
 | 6 | Delete the stale follow-up note in `specs/tasks/active.md` | It is the file every session reads first. |
 | 7 | ~~Ship `E20-F01-S01` (SyncBloc)~~ **done in #201** | Was the only functional gap in the product. |
 | 8 | ~~Backfill `specs/design/README.md` (37 Vue + 17 Flutter), then `design:audit --strict`~~ **done in #202** | The 17 "Flutter components" were directory names, not widgets — see §5. |
-| 9 | Add `xt0rted/setup-ffmpeg` to `ci.yml` and drop the "Fix (CI)" section of `docs/troubleshooting.md:162-173` | An entire integration suite has never run. |
+| 9 | ~~Add ffmpeg to `ci.yml` and drop the "Fix (CI)" section of `docs/troubleshooting.md`~~ **done in #203** | Installed via apt, not a third-party action. The 2 tests it unblocks pass. |
 | 10 | Add override props for the five hard-coded strings (§8) | Violates a stated hard rule; blocks el/uk correctness. |
-| 11 | Make `tests/e2e/csp.spec.ts` fail rather than skip when CI runs the prod stack | A skip reads as a pass. |
-| 12 | Narrow the CLAUDE.md issue-mirroring rule to match reality, or backfill ~80 issues | Rule currently describes a repo that does not exist. |
+| 11 | ~~Make `tests/e2e/csp.spec.ts` fail rather than skip when CI runs the prod stack~~ **done in #203** | `E2E_EXPECT_CSP=1` flips skip into throw. |
+| 12 | ~~Narrow the CLAUDE.md issue-mirroring rule to match reality~~ **done in #203** | Mirroring covers E15–E20 only — 133 issues, counted. |
 | 13 | Wire `AppSsoBlock` into sign-in/sign-up, or delete it and the dead `ssoProviders` field | Built, paid for, unused. |
 | 14 | Wire or delete `CachedCatalogDao` | Same. |
 | 15 | Add the three binary routes to `openapi.yaml` as typed path items (§7) | Closes the last standing exception to the spec-first rule. |

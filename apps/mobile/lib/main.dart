@@ -19,6 +19,9 @@ import 'package:app_mobile/features/settings/presentation/bloc/settings_state.da
 import 'package:app_mobile/i18n/strings.g.dart';
 import 'package:app_mobile/features/downloads/presentation/bloc/downloads_bloc.dart';
 import 'package:app_mobile/features/downloads/presentation/bloc/downloads_event.dart';
+import 'package:app_mobile/features/sync/domain/sync_state.dart';
+import 'package:app_mobile/features/sync/presentation/bloc/sync_bloc.dart';
+import 'package:app_mobile/features/sync/presentation/sync_lifecycle.dart';
 import 'package:app_mobile/shared/di/injector.dart';
 import 'package:app_mobile/shared/notifications/push_notification_service.dart';
 
@@ -124,28 +127,44 @@ class App extends StatelessWidget {
         BlocProvider<DownloadsBloc>(
           create: (_) => getIt<DownloadsBloc>()..add(const DownloadsStarted()),
         ),
+        // Above the MaterialApp for the same reason, plus: the outbox drain has
+        // to keep running while a pushed route (the player) is on screen —
+        // that route is where most of the queued writes come from.
+        BlocProvider<SyncBloc>(
+          create: (_) => getIt<SyncBloc>()..add(const SyncStarted()),
+        ),
       ],
-      child: BlocBuilder<SettingsCubit, SettingsState>(
-        builder: (context, settings) => MaterialApp(
-          onGenerateTitle: (context) => context.t.common.appTitle,
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: themeModeFrom(settings.theme),
-          locale: TranslationProvider.of(context).flutterLocale,
-          supportedLocales: AppLocaleUtils.supportedLocales,
-          localizationsDelegates: GlobalMaterialLocalizations.delegates,
-          // Wraps the Navigator, so text scale + reduce-motion reach pushed
-          // routes (player, course detail) too — not just `home:`.
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.linear(textScaleFrom(settings.textSize)),
-              disableAnimations: settings.reduceMotion,
+      // `Stream<SyncState>` for anything that wants sync state without taking a
+      // dependency on the bloc type — the `RepositoryProvider` exposure
+      // E20-F01-S01 asks for.
+      child: RepositoryProvider<Stream<SyncState>>(
+        create: (BuildContext context) => context.read<SyncBloc>().stream,
+        child: SyncLifecycle(
+          child: BlocBuilder<SettingsCubit, SettingsState>(
+            builder: (context, settings) => MaterialApp(
+              onGenerateTitle: (context) => context.t.common.appTitle,
+              theme: AppTheme.light(),
+              darkTheme: AppTheme.dark(),
+              themeMode: themeModeFrom(settings.theme),
+              locale: TranslationProvider.of(context).flutterLocale,
+              supportedLocales: AppLocaleUtils.supportedLocales,
+              localizationsDelegates: GlobalMaterialLocalizations.delegates,
+              // Wraps the Navigator, so text scale + reduce-motion reach pushed
+              // routes (player, course detail) too — not just `home:`.
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(
+                    textScaleFrom(settings.textSize),
+                  ),
+                  disableAnimations: settings.reduceMotion,
+                ),
+                child: child!,
+              ),
+              // AuthGate is the home for the session-restore-on-boot flow.
+              home: const AuthGate(),
+              onGenerateRoute: onGenerateRoute,
             ),
-            child: child!,
           ),
-          // AuthGate is the home for the session-restore-on-boot flow.
-          home: const AuthGate(),
-          onGenerateRoute: onGenerateRoute,
         ),
       ),
     );

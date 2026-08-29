@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApplyIdentifyResultData, ApplyIdentifyResultErrors, ApplyIdentifyResultResponses, CreateBackupData, CreateBackupErrors, CreateBackupResponses, CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, DiscardIdentifyTaskData, DiscardIdentifyTaskErrors, DiscardIdentifyTaskResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceResponses, GetAdminUserData, GetAdminUserErrors, GetAdminUserResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseDownloadEstimateData, GetCourseDownloadEstimateErrors, GetCourseDownloadEstimateResponses, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetIdentifyTaskData, GetIdentifyTaskErrors, GetIdentifyTaskResponses, GetInstructorData, GetInstructorErrors, GetInstructorResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetStudioData, GetStudioErrors, GetStudioResponses, GetTagData, GetTagErrors, GetTagResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueMaterialDownloadUrlData, IssueMaterialDownloadUrlErrors, IssueMaterialDownloadUrlResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListAdminLibrariesData, ListAdminLibrariesErrors, ListAdminLibrariesResponses, ListAdminScansData, ListAdminScansErrors, ListAdminScansResponses, ListAdminUsersData, ListAdminUsersErrors, ListAdminUsersResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListIdentifyTasksData, ListIdentifyTasksErrors, ListIdentifyTasksResponses, ListInstructorsData, ListInstructorsErrors, ListInstructorsResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, ListScrapersData, ListScrapersErrors, ListScrapersResponses, ListStudiosData, ListStudiosErrors, ListStudiosResponses, ListTagsData, ListTagsErrors, ListTagsResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RemoveLibraryData, RemoveLibraryErrors, RemoveLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunIdentifyTaskData, RunIdentifyTaskErrors, RunIdentifyTaskResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, ScrapeCoursePreviewData, ScrapeCoursePreviewErrors, ScrapeCoursePreviewResponses, SearchCatalogueData, SearchCatalogueErrors, SearchCatalogueResponses, SignOutOtherSessionsData, SignOutOtherSessionsErrors, SignOutOtherSessionsResponses, StartBackfillMetadataData, StartBackfillMetadataErrors, StartBackfillMetadataResponses, UpdateAdminUserData, UpdateAdminUserErrors, UpdateAdminUserResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpdateLibraryData, UpdateLibraryErrors, UpdateLibraryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpsertInstructorData, UpsertInstructorErrors, UpsertInstructorResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses, UpsertStudioData, UpsertStudioErrors, UpsertStudioResponses, UpsertTagData, UpsertTagErrors, UpsertTagResponses } from './types.gen';
+import type { ApplyIdentifyResultData, ApplyIdentifyResultErrors, ApplyIdentifyResultResponses, CreateBackupData, CreateBackupErrors, CreateBackupResponses, CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, DiscardIdentifyTaskData, DiscardIdentifyTaskErrors, DiscardIdentifyTaskResponses, DownloadBackupData, DownloadBackupErrors, DownloadBackupResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceResponses, GetAdminUserData, GetAdminUserErrors, GetAdminUserResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseDownloadEstimateData, GetCourseDownloadEstimateErrors, GetCourseDownloadEstimateResponses, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetIdentifyTaskData, GetIdentifyTaskErrors, GetIdentifyTaskResponses, GetInstructorData, GetInstructorErrors, GetInstructorResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetStudioData, GetStudioErrors, GetStudioResponses, GetTagData, GetTagErrors, GetTagResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueMaterialDownloadUrlData, IssueMaterialDownloadUrlErrors, IssueMaterialDownloadUrlResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListAdminLibrariesData, ListAdminLibrariesErrors, ListAdminLibrariesResponses, ListAdminScansData, ListAdminScansErrors, ListAdminScansResponses, ListAdminUsersData, ListAdminUsersErrors, ListAdminUsersResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListIdentifyTasksData, ListIdentifyTasksErrors, ListIdentifyTasksResponses, ListInstructorsData, ListInstructorsErrors, ListInstructorsResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, ListScrapersData, ListScrapersErrors, ListScrapersResponses, ListStudiosData, ListStudiosErrors, ListStudiosResponses, ListTagsData, ListTagsErrors, ListTagsResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RemoveLibraryData, RemoveLibraryErrors, RemoveLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunIdentifyTaskData, RunIdentifyTaskErrors, RunIdentifyTaskResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, ScrapeCoursePreviewData, ScrapeCoursePreviewErrors, ScrapeCoursePreviewResponses, SearchCatalogueData, SearchCatalogueErrors, SearchCatalogueResponses, SignOutOtherSessionsData, SignOutOtherSessionsErrors, SignOutOtherSessionsResponses, StartBackfillMetadataData, StartBackfillMetadataErrors, StartBackfillMetadataResponses, StreamLessonSubtitleData, StreamLessonSubtitleErrors, StreamLessonSubtitleResponses, StreamLessonVideoData, StreamLessonVideoErrors, StreamLessonVideoResponses, StreamMaterialData, StreamMaterialErrors, StreamMaterialResponses, UpdateAdminUserData, UpdateAdminUserErrors, UpdateAdminUserResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpdateLibraryData, UpdateLibraryErrors, UpdateLibraryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpsertInstructorData, UpsertInstructorErrors, UpsertInstructorResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses, UpsertStudioData, UpsertStudioErrors, UpsertStudioResponses, UpsertTagData, UpsertTagErrors, UpsertTagResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -104,6 +104,23 @@ export const createBackup = <ThrowOnError extends boolean = false>(options?: Opt
     url: '/api/v1/admin/backups',
     ...options
 });
+
+/**
+ * Download a backup archive with a signed link
+ *
+ * Serves the archive `POST /api/v1/admin/backups` produced.
+ *
+ * Anonymous by design: the link is followed by a browser navigation or a
+ * `curl`, neither of which carries the admin session. Authorisation is the
+ * signed `token`, bound to `(backupId, expiresAt)` with a 5-minute TTL —
+ * deliberately short, because a leaked URL is a database dump.
+ *
+ * The token is verified **before** the filesystem is touched, so an
+ * unauthenticated caller cannot probe which backup ids exist by response
+ * timing or error shape.
+ *
+ */
+export const downloadBackup = <ThrowOnError extends boolean = false>(options: Options<DownloadBackupData, ThrowOnError>) => (options.client ?? client).get<DownloadBackupResponses, DownloadBackupErrors, ThrowOnError>({ url: '/api/v1/admin/backups/{id}/download', ...options });
 
 /**
  * List recent scans across every library
@@ -714,6 +731,52 @@ export const getLesson = <ThrowOnError extends boolean = false>(options: Options
     url: '/api/v1/lessons/{id}',
     ...options
 });
+
+/**
+ * Stream a lesson's video, with byte-range support
+ *
+ * Progressive HTTP delivery — no HLS, no DASH, no transcoding
+ * (ADR-0009). Honours `Range`, so seeking is a 206 rather than a
+ * re-download.
+ *
+ * Authenticated by the `token` query parameter minted by
+ * `GET /api/v1/lessons/{id}/stream-url`, not by a session: a `<video>`
+ * element cannot send an Authorization header. The token is bound to
+ * `(userId, lessonId, expiresAt)` and lives 15 minutes by default.
+ *
+ * Responds with `Cross-Origin-Resource-Policy: cross-origin` so the SPA
+ * can embed it from the proxy origin, the bare Nuxt origin, or a
+ * production domain.
+ *
+ */
+export const streamLessonVideo = <ThrowOnError extends boolean = false>(options: Options<StreamLessonVideoData, ThrowOnError>) => (options.client ?? client).get<StreamLessonVideoResponses, StreamLessonVideoErrors, ThrowOnError>({ url: '/api/v1/stream/lessons/{id}', ...options });
+
+/**
+ * Serve a lesson's subtitle track as WebVTT
+ *
+ * Always `text/vtt`, whatever the source was: an `.srt` sidecar is
+ * converted on the fly and the result cached next to it as
+ * `*.cache.vtt` (which the scanner then knows to ignore).
+ *
+ * Same token as the video endpoint — a `<track>` element cannot send an
+ * Authorization header either.
+ *
+ */
+export const streamLessonSubtitle = <ThrowOnError extends boolean = false>(options: Options<StreamLessonSubtitleData, ThrowOnError>) => (options.client ?? client).get<StreamLessonSubtitleResponses, StreamLessonSubtitleErrors, ThrowOnError>({ url: '/api/v1/stream/lessons/{id}/subtitles/{language}', ...options });
+
+/**
+ * Download a lesson material
+ *
+ * Serves a course material (PDF, slides, an image) as an attachment.
+ *
+ * Uses a **material-scoped** token from
+ * `GET /api/v1/lessons/{lessonId}/materials/{materialId}/download-url`,
+ * distinct from the video token: it embeds the owning `lessonId`, and the
+ * handler re-checks that the material still belongs to that lesson —
+ * token binding plus a database check, rather than either alone.
+ *
+ */
+export const streamMaterial = <ThrowOnError extends boolean = false>(options: Options<StreamMaterialData, ThrowOnError>) => (options.client ?? client).get<StreamMaterialResponses, StreamMaterialErrors, ThrowOnError>({ url: '/api/v1/stream/materials/{materialId}', ...options });
 
 /**
  * Mint a short-lived signed URL for a lesson video

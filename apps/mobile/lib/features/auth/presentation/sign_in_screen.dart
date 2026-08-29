@@ -176,10 +176,7 @@ class _SignInView extends StatelessWidget {
                 AppSsoBlock(
                   semanticsLabel: context.t.ui.sso.group,
                   key: const ValueKey('signInSsoBlock'),
-                  providers: ssoProvidersFor(
-                    context,
-                    state.config.ssoProviders,
-                  ),
+                  providers: ssoProvidersFor(state.config.ssoProviders),
                 ),
               ],
 

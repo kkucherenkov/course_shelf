@@ -140,23 +140,31 @@ void main() {
       );
     });
 
-    test('byCourseId groups a whole course for EnqueueCourse / Cancel', () async {
-      for (final String id in <String>['a', 'b']) {
-        await db.downloadsDao.upsert(
-          DownloadedLessonsCompanion.insert(
-            lessonId: id,
-            state: DownloadState.queued,
-            filePath: '/tmp/$id.csdl',
-            updatedAt: DateTime.utc(2026, 7, 29),
-            courseId: const Value<String?>('c1'),
-            queuedAt: Value<DateTime?>(DateTime.utc(2026, 7, 29)),
-          ),
-        );
-      }
+    test(
+      'byCourseId groups a whole course for EnqueueCourse / Cancel',
+      () async {
+        for (final String id in <String>['a', 'b']) {
+          await db.downloadsDao.upsert(
+            DownloadedLessonsCompanion.insert(
+              lessonId: id,
+              state: DownloadState.queued,
+              filePath: '/tmp/$id.csdl',
+              updatedAt: DateTime.utc(2026, 7, 29),
+              courseId: const Value<String?>('c1'),
+              queuedAt: Value<DateTime?>(DateTime.utc(2026, 7, 29)),
+            ),
+          );
+        }
 
-      final List<DownloadedLesson> rows = await db.downloadsDao.byCourseId('c1');
-      expect(rows.map((DownloadedLesson r) => r.lessonId), <String>['a', 'b']);
-    });
+        final List<DownloadedLesson> rows = await db.downloadsDao.byCourseId(
+          'c1',
+        );
+        expect(rows.map((DownloadedLesson r) => r.lessonId), <String>[
+          'a',
+          'b',
+        ]);
+      },
+    );
 
     test('attemptCount defaults to 0', () async {
       await db.downloadsDao.upsert(

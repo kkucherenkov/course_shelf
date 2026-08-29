@@ -346,8 +346,16 @@ string, not a `t()` call inside a design-system package — `@app/ui` and
   or delete it.
 - **`AppSsoBlock`** ships with a story and a spec, is exported from
   `packages/ui/src/index.ts`, and is imported by **no page**.
-  `apps/web/app/composables/useInstanceConfig.ts:17` hard-codes
-  `ssoProviders: []`, so the data it would render is fetched and discarded.
+
+  > **Corrected in #205.** `useInstanceConfig.ts:17` is the *fallback* for an
+  > unreachable `GET /admin/instance`, not a hard-code. The real one is
+  > `apps/backend/src/common/config/app-config.ts:334`, which returns
+  > `ssoProviders: []` unconditionally until v2's `genericOAuth` plugin. The
+  > Flutter twin was already wired, so deleting was never right — only the web
+  > half was missing. Wiring it also surfaced a bug: mobile parsed the array as
+  > `List<String>` when the wire shape is objects, which would have silently
+  > dropped the whole instance config the first time a provider was
+  > configured.
   `E13-F02-S10` (build the component) is genuinely done; `E14-F02-S01` (auth
   pages) never consumed it.
 - **`POST /api/v1/progress/batch`** — implemented, no caller. Not dead, see §3.
@@ -388,8 +396,8 @@ Ordered by *damage if left alone*, not by effort.
 | 10 | ~~Add override props for the five hard-coded strings (§8)~~ **done in #204** | Not five — 54, across 17 components. §8 also named one that was already a prop. |
 | 11 | ~~Make `tests/e2e/csp.spec.ts` fail rather than skip when CI runs the prod stack~~ **done in #203** | `E2E_EXPECT_CSP=1` flips skip into throw. |
 | 12 | ~~Narrow the CLAUDE.md issue-mirroring rule to match reality~~ **done in #203** | Mirroring covers E15–E20 only — 133 issues, counted. |
-| 13 | Wire `AppSsoBlock` into sign-in/sign-up, or delete it and the dead `ssoProviders` field | Built, paid for, unused. |
-| 14 | Wire or delete `CachedCatalogDao` | Same. |
+| 13 | ~~Wire `AppSsoBlock` into sign-in/sign-up~~ **done in #205** | Wired, not deleted — the Flutter twin was already in use. Uncovered a wire-shape bug in mobile. |
+| 14 | ~~Wire or delete `CachedCatalogDao`~~ **done in #205** | Wired — it is the offline-read half of the pair E20 completed on the write side. |
 | 15 | Add the three binary routes to `openapi.yaml` as typed path items (§7) | Closes the last standing exception to the spec-first rule. |
 | 16 | Add coverage thresholds, or delete the "coverage enforcement" claim | Pick one. The claim without the threshold is the only wrong option. |
 | 17 | Backend e2e layer via supertest (installed, used in 2 specs) | The test pyramid has no top. |

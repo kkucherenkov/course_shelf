@@ -78,43 +78,52 @@ void main() {
         ),
       );
 
-  test('an intact ready download resolves to the loopback decrypt URL', () async {
-    await insertReady(await writeContainer('l1.csdl', storedBytes));
+  test(
+    'an intact ready download resolves to the loopback decrypt URL',
+    () async {
+      await insertReady(await writeContainer('l1.csdl', storedBytes));
 
-    final LessonVideoSource source = await api.resolveVideoSource('l1');
+      final LessonVideoSource source = await api.resolveVideoSource('l1');
 
-    expect(source.kind, LessonVideoSourceKind.localFile);
-    expect(source.isOffline, isTrue);
-    final Uri uri = Uri.parse(source.uri);
-    expect(uri.scheme, 'http');
-    expect(uri.host, '127.0.0.1');
-    expect(uri.path, '/l/l1');
-    // Loopback is reachable by every other app on the device, so the per-run
-    // token — not the ephemeral port — is what gates access.
-    expect(uri.queryParameters['t'], isNotEmpty);
-  });
+      expect(source.kind, LessonVideoSourceKind.localFile);
+      expect(source.isOffline, isTrue);
+      final Uri uri = Uri.parse(source.uri);
+      expect(uri.scheme, 'http');
+      expect(uri.host, '127.0.0.1');
+      expect(uri.path, '/l/l1');
+      // Loopback is reachable by every other app on the device, so the per-run
+      // token — not the ephemeral port — is what gates access.
+      expect(uri.queryParameters['t'], isNotEmpty);
+    },
+  );
 
-  test('a truncated container falls back to the network and re-marks the row failed', () async {
-    await insertReady(await writeContainer('l1.csdl', storedBytes - 10));
+  test(
+    'a truncated container falls back to the network and re-marks the row failed',
+    () async {
+      await insertReady(await writeContainer('l1.csdl', storedBytes - 10));
 
-    final LessonVideoSource source = await api.resolveVideoSource('l1');
+      final LessonVideoSource source = await api.resolveVideoSource('l1');
 
-    expect(source.kind, LessonVideoSourceKind.network);
-    final DownloadedLesson? row = await dao.byLessonId('l1');
-    expect(row?.state, DownloadState.failed);
-    expect(row?.lastError, isNotNull);
-  });
+      expect(source.kind, LessonVideoSourceKind.network);
+      final DownloadedLesson? row = await dao.byLessonId('l1');
+      expect(row?.state, DownloadState.failed);
+      expect(row?.lastError, isNotNull);
+    },
+  );
 
-  test('a deleted file falls back to the network and re-marks the row failed', () async {
-    final File file = await writeContainer('l1.csdl', storedBytes);
-    await insertReady(file);
-    await file.delete();
+  test(
+    'a deleted file falls back to the network and re-marks the row failed',
+    () async {
+      final File file = await writeContainer('l1.csdl', storedBytes);
+      await insertReady(file);
+      await file.delete();
 
-    final LessonVideoSource source = await api.resolveVideoSource('l1');
+      final LessonVideoSource source = await api.resolveVideoSource('l1');
 
-    expect(source.kind, LessonVideoSourceKind.network);
-    expect((await dao.byLessonId('l1'))?.state, DownloadState.failed);
-  });
+      expect(source.kind, LessonVideoSourceKind.network);
+      expect((await dao.byLessonId('l1'))?.state, DownloadState.failed);
+    },
+  );
 
   // `totalBytes` stays null until the first response carries a Content-Length,
   // so a row that never learnt its total must still be playable rather than

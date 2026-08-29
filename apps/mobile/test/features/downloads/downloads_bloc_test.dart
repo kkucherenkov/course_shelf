@@ -41,10 +41,8 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(
-      () => repository.enqueueCourse(
-        any<String>(),
-        any<List<DownloadRequest>>(),
-      ),
+      () =>
+          repository.enqueueCourse(any<String>(), any<List<DownloadRequest>>()),
     ).thenAnswer((_) async {});
     when(() => repository.pause(any<String>())).thenAnswer((_) async {});
     when(() => repository.resume(any<String>())).thenAnswer((_) async {});
@@ -227,10 +225,7 @@ void main() {
     test('appUsedBytes sums what the queue has written', () {
       final DownloadsState state = DownloadsState(
         isLoading: false,
-        items: <DownloadItem>[
-          _item('a', bytes: 100),
-          _item('b', bytes: 250),
-        ],
+        items: <DownloadItem>[_item('a', bytes: 100), _item('b', bytes: 250)],
       );
 
       expect(state.appUsedBytes, 350);

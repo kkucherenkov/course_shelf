@@ -293,6 +293,21 @@ check *parameters* even where it cannot check the body. As it stands, the
 openapi.yaml"* has four standing exceptions that a reader of the rule would
 not expect.
 
+> **Closed in #206.** All four are documented — the three `/stream/*` routes
+> and the backup download — with their 206/`Content-Range`/416 behaviour, their
+> query-param tokens and `security: []`. Both clients gained typed methods.
+>
+> They remain exempt from the **validator**, for a reason this section did not
+> have: `validateResponses` is on outside production and throws 400 on a
+> mismatch, so un-exempting them would push a video stream through a JSON
+> response validator in every dev run. The spec-first rule is about describing
+> the contract; that exemption is a property of the middleware.
+>
+> **On item 16.** Coverage thresholds were deliberately *not* added.
+> `.claude/CLAUDE.md` says not to tune a threshold number that will rot in a
+> greenfield, and the false claim — the actual defect — was deleted in #199.
+> "Pick one" was picked.
+
 Also open: 4 Redocly `no-required-schema-properties-undefined` warnings in
 `ScrapePreviewRequest` (`openapi.yaml:5155,5160,5165`).
 
@@ -398,8 +413,8 @@ Ordered by *damage if left alone*, not by effort.
 | 12 | ~~Narrow the CLAUDE.md issue-mirroring rule to match reality~~ **done in #203** | Mirroring covers E15–E20 only — 133 issues, counted. |
 | 13 | ~~Wire `AppSsoBlock` into sign-in/sign-up~~ **done in #205** | Wired, not deleted — the Flutter twin was already in use. Uncovered a wire-shape bug in mobile. |
 | 14 | ~~Wire or delete `CachedCatalogDao`~~ **done in #205** | Wired — it is the offline-read half of the pair E20 completed on the write side. |
-| 15 | Add the three binary routes to `openapi.yaml` as typed path items (§7) | Closes the last standing exception to the spec-first rule. |
-| 16 | Add coverage thresholds, or delete the "coverage enforcement" claim | Pick one. The claim without the threshold is the only wrong option. |
+| 15 | ~~Add the three binary routes to `openapi.yaml` as typed path items (§7)~~ **done in #206** | Four, not three. Documented; the validator exemption is now about the middleware alone. |
+| 16 | ~~Add coverage thresholds, or delete the "coverage enforcement" claim~~ **done in #199 / #206** | Claim deleted. Thresholds deliberately not added — see §7 note. |
 | 17 | Backend e2e layer via supertest (installed, used in 2 specs) | The test pyramid has no top. |
 | 18 | Restore Storybook a11y assertions (remove `STORYBOOK_A11Y_LEVEL: todo`), fix ~75 stories | Largest effort here; a11y is a stated non-negotiable, so it cannot stay disabled forever. |
 

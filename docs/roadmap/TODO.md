@@ -8,7 +8,7 @@ Legend: **A** = implementable now from the bundle · **B** = needs design pre-st
 A row marked ❌ is cancelled — the card records why, and it is out of the
 denominator below.
 
-Progress: `117 / 119` complete — 121 cards, 2 cancelled (update by hand).
+Progress: `118 / 119` complete — 121 cards, 2 cancelled (update by hand).
 
 ## E00 — Stage the design bundle
 
@@ -169,7 +169,7 @@ Progress: `117 / 119` complete — 121 cards, 2 cancelled (update by hand).
 
 - [x] [E19-F01-S01](./tasks/E19-F01-S01.md) `A` — DownloadsBloc with resumable encrypted downloads · ⇐ E18-F02-S01, E15-F02-S01
 - [x] [E19-F01-S02](./tasks/E19-F01-S02.md) `A` — Offline-first lesson resolution · ⇐ E19-F01-S01
-- [ ] [E19-F01-S03](./tasks/E19-F01-S03.md) `B` — Stage B · Downloads tab UI (precede with cs-mobile-downloads) · ⇐ E19-F01-S01, E17-F02-S06
+- [x] [E19-F01-S03](./tasks/E19-F01-S03.md) `B` — Stage B · Downloads tab UI (precede with cs-mobile-downloads) · ⇐ E19-F01-S01, E17-F02-S06
 
 ## E20 — Mobile sync
 

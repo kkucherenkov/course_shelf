@@ -1,11 +1,32 @@
 import 'package:app_mobile/features/downloads/domain/download_item.dart';
 
 /// Port — the download queue as the BLoC sees it.
+/// A lesson to enqueue, with the names the queue row will keep.
+///
+/// The titles travel with the request because there is nothing to look them up
+/// from later — see `DownloadedLessons.lessonTitle`.
+class DownloadRequest {
+  const DownloadRequest({
+    required this.lessonId,
+    this.lessonTitle,
+    this.courseTitle,
+  });
+
+  final String lessonId;
+  final String? lessonTitle;
+  final String? courseTitle;
+}
+
 abstract class DownloadsRepository {
-  Future<void> enqueueLesson(String lessonId, {String? courseId});
+  Future<void> enqueueLesson(
+    String lessonId, {
+    String? courseId,
+    String? lessonTitle,
+    String? courseTitle,
+  });
 
   /// Enqueues every lesson of a course that is not already `ready`.
-  Future<void> enqueueCourse(String courseId, List<String> lessonIds);
+  Future<void> enqueueCourse(String courseId, List<DownloadRequest> lessons);
 
   Future<void> pause(String lessonId);
   Future<void> resume(String lessonId);

@@ -175,9 +175,12 @@ lesson that was in flight.
 `cancelled` status between lessons — cooperative, so the in-flight `whisper`
 child is allowed to finish rather than leaving a truncated file.
 
-**Concurrency.** One lesson at a time by default, `TRANSCRIPTION_CONCURRENCY`
-(default `1`) and `WHISPER_THREADS` in `AppConfig`. This runs on a NAS; the
-default must not saturate the box that is also serving video.
+**Concurrency.** The walk is sequential — one lesson at a time, no knob. This
+runs on a NAS that is also serving video, and a second concurrent whisper
+process would compete with the first for the same cores rather than finish
+anything sooner. `WHISPER_THREADS` (default `4`) is the one dial that matters,
+and it belongs to the engine rather than the walk. A parallelism setting whose
+only supported value is `1` would be dead configuration.
 
 **Timeouts.** `local-ffmpeg.adapter.ts` uses a 30-second `execFile` timeout,
 which is correct for `ffprobe` and wrong by three orders of magnitude for

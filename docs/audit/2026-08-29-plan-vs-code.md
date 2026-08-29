@@ -53,7 +53,7 @@ do run.
 | Root `README.md` / `.ru.md` | ~~❌ 6 false claims + version drift~~ → **fixed** |
 | `.claude/CLAUDE.md` issue-mirroring rule | ❌ 46 of 121 cards mirrored |
 | `docs/troubleshooting.md` | ⚠ one entry points at a non-existent file |
-| CI gates | ❌ 4 documented, not enforced |
+| CI gates | ~~❌ 4 documented, not enforced~~ → 2 armed (i18n, roadmap), a11y + contract-test remain |
 | `main` branch protection | ❌ absent |
 
 ## What was verified, and how
@@ -224,6 +224,19 @@ The inventory was written once and never maintained. Backfill the rows, then
 flip to `--strict` — otherwise the audit is a step that always passes and
 teaches CI readers to ignore it.
 
+> **Corrected in #202.** The "17 Flutter components" above are an artefact of
+> the audit script, not real drift: it listed `packages/ui_flutter/lib/src/`
+> *directories* — `buttons/`, `fields/`, `progress/` — and pascalised them into
+> `AppButtons`, `AppFields`, `AppProgress`, which no widget is called. That
+> package groups several widgets per directory. Backfilling those rows would
+> have satisfied the check by inventing names.
+>
+> The Flutter set now comes from the package barrel `lib/app_ui.dart`: 52 real
+> components. The inventory holds 61 rows — 41 on both platforms, 9 Vue-only,
+> 11 Flutter-only — and the `Vue` / `Flutter` marks are verified against the
+> code rather than trusted, which the script's header had promised since it was
+> written and never done. `--strict` runs in CI.
+
 ---
 
 ## 6 — Root README: four false claims
@@ -355,7 +368,7 @@ Ordered by *damage if left alone*, not by effort.
 | 5 | Reconcile `docs/roadmap/README.md` (115 → 121) and decide the Gantt's fate | Two documents in one directory currently contradict each other. |
 | 6 | Delete the stale follow-up note in `specs/tasks/active.md` | It is the file every session reads first. |
 | 7 | ~~Ship `E20-F01-S01` (SyncBloc)~~ **done in #201** | Was the only functional gap in the product. |
-| 8 | Backfill `specs/design/README.md` (37 Vue + 17 Flutter), then `design:audit --strict` | An always-green CI step teaches readers to ignore CI steps. |
+| 8 | ~~Backfill `specs/design/README.md` (37 Vue + 17 Flutter), then `design:audit --strict`~~ **done in #202** | The 17 "Flutter components" were directory names, not widgets — see §5. |
 | 9 | Add `xt0rted/setup-ffmpeg` to `ci.yml` and drop the "Fix (CI)" section of `docs/troubleshooting.md:162-173` | An entire integration suite has never run. |
 | 10 | Add override props for the five hard-coded strings (§8) | Violates a stated hard rule; blocks el/uk correctness. |
 | 11 | Make `tests/e2e/csp.spec.ts` fail rather than skip when CI runs the prod stack | A skip reads as a pass. |

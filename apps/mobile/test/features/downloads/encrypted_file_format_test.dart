@@ -11,12 +11,15 @@ void main() {
       Uint8List.fromList(List<int>.generate(12, (int i) => i + 1));
 
   group('block arithmetic', () {
-    test('blockIndexAt is inclusive at the low edge, exclusive at the high', () {
-      expect(EncryptedFileFormat.blockIndexAt(0), 0);
-      expect(EncryptedFileFormat.blockIndexAt(block - 1), 0);
-      expect(EncryptedFileFormat.blockIndexAt(block), 1);
-      expect(EncryptedFileFormat.blockIndexAt(block * 3 + 7), 3);
-    });
+    test(
+      'blockIndexAt is inclusive at the low edge, exclusive at the high',
+      () {
+        expect(EncryptedFileFormat.blockIndexAt(0), 0);
+        expect(EncryptedFileFormat.blockIndexAt(block - 1), 0);
+        expect(EncryptedFileFormat.blockIndexAt(block), 1);
+        expect(EncryptedFileFormat.blockIndexAt(block * 3 + 7), 3);
+      },
+    );
 
     test('storedOffsetOf accounts for the header and every prior tag', () {
       expect(EncryptedFileFormat.storedOffsetOf(0), 24);

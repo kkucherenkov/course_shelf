@@ -115,10 +115,7 @@ void main() {
   });
 
   testWidgets('shows the offline banner when offline', (tester) async {
-    await pump(
-      tester,
-      const DownloadsState(isLoading: false, isOnline: false),
-    );
+    await pump(tester, const DownloadsState(isLoading: false, isOnline: false));
 
     expect(find.byType(AppBanner), findsOneWidget);
     expect(
@@ -136,11 +133,7 @@ void main() {
         isLoading: false,
         items: <DownloadItem>[
           _item('a', state: DownloadState.downloading),
-          _item(
-            'b',
-            courseId: 'c1',
-            courseTitle: 'C1',
-          ),
+          _item('b', courseId: 'c1', courseTitle: 'C1'),
         ],
       ),
     );

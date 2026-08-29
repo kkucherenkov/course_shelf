@@ -52,6 +52,13 @@ class CachedCatalogDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
+  /// A course's sections, in outline order.
+  Future<List<CachedSection>> sectionsForCourse(String courseId) =>
+      (select(cachedSections)
+            ..where((t) => t.courseId.equals(courseId))
+            ..orderBy([(t) => OrderingTerm(expression: t.position)]))
+          .get();
+
   Future<List<CachedLesson>> lessonsForCourse(String courseId) =>
       (select(cachedLessons)
             ..where((t) => t.courseId.equals(courseId))

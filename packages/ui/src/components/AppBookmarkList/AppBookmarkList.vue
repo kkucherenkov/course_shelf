@@ -22,6 +22,13 @@
       emptyTitle?: string;
       /** Empty-state body. */
       emptyBody?: string;
+      /**
+       * Forwarded to the rows it renders. The list owns them so a consumer
+       * translates once here rather than reaching past it into each child.
+       */
+      editLabel?: string;
+      deleteLabel?: string;
+      addGroupLabel?: string;
     }>(),
     {
       addTime: undefined,
@@ -29,6 +36,9 @@
       adding: false,
       emptyTitle: 'No bookmarks yet',
       emptyBody: 'Add a bookmark from the player to mark a moment for later.',
+      editLabel: 'Edit bookmark',
+      deleteLabel: 'Delete bookmark',
+      addGroupLabel: 'Add bookmark',
     },
   );
 
@@ -47,6 +57,7 @@
       v-if="addTime !== undefined"
       :time="addTime"
       :submitting="adding"
+      :group-label="addGroupLabel"
       @save="(p) => emit('addSave', p)"
       @cancel="emit('addCancel')"
     />
@@ -58,6 +69,8 @@
         :time="b.time"
         :label="b.label"
         :editable="editable"
+        :edit-label="editLabel"
+        :delete-label="deleteLabel"
         @select="emit('select', b.id)"
         @edit="emit('edit', b.id)"
         @delete="emit('delete', b.id)"

@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { ref } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import { AppSectionHeader, AppLessonRow } from '@app/ui';
   import type { SectionOutline } from '@app/api-client-ts';
 
@@ -13,6 +14,8 @@
   const emit = defineEmits<{
     selectLesson: [lessonId: string];
   }>();
+
+  const { t } = useI18n();
 
   // Track open/closed state per section — all open by default.
   const openSections = ref<Set<string>>(new Set(props.sections.map((s) => s.id)));
@@ -45,6 +48,8 @@
         <AppLessonRow
           v-for="lesson in section.lessons"
           :key="lesson.id"
+          :loading-label="t('ui.lessonRow.loading')"
+          :materials-label="t('ui.lessonRow.materials')"
           :num="lesson.position"
           :title="lesson.title"
           :duration="lesson.durationSeconds"

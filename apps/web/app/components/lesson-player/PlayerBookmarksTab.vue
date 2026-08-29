@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { ref, computed } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import { AppBookmarkList } from '@app/ui';
   import type { BookmarkEntry } from '@app/ui';
   import { createBookmark, deleteBookmark } from '@app/api-client-ts';
@@ -20,6 +21,8 @@
     seek: [time: number];
     'update:bookmarks': [bookmarks: BookmarkDto[]];
   }>();
+
+  const { t } = useI18n();
 
   const adding = ref(false);
   const showAddRow = ref(false);
@@ -79,6 +82,9 @@
 <template>
   <div class="player-bookmarks-tab">
     <AppBookmarkList
+      :edit-label="t('ui.bookmark.edit')"
+      :delete-label="t('ui.bookmark.delete')"
+      :add-group-label="t('ui.bookmark.addGroup')"
       :bookmarks="bookmarkEntries"
       :add-time="showAddRow ? props.currentTime : undefined"
       :adding="adding"

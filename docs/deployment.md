@@ -1,5 +1,9 @@
 # Self-hosted deployment
 
+> **On a NAS with Dockge?** There is a step-by-step for that path —
+> pre-built images only, every variable and mount spelled out:
+> [`deploy-ugreen-nas-dockge.md`](./deploy-ugreen-nas-dockge.md).
+
 Two deployment paths are supported:
 
 1. **Pull a tagged release** (recommended). Download the artefact bundle

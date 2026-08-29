@@ -7,6 +7,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
+import 'package:app_mobile/features/player/data/outbox_lesson_player_repository.dart';
+import 'package:app_mobile/features/sync/data/sync_api.dart';
+import 'package:app_mobile/features/sync/data/sync_repository_impl.dart';
+import 'package:app_mobile/features/sync/domain/sync_repository.dart';
+import 'package:app_mobile/features/sync/presentation/bloc/sync_bloc.dart';
 import 'package:app_mobile/features/auth/data/auth_api.dart';
 import 'package:app_mobile/features/auth/data/instance_api.dart';
 import 'package:app_mobile/features/auth/data/library_api.dart';
@@ -103,11 +108,20 @@ void configureDependencies() {
     ..registerLazySingleton<SearchRepository>(
       () => SearchRepositoryImpl(getIt<Dio>()),
     )
+    // The player's note and bookmark writes go through the outboxes; every
+    // read still goes straight at `LessonPlayerApi`. `onEnqueued` resolves
+    // `SyncBloc` lazily *inside* the closure — resolving it here instead would
+    // make the two singletons construct each other.
     ..registerLazySingleton<LessonPlayerRepository>(
-      () => LessonPlayerApi(
-        dio: getIt<Dio>(),
-        downloadsDao: DownloadsDao(getIt<AppDatabase>()),
-        loopback: getIt<LoopbackDecryptServer>(),
+      () => OutboxLessonPlayerRepository(
+        inner: LessonPlayerApi(
+          dio: getIt<Dio>(),
+          downloadsDao: DownloadsDao(getIt<AppDatabase>()),
+          loopback: getIt<LoopbackDecryptServer>(),
+        ),
+        notes: NotesOutboxDao(getIt<AppDatabase>()),
+        bookmarks: BookmarksOutboxDao(getIt<AppDatabase>()),
+        onEnqueued: () => getIt<SyncBloc>().add(const SyncManualRequested()),
       ),
     )
     ..registerLazySingleton<LessonProgressRecorder>(
@@ -199,6 +213,24 @@ void configureDependencies() {
     )
     ..registerLazySingleton<DeviceStorage>(DiskSpaceDeviceStorage.new)
     ..registerLazySingleton<Connectivity>(Connectivity.new)
+    ..registerLazySingleton<SyncRepository>(
+      () => SyncRepositoryImpl(
+        api: SyncApi(getIt<Dio>()),
+        progress: ProgressOutboxDao(getIt<AppDatabase>()),
+        notes: NotesOutboxDao(getIt<AppDatabase>()),
+        bookmarks: BookmarksOutboxDao(getIt<AppDatabase>()),
+      ),
+    )
+    // Singleton, not a factory: one sync engine per app. A second instance
+    // would run its own ticker and could drain concurrently with the first,
+    // and `OutboxLessonPlayerRepository` resolves this exact instance to nudge
+    // a drain after each write.
+    ..registerLazySingleton<SyncBloc>(
+      () => SyncBloc(
+        repository: getIt<SyncRepository>(),
+        connectivity: getIt<Connectivity>(),
+      ),
+    )
     ..registerFactory<DownloadsBloc>(
       () => DownloadsBloc(
         getIt<DownloadsRepository>(),

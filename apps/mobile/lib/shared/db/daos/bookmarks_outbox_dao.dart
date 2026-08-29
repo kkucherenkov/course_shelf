@@ -35,6 +35,18 @@ class BookmarksOutboxDao extends DatabaseAccessor<AppDatabase>
     bookmarksOutbox,
   )..orderBy([(t) => OrderingTerm(expression: t.queuedAt)])).get();
 
+  /// The row already queued for this bookmark, or null.
+  ///
+  /// The player needs it before enqueueing a delete: whether that delete
+  /// collapses a not-yet-synced create (drop it, the server never saw the
+  /// bookmark) or targets a real server id depends on the `serverId` of the row
+  /// already sitting here, which the caller cannot know from the id alone.
+  Future<BookmarksOutboxEntry?> findByLocalId(String localId) =>
+      (select(bookmarksOutbox)
+            ..where((t) => t.localId.equals(localId))
+            ..limit(1))
+          .getSingleOrNull();
+
   Future<void> clear(Iterable<String> localIds) =>
       (delete(bookmarksOutbox)..where((t) => t.localId.isIn(localIds))).go();
 }

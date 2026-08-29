@@ -15,6 +15,16 @@ root `README.md` / `README.ru.md`, `.claude/CLAUDE.md`, `docs/troubleshooting.md
 > false claims were found while fixing (`@app/ui` "11 components / 181 tests" —
 > actually 50 and 878) and corrected in the same pass. Everything else below
 > still stands.
+>
+> **Update 2 — item 7 shipped.** `E20-F01-S01` (SyncBloc) landed in #201, so
+> §3 "Genuinely open work" is now empty: all 119 tracked cards are ✅ and the
+> Gantt carries no `:active` row. That PR also fixed a bug this audit missed —
+> `lesson_player_api.dart` and `http_lesson_byte_source.dart` still doubled the
+> `/api/v1` prefix, the same defect issue #172 closed for `auth_api.dart` in
+> July, leaving the mobile player and the download byte source non-functional
+> against a real backend. §9's dead-code list is one shorter: the notes and
+> bookmarks outboxes now have producers. `CachedCatalogDao` and `AppSsoBlock`
+> remain.
 
 **The card statuses are honest. The prose around them is not.**
 
@@ -38,7 +48,7 @@ do run.
 | Card statuses (`docs/roadmap/tasks/*.md`) | ✅ accurate |
 | `TODO.md` counts | ✅ accurate |
 | `docs/roadmap/README.md` | ~~❌ stale (115 vs 121)~~ → **fixed** |
-| `docs/roadmap/ROADMAP.md` Gantt | ❌ stale (0 done of 118) |
+| `docs/roadmap/ROADMAP.md` Gantt | ~~❌ stale (0 done of 118)~~ → **fixed**, and gated in CI |
 | `specs/tasks/active.md` | ~~❌ stale (shipped follow-up still listed)~~ → **fixed** |
 | Root `README.md` / `.ru.md` | ~~❌ 6 false claims + version drift~~ → **fixed** |
 | `.claude/CLAUDE.md` issue-mirroring rule | ❌ 46 of 121 cards mirrored |
@@ -344,7 +354,7 @@ Ordered by *damage if left alone*, not by effort.
 | 4 | Fix `docs/troubleshooting.md:190` (`.fvmrc` → 3.44.4, or drop the fvm advice) | Following the current instruction breaks the reader's build. |
 | 5 | Reconcile `docs/roadmap/README.md` (115 → 121) and decide the Gantt's fate | Two documents in one directory currently contradict each other. |
 | 6 | Delete the stale follow-up note in `specs/tasks/active.md` | It is the file every session reads first. |
-| 7 | Ship `E20-F01-S01` (SyncBloc) | The only functional gap in the product. Offline writes currently never sync. |
+| 7 | ~~Ship `E20-F01-S01` (SyncBloc)~~ **done in #201** | Was the only functional gap in the product. |
 | 8 | Backfill `specs/design/README.md` (37 Vue + 17 Flutter), then `design:audit --strict` | An always-green CI step teaches readers to ignore CI steps. |
 | 9 | Add `xt0rted/setup-ffmpeg` to `ci.yml` and drop the "Fix (CI)" section of `docs/troubleshooting.md:162-173` | An entire integration suite has never run. |
 | 10 | Add override props for the five hard-coded strings (§8) | Violates a stated hard rule; blocks el/uk correctness. |

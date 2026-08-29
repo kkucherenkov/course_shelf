@@ -138,11 +138,7 @@ class _DownloadedSection extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.count,
-    this.tone,
-  });
+  const _SectionHeader({required this.title, required this.count, this.tone});
 
   final String title;
   final int count;
@@ -160,10 +156,7 @@ class _SectionHeader extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          Text(
-            title,
-            style: theme.textTheme.titleSmall?.copyWith(color: tone),
-          ),
+          Text(title, style: theme.textTheme.titleSmall?.copyWith(color: tone)),
           const SizedBox(width: AppSpacing.s2),
           Text('· $count', style: theme.textTheme.bodySmall),
         ],
@@ -232,6 +225,7 @@ class _DownloadRow extends StatelessWidget {
     final TranslationsDownloadsEn t = context.t.downloads;
 
     return AppDownloadRow(
+      progressLabel: context.t.ui.downloadRow.progress,
       // The id is the last-resort label for rows written before the v3
       // migration added the title columns; it is ugly on purpose, so a row
       // that lost its name is visibly wrong rather than blank.

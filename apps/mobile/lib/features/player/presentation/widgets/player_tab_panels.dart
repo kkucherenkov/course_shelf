@@ -47,6 +47,12 @@ class PlayerSectionsPanel extends StatelessWidget {
           ),
           for (final LessonOutlineEntry lesson in section.lessons)
             AppLessonRow(
+              materialsLabel: context.t.ui.lessonRow.materials,
+              downloadedLabel: context.t.ui.lessonRow.downloaded,
+              downloadingLabel: context.t.ui.lessonRow.downloading,
+              downloadLabel: context.t.ui.lessonRow.download,
+              downloadFailedLabel: context.t.ui.lessonRow.downloadFailed,
+              loadingLabel: context.t.ui.lessonRow.loading,
               num: lesson.position,
               title: lesson.title,
               duration: lesson.duration,
@@ -87,6 +93,12 @@ class PlayerNotesPanel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.s2),
       child: AppNoteEditor(
+        boldLabel: context.t.ui.noteEditor.bold,
+        italicLabel: context.t.ui.noteEditor.italic,
+        headingLabel: context.t.ui.noteEditor.heading,
+        listLabel: context.t.ui.noteEditor.list,
+        linkLabel: context.t.ui.noteEditor.link,
+        retryLabel: context.t.ui.noteEditor.retry,
         modelValue: state.note,
         placeholder: context.t.player.notePlaceholder,
         onSave: onSave,

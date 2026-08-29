@@ -1,0 +1,50 @@
+{
+  "chip": {
+    "remove": "Αφαίρεση"
+  },
+  "lessonRow": {
+    "materials": "Διαθέσιμο υλικό",
+    "downloaded": "Λήφθηκε",
+    "downloading": "Γίνεται λήψη",
+    "download": "Λήψη μαθήματος",
+    "downloadFailed": "Η λήψη απέτυχε",
+    "loading": "Φόρτωση μαθήματος"
+  },
+  "noteEditor": {
+    "bold": "Έντονα",
+    "italic": "Πλάγια",
+    "heading": "Επικεφαλίδα",
+    "list": "Λίστα",
+    "link": "Σύνδεσμος",
+    "retry": "Επανάληψη"
+  },
+  "playerChrome": {
+    "settings": "Ρυθμίσεις",
+    "prevLesson": "Προηγούμενο μάθημα",
+    "nextLesson": "Επόμενο μάθημα",
+    "subtitles": "Υπότιτλοι",
+    "fullscreen": "Πλήρης οθόνη"
+  },
+  "bookmark": {
+    "edit": "Επεξεργασία σελιδοδείκτη",
+    "delete": "Διαγραφή σελιδοδείκτη",
+    "addGroup": "Προσθήκη σελιδοδείκτη",
+    "save": "Αποθήκευση"
+  },
+  "numberField": {
+    "decrement": "Μείωση",
+    "increment": "Αύξηση"
+  },
+  "sso": {
+    "group": "Σύνδεση με"
+  },
+  "downloadRow": {
+    "progress": "Πρόοδος λήψης"
+  },
+  "progressBadge": {
+    "done": "Ολοκληρώθηκε",
+    "locked": "Κλειδωμένο",
+    "notStarted": "—",
+    "progress": "$completed από $total"
+  }
+}

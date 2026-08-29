@@ -78,6 +78,21 @@ jobs:
       - name: Design inventory audit
         run: pnpm design:audit
 
+      # Key parity across the locales each app ships (mobile: 4, web: 2). The
+      # gate existed as a checkbox in the PR template and nowhere else, so
+      # nothing ever failed on a locale that had drifted — see
+      # docs/audit/2026-08-29-plan-vs-code.md §4. Apps carrying a single locale
+      # (backend) are skipped by the script: there is nothing to compare.
+      - name: i18n key parity
+        run: pnpm check:i18n
+
+      # The Gantt encoded Stage (A/B), never progress, so all 121 rows read
+      # `:active` while 118 stories had shipped. Progress now comes from each
+      # card's `**Status:**`; this step fails if the committed chart drifts
+      # from the cards again. Writes nothing.
+      - name: Roadmap chart matches the cards
+        run: python3 docs/roadmap/tools/generate.py --roadmap-only --check
+
       # stylelint ran nowhere before this — which is why ~195 violations
       # accumulated across 28 files, and why dangling `var()` refs (an
       # undefined token invalidates the whole declaration, so AuthLayout

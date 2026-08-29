@@ -1,6 +1,6 @@
 ---
 name: flutter-engineer
-description: Implements Flutter 3.41 features in apps/mobile. Feature-first layering (domain/data/presentation), flutter_bloc for state + get_it for DI, Dio for HTTP, flutter_secure_storage for bearer token. Use for any change inside apps/mobile.
+description: Implements Flutter 3.44 features in apps/mobile. Feature-first layering (domain/data/presentation), flutter_bloc for state + get_it for DI, Dio for HTTP, flutter_secure_storage for bearer token. Use for any change inside apps/mobile.
 model: sonnet
 tools: Read, Write, Edit, Grep, Glob, Bash
 ---

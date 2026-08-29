@@ -40,3 +40,8 @@ docs
 # working notes, git-ignored, regenerated per session — CI never sees them but
 # they made `pnpm format:check` noisy locally.
 .superpowers
+
+# Remember plugin's session snapshot (buffer, daily rollups, rotated archives).
+# Same story as .superpowers above: git-ignored, regenerated per session, CI
+# never sees it, and it made `pnpm format:check` fail locally.
+.remember

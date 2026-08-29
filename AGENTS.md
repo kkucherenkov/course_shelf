@@ -16,7 +16,7 @@ Greenfield monorepo boilerplate for agent-driven product work.
 ```
 apps/backend    NestJS 11 + Prisma 7 + CQRS + Better Auth
 apps/web        Nuxt 4 SPA + Nuxt UI v4 + Tailwind 4 + @app/ui + @nuxtjs/i18n
-apps/mobile     Flutter 3.41 + flutter_bloc + get_it + Dio
+apps/mobile     Flutter 3.44 + flutter_bloc + get_it + Dio
 packages/specs  OpenAPI 3.1 + AsyncAPI 3.0 — single source of API truth
 packages/ui     brand components + colocated Storybook + specs
 packages/api-client-{ts,dart}   generated clients — never edit by hand
@@ -24,6 +24,25 @@ specs/tasks/    active.md (LIFO stack) + done.md (archive)
 specs/design/   W3C tokens + optional JSX mockups under mockups/
 docker/         local stack (postgres / redis / centrifugo / otel-lgtm)
 ```
+
+## How to work here
+
+Before the rules about _what_ you build, five about _how_. Full text in
+[`.claude/CLAUDE.md`](.claude/CLAUDE.md#working-agreement-read-before-anything-else).
+
+1. **Answer in Russian.** Everything committed to the repo stays in English.
+2. **Plan first.** Read the code, trace the flow, state the plan — and push an
+   entry to `specs/tasks/active.md` before the first edit. Ambiguity or an
+   architectural fork: ask, don't guess.
+3. **Update the docs in the same pass.** Behaviour → `docs/user-guide.md`;
+   architecture → `docs/architecture.md` (+ an ADR if the decision is new);
+   setup/versions → both READMEs. Never leave a document asserting something
+   that stopped being true.
+4. **Long-term memory goes to `tuxedo` (open work) and `dnote` (what was
+   learned)**, keyed `+course_shelf` / book `course_shelf` — not to the chat.
+5. **Append to the dnote changelog** before reporting work finished:
+   `dnote find "CHANGELOG course_shelf"`, one line per change,
+   `YYYY-MM-DD · что сделали`.
 
 ## Five rules every agent must follow
 

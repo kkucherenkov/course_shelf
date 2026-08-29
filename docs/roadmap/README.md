@@ -1,6 +1,6 @@
 # CourseShelf — Roadmap
 
-This directory holds the executable plan for CourseShelf v1: 115 stories
+This directory holds the executable plan for CourseShelf v1: 121 stories
 in 24 epics, each with a one-file task spec and a checkbox in `TODO.md`.
 The roadmap is the static plan; the live work log is `specs/tasks/active.md`.
 
@@ -11,7 +11,7 @@ The roadmap is the static plan; the live work log is `specs/tasks/active.md`.
   ships.
 - **[`ROADMAP.md`](./ROADMAP.md)** — Mermaid Gantt of the same stories
   with dependencies and duration estimates.
-- **[`tasks/`](./tasks)** — one markdown file per story (`115` files).
+- **[`tasks/`](./tasks)** — one markdown file per story (`121` files).
   Each file follows the `feature.md` template: status, dependencies,
   goal, acceptance, spec/codegen/design impact, tests, sub-steps, notes.
 - **[`tools/generate.py`](./tools/generate.py)** — regenerates
@@ -20,8 +20,8 @@ The roadmap is the static plan; the live work log is `specs/tasks/active.md`.
 
 ## Counts
 
-- Total stories: **115**
-  - Stage A (implementable directly from the design bundle): **108**
+- Total stories: **121**
+  - Stage A (implementable directly from the design bundle): **114**
   - Stage B (needs a design pre-step): **7**
 
 ## Epics

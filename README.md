@@ -23,7 +23,7 @@ The project is built to be developed with AI coding agents. A task stack lives i
 flowchart LR
   subgraph clients[" "]
     web["web<br/><sub>Nuxt 4 SPA</sub>"]
-    mobile["mobile<br/><sub>Flutter 3.41</sub>"]
+    mobile["mobile<br/><sub>Flutter 3.44</sub>"]
   end
 
   nginx["nginx<br/><sub>:8080 — canonical entry</sub>"]
@@ -67,9 +67,9 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 
 **Spec-first API contract.** One OpenAPI 3.1 file and one AsyncAPI 3.0 file generate both the TypeScript and Dart API clients. A CI drift guard regenerates every client and fails the PR if the committed output does not match. At runtime, `express-openapi-validator` rejects requests that are not in the spec -- the backend cannot serve an undocumented route.
 
-**Multi-platform from day one.** Nuxt 4 SPA for the web, Flutter 3.41 for mobile. Both consume the same generated client and the same design-token pipeline. Four locales (en, ru, uk, el) are wired across all three apps with a key-parity check that runs in CI.
+**Multi-platform from day one.** Nuxt 4 SPA for the web, Flutter 3.44 for mobile. Both consume the same generated client and the same design-token pipeline. Mobile ships four locales (en, ru, uk, el); web ships two (en, ru). `pnpm check:i18n` verifies key parity within each app.
 
-**Design system with enforcement.** W3C Design Tokens flow from JSON into CSS custom properties, TypeScript constants, and a Dart theme. `@app/ui` ships 11 Vue brand components, each with a colocated Storybook story and a Vitest spec (181 tests total). Stylelint bans hex literals and `!important` -- every color comes from a token.
+**Design system with enforcement.** W3C Design Tokens flow from JSON into CSS custom properties, TypeScript constants, and a Dart theme. `@app/ui` ships 50 Vue brand components, each with a colocated Storybook story and a Vitest spec (878 tests total). Stylelint bans hex literals and `!important` -- every color comes from a token.
 
 **Realtime via Centrifugo.** The backend publishes events to Centrifugo over its GRPC API. Web and mobile clients subscribe over websockets using short-lived tokens issued by `POST /api/v1/realtime/token`. Channel definitions are generated from the AsyncAPI spec.
 
@@ -85,7 +85,7 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 | ------------------ | ------------------------------------- | -------------------------------------------------------------------------- |
 | **`apps/backend`** | NestJS 11, Prisma 7, CQRS             | Better Auth, express-openapi-validator, nestjs-i18n, Sentry, OpenTelemetry |
 | **`apps/web`**     | Nuxt 4 (SPA), Nuxt UI v4, Tailwind v4 | @nuxtjs/i18n, generated api-client-ts, SCSS + BEM                          |
-| **`apps/mobile`**  | Flutter 3.41                          | flutter_bloc, get_it, Dio, slang (i18n), Firebase Messaging, Sentry        |
+| **`apps/mobile`**  | Flutter 3.44                          | flutter_bloc, get_it, Dio, slang (i18n), Firebase Messaging, Sentry        |
 
 ### Shared Packages
 
@@ -116,12 +116,12 @@ Containers mount the repository as a volume, so edits reach the running containe
 
 ### CI (GitHub Actions)
 
-- **Backend:** lint, typecheck, test with coverage enforcement
+- **Backend:** lint, typecheck, test (coverage is reported, not gated on a threshold)
 - **Web:** lint, typecheck, test
 - **Specs:** OpenAPI + AsyncAPI validation, spec bundle
 - **Codegen drift guard:** regenerates every client, fails on `git diff`
 - **UI audit:** every `@app/ui` component must have both a Storybook story and a Vitest spec
-- **Security:** `pnpm audit`, TruffleHog secret scan, `license-checker` with an OSI-permissive allowlist
+- **Security:** `osv-scanner` gated on CRITICAL + HIGH advisories, TruffleHog secret scan, `license-checker` with an OSI-permissive allowlist
 
 ## Quick Start
 
@@ -134,7 +134,7 @@ Goal: a fresh clone to all three apps running locally **in under 15 minutes**.
 | Node.js                 | 24      | `node -v`                                    |
 | pnpm                    | 10      | `pnpm -v`                                    |
 | Docker + Docker Compose | recent  | `docker --version && docker compose version` |
-| Flutter (mobile only)   | 3.41    | `flutter --version`                          |
+| Flutter (mobile only)   | 3.44    | `flutter --version`                          |
 
 ### 1 — Clone, install, generate
 
@@ -224,7 +224,7 @@ The `apps/mobile` Stage A capture is not yet automated — when the mobile home 
 apps/
   backend/          NestJS 11 + Prisma 7 + CQRS + Better Auth
   web/              Nuxt 4 (SPA) + Nuxt UI v4 + Tailwind v4
-  mobile/           Flutter 3.41 + flutter_bloc + get_it + Dio
+  mobile/           Flutter 3.44 + flutter_bloc + get_it + Dio
 packages/
   specs/            OpenAPI 3.1 + AsyncAPI 3.0 (source of truth)
   api-client-ts/    generated TS client -- never edit by hand
@@ -284,12 +284,15 @@ scripts/            setup.sh + cross-repo helpers
 | Node.js                 | >= 24                              |
 | pnpm                    | >= 10                              |
 | Docker + Docker Compose | any recent version                 |
-| Flutter + Dart          | 3.41 + 3.8 (optional, mobile only) |
+| Flutter + Dart          | 3.44 + 3.8 (optional, mobile only) |
 
 ## Documentation
 
 | Topic                                              | File                                                             |
 | -------------------------------------------------- | ---------------------------------------------------------------- |
+| **How to use CourseShelf (end users, admins)**     | [`docs/user-guide.md`](docs/user-guide.md)                       |
+| **System architecture (developers, architects)**   | [`docs/architecture.md`](docs/architecture.md)                   |
+| Architectural decision records                     | [`docs/adr/`](docs/adr/)                                         |
 | Backend, CQRS, Prisma, API conventions             | [`.claude/docs/handbook.md`](.claude/docs/handbook.md)           |
 | Design system, @app/ui, tokens, BEM                | [`.claude/docs/design-system.md`](.claude/docs/design-system.md) |
 | i18n across web, mobile, and backend               | [`.claude/docs/i18n.md`](.claude/docs/i18n.md)                   |

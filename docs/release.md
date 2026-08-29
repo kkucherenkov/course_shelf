@@ -24,11 +24,11 @@ the deploy side (see [`deployment.md`](./deployment.md)).
 
 ```sh
 # 1. Bump version in the root package.json (skip if already at target).
-npm version 0.2.0 --no-git-tag-version
+npm version 1.0.0 --no-git-tag-version
 
 # 2. Commit the bump.
 git add package.json
-git commit -m "chore(root): bump version to 0.2.0"
+git commit -m "chore(root): bump version to 1.0.0"
 git push origin main
 
 # 3. Tag and push.
@@ -51,7 +51,7 @@ For every release tag, two images are pushed under four tags each:
 | `ghcr.io/<owner>/courseshelf-backend` | `apps/backend/Dockerfile` |
 | `ghcr.io/<owner>/courseshelf-web`     | `apps/web/Dockerfile`     |
 
-Each image is tagged `:0.2.0`, `:0.2`, `:0`, and `:latest` — pin to the
+Each image is tagged `:1.0.0`, `:1.0`, `:1`, and `:latest` — pin to the
 exact patch in production, use the floating tags for dev/staging if you
 want to follow a major or minor lane.
 

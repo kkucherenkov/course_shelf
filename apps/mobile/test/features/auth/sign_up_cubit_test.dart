@@ -24,7 +24,7 @@ const _user = AuthUser(id: 'u1', email: 'jane@example.com', name: 'Jane');
 const _verifyingConfig = InstanceConfig(
   selfRegistration: true,
   emailVerificationRequired: true,
-  ssoProviders: <String>[],
+  ssoProviders: <SsoProviderConfig>[],
 );
 
 void main() {

@@ -409,11 +409,11 @@ void main() {
       await repo.enqueueLesson('l1');
       await repo.drain().timeout(const Duration(seconds: 10));
 
-      expect(
-        script.offsets,
-        <int>[0, EncryptedFileFormat.blockSize, 0],
-        reason: 'the changed total must send the transfer back to byte 0',
-      );
+      expect(script.offsets, <int>[
+        0,
+        EncryptedFileFormat.blockSize,
+        0,
+      ], reason: 'the changed total must send the transfer back to byte 0');
 
       final DownloadedLesson? row = await db.downloadsDao.byLessonId('l1');
       expect(row?.state, DownloadState.ready);

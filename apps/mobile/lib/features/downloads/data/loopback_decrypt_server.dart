@@ -30,6 +30,7 @@ class LoopbackDecryptServer {
   final Future<Uint8List> Function() _key;
 
   HttpServer? _server;
+
   /// In-flight (or completed) [start] call. `start()` is now reached from
   /// `resolveVideoSource`, which two overlapping lesson opens can enter at
   /// once; a plain `if (_server != null)` check lets both past the guard and

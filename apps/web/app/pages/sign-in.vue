@@ -1,9 +1,18 @@
 <script setup lang="ts">
-  import { AppField, AppInput, AppButton, AppCheckbox, AppBanner, AppPasswordField } from '@app/ui';
+  import {
+    AppField,
+    AppInput,
+    AppButton,
+    AppCheckbox,
+    AppBanner,
+    AppPasswordField,
+    AppSsoBlock,
+  } from '@app/ui';
   import { ref, computed } from 'vue';
 
   import { useAuthStore } from '~/stores/auth';
   import { useInstanceConfig } from '~/composables/useInstanceConfig';
+  import { useSsoProviders } from '~/composables/useSsoProviders';
   import { AUTH_ERROR_CODES } from '~/constants/authErrorCodes';
 
   definePageMeta({ layout: false });
@@ -12,6 +21,7 @@
   const toast = useToast();
   const authStore = useAuthStore();
   const { config } = useInstanceConfig();
+  const ssoProviders = useSsoProviders();
 
   const email = ref('');
   const password = ref('');
@@ -143,6 +153,15 @@
           :disabled="!formValid || rateLimitSec !== null"
         />
       </form>
+
+      <!-- SSO — renders nothing until the backend advertises a provider.
+           Wired now so v2's genericOAuth plugin lights it up with no UI change,
+           which is what the spec promises. -->
+      <AppSsoBlock
+        v-if="ssoProviders.length > 0"
+        :providers="ssoProviders"
+        :group-label="t('ui.sso.group')"
+      />
 
       <!-- Sign-up CTA — hidden when self-registration is disabled -->
       <p v-if="config.selfRegistration" class="page-sign-in__footnote-link">

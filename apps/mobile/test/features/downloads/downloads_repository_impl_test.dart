@@ -744,7 +744,10 @@ void main() {
       _ScriptedByteSource(payload: payload(10)),
       online: false,
     );
-    await repo.enqueueCourse('c1', <String>['done', 'fresh']);
+    await repo.enqueueCourse('c1', const <DownloadRequest>[
+      DownloadRequest(lessonId: 'done'),
+      DownloadRequest(lessonId: 'fresh'),
+    ]);
 
     expect(
       (await db.downloadsDao.byLessonId('done'))?.state,

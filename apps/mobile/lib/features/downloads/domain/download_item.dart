@@ -17,6 +17,8 @@ class DownloadItem extends Equatable {
     required this.attemptCount,
     this.courseId,
     this.lastError,
+    this.lessonTitle,
+    this.courseTitle,
   });
 
   factory DownloadItem.fromRow(DownloadedLesson row) => DownloadItem(
@@ -27,6 +29,8 @@ class DownloadItem extends Equatable {
     attemptCount: row.attemptCount,
     courseId: row.courseId,
     lastError: row.lastError,
+    lessonTitle: row.lessonTitle,
+    courseTitle: row.courseTitle,
   );
 
   final String lessonId;
@@ -36,6 +40,12 @@ class DownloadItem extends Equatable {
   final int? totalBytes;
   final int attemptCount;
   final String? lastError;
+
+  /// Denormalised at enqueue time — see `DownloadedLessons.lessonTitle` for
+  /// why the queue row carries its own names. Null on rows written before the
+  /// v3 migration.
+  final String? lessonTitle;
+  final String? courseTitle;
 
   /// `null` until the server has told us the total — a progress bar cannot be
   /// drawn before the first response arrives.
@@ -54,5 +64,7 @@ class DownloadItem extends Equatable {
     totalBytes,
     attemptCount,
     lastError,
+    lessonTitle,
+    courseTitle,
   ];
 }

@@ -1,0 +1,35 @@
+{
+  "title": "Downloads",
+  "storage": {
+    "summary": "{used} of {total} free",
+    "appOnly": "CourseShelf is using {used}",
+    "legendApp": "CourseShelf",
+    "legendOther": "Other apps",
+    "legendFree": "Free"
+  },
+  "sections": {
+    "inProgress": "In progress",
+    "downloaded": "Downloaded",
+    "failed": "Failed"
+  },
+  "ungroupedCourse": "Other lessons",
+  "deleteAll": "Delete all",
+  "deleteAllFor": "Delete all downloads for {course}",
+  "offline": {
+    "title": "You're offline",
+    "message": "Downloads and retries are paused — they resume automatically when you reconnect."
+  },
+  "empty": {
+    "title": "No downloads yet",
+    "message": "Nothing downloaded yet — open a course and tap the download icon."
+  },
+  "unknownLesson": "Untitled lesson",
+  "actions": {
+    "cancel": "Cancel download",
+    "resume": "Resume download",
+    "retry": "Retry download",
+    "delete": "Delete download",
+    "download": "Download lesson",
+    "downloaded": "Downloaded"
+  }
+}

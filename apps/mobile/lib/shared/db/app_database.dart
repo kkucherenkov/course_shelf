@@ -61,7 +61,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.open() : super(driftDatabase(name: 'course_shelf'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -79,6 +79,14 @@ class AppDatabase extends _$AppDatabase {
           'UPDATE downloaded_lessons SET queued_at = updated_at '
           'WHERE queued_at IS NULL',
         );
+      }
+      // v2 -> v3 (E19-F01-S03): the queue row carries its own display names.
+      // Not backfilled — there is nowhere to backfill them from, which is the
+      // whole reason the columns exist. Pre-v3 rows render with the id as a
+      // fallback until they are re-enqueued.
+      if (from < 3) {
+        await m.addColumn(downloadedLessons, downloadedLessons.lessonTitle);
+        await m.addColumn(downloadedLessons, downloadedLessons.courseTitle);
       }
     },
     beforeOpen: (details) async {

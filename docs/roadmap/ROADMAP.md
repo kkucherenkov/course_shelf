@@ -156,7 +156,7 @@ gantt
     Stage B · Downloads tab UI (precede with cs-mobile-downloads :crit, done, e19f01s03, after e19f01s01 e17f02s06, 3d
 
     section E20 Mobile sync
-    SyncBloc with connectivity + ticker triggers                 :active, e20f01s01, after e19f01s01, 3d
+    SyncBloc with connectivity + ticker triggers                 :done, e20f01s01, after e19f01s01, 3d
 
     section E21 Admin & operations
     GET /admin/dashboard aggregator                              :done, e21f01s01, after e10f01s01 e07f01s01, 2d

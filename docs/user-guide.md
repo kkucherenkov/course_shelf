@@ -300,9 +300,24 @@ the device.
 Downloads are **resumable**: interrupt one and it continues from where it
 stopped rather than starting over.
 
-> **Important — offline writes do not sync yet.** Progress, notes and bookmarks
-> made while offline are stored on the device and are **not** uploaded when you
-> reconnect. See [known limits](#known-limits-in-this-release).
+### Working offline
+
+Watch position, notes and bookmarks are all recorded on the device first and
+sent to the server afterwards — so they work with no connection and nothing
+waits on the network.
+
+Queued work is sent when the connection comes back (immediately, not on a
+timer), when you reopen the app, every few minutes while you use it, and right
+after each change while you are already online. Nothing is lost if the app is
+closed in between: the queue is on disk.
+
+Two rules are worth knowing:
+
+- **The newest edit wins.** Editing a note four times offline sends the fourth
+  version, not four requests. Same for your position in a lesson.
+- **If the server already has newer progress** for a lesson — you watched it on
+  the web in the meantime — the server's version stands and your queued one is
+  discarded rather than overwriting it.
 
 ---
 
@@ -397,7 +412,7 @@ Stated plainly, because finding these by surprise is worse.
 
 | Limit | Detail |
 | --- | --- |
-| **Offline writes never sync** | On mobile, progress / notes / bookmarks made offline are queued on the device and never uploaded. Work them online, or expect to lose them. Tracked as `E20-F01-S01`. |
+| **A bookmark added offline may appear twice, briefly** | Until the app refetches that lesson's bookmarks, one copy carries a local id and the server's copy carries its own. Reopening the lesson clears it. |
 | **Browse filters incomplete** | Library, duration-bucket and instructor filters, and sort-by-duration, are designed but not implemented on web. |
 | **Avatar upload, email change, account deletion** | Present in Settings, not functional. |
 | **Backups have no UI** | API only. |

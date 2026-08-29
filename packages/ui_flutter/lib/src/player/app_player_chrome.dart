@@ -181,6 +181,11 @@ class AppPlayerChrome extends StatefulWidget {
     this.onRetry,
     this.onStay,
     this.onPlayNext,
+    this.settingsLabel = 'Settings',
+    this.prevLessonLabel = 'Previous lesson',
+    this.nextLessonLabel = 'Next lesson',
+    this.subtitlesLabel = 'Subtitles',
+    this.fullscreenLabel = 'Fullscreen',
     super.key,
   });
 
@@ -246,6 +251,16 @@ class AppPlayerChrome extends StatefulWidget {
 
   /// Label of the [AppPlayerChromeState.end] "play next" button.
   final String playNextLabel;
+
+  /// Accessible names for the control cluster, translatable by the consumer.
+  /// The visible copy above already worked this way; these were the five
+  /// screen-reader labels that did not. English defaults keep behaviour
+  /// identical without any.
+  final String settingsLabel;
+  final String prevLessonLabel;
+  final String nextLessonLabel;
+  final String subtitlesLabel;
+  final String fullscreenLabel;
 
   final VoidCallback? onPlayPause;
 
@@ -708,7 +723,7 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
         AppIconButton(
           key: AppPlayerChrome.settingsKey,
           name: IconName.settings,
-          semanticLabel: 'Settings',
+          semanticLabel: widget.settingsLabel,
           variant: AppButtonVariant.ghost,
           size: AppButtonSize.sm,
           onPressed: widget.onSettingsTap,
@@ -767,7 +782,7 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
               AppIconButton(
                 key: AppPlayerChrome.previousKey,
                 name: IconName.prev,
-                semanticLabel: 'Previous lesson',
+                semanticLabel: widget.prevLessonLabel,
                 variant: AppButtonVariant.ghost,
                 size: AppButtonSize.sm,
                 onPressed: widget.onPrevious,
@@ -776,7 +791,7 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
               AppIconButton(
                 key: AppPlayerChrome.nextKey,
                 name: IconName.next,
-                semanticLabel: 'Next lesson',
+                semanticLabel: widget.nextLessonLabel,
                 variant: AppButtonVariant.ghost,
                 size: AppButtonSize.sm,
                 onPressed: widget.onNext,
@@ -813,7 +828,7 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
               AppIconButton(
                 key: AppPlayerChrome.subtitlesKey,
                 name: IconName.subtitles,
-                semanticLabel: 'Subtitles',
+                semanticLabel: widget.subtitlesLabel,
                 variant: AppButtonVariant.ghost,
                 size: AppButtonSize.sm,
                 onPressed: widget.onSubtitlesTap,
@@ -823,7 +838,7 @@ class _AppPlayerChromeState extends State<AppPlayerChrome>
             AppIconButton(
               key: AppPlayerChrome.fullscreenKey,
               name: IconName.fullscreen,
-              semanticLabel: 'Fullscreen',
+              semanticLabel: widget.fullscreenLabel,
               variant: AppButtonVariant.ghost,
               size: AppButtonSize.sm,
               onPressed: widget.onToggleFullscreen,

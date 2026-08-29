@@ -69,13 +69,23 @@ class SsoProvider {
 /// `AppSsoBlock.vue` has no divider prop or markup — it is a plain list of
 /// buttons. This twin matches 1:1 and does not add one.
 class AppSsoBlock extends StatelessWidget {
-  const AppSsoBlock({required this.providers, this.onSelect, super.key});
+  const AppSsoBlock({
+    required this.providers,
+    this.onSelect,
+    this.semanticsLabel = 'Sign in with',
+    super.key,
+  });
 
   /// The providers rendered as a vertical list, in order.
   final List<SsoProvider> providers;
 
   /// Called with a provider's [SsoProvider.id] when its button is tapped.
   final ValueChanged<String>? onSelect;
+
+  /// Copy the consumer can translate. The English default keeps the widget
+  /// rendering identically without one; `app_ui` never looks up a translation
+  /// itself — it has no locale and must not acquire one.
+  final String semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +109,7 @@ class AppSsoBlock extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: 'Sign in with',
+      label: semanticsLabel,
       child: Column(mainAxisSize: MainAxisSize.min, children: children),
     );
   }

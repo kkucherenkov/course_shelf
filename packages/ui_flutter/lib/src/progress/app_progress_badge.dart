@@ -32,6 +32,10 @@ class AppProgressBadge extends StatelessWidget {
     this.state = AppProgressBadgeState.inProgress,
     this.completed = 0,
     this.total = 0,
+    this.doneLabel = 'Done',
+    this.lockedLabel = 'Locked',
+    this.notStartedLabel = '—',
+    this.progressLabel = _defaultProgressLabel,
     super.key,
   });
 
@@ -46,6 +50,27 @@ class AppProgressBadge extends StatelessWidget {
   /// Units total; only consulted when [state] is
   /// [AppProgressBadgeState.inProgress].
   final int total;
+
+  /// Copy for the four states. English defaults so the widget stays usable —
+  /// and renders identically — without a consumer supplying anything, while
+  /// an app with `AppLocalizations` can translate every one. `app_ui` never
+  /// looks up a translation itself: it has no locale and must not acquire one.
+  final String doneLabel;
+  final String lockedLabel;
+
+  /// Shown for `notStarted`. An em dash by default, which needs no
+  /// translation, but a locale that prefers words is not blocked from saying
+  /// so.
+  final String notStartedLabel;
+
+  /// Builds the `inProgress` copy from the two counts. A callback rather than
+  /// a template string because word order around the numbers is not universal
+  /// — "2 of 5" is "5 из 2" nowhere, but plenty of languages put the total
+  /// first, and a `{completed} of {total}` placeholder cannot express that.
+  final String Function(int completed, int total) progressLabel;
+
+  static String _defaultProgressLabel(int completed, int total) =>
+      '$completed of $total';
 
   /// 0..100, mirroring the web `pct` computed prop. See the class doc.
   int get percent => switch (state) {
@@ -68,6 +93,10 @@ class AppProgressBadge extends StatelessWidget {
         state: state,
         completed: completed,
         total: total,
+        doneLabel: doneLabel,
+        lockedLabel: lockedLabel,
+        notStartedLabel: notStartedLabel,
+        progressLabel: progressLabel,
       ),
     };
   }
@@ -234,11 +263,23 @@ class _PillBadge extends StatelessWidget {
     required this.state,
     required this.completed,
     required this.total,
+    required this.doneLabel,
+    required this.lockedLabel,
+    required this.notStartedLabel,
+    required this.progressLabel,
   });
 
   final AppProgressBadgeState state;
   final int completed;
   final int total;
+
+  // Threaded down rather than read from an inherited widget: the pill is the
+  // only variant that renders words, and a private sub-widget reaching for
+  // context would hide that from the public constructor.
+  final String doneLabel;
+  final String lockedLabel;
+  final String notStartedLabel;
+  final String Function(int completed, int total) progressLabel;
 
   static const double _height = 22;
   static const double _iconSize = 10;
@@ -278,7 +319,7 @@ class _PillBadge extends StatelessWidget {
         children: <Widget>[
           IconCS(name: IconName.check, size: _iconSize, color: foreground),
           const SizedBox(width: AppSpacing.s1),
-          Text('Done', style: textStyle),
+          Text(doneLabel, style: textStyle),
         ],
       ),
       AppProgressBadgeState.locked => Row(
@@ -286,12 +327,12 @@ class _PillBadge extends StatelessWidget {
         children: <Widget>[
           IconCS(name: IconName.lock, size: _iconSize, color: foreground),
           const SizedBox(width: AppSpacing.s1),
-          Text('Locked', style: textStyle),
+          Text(lockedLabel, style: textStyle),
         ],
       ),
-      AppProgressBadgeState.notStarted => Text('—', style: textStyle),
+      AppProgressBadgeState.notStarted => Text(notStartedLabel, style: textStyle),
       AppProgressBadgeState.inProgress => Text(
-        '$completed of $total',
+        progressLabel(completed, total),
         style: textStyle,
       ),
     };

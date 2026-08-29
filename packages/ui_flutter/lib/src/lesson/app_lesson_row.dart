@@ -63,6 +63,12 @@ class AppLessonRow extends StatelessWidget {
     this.loading = false,
     this.onTap,
     this.onDownload,
+    this.materialsLabel = 'Materials available',
+    this.downloadedLabel = 'Downloaded',
+    this.downloadingLabel = 'Downloading',
+    this.downloadLabel = 'Download lesson',
+    this.downloadFailedLabel = 'Download failed',
+    this.loadingLabel = 'Loading lesson',
     super.key,
   });
 
@@ -112,6 +118,17 @@ class AppLessonRow extends StatelessWidget {
   /// widget only reports the tap (`docs/roadmap/tasks/E17-F02-S02.md`
   /// acceptance: "intercepted by the feature layer, not the widget").
   final VoidCallback? onDownload;
+
+  /// Accessible copy the consumer can translate. These are screen-reader
+  /// names, not visible text, which is exactly why they were easy to miss —
+  /// an untranslated one is invisible until someone uses a screen reader in
+  /// another language. English defaults keep behaviour identical without any.
+  final String materialsLabel;
+  final String downloadedLabel;
+  final String downloadingLabel;
+  final String downloadLabel;
+  final String downloadFailedLabel;
+  final String loadingLabel;
 
   static const Key numKey = Key('appLessonRowNum');
   static const Key iconKey = Key('appLessonRowIcon');
@@ -260,7 +277,7 @@ class AppLessonRow extends StatelessWidget {
             name: IconName.pdf,
             size: 14,
             color: cs.onSurfaceVariant,
-            semanticLabel: 'Materials available',
+            semanticLabel: materialsLabel,
           ),
           const SizedBox(width: AppSpacing.s2),
         ],
@@ -283,7 +300,7 @@ class AppLessonRow extends StatelessWidget {
           name: IconName.check,
           size: 14,
           color: sem.successFg,
-          semanticLabel: 'Downloaded',
+          semanticLabel: downloadedLabel,
         );
       case LessonDownloadState.downloading:
         return SizedBox(
@@ -294,7 +311,7 @@ class AppLessonRow extends StatelessWidget {
             child: AppSpinner(
               size: AppSpinnerSize.sm,
               color: cs.primary,
-              semanticLabel: 'Downloading',
+              semanticLabel: downloadingLabel,
             ),
           ),
         );
@@ -302,7 +319,7 @@ class AppLessonRow extends StatelessWidget {
         return Semantics(
           key: downloadKey,
           button: true,
-          label: 'Download lesson',
+          label: downloadLabel,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: onDownload,
@@ -319,14 +336,14 @@ class AppLessonRow extends StatelessWidget {
           name: IconName.alert,
           size: 14,
           color: cs.error,
-          semanticLabel: 'Download failed',
+          semanticLabel: downloadFailedLabel,
         );
     }
   }
 
   Widget _buildLoading() {
     return Semantics(
-      label: 'Loading lesson',
+      label: loadingLabel,
       child: const Padding(
         padding: EdgeInsets.all(AppSpacing.s3),
         child: Row(

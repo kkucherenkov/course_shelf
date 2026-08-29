@@ -159,24 +159,16 @@ export FFMPEG_PATH=/opt/ffmpeg/bin/ffmpeg
 
 These env vars are read by `AppConfig.ffprobePath` / `AppConfig.ffmpegPath`.
 
-**Fix (CI):**
+**CI:** already handled — `ci.yml`'s `checks` job installs ffmpeg before the
+backend tests. This entry used to carry a "Fix (CI)" section telling the reader
+to add that step; the step now exists, so the instruction belongs in the config
+and not here.
 
-Add one of the following before any job that runs `pnpm --filter @app/backend test`
-or `pnpm spec:codegen`:
-
-```yaml
-# GitHub Actions — fastest option (cached binary):
-- uses: xt0rted/setup-ffmpeg@v1
-
-# Ubuntu runner (slower, always pulls from apt):
-- run: sudo apt-get install -y ffmpeg
-```
-
-**Test isolation:**
-
-Integration tests in `local-ffmpeg.adapter.integration.spec.ts` check for the
-binary at suite startup via `spawnSync('which', ['ffmpeg'])` and skip the entire
-suite when it returns non-zero, so CI without ffmpeg stays green.
+**Test isolation:** `local-ffmpeg.adapter.integration.spec.ts` probes for the
+binary at suite startup (`spawnSync('which', ['ffmpeg'])`) and skips itself when
+it is absent, so a contributor without ffmpeg still gets a green local run. That
+guard is why the suite went unexecuted for months — it was never installed
+anywhere, and a skipped suite reads exactly like a passing one.
 
 ## Flutter — SDK version mismatch after upgrading macOS or Xcode
 

@@ -313,6 +313,21 @@ Both catalogs ship user-visible strings that no locale can reach.
 `AppNoteEditor.vue:25` (`placeholder`) is a default prop and is overridable —
 acceptable. The five above are computed or positional and are not.
 
+> **Corrected in #204.** This section undercounts badly, and one of its five
+> entries is wrong: `app_spinner.dart:34` is a constructor parameter with an
+> English default — already overridable, never a defect.
+>
+> Measured properly: **54 strings across 17 components** — 25 in 7 Vue
+> components, 29 in 10 Flutter widgets. An initial sweep suggested ~95, but
+> that counted `withDefaults` defaults as hard-coded; `AppBanner`,
+> `AppSearchField`, `AppPasswordField`, `AppBookmarkList` and — with 23 strings
+> — `AppPlayerChrome` were already fully overridable. `AppPlayerChrome` is the
+> pattern the fix follows rather than a component that needed fixing.
+>
+> Most of the real ones are `semanticLabel`s: screen-reader names, not visible
+> text, which is why they survived a design review. An untranslated one is
+> invisible until somebody runs a screen reader in another language.
+
 This violates *"never ship a user-visible string without `t()` /
 `AppLocalizations`"* in `.claude/CLAUDE.md`. The fix is an override prop per
 string, not a `t()` call inside a design-system package — `@app/ui` and
@@ -370,7 +385,7 @@ Ordered by *damage if left alone*, not by effort.
 | 7 | ~~Ship `E20-F01-S01` (SyncBloc)~~ **done in #201** | Was the only functional gap in the product. |
 | 8 | ~~Backfill `specs/design/README.md` (37 Vue + 17 Flutter), then `design:audit --strict`~~ **done in #202** | The 17 "Flutter components" were directory names, not widgets — see §5. |
 | 9 | ~~Add ffmpeg to `ci.yml` and drop the "Fix (CI)" section of `docs/troubleshooting.md`~~ **done in #203** | Installed via apt, not a third-party action. The 2 tests it unblocks pass. |
-| 10 | Add override props for the five hard-coded strings (§8) | Violates a stated hard rule; blocks el/uk correctness. |
+| 10 | ~~Add override props for the five hard-coded strings (§8)~~ **done in #204** | Not five — 54, across 17 components. §8 also named one that was already a prop. |
 | 11 | ~~Make `tests/e2e/csp.spec.ts` fail rather than skip when CI runs the prod stack~~ **done in #203** | `E2E_EXPECT_CSP=1` flips skip into throw. |
 | 12 | ~~Narrow the CLAUDE.md issue-mirroring rule to match reality~~ **done in #203** | Mirroring covers E15–E20 only — 133 issues, counted. |
 | 13 | Wire `AppSsoBlock` into sign-in/sign-up, or delete it and the dead `ssoProviders` field | Built, paid for, unused. |

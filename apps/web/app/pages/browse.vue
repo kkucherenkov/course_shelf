@@ -100,6 +100,7 @@
         <AppChip
           v-for="option in statusOptions"
           :key="option.value"
+          :remove-label="t('ui.chip.remove')"
           :variant="status === option.value ? 'primary' : 'default'"
           :selected="status === option.value"
           :label="option.label"

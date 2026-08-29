@@ -149,6 +149,11 @@ class _LandscapePlayer extends StatelessWidget {
       backgroundColor: AppMedia.stage,
       body: Center(
         child: AppPlayerChrome(
+          settingsLabel: context.t.ui.playerChrome.settings,
+          prevLessonLabel: context.t.ui.playerChrome.prevLesson,
+          nextLessonLabel: context.t.ui.playerChrome.nextLesson,
+          subtitlesLabel: context.t.ui.playerChrome.subtitles,
+          fullscreenLabel: context.t.ui.playerChrome.fullscreen,
           state: _chromeState(state.status),
           sectionLabel: _sectionLabel(context, state),
           // context defaults to mobileLandscape.
@@ -204,6 +209,11 @@ class _PortraitPlayer extends StatelessWidget {
             // landscape path uses, switched to its portrait context. Landscape
             // rotation swaps to the immersive 19:9 context via `onFullscreen`.
             AppPlayerChrome(
+              settingsLabel: context.t.ui.playerChrome.settings,
+              prevLessonLabel: context.t.ui.playerChrome.prevLesson,
+              nextLessonLabel: context.t.ui.playerChrome.nextLesson,
+              subtitlesLabel: context.t.ui.playerChrome.subtitles,
+              fullscreenLabel: context.t.ui.playerChrome.fullscreen,
               context: AppPlayerChromeContext.portrait,
               state: _chromeState(state.status),
               sectionLabel: _sectionLabel(context, state),

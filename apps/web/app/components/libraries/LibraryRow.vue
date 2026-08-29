@@ -69,6 +69,7 @@
         <h3 class="library-row__name">{{ library.name }}</h3>
         <AppChip
           v-if="statusChip"
+          :remove-label="t('ui.chip.remove')"
           :variant="statusChip.variant"
           :label="statusChip.label"
           class="library-row__chip"

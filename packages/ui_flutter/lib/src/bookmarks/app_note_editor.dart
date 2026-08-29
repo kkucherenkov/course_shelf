@@ -64,6 +64,12 @@ class AppNoteEditor extends StatefulWidget {
     this.onModeChanged,
     this.onSave,
     this.onRetry,
+    this.boldLabel = 'Bold',
+    this.italicLabel = 'Italic',
+    this.headingLabel = 'Heading',
+    this.listLabel = 'List',
+    this.linkLabel = 'Link',
+    this.retryLabel = 'Retry',
     super.key,
   });
 
@@ -79,6 +85,16 @@ class AppNoteEditor extends StatefulWidget {
 
   /// Visible while editing.
   final String placeholder;
+
+  /// Toolbar and action copy the consumer can translate. English defaults
+  /// keep the widget rendering identically without any; `app_ui` never looks
+  /// up a translation itself — it has no locale and must not acquire one.
+  final String boldLabel;
+  final String italicLabel;
+  final String headingLabel;
+  final String listLabel;
+  final String linkLabel;
+  final String retryLabel;
 
   final ValueChanged<String>? onChanged;
   final ValueChanged<AppNoteMode>? onModeChanged;
@@ -243,7 +259,7 @@ class _AppNoteEditorState extends State<AppNoteEditor> {
       child: Row(
         children: <Widget>[
           _toolButton(
-            semanticLabel: 'Bold',
+            semanticLabel: widget.boldLabel,
             enabled: enabled,
             onPressed: () => _applyWrap('**'),
             child: Text(
@@ -253,7 +269,7 @@ class _AppNoteEditorState extends State<AppNoteEditor> {
           ),
           const SizedBox(width: AppSpacing.s1),
           _toolButton(
-            semanticLabel: 'Italic',
+            semanticLabel: widget.italicLabel,
             enabled: enabled,
             onPressed: () => _applyWrap('*'),
             child: Text(
@@ -263,7 +279,7 @@ class _AppNoteEditorState extends State<AppNoteEditor> {
           ),
           const SizedBox(width: AppSpacing.s1),
           _toolButton(
-            semanticLabel: 'Heading',
+            semanticLabel: widget.headingLabel,
             enabled: enabled,
             onPressed: () => _applyLinePrefix('# '),
             child: Text(
@@ -274,7 +290,7 @@ class _AppNoteEditorState extends State<AppNoteEditor> {
           const SizedBox(width: AppSpacing.s1),
           AppIconButton(
             name: IconName.list,
-            semanticLabel: 'List',
+            semanticLabel: widget.listLabel,
             variant: AppButtonVariant.ghost,
             size: AppButtonSize.sm,
             disabled: !enabled,
@@ -283,7 +299,7 @@ class _AppNoteEditorState extends State<AppNoteEditor> {
           const SizedBox(width: AppSpacing.s1),
           AppIconButton(
             name: IconName.copy,
-            semanticLabel: 'Link',
+            semanticLabel: widget.linkLabel,
             variant: AppButtonVariant.ghost,
             size: AppButtonSize.sm,
             disabled: !enabled,
@@ -416,10 +432,10 @@ class _AppNoteEditorState extends State<AppNoteEditor> {
               AppButton(
                 variant: AppButtonVariant.ghost,
                 size: AppButtonSize.sm,
-                semanticLabel: 'Retry',
+                semanticLabel: widget.retryLabel,
                 onPressed: widget.onRetry,
                 child: Text(
-                  'Retry',
+                  widget.retryLabel,
                   style: labelStyle.copyWith(
                     color: cs.primary,
                     fontWeight: AppFontWeight.medium,

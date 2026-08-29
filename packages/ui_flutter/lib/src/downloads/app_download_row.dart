@@ -73,6 +73,7 @@ class AppDownloadRow extends StatelessWidget {
     this.resumeLabel = 'Resume download',
     this.retryLabel = 'Retry download',
     this.deleteLabel = 'Delete download',
+    this.progressLabel = 'Download progress',
     super.key,
   }) : assert(
          progress >= 0 && progress <= 1,
@@ -126,6 +127,11 @@ class AppDownloadRow extends StatelessWidget {
 
   /// Accessible name for the delete action; override to localize.
   final String deleteLabel;
+
+  /// Copy the consumer can translate. The English default keeps the widget
+  /// rendering identically without one; `app_ui` never looks up a translation
+  /// itself — it has no locale and must not acquire one.
+  final String progressLabel;
 
   /// Test/inspection key for the leading state glyph.
   static const Key stateIconKey = Key('appDownloadRowStateIcon');
@@ -227,7 +233,7 @@ class AppDownloadRow extends StatelessWidget {
             key: progressKey,
             value: progress * 100,
             thin: true,
-            label: 'Download progress',
+            label: progressLabel,
           ),
         ],
       ],

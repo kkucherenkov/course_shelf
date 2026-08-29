@@ -174,6 +174,7 @@ class _SignInView extends StatelessWidget {
                 _Divider(label: context.t.auth.dividerOr),
                 const SizedBox(height: AppSpacing.s4),
                 AppSsoBlock(
+                  semanticsLabel: context.t.ui.sso.group,
                   key: const ValueKey('signInSsoBlock'),
                   providers: ssoProvidersFor(
                     context,

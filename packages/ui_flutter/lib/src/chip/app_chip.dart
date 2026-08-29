@@ -31,6 +31,7 @@ class AppChip extends StatelessWidget {
     this.disabled = false,
     this.onTap,
     this.onRemove,
+    this.removeLabel = 'Remove',
     super.key,
   }) : assert(
          label != null || child != null,
@@ -59,6 +60,11 @@ class AppChip extends StatelessWidget {
 
   final VoidCallback? onTap;
   final VoidCallback? onRemove;
+
+  /// Copy the consumer can translate. The English default keeps the widget
+  /// rendering identically without one; `app_ui` never looks up a translation
+  /// itself — it has no locale and must not acquire one.
+  final String removeLabel;
 
   /// Gap between the leading icon and the label (web: flat `gap: 6px` on
   /// `.app-chip`, not routed through a spacing token — a locally-owned
@@ -136,6 +142,7 @@ class AppChip extends StatelessWidget {
                   iconSize: size.iconSize,
                   disabled: disabled,
                   onRemove: onRemove,
+                  removeLabel: removeLabel,
                 ),
             ],
           ),
@@ -156,12 +163,17 @@ class _AppChipRemoveAffordance extends StatelessWidget {
     required this.iconSize,
     required this.disabled,
     required this.onRemove,
+    required this.removeLabel,
   });
 
   final Color color;
   final double iconSize;
   final bool disabled;
   final VoidCallback? onRemove;
+
+  /// Threaded down from [AppChip] rather than defaulted here, so the label has
+  /// exactly one definition and it sits on the public constructor.
+  final String removeLabel;
 
   /// Web: `margin-inline-start: 2px; padding: 2px;` on `.app-chip__remove` —
   /// locally-owned literals, matching the web component's own hard-coded
@@ -175,7 +187,7 @@ class _AppChipRemoveAffordance extends StatelessWidget {
       padding: const EdgeInsets.only(left: _gap),
       child: Semantics(
         button: true,
-        label: 'Remove',
+        label: removeLabel,
         enabled: !disabled,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,

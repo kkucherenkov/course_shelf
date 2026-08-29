@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { ref } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import { AppSectionHeader, AppLessonRow } from '@app/ui';
   import type { SectionOutline } from '@app/api-client-ts';
 
@@ -8,6 +9,8 @@
     courseId: string;
     currentLessonId: string;
   }>();
+
+  const { t } = useI18n();
 
   // Track collapsed state per section id
   const openSections = ref<Record<string, boolean>>({});
@@ -43,6 +46,8 @@
           class="player-sections-tab__lesson-link"
         >
           <AppLessonRow
+            :loading-label="t('ui.lessonRow.loading')"
+            :materials-label="t('ui.lessonRow.materials')"
             :num="lesson.position"
             :title="lesson.title"
             :duration="lesson.durationSeconds"

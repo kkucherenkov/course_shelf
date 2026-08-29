@@ -46,6 +46,13 @@
       colorMode?: 'light' | 'dark';
       brandName?: string;
       brandMark?: string;
+      /** Landmark and menu names; override to translate. */
+      primaryNavLabel?: string;
+      adminNavLabel?: string;
+      userMenuLabel?: string;
+      bottomNavLabel?: string;
+      /** Visible heading over the admin section; override to translate. */
+      adminLabel?: string;
     }>(),
     {
       adminNav: () => [],
@@ -54,6 +61,11 @@
       colorMode: 'dark',
       brandName: 'CourseShelf',
       brandMark: 'CS',
+      primaryNavLabel: 'Primary navigation',
+      adminNavLabel: 'Admin navigation',
+      userMenuLabel: 'User menu',
+      bottomNavLabel: 'Bottom navigation',
+      adminLabel: 'Admin',
     },
   );
 
@@ -189,7 +201,7 @@
       </div>
 
       <!-- Primary nav -->
-      <nav class="app-navigation-shell__nav" aria-label="Primary navigation">
+      <nav class="app-navigation-shell__nav" :aria-label="primaryNavLabel">
         <AppRow
           v-for="item in nav"
           :key="item.key"
@@ -208,8 +220,8 @@
 
       <!-- Admin nav -->
       <template v-if="adminNav && adminNav.length > 0">
-        <div class="app-navigation-shell__admin-section">Admin</div>
-        <nav class="app-navigation-shell__nav" aria-label="Admin navigation">
+        <div class="app-navigation-shell__admin-section">{{ adminLabel }}</div>
+        <nav class="app-navigation-shell__nav" :aria-label="adminNavLabel">
           <AppRow
             v-for="item in adminNav"
             :key="item.key"
@@ -303,7 +315,7 @@
             v-if="menuOpen"
             class="app-navigation-shell__menu"
             role="menu"
-            aria-label="User menu"
+            :aria-label="userMenuLabel"
           >
             <button
               type="button"
@@ -361,7 +373,7 @@
     </div>
 
     <!-- ── Bottom-tab bar (xs only) ────────────────────────────────────────── -->
-    <nav class="app-navigation-shell__bottom-tabs" aria-label="Bottom navigation">
+    <nav class="app-navigation-shell__bottom-tabs" :aria-label="bottomNavLabel">
       <button
         v-for="item in bottomTabItems"
         :key="item.key"

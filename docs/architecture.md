@@ -125,11 +125,21 @@ implementation; the implementation is checked against the spec.** Adding a
 route without editing the YAML first produces a 400 at runtime and a red
 `Codegen drift guard` job in CI.
 
-Four route families are exempt from the validator
-(`apps/backend/src/common/openapi/openapi-validator.middleware.ts:86`):
-`/v1/auth/*` (Better Auth owns that protocol), the two `/v1/stream/*` binary
-endpoints, and the backup download — all raw non-JSON bodies. See
-[§18](#18--known-architectural-debt).
+Four route families are exempt from the **validator**
+(`apps/backend/src/common/openapi/openapi-validator.middleware.ts`), though all
+but one are fully described in the spec:
+
+- `/v1/auth/*` — Better Auth owns that wire protocol and evolves it
+  independently; it is the one family with no path item, deliberately.
+- `/v1/stream/lessons/…`, `/v1/stream/materials/…`,
+  `/v1/admin/backups/{id}/download` — documented as
+  `application/octet-stream` / `text/vtt` path items, but skipped at runtime
+  because outside production the validator checks *responses* too, and
+  streaming a video through a JSON response validator is not something to
+  attempt.
+
+The distinction matters: the spec-first rule is about describing the contract,
+which these now do. The exemption is a property of that middleware.
 
 ### 3.2 Realtime contract
 
@@ -608,41 +618,38 @@ package; use `any` to escape a type error.
 ## 18 — Known architectural debt
 
 Ordered by consequence. Full evidence in
-[`docs/audit/2026-08-29-plan-vs-code.md`](./audit/2026-08-29-plan-vs-code.md).
+[`docs/audit/2026-08-29-plan-vs-code.md`](./audit/2026-08-29-plan-vs-code.md),
+whose ranked list this tracks. `main` is now protected with four required
+checks, so everything below is enforceable rather than advisory.
 
-1. **`main` is unprotected.** No required status checks. Every gate below is
-   advisory. Fix this first; it makes all the others enforceable.
-2. **No `integration_test` anywhere on mobile.** The sync engine, the download
+1. **No `integration_test` anywhere on mobile.** The sync engine, the download
    queue and offline playback are all covered by unit and bloc tests only —
    there is no emulator on the dev host and none in CI, so nothing exercises
    them against a real platform. `disk_space_plus`'s native code has still
    never run.
-3. **Four gates documented but disarmed** — Storybook a11y is downgraded to
-   notes via `STORYBOOK_A11Y_LEVEL: todo` (~75 stories would fail);
-   `pnpm check:i18n` runs in no workflow; `pnpm spec:contract-test` runs in no
-   workflow; no ffmpeg is installed in CI, so the ffprobe integration suite has
-   never executed.
-4. **`tests/e2e/csp.spec.ts` skips rather than fails** when the stack is not
-   production-shaped. In CI, where it *is* production-shaped, a skip and a pass
-   look identical in the report.
-5. **No backend e2e layer.** Nothing exercises
-   guard → openapi-validator → handler → Prisma end to end.
-6. **`design:audit` is advisory.** 37 Vue and 17 Flutter components are missing
-   from `specs/design/README.md`. Backfill, then `--strict`.
-7. **Four binary routes live outside `openapi.yaml`'s `paths`.** The rationale
-   (no JSON body to validate) is sound but incomplete — OpenAPI 3.1 can express
-   `application/octet-stream`, and path items would give the generated clients
-   typed methods and let the validator check parameters.
-8. **Hard-coded English in both design systems** —
-   `app_progress_badge.dart:281,289`, `app_spinner.dart:34`,
-   `AppNoteEditor.vue:186,187`. Fix with override props, not `t()` inside the
-   package.
-9. **Dead code:** `CachedCatalogDao` is registered and tested but has no
-   production caller (which is why Downloads had to denormalise its titles);
-   `AppSsoBlock` is built, storied, exported, and consumed by no page, while
-   `useInstanceConfig.ts:17` hard-codes `ssoProviders: []`.
-10. **No coverage thresholds** anywhere. Coverage is reported, never gated —
-    the README no longer claims otherwise, but the gap itself remains.
+2. **No backend e2e layer.** Nothing exercises
+   guard → openapi-validator → handler → Prisma end to end. `supertest` is a
+   dependency and is used in two controller specs; the pyramid has no top.
+3. **Storybook a11y is downgraded to notes** via `STORYBOOK_A11Y_LEVEL: todo`.
+   Measured: 40 axe violations across 4 rules (`nested-interactive`,
+   `aria-allowed-attr`, `select-name`, `aria-prohibited-attr`) in 8 components.
+   The level cannot simply be raised on the existing job — at `error` the addon
+   throws before `postVisit`, so visual baselines would stop being compared. It
+   needs a job of its own.
+4. **`pnpm spec:contract-test` runs in no workflow.** The script exists; nothing
+   calls it.
+5. **No coverage thresholds** anywhere. Coverage is reported, never gated. Left
+   deliberately: `.claude/CLAUDE.md` says not to tune a threshold number that
+   will rot in a greenfield, and the README no longer claims enforcement. Revisit
+   when the codebase stops moving.
+6. **`AppSsoBlock` renders nothing on either client** — not a wiring gap any
+   more, both consume `InstanceConfigDto.ssoProviders`, but the backend returns
+   `[]` unconditionally until Better Auth's `genericOAuth` plugin lands in v2.
+
+Closed since this list was first written: the `/api/v1` doubling in the mobile
+clients, the missing outbox drain, the design-inventory drift, the ffmpeg and
+CSP gates, the issue-mirroring rule, hard-coded strings in both design systems,
+the two dead components, and the four undocumented binary routes.
 
 ---
 

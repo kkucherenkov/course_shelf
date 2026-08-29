@@ -29,7 +29,7 @@ media server rather than a nicer skin on one. This document designs it.
 | D1 | Ship the in-lesson transcript panel (B3) **first**, before any storage or search work | It is client-side only and depends on nothing. See finding F1. |
 | D2 | Index cues with `pg_trgm` + GIN, not `tsvector` | Substring matching is what "find where they said X" means, it matches how search already behaves, and it needs no raw SQL in application code and no per-language text-search configs. See §6.2. |
 | D3 | Leave the `Note` model untouched | Timestamped notes were considered and deferred; `Bookmark` already carries `positionSeconds` and covers "mark this minute". Revisit only if the panel makes the need concrete. |
-| D4 | Defer Whisper transcription (B4) until the gap is measured | Cost is real; the need is unproven. Measure the share of lessons with zero subtitle tracks first. |
+| D4 | ~~Defer Whisper transcription (B4) until the gap is measured~~ **Superseded 2026-08-29: B4 goes first.** | The measurement came back from the real library: most courses have no subtitle track at all, so B3 and B2 would render data that does not exist. Design: [`2026-08-29-b4-transcription-design.md`](./2026-08-29-b4-transcription-design.md). |
 | D5 | Web only for B3; mobile transcript panel is a follow-up | Keeps the first increment small. The data path (§4) is platform-neutral. |
 
 ## 3. Findings from the code that shaped this design
@@ -242,8 +242,12 @@ understands. The matched substring is highlighted in the cue text.
 
 ## 8. Out of scope
 
-- **B4, Whisper transcription.** Deferred until the share of lessons with no
-  subtitle track is measured on a real library.
+- **B4, Whisper transcription.** No longer deferred — it now leads the
+  programme and has its own design,
+  [`2026-08-29-b4-transcription-design.md`](./2026-08-29-b4-transcription-design.md).
+  It also creates the `Transcript` and `TranscriptCue` tables described in §5
+  below (with two added columns) and fills cues for the content it generates,
+  which narrows B1 to parsing pre-existing sidecars and building the index.
 - **B6, notes export.** Follows B3.
 - **Timestamped notes.** Decided against for now (D3).
 - **Mobile transcript panel.** Follow-up to B3 (D5).
@@ -252,8 +256,8 @@ understands. The matched substring is highlighted in the cue text.
 
 ## 9. Open questions
 
-1. What fraction of lessons in a real library have zero subtitle tracks? This
-   gates B4 and cannot be answered from the repository — it needs a query
-   against a running instance.
+1. ~~What fraction of lessons in a real library have zero subtitle tracks?~~
+   **Answered 2026-08-29:** most of them. B4 was promoted ahead of B3 and B1 as
+   a result.
 2. Should the transcript tab be hidden or shown-empty for a lesson with no
    subtitles? Leaning hidden, to keep the tab strip honest.

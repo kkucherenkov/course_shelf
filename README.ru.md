@@ -23,7 +23,7 @@ Course Shelf -- это полнофункциональная обучающая
 flowchart LR
   subgraph clients[" "]
     web["web<br/><sub>Nuxt 4 SPA</sub>"]
-    mobile["mobile<br/><sub>Flutter 3.41</sub>"]
+    mobile["mobile<br/><sub>Flutter 3.44</sub>"]
   end
 
   nginx["nginx<br/><sub>:8080 — canonical entry</sub>"]
@@ -67,9 +67,9 @@ flowchart LR
 
 **Спецификация как основа API-контракта.** Один файл OpenAPI 3.1 и один файл AsyncAPI 3.0 генерируют как TypeScript-, так и Dart-клиенты API. Защита от рассинхронизации в CI регенерирует каждый клиент и отклоняет PR, если зафиксированный результат не совпадает. Во время выполнения `express-openapi-validator` отклоняет запросы, не описанные в спецификации -- бэкенд не может обслуживать недокументированный маршрут.
 
-**Мультиплатформенность с первого дня.** Nuxt 4 SPA для веба, Flutter 3.41 для мобильных устройств. Оба используют один и тот же сгенерированный клиент и единую цепочку дизайн-токенов. Четыре языковых стандарта (en, ru, uk, el) подключены во всех трёх приложениях с проверкой полноты ключей в CI.
+**Мультиплатформенность с первого дня.** Nuxt 4 SPA для веба, Flutter 3.44 для мобильных устройств. Оба используют один и тот же сгенерированный клиент и единую цепочку дизайн-токенов. Мобильное приложение поставляется с четырьмя локалями (en, ru, uk, el), веб -- с двумя (en, ru). `pnpm check:i18n` проверяет полноту ключей внутри каждого приложения.
 
-**Система дизайна с принудительным соблюдением правил.** W3C Design Tokens поступают из JSON в CSS custom properties, константы TypeScript и Dart-тему. `@app/ui` содержит 11 фирменных Vue-компонентов, каждый из которых сопровождается colocated-историей Storybook и спецификацией Vitest (всего 181 тест). Stylelint запрещает шестнадцатеричные литералы и `!important` -- каждый цвет берётся из токена.
+**Система дизайна с принудительным соблюдением правил.** W3C Design Tokens поступают из JSON в CSS custom properties, константы TypeScript и Dart-тему. `@app/ui` содержит 50 фирменных Vue-компонентов, каждый из которых сопровождается colocated-историей Storybook и спецификацией Vitest (всего 878 тестов). Stylelint запрещает шестнадцатеричные литералы и `!important` -- каждый цвет берётся из токена.
 
 **Работа в реальном времени через Centrifugo.** Бэкенд публикует события в Centrifugo через GRPC API. Веб- и мобильные клиенты подписываются через веб-сокеты, используя кратковременные токены, выдаваемые эндпоинтом `POST /api/v1/realtime/token`. Определения каналов генерируются из спецификации AsyncAPI.
 
@@ -85,7 +85,7 @@ flowchart LR
 | ------------------ | ------------------------------------- | -------------------------------------------------------------------------- |
 | **`apps/backend`** | NestJS 11, Prisma 7, CQRS             | Better Auth, express-openapi-validator, nestjs-i18n, Sentry, OpenTelemetry |
 | **`apps/web`**     | Nuxt 4 (SPA), Nuxt UI v4, Tailwind v4 | @nuxtjs/i18n, сгенерированный api-client-ts, SCSS + BEM                    |
-| **`apps/mobile`**  | Flutter 3.41                          | flutter_bloc, get_it, Dio, slang (i18n), Firebase Messaging, Sentry        |
+| **`apps/mobile`**  | Flutter 3.44                          | flutter_bloc, get_it, Dio, slang (i18n), Firebase Messaging, Sentry        |
 
 ### Общие пакеты
 
@@ -116,12 +116,12 @@ flowchart LR
 
 ### CI (GitHub Actions)
 
-- **Backend:** lint, typecheck, тесты с контролем покрытия
+- **Backend:** lint, typecheck, тесты (покрытие измеряется, но порогом не гейтится)
 - **Web:** lint, typecheck, тесты
 - **Specs:** валидация OpenAPI + AsyncAPI, сборка спецификации
 - **Защита от рассинхронизации кодогенерации:** регенерирует все клиенты, отклоняет при наличии `git diff`
 - **Аудит UI:** каждый компонент `@app/ui` должен иметь историю Storybook и спецификацию Vitest
-- **Безопасность:** `pnpm audit`, TruffleHog для поиска секретов, `license-checker` с разрешительным OSI-списком лицензий
+- **Безопасность:** `osv-scanner` с гейтом по CRITICAL + HIGH, TruffleHog для поиска секретов, `license-checker` с разрешительным OSI-списком лицензий
 
 ## Быстрый старт
 
@@ -134,7 +134,7 @@ flowchart LR
 | Node.js                    | 24            | `node -v`                                    |
 | pnpm                       | 10            | `pnpm -v`                                    |
 | Docker + Docker Compose    | свежая версия | `docker --version && docker compose version` |
-| Flutter (только мобильное) | 3.41          | `flutter --version`                          |
+| Flutter (только мобильное) | 3.44          | `flutter --version`                          |
 
 ### 1 — Клонирование, установка, генерация
 
@@ -224,7 +224,7 @@ Stat-карточки (библиотеки, пользователи, посл�
 apps/
   backend/          NestJS 11 + Prisma 7 + CQRS + Better Auth
   web/              Nuxt 4 (SPA) + Nuxt UI v4 + Tailwind v4
-  mobile/           Flutter 3.41 + flutter_bloc + get_it + Dio
+  mobile/           Flutter 3.44 + flutter_bloc + get_it + Dio
 packages/
   specs/            OpenAPI 3.1 + AsyncAPI 3.0 (источник истины)
   api-client-ts/    сгенерированный TS-клиент -- не редактировать вручную
@@ -284,12 +284,15 @@ scripts/            setup.sh + вспомогательные скрипты
 | Node.js                 | >= 24                                                     |
 | pnpm                    | >= 10                                                     |
 | Docker + Docker Compose | любая актуальная версия                                   |
-| Flutter + Dart          | 3.41 + 3.8 (опционально, только для мобильной разработки) |
+| Flutter + Dart          | 3.44 + 3.8 (опционально, только для мобильной разработки) |
 
 ## Документация
 
 | Тема                                                         | Файл                                                             |
 | ------------------------------------------------------------ | ---------------------------------------------------------------- |
+| **Как пользоваться CourseShelf (пользователи, админы)**      | [`docs/user-guide.md`](docs/user-guide.md)                       |
+| **Архитектура системы (разработчики, архитекторы)**          | [`docs/architecture.md`](docs/architecture.md)                   |
+| Записи архитектурных решений (ADR)                           | [`docs/adr/`](docs/adr/)                                         |
 | Бэкенд, CQRS, Prisma, соглашения API                         | [`.claude/docs/handbook.md`](.claude/docs/handbook.md)           |
 | Система дизайна, @app/ui, токены, BEM                        | [`.claude/docs/design-system.md`](.claude/docs/design-system.md) |
 | i18n в вебе, мобильном приложении и бэкенде                  | [`.claude/docs/i18n.md`](.claude/docs/i18n.md)                   |

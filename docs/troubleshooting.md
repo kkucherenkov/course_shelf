@@ -183,10 +183,17 @@ suite when it returns non-zero, so CI without ffmpeg stays green.
 **Symptom:** `flutter analyze` or `flutter pub get` complains about Dart SDK
 range.
 
-**Cause:** The repo pins Flutter 3.41 in CI (`.github/workflows/ci.yml`) and
-in `.devcontainer/devcontainer.json`. Local `fvm` or brew-installed Flutter
-may drift.
+**Cause:** A locally installed Flutter older than the floor in
+`apps/mobile/pubspec.yaml` (`>=3.44.0`) and `packages/ui_flutter/pubspec.yaml`.
+CI pins the exact version in `.github/actions/setup-cs/action.yml`
+(`flutter-version`, currently `3.44.4`) — that composite action is the single
+pin every workflow reads, not the individual workflow files.
 
-**Fix:** Use `fvm` with `.fvmrc` pointing at `3.41.0`, or install via
-`flutter-action` in a devcontainer. Don't bump the pin ad-hoc — it ripples
-into generated code via `dart run build_runner`.
+**Fix:** Match CI: `fvm use 3.44.4` (no `.fvmrc` is committed — a fourth copy
+of the version would be one more thing to drift), or reopen in the
+devcontainer, which pins the same version. Golden tests are the reason the pin
+is exact rather than a range: golden PNGs are rendering-engine artefacts, so a
+version skew fails them for reasons unrelated to the code.
+
+When bumping, move all four together — `setup-cs/action.yml`,
+`.devcontainer/devcontainer.json`, and both pubspec floors.

@@ -20,11 +20,13 @@ import 'package:app_mobile/features/browse/presentation/bloc/browse_cubit.dart';
 import 'package:app_mobile/features/course_detail/data/course_detail_repository_impl.dart';
 import 'package:app_mobile/features/course_detail/domain/course_detail_repository.dart';
 import 'package:app_mobile/features/course_detail/presentation/bloc/course_detail_cubit.dart';
+import 'package:app_mobile/features/downloads/data/disk_space_device_storage.dart';
 import 'package:app_mobile/features/downloads/data/downloads_repository_impl.dart';
 import 'package:app_mobile/features/downloads/data/http_lesson_byte_source.dart';
 import 'package:app_mobile/features/downloads/data/loopback_decrypt_server.dart';
 import 'package:app_mobile/features/downloads/data/platform_download_scheduler.dart';
 import 'package:app_mobile/features/downloads/data/secure_download_key_store.dart';
+import 'package:app_mobile/features/downloads/domain/device_storage.dart';
 import 'package:app_mobile/features/downloads/domain/download_key_store.dart';
 import 'package:app_mobile/features/downloads/domain/download_scheduler_port.dart';
 import 'package:app_mobile/features/downloads/domain/downloads_repository.dart';
@@ -195,8 +197,14 @@ void configureDependencies() {
         playbackPreferences: getIt<PlaybackPreferences>(),
       ),
     )
+    ..registerLazySingleton<DeviceStorage>(DiskSpaceDeviceStorage.new)
+    ..registerLazySingleton<Connectivity>(Connectivity.new)
     ..registerFactory<DownloadsBloc>(
-      () => DownloadsBloc(getIt<DownloadsRepository>()),
+      () => DownloadsBloc(
+        getIt<DownloadsRepository>(),
+        deviceStorage: getIt<DeviceStorage>(),
+        connectivity: getIt<Connectivity>(),
+      ),
     );
 }
 

@@ -99,7 +99,12 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   final Set<String> _reminted = <String>{};
 
   @override
-  Future<void> enqueueLesson(String lessonId, {String? courseId}) async {
+  Future<void> enqueueLesson(
+    String lessonId, {
+    String? courseId,
+    String? lessonTitle,
+    String? courseTitle,
+  }) async {
     final DownloadedLesson? existing = await _dao.byLessonId(lessonId);
     if (existing?.state == DownloadState.ready) return;
 
@@ -117,6 +122,11 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
         courseId: Value<String?>(courseId ?? existing?.courseId),
         bytesDownloaded: Value<int>(existing?.bytesDownloaded ?? 0),
         totalBytes: Value<int?>(existing?.totalBytes),
+        // Keep whatever the row already had when the caller has nothing to
+        // offer: a re-enqueue from a screen without titles must not blank a
+        // name the row already knows.
+        lessonTitle: Value<String?>(lessonTitle ?? existing?.lessonTitle),
+        courseTitle: Value<String?>(courseTitle ?? existing?.courseTitle),
       ),
     );
 
@@ -125,9 +135,17 @@ class DownloadsRepositoryImpl implements DownloadsRepository {
   }
 
   @override
-  Future<void> enqueueCourse(String courseId, List<String> lessonIds) async {
-    for (final String lessonId in lessonIds) {
-      await enqueueLesson(lessonId, courseId: courseId);
+  Future<void> enqueueCourse(
+    String courseId,
+    List<DownloadRequest> lessons,
+  ) async {
+    for (final DownloadRequest lesson in lessons) {
+      await enqueueLesson(
+        lesson.lessonId,
+        courseId: courseId,
+        lessonTitle: lesson.lessonTitle,
+        courseTitle: lesson.courseTitle,
+      );
     }
   }
 

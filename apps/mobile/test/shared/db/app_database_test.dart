@@ -9,8 +9,19 @@ void main() {
   setUp(() => db = AppDatabase(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  test('schemaVersion is 2', () {
-    expect(db.schemaVersion, 2);
+  test('schemaVersion is 3', () {
+    expect(db.schemaVersion, 3);
+  });
+
+  test('downloaded_lessons carries its own display titles', () async {
+    // The Downloads tab is an offline surface with no catalog to join against,
+    // so the queue row must be able to name itself. Guarding the columns here
+    // because losing them turns every row into a bare id.
+    final columns = await db
+        .customSelect("PRAGMA table_info('downloaded_lessons')")
+        .get();
+    final names = columns.map((r) => r.read<String>('name')).toSet();
+    expect(names, containsAll(<String>['lesson_title', 'course_title']));
   });
 
   test('onCreate builds the schema from cold', () async {

@@ -58,6 +58,13 @@ dependencies:
   # Lets the queue distinguish "offline" (stay queued, no attempt burned) from
   # "failed" (count an attempt, back off).
   connectivity_plus: ^7.3.1
+
+  # Device capacity + free space for the Downloads tab's storage bar. Dart has
+  # no free-space API and `dart:io` exposes none, so this needs a platform
+  # call. Values come back as MB (undocumented on pub.dev — confirmed from the
+  # package's own example, which labels them "(MB)"); the conversion to bytes
+  # lives in exactly one place, DiskSpaceDeviceStorage.
+  disk_space_plus: ^0.2.6
   async: ^2.13.1
 
 dev_dependencies:

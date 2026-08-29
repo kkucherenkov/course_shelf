@@ -1,0 +1,35 @@
+{
+  "title": "Загрузки",
+  "storage": {
+    "summary": "{used} из {total} свободно",
+    "appOnly": "CourseShelf занимает {used}",
+    "legendApp": "CourseShelf",
+    "legendOther": "Другие приложения",
+    "legendFree": "Свободно"
+  },
+  "sections": {
+    "inProgress": "Загружается",
+    "downloaded": "Загружено",
+    "failed": "Не удалось"
+  },
+  "ungroupedCourse": "Отдельные уроки",
+  "deleteAll": "Удалить все",
+  "deleteAllFor": "Удалить все загрузки курса «{course}»",
+  "offline": {
+    "title": "Нет сети",
+    "message": "Загрузки и повторы приостановлены — они возобновятся сами, когда связь вернётся."
+  },
+  "empty": {
+    "title": "Загрузок пока нет",
+    "message": "Пока ничего не загружено — откройте курс и нажмите значок загрузки."
+  },
+  "unknownLesson": "Урок без названия",
+  "actions": {
+    "cancel": "Отменить загрузку",
+    "resume": "Продолжить загрузку",
+    "retry": "Повторить загрузку",
+    "delete": "Удалить загрузку",
+    "download": "Загрузить урок",
+    "downloaded": "Загружено"
+  }
+}

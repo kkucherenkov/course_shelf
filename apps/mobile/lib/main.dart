@@ -17,6 +17,8 @@ import 'package:app_mobile/features/downloads/domain/downloads_repository.dart';
 import 'package:app_mobile/features/settings/presentation/bloc/settings_cubit.dart';
 import 'package:app_mobile/features/settings/presentation/bloc/settings_state.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
+import 'package:app_mobile/features/downloads/presentation/bloc/downloads_bloc.dart';
+import 'package:app_mobile/features/downloads/presentation/bloc/downloads_event.dart';
 import 'package:app_mobile/shared/di/injector.dart';
 import 'package:app_mobile/shared/notifications/push_notification_service.dart';
 
@@ -102,17 +104,26 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // AuthCubit and SettingsCubit are provided ABOVE the MaterialApp on
-    // purpose: pushed routes are children of the MaterialApp's Navigator, not
-    // of `home:`, so a provider inside AuthGate would be invisible to
-    // /sign-up — and the SettingsCubit that drives themeMode / text scale must
-    // be the same instance the Settings tab mutates.
+    // AuthCubit, SettingsCubit and DownloadsBloc are provided ABOVE the
+    // MaterialApp on purpose: pushed routes are children of the MaterialApp's
+    // Navigator, not of `home:`, so a provider inside AuthGate would be
+    // invisible to /sign-up — and the SettingsCubit that drives themeMode /
+    // text scale must be the same instance the Settings tab mutates.
+    //
+    // DownloadsBloc is here for the same reason plus one of its own: the
+    // Downloads tab and the pushed course-detail route must read the *same*
+    // queue. A provider per screen would give each its own subscription, and a
+    // lesson downloaded from course detail would not appear in the tab until
+    // it was rebuilt.
     return MultiBlocProvider(
       providers: <BlocProvider<dynamic>>[
         BlocProvider<AuthCubit>(
           create: (_) => getIt<AuthCubit>()..checkSession(),
         ),
         BlocProvider<SettingsCubit>(create: (_) => getIt<SettingsCubit>()),
+        BlocProvider<DownloadsBloc>(
+          create: (_) => getIt<DownloadsBloc>()..add(const DownloadsStarted()),
+        ),
       ],
       child: BlocBuilder<SettingsCubit, SettingsState>(
         builder: (context, settings) => MaterialApp(

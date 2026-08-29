@@ -75,6 +75,24 @@ class DownloadedLessons extends Table {
   /// lesson, serialized.
   DateTimeColumn get nextAttemptAt => dateTime().nullable()();
 
+  /// Lesson and course names, denormalised from the catalog at enqueue time.
+  ///
+  /// WHY they live here rather than in a join: there is no local catalog to
+  /// join against. `cached_lessons` / `cached_courses` exist but nothing
+  /// populates them (`CachedCatalogDao` has no callers), and the Downloads tab
+  /// is by definition an offline surface — it cannot fetch a title.
+  ///
+  /// Denormalising is also the more correct answer even once a cache exists: a
+  /// download outlives the catalog entry it came from. A course unpublished on
+  /// the server, or a cache cleared to reclaim space, would otherwise leave a
+  /// downloaded file the UI cannot name.
+  ///
+  /// Nullable because rows written before v3 have no titles; the UI falls back
+  /// to the id rather than showing an empty row.
+  TextColumn get lessonTitle => text().nullable()();
+
+  TextColumn get courseTitle => text().nullable()();
+
   DateTimeColumn get updatedAt => dateTime()();
 
   @override

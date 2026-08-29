@@ -6,10 +6,15 @@ import 'package:app_mobile/app/routes.dart';
 import 'package:app_mobile/features/course_detail/domain/course_detail.dart';
 import 'package:app_mobile/features/course_detail/presentation/bloc/course_detail_cubit.dart';
 import 'package:app_mobile/features/course_detail/presentation/bloc/course_detail_state.dart';
-import 'package:app_mobile/features/course_detail/presentation/download_size_formatter.dart';
+import 'package:app_mobile/features/downloads/domain/downloads_repository.dart';
+import 'package:app_mobile/features/downloads/presentation/bloc/downloads_bloc.dart';
+import 'package:app_mobile/features/downloads/presentation/bloc/downloads_event.dart';
+import 'package:app_mobile/features/downloads/presentation/bloc/downloads_state.dart';
 import 'package:app_mobile/features/home/presentation/course_accent.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
+import 'package:app_mobile/shared/db/tables/downloaded_lessons.dart';
 import 'package:app_mobile/shared/di/injector.dart';
+import 'package:app_mobile/shared/format/byte_size.dart';
 
 /// The Course-detail screen — E18-F01-S03.
 ///
@@ -18,12 +23,17 @@ import 'package:app_mobile/shared/di/injector.dart';
 /// watch state. `courseId` arrives via
 /// `Navigator.pushNamed(AppRoutes.course, arguments:)`.
 ///
-/// **Scope note (E19 seam).** The download half of this card is gated on
-/// E19's `DownloadsBloc`, which does not exist yet: every [AppLessonRow]
-/// below renders `downloadState: null` (no per-lesson download affordance),
-/// and the secondary "Download course · `<size>`" CTA — real size, from this
-/// card's own download-estimate endpoint — shows a "coming soon" snackbar
-/// instead of enqueuing anything.
+/// **Downloads (E18-F01-S03).** Both download affordances are live. Each
+/// [AppLessonRow] shows its lesson's queue state and enqueues on tap — or
+/// retries a failed one; a finished download is inert here, because deleting
+/// behind the same one-tap glyph that starts a download is how a user loses a
+/// file by mis-tapping. Deleting lives in the Downloads tab, labelled.
+/// The secondary "Download course · `<size>`" CTA enqueues every lesson in
+/// curriculum order.
+///
+/// The enqueue carries the lesson and course *titles*, not just ids: the
+/// Downloads tab is an offline surface with no catalog to look them up from
+/// (see `DownloadedLessons.lessonTitle`).
 class CourseDetailScreen extends StatelessWidget {
   const CourseDetailScreen({required this.courseId, super.key});
 
@@ -187,7 +197,13 @@ class _LoadedScaffold extends StatelessWidget {
           _CourseHeroAppBar(summary: detail.summary, height: _heroHeight),
           SliverToBoxAdapter(child: _ProgressRow(summary: detail.summary)),
           SliverToBoxAdapter(
-            child: _CtaColumn(primary: primary, estimate: detail.estimate),
+            child: _CtaColumn(
+              primary: primary,
+              estimate: detail.estimate,
+              courseId: detail.summary.id,
+              courseTitle: detail.summary.title,
+              sections: detail.sections,
+            ),
           ),
           const SliverToBoxAdapter(child: Divider(height: 1)),
           SliverPadding(
@@ -200,6 +216,8 @@ class _LoadedScaffold extends StatelessWidget {
                     open: !collapsedSectionIds.contains(section.id),
                     onToggle: () => onToggleSection(section.id),
                     currentLessonId: primary.targetLessonId,
+                    courseId: detail.summary.id,
+                    courseTitle: detail.summary.title,
                   ),
               ]),
             ),
@@ -446,10 +464,35 @@ class _ProgressRow extends StatelessWidget {
 // ── CTAs ─────────────────────────────────────────────────────────────────
 
 class _CtaColumn extends StatelessWidget {
-  const _CtaColumn({required this.primary, required this.estimate});
+  const _CtaColumn({
+    required this.primary,
+    required this.estimate,
+    required this.courseId,
+    required this.courseTitle,
+    required this.sections,
+  });
 
   final _PrimaryCta primary;
   final CourseDownloadEstimate? estimate;
+  final String courseId;
+  final String courseTitle;
+
+  /// Needed whole because enqueuing a course means enqueuing each of its
+  /// lessons, each carrying its own title (see `DownloadedLessons.lessonTitle`).
+  final List<CourseDetailSection> sections;
+
+  /// Flattens the curriculum into one enqueue request per lesson, in
+  /// curriculum order — the queue is FIFO, so section order is what the user
+  /// gets downloaded first.
+  List<DownloadRequest> _lessonRequests() => <DownloadRequest>[
+    for (final CourseDetailSection section in sections)
+      for (final CourseDetailLesson lesson in section.lessons)
+        DownloadRequest(
+          lessonId: lesson.id,
+          lessonTitle: lesson.title,
+          courseTitle: courseTitle,
+        ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -489,8 +532,9 @@ class _CtaColumn extends StatelessWidget {
             variant: AppButtonVariant.secondary,
             iconLeading: IconName.cloudDown,
             block: true,
-            // TODO(E19): enqueue full-course download once DownloadsBloc lands.
-            onPressed: () => _showComingSoonSnackBar(context),
+            onPressed: () => context.read<DownloadsBloc>().add(
+              EnqueueCourse(courseId, _lessonRequests()),
+            ),
           ),
           if (primary.resumeNote != null) ...<Widget>[
             const SizedBox(height: AppSpacing.s2),
@@ -545,12 +589,20 @@ class _SectionBlock extends StatelessWidget {
     required this.open,
     required this.onToggle,
     required this.currentLessonId,
+    required this.courseId,
+    required this.courseTitle,
   });
 
   final CourseDetailSection section;
   final bool open;
   final VoidCallback onToggle;
   final String? currentLessonId;
+
+  /// Carried down to the enqueue call: the queue row keeps its own display
+  /// names, because the Downloads tab has no catalog to look them up from
+  /// (see `DownloadedLessons.lessonTitle`).
+  final String courseId;
+  final String courseTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -571,27 +623,76 @@ class _SectionBlock extends StatelessWidget {
           lessonsLabel: t.lessons,
         ),
         if (open)
-          for (final CourseDetailLesson lesson in section.lessons)
-            AppLessonRow(
-              key: ValueKey<String>('courseDetailLesson_${lesson.id}'),
-              num: lesson.position,
-              title: lesson.title,
-              duration: Duration(seconds: lesson.durationSeconds),
-              state: _rowState(lesson.state),
-              materials: lesson.hasMaterials,
-              current:
-                  lesson.id == currentLessonId &&
-                  lesson.state == CourseDetailLessonState.inProgress,
-              progress: lesson.progressPercent.toDouble(),
-              // TODO(E19): per-lesson download state + tap-to-enqueue once
-              // DownloadsBloc lands.
-              downloadState: null,
-              onDownload: null,
-              onTap: () => Navigator.of(
-                context,
-              ).pushNamed(AppRoutes.lesson, arguments: lesson.id),
+          // Rebuilds on every queue tick so the per-lesson glyph tracks the
+          // download without the screen owning any of that state.
+          BlocBuilder<DownloadsBloc, DownloadsState>(
+            builder: (BuildContext context, DownloadsState downloads) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                for (final CourseDetailLesson lesson in section.lessons)
+                  AppLessonRow(
+                    key: ValueKey<String>('courseDetailLesson_${lesson.id}'),
+                    num: lesson.position,
+                    title: lesson.title,
+                    duration: Duration(seconds: lesson.durationSeconds),
+                    state: _rowState(lesson.state),
+                    materials: lesson.hasMaterials,
+                    current:
+                        lesson.id == currentLessonId &&
+                        lesson.state == CourseDetailLessonState.inProgress,
+                    progress: lesson.progressPercent.toDouble(),
+                    downloadState: _downloadState(
+                      downloads.itemFor(lesson.id)?.state,
+                    ),
+                    onDownload: _onDownload(context, downloads, lesson),
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(AppRoutes.lesson, arguments: lesson.id),
+                  ),
+              ],
             ),
+          ),
       ],
+    );
+  }
+
+  /// Maps the queue's persisted state onto the row's glyph. `null` — no row
+  /// in the queue — is the "available to download" affordance.
+  static LessonDownloadState _downloadState(DownloadState? state) =>
+      switch (state) {
+        null => LessonDownloadState.available,
+        DownloadState.queued ||
+        DownloadState.downloading ||
+        DownloadState.paused => LessonDownloadState.downloading,
+        DownloadState.ready => LessonDownloadState.downloaded,
+        DownloadState.failed => LessonDownloadState.failed,
+      };
+
+  /// Tapping enqueues, retries, or does nothing — never cancels. A destructive
+  /// action behind the same one-tap glyph that starts a download is how a user
+  /// loses a finished file by mis-tapping; deleting lives in the Downloads tab,
+  /// where it is labelled.
+  VoidCallback? _onDownload(
+    BuildContext context,
+    DownloadsState downloads,
+    CourseDetailLesson lesson,
+  ) {
+    final DownloadState? state = downloads.itemFor(lesson.id)?.state;
+    if (state == DownloadState.ready) return null;
+
+    final DownloadsBloc bloc = context.read<DownloadsBloc>();
+    if (state == DownloadState.failed) {
+      return () => bloc.add(RetryDownload(lesson.id));
+    }
+    if (state != null) return null; // already on its way
+
+    return () => bloc.add(
+      EnqueueLesson(
+        lesson.id,
+        courseId: courseId,
+        lessonTitle: lesson.title,
+        courseTitle: courseTitle,
+      ),
     );
   }
 

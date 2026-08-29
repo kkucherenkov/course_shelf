@@ -9,6 +9,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:app_mobile/app/routes.dart';
 import 'package:app_mobile/features/course_detail/domain/course_detail.dart';
 import 'package:app_mobile/features/course_detail/domain/course_detail_repository.dart';
+import 'package:app_mobile/features/downloads/domain/download_item.dart';
+import 'package:app_mobile/features/downloads/domain/downloads_repository.dart';
+import 'package:app_mobile/features/downloads/presentation/bloc/downloads_bloc.dart';
 import 'package:app_mobile/features/course_detail/presentation/bloc/course_detail_cubit.dart';
 import 'package:app_mobile/features/course_detail/presentation/course_detail_screen.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
@@ -163,16 +166,80 @@ Route<dynamic>? _spyRoute(RouteSettings settings) {
   return null;
 }
 
+/// The screen reads the shared download queue to decide each lesson row's
+/// glyph, so the harness has to provide one. A real bloc over a stub
+/// repository keeps the assertions about the screen rather than about a mock's
+/// call log.
+class _StubDownloadsRepository implements DownloadsRepository {
+  final StreamController<List<DownloadItem>> _items =
+      StreamController<List<DownloadItem>>.broadcast();
+
+  final List<String> enqueuedLessonIds = <String>[];
+  final List<DownloadRequest> enqueuedCourseLessons = <DownloadRequest>[];
+  final List<String> retried = <String>[];
+
+  @override
+  Future<void> enqueueLesson(
+    String lessonId, {
+    String? courseId,
+    String? lessonTitle,
+    String? courseTitle,
+  }) async => enqueuedLessonIds.add(lessonId);
+
+  @override
+  Future<void> enqueueCourse(
+    String courseId,
+    List<DownloadRequest> lessons,
+  ) async => enqueuedCourseLessons.addAll(lessons);
+
+  @override
+  Future<void> retry(String lessonId) async => retried.add(lessonId);
+
+  @override
+  Future<void> pause(String lessonId) async {}
+
+  @override
+  Future<void> resume(String lessonId) async {}
+
+  @override
+  Future<void> cancel(String lessonId) async {}
+
+  @override
+  Future<void> reconcileAfterRestart() async {}
+
+  @override
+  Future<void> drain() async {}
+
+  @override
+  Stream<List<DownloadItem>> watchAll() => _items.stream;
+
+  @override
+  Stream<DownloadItem?> watch(String lessonId) =>
+      const Stream<DownloadItem?>.empty();
+
+  void emit(List<DownloadItem> items) => _items.add(items);
+
+  Future<void> dispose() => _items.close();
+}
+
 void main() {
   late _MockCourseDetailRepository repository;
   late CourseDetailCubit cubit;
+  late _StubDownloadsRepository downloadsRepository;
+  late DownloadsBloc downloadsBloc;
 
   setUp(() {
     repository = _MockCourseDetailRepository();
     cubit = CourseDetailCubit(repository);
+    downloadsRepository = _StubDownloadsRepository();
+    downloadsBloc = DownloadsBloc(downloadsRepository);
   });
 
-  tearDown(() async => cubit.close());
+  tearDown(() async {
+    await cubit.close();
+    await downloadsBloc.close();
+    await downloadsRepository.dispose();
+  });
 
   Future<void> pump(WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1400));
@@ -182,8 +249,11 @@ void main() {
         child: MaterialApp(
           theme: AppTheme.dark(),
           onGenerateRoute: _spyRoute,
-          home: BlocProvider<CourseDetailCubit>.value(
-            value: cubit,
+          home: MultiBlocProvider(
+            providers: <BlocProvider<dynamic>>[
+              BlocProvider<CourseDetailCubit>.value(value: cubit),
+              BlocProvider<DownloadsBloc>.value(value: downloadsBloc),
+            ],
             child: const CourseDetailView(),
           ),
         ),
@@ -274,7 +344,7 @@ void main() {
       expect(find.byType(AppLessonRow), findsNothing);
     });
 
-    testWidgets('the download CTA is a labelled seam, not a dead button', (
+    testWidgets('the download CTA enqueues every lesson, titles included', (
       tester,
     ) async {
       await cubit.load('c1');
@@ -284,10 +354,31 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('courseDetailDownloadCta')));
       await tester.pump();
 
+      expect(downloadsRepository.enqueuedCourseLessons, isNotEmpty);
+      // The titles are the point: the queue row has to name itself later,
+      // offline, with no catalog to look it up from.
       expect(
-        find.text('This part of CourseShelf is still being built.'),
-        findsOneWidget,
+        downloadsRepository.enqueuedCourseLessons.first.lessonTitle,
+        isNotNull,
       );
+      expect(
+        downloadsRepository.enqueuedCourseLessons.first.courseTitle,
+        isNotNull,
+      );
+    });
+
+    testWidgets('tapping a lesson row enqueues that lesson', (tester) async {
+      await cubit.load('c1');
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      final Finder row = find.byType(AppLessonRow).first;
+      final AppLessonRow widget = tester.widget<AppLessonRow>(row);
+      expect(widget.downloadState, LessonDownloadState.available);
+      widget.onDownload!();
+      await tester.pump();
+
+      expect(downloadsRepository.enqueuedLessonIds, isNotEmpty);
     });
   });
 

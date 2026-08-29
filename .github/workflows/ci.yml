@@ -34,6 +34,14 @@ jobs:
 
       - uses: ./.github/actions/setup-cs
 
+      # The backend's ffprobe/ffmpeg integration suite skips itself when the
+      # binaries are absent, so without this step it had never executed —
+      # `docs/audit/2026-08-29-plan-vs-code.md` §4. apt rather than a
+      # third-party setup action: it is one line, needs no version pin, and
+      # adds no supply-chain surface to a job that exists to check exactly that.
+      - name: Install ffmpeg (backend metadata + thumbnail suite)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Prisma generate
         run: pnpm --filter @app/backend prisma:generate
 

@@ -219,10 +219,19 @@ pnpm e2e --grep "smoke"
 
 ## GitHub issues — card bookkeeping (REQUIRED)
 
-**GitHub is the sole repo.** Every roadmap card in `docs/roadmap/tasks/` is
-mirrored as GitHub issues titled `[<card-id>] <sub-step or title>`; each epic has
-an umbrella issue titled `[<epic-id>] <name>`. The card is the source of truth —
-issues are stable URLs for cross-referencing.
+**GitHub is the sole repo.** The card in `docs/roadmap/tasks/` is always the
+source of truth; issues are stable URLs for cross-referencing, nothing more.
+
+**Mirroring covers epics E15–E20 only** — 133 issues titled
+`[<card-id>] <sub-step or title>`, plus one umbrella per epic titled
+`[<epic-id>] <name>`. E00–E14 and E21–E24 were never mirrored: the practice
+started mid-project and was not backfilled. Do not go looking for an issue for
+`E13-F02-S01` and conclude the work is untracked — check the card.
+
+This rule used to claim _every_ card was mirrored, which was true of 46 of 121.
+It is narrowed rather than backfilled because the v1 roadmap is complete: 80
+issues opened and immediately closed would be archaeology, not tracking. New
+work that wants an issue can have one; nothing requires it.
 
 **Look up a card's issues.** Filter by the `[<card-id>]` _prefix_
 — a plain search also returns other cards' issues that merely _mention_ the id in

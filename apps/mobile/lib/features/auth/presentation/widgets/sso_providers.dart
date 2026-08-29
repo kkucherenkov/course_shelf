@@ -1,36 +1,35 @@
 import 'package:app_ui/app_ui.dart';
-import 'package:flutter/material.dart';
 
-import 'package:app_mobile/i18n/strings.g.dart';
+import 'package:app_mobile/features/auth/domain/instance_config.dart';
 
-/// Maps the provider ids advertised by `GET /admin/instance`
-/// (`instance.ssoProviders`) onto renderable [SsoProvider] records.
+/// Adapts the providers advertised by `GET /admin/instance` to what
+/// [AppSsoBlock] renders.
 ///
-/// `AppSsoBlock` takes labels as plain strings with English defaults, per the
-/// catalog convention — so localizing them is this (app-layer) function's job.
-/// Icons follow the same id→glyph choices as `lib/widgetbook/sso_block_catalog.dart`
-/// (`IconName` has no Google mark; `mail` stands in there and here).
+/// **The server owns the copy.** `SsoProviderConfig` in `openapi.yaml` requires
+/// `label` and `iconName` alongside `id`, and the spec says the array "lights
+/// up the SsoBlock without UI changes". So there is deliberately no id→label
+/// mapping here any more — the previous version localized `google`/`github`
+/// itself and ignored whatever the operator had configured, which would have
+/// overridden a real label with a guess.
+///
+/// The only work left is narrowing `iconName` off the wire to the [IconName]
+/// enum. An unrecognised glyph falls back to [IconName.key] so a provider an
+/// operator adds is visibly usable rather than blank. The recognised set is the
+/// three the design bundle documents for SSO — `IconName` has no Google mark,
+/// so `mail` stands in there, on the web, and in
+/// `lib/widgetbook/sso_block_catalog.dart`.
 ///
 /// v1 ships `ssoProviders: []`, so this normally returns an empty list and the
-/// SSO row does not render at all. Unknown ids still get a button — a generic
-/// "Single sign-on" one — rather than being dropped, so a server that adds a
-/// provider is not silently unusable on mobile.
-List<SsoProvider> ssoProvidersFor(BuildContext context, List<String> ids) {
-  final t = context.t.auth.sso;
+/// SSO row does not render at all.
+List<SsoProvider> ssoProvidersFor(List<SsoProviderConfig> providers) {
   return [
-    for (final id in ids)
-      SsoProvider(
-        id: id,
-        label: switch (id) {
-          'google' => t.google,
-          'github' => t.github,
-          _ => t.generic,
-        },
-        iconName: switch (id) {
-          'google' => IconName.mail,
-          'github' => IconName.github,
-          _ => IconName.key,
-        },
-      ),
+    for (final p in providers)
+      SsoProvider(id: p.id, label: p.label, iconName: _glyphFor(p.iconName)),
   ];
 }
+
+IconName _glyphFor(String raw) => switch (raw) {
+  'mail' => IconName.mail,
+  'github' => IconName.github,
+  _ => IconName.key,
+};

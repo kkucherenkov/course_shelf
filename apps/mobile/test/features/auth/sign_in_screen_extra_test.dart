@@ -21,13 +21,24 @@ class _MockInstanceRepository extends Mock implements InstanceRepository {}
 const _ssoConfig = InstanceConfig(
   selfRegistration: true,
   emailVerificationRequired: false,
-  ssoProviders: <String>['google', 'github'],
+  ssoProviders: <SsoProviderConfig>[
+    SsoProviderConfig(
+      id: 'google',
+      label: 'Continue with Google',
+      iconName: 'mail',
+    ),
+    SsoProviderConfig(
+      id: 'github',
+      label: 'Continue with GitHub',
+      iconName: 'github',
+    ),
+  ],
 );
 
 const _noRegistrationConfig = InstanceConfig(
   selfRegistration: false,
   emailVerificationRequired: false,
-  ssoProviders: <String>[],
+  ssoProviders: <SsoProviderConfig>[],
 );
 
 void main() {

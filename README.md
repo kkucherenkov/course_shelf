@@ -288,20 +288,21 @@ scripts/            setup.sh + cross-repo helpers
 
 ## Documentation
 
-| Topic                                              | File                                                             |
-| -------------------------------------------------- | ---------------------------------------------------------------- |
-| **How to use CourseShelf (end users, admins)**     | [`docs/user-guide.md`](docs/user-guide.md)                       |
-| **System architecture (developers, architects)**   | [`docs/architecture.md`](docs/architecture.md)                   |
-| Architectural decision records                     | [`docs/adr/`](docs/adr/)                                         |
-| Backend, CQRS, Prisma, API conventions             | [`.claude/docs/handbook.md`](.claude/docs/handbook.md)           |
-| Design system, @app/ui, tokens, BEM                | [`.claude/docs/design-system.md`](.claude/docs/design-system.md) |
-| i18n across web, mobile, and backend               | [`.claude/docs/i18n.md`](.claude/docs/i18n.md)                   |
-| Testing pyramid, definition of done, PR checklist  | [`.claude/docs/testing.md`](.claude/docs/testing.md)             |
-| Security, observability, a11y, performance         | [`.claude/docs/security.md`](.claude/docs/security.md)           |
-| Feature migration from another project             | [`.claude/docs/migration.md`](.claude/docs/migration.md)         |
-| Project rules (canonical, superset of this README) | [`.claude/CLAUDE.md`](.claude/CLAUDE.md)                         |
-| Design workflow and component inventory            | [`specs/design/README.md`](specs/design/README.md)               |
-| Docker stack details                               | [`docker/README.md`](docker/README.md)                           |
+| Topic                                              | File                                                                   |
+| -------------------------------------------------- | ---------------------------------------------------------------------- |
+| **How to use CourseShelf (end users, admins)**     | [`docs/user-guide.md`](docs/user-guide.md)                             |
+| **System architecture (developers, architects)**   | [`docs/architecture.md`](docs/architecture.md)                         |
+| Architectural decision records                     | [`docs/adr/`](docs/adr/)                                               |
+| **Deploying a release to a NAS (UGREEN + Dockge)** | [`docs/deploy-ugreen-nas-dockge.md`](docs/deploy-ugreen-nas-dockge.md) |
+| Backend, CQRS, Prisma, API conventions             | [`.claude/docs/handbook.md`](.claude/docs/handbook.md)                 |
+| Design system, @app/ui, tokens, BEM                | [`.claude/docs/design-system.md`](.claude/docs/design-system.md)       |
+| i18n across web, mobile, and backend               | [`.claude/docs/i18n.md`](.claude/docs/i18n.md)                         |
+| Testing pyramid, definition of done, PR checklist  | [`.claude/docs/testing.md`](.claude/docs/testing.md)                   |
+| Security, observability, a11y, performance         | [`.claude/docs/security.md`](.claude/docs/security.md)                 |
+| Feature migration from another project             | [`.claude/docs/migration.md`](.claude/docs/migration.md)               |
+| Project rules (canonical, superset of this README) | [`.claude/CLAUDE.md`](.claude/CLAUDE.md)                               |
+| Design workflow and component inventory            | [`specs/design/README.md`](specs/design/README.md)                     |
+| Docker stack details                               | [`docker/README.md`](docker/README.md)                                 |
 
 ## Contributing
 

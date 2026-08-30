@@ -190,10 +190,10 @@ gantt
     The skip rule                                                :done, e25f02s03, after e25f02s01, 1d
     OpenAPI for transcription runs and generated subtitles       :done, e25f03s01, after e02f02s04, 1d
     The transcription run                                        :done, e25f03s02, after e25f01s02 e25f01s03 e25f01s04 e25f02s02 e25f02s03 e25f03s01, 3d
-    Serve generated transcripts as subtitle tracks               :active, e25f03s03, after e08f02s02 e25f02s01, 1d
+    Serve generated transcripts as subtitle tracks               :done, e25f03s03, after e08f02s02 e25f02s01, 1d
     Scan thumbnails to the derived volume, and orphan cleanup    :active, e25f04s01, after e25f01s02, 1d
     Transcription card in the admin library screen               :active, e25f04s02, after e25f03s01 e14f04s01, 2d
-    Transcription documentation                                  :active, e25f04s03, after e25f03s02, 1d
+    Transcription documentation                                  :done, e25f04s03, after e25f03s02, 1d
 
     section E26 Transcript panel (web)
     Render the subtitle tracks in the web player                 :done, e26f01s01, after e08f02s02 e14f03s01, 1d

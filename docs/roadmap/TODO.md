@@ -221,10 +221,10 @@ them would quietly reopen a milestone that is finished.
 - [x] [E25-F02-S03](./tasks/E25-F02-S03.md) `A` — The skip rule · ⇐ E25-F02-S01
 - [x] [E25-F03-S01](./tasks/E25-F03-S01.md) `A` — OpenAPI for transcription runs and generated subtitles · ⇐ E02-F02-S04
 - [x] [E25-F03-S02](./tasks/E25-F03-S02.md) `A` — The transcription run · ⇐ E25-F01-S02, E25-F01-S03, E25-F01-S04, E25-F02-S02, E25-F02-S03, E25-F03-S01
-- [ ] [E25-F03-S03](./tasks/E25-F03-S03.md) `A` — Serve generated transcripts as subtitle tracks · ⇐ E08-F02-S02, E25-F02-S01
+- [x] [E25-F03-S03](./tasks/E25-F03-S03.md) `A` — Serve generated transcripts as subtitle tracks · ⇐ E08-F02-S02, E25-F02-S01
 - [ ] [E25-F04-S01](./tasks/E25-F04-S01.md) `A` — Scan thumbnails to the derived volume, and orphan cleanup · ⇐ E25-F01-S02
 - [ ] [E25-F04-S02](./tasks/E25-F04-S02.md) `A` — Transcription card in the admin library screen · ⇐ E25-F03-S01, E14-F04-S01
-- [ ] [E25-F04-S03](./tasks/E25-F04-S03.md) `A` — Transcription documentation · ⇐ E25-F03-S02
+- [x] [E25-F04-S03](./tasks/E25-F04-S03.md) `A` — Transcription documentation · ⇐ E25-F03-S02
 
 ## E26 — Transcript panel (web)
 

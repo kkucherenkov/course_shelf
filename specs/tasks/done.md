@@ -94,7 +94,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - [x] remove the Known-limits row
 - Status: done
 
-## T-2026-08-30-010 — settle the locale parity claim + the mobile storage bar
+## T-2026-08-30-014 — settle the locale parity claim + the mobile storage bar
 
 - Created: 2026-08-30
 - Owner: claude

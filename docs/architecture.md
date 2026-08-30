@@ -431,6 +431,11 @@ downloads use a third signer with a 300 s TTL.
 Subtitles are served from `/stream/lessons/{id}/subtitles/{language}`; `.srt`
 is converted to WebVTT on the fly and the result cached next to the source as
 `*.cache.vtt` (which `stem-match.ts` then knows to ignore on the next scan).
+Because the language *is* the address, the scan writes at most one `Subtitle`
+row per language per lesson — `dedupeSubtitlePathsByLanguage` in
+`domain/lesson/subtitle.ts` collapses an `.srt`/`.vtt` pair, preferring the
+`.vtt`. `SubtitleDto.label` is derived from that language, never from the
+video's file name.
 
 `lesson-file-locator.ts` is the guard that keeps a lesson id from resolving to
 an arbitrary path — path traversal is contained there, not at the controller.

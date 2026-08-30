@@ -730,6 +730,43 @@ describe('RunScanHandler', () => {
       expect(lesson.subtitles[0]!.language).toBe('en');
     });
 
+    it('same language in two containers materialises one Subtitle row, labelled by language', async () => {
+      vi.useRealTimers();
+
+      const dupFiles: FileRecord[] = [
+        { path: '/lib/05 - Dup Course/01 - Intro.mp4', mtime: BASE_TIME, size: 500 },
+        { path: '/lib/05 - Dup Course/01 - Intro.en.srt', mtime: BASE_TIME, size: 20 },
+        { path: '/lib/05 - Dup Course/01 - Intro.en.vtt', mtime: BASE_TIME, size: 22 },
+        { path: '/lib/05 - Dup Course/01 - Intro.ru.srt', mtime: BASE_TIME, size: 24 },
+      ];
+
+      const dupLessonRepo = makeLessonRepo();
+      const dupHandler = new RunScanHandler(
+        libraryRepo,
+        makeScanRepo(),
+        makeCourseRepo(),
+        dupLessonRepo,
+        new FakeFsAdapter(dupFiles),
+        makePassthroughFfmpeg(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      await dupHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const lesson = [...dupLessonRepo.store.values()][0]!;
+
+      // One track per language — `.vtt` wins for `en` so no conversion is needed.
+      expect(lesson.subtitles.map((s) => s.language).toSorted()).toEqual(['en', 'ru']);
+      expect(lesson.subtitles.find((s) => s.language === 'en')!.path).toBe(
+        '/lib/05 - Dup Course/01 - Intro.en.vtt',
+      );
+      // Label names the language, not the video stem.
+      expect(lesson.subtitles.map((s) => s.label).toSorted()).toEqual(['English', 'Russian']);
+    });
+
     it('dot-prefix variant: "1.1. Vim.pdf" groups with "1.1 Vim.mp4"', async () => {
       vi.useRealTimers();
 

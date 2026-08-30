@@ -34,8 +34,14 @@
         Storybook, 35 Flutter goldens, and the e2e page screenshot. Two bugs in
         that workflow had to be fixed first — the goldens job threw away its own
         capture, and the e2e job declined to regenerate anything.
-- Status: in-progress
-- Blockers: none for the work itself. Merges LAST of the eight lanes (it touches
+  - [x] #269 — the armed contract test found 70 spec/implementation
+        disagreements on its first real run (429 undocumented on all 75
+        operations, 400 on ~59, one 404, 7 lenient-implementation cases).
+        Raised as GH #320 for the spec's lane; the step stays in e2e.yml.
+- Status: blocked
+- Blockers: `E2E smoke` is red on GH #320 — the contract test is reporting real
+  drift, and the fix is a spec change in another lane. The other seven checks
+  pass. Merges LAST of the eight lanes (it touches
   baselines and goldens); baselines and goldens are regenerated on top of the
   final `main` after the other seven land, not merged by hand.
 

@@ -821,6 +821,12 @@ paths:
       parameters:
         - name: search
           in: query
+          # Free text: a Dart client encodes a space as `+` (dart:core Uri),
+          # which express-openapi-validator counts as an unencoded reserved
+          # character and rejects with 400 — so search for two words from the
+          # mobile app failed. The value is opaque to us either way; this
+          # declares what clients legitimately send. See #320.
+          allowReserved: true
           required: false
           description: Case-insensitive substring filter on `email` or `name`.
           schema:
@@ -2962,6 +2968,12 @@ paths:
             default: 20
         - name: search
           in: query
+          # Free text: a Dart client encodes a space as `+` (dart:core Uri),
+          # which express-openapi-validator counts as an unencoded reserved
+          # character and rejects with 400 — so search for two words from the
+          # mobile app failed. The value is opaque to us either way; this
+          # declares what clients legitimately send. See #320.
+          allowReserved: true
           required: false
           description: Case-insensitive substring filter on `displayName`.
           schema:
@@ -3116,6 +3128,12 @@ paths:
             default: 20
         - name: search
           in: query
+          # Free text: a Dart client encodes a space as `+` (dart:core Uri),
+          # which express-openapi-validator counts as an unencoded reserved
+          # character and rejects with 400 — so search for two words from the
+          # mobile app failed. The value is opaque to us either way; this
+          # declares what clients legitimately send. See #320.
+          allowReserved: true
           required: false
           description: Case-insensitive substring filter on `displayName`.
           schema:
@@ -3271,6 +3289,12 @@ paths:
             default: 20
         - name: search
           in: query
+          # Free text: a Dart client encodes a space as `+` (dart:core Uri),
+          # which express-openapi-validator counts as an unencoded reserved
+          # character and rejects with 400 — so search for two words from the
+          # mobile app failed. The value is opaque to us either way; this
+          # declares what clients legitimately send. See #320.
+          allowReserved: true
           required: false
           description: Case-insensitive substring filter on `displayName`.
           schema:
@@ -3278,6 +3302,12 @@ paths:
             minLength: 1
         - name: category
           in: query
+          # Free text: a Dart client encodes a space as `+` (dart:core Uri),
+          # which express-openapi-validator counts as an unencoded reserved
+          # character and rejects with 400 — so search for two words from the
+          # mobile app failed. The value is opaque to us either way; this
+          # declares what clients legitimately send. See #320.
+          allowReserved: true
           required: false
           description: Exact match filter on `category`. Omit to return tags from all categories.
           schema:
@@ -5987,6 +6017,12 @@ paths:
       parameters:
         - name: q
           in: query
+          # Free text: a Dart client encodes a space as `+` (dart:core Uri),
+          # which express-openapi-validator counts as an unencoded reserved
+          # character and rejects with 400 — so search for two words from the
+          # mobile app failed. The value is opaque to us either way; this
+          # declares what clients legitimately send. See #320.
+          allowReserved: true
           required: true
           description: Substring to match. Trimmed; case-insensitive.
           schema:

@@ -30,7 +30,9 @@ export function useInstanceConfig(): UseInstanceConfigReturn {
   async function refresh(): Promise<void> {
     try {
       const res = await getAdminInstance({ client, throwOnError: false });
-      if (res.error || !res.data) {
+      // See useFirstRun: `!res.data` is unreachable now that the operation
+      // declares its error responses and the generated union discriminates.
+      if (res.error) {
         config.value = { ...DEFAULT_CONFIG };
         return;
       }

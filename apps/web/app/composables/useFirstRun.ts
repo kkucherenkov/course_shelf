@@ -20,7 +20,12 @@ export function useFirstRun(): UseFirstRunReturn {
   async function refresh(): Promise<void> {
     try {
       const res = await getAdminHasUsers({ client, throwOnError: false });
-      if (res.error || !res.data) {
+      // `|| !res.data` used to guard this too. It is dead now: the operation
+      // had no error responses in the spec, so the generated union could not
+      // discriminate and typed `data` as possibly-undefined on success.
+      // Documenting 400/429 gave it something to discriminate on, and
+      // `res.data` is now known-present whenever `res.error` is not set.
+      if (res.error) {
         // Defensive: assume users exist on probe failure.
         hasUsers.value = true;
         return;

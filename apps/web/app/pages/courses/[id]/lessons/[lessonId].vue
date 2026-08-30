@@ -10,6 +10,7 @@
   import { useProgressReporter } from '~/composables/useProgressReporter';
   import { useStreamUrl } from '~/composables/useStreamUrl';
   import { usePreferencesStore } from '~/stores/preferences';
+  import { parseStartTime } from '~/utils/start-time';
   import { buildSubtitleTracks } from '~/utils/subtitle-url';
 
   import PlayerSidebar from '~/components/lesson-player/PlayerSidebar.vue';
@@ -114,18 +115,31 @@
   // ── Video element ref ────────────────────────────────────────────────────────
 
   const videoRef = ref<HTMLVideoElement | null>(null);
-  let hasSetResumeTime = false;
+  let hasSetStartTime = false;
 
   const preferencesStore = usePreferencesStore();
 
+  // `?t=` deep link — a link to a moment must land on that moment, so it beats
+  // both the stored resume position and the "Resume where I left off"
+  // preference. Junk (`?t=abc`, `?t=-1`) parses to null and changes nothing.
+  const deepLinkStart = computed(() => parseStartTime(route.query.t));
+
   function onVideoLoadedMetadata(): void {
-    if (!videoRef.value) return;
+    const el = videoRef.value;
+    if (!el || hasSetStartTime) return;
+
+    if (deepLinkStart.value !== null) {
+      el.currentTime = deepLinkStart.value;
+      hasSetStartTime = true;
+      return;
+    }
+
     // Skip resume seek when the user has turned off "Resume where I left off".
     if (!preferencesStore.resumeWhereLeftOff) return;
     const lastSeen = lessonData.value?.progress.lastSeenAtSeconds ?? 0;
-    if (!hasSetResumeTime && lastSeen > 0) {
-      videoRef.value.currentTime = lastSeen;
-      hasSetResumeTime = true;
+    if (lastSeen > 0) {
+      el.currentTime = lastSeen;
+      hasSetStartTime = true;
     }
   }
 
@@ -519,12 +533,8 @@
       }
     }
 
-    &__video {
-      width: 100%;
-      height: 100%;
-      display: block;
-      object-fit: contain;
-    }
+    // The `<video>` box is sized by AppPlayerChrome's frame slot — it owns the
+    // 16:9 stage every aspect ratio letterboxes into.
 
     &__sidebar {
       @media (width < 768px) {

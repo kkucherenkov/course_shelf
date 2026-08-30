@@ -24,6 +24,43 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Completed: 2026-08-30
 - Result: https://github.com/kkucherenkov/course_shelf/pull/301
 
+## T-2026-08-30-013 — E26-F01-S02 + E26-F01-S04 transcript cues, `?t=` deep links, two player defects
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude (lane L3, worktree `e26-transcript-cues`)
+- Branch: `kkucherenkov/e26-transcript-cues`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/299
+- Cards: [E26-F01-S02](../../docs/roadmap/tasks/E26-F01-S02.md) · GitHub #224 ·
+  [E26-F01-S04](../../docs/roadmap/tasks/E26-F01-S04.md) · GitHub #226
+- Defects closed in the same pass: #287 (native cue line painted behind
+  `AppPlayerChrome`), #288 (a non-16:9 video overflowing the player frame),
+  #295 (stale `buildSubtitleTracks` comment after the scan learned to dedupe
+  sidecars)
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] `useTranscriptCues` + spec — locale-matched track with fallback,
+        `disabled` → `hidden` promotion, `showing` left to the chrome, re-read
+        on `load`/`addtrack`, `activeIndex: -1` outside every cue
+  - [x] `parseStartTime` + spec — every accepted and rejected form
+  - [x] `?t=` beats the resume position and the resume preference
+  - [x] #287 — `VTTCue.line` lifts the cue box clear of the control bar;
+        the non-bubbling `<track>` `load` is caught in the capture phase
+  - [x] #288 — `AppPlayerChrome` sizes slotted media itself (`::v-slotted`),
+        so every caller letterboxes instead of repeating the rule
+  - [x] Gates: web lint/typecheck/test, @app/ui lint/typecheck/test,
+        stylelint, prettier, check:i18n
+- Notes:
+  - `happy-dom` has no `TextTrackList`, so neither the cue lift nor the
+    letterboxing is assertable in a unit test. What a browser still has to
+    confirm is listed in the PR body and on the E26-F01-S04 card, whose
+    "Manual verification" box is deliberately left unticked.
+  - `pnpm --filter @app/web lint` fails on a fresh worktree with 27 errors in
+    `app/pages/dev/foundations.vue` until `pnpm design:build` writes the
+    git-ignored `app/design-tokens.generated.ts`. Not a code defect — the
+    artefact simply does not exist before the first build.
+
 ## T-2026-08-30-008 — E25-F01 whisper foundation (S01, S02, S04)
 
 - Created: 2026-08-30

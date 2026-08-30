@@ -7862,8 +7862,18 @@ components:
           description: URL of the course poster image. Null when not set.
         ratingAverage:
           oneOf:
+            # No `multipleOf: 0.01` for the two decimal places. ajv enforces
+            # multipleOf as `value / 0.01` landing on an integer, and IEEE-754
+            # makes that a coin toss: 4.68 / 0.01 is 467.99999999999994 and
+            # 0.07 / 0.01 is 7.000000000000001, so both were rejected with a
+            # 400 while 2.31, 3.29 and 4.99 divided cleanly and passed.
+            # `express-openapi-validator` exposes no way to hand ajv its
+            # `multipleOfPrecision` remedy (`validateRequests` takes
+            # `ValidateRequestOpts`, which does not extend ajv's options), so
+            # the constraint cannot be enforced correctly here. The scale is
+            # `Decimal(3,2)` in the database, which rounds on write; the
+            # description below states the intent for readers and clients.
             - type: number
-              multipleOf: 0.01
               minimum: 0
               maximum: 5
             - type: "null"
@@ -9428,8 +9438,18 @@ components:
           description: Course poster image URL. Pass `null` to clear.
         ratingAverage:
           oneOf:
+            # No `multipleOf: 0.01` for the two decimal places. ajv enforces
+            # multipleOf as `value / 0.01` landing on an integer, and IEEE-754
+            # makes that a coin toss: 4.68 / 0.01 is 467.99999999999994 and
+            # 0.07 / 0.01 is 7.000000000000001, so both were rejected with a
+            # 400 while 2.31, 3.29 and 4.99 divided cleanly and passed.
+            # `express-openapi-validator` exposes no way to hand ajv its
+            # `multipleOfPrecision` remedy (`validateRequests` takes
+            # `ValidateRequestOpts`, which does not extend ajv's options), so
+            # the constraint cannot be enforced correctly here. The scale is
+            # `Decimal(3,2)` in the database, which rounds on write; the
+            # description below states the intent for readers and clients.
             - type: number
-              multipleOf: 0.01
               minimum: 0
               maximum: 5
             - type: "null"

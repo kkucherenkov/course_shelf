@@ -67,9 +67,13 @@ flowchart LR
 
 **Мультиплатформенность с первого дня.** Nuxt 4 SPA для веба, Flutter 3.44 для мобильных устройств. Оба используют один и тот же сгенерированный клиент и единую цепочку дизайн-токенов. Оба поставляются с двумя локалями (en, ru). `pnpm check:i18n` проверяет полноту ключей внутри каждого приложения.
 
-**Система дизайна с принудительным соблюдением правил.** W3C Design Tokens поступают из JSON в CSS custom properties, константы TypeScript и Dart-тему. `@app/ui` содержит 50 фирменных Vue-компонентов, каждый из которых сопровождается colocated-историей Storybook и спецификацией Vitest (всего 878 тестов). Stylelint запрещает шестнадцатеричные литералы и `!important` -- каждый цвет берётся из токена.
+**Система дизайна с принудительным соблюдением правил.** W3C Design Tokens поступают из JSON в CSS custom properties, константы TypeScript и Dart-тему. `@app/ui` содержит 50 фирменных Vue-компонентов, каждый из которых сопровождается colocated-историей Storybook и спецификацией Vitest. Stylelint запрещает шестнадцатеричные литералы и `!important` -- каждый цвет берётся из токена.
 
 **Работа в реальном времени через Centrifugo.** Бэкенд публикует события в Centrifugo через GRPC API. Веб- и мобильные клиенты подписываются через веб-сокеты, используя кратковременные токены, выдаваемые эндпоинтом `POST /api/v1/realtime/token`. Определения каналов генерируются из спецификации AsyncAPI.
+
+**Офлайн-первое мобильное приложение.** Flutter-приложение держит локальную копию каталога в Drift (SQLite) и разрешает урок сначала с диска, а не из сети. Загрузки возобновляемые и зашифрованы на диске, очередь работает в фоне через `workmanager`, поэтому курс остаётся доступным при недоступном бэкенде.
+
+**Транскрипция через Whisper.** В образ бэкенда вшит зафиксированный `whisper-cli`; подложите ggml-модель во время выполнения — и уроки без субтитров получают транскрипт, который хранится рядом с импортированными sidecar-файлами. Веб-плеер показывает их во вкладке транскрипта с поиском, а `?t=` даёт ссылку на конкретную секунду урока. См. [Транскрипция](#2b--транскрипция-опционально).
 
 **Наблюдаемость по умолчанию.** Sentry фиксирует ошибки. OpenTelemetry отправляет трейсы и метрики в локальный стек Grafana + LGTM на порту `:3200`. Проверки состояния на `/api/v1/health` сообщают статус PostgreSQL и Centrifugo.
 
@@ -79,11 +83,11 @@ flowchart LR
 
 ### Приложения
 
-| Приложение         | Стек                                  | Основные библиотеки                                                        |
-| ------------------ | ------------------------------------- | -------------------------------------------------------------------------- |
-| **`apps/backend`** | NestJS 11, Prisma 7, CQRS             | Better Auth, express-openapi-validator, nestjs-i18n, Sentry, OpenTelemetry |
-| **`apps/web`**     | Nuxt 4 (SPA), Nuxt UI v4, Tailwind v4 | @nuxtjs/i18n, сгенерированный api-client-ts, SCSS + BEM                    |
-| **`apps/mobile`**  | Flutter 3.44                          | flutter_bloc, get_it, Dio, slang (i18n), Firebase Messaging, Sentry        |
+| Приложение         | Стек                                  | Основные библиотеки                                                                                            |
+| ------------------ | ------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **`apps/backend`** | NestJS 11, Prisma 7, CQRS             | Better Auth, express-openapi-validator, nestjs-i18n, Sentry, OpenTelemetry                                     |
+| **`apps/web`**     | Nuxt 4 (SPA), Nuxt UI v4, Tailwind v4 | @nuxtjs/i18n, сгенерированный api-client-ts, SCSS + BEM                                                        |
+| **`apps/mobile`**  | Flutter 3.44                          | flutter_bloc, get_it, Dio, Drift (офлайн), workmanager, video_player, slang (i18n), Firebase Messaging, Sentry |
 
 ### Общие пакеты
 
@@ -107,6 +111,7 @@ flowchart LR
 | backend    | Dockerfile  | 3000 | Ожидает готовности postgres, centrifugo                           |
 | web        | Dockerfile  | 3001 | Nuxt dev server                                                   |
 | nginx      | --          | 8080 | Обратный прокси: единый origin для SPA и API                      |
+| storybook  | Dockerfile  | 6006 | Storybook для `@app/ui` (его же поднимает `pnpm storybook`)       |
 | otel-lgtm  | Grafana     | 3200 | Локальный стек наблюдаемости Grafana + LGTM                       |
 
 Контейнеры монтируют репозиторий как том, поэтому изменения попадают в работающий контейнер без пересборки. Не запускайте `pnpm dev` одновременно с `docker compose up` -- они используют одни и те же порты на хосте.
@@ -312,21 +317,25 @@ scripts/            setup.sh + вспомогательные скрипты
 
 ## Документация
 
-| Тема                                                         | Файл                                                                   |
-| ------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| **Как пользоваться CourseShelf (пользователи, админы)**      | [`docs/user-guide.md`](docs/user-guide.md)                             |
-| **Архитектура системы (разработчики, архитекторы)**          | [`docs/architecture.md`](docs/architecture.md)                         |
-| Записи архитектурных решений (ADR)                           | [`docs/adr/`](docs/adr/)                                               |
-| **Развёртывание релиза на NAS (UGREEN + Dockge)**            | [`docs/deploy-ugreen-nas-dockge.md`](docs/deploy-ugreen-nas-dockge.md) |
-| Бэкенд, CQRS, Prisma, соглашения API                         | [`.claude/docs/handbook.md`](.claude/docs/handbook.md)                 |
-| Система дизайна, @app/ui, токены, BEM                        | [`.claude/docs/design-system.md`](.claude/docs/design-system.md)       |
-| i18n в вебе, мобильном приложении и бэкенде                  | [`.claude/docs/i18n.md`](.claude/docs/i18n.md)                         |
-| Пирамида тестирования, критерии готовности, чеклист PR       | [`.claude/docs/testing.md`](.claude/docs/testing.md)                   |
-| Безопасность, наблюдаемость, доступность, производительность | [`.claude/docs/security.md`](.claude/docs/security.md)                 |
-| Миграция функционала из другого проекта                      | [`.claude/docs/migration.md`](.claude/docs/migration.md)               |
-| Правила проекта (канонические, расширение данного README)    | [`.claude/CLAUDE.md`](.claude/CLAUDE.md)                               |
-| Рабочий процесс дизайна и реестр компонентов                 | [`specs/design/README.md`](specs/design/README.md)                     |
-| Подробности о Docker-стеке                                   | [`docker/README.md`](docker/README.md)                                 |
+| Тема                                                           | Файл                                                                   |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **Как пользоваться CourseShelf (пользователи, админы)**        | [`docs/user-guide.md`](docs/user-guide.md)                             |
+| **Архитектура системы (разработчики, архитекторы)**            | [`docs/architecture.md`](docs/architecture.md)                         |
+| Записи архитектурных решений (ADR)                             | [`docs/adr/`](docs/adr/)                                               |
+| **Развёртывание релиза на NAS (UGREEN + Dockge)**              | [`docs/deploy-ugreen-nas-dockge.md`](docs/deploy-ugreen-nas-dockge.md) |
+| Бэкенд, CQRS, Prisma, соглашения API                           | [`.claude/docs/handbook.md`](.claude/docs/handbook.md)                 |
+| Система дизайна, @app/ui, токены, BEM                          | [`.claude/docs/design-system.md`](.claude/docs/design-system.md)       |
+| i18n в вебе, мобильном приложении и бэкенде                    | [`.claude/docs/i18n.md`](.claude/docs/i18n.md)                         |
+| Пирамида тестирования, критерии готовности, чеклист PR         | [`.claude/docs/testing.md`](.claude/docs/testing.md)                   |
+| Безопасность, наблюдаемость, доступность, производительность   | [`.claude/docs/security.md`](.claude/docs/security.md)                 |
+| Миграция функционала из другого проекта                        | [`.claude/docs/migration.md`](.claude/docs/migration.md)               |
+| Правила проекта (канонические, расширение данного README)      | [`.claude/CLAUDE.md`](.claude/CLAUDE.md)                               |
+| Рабочий процесс дизайна и реестр компонентов                   | [`specs/design/README.md`](specs/design/README.md)                     |
+| Подробности о Docker-стеке                                     | [`docker/README.md`](docker/README.md)                                 |
+| Релизные образы, переменные окружения, продакшен-развёртывание | [`docs/deployment.md`](docs/deployment.md)                             |
+| Выпуск релиза                                                  | [`docs/release.md`](docs/release.md)                                   |
+| Известные проблемы апстрима и обходные пути                    | [`docs/troubleshooting.md`](docs/troubleshooting.md)                   |
+| Дорожная карта, эпики, карточки задач                          | [`docs/roadmap/`](docs/roadmap/)                                       |
 
 ## Участие в проекте
 

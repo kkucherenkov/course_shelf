@@ -315,6 +315,23 @@ describe('AppPlayerChrome', () => {
     });
   });
 
+  describe('frame slot', () => {
+    // The letterbox rule for slotted media is `::v-slotted(video)`, which only
+    // matches when Vue stamps the slotted scope id (`data-v-…-s`) onto the
+    // caller's element. Assert the stamp — without it a non-16:9 video keeps
+    // its intrinsic ratio and overflows the 16:9 stage.
+    it('stamps the slotted scope id on media passed to the frame', () => {
+      const wrapper = mount(AppPlayerChrome, {
+        props: baseProps,
+        slots: { frame: '<video class="stub" />' },
+      });
+      const video = wrapper.find('video.stub');
+      expect(video.exists()).toBe(true);
+      const slotted = Object.keys(video.attributes()).filter((a) => /^data-v-.+-s$/.test(a));
+      expect(slotted).toHaveLength(1);
+    });
+  });
+
   describe('scrubber click', () => {
     it('emits seek with the clicked fraction × duration', async () => {
       const wrapper = makeWrapper({ position: 0, duration: 600 });

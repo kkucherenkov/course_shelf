@@ -196,7 +196,7 @@ gantt
     Transcription documentation                                  :active, e25f04s03, after e25f03s02, 1d
 
     section E26 Transcript panel (web)
-    Render the subtitle tracks in the web player                 :active, e26f01s01, after e08f02s02 e14f03s01, 1d
+    Render the subtitle tracks in the web player                 :done, e26f01s01, after e08f02s02 e14f03s01, 1d
     useTranscriptCues composable                                 :active, e26f01s02, after e26f01s01, 1d
     Transcript tab in the player sidebar                         :active, e26f01s03, after e26f01s02, 2d
     `?t=` deep links into a lesson                               :active, e26f01s04, after e26f01s01, 1d

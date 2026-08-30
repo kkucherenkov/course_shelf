@@ -8,7 +8,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Completed: 2026-08-30
 - Owner: claude (lane, worktree `e27-scan-sidecars`)
 - Branch: `kkucherenkov/e27-scan-sidecars`
-- Result: <PR link>
+- Result: https://github.com/kkucherenkov/course_shelf/pull/315
 - Spec: [docs/roadmap/tasks/E27-F01-S01.md](../../docs/roadmap/tasks/E27-F01-S01.md) (#227), [docs/roadmap/tasks/E25-F04-S01.md](../../docs/roadmap/tasks/E25-F04-S01.md) (#220, duplicate report #282)
 - Goal: scan parses `.srt`/`.vtt` sidecars into `Transcript(origin: sidecar)` + cues (re-parse only on
   changed signature); scan thumbnails move under `<derivedPath>/<libraryId>/…` instead of next to the

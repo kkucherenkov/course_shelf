@@ -277,6 +277,158 @@ describe('PrismaDashboardAdapter.listRecentScans', () => {
 });
 
 // ---------------------------------------------------------------------------
+// listRecentTranscriptions
+// ---------------------------------------------------------------------------
+
+interface TranscriptionRow {
+  id: string;
+  libraryId: string;
+  status: 'running' | 'succeeded' | 'failed' | 'cancelled';
+  force: boolean;
+  startedAt: Date;
+  finishedAt: Date | null;
+  lessonsTotal: number;
+  lessonsTranscribed: number;
+  _count: { errors: number };
+}
+
+function makeTranscriptionPrisma(
+  rows: TranscriptionRow[],
+  libraryRows: { id: string; name: string }[],
+): PrismaService {
+  return {
+    transcription: {
+      findMany: vi.fn().mockResolvedValue(rows),
+    },
+    library: {
+      findMany: vi.fn().mockResolvedValue(libraryRows),
+    },
+  } as unknown as PrismaService;
+}
+
+describe('PrismaDashboardAdapter.listRecentTranscriptions', () => {
+  it('returns empty array when no transcriptions exist', async () => {
+    const prisma = makeTranscriptionPrisma([], []);
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.listRecentTranscriptions(20);
+
+    expect(result).toEqual([]);
+    expect(prisma.transcription.findMany).toHaveBeenCalledWith({
+      orderBy: { startedAt: 'desc' },
+      take: 20,
+      include: { _count: { select: { errors: true } } },
+    });
+    expect(prisma.library.findMany).not.toHaveBeenCalled();
+  });
+
+  it('maps rows to AdminTranscriptionListItem shape with libraryName and collapsed errorsCount', async () => {
+    const startedAt = new Date('2026-08-30T12:00:00.000Z');
+    const finishedAt = new Date('2026-08-30T12:10:00.000Z');
+    const rows: TranscriptionRow[] = [
+      {
+        id: 'trn-1',
+        libraryId: 'lib-1',
+        status: 'succeeded',
+        force: false,
+        startedAt,
+        finishedAt,
+        lessonsTotal: 412,
+        lessonsTranscribed: 6,
+        _count: { errors: 2 },
+      },
+    ];
+    const prisma = makeTranscriptionPrisma(rows, [{ id: 'lib-1', name: 'Computer Science' }]);
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.listRecentTranscriptions(10);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      transcriptionId: 'trn-1',
+      libraryId: 'lib-1',
+      libraryName: 'Computer Science',
+      status: 'succeeded',
+      force: false,
+      startedAt: startedAt.toISOString(),
+      finishedAt: finishedAt.toISOString(),
+      lessonsTotal: 412,
+      lessonsTranscribed: 6,
+      errorsCount: 2,
+    });
+  });
+
+  it('sets finishedAt to null for a running transcription', async () => {
+    const startedAt = new Date('2026-08-30T12:00:00.000Z');
+    const rows: TranscriptionRow[] = [
+      {
+        id: 'trn-2',
+        libraryId: 'lib-1',
+        status: 'running',
+        force: true,
+        startedAt,
+        finishedAt: null,
+        lessonsTotal: 412,
+        lessonsTranscribed: 6,
+        _count: { errors: 0 },
+      },
+    ];
+    const prisma = makeTranscriptionPrisma(rows, [{ id: 'lib-1', name: 'Mathematics' }]);
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.listRecentTranscriptions(5);
+
+    expect(result[0]?.finishedAt).toBeNull();
+    expect(result[0]?.status).toBe('running');
+    expect(result[0]?.force).toBe(true);
+  });
+
+  it('filters by libraryId when provided', async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const prisma = {
+      transcription: { findMany },
+      library: { findMany: vi.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    await adapter.listRecentTranscriptions(10, 'lib-filter');
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { libraryId: 'lib-filter' } }),
+    );
+  });
+
+  it('passes no where clause when no libraryId is provided', async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const prisma = {
+      transcription: { findMany },
+      library: { findMany: vi.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    await adapter.listRecentTranscriptions(10);
+
+    const callArg = (findMany as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<
+      string,
+      unknown
+    >;
+    expect(callArg).not.toHaveProperty('where');
+  });
+
+  it('returns empty list for unknown libraryId without throwing', async () => {
+    const prisma = {
+      transcription: { findMany: vi.fn().mockResolvedValue([]) },
+      library: { findMany: vi.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+    const adapter = new PrismaDashboardAdapter(prisma);
+
+    const result = await adapter.listRecentTranscriptions(10, 'nonexistent-id');
+
+    expect(result).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // listAllLibrariesWithCounts
 // ---------------------------------------------------------------------------
 

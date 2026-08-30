@@ -9,6 +9,7 @@ import type {
   AdminLibraryListItem,
   AdminLibraryListItemScan,
   AdminScanListItem,
+  AdminTranscriptionListItem,
   AdminUserListItem,
   AdminUserRole,
 } from '@app/api-client-ts';
@@ -142,6 +143,44 @@ export class PrismaDashboardAdapter implements DashboardPort {
       filesScanned: scan.filesScanned,
       coursesAdded: coursesAddedByScanId.get(scan.id) ?? 0,
       errorsCount: scan._count.errors,
+    }));
+  }
+
+  async listRecentTranscriptions(
+    limit: number,
+    libraryId?: string,
+  ): Promise<AdminTranscriptionListItem[]> {
+    const rows = await this.prisma.transcription.findMany({
+      ...(libraryId === undefined ? {} : { where: { libraryId } }),
+      orderBy: { startedAt: 'desc' },
+      take: limit,
+      include: { _count: { select: { errors: true } } },
+    });
+
+    if (rows.length === 0) {
+      return [];
+    }
+
+    // Fetch library names in a single batched query — same pattern as
+    // listRecentScans, so a cross-library page never round-trips per row.
+    const libraryIds = [...new Set(rows.map((r) => r.libraryId))];
+    const libraries = await this.prisma.library.findMany({
+      where: { id: { in: libraryIds } },
+      select: { id: true, name: true },
+    });
+    const libraryNameById = new Map(libraries.map((l) => [l.id, l.name]));
+
+    return rows.map((row) => ({
+      transcriptionId: row.id,
+      libraryId: row.libraryId,
+      libraryName: libraryNameById.get(row.libraryId) ?? '',
+      status: row.status,
+      force: row.force,
+      startedAt: row.startedAt.toISOString(),
+      finishedAt: row.finishedAt ? row.finishedAt.toISOString() : null,
+      lessonsTotal: row.lessonsTotal,
+      lessonsTranscribed: row.lessonsTranscribed,
+      errorsCount: row._count.errors,
     }));
   }
 

@@ -28,6 +28,7 @@ function makePort(items: AdminLibraryListItem[] = []): DashboardPort {
     getSnapshot: vi.fn(),
     hasAnyUser: vi.fn(),
     listRecentScans: vi.fn(),
+    listRecentTranscriptions: vi.fn(),
     listAllLibrariesWithCounts: vi.fn().mockResolvedValue(items),
     listUsers: vi.fn(),
     findUserById: vi.fn(),

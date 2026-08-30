@@ -119,6 +119,20 @@ export function useLessonPlayer(): UseLessonPlayerReturn {
     fullscreen.value = Boolean(document.fullscreenElement);
   }
 
+  /** The `<track default>` the page rendered for the UI locale, else the first one. */
+  function preferredTrack(el: HTMLVideoElement): TextTrack | undefined {
+    const marked = el.querySelector<HTMLTrackElement>('track[default]');
+    return marked?.track ?? el.textTracks[0];
+  }
+
+  // The `<track>` list is populated after the lesson loads, and a `default`
+  // track is switched to "showing" by the browser itself — so the chrome's
+  // toggle state has to follow the real track modes, not just its own clicks.
+  function onTextTracksChange(): void {
+    if (!videoEl) return;
+    subtitlesOn.value = [...videoEl.textTracks].some((track) => track.mode === 'showing');
+  }
+
   // ── Attach / detach ────────────────────────────────────────────────────────
 
   function attach(el: HTMLVideoElement): void {
@@ -135,6 +149,9 @@ export function useLessonPlayer(): UseLessonPlayerReturn {
     el.addEventListener('ended', onEnded);
     el.addEventListener('error', onError);
     el.addEventListener('volumechange', onVolumeChange);
+    el.textTracks.addEventListener('change', onTextTracksChange);
+    el.textTracks.addEventListener('addtrack', onTextTracksChange);
+    onTextTracksChange();
 
     if (typeof document !== 'undefined') {
       document.addEventListener('fullscreenchange', onFullscreenChange);
@@ -155,6 +172,8 @@ export function useLessonPlayer(): UseLessonPlayerReturn {
     el.removeEventListener('ended', onEnded);
     el.removeEventListener('error', onError);
     el.removeEventListener('volumechange', onVolumeChange);
+    el.textTracks.removeEventListener('change', onTextTracksChange);
+    el.textTracks.removeEventListener('addtrack', onTextTracksChange);
 
     if (typeof document !== 'undefined') {
       document.removeEventListener('fullscreenchange', onFullscreenChange);
@@ -204,11 +223,15 @@ export function useLessonPlayer(): UseLessonPlayerReturn {
   function chromeToggleSubtitles(): void {
     subtitlesOn.value = !subtitlesOn.value;
     if (!videoEl) return;
-    // Enable/disable the first text track
-    const tracks = videoEl.textTracks;
-    for (const track of tracks) {
-      track.mode = subtitlesOn.value ? 'showing' : 'hidden';
+    // Show exactly one track — the one the page marked `default` (the UI
+    // locale), else the first. Showing them all stacks the languages on top
+    // of each other.
+    const preferred = preferredTrack(videoEl);
+    for (const track of videoEl.textTracks) {
+      track.mode = subtitlesOn.value && track === preferred ? 'showing' : 'hidden';
     }
+    // Resync: with no tracks at all the button must not latch to "on".
+    onTextTracksChange();
   }
 
   function chromeTogglePip(): void {

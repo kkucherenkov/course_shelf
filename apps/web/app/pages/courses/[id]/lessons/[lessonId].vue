@@ -10,12 +10,13 @@
   import { useProgressReporter } from '~/composables/useProgressReporter';
   import { useStreamUrl } from '~/composables/useStreamUrl';
   import { usePreferencesStore } from '~/stores/preferences';
+  import { buildSubtitleUrl } from '~/utils/subtitle-url';
 
   import PlayerSidebar from '~/components/lesson-player/PlayerSidebar.vue';
 
   definePageMeta({ layout: 'default' });
 
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const route = useRoute();
   const toast = useToast();
 
@@ -65,6 +66,29 @@
     errorStatus: streamErrorStatus,
     fetch: fetchStream,
   } = useStreamUrl();
+
+  // ── Subtitle tracks ──────────────────────────────────────────────────────────
+
+  // The subtitle route takes the same signed token as the video, so every
+  // `<track>` src is derived from the resolved stream URL. Entries we cannot
+  // build a URL for are dropped rather than rendered with an undefined src.
+  const subtitleTracks = computed(() => {
+    const uiLanguage = locale.value.split('-')[0];
+    return (lessonData.value?.subtitles ?? []).flatMap((sub) => {
+      const src = buildSubtitleUrl(streamUrl.value, sub.language);
+      return src
+        ? [
+            {
+              id: sub.id,
+              src,
+              language: sub.language,
+              label: sub.label,
+              isDefault: sub.language === uiLanguage,
+            },
+          ]
+        : [];
+    });
+  });
 
   // ── Player state ─────────────────────────────────────────────────────────────
 
@@ -385,7 +409,17 @@
                 preload="metadata"
                 playsinline
                 @loadedmetadata="onVideoLoadedMetadata"
-              />
+              >
+                <track
+                  v-for="track in subtitleTracks"
+                  :key="track.id"
+                  kind="subtitles"
+                  :src="track.src"
+                  :srclang="track.language"
+                  :label="track.label"
+                  :default="track.isDefault"
+                />
+              </video>
             </template>
           </AppPlayerChrome>
         </div>

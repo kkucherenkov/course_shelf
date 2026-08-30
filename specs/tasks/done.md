@@ -51,6 +51,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - [x] locale keys in en + ru
   - [x] remove the Known-limits row
 - Status: done
+
 ## T-2026-08-30-013 — E26-F01-S02 + E26-F01-S04 transcript cues, `?t=` deep links, two player defects
 
 - Created: 2026-08-30

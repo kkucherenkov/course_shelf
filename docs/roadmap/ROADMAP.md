@@ -227,8 +227,8 @@ gantt
     Fix the duplicated offline bookmark                          :done, e31f01s03, after e20f01s01, 2d
     Remove the SSO promise                                       :done, e31f02s01, after e14f02s01, 1d
     Remove the non-functional Settings controls                  :done, e31f02s02, after e14f02s02, 1d
-    Settle the locale parity claim                               :active, e31f02s03, after e15f01s02, 1d
-    Verify or remove the mobile storage bar                      :active, e31f02s04, after e19f01s03, 1d
+    Settle the locale parity claim                               :done, e31f02s03, after e15f01s02, 1d
+    Verify or remove the mobile storage bar                      :done, e31f02s04, after e19f01s03, 1d
 
 ```
 

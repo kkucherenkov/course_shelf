@@ -346,8 +346,7 @@ Four groups, saved automatically as you change them.
 **Account** — sign out of this device; sign out of *all other* devices
 (revokes every session but the current one, behind a confirmation dialog).
 
-**Languages.** The mobile app ships English, Russian, Ukrainian and Greek.
-The web app currently ships English and Russian.
+**Languages.** English and Russian, on both web and mobile.
 
 ---
 
@@ -416,9 +415,6 @@ Stated plainly, because finding these by surprise is worse.
 | --- | --- |
 | **Browse filters incomplete** | Library, duration-bucket and instructor filters, and sort-by-duration, are designed but not implemented on web. |
 | **Backups have no UI** | API only. |
-| **Web ships 2 locales** | English and Russian. Mobile ships four (en, ru, uk, el). |
-| **Greek and Ukrainian are machine-written** | Not yet reviewed by a native speaker. |
-| **Storage bar on mobile** | The free/used disk figures use a native plugin that has not been verified on a real device. |
 
 ---
 

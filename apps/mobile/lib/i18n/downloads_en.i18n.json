@@ -1,10 +1,9 @@
 {
   "title": "Downloads",
   "storage": {
-    "summary": "{used} of {total} free",
+    "summary": "{used} used, {free} free",
     "appOnly": "CourseShelf is using {used}",
     "legendApp": "CourseShelf",
-    "legendOther": "Other apps",
     "legendFree": "Free"
   },
   "sections": {

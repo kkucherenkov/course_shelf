@@ -105,15 +105,8 @@ class DownloadsBloc extends Bloc<DownloadsEvent, DownloadsState> {
     // derives from the queue.
     if (storage == null) return;
 
-    final ({int? freeBytes, int? totalBytes}) reading = await storage.read();
-    add(
-      DownloadsStorageUpdated(
-        StorageSnapshot(
-          deviceFreeBytes: reading.freeBytes,
-          deviceTotalBytes: reading.totalBytes,
-        ),
-      ),
-    );
+    final int? freeBytes = await storage.read();
+    add(DownloadsStorageUpdated(StorageSnapshot(deviceFreeBytes: freeBytes)));
   }
 
   void _onStorageUpdated(

@@ -41,6 +41,8 @@ export interface BookmarkProps {
   readonly lessonId: string;
   positionSeconds: number;
   label: string | undefined;
+  /** Client-generated retry key (#285). undefined disables the guarantee. */
+  readonly idempotencyKey: string | undefined;
   readonly createdAt: Date;
   updatedAt: Date;
 }
@@ -51,6 +53,7 @@ export class Bookmark {
   readonly lessonId: string;
   positionSeconds: number;
   label: string | undefined;
+  readonly idempotencyKey: string | undefined;
   readonly createdAt: Date;
   updatedAt: Date;
 
@@ -60,6 +63,7 @@ export class Bookmark {
     this.lessonId = props.lessonId;
     this.positionSeconds = props.positionSeconds;
     this.label = props.label;
+    this.idempotencyKey = props.idempotencyKey;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
@@ -76,6 +80,7 @@ export class Bookmark {
     lessonId: string;
     positionSeconds: number;
     label?: string;
+    idempotencyKey?: string;
   }): Bookmark {
     validatePosition(params.positionSeconds);
 
@@ -88,6 +93,7 @@ export class Bookmark {
       lessonId: params.lessonId,
       positionSeconds: params.positionSeconds,
       label,
+      idempotencyKey: params.idempotencyKey,
       createdAt: now,
       updatedAt: now,
     });

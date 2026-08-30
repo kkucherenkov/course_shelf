@@ -4,12 +4,13 @@ import type { MiddlewareConsumer, NestModule } from '@nestjs/common';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { SelfRegistrationGuardMiddleware } from './self-registration-guard.middleware';
 import { SignInRateLimitMiddleware } from './sign-in-rate-limit.middleware';
 
 @Global()
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, SignInRateLimitMiddleware],
+  providers: [AuthService, SignInRateLimitMiddleware, SelfRegistrationGuardMiddleware],
   exports: [AuthService],
 })
 export class AuthModule implements NestModule {
@@ -21,5 +22,12 @@ export class AuthModule implements NestModule {
     consumer
       .apply(SignInRateLimitMiddleware)
       .forRoutes({ path: 'api/v1/auth/sign-in/*splat', method: RequestMethod.POST });
+
+    // Mount on /api/v1/auth/sign-up/* — same wildcard reasoning as above, this
+    // time to close #283: every account-creation path, not just
+    // /sign-up/email, must honour AUTH_SELF_REGISTRATION=false.
+    consumer
+      .apply(SelfRegistrationGuardMiddleware)
+      .forRoutes({ path: 'api/v1/auth/sign-up/*splat', method: RequestMethod.ALL });
   }
 }

@@ -8,9 +8,11 @@
   import AdminScansTable from '~/components/admin/AdminScansTable.vue';
   import AdminEditLibrarySheet from '~/components/admin/AdminEditLibrarySheet.vue';
   import AdminRemoveLibraryDialog from '~/components/admin/AdminRemoveLibraryDialog.vue';
+  import AdminTranscriptionCard from '~/components/admin/AdminTranscriptionCard.vue';
   import { useAdminLibraries } from '~/composables/useAdminLibraries';
   import { useAdminLibraryScans } from '~/composables/useAdminLibraryScans';
   import { useScanProgress } from '~/composables/useScanProgress';
+  import { useTranscriptionProgress } from '~/composables/useTranscriptionProgress';
 
   definePageMeta({ middleware: 'admin' });
 
@@ -74,6 +76,31 @@
     percent,
     start: startPolling,
   } = useScanProgress(libraryId);
+
+  // Live transcription progress
+  const {
+    transcription,
+    starting: transcriptionStarting,
+    cancelling: transcriptionCancelling,
+    start: startTranscriptionRun,
+    cancel: cancelTranscriptionRun,
+  } = useTranscriptionProgress(libraryId);
+
+  async function onTranscriptionStart(force: boolean): Promise<void> {
+    try {
+      await startTranscriptionRun(force);
+    } catch {
+      toast.add({ title: t('admin.transcription.startError'), color: 'error' });
+    }
+  }
+
+  async function onTranscriptionCancel(): Promise<void> {
+    try {
+      await cancelTranscriptionRun();
+    } catch {
+      toast.add({ title: t('admin.transcription.cancelError'), color: 'error' });
+    }
+  }
 
   const latestScanStatus = computed(() => library.value?.lastScan?.status ?? null);
   const showScanProgress = computed(
@@ -285,6 +312,30 @@
             :label-failed="t('pages.libraries.statusFailed')"
             :label-cancelled="t('pages.libraries.statusCancelled')"
             :show-library="false"
+          />
+
+          <!-- Transcription -->
+          <AdminTranscriptionCard
+            class="adm-lib-detail__transcription"
+            :transcription="transcription"
+            :starting="transcriptionStarting"
+            :cancelling="transcriptionCancelling"
+            :title="t('admin.transcription.title')"
+            :idle-body="t('admin.transcription.idleBody')"
+            :force-label="t('admin.transcription.forceLabel')"
+            :start-cta="t('admin.transcription.startCta')"
+            :cancel-cta="t('admin.transcription.cancelCta')"
+            :label-running="t('admin.transcription.statusRunning')"
+            :label-succeeded="t('admin.transcription.statusSucceeded')"
+            :label-failed="t('admin.transcription.statusFailed')"
+            :label-cancelled="t('admin.transcription.statusCancelled')"
+            :stat-skipped="t('admin.transcription.statSkipped')"
+            :stat-transcribed="t('admin.transcription.statTranscribed')"
+            :stat-failed="t('admin.transcription.statFailed')"
+            :stat-total="t('admin.transcription.statTotal')"
+            :errors-heading="t('admin.transcription.errorsHeading')"
+            @start="onTranscriptionStart"
+            @cancel="onTranscriptionCancel"
           />
         </div>
 
@@ -513,6 +564,11 @@
 
     &__failed-banner {
       margin-bottom: var(--space-4);
+    }
+
+    // ── Transcription card ───────────────────────────────────────────────────
+    &__transcription {
+      margin-top: var(--space-4);
     }
 
     // ── Table heading ─────────────────────────────────────────────────────────

@@ -65,10 +65,16 @@ export interface ScannedMaterial {
 /**
  * A subtitle track file grouped with a lesson during the scan walk.
  * In-memory only — persisted to the `subtitle` table by the same follow-up.
+ *
+ * `mtime`/`size` (E27-F01-S01) are the sidecar's own file signature, carried
+ * so the scan can skip re-parsing a `.srt`/`.vtt` whose signature has not
+ * changed since it was last ingested into `Transcript(origin: sidecar)`.
  */
 export interface ScannedSubtitle {
   readonly path: string;
   readonly language: string;
+  readonly mtime: Date;
+  readonly size: number;
 }
 
 /**

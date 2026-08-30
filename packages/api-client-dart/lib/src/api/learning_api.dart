@@ -29,7 +29,7 @@ class LearningApi {
   const LearningApi(this._dio, this._serializers);
 
   /// Create a bookmark on a lesson
-  /// Bookmarks are personal — even your own admin role does not surface them in listings for other users. The body carries &#x60;positionSeconds&#x60; and an optional &#x60;label&#x60;. 
+  /// Bookmarks are personal — even your own admin role does not surface them in listings for other users. The body carries &#x60;positionSeconds&#x60; and an optional &#x60;label&#x60;.  **Retries.** Pass &#x60;idempotencyKey&#x60; to make a retried &#x60;POST&#x60; safe: a second call with the same &#x60;idempotencyKey&#x60; for the same lesson and caller returns the bookmark created by the first call — &#x60;200&#x60; instead of &#x60;201&#x60; — rather than creating a duplicate. The match is on &#x60;(lessonId, caller, idempotencyKey)&#x60;, not on payload equality: a differing &#x60;positionSeconds&#x60; or &#x60;label&#x60; on the retry is ignored, the already-stored bookmark wins. Omitting &#x60;idempotencyKey&#x60; disables the guarantee for that call — every request creates a new bookmark, as before. 
   ///
   /// Parameters:
   /// * [lessonId] - Server-generated cuid identifying the lesson.

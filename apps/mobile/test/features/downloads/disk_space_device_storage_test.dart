@@ -1,13 +1,14 @@
 /// Unit tests for DiskSpaceDeviceStorage.
 ///
-/// The adapter is four lines of arithmetic and one try/catch, and both matter:
+/// The adapter is three lines of arithmetic and one try/catch, and both
+/// matter:
 ///
 ///   1. The plugin reports **megabytes** (undocumented on pub.dev — confirmed
 ///      from its own example, which labels the values "(MB)"). Getting the
 ///      conversion wrong scales the whole storage bar by 2^20.
 ///   2. It must never throw. The bar is decoration; a MissingPluginException on
-///      an unsupported platform must degrade to "no device totals", not take
-///      the Downloads tab down.
+///      an unsupported platform must degrade to "no device free space", not
+///      take the Downloads tab down.
 ///
 /// The last group renders [StorageBar] from what the stubbed plugin returned,
 /// so the megabyte conversion and the degrade path are asserted against what a
@@ -28,10 +29,9 @@ import 'package:app_mobile/features/downloads/presentation/widgets/storage_bar.d
 import 'package:app_mobile/i18n/strings.g.dart';
 
 class _FakePlugin implements DiskSpacePlus {
-  _FakePlugin({this.free, this.total, this.throws = false});
+  _FakePlugin({this.free, this.throws = false});
 
   final double? free;
-  final double? total;
   final bool throws;
 
   @override
@@ -40,11 +40,10 @@ class _FakePlugin implements DiskSpacePlus {
     return free;
   }
 
+  // Unused by [DiskSpaceDeviceStorage] (#305 dropped device totals), but the
+  // fake still has to satisfy the plugin's interface.
   @override
-  Future<double?> get getTotalDiskSpace async {
-    if (throws) throw StateError('no platform implementation');
-    return total;
-  }
+  Future<double?> get getTotalDiskSpace async => null;
 
   @override
   Future<double?> getFreeDiskSpaceForPath(String path) async => free;
@@ -55,55 +54,46 @@ class _FakePlugin implements DiskSpacePlus {
 
 void main() {
   test('converts the plugin megabytes to bytes', () async {
-    final storage = DiskSpaceDeviceStorage(
-      plugin: _FakePlugin(free: 1024, total: 65536),
-    );
+    final storage = DiskSpaceDeviceStorage(plugin: _FakePlugin(free: 1024));
 
-    final reading = await storage.read();
+    final freeBytes = await storage.read();
 
-    expect(reading.freeBytes, 1024 * 1024 * 1024);
-    expect(reading.totalBytes, 65536 * 1024 * 1024);
+    expect(freeBytes, 1024 * 1024 * 1024);
   });
 
   test('rounds a fractional megabyte reading', () async {
-    final storage = DiskSpaceDeviceStorage(
-      plugin: _FakePlugin(free: 1.5, total: 2.5),
-    );
+    final storage = DiskSpaceDeviceStorage(plugin: _FakePlugin(free: 1.5));
 
-    final reading = await storage.read();
+    final freeBytes = await storage.read();
 
-    expect(reading.freeBytes, (1.5 * 1024 * 1024).round());
-    expect(reading.totalBytes, (2.5 * 1024 * 1024).round());
+    expect(freeBytes, (1.5 * 1024 * 1024).round());
   });
 
   test('passes a null reading through rather than inventing a zero', () async {
     final storage = DiskSpaceDeviceStorage(plugin: _FakePlugin());
 
-    final reading = await storage.read();
+    final freeBytes = await storage.read();
 
-    expect(reading.freeBytes, isNull);
-    expect(reading.totalBytes, isNull);
+    expect(freeBytes, isNull);
   });
 
   test('rejects a negative or non-finite reading', () async {
     final storage = DiskSpaceDeviceStorage(
-      plugin: _FakePlugin(free: -1, total: double.infinity),
+      plugin: _FakePlugin(free: double.infinity),
     );
 
-    final reading = await storage.read();
+    final freeBytes = await storage.read();
 
-    expect(reading.freeBytes, isNull);
-    expect(reading.totalBytes, isNull);
+    expect(freeBytes, isNull);
   });
 
   test('degrades to nulls when the platform throws', () async {
     final storage = DiskSpaceDeviceStorage(plugin: _FakePlugin(throws: true));
 
     // The assertion is that this returns at all.
-    final reading = await storage.read();
+    final freeBytes = await storage.read();
 
-    expect(reading.freeBytes, isNull);
-    expect(reading.totalBytes, isNull);
+    expect(freeBytes, isNull);
   });
 
   group('StorageBar over the stubbed plugin', () {
@@ -112,7 +102,9 @@ void main() {
       required DiskSpacePlus plugin,
       required int appUsedBytes,
     }) async {
-      final reading = await DiskSpaceDeviceStorage(plugin: plugin).read();
+      final int? freeBytes = await DiskSpaceDeviceStorage(
+        plugin: plugin,
+      ).read();
 
       await tester.pumpWidget(
         TranslationProvider(
@@ -121,10 +113,7 @@ void main() {
             home: Scaffold(
               body: StorageBar(
                 appUsedBytes: appUsedBytes,
-                snapshot: StorageSnapshot(
-                  deviceFreeBytes: reading.freeBytes,
-                  deviceTotalBytes: reading.totalBytes,
-                ),
+                snapshot: StorageSnapshot(deviceFreeBytes: freeBytes),
               ),
             ),
           ),
@@ -135,15 +124,15 @@ void main() {
     testWidgets('renders the plugin reading as the full caption and legend', (
       tester,
     ) async {
-      // 8192 MB free of 65536 MB — the bar must show GB, not the raw figures.
+      // 8192 MB free — the bar must show GB, not the raw figure.
       await pumpBar(
         tester,
-        plugin: _FakePlugin(free: 8192, total: 65536),
+        plugin: _FakePlugin(free: 8192),
         appUsedBytes: 1024 * 1024,
       );
 
-      expect(find.text('1.0 MB of 8.0 GB free'), findsOneWidget);
-      expect(find.text('Other apps'), findsOneWidget);
+      expect(find.text('1.0 MB used, 8.0 GB free'), findsOneWidget);
+      expect(find.text('CourseShelf'), findsOneWidget);
       expect(find.text('Free'), findsOneWidget);
     });
 
@@ -157,8 +146,8 @@ void main() {
       );
 
       expect(find.text('CourseShelf is using 2.0 MB'), findsOneWidget);
-      // No denominator, so no three-segment legend to explain.
-      expect(find.text('Other apps'), findsNothing);
+      // No free reading, so no legend to explain a bar that isn't drawn.
+      expect(find.text('Free'), findsNothing);
     });
   });
 }

@@ -9,6 +9,7 @@
   import { useMaterialDownload } from '~/composables/useMaterialDownload';
   import { useProgressReporter } from '~/composables/useProgressReporter';
   import { useStreamUrl } from '~/composables/useStreamUrl';
+  import { useTranscriptCues } from '~/composables/useTranscriptCues';
   import { usePreferencesStore } from '~/stores/preferences';
   import { parseStartTime } from '~/utils/start-time';
   import { buildSubtitleTracks } from '~/utils/subtitle-url';
@@ -116,6 +117,14 @@
 
   const videoRef = ref<HTMLVideoElement | null>(null);
   let hasSetStartTime = false;
+
+  // ── Transcript ────────────────────────────────────────────────────────────────
+
+  const { cues: transcriptCues, activeIndex: transcriptActiveIndex } = useTranscriptCues({
+    videoRef,
+    position,
+    preferredLanguage: locale,
+  });
 
   const preferencesStore = usePreferencesStore();
 
@@ -434,14 +443,20 @@
           :bookmarks="bookmarks"
           :materials="lessonData.materials"
           :current-time="position"
+          :transcript-cues="transcriptCues"
+          :transcript-active-index="transcriptActiveIndex"
           :tab-sections="t('pages.lessonPlayer.tabSections')"
           :tab-notes="t('pages.lessonPlayer.tabNotes')"
           :tab-bookmarks="t('pages.lessonPlayer.tabBookmarks')"
           :tab-materials="t('pages.lessonPlayer.tabMaterials')"
+          :tab-transcript="t('pages.lessonPlayer.tabTranscript')"
           :bookmarks-empty-title="t('pages.lessonPlayer.bookmarksEmptyTitle')"
           :bookmarks-empty-body="t('pages.lessonPlayer.bookmarksEmptyBody')"
           :bookmarks-add-label="t('pages.lessonPlayer.bookmarkAdd')"
           :materials-empty-label="t('pages.lessonPlayer.materialsEmpty')"
+          :transcript-empty-label="t('pages.lessonPlayer.transcript.empty')"
+          :transcript-no-match-label="t('pages.lessonPlayer.transcript.noMatch')"
+          :transcript-filter-placeholder="t('pages.lessonPlayer.transcript.filterPlaceholder')"
           @seek="onBookmarkSeek"
           @update:bookmarks="(b) => (bookmarks = b)"
           @download-attempt="onDownloadAttempt"

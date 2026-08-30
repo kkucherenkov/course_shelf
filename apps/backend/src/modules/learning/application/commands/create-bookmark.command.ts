@@ -5,6 +5,7 @@ export class CreateBookmarkCommand {
     readonly lessonId: string,
     readonly positionSeconds: number,
     readonly label: string | undefined,
+    readonly idempotencyKey: string | undefined,
     readonly actor: AuthorizationActor,
   ) {}
 }

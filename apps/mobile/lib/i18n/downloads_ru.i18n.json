@@ -1,10 +1,9 @@
 {
   "title": "Загрузки",
   "storage": {
-    "summary": "{used} из {total} свободно",
+    "summary": "{used} занято, {free} свободно",
     "appOnly": "CourseShelf занимает {used}",
     "legendApp": "CourseShelf",
-    "legendOther": "Другие приложения",
     "legendFree": "Свободно"
   },
   "sections": {

@@ -216,7 +216,7 @@ void main() {
     expect(find.text('CourseShelf is using 2.0 MB'), findsOneWidget);
   });
 
-  testWidgets('the storage bar shows the device totals when they are known', (
+  testWidgets('the storage bar shows the device free space when it is known', (
     tester,
   ) async {
     await pump(
@@ -224,13 +224,10 @@ void main() {
       DownloadsState(
         isLoading: false,
         items: <DownloadItem>[_item('a', bytes: 1024 * 1024)],
-        storage: const StorageSnapshot(
-          deviceFreeBytes: 8 * 1024 * 1024 * 1024,
-          deviceTotalBytes: 64 * 1024 * 1024 * 1024,
-        ),
+        storage: const StorageSnapshot(deviceFreeBytes: 8 * 1024 * 1024 * 1024),
       ),
     );
 
-    expect(find.text('1.0 MB of 8.0 GB free'), findsOneWidget);
+    expect(find.text('1.0 MB used, 8.0 GB free'), findsOneWidget);
   });
 }

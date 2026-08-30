@@ -13,6 +13,7 @@ part 'create_bookmark_request.g.dart';
 /// Properties:
 /// * [positionSeconds] - Playback position in seconds to pin the bookmark at.
 /// * [label] - Optional free-form label. Trimmed server-side.
+/// * [idempotencyKey] - Client-generated key (e.g. a local UUID) scoping retries of this create to one bookmark. See the operation description for replay semantics.
 @BuiltValue()
 abstract class CreateBookmarkRequest implements Built<CreateBookmarkRequest, CreateBookmarkRequestBuilder> {
   /// Playback position in seconds to pin the bookmark at.
@@ -22,6 +23,10 @@ abstract class CreateBookmarkRequest implements Built<CreateBookmarkRequest, Cre
   /// Optional free-form label. Trimmed server-side.
   @BuiltValueField(wireName: r'label')
   String? get label;
+
+  /// Client-generated key (e.g. a local UUID) scoping retries of this create to one bookmark. See the operation description for replay semantics.
+  @BuiltValueField(wireName: r'idempotencyKey')
+  String? get idempotencyKey;
 
   CreateBookmarkRequest._();
 
@@ -55,6 +60,13 @@ class _$CreateBookmarkRequestSerializer implements PrimitiveSerializer<CreateBoo
       yield r'label';
       yield serializers.serialize(
         object.label,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.idempotencyKey != null) {
+      yield r'idempotencyKey';
+      yield serializers.serialize(
+        object.idempotencyKey,
         specifiedType: const FullType(String),
       );
     }
@@ -94,6 +106,13 @@ class _$CreateBookmarkRequestSerializer implements PrimitiveSerializer<CreateBoo
             specifiedType: const FullType(String),
           ) as String;
           result.label = valueDes;
+          break;
+        case r'idempotencyKey':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.idempotencyKey = valueDes;
           break;
         default:
           unhandled.add(key);

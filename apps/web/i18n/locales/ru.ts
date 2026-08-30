@@ -197,11 +197,17 @@ export default {
       tabNotes: 'Заметки',
       tabBookmarks: 'Закладки',
       tabMaterials: 'Материалы',
+      tabTranscript: 'Транскрипт',
       bookmarksEmptyTitle: 'Закладок пока нет',
       bookmarksEmptyBody: 'Добавьте закладку из плеера, чтобы отметить момент для просмотра позже.',
       materialsEmpty: 'У этого урока нет материалов.',
       sectionLabel: 'Раздел {n} · {title}',
       bookmarkAdd: '+ Отметить текущую позицию',
+      transcript: {
+        empty: 'Для этого урока нет транскрипта.',
+        noMatch: 'Ничего не найдено по вашему запросу.',
+        filterPlaceholder: 'Фильтр по транскрипту',
+      },
       aria: {
         player: 'Видеоплеер урока',
         buffering: 'Буферизация',
@@ -585,6 +591,32 @@ export default {
       toastFailedTitle: 'Ошибка сканирования {name}',
       toastFailedSummary: '{errors} ошибка | {errors} ошибки | {errors} ошибок',
       dismissAria: 'Закрыть уведомление о сканировании',
+    },
+  },
+  /**
+   * Строки админ-раздела, которые не относятся к `pages.admin.*` — вынесены
+   * в собственное пространство имён, чтобы не конфликтовать с правками
+   * внутри страниц.
+   */
+  admin: {
+    transcription: {
+      title: 'Транскрипция',
+      idleBody:
+        'Запускает whisper по всем урокам без субтитров и без актуальной сгенерированной транскрипции.',
+      forceLabel: 'Перетранскрибировать всё заново',
+      startCta: 'Начать транскрипцию',
+      cancelCta: 'Отменить',
+      statusRunning: 'Идёт',
+      statusSucceeded: 'Успешно',
+      statusFailed: 'Ошибка',
+      statusCancelled: 'Отменено',
+      statSkipped: 'Пропущено',
+      statTranscribed: 'Транскрибировано',
+      statFailed: 'Ошибок',
+      statTotal: 'Всего',
+      errorsHeading: 'Ошибки',
+      startError: 'Не удалось запустить транскрипцию. Попробуйте ещё раз.',
+      cancelError: 'Не удалось отменить прогон. Попробуйте ещё раз.',
     },
   },
   /**

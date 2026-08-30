@@ -2,11 +2,13 @@
   import { ref } from 'vue';
   import { AppTabs, AppTab } from '@app/ui';
   import type { SectionOutline, BookmarkDto, MaterialDto } from '@app/api-client-ts';
+  import type { TranscriptCue } from '~/composables/useTranscriptCues';
 
   import PlayerSectionsTab from './PlayerSectionsTab.vue';
   import PlayerNotesTab from './PlayerNotesTab.vue';
   import PlayerBookmarksTab from './PlayerBookmarksTab.vue';
   import PlayerMaterialsTab from './PlayerMaterialsTab.vue';
+  import PlayerTranscriptTab from './PlayerTranscriptTab.vue';
 
   const props = defineProps<{
     sections: SectionOutline[];
@@ -15,16 +17,22 @@
     bookmarks: BookmarkDto[];
     materials: MaterialDto[];
     currentTime: number;
+    transcriptCues: TranscriptCue[];
+    transcriptActiveIndex: number;
 
     // i18n strings
     tabSections: string;
     tabNotes: string;
     tabBookmarks: string;
     tabMaterials: string;
+    tabTranscript: string;
     bookmarksEmptyTitle: string;
     bookmarksEmptyBody: string;
     bookmarksAddLabel: string;
     materialsEmptyLabel: string;
+    transcriptEmptyLabel: string;
+    transcriptNoMatchLabel: string;
+    transcriptFilterPlaceholder: string;
   }>();
 
   const emit = defineEmits<{
@@ -33,7 +41,9 @@
     downloadAttempt: [material: MaterialDto];
   }>();
 
-  const activeTab = ref<'sections' | 'notes' | 'bookmarks' | 'materials'>('sections');
+  const activeTab = ref<'sections' | 'notes' | 'bookmarks' | 'materials' | 'transcript'>(
+    'sections',
+  );
 </script>
 
 <template>
@@ -43,6 +53,7 @@
       <AppTab value="notes" :label="props.tabNotes" />
       <AppTab value="bookmarks" :label="props.tabBookmarks" />
       <AppTab value="materials" :label="props.tabMaterials" />
+      <AppTab value="transcript" :label="props.tabTranscript" />
     </AppTabs>
 
     <div class="player-sidebar__body">
@@ -69,6 +80,15 @@
         :materials="props.materials"
         :empty-label="props.materialsEmptyLabel"
         @download-attempt="(m) => emit('downloadAttempt', m)"
+      />
+      <PlayerTranscriptTab
+        v-else-if="activeTab === 'transcript'"
+        :cues="props.transcriptCues"
+        :active-index="props.transcriptActiveIndex"
+        :empty-label="props.transcriptEmptyLabel"
+        :no-match-label="props.transcriptNoMatchLabel"
+        :filter-placeholder="props.transcriptFilterPlaceholder"
+        @seek="(t) => emit('seek', t)"
       />
     </div>
   </aside>

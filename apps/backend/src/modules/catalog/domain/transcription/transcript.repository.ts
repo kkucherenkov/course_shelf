@@ -12,6 +12,20 @@
  *     transaction. A half-written transcript would be read back as current by
  *     the next run's skip rule and never repaired.
  *
+ * `findExisting`/`replaceSidecar`/`deleteForLesson` (E27-F01-S01, E25-F04-S01)
+ * serve the scan walk rather than the transcription run:
+ *
+ *   - `findExisting` is per-lesson, not batched across lessons — the scan
+ *     ingests sidecars one lesson at a time (same granularity as its ffprobe
+ *     call), and `(lessonId, language)` is the table's unique key, so the
+ *     result is a single row rather than a list.
+ *   - `replaceSidecar` mirrors `replaceGenerated`'s delete-then-insert shape,
+ *     with `origin: sidecar` and no `derivedPath` (the sidecar's own path on
+ *     disk is `sourcePath`; nothing is written under DERIVED_PATH for it).
+ *   - `deleteForLesson` is scan orphan cleanup: a lesson the scan no longer
+ *     finds loses its Transcript rows (both origins), and any `derivedPath`
+ *     file is unlinked best-effort — it never touches the Lesson row itself.
+ *
  * Naming convention:
  *   Token:   TRANSCRIPT_REPOSITORY
  *   Port:    TranscriptRepository (interface)
@@ -31,6 +45,16 @@ export interface GeneratedTranscriptSignature {
   readonly sourceSize: number;
 }
 
+/** A transcript's origin, mirroring the Prisma `TranscriptOrigin` enum. */
+export type TranscriptOriginValue = 'sidecar' | 'generated';
+
+/** What `findExisting` returns for a `(lessonId, language)` pair, if a row exists. */
+export interface ExistingTranscriptSignature {
+  readonly origin: TranscriptOriginValue;
+  readonly sourceMtime: Date;
+  readonly sourceSize: number;
+}
+
 export interface ReplaceGeneratedInput {
   readonly lessonId: string;
   readonly language: string;
@@ -40,6 +64,16 @@ export interface ReplaceGeneratedInput {
   readonly sourceSize: number;
   /** Absolute path of the generated `.srt` under DERIVED_PATH. */
   readonly derivedPath: string;
+  readonly cues: readonly SubtitleCue[];
+}
+
+export interface ReplaceSidecarInput {
+  readonly lessonId: string;
+  readonly language: string;
+  /** Library-relative path of the sidecar file itself. */
+  readonly sourcePath: string;
+  readonly sourceMtime: Date;
+  readonly sourceSize: number;
   readonly cues: readonly SubtitleCue[];
 }
 
@@ -58,4 +92,23 @@ export interface TranscriptRepository {
    * row (cues cascade) and insert the new one with its cues, in one transaction.
    */
   replaceGenerated(input: ReplaceGeneratedInput): Promise<void>;
+
+  /**
+   * The current transcript row for `(lessonId, language)`, of either origin, or
+   * null when none exists yet. Drives the scan's re-parse-only-on-change check.
+   */
+  findExisting(lessonId: string, language: string): Promise<ExistingTranscriptSignature | null>;
+
+  /**
+   * Replace the sidecar-origin transcript for `(lessonId, language)` — same
+   * delete-then-insert shape as `replaceGenerated`.
+   */
+  replaceSidecar(input: ReplaceSidecarInput): Promise<void>;
+
+  /**
+   * Delete every Transcript row (both origins, all languages) for a lesson the
+   * scan no longer finds, unlinking each row's `derivedPath` file best-effort.
+   * Never touches the Lesson row.
+   */
+  deleteForLesson(lessonId: string): Promise<void>;
 }

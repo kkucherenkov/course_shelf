@@ -38,10 +38,15 @@
         disagreements on its first real run (429 undocumented on all 75
         operations, 400 on ~59, one 404, 7 lenient-implementation cases).
         Raised as GH #320 for the spec's lane; the step stays in e2e.yml.
-- Status: blocked
-- Blockers: `E2E smoke` is red on GH #320 — the contract test is reporting real
-  drift, and the fix is a spec change in another lane. The other seven checks
-  pass. Merges LAST of the eight lanes (it touches
+  - [x] #320 — documented the `400` and `429` every operation can return
+        (429 was absent from all 75, 400 from 59) as shared
+        `components/responses`, with the codegen in its own commit. Taken on
+        here once L6 merged and `openapi.yaml` stopped moving under us.
+- Status: in-progress
+- Blockers: the remaining contract-test findings are a third class — the spec's
+  parameter schemas are looser than the backend's validation on ~14 operations,
+  plus one 404 and 7 lenient-implementation cases. Tracked on #320. Merges LAST
+  of the eight lanes (it touches
   baselines and goldens); baselines and goldens are regenerated on top of the
   final `main` after the other seven land, not merged by hand.
 

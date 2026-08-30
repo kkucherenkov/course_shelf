@@ -2,6 +2,29 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-30-002 — E26-F01-S03: transcript tab in the player sidebar
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude
+- Result: <PR link>
+- Spec: [docs/roadmap/tasks/E26-F01-S03.md](../../docs/roadmap/tasks/E26-F01-S03.md) (#225, closes epic E26 — #247)
+- Goal: read along with the lesson, find a line, jump to it — fifth sidebar tab
+  consuming the `useTranscriptCues` composable from E26-F01-S02.
+- Acceptance:
+  - fifth tab beside sections / notes / bookmarks / materials
+  - the cue under the playhead is highlighted and `aria-current`
+  - clicking a cue emits the sidebar's `seek` event, in seconds
+  - a filter box narrows the visible cues, case-insensitively, in-memory
+  - empty and no-match states are distinct and translated
+- Spec diff: none
+- Codegen impact: no
+- Design impact: not promoted into `@app/ui` — single-use scrollable list,
+  same call as `PlayerNotesTab`
+- Tests: `PlayerTranscriptTab.spec.ts` — one row per cue, active marking,
+  `seek` payload in seconds, formatted timestamps, filtering, no-match, and
+  the empty state hiding the filter box
+
 ## T-2026-08-30-012 — run whisper transcription over a library
 
 - Created: 2026-08-30

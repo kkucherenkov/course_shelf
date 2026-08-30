@@ -197,11 +197,17 @@ export default {
       tabNotes: 'Заметки',
       tabBookmarks: 'Закладки',
       tabMaterials: 'Материалы',
+      tabTranscript: 'Транскрипт',
       bookmarksEmptyTitle: 'Закладок пока нет',
       bookmarksEmptyBody: 'Добавьте закладку из плеера, чтобы отметить момент для просмотра позже.',
       materialsEmpty: 'У этого урока нет материалов.',
       sectionLabel: 'Раздел {n} · {title}',
       bookmarkAdd: '+ Отметить текущую позицию',
+      transcript: {
+        empty: 'Для этого урока нет транскрипта.',
+        noMatch: 'Ничего не найдено по вашему запросу.',
+        filterPlaceholder: 'Фильтр по транскрипту',
+      },
       aria: {
         player: 'Видеоплеер урока',
         buffering: 'Буферизация',

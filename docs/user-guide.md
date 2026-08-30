@@ -231,16 +231,27 @@ Four rows, each answering a different question:
 
 ### Browse and search
 
-**Browse** lists everything you have access to, with a status filter
-(all / in progress / completed / not started) and three sort orders:
-*recently watched* (default), *newest*, *alphabetical*.
+**Browse** lists everything you have access to. Four filters narrow the shelf,
+and they combine:
+
+| Filter | Values |
+| --- | --- |
+| **Status** | all · in progress · completed · not started |
+| **Library** | any one of your libraries |
+| **Length** | under 5h · 5–10h · 10–20h · over 20h — total runtime of every lesson |
+| **Instructor** | anyone credited on a course (hidden when nobody is) |
+
+Sort orders are *recently watched* (default), *newest*, *alphabetical* and
+*longest first*.
+
+Every filter and the sort live in the address bar, so a reload, a bookmark or a
+link you send yourself all reproduce the same shelf. Defaults are left out of
+the URL — `/browse` and `/browse?status=all` are the same page. **Clear
+filters** resets the narrowing without touching the sort order.
 
 **Search** covers courses **and** individual lessons in one query, grouping the
 results and showing a snippet, a thumbnail and the parent course for each hit.
 On desktop it is also available as a command palette without leaving the page.
-
-> Filtering by library, duration bucket or instructor — and sorting by duration —
-> is designed but **not yet built**. See [known limits](#known-limits-in-this-release).
 
 ### Course detail
 
@@ -404,7 +415,11 @@ The archive contains the database only — your media files are not copied,
 because CourseShelf never owned them in the first place. Back those up the way
 you already back up the rest of that disk.
 
-> This exists as an API endpoint. There is no button for it in the admin UI yet.
+**Admin → Backups** is the button for it. One click runs the dump; the page
+shows that it is running, then the archive's size, when it was taken, and a
+download link with the time it stops working. If `pg_dump` is missing or its
+version does not match the server, the screen shows what the server said —
+that message names the exact mismatch, which is usually the whole fix.
 
 ---
 
@@ -414,8 +429,6 @@ Stated plainly, because finding these by surprise is worse.
 
 | Limit | Detail |
 | --- | --- |
-| **Browse filters incomplete** | Library, duration-bucket and instructor filters, and sort-by-duration, are designed but not implemented on web. |
-| **Backups have no UI** | API only. |
 | **Web ships 2 locales** | English and Russian. Mobile ships four (en, ru, uk, el). |
 | **Greek and Ukrainian are machine-written** | Not yet reviewed by a native speaker. |
 | **Storage bar on mobile** | The free/used disk figures use a native plugin that has not been verified on a real device. |

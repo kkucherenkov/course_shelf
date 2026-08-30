@@ -11,7 +11,7 @@ denominator below.
 Progress (update by hand):
 
 - **v1** — `119 / 119` complete. 121 cards, 2 cancelled.
-- **v2** — `9 / 36` complete. 36 cards across E25–E31.
+- **v2** — `11 / 36` complete. 36 cards across E25–E31.
 
 v1 is the shipped product; v2 is the transcript-first direction and the
 honest-v1.1 cleanup. The two denominators are kept apart on purpose — merging
@@ -259,8 +259,8 @@ them would quietly reopen a milestone that is finished.
 
 ## E31 — Honest v1.1
 
-- [ ] [E31-F01-S01](./tasks/E31-F01-S01.md) `A` — Finish the browse filters · ⇐ E14-F01-S02
-- [ ] [E31-F01-S02](./tasks/E31-F01-S02.md) `A` — Backups UI · ⇐ E21-F01-S02
+- [x] [E31-F01-S01](./tasks/E31-F01-S01.md) `A` — Finish the browse filters · ⇐ E14-F01-S02
+- [x] [E31-F01-S02](./tasks/E31-F01-S02.md) `A` — Backups UI · ⇐ E21-F01-S02
 - [x] [E31-F01-S03](./tasks/E31-F01-S03.md) `A` — Fix the duplicated offline bookmark · ⇐ E20-F01-S01
 - [x] [E31-F02-S01](./tasks/E31-F02-S01.md) `A` — Remove the SSO promise · ⇐ E14-F02-S01
 - [x] [E31-F02-S02](./tasks/E31-F02-S02.md) `A` — Remove the non-functional Settings controls · ⇐ E14-F02-S02

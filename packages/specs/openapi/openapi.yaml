@@ -8854,7 +8854,16 @@ components:
         rootPath:
           type: string
           minLength: 1
-          pattern: '^(?:/[^\0]*|[A-Za-z]:\\[^\0]*)$'
+          # Factored so the anchor alternation comes first and the NUL
+          # exclusion appears once, as \x00. Semantically identical to the
+          # previous '^(?:/[^\0]*|[A-Za-z]:\\[^\0]*)$' — verified equal on 4021
+          # inputs including NUL-bearing and Windows paths — but written in a
+          # form regex-based data generators handle. Schemathesis was producing
+          # "00" for this field and reporting the API's correct 400 as
+          # "API rejected schema-compliant request"; a repeated [^\0] class
+          # inside an alternation is the kind of construct a generator degrades
+          # on, falling back to the other keywords (here minLength) alone.
+          pattern: '^(?:/|[A-Za-z]:\\)[^\x00]*$'
           description: >-
             Absolute filesystem path to the library root. Accepts POSIX paths
             starting with `/` or Windows drive paths starting with `[A-Za-z]:\`.

@@ -8,12 +8,14 @@ import { ListCoursesHandler } from './list-courses.handler';
 import type { CourseRepository } from '../../domain/course/course.repository';
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
 import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
+import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 const NOW = new Date('2026-01-01T00:00:00.000Z');
+const HOUR = 3600;
 
 function makeRepo(): CourseRepository {
   return {
@@ -43,6 +45,28 @@ function makeProgressRepo(rows: CourseProgressReadModel[] = []): CourseProgressR
     deleteAll: vi.fn(),
     findCompletedByUser: vi.fn(),
     deleteByUserAndCourse: vi.fn(),
+  };
+}
+
+/**
+ * `durations` maps courseId → total runtime in seconds. Courses absent from the
+ * map are absent from the groupBy result too, which is how the real adapter
+ * reports "no lessons".
+ */
+function makeLessonRepo(durations: Record<string, number> = {}): LessonRepository {
+  return {
+    save: vi.fn(),
+    findById: vi.fn(),
+    findByCourse: vi.fn(),
+    findBySection: vi.fn(),
+    getLessonStatsByCourseIds: vi.fn().mockImplementation((courseIds: string[]) => {
+      const map = new Map<string, { lessonCount: number; totalDurationSeconds: number }>();
+      for (const id of courseIds) {
+        const seconds = durations[id];
+        if (seconds !== undefined) map.set(id, { lessonCount: 1, totalDurationSeconds: seconds });
+      }
+      return Promise.resolve(map);
+    }),
   };
 }
 
@@ -95,7 +119,12 @@ function buildStatusHandler(progressRows: CourseProgressReadModel[]): ListCourse
     makeCourse({ id: 'c-mid', slug: 'in-progress' }),
     makeCourse({ id: 'c-done', slug: 'completed' }),
   ]);
-  return new ListCoursesHandler(r, makeAuthz(true), makeProgressRepo(progressRows));
+  return new ListCoursesHandler(
+    r,
+    makeAuthz(true),
+    makeProgressRepo(progressRows),
+    makeLessonRepo(),
+  );
 }
 
 function makeCourseWithDates(
@@ -118,10 +147,42 @@ function makeCourseWithDates(
   return c;
 }
 
-function buildSortHandler(courses: Course[]): ListCoursesHandler {
+function buildSortHandler(
+  courses: Course[],
+  durations: Record<string, number> = {},
+): ListCoursesHandler {
   const r = makeRepo();
   vi.mocked(r.findAll).mockResolvedValue(courses);
-  return new ListCoursesHandler(r, makeAuthz(true), makeProgressRepo());
+  return new ListCoursesHandler(r, makeAuthz(true), makeProgressRepo(), makeLessonRepo(durations));
+}
+
+/**
+ * One course per duration bucket, plus a boundary course at exactly 5h that
+ * must land in `5to10` rather than `lt5`.
+ */
+function buildBucketHandler(): ListCoursesHandler {
+  return buildSortHandler(
+    [
+      makeCourseWithDates('tiny', 'Tiny', 0, 0),
+      makeCourseWithDates('five', 'Five', 0, 0),
+      makeCourseWithDates('fifteen', 'Fifteen', 0, 0),
+      makeCourseWithDates('epic', 'Epic', 0, 0),
+    ],
+    { tiny: 2 * HOUR, five: 5 * HOUR, fifteen: 15 * HOUR, epic: 25 * HOUR },
+  );
+}
+
+/** Two courses with different instructors, plus one with none credited. */
+function buildInstructorHandler(): ListCoursesHandler {
+  const withRef = makeCourse({ id: 'c-with', slug: 'with' });
+  withRef.setInstructors([{ id: 'i-1', slug: 'ada', displayName: 'Ada' }]);
+  const other = makeCourse({ id: 'c-other', slug: 'other' });
+  other.setInstructors([{ id: 'i-2', slug: 'grace', displayName: 'Grace' }]);
+  const none = makeCourse({ id: 'c-none', slug: 'none' });
+
+  const r = makeRepo();
+  vi.mocked(r.findAll).mockResolvedValue([withRef, other, none]);
+  return new ListCoursesHandler(r, makeAuthz(true), makeProgressRepo(), makeLessonRepo());
 }
 
 // ---------------------------------------------------------------------------
@@ -136,7 +197,7 @@ describe('ListCoursesHandler', () => {
     beforeEach(() => {
       repo = makeRepo();
       const authz = makeAuthz(true);
-      handler = new ListCoursesHandler(repo, authz, makeProgressRepo());
+      handler = new ListCoursesHandler(repo, authz, makeProgressRepo(), makeLessonRepo());
     });
 
     it('returns empty array when no courses', async () => {
@@ -178,7 +239,7 @@ describe('ListCoursesHandler', () => {
       const progressRow = makeProgressRow('c1');
       const progressRepo = makeProgressRepo([progressRow]);
       const authz = makeAuthz(true);
-      handler = new ListCoursesHandler(repo, authz, progressRepo);
+      handler = new ListCoursesHandler(repo, authz, progressRepo, makeLessonRepo());
 
       const result = await handler.execute(new ListCoursesQuery(adminActor));
 
@@ -194,7 +255,7 @@ describe('ListCoursesHandler', () => {
 
       const progressRepo = makeProgressRepo([]); // no rows
       const authz = makeAuthz(true);
-      handler = new ListCoursesHandler(repo, authz, progressRepo);
+      handler = new ListCoursesHandler(repo, authz, progressRepo, makeLessonRepo());
 
       const result = await handler.execute(new ListCoursesQuery(adminActor));
 
@@ -208,7 +269,7 @@ describe('ListCoursesHandler', () => {
 
       const progressRepo = makeProgressRepo([]);
       const authz = makeAuthz(true);
-      handler = new ListCoursesHandler(repo, authz, progressRepo);
+      handler = new ListCoursesHandler(repo, authz, progressRepo, makeLessonRepo());
 
       await handler.execute(new ListCoursesQuery(adminActor));
 
@@ -229,7 +290,7 @@ describe('ListCoursesHandler', () => {
         invalidate: vi.fn(),
         listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
       };
-      handler = new ListCoursesHandler(repo, authz, makeProgressRepo());
+      handler = new ListCoursesHandler(repo, authz, makeProgressRepo(), makeLessonRepo());
 
       const result = await handler.execute(new ListCoursesQuery(userActor));
 
@@ -242,7 +303,7 @@ describe('ListCoursesHandler', () => {
     beforeEach(() => {
       repo = makeRepo();
       const authz = makeAuthz(false);
-      handler = new ListCoursesHandler(repo, authz, makeProgressRepo());
+      handler = new ListCoursesHandler(repo, authz, makeProgressRepo(), makeLessonRepo());
     });
 
     it('returns empty array even when courses exist', async () => {
@@ -255,7 +316,7 @@ describe('ListCoursesHandler', () => {
 
     it('calls canSee for each course', async () => {
       const authz = makeAuthz(false);
-      handler = new ListCoursesHandler(repo, authz, makeProgressRepo());
+      handler = new ListCoursesHandler(repo, authz, makeProgressRepo(), makeLessonRepo());
       vi.mocked(repo.findAll).mockResolvedValue([
         makeCourse({ id: 'c1' }),
         makeCourse({ id: 'c2', slug: 'other' }),
@@ -340,6 +401,107 @@ describe('ListCoursesHandler', () => {
         new ListCoursesQuery(adminActor, undefined, 'all', 'alphabetical'),
       );
       expect(result.map((d) => d.title)).toEqual(['Apples', 'Bananas', 'Cherries']);
+    });
+
+    it('duration sorts by total runtime desc', async () => {
+      const h = buildSortHandler(
+        [
+          makeCourseWithDates('short', 'Short', 0, 0),
+          makeCourseWithDates('long', 'Long', 0, 0),
+          makeCourseWithDates('mid', 'Mid', 0, 0),
+        ],
+        { short: 1 * HOUR, long: 30 * HOUR, mid: 12 * HOUR },
+      );
+      const result = await h.execute(
+        new ListCoursesQuery(adminActor, undefined, 'all', 'duration'),
+      );
+      expect(result.map((d) => d.id)).toEqual(['long', 'mid', 'short']);
+    });
+
+    it('duration treats a course with no lessons as zero seconds', async () => {
+      const h = buildSortHandler(
+        [makeCourseWithDates('empty', 'Empty', 0, 0), makeCourseWithDates('some', 'Some', 0, 0)],
+        { some: 1 * HOUR },
+      );
+      const result = await h.execute(
+        new ListCoursesQuery(adminActor, undefined, 'all', 'duration'),
+      );
+      expect(result.map((d) => d.id)).toEqual(['some', 'empty']);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Duration bucket + instructor filters (E31-F01-S01)
+  // ---------------------------------------------------------------------------
+
+  describe('durationBucket filter', () => {
+    it('returns everything when durationBucket=all', async () => {
+      const result = await buildBucketHandler().execute(
+        new ListCoursesQuery(adminActor, undefined, 'all', 'alphabetical', 'all'),
+      );
+      expect(result).toHaveLength(4);
+    });
+
+    it('lt5 keeps courses under 5 hours', async () => {
+      const result = await buildBucketHandler().execute(
+        new ListCoursesQuery(adminActor, undefined, 'all', 'alphabetical', 'lt5'),
+      );
+      expect(result.map((d) => d.id)).toEqual(['tiny']);
+    });
+
+    it('5to10 is lower-inclusive — a course of exactly 5h is not in lt5', async () => {
+      const result = await buildBucketHandler().execute(
+        new ListCoursesQuery(adminActor, undefined, 'all', 'alphabetical', '5to10'),
+      );
+      expect(result.map((d) => d.id)).toEqual(['five']);
+    });
+
+    it('10to20 keeps courses in the 10–20h band', async () => {
+      const result = await buildBucketHandler().execute(
+        new ListCoursesQuery(adminActor, undefined, 'all', 'alphabetical', '10to20'),
+      );
+      expect(result.map((d) => d.id)).toEqual(['fifteen']);
+    });
+
+    it('gt20 has no upper bound', async () => {
+      const result = await buildBucketHandler().execute(
+        new ListCoursesQuery(adminActor, undefined, 'all', 'alphabetical', 'gt20'),
+      );
+      expect(result.map((d) => d.id)).toEqual(['epic']);
+    });
+
+    it('does not query lesson stats when no duration filter or sort is asked for', async () => {
+      const r = makeRepo();
+      vi.mocked(r.findAll).mockResolvedValue([makeCourse({ id: 'c1' })]);
+      const lessonRepo = makeLessonRepo({ c1: 1 * HOUR });
+      const h = new ListCoursesHandler(r, makeAuthz(true), makeProgressRepo(), lessonRepo);
+
+      await h.execute(new ListCoursesQuery(adminActor));
+
+      expect(lessonRepo.getLessonStatsByCourseIds).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('instructorId filter', () => {
+    it('keeps only courses linked to that instructor', async () => {
+      const result = await buildInstructorHandler().execute(
+        new ListCoursesQuery(adminActor, undefined, 'all', 'alphabetical', 'all', 'i-1'),
+      );
+      expect(result.map((d) => d.id)).toEqual(['c-with']);
+    });
+
+    it('returns an empty list for an instructor nobody is linked to', async () => {
+      const result = await buildInstructorHandler().execute(
+        new ListCoursesQuery(adminActor, undefined, 'all', 'alphabetical', 'all', 'nope'),
+      );
+      expect(result).toEqual([]);
+    });
+
+    it('ignores an empty instructorId', async () => {
+      const result = await buildInstructorHandler().execute(
+        new ListCoursesQuery(adminActor, undefined, 'all', 'alphabetical', 'all', ''),
+      );
+      expect(result).toHaveLength(3);
     });
   });
 });

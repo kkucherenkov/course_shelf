@@ -44,6 +44,56 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - Follow-ups opened: AsyncAPI variants for the transcription messages on
     `scans:user:{userId}`, and `GET /api/v1/admin/transcriptions`.
 
+## T-2026-08-30-009 — E31-F01-S01 finish the browse filters
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude (lane v1.1 web, worktree `agent-aa63298f92fa237a6`)
+- Branch: `kkucherenkov/e31-close-the-real-gaps`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/303
+- Cards: [E31-F01-S01](../../docs/roadmap/tasks/E31-F01-S01.md) · GH #239
+- Goal: library / duration-bucket / instructor filters and sort-by-duration on
+  `/browse`, with the whole filter set surviving a reload through the query
+  string. Removes the "Browse filters incomplete" row from the Known limits.
+- Spec diff: openapi.yaml — `GET /api/v1/courses` gained `durationBucket` and
+  `instructorId` query params, and `sort` gained `duration`. The card said the
+  diff was conditional; the audit made it mandatory. `libraryId`, `status` and a
+  three-value `sort` already existed. The other three did not, and `CourseDto`
+  carries no runtime at all, so a client-side filter over the full list was not
+  possible even in principle.
+- Codegen impact: yes — regenerated TS + Dart clients in their own commit.
+- Sub-steps:
+  - [x] audit which filter parameters the API already accepts
+  - [x] openapi.yaml: `durationBucket`, `instructorId`, `sort=duration`
+  - [x] `pnpm spec:validate && spec:bundle && spec:codegen` (own commit)
+  - [x] backend: ListCoursesQuery/Handler filter + sort by aggregated lesson duration
+  - [x] web: library / duration / instructor selects + duration sort on `/browse`
+  - [x] web: query-string persistence for every filter
+  - [x] locale keys in en + ru
+  - [x] remove the Known-limits row
+- Status: done
+
+## T-2026-08-30-010 — E31-F01-S02 backups UI
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude (lane v1.1 web, worktree `agent-aa63298f92fa237a6`)
+- Branch: `kkucherenkov/e31-close-the-real-gaps`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/303
+- Cards: [E31-F01-S02](../../docs/roadmap/tasks/E31-F01-S02.md) · GH #240
+- Goal: an admin screen that takes a metadata backup and offers the existing
+  signed short-lived download link, with the in-progress and failure states
+  visible. Removes the "Backups have no UI" row from the Known limits.
+- Spec diff: none — `POST /api/v1/admin/backups` and the signed download route
+  have existed since E21.
+- Codegen impact: no
+- Sub-steps:
+  - [x] `useAdminBackup` composable over `createBackup`
+  - [x] `/admin/backups` page + nav entry + spec covering the three states
+  - [x] locale keys in en + ru
+  - [x] remove the Known-limits row
+- Status: done
+
 ## T-2026-08-30-010 — settle the locale parity claim + the mobile storage bar
 
 - Created: 2026-08-30

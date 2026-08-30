@@ -222,8 +222,8 @@ gantt
     Scraper inventory in the admin UI                            :active, e30f01s02, after e30f01s01, 1d
 
     section E31 Honest v1.1
-    Finish the browse filters                                    :active, e31f01s01, after e14f01s02, 2d
-    Backups UI                                                   :active, e31f01s02, after e21f01s02, 1d
+    Finish the browse filters                                    :done, e31f01s01, after e14f01s02, 2d
+    Backups UI                                                   :done, e31f01s02, after e21f01s02, 1d
     Fix the duplicated offline bookmark                          :done, e31f01s03, after e20f01s01, 2d
     Remove the SSO promise                                       :done, e31f02s01, after e14f02s01, 1d
     Remove the non-functional Settings controls                  :done, e31f02s02, after e14f02s02, 1d

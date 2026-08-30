@@ -546,11 +546,11 @@ This endpoint does not need any parameter.
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **listCourses**
-> CourseListDto listCourses(libraryId, status, sort)
+> CourseListDto listCourses(libraryId, status, durationBucket, instructorId, sort)
 
 List courses (with filtering and sort)
 
-Returns courses the requester can see. Non-admins see only courses inside libraries they have a READ AccessGrant for; admins see all.  The `status` and `sort` query params back the Browse page (E14-F01-S02). `status` filters by per-user progress derived from the CourseProgressReadModel projection. `sort` is server-applied so the SPA never needs to re-sort the response. 
+Returns courses the requester can see. Non-admins see only courses inside libraries they have a READ AccessGrant for; admins see all.  The `status` and `sort` query params back the Browse page (E14-F01-S02); `durationBucket` and `instructorId`, and the `duration` sort, complete that filter set (E31-F01-S01). `status` filters by per-user progress derived from the CourseProgressReadModel projection. Every filter and the sort are server-applied so the SPA never needs to re-filter or re-sort the response. 
 
 ### Example
 ```dart
@@ -559,10 +559,12 @@ import 'package:app_api_client/api.dart';
 final api = AppApiClient().getCatalogApi();
 final String libraryId = libraryId_example; // String | Filter to a single library; omit for everything visible.
 final String status = status_example; // String | Filter by per-user progress state.   - `all` (default) — no filter.   - `not-started` — `progress.percent == 0` and no `lessonsCompleted`.   - `in-progress` — `0 < progress.percent < 100`.   - `completed`   — `progress.percent == 100`. 
-final String sort = sort_example; // String | Server-side sort. `recently-watched` (default) uses `updatedAt` as a proxy for last activity until a dedicated `lastViewedAt` field is added. `newest` is `createdAt` desc. `alphabetical` is title asc, locale-insensitive. 
+final String durationBucket = durationBucket_example; // String | Filter by total course runtime — the sum of every lesson's duration, with lessons of unknown duration counted as zero.   - `all` (default) — no filter.   - `lt5`     — under 5 hours.   - `5to10`   — 5 hours up to (not including) 10.   - `10to20`  — 10 hours up to (not including) 20.   - `gt20`    — 20 hours and over. 
+final String instructorId = instructorId_example; // String | Filter to courses linked to this instructor. An id that matches no instructor yields an empty list rather than an error.
+final String sort = sort_example; // String | Server-side sort. `recently-watched` (default) uses `updatedAt` as a proxy for last activity until a dedicated `lastViewedAt` field is added. `newest` is `createdAt` desc. `alphabetical` is title asc, locale-insensitive. `duration` is total runtime desc, using the same sum as `durationBucket`. 
 
 try {
-    final response = api.listCourses(libraryId, status, sort);
+    final response = api.listCourses(libraryId, status, durationBucket, instructorId, sort);
     print(response);
 } on DioException catch (e) {
     print('Exception when calling CatalogApi->listCourses: $e\n');
@@ -575,7 +577,9 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **libraryId** | **String**| Filter to a single library; omit for everything visible. | [optional] 
  **status** | **String**| Filter by per-user progress state.   - `all` (default) — no filter.   - `not-started` — `progress.percent == 0` and no `lessonsCompleted`.   - `in-progress` — `0 < progress.percent < 100`.   - `completed`   — `progress.percent == 100`.  | [optional] [default to 'all']
- **sort** | **String**| Server-side sort. `recently-watched` (default) uses `updatedAt` as a proxy for last activity until a dedicated `lastViewedAt` field is added. `newest` is `createdAt` desc. `alphabetical` is title asc, locale-insensitive.  | [optional] [default to 'recently-watched']
+ **durationBucket** | **String**| Filter by total course runtime — the sum of every lesson's duration, with lessons of unknown duration counted as zero.   - `all` (default) — no filter.   - `lt5`     — under 5 hours.   - `5to10`   — 5 hours up to (not including) 10.   - `10to20`  — 10 hours up to (not including) 20.   - `gt20`    — 20 hours and over.  | [optional] [default to 'all']
+ **instructorId** | **String**| Filter to courses linked to this instructor. An id that matches no instructor yields an empty list rather than an error. | [optional] 
+ **sort** | **String**| Server-side sort. `recently-watched` (default) uses `updatedAt` as a proxy for last activity until a dedicated `lastViewedAt` field is added. `newest` is `createdAt` desc. `alphabetical` is title asc, locale-insensitive. `duration` is total runtime desc, using the same sum as `durationBucket`.  | [optional] [default to 'recently-watched']
 
 ### Return type
 

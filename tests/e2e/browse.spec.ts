@@ -32,6 +32,61 @@ async function mockAuthenticated(page: Page): Promise<void> {
       }),
     }),
   );
+
+  // Sidecar lists behind the library and instructor filters (E31-F01-S01).
+  await page.route('**/api/v1/libraries', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [
+          {
+            id: 'lib-1',
+            name: 'Backend',
+            rootPath: '/srv/backend',
+            createdAt: '2026-01-01T00:00:00Z',
+            updatedAt: '2026-01-01T00:00:00Z',
+          },
+        ],
+      }),
+    }),
+  );
+
+  await page.route('**/api/v1/catalog/instructors**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [
+          {
+            id: 'i-1',
+            slug: 'ada',
+            displayName: 'Ada Lovelace',
+            externalIds: [],
+            coursesTotal: 2,
+            createdAt: '2026-01-01T00:00:00Z',
+            updatedAt: '2026-01-01T00:00:00Z',
+          },
+        ],
+        total: 1,
+        offset: 0,
+        limit: 100,
+      }),
+    }),
+  );
+}
+
+/** Fulfil every shape of the course-list call and record the URLs requested. */
+async function mockCourses(page: Page, body: unknown, seen: string[] = []): Promise<string[]> {
+  await page.route('**/api/v1/courses**', (route) => {
+    seen.push(route.request().url());
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(body),
+    });
+  });
+  return seen;
 }
 
 const SAMPLE_COURSES = {
@@ -123,4 +178,43 @@ test('browse page renders empty state when no courses', async ({ page }) => {
   });
   await expect(page.locator('.app-empty-state')).toBeVisible();
   await expect(page.getByText('No courses yet')).toBeVisible();
+});
+
+test('a chosen filter reaches the server and lands in the URL', async ({ page }) => {
+  await mockAuthenticated(page);
+  const seen = await mockCourses(page, SAMPLE_COURSES);
+
+  await page.goto('/browse');
+  await expect(page.locator('[data-testid="page-browse"]')).toBeVisible({ timeout: 10_000 });
+
+  await page.locator('[data-testid="browse-filter-duration"]').selectOption('gt20');
+
+  await expect(page).toHaveURL(/duration=gt20/);
+  await expect.poll(() => seen.some((url) => url.includes('durationBucket=gt20'))).toBe(true);
+});
+
+test('filters survive a reload through the query string', async ({ page }) => {
+  await mockAuthenticated(page);
+  const seen = await mockCourses(page, SAMPLE_COURSES);
+
+  // A cold load of a filtered URL — the bookmark / shared-link case.
+  await page.goto('/browse?status=completed&duration=lt5&sort=duration&library=lib-1');
+  await expect(page.locator('[data-testid="page-browse"]')).toBeVisible({ timeout: 10_000 });
+
+  await expect
+    .poll(() =>
+      seen.some(
+        (url) =>
+          url.includes('status=completed') &&
+          url.includes('durationBucket=lt5') &&
+          url.includes('sort=duration') &&
+          url.includes('libraryId=lib-1'),
+      ),
+    )
+    .toBe(true);
+
+  // The controls reflect the URL rather than their defaults.
+  await expect(page.locator('[data-testid="browse-filter-duration"]')).toHaveValue('lt5');
+  await expect(page.locator('[data-testid="browse-sort"]')).toHaveValue('duration');
+  await expect(page.locator('[data-testid="browse-filter-library"]')).toHaveValue('lib-1');
 });

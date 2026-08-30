@@ -1,10 +1,36 @@
+# whisper.cpp, built from a pinned tag. Kept in the same shape as the
+# production image (apps/backend/Dockerfile stage W) so dev and prod run the
+# same binary. It caches independently of the app, so the ~2-minute compile is
+# paid once per pin, not once per code change.
+FROM node:24-alpine AS whisper
+
+ARG WHISPER_CPP_VERSION=v1.9.3
+
+RUN apk add --no-cache build-base cmake git \
+    && git clone --depth 1 --branch "${WHISPER_CPP_VERSION}" \
+        https://github.com/ggml-org/whisper.cpp /usr/src/whisper.cpp \
+    && cmake -S /usr/src/whisper.cpp -B /usr/src/whisper.cpp/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DWHISPER_BUILD_TESTS=OFF \
+        -DWHISPER_BUILD_SERVER=OFF \
+    && cmake --build /usr/src/whisper.cpp/build --config Release \
+        -j "$(nproc)" --target whisper-cli
+
 FROM node:24-alpine
 
 # `ffmpeg` ships both `ffmpeg` and `ffprobe` binaries — the catalog scanner
 # uses ffprobe to read video duration / codecs. Without it, every .mp4 in a
 # library scan fails with `ffmpeg-probe-failed: spawn ffprobe ENOENT` and
 # the corresponding course/lesson rows are never created.
-RUN apk add --no-cache openssl libc6-compat ffmpeg && corepack enable
+#
+# `libgomp` is whisper-cli's only extra runtime dependency (it is built with
+# OpenMP); without it the binary fails to start rather than failing to build.
+RUN apk add --no-cache openssl libc6-compat ffmpeg libgomp && corepack enable
+
+# Same binary as production. WHISPER_PATH defaults to the bare name, so PATH
+# resolution is all that is needed.
+COPY --from=whisper /usr/src/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
 
 WORKDIR /workspace
 

@@ -572,6 +572,22 @@
       color: var(--media-fg-faint);
       font-family: var(--font-mono);
       font-size: var(--text-xs);
+
+      // Media handed to the `frame` slot letterboxes inside the 16:9 stage.
+      // Sized here rather than by each caller: without an explicit box a
+      // non-16:9 `<video>` keeps its intrinsic ratio (a 320×240 source measured
+      // 768×576 inside a 768×432 frame), which crops the picture and pushes the
+      // native subtitle line outside the frame. Absolute rather than
+      // `height: 100%` — a percentage height against a centred grid item is not
+      // a definite length, which is how the overflow got in.
+      ::v-slotted(video),
+      ::v-slotted(img) {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
     }
 
     &__overlay {

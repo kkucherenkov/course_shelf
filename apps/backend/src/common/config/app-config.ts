@@ -116,6 +116,21 @@ export interface BackupsConfig {
   readonly retentionHours: number;
 }
 
+export interface TranscriptionConfig {
+  /** whisper.cpp CLI binary. Default: 'whisper-cli' (resolved via PATH). */
+  readonly whisperPath: string;
+  /** Absolute path to a ggml model file. Empty = transcription unavailable. */
+  readonly modelPath: string;
+  /** Wall-clock timeout for one whisper invocation, in milliseconds. */
+  readonly timeoutMs: number;
+  /** `-t` passed to whisper.cpp. The one dial that matters on a NAS. */
+  readonly threads: number;
+  /** `-l` passed to whisper.cpp. 'auto' lets whisper detect the language. */
+  readonly language: string;
+  /** False when no model path is set — the run endpoint fails fast on this. */
+  readonly configured: boolean;
+}
+
 export type ProviderMode = 'mock' | 'real';
 
 export interface ScrapersConfig {
@@ -237,6 +252,37 @@ export class AppConfig {
    */
   get ffmpegPath(): string {
     return this.stringOrDefault('FFMPEG_PATH', 'ffmpeg');
+  }
+
+  /**
+   * Root for artefacts CourseShelf generates from the media it reads:
+   * whisper transcripts and, later, scan thumbnails. Deliberately separate
+   * from COURSES_PATH, which is mounted read-only in prod and release.
+   * Default: '/data/derived'. Env: DERIVED_PATH.
+   */
+  get derivedPath(): string {
+    return this.stringOrDefault('DERIVED_PATH', '/data/derived');
+  }
+
+  /**
+   * whisper.cpp settings. `configured` stays false until a model file is
+   * named — the binary alone cannot transcribe anything, and starting a run
+   * that can only fail is worse than refusing it.
+   * Env: WHISPER_PATH, WHISPER_MODEL_PATH, WHISPER_TIMEOUT_MS,
+   *      WHISPER_THREADS, WHISPER_LANGUAGE.
+   */
+  get transcription(): TranscriptionConfig {
+    const modelPath = this.stringOrDefault('WHISPER_MODEL_PATH', '');
+    return {
+      whisperPath: this.stringOrDefault('WHISPER_PATH', 'whisper-cli'),
+      modelPath,
+      // Six hours. A long lesson on NAS-grade CPU is measured in hours, not
+      // in the 30s that is right for ffprobe.
+      timeoutMs: this.numberOrDefault('WHISPER_TIMEOUT_MS', 21_600_000),
+      threads: this.numberOrDefault('WHISPER_THREADS', 4),
+      language: this.stringOrDefault('WHISPER_LANGUAGE', 'auto'),
+      configured: modelPath !== '',
+    };
   }
 
   /**

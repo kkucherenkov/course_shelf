@@ -181,10 +181,10 @@ gantt
     AsyncAPI Centrifugo channels + POST /api/v1/realtime/token   :done, e24f01s01, after e04f02s03, 2d
 
     section E25 Transcription (Whisper)
-    Derived-artifact volume, whisper config, and the binary in t :active, e25f01s01, after e01f02s01, 1d
-    Derived path resolution with its own traversal guard         :active, e25f01s02, after e25f01s01, 1d
+    Derived-artifact volume, whisper config, and the binary in t :done, e25f01s01, after e01f02s01, 1d
+    Derived path resolution with its own traversal guard         :done, e25f01s02, after e25f01s01, 1d
     ffmpeg audio extraction for whisper                          :done, e25f01s03, after e06f02s02, 1d
-    whisper.cpp adapter behind a port                            :active, e25f01s04, after e25f01s01, 1d
+    whisper.cpp adapter behind a port                            :done, e25f01s04, after e25f01s01, 1d
     Transcript and transcription schema                          :done, e25f02s01, after e06f03s02, 1d
     Transcription aggregate                                      :done, e25f02s02, after e25f02s01, 1d
     The skip rule                                                :done, e25f02s03, after e25f02s01, 1d
@@ -197,9 +197,9 @@ gantt
 
     section E26 Transcript panel (web)
     Render the subtitle tracks in the web player                 :done, e26f01s01, after e08f02s02 e14f03s01, 1d
-    useTranscriptCues composable                                 :active, e26f01s02, after e26f01s01, 1d
+    useTranscriptCues composable                                 :done, e26f01s02, after e26f01s01, 1d
     Transcript tab in the player sidebar                         :active, e26f01s03, after e26f01s02, 2d
-    `?t=` deep links into a lesson                               :active, e26f01s04, after e26f01s01, 1d
+    `?t=` deep links into a lesson                               :done, e26f01s04, after e26f01s01, 1d
 
     section E27 Transcript storage and search
     Parse existing subtitle sidecars into cues                   :active, e27f01s01, after e25f02s01 e25f03s02, 2d

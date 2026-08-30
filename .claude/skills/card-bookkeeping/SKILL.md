@@ -56,6 +56,20 @@ record. The only safe invocation regenerates the Gantt chart:
 python3 docs/roadmap/tools/generate.py --roadmap-only
 ```
 
+### The progress counter is not a mergeable quantity
+
+Two lanes that each bump `12 / 36` to `14 / 36` produce no conflict — both
+sides wrote the same text — and the merge silently loses two cards. Git cannot
+help here, so after **every** merge that touches `TODO.md`, recount instead of
+trusting the arithmetic:
+
+```sh
+grep -cE '^- \[x\] \[E(2[5-9]|3[01])-' docs/roadmap/TODO.md   # v2 epics E25-E31
+```
+
+Set the counter to what that prints. Do the same for v1 with its own epic
+range.
+
 Reconcile in the same pass: confirm every story issue for that card is closed,
 and once **every** card under an epic is Done, close the epic's umbrella issue
 too.

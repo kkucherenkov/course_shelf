@@ -162,6 +162,28 @@ docker compose -f docker/compose.yml logs -f backend --tail=50    # follow until
 
 Containers mount the repository as a volume, so subsequent edits reach the running container without a rebuild. **Do not** run `pnpm dev` alongside `docker compose up` — they share the same host ports.
 
+The backend also binds two directories for generated content: `DERIVED_PATH`
+(default `<repo>/derived`, writable — whisper transcripts and, later, scan
+thumbnails) and `WHISPER_MODEL_DIR` (default `<repo>/models`, read-only). Both
+are gitignored and created on first `up`.
+
+### 2b — Transcription (optional)
+
+The backend image ships a pinned `whisper-cli`, but transcription stays off
+until you supply a ggml model — the model is deliberately not baked into the
+image:
+
+```sh
+mkdir -p models
+curl -L -o models/ggml-base.bin \
+  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+WHISPER_MODEL_PATH=/models/ggml-base.bin docker compose -f docker/compose.yml up -d backend
+```
+
+`WHISPER_THREADS` (4), `WHISPER_LANGUAGE` (`auto`) and `WHISPER_TIMEOUT_MS`
+(six hours) tune the run — see [`docker/README.md`](docker/README.md) and
+[`.env.example`](.env.example).
+
 ### 3 — Verify
 
 ```sh

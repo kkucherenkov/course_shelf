@@ -162,6 +162,28 @@ docker compose -f docker/compose.yml logs -f backend --tail=50    # ждём "Ba
 
 Контейнеры монтируют репозиторий как volume, так что последующие правки попадают внутрь без пересборки. **Не запускайте** `pnpm dev` параллельно с `docker compose up` — они конкурируют за одни и те же порты.
 
+Бэкенд дополнительно монтирует два каталога для генерируемого контента:
+`DERIVED_PATH` (по умолчанию `<repo>/derived`, на запись — транскрипты whisper
+и, позже, превью из сканирования) и `WHISPER_MODEL_DIR` (по умолчанию
+`<repo>/models`, только на чтение). Оба в `.gitignore` и создаются при первом
+`up`.
+
+### 2b — Транскрипция (опционально)
+
+Образ бэкенда несёт зафиксированный по версии `whisper-cli`, но транскрипция
+выключена, пока не указана ggml-модель — модель намеренно не вшита в образ:
+
+```sh
+mkdir -p models
+curl -L -o models/ggml-base.bin \
+  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+WHISPER_MODEL_PATH=/models/ggml-base.bin docker compose -f docker/compose.yml up -d backend
+```
+
+`WHISPER_THREADS` (4), `WHISPER_LANGUAGE` (`auto`) и `WHISPER_TIMEOUT_MS`
+(шесть часов) настраивают прогон — см. [`docker/README.md`](docker/README.md) и
+[`.env.example`](.env.example).
+
 ### 3 — Проверка
 
 ```sh

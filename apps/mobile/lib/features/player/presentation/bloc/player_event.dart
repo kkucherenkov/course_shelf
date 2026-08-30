@@ -104,6 +104,18 @@ class PlayerBookmarkAdded extends PlayerEvent {
   List<Object?> get props => <Object?>[position, label];
 }
 
+/// The sync engine finished a drain, so what the server holds for this lesson
+/// may have moved on from what is on screen.
+///
+/// Specifically: a bookmark added offline was created server-side under an id
+/// this bloc has never seen. `OutboxLessonPlayerRepository` reconciles the two
+/// on read, but only a read triggers it — before this event the corrected list
+/// arrived no earlier than the next `PlayerStarted`, which means reopening the
+/// lesson.
+class PlayerBookmarksRefreshed extends PlayerEvent {
+  const PlayerBookmarksRefreshed();
+}
+
 class PlayerBookmarkDeleted extends PlayerEvent {
   const PlayerBookmarkDeleted(this.bookmarkId);
 

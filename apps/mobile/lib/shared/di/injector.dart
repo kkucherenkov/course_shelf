@@ -216,6 +216,12 @@ void configureDependencies() {
         progressRecorder: getIt<LessonProgressRecorder>(),
         playback: VideoPlayerAdapter(),
         playbackPreferences: getIt<PlaybackPreferences>(),
+        // The return edge of the wire above: the player nudges a drain after
+        // each write, and a settled drain tells the player to re-read its
+        // bookmarks. Without it, a bookmark added offline keeps its local id on
+        // screen until the lesson is reopened, which is the duplicate
+        // E31-F01-S03 removed at the repository layer.
+        syncSettled: getIt<SyncBloc>().drained,
       ),
     )
     ..registerLazySingleton<DeviceStorage>(DiskSpaceDeviceStorage.new)

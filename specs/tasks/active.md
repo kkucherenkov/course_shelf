@@ -20,8 +20,8 @@
   - [x] #283: unit test
   - [x] #285: spec — idempotencyKey field + 200/201 semantics
   - [x] #285: spec:validate / bundle / codegen (own commit)
-  - [ ] #285: backend — dedupe by (lessonId, userId, idempotencyKey)
-  - [ ] #285: mobile — pass idempotencyKey from localId in `_drainBookmarks`
-  - [ ] gates: spec:validate, backend test, backend lint, typecheck, mobile test
-- Status: in-progress
+  - [x] #285: backend — dedupe by (lessonId, userId, idempotencyKey)
+  - [x] #285: mobile — pass idempotencyKey from localId in `_drainBookmarks`
+  - [x] gates: spec:validate, backend test, backend lint, typecheck, mobile test
+- Status: in-progress (PR open, awaiting review/merge)
 - Blockers: —

@@ -3278,10 +3278,12 @@ class DownloadedLesson extends DataClass
 
   /// Lesson and course names, denormalised from the catalog at enqueue time.
   ///
-  /// WHY they live here rather than in a join: there is no local catalog to
-  /// join against. `cached_lessons` / `cached_courses` exist but nothing
-  /// populates them (`CachedCatalogDao` has no callers), and the Downloads tab
-  /// is by definition an offline surface — it cannot fetch a title.
+  /// WHY they live here rather than in a join: at the time this table was
+  /// written, `cached_lessons` / `cached_courses` existed but nothing
+  /// populated them. `CourseDetailRepositoryImpl` now writes through to them
+  /// on outline fetch, but that cache is scoped to courses the user has
+  /// opened — the Downloads tab is by definition an offline surface and
+  /// cannot assume a join hit, so the denormalised copy stays regardless.
   ///
   /// Denormalising is also the more correct answer even once a cache exists: a
   /// download outlives the catalog entry it came from. A course unpublished on

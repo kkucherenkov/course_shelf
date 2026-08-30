@@ -10,12 +10,13 @@
   import { useProgressReporter } from '~/composables/useProgressReporter';
   import { useStreamUrl } from '~/composables/useStreamUrl';
   import { usePreferencesStore } from '~/stores/preferences';
+  import { buildSubtitleTracks } from '~/utils/subtitle-url';
 
   import PlayerSidebar from '~/components/lesson-player/PlayerSidebar.vue';
 
   definePageMeta({ layout: 'default' });
 
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const route = useRoute();
   const toast = useToast();
 
@@ -65,6 +66,15 @@
     errorStatus: streamErrorStatus,
     fetch: fetchStream,
   } = useStreamUrl();
+
+  // ── Subtitle tracks ──────────────────────────────────────────────────────────
+
+  // The subtitle route takes the same signed token as the video, so every
+  // `<track>` src is derived from the resolved stream URL. Unbuildable entries
+  // are dropped and at most one track is marked `default` — see the helper.
+  const subtitleTracks = computed(() =>
+    buildSubtitleTracks(streamUrl.value, lessonData.value?.subtitles, locale.value),
+  );
 
   // ── Player state ─────────────────────────────────────────────────────────────
 
@@ -385,7 +395,17 @@
                 preload="metadata"
                 playsinline
                 @loadedmetadata="onVideoLoadedMetadata"
-              />
+              >
+                <track
+                  v-for="track in subtitleTracks"
+                  :key="track.id"
+                  kind="subtitles"
+                  :src="track.src"
+                  :srclang="track.language"
+                  :label="track.label"
+                  :default="track.isDefault"
+                />
+              </video>
             </template>
           </AppPlayerChrome>
         </div>

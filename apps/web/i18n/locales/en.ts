@@ -196,11 +196,17 @@ export default {
       tabNotes: 'Notes',
       tabBookmarks: 'Bookmarks',
       tabMaterials: 'Materials',
+      tabTranscript: 'Transcript',
       bookmarksEmptyTitle: 'No bookmarks yet',
       bookmarksEmptyBody: 'Add a bookmark from the player to mark a moment for later.',
       materialsEmpty: 'No materials for this lesson.',
       sectionLabel: 'Section {n} · {title}',
       bookmarkAdd: '+ Bookmark current position',
+      transcript: {
+        empty: 'No transcript for this lesson.',
+        noMatch: 'No lines match your search.',
+        filterPlaceholder: 'Filter transcript',
+      },
       aria: {
         player: 'Lesson video player',
         buffering: 'Buffering',

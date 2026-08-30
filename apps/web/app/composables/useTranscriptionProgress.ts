@@ -4,8 +4,9 @@
  * Fetches `GET /libraries/{id}/transcriptions/latest` on mount, then refetches
  * whenever a `transcription-*` event for this library arrives on the same
  * Centrifugo channel the scan lifecycle notifier subscribes to
- * (`scans:user:<userId>` — see `useScanLifecycle.ts`, which this mirrors:
- * same token/connect/subscribe shape, own connection).
+ * (`scans:user:<userId>`). Rides `subscribeToScansChannel` from
+ * `useScanLifecycle.ts` rather than opening a second Centrifuge connection —
+ * that module owns the one-instance-per-tab invariant for this channel.
  *
  * The push events only carry counters, not the error list, so a full refetch
  * on every push is the simplest way to keep both in sync — ponytail: an extra
@@ -17,17 +18,15 @@
  */
 
 import { ref, computed, onMounted, onUnmounted, type Ref } from 'vue';
-import { useRuntimeConfig } from '#imports';
-import { Centrifuge } from 'centrifuge';
 import {
   startTranscription,
   getLatestTranscription,
   cancelTranscription,
-  issueRealtimeToken,
   client,
 } from '@app/api-client-ts';
 import type { TranscriptionDto } from '@app/api-client-ts';
 import { useAuthStore } from '~/stores/auth';
+import { subscribeToScansChannel } from './useScanLifecycle';
 
 interface TranscriptionLifecycleEvent {
   kind: string;
@@ -42,23 +41,6 @@ export interface UseTranscriptionProgressReturn {
   error: Ref<Error | null>;
   start: (force: boolean) => Promise<void>;
   cancel: () => Promise<void>;
-}
-
-async function fetchRealtimeToken(retried = false): Promise<string> {
-  const res = await issueRealtimeToken({ client, throwOnError: false });
-
-  if (res.error) {
-    if (res.response.status === 401 && !retried) {
-      const auth = useAuthStore();
-      const ok = await auth.refresh();
-      if (ok) return fetchRealtimeToken(true);
-    }
-    throw new Error(`Failed to obtain realtime token (HTTP ${String(res.response.status)})`);
-  }
-
-  const token = res.data.token;
-  if (!token) throw new Error('Realtime token response contained no token');
-  return token;
 }
 
 export function useTranscriptionProgress(libraryId: Ref<string>): UseTranscriptionProgressReturn {
@@ -128,9 +110,9 @@ export function useTranscriptionProgress(libraryId: Ref<string>): UseTranscripti
     }
   }
 
-  // ── Centrifugo: same channel + connection shape as useScanLifecycle ────────
+  // ── Centrifugo: shared channel via useScanLifecycle's subscription seam ────
   if (!import.meta.server) {
-    let centrifuge: Centrifuge | null = null;
+    let unsubscribe: (() => void) | null = null;
 
     onMounted(() => {
       void fetchLatest();
@@ -138,27 +120,17 @@ export function useTranscriptionProgress(libraryId: Ref<string>): UseTranscripti
       const auth = useAuthStore();
       if (!auth.isAuthenticated || !auth.user?.id) return;
 
-      const runtimeConfig = useRuntimeConfig();
-      const configuredUrl = (runtimeConfig.public as Record<string, unknown>).centrifugoUrl as
-        | string
-        | undefined;
-      const wsUrl = configuredUrl ?? 'ws://localhost:8000/connection/websocket';
-
-      centrifuge = new Centrifuge(wsUrl, { getToken: () => fetchRealtimeToken() });
-      const sub = centrifuge.newSubscription(`scans:user:${auth.user.id}`);
-      sub.on('publication', (ctx) => {
-        const event = ctx.data as TranscriptionLifecycleEvent;
+      unsubscribe = subscribeToScansChannel(auth.user.id, (data) => {
+        const event = data as TranscriptionLifecycleEvent;
         if (!event.kind.startsWith('transcription-')) return;
         if (event.libraryId !== libraryId.value) return;
         void fetchLatest();
       });
-      sub.subscribe();
-      centrifuge.connect();
     });
 
     onUnmounted(() => {
-      centrifuge?.disconnect();
-      centrifuge = null;
+      unsubscribe?.();
+      unsubscribe = null;
     });
   }
 

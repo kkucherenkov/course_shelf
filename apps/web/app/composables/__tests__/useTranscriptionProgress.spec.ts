@@ -3,9 +3,11 @@
  *
  * Verifies:
  *  - Initial GET latest hydrates `transcription` (and treats 404 as null).
- *  - Centrifuge subscribes to `scans:user:<userId>` and a matching
- *    `transcription-*` publication triggers a refetch.
- *  - A publication for a different library is ignored.
+ *  - Subscribes through `subscribeToScansChannel` (the shared seam in
+ *    `useScanLifecycle.ts`) rather than opening its own Centrifuge connection.
+ *  - A matching `transcription-*` publication triggers a refetch; a
+ *    publication for a different library is ignored.
+ *  - Unmount calls the unsubscribe function `subscribeToScansChannel` returned.
  *  - `start(force)` posts the force flag and adopts the 202 body.
  *  - `cancel()` posts to the run id and adopts the 202 body.
  */
@@ -14,63 +16,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ref } from 'vue';
 import type { TranscriptionDto } from '@app/api-client-ts';
 
-// ── Centrifuge mock ──────────────────────────────────────────────────────────
-
-type EventHandler = (...args: unknown[]) => void;
-
-const mockSubOn = vi.fn();
-const mockSubSubscribe = vi.fn();
-const mockConnect = vi.fn();
-const mockDisconnect = vi.fn();
-const mockNewSubscription = vi.fn();
-
-let _pubHandler: ((ctx: { data: unknown }) => void) | null = null;
-
-vi.mock('centrifuge', () => {
-  class MockCentrifuge {
-    constructor(
-      _url: string,
-      private opts: { getToken: () => Promise<string> },
-    ) {}
-
-    on() {
-      // connection-level events are not exercised here
-    }
-
-    newSubscription(channel: string) {
-      mockNewSubscription(channel);
-      return {
-        on: (event: string, handler: EventHandler) => {
-          mockSubOn(event, handler);
-          if (event === 'publication') {
-            _pubHandler = handler as (ctx: { data: unknown }) => void;
-          }
-        },
-        subscribe: mockSubSubscribe,
-      };
-    }
-
-    connect() {
-      mockConnect();
-    }
-
-    disconnect() {
-      mockDisconnect();
-    }
-  }
-
-  return { Centrifuge: MockCentrifuge };
-});
-
 // ── API client mock ──────────────────────────────────────────────────────────
 
-const mockIssueRealtimeToken = vi.fn();
 const mockGetLatestTranscription = vi.fn();
 const mockStartTranscription = vi.fn();
 const mockCancelTranscription = vi.fn();
 
 vi.mock('@app/api-client-ts', () => ({
-  issueRealtimeToken: (...args: unknown[]) => mockIssueRealtimeToken(...args),
   getLatestTranscription: (...args: unknown[]) => mockGetLatestTranscription(...args),
   startTranscription: (...args: unknown[]) => mockStartTranscription(...args),
   cancelTranscription: (...args: unknown[]) => mockCancelTranscription(...args),
@@ -79,18 +31,22 @@ vi.mock('@app/api-client-ts', () => ({
 
 // ── Auth store mock ──────────────────────────────────────────────────────────
 
-const mockAuthStore = { isAuthenticated: true, user: { id: 'user-42' }, refresh: vi.fn() };
+const mockAuthStore = { isAuthenticated: true, user: { id: 'user-42' } };
 
 vi.mock('~/stores/auth', () => ({
   useAuthStore: () => mockAuthStore,
 }));
 
-// ── Nuxt imports mock ─────────────────────────────────────────────────────────
+// ── useScanLifecycle's shared subscription seam ─────────────────────────────
 
-vi.mock('#imports', () => ({
-  useRuntimeConfig: () => ({
-    public: { centrifugoUrl: 'ws://localhost:8000/connection/websocket' },
-  }),
+const mockUnsubscribe = vi.fn();
+const mockSubscribeToScansChannel = vi.fn(
+  (_userId: string, _handler: (data: unknown) => void) => mockUnsubscribe,
+);
+
+vi.mock('../useScanLifecycle', () => ({
+  subscribeToScansChannel: (userId: string, handler: (data: unknown) => void) =>
+    mockSubscribeToScansChannel(userId, handler),
 }));
 
 // ── Mount/unmount capture ─────────────────────────────────────────────────────
@@ -146,13 +102,8 @@ describe('useTranscriptionProgress', () => {
     vi.clearAllMocks();
     mountedCallbacks.length = 0;
     unmountedCallbacks.length = 0;
-    _pubHandler = null;
+    mockSubscribeToScansChannel.mockReturnValue(mockUnsubscribe);
 
-    mockIssueRealtimeToken.mockResolvedValue({
-      data: { token: 'jwt-abc', expiresAt: null },
-      error: null,
-      response: { status: 200 },
-    });
     mockGetLatestTranscription.mockResolvedValue({
       data: baseDto,
       error: null,
@@ -183,12 +134,10 @@ describe('useTranscriptionProgress', () => {
     expect(transcription.value).toBeNull();
   });
 
-  it('subscribes to the per-user scan channel', () => {
+  it('subscribes through the shared per-user channel seam', () => {
     useTranscriptionProgress(ref('lib-1'));
     triggerMount();
-    expect(mockNewSubscription).toHaveBeenCalledWith('scans:user:user-42');
-    expect(mockConnect).toHaveBeenCalled();
-    expect(mockSubSubscribe).toHaveBeenCalled();
+    expect(mockSubscribeToScansChannel).toHaveBeenCalledWith('user-42', expect.any(Function));
   });
 
   it('refetches on a matching transcription-* publication', async () => {
@@ -196,7 +145,8 @@ describe('useTranscriptionProgress', () => {
     triggerMount();
     await vi.waitFor(() => expect(mockGetLatestTranscription).toHaveBeenCalledTimes(1));
 
-    _pubHandler!({ data: { kind: 'transcription-progress', libraryId: 'lib-1' } });
+    const handler = mockSubscribeToScansChannel.mock.calls[0]?.[1] as (data: unknown) => void;
+    handler({ kind: 'transcription-progress', libraryId: 'lib-1' });
 
     await vi.waitFor(() => expect(mockGetLatestTranscription).toHaveBeenCalledTimes(2));
   });
@@ -206,11 +156,19 @@ describe('useTranscriptionProgress', () => {
     triggerMount();
     await vi.waitFor(() => expect(mockGetLatestTranscription).toHaveBeenCalledTimes(1));
 
-    _pubHandler!({ data: { kind: 'transcription-progress', libraryId: 'lib-2' } });
+    const handler = mockSubscribeToScansChannel.mock.calls[0]?.[1] as (data: unknown) => void;
+    handler({ kind: 'transcription-progress', libraryId: 'lib-2' });
 
     // give any stray microtask a chance to run, then assert no extra call
     await Promise.resolve();
     expect(mockGetLatestTranscription).toHaveBeenCalledTimes(1);
+  });
+
+  it('unsubscribes on unmount', () => {
+    useTranscriptionProgress(ref('lib-1'));
+    triggerMount();
+    triggerUnmount();
+    expect(mockUnsubscribe).toHaveBeenCalledOnce();
   });
 
   it('start(force) posts the flag and adopts the response', async () => {
@@ -231,11 +189,6 @@ describe('useTranscriptionProgress', () => {
   });
 
   it('cancel() posts to the run id and adopts the response', async () => {
-    mockGetLatestTranscription.mockResolvedValue({
-      data: baseDto,
-      error: null,
-      response: { status: 200 },
-    });
     mockCancelTranscription.mockResolvedValue({
       data: { ...baseDto, status: 'cancelled' },
       error: null,

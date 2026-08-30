@@ -96,7 +96,6 @@ C4Container
     Container(backend, "API", "NestJS 11, CQRS, Prisma 7, Express 5", "Bounded contexts, RFC 9457 errors, signed stream tokens")
     ContainerDb(postgres, "Database", "PostgreSQL 18", "Catalog structure, users, learning state, read models")
     Container(centrifugo, "Realtime hub", "Centrifugo v6", "Per-user channels. The backend publishes; it never subscribes.")
-    ContainerDb(redis, "Redis", "Redis 8", "Reached only by the API health check — see the note below")
   }
 
   System_Ext(library, "Course library on disk", "Mounted into the API container")
@@ -113,24 +112,22 @@ C4Container
   Rel(backend, postgres, "Reads and writes", "SQL · Prisma")
   Rel(backend, library, "Scans and reads bytes from", "filesystem")
   Rel(backend, centrifugo, "Publishes events to", "HTTP server API")
-  Rel(backend, redis, "Pings for the health check only", "RESP")
   Rel(spa, centrifugo, "Subscribes for nudges", "WebSocket")
   Rel(mobile, centrifugo, "Subscribes for nudges", "WebSocket")
 
   UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
 ```
 
-Two things in that picture are easy to get wrong, so read them off it
-deliberately.
+One thing in that picture is easy to get wrong, so read it off deliberately.
 
-**Nothing uses Redis.** The backend's only call is `ping()`, from
-`modules/health/infra/redis.checker.ts` through `common/redis/redis.service.ts`
-— a health check on a dependency nothing depends on. Centrifugo does not use it
-either: `docker/centrifugo/config.json` declares no engine or broker section, so
-it runs on the default in-memory engine, and the only `REDIS_URL` in any compose
-file belongs to the `backend` service. The container, its `redisdata` volume and
-its healthcheck are currently paying rent for a single `PING`. Whether it should
-exist at all is tracked as an open question, not settled here.
+**There is no Redis.** An earlier revision of this diagram carried a Redis
+container reached only by the API's health check — `ping()` on a dependency
+nothing depended on. Centrifugo never used it either:
+`docker/centrifugo/config.json` declares no engine or broker section, so it
+runs on the default in-memory engine, which is all a single-owner instance
+needs (Redis only buys presence/history surviving a restart, or coordination
+across more than one Centrifugo node — neither applies here). The container,
+its volume and its healthcheck were removed rather than kept "just in case".
 
 Ports, for the local stack: proxy **8080** (use this in the browser), web 3001,
 backend 3000, Centrifugo 8000. 3000 and 3001 are published for tooling that
@@ -445,9 +442,9 @@ an arbitrary path — path traversal is contained there, not at the controller.
 ## 7 — Realtime
 
 Centrifugo v6, single node on its default in-memory engine, fronted by the
-same nginx origin. It is **not** wired to Redis: `docker/centrifugo/config.json`
-declares no engine or broker section, and no compose file sets a Centrifugo
-Redis address.
+same nginx origin. There is no Redis anywhere in the stack — see §2 — so
+presence and history reset on restart, which is acceptable for a single-node
+deployment.
 
 `POST /api/v1/realtime/token` mints a short-lived connection JWT
 (`CENTRIFUGO_TOKEN_TTL_SECONDS`, default **300 s**). Channels carry the user id
@@ -695,9 +692,11 @@ Compose files by target: `compose.yml` (local dev, repo bind-mounted into the
 containers), `compose.ci.yml` (production-shaped, for e2e), `compose.prod.yml`
 and `compose.release.yml`.
 
-Production services: `postgres` · `redis` · `centrifugo` · `backend` · `web` ·
-`proxy`, on one `cs-net` network with named volumes for Postgres and Redis and
-healthchecks wired throughout.
+Production services: `postgres` · `centrifugo` · `backend` · `web` · `proxy`,
+on one `cs-net` network with a named volume for Postgres — the derived
+volume (`DERIVED_PATH`, whisper transcripts and scan thumbnails) is a bind
+mount, not a named volume, so it survives outside Docker's storage driver —
+and healthchecks wired throughout.
 
 ```mermaid
 C4Deployment
@@ -724,13 +723,11 @@ C4Deployment
     Deployment_Node(rtn, "centrifugo", "container") {
       Container(cent, "Realtime hub", "Centrifugo v6", "")
     }
-    Deployment_Node(rdn, "redis", "container, volume redisdata") {
-      ContainerDb(rd, "Redis", "Redis 8", "Health-checked, otherwise unused")
-    }
   }
 
-  Deployment_Node(disk, "Host filesystem", "COURSES_PATH") {
+  Deployment_Node(disk, "Host filesystem", "COURSES_PATH / DERIVED_PATH") {
     Container_Ext(media, "Course library", "bind mount at /data/courses:ro", "")
+    Container_Ext(derived, "Derived artefacts", "bind mount at /data/derived, writable — whisper transcripts, scan thumbnails", "")
   }
 
   Rel(spa, proxyc, "HTTPS")
@@ -739,8 +736,8 @@ C4Deployment
   Rel(proxyc, apic, "HTTP")
   Rel(apic, pg, "SQL")
   Rel(apic, cent, "HTTP server API")
-  Rel(apic, rd, "health ping")
   Rel(apic, media, "reads")
+  Rel(apic, derived, "reads and writes")
 
   UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="2")
 ```
@@ -796,7 +793,7 @@ shutdown via `enableShutdownHooks()`. Grafana ships in the local stack on
 `:3200`.
 
 `GET /api/v1/health` reports per-dependency status
-(`{"status":"ok","dependencies":{"db":"ok","redis":"ok","centrifugo":"ok"}}`);
+(`{"status":"ok","dependencies":{"db":"ok","centrifugo":"ok"}}`);
 `/api/v1/ping` is the liveness probe.
 
 ---

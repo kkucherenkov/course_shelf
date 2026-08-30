@@ -37,6 +37,7 @@ their own view of the catalog.
   - [Users](#users)
   - [Permissions](#permissions)
   - [Metadata: scrape and identify](#metadata-scrape-and-identify)
+  - [Transcription](#transcription)
   - [Backups](#backups)
 - [Known limits in this release](#known-limits-in-this-release)
 - [Troubleshooting](#troubleshooting)
@@ -405,6 +406,27 @@ entities, so renaming an instructor updates every course that references them.
 
 There is also a **maintenance backfill** that recomputes derived metadata
 (durations, thumbnails) across the catalog, reporting progress in realtime.
+
+### Transcription
+
+`Admin → Libraries → (library) → Transcribe` generates a subtitle track for
+every lesson that has neither a hand-made `.srt`/`.vtt` sidecar nor an
+up-to-date generated one — a lesson you already subtitled yourself is never
+touched. **Start** offers a "re-transcribe everything" checkbox for redoing
+generated transcripts after switching models or languages; while a run is
+going, the same spot offers **Cancel**, which stops after the lesson
+currently in flight rather than mid-file.
+
+Progress is counters against the total — skipped, transcribed, failed — over
+the same realtime channel the scan card already uses, plus an error list, one
+row per failed lesson. A generated transcript plays through the ordinary
+subtitle track the player already renders; nothing distinguishes it in the
+`<track>` menu from a sidecar you wrote by hand except that it exists at all.
+
+Transcription is a CPU job measured in hours for a real course, and it stays
+off until the instance has a whisper model configured — see
+[`docs/deployment.md`](./deployment.md#derived-artefacts-and-transcription)
+for what to download and where it goes.
 
 ### Backups
 

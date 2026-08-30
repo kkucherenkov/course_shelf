@@ -197,9 +197,9 @@ gantt
 
     section E26 Transcript panel (web)
     Render the subtitle tracks in the web player                 :done, e26f01s01, after e08f02s02 e14f03s01, 1d
-    useTranscriptCues composable                                 :active, e26f01s02, after e26f01s01, 1d
+    useTranscriptCues composable                                 :done, e26f01s02, after e26f01s01, 1d
     Transcript tab in the player sidebar                         :active, e26f01s03, after e26f01s02, 2d
-    `?t=` deep links into a lesson                               :active, e26f01s04, after e26f01s01, 1d
+    `?t=` deep links into a lesson                               :done, e26f01s04, after e26f01s01, 1d
 
     section E27 Transcript storage and search
     Parse existing subtitle sidecars into cues                   :active, e27f01s01, after e25f02s01 e25f03s02, 2d
@@ -227,8 +227,8 @@ gantt
     Fix the duplicated offline bookmark                          :done, e31f01s03, after e20f01s01, 2d
     Remove the SSO promise                                       :done, e31f02s01, after e14f02s01, 1d
     Remove the non-functional Settings controls                  :done, e31f02s02, after e14f02s02, 1d
-    Settle the locale parity claim                               :active, e31f02s03, after e15f01s02, 1d
-    Verify or remove the mobile storage bar                      :active, e31f02s04, after e19f01s03, 1d
+    Settle the locale parity claim                               :done, e31f02s03, after e15f01s02, 1d
+    Verify or remove the mobile storage bar                      :done, e31f02s04, after e19f01s03, 1d
 
 ```
 

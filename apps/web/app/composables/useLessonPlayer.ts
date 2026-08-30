@@ -119,6 +119,30 @@ export function useLessonPlayer(): UseLessonPlayerReturn {
     fullscreen.value = Boolean(document.fullscreenElement);
   }
 
+  // The chrome's control bar is painted over the bottom of the frame — exactly
+  // where the browser renders the native cue line, which left the subtitles
+  // half-hidden behind the scrubber. `VTTCue.line` counts line boxes from the
+  // bottom when negative (`auto` behaves as -1), so this lifts the cue box
+  // clear of the bar. CSS cannot do it: `::cue` styles the text, not its
+  // position, and the browser only makes room for *its own* controls.
+  const CUE_LINE_ABOVE_CHROME = -4;
+
+  function liftCues(track: TextTrack | null | undefined): void {
+    // `cues` is null until the browser has parsed the file (mode `disabled`).
+    const list = track?.cues;
+    for (let i = 0; i < (list?.length ?? 0); i += 1) {
+      const cue = list?.[i];
+      if (cue && 'line' in cue) (cue as VTTCue).line = CUE_LINE_ABOVE_CHROME;
+    }
+  }
+
+  // `load` on a `<track>` does not bubble, and the track elements are rendered
+  // from the resolved stream URL — i.e. after `attach()` has run — so the only
+  // way to catch every one of them is a capture-phase listener on the video.
+  function onTrackLoad(event: Event): void {
+    if (event.target instanceof HTMLTrackElement) liftCues(event.target.track);
+  }
+
   /** The `<track default>` the page rendered for the UI locale, else the first one. */
   function preferredTrack(el: HTMLVideoElement): TextTrack | undefined {
     const marked = el.querySelector<HTMLTrackElement>('track[default]');
@@ -131,6 +155,8 @@ export function useLessonPlayer(): UseLessonPlayerReturn {
   function onTextTracksChange(): void {
     if (!videoEl) return;
     subtitlesOn.value = [...videoEl.textTracks].some((track) => track.mode === 'showing');
+    // A track parsed before the listener was attached never fires `load` here.
+    for (const track of videoEl.textTracks) liftCues(track);
   }
 
   // ── Attach / detach ────────────────────────────────────────────────────────
@@ -151,6 +177,7 @@ export function useLessonPlayer(): UseLessonPlayerReturn {
     el.addEventListener('volumechange', onVolumeChange);
     el.textTracks.addEventListener('change', onTextTracksChange);
     el.textTracks.addEventListener('addtrack', onTextTracksChange);
+    el.addEventListener('load', onTrackLoad, true);
     onTextTracksChange();
 
     if (typeof document !== 'undefined') {
@@ -174,6 +201,7 @@ export function useLessonPlayer(): UseLessonPlayerReturn {
     el.removeEventListener('volumechange', onVolumeChange);
     el.textTracks.removeEventListener('change', onTextTracksChange);
     el.textTracks.removeEventListener('addtrack', onTextTracksChange);
+    el.removeEventListener('load', onTrackLoad, true);
 
     if (typeof document !== 'undefined') {
       document.removeEventListener('fullscreenchange', onFullscreenChange);

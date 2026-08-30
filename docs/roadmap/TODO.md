@@ -11,7 +11,7 @@ denominator below.
 Progress (update by hand):
 
 - **v1** — `119 / 119` complete. 121 cards, 2 cancelled.
-- **v2** — `13 / 36` complete. 36 cards across E25–E31.
+- **v2** — `17 / 36` complete. 36 cards across E25–E31.
 
 v1 is the shipped product; v2 is the transcript-first direction and the
 honest-v1.1 cleanup. The two denominators are kept apart on purpose — merging
@@ -229,9 +229,9 @@ them would quietly reopen a milestone that is finished.
 ## E26 — Transcript panel (web)
 
 - [x] [E26-F01-S01](./tasks/E26-F01-S01.md) `A` — Render the subtitle tracks in the web player · ⇐ E08-F02-S02, E14-F03-S01
-- [ ] [E26-F01-S02](./tasks/E26-F01-S02.md) `A` — useTranscriptCues composable · ⇐ E26-F01-S01
+- [x] [E26-F01-S02](./tasks/E26-F01-S02.md) `A` — useTranscriptCues composable · ⇐ E26-F01-S01
 - [ ] [E26-F01-S03](./tasks/E26-F01-S03.md) `A` — Transcript tab in the player sidebar · ⇐ E26-F01-S02
-- [ ] [E26-F01-S04](./tasks/E26-F01-S04.md) `A` — `?t=` deep links into a lesson · ⇐ E26-F01-S01
+- [x] [E26-F01-S04](./tasks/E26-F01-S04.md) `A` — `?t=` deep links into a lesson · ⇐ E26-F01-S01
 
 ## E27 — Transcript storage and search
 
@@ -264,5 +264,5 @@ them would quietly reopen a milestone that is finished.
 - [x] [E31-F01-S03](./tasks/E31-F01-S03.md) `A` — Fix the duplicated offline bookmark · ⇐ E20-F01-S01
 - [x] [E31-F02-S01](./tasks/E31-F02-S01.md) `A` — Remove the SSO promise · ⇐ E14-F02-S01
 - [x] [E31-F02-S02](./tasks/E31-F02-S02.md) `A` — Remove the non-functional Settings controls · ⇐ E14-F02-S02
-- [ ] [E31-F02-S03](./tasks/E31-F02-S03.md) `A` — Settle the locale parity claim · ⇐ E15-F01-S02
-- [ ] [E31-F02-S04](./tasks/E31-F02-S04.md) `A` — Verify or remove the mobile storage bar · ⇐ E19-F01-S03
+- [x] [E31-F02-S03](./tasks/E31-F02-S03.md) `A` — Settle the locale parity claim · ⇐ E15-F01-S02
+- [x] [E31-F02-S04](./tasks/E31-F02-S04.md) `A` — Verify or remove the mobile storage bar · ⇐ E19-F01-S03

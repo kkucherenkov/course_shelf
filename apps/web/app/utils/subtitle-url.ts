@@ -43,13 +43,12 @@ export interface SubtitleTrack extends SubtitleTrackInput {
  * Turn `LessonDto.subtitles[]` into the `<track>` list for the player.
  *
  * Entries whose URL cannot be derived are dropped rather than rendered with
- * an undefined `src`, and **at most one** track is marked `default`: nothing
- * stops a lesson from carrying two sidecars for the same language
- * (`Lesson.en.srt` next to `Lesson.en.vtt` is two rows — there is no
- * `@@unique([lessonId, language])`, and both files are legitimate), while a
- * second `<track default>` on one `<video>` is an HTML conformance error that
- * leaves the activated track, and therefore the chrome's toggle, up to the
- * implementation.
+ * an undefined `src`, and **at most one** track is marked `default`. The scan
+ * now collapses duplicate sidecars to one row per language (`.vtt` wins over
+ * `.srt`), so a second candidate should not reach here — the guard stays as
+ * defence in depth, because a second `<track default>` on one `<video>` is an
+ * HTML conformance error that leaves the activated track, and therefore the
+ * chrome's toggle, up to the implementation.
  */
 export function buildSubtitleTracks(
   streamUrl: string | null | undefined,

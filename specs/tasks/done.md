@@ -2,6 +2,48 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-30-012 — run whisper transcription over a library
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude (lane, worktree `e25-f03-s02-transcription-run`)
+- Branch: `kkucherenkov/e25-f03-s02-transcription-run`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/304
+- Spec: [docs/roadmap/tasks/E25-F03-S02.md](../../docs/roadmap/tasks/E25-F03-S02.md) (#218, #300)
+- Goal: an admin can start, watch and stop a transcription pass over a library, and
+  the pass survives a restart because re-running skips what is already on disk.
+- Acceptance:
+  - `POST /api/v1/libraries/{id}/transcriptions` answers 202 with a `running` run and
+    the walk continues after the response flushes
+  - a run refuses to start when no whisper model is configured (503) and when one is
+    already running for the library (409)
+  - a lesson with a sidecar subtitle or an up-to-date generated transcript is skipped
+  - a lesson whose audio extraction or whisper call fails is recorded and the run
+    carries on
+  - `POST /api/v1/transcriptions/{id}/cancel` stops the walk after the lesson in flight
+  - `GET /libraries/{id}/transcriptions` and `.../latest` return the history
+- Spec diff: none — the contract landed in E25-F03-S01
+- Codegen impact: no
+- Design impact: none
+- Tests: unit — `run-transcription.handler.spec.ts` (13 cases) and 8 new
+  `extractCues` cases; integration — `transcriptions.integration.spec.ts`
+  (8 cases, every route and documented status through supertest)
+- Sub-steps:
+  - [x] `extractCues` beside `convertSrtToVtt` + tests
+  - [x] `TranscriptionRepository` / `TranscriptRepository` ports + Prisma adapters
+  - [x] `RunTranscriptionHandler` + spec
+  - [x] Cancel command, latest/list queries
+  - [x] Controllers and DTO
+  - [x] Module wiring, including `WHISPER_ADAPTER` (#300)
+- Notes:
+  - `TranscriptionNotConfiguredError` moved 422 → 503 to match the contract that
+    E25-F03-S01 landed; an undocumented status becomes a 400 under response
+    validation.
+  - `convertSrtToVtt` moved to `src/shared/` so `extractCues` could land beside it
+    and stay reachable from the catalog context.
+  - Follow-ups opened: AsyncAPI variants for the transcription messages on
+    `scans:user:{userId}`, and `GET /api/v1/admin/transcriptions`.
+
 ## T-2026-08-30-009 — E31-F01-S01 finish the browse filters
 
 - Created: 2026-08-30
@@ -52,7 +94,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - [x] remove the Known-limits row
 - Status: done
 
-## T-2026-08-30-010 — settle the locale parity claim + the mobile storage bar
+## T-2026-08-30-014 — settle the locale parity claim + the mobile storage bar
 
 - Created: 2026-08-30
 - Owner: claude

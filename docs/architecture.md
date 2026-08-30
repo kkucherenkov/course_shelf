@@ -459,7 +459,7 @@ Channels (`packages/specs/asyncapi/centrifugo.yaml`):
 | --- | --- |
 | `systemHealth` | instance health pings |
 | `libraryScan` | live scan progress: files scanned, current file, counters |
-| `scansUser` | scan lifecycle events for one user |
+| `scansUser` | scan **and transcription** lifecycle events for one user, told apart by `kind` |
 | `notesLesson` | note updated |
 | `progressUser` | progress updated |
 | `maintenanceBackfill` | backfill started / progress / finished |
@@ -473,7 +473,7 @@ polling-free-but-stale, not broken.
 
 ## 8 — Data model
 
-31 models. The shape in five groups:
+30 models. The shape in six groups:
 
 **Auth** — `User`, `Session`, `Account`, `Verification` (Better Auth's).
 
@@ -486,6 +486,15 @@ this is the incremental-scan signature).
 Many-to-many to `Instructor`, `Studio`, `Tag` through explicit join models.
 `ExternalId` links a course to an upstream source; `IdentifyTask` holds a
 proposed metadata match awaiting apply/discard.
+
+**Transcription** — `Transcription` (same status machine as `Scan`) →
+`TranscriptionErrorRecord` (per-lesson, non-fatal), plus the artefacts a run
+produces: `Transcript` (unique per `(lessonId, language)`, `origin` telling a
+hand-made sidecar from a generated one, and the video's `(mtime, size)` that
+makes a re-run a cheap no-op) → `TranscriptCue`. `Transcript` deliberately
+carries no foreign key to `Lesson` or `Subtitle`: saving a lesson recreates its
+subtitle rows, so anything cascading from either would be erased by the next
+ordinary scan.
 
 **Learning** — `LessonProgress` (per user per lesson; the 90 % completion
 threshold lives in the `LessonProgress` aggregate,

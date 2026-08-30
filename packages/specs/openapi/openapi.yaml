@@ -644,33 +644,32 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TranscriptionListDto"
+                $ref: "#/components/schemas/AdminTranscriptionListDto"
               examples:
                 twoRuns:
                   summary: Two runs from two libraries, one still going
                   value:
                     items:
-                      - id: clxvtrn0000000000000000003
+                      - transcriptionId: clxvtrn0000000000000000003
                         libraryId: clxvlib0000000000000000001
+                        libraryName: Computer Science
                         status: running
                         force: false
                         startedAt: "2026-08-30T12:00:00Z"
+                        finishedAt: null
                         lessonsTotal: 412
-                        lessonsSkipped: 400
                         lessonsTranscribed: 6
-                        lessonsFailed: 0
-                        errors: []
-                      - id: clxvtrn0000000000000000002
+                        errorsCount: 0
+                      - transcriptionId: clxvtrn0000000000000000002
                         libraryId: clxvlib0000000000000000002
+                        libraryName: Mathematics
                         status: cancelled
                         force: true
                         startedAt: "2026-08-29T09:55:00Z"
                         finishedAt: "2026-08-29T10:12:31Z"
                         lessonsTotal: 312
-                        lessonsSkipped: 0
                         lessonsTranscribed: 18
-                        lessonsFailed: 0
-                        errors: []
+                        errorsCount: 2
                 empty:
                   summary: No transcription has ever run
                   value:
@@ -6980,6 +6979,79 @@ components:
           type: integer
           minimum: 0
 
+    AdminTranscriptionListDto:
+      type: object
+      required: [items]
+      additionalProperties: false
+      description: >-
+        Page of recent transcription runs across every library, ordered by
+        `startedAt` descending. The admin transcription table consumes this.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTranscriptionListItem"
+
+    AdminTranscriptionListItem:
+      type: object
+      required:
+        - transcriptionId
+        - libraryId
+        - libraryName
+        - status
+        - force
+        - startedAt
+        - finishedAt
+        - lessonsTotal
+        - lessonsTranscribed
+        - errorsCount
+      additionalProperties: false
+      description: >-
+        One row in the admin recent-transcriptions table. Same backbone as
+        `TranscriptionDto` plus `libraryName` (so the table can render the
+        library label without a second round-trip), and with the per-lesson
+        `errors` array collapsed to `errorsCount` — a cross-library list
+        should not ship every run's failures. Follows `AdminScanListItem`.
+      properties:
+        transcriptionId:
+          type: string
+        libraryId:
+          type: string
+        libraryName:
+          type: string
+          minLength: 1
+        status:
+          $ref: "#/components/schemas/TranscriptionStatus"
+        force:
+          type: boolean
+          description: >-
+            When true, the run redid existing generated transcripts — which is
+            why its `lessonsTotal` and `lessonsTranscribed` are close together.
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+          description: null while still `running`.
+        lessonsTotal:
+          type: integer
+          minimum: 0
+        lessonsTranscribed:
+          type: integer
+          minimum: 0
+          description: >-
+            Lessons for which this run produced a transcript, highlighted as a
+            "+N" badge the way `coursesAdded` is for scans.
+        errorsCount:
+          type: integer
+          minimum: 0
+          description: >-
+            Number of error records attached to this run — the same number as
+            the run's `lessonsFailed`. Fetch the run itself for the details.
+
     BookmarkDto:
       type: object
       required: [id, lessonId, positionSeconds, createdAt, updatedAt]
@@ -8649,9 +8721,10 @@ components:
       type: object
       required: [items]
       description: >-
-        Transcription runs ordered by `startedAt` descending (newest first).
-        Used both for a single library's history and for the cross-library
-        admin list.
+        One library's transcription history, ordered by `startedAt` descending
+        (newest first). The cross-library admin list uses
+        `AdminTranscriptionListDto` instead — it needs `libraryName` per row
+        and does not ship the nested `errors` arrays.
       properties:
         items:
           type: array

@@ -34,3 +34,17 @@ You own `apps/web` and `packages/ui`. Components are typed, typed again, reusabl
 4. Wire data via `useApi()` + `useAsyncData`.
 5. `pnpm --filter @app/web dev` and hit the URL. Verify the golden path AND an error state (e.g., backend down). Verify `ru` locale renders.
 6. Add a unit test for any non-trivial composable; add a Playwright spec for the happy path.
+
+## Skills
+
+Invoke these before writing code, not after:
+
+| Skill                        | When                                                                  |
+| ---------------------------- | --------------------------------------------------------------------- |
+| `nuxt`                       | Pages, layouts, plugins, middleware, `useFetch`, anything Nuxt-shaped |
+| `vue-best-practices`         | Component structure, props/emits, composables                         |
+| `pinia`                      | Any state that outlives a single component                            |
+| `vue-testing-best-practices` | Writing or fixing a component spec                                    |
+| `design-system`              | Adding to or changing `@app/ui`, or reaching for a token              |
+| `responsive-design`          | A layout that has to hold at more than one width                      |
+| `context7`                   | Before trusting your memory of any library's current API              |

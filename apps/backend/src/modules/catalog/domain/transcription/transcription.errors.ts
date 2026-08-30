@@ -4,9 +4,9 @@
  * `scan/scan.errors.ts`. All extend the shared kernel so HttpExceptionFilter
  * maps them to application/problem+json without HTTP logic in the domain.
  *
- * `WhisperFailedError` never reaches a request handler: it is caught inside
- * the run and recorded against the lesson so one bad video costs its own
- * lesson, never the whole transcription.
+ * `WhisperFailedError` and `AudioExtractionFailedError` never reach a request
+ * handler: both are caught inside the run and recorded against the lesson, so
+ * one bad video costs its own lesson, never the whole transcription.
  */
 import { DomainError } from '../../../../shared/domain-error';
 
@@ -57,5 +57,43 @@ export class WhisperFailedError extends DomainError {
       detail: `whisper on "${audioPath}" failed: ${detail}`,
     });
     this.name = 'WhisperFailedError';
+  }
+}
+
+/**
+ * Thrown when a mutator (recordSkipped, complete, cancel, …) is called on a run
+ * that has already reached `succeeded` / `failed` / `cancelled`.
+ *
+ * WHY 409 and not the 422 its Scan counterpart uses: the one place this reaches
+ * a request handler is `POST /transcriptions/{id}/cancel`, whose contract
+ * documents 409 for "already terminal". Inside the walk it is a bug guard and
+ * the status never surfaces.
+ */
+export class TranscriptionInTerminalStateError extends DomainError {
+  constructor(status: string) {
+    super({
+      code: 'transcription-in-terminal-state',
+      status: 409,
+      title: 'Conflict',
+      detail: `Transcription is already in terminal state "${status}" and cannot be mutated.`,
+    });
+    this.name = 'TranscriptionInTerminalStateError';
+  }
+}
+
+/**
+ * Thrown by `LocalFfmpegAdapter.extractAudio()` when ffmpeg exits non-zero or
+ * exceeds its timeout. Never surfaces in a request handler — the run catches it
+ * and records a TranscriptionErrorRecord so the next lesson still gets its turn.
+ */
+export class AudioExtractionFailedError extends DomainError {
+  constructor(videoPath: string, reason: string) {
+    super({
+      code: 'audio-extract-failed',
+      status: 500,
+      title: 'Audio extraction failed',
+      detail: `Audio extraction for "${videoPath}" failed: ${reason}`,
+    });
+    this.name = 'AudioExtractionFailedError';
   }
 }

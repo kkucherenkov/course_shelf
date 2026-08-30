@@ -326,7 +326,6 @@ Two rules are worth knowing:
 Four groups, saved automatically as you change them.
 
 **Profile** — display name, email (read-only), password change.
-Avatar upload and email change are visible but not yet functional.
 
 **Appearance** — theme (dark / light / system) and density
 (comfortable / cozy / compact).
@@ -342,7 +341,6 @@ Avatar upload and email change are visible but not yet functional.
 
 **Account** — sign out of this device; sign out of *all other* devices
 (revokes every session but the current one, behind a confirmation dialog).
-Account deletion is shown but not yet functional.
 
 **Languages.** The mobile app ships English, Russian, Ukrainian and Greek.
 The web app currently ships English and Russian.

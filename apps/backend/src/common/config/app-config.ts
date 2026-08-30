@@ -40,6 +40,10 @@ export interface RateLimitConfig {
   readonly ttlMs: number;
   /** Requests allowed per window, per client. Default 60. */
   readonly limit: number;
+  /** Window for the realtime-token route's own, tighter budget. Default 60 000. */
+  readonly realtimeTokenTtlMs: number;
+  /** Requests allowed per window for realtime-token minting. Default 30. */
+  readonly realtimeTokenLimit: number;
 }
 
 export interface FirebaseConfig {
@@ -242,6 +246,8 @@ export class AppConfig {
     return {
       ttlMs: this.numberOrDefault('RATE_LIMIT_TTL_MS', 60_000),
       limit: this.numberOrDefault('RATE_LIMIT_MAX', 60),
+      realtimeTokenTtlMs: this.numberOrDefault('RATE_LIMIT_REALTIME_TOKEN_TTL_MS', 60_000),
+      realtimeTokenLimit: this.numberOrDefault('RATE_LIMIT_REALTIME_TOKEN_MAX', 30),
     };
   }
 

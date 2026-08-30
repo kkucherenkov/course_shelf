@@ -101,6 +101,12 @@ services:
       # it. This only stops the limiter from deciding what the contract test
       # measures.
       RATE_LIMIT_MAX: "100000"
+      # RealtimeController keeps its own, tighter budget (30/min by default) for
+      # token minting. It is raised here for the same reason as the global one:
+      # otherwise `POST /realtime/token` is the last endpoint still answering
+      # 429 during the fuzz run, which is what the last two contract-test
+      # failures were.
+      RATE_LIMIT_REALTIME_TOKEN_MAX: "100000"
     # CMD inherits from the prod Dockerfile:
     #   prisma migrate deploy && node dist/main.js
 

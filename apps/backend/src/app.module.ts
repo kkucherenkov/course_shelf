@@ -28,6 +28,10 @@ import { CatalogModule } from './modules/catalog/catalog.module';
 import { LearningModule } from './modules/learning/learning.module';
 import { OpsModule } from './modules/ops/ops.module';
 import { AppConfig } from './common/config/app-config';
+import {
+  REALTIME_TOKEN_THROTTLER,
+  isRealtimeTokenRequest,
+} from './modules/realtime/realtime-throttle';
 import { StreamingModule } from './modules/streaming/streaming.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { HealthModule } from './modules/health/health.module';
@@ -48,7 +52,21 @@ const devOnlyModules: ImportableModule[] = [];
       imports: [ConfigModule],
       inject: [AppConfig],
       useFactory: (config: AppConfig) => ({
-        throttlers: [{ ttl: config.rateLimit.ttlMs, limit: config.rateLimit.limit }],
+        throttlers: [
+          { name: 'default', ttl: config.rateLimit.ttlMs, limit: config.rateLimit.limit },
+          // Realtime-token minting keeps its own, tighter budget. It used to
+          // live as a literal in `@Throttle` on RealtimeController, which put
+          // it beyond AppConfig's reach — raising the global limit for CI left
+          // this route throttled and the contract test failing on it.
+          // `skipIf` keeps it scoped to that one route; the controller carries
+          // `@SkipThrottle({ default: true })` so the two do not stack.
+          {
+            name: REALTIME_TOKEN_THROTTLER,
+            ttl: config.rateLimit.realtimeTokenTtlMs,
+            limit: config.rateLimit.realtimeTokenLimit,
+            skipIf: (context) => !isRealtimeTokenRequest(context),
+          },
+        ],
       }),
     }),
     I18nModule.forRoot({

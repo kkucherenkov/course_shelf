@@ -21,6 +21,9 @@ import 'package:app_api_client/src/model/recently_completed_dto.dart';
 import 'package:app_api_client/src/model/register_library_request.dart';
 import 'package:app_api_client/src/model/scan_dto.dart';
 import 'package:app_api_client/src/model/search_result_dto.dart';
+import 'package:app_api_client/src/model/start_transcription_request.dart';
+import 'package:app_api_client/src/model/transcription_dto.dart';
+import 'package:app_api_client/src/model/transcription_list_dto.dart';
 import 'package:app_api_client/src/model/update_course_request.dart';
 import 'package:app_api_client/src/model/update_library_request.dart';
 import 'package:app_api_client/src/model/your_week_dto.dart';
@@ -32,6 +35,87 @@ class CatalogApi {
   final Serializers _serializers;
 
   const CatalogApi(this._dio, this._serializers);
+
+  /// Request cancellation of a running transcription
+  /// Cooperative cancellation: the run stops after the lesson it is currently working on, so the response is 202 rather than 200. Already generated transcripts are kept. Cancelling a run that has already reached a terminal status is a 409.
+  ///
+  /// Parameters:
+  /// * [id] - Server-generated cuid identifying the transcription run.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [TranscriptionDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<TranscriptionDto>> cancelTranscription({ 
+    required String id,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/transcriptions/{id}/cancel'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    TranscriptionDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TranscriptionDto),
+      ) as TranscriptionDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<TranscriptionDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
 
   /// List courses the requester is in the middle of
   /// Returns the requester&#39;s courses ordered by recency (most-recently-watched first), capped by &#x60;limit&#x60;. Reads from a denormalised &#x60;CourseProgressReadModel&#x60; projection that&#39;s updated by &#x60;LessonCompleted&#x60; and &#x60;LessonProgressRecorded&#x60; events. Empty array for new users. 
@@ -432,6 +516,87 @@ class CatalogApi {
     }
 
     return Response<ScanDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Get the most recent transcription run for a library
+  /// Returns the latest transcription record regardless of status (running, succeeded, failed, cancelled). This is what the admin transcription card polls.
+  ///
+  /// Parameters:
+  /// * [id] - Server-generated cuid identifying the library.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [TranscriptionDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<TranscriptionDto>> getLatestTranscription({ 
+    required String id,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/libraries/{id}/transcriptions/latest'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    TranscriptionDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TranscriptionDto),
+      ) as TranscriptionDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<TranscriptionDto>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,
@@ -1027,6 +1192,94 @@ class CatalogApi {
     );
   }
 
+  /// List transcription runs for a library
+  /// History for one library, ordered by &#x60;startedAt&#x60; descending (newest first). Capped at &#x60;limit&#x60; (default 20, max 100).
+  ///
+  /// Parameters:
+  /// * [id] - Server-generated cuid identifying the library.
+  /// * [limit] - Maximum number of runs to return.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [TranscriptionListDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<TranscriptionListDto>> listLibraryTranscriptions({ 
+    required String id,
+    int? limit = 20,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/libraries/{id}/transcriptions'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      if (limit != null) r'limit': encodeQueryParameter(_serializers, limit, const FullType(int)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    TranscriptionListDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TranscriptionListDto),
+      ) as TranscriptionListDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<TranscriptionListDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
   /// Register a new library (or share an existing path)
   /// Persists a library pointing at an absolute filesystem path.  **Idempotent on &#x60;rootPath&#x60;.** When a library with the same path already exists, the call returns the existing library and grants the calling user READ access to it instead of creating a duplicate row. The response body matches what &#x60;GET /libraries/{id}&#x60; would return for that library — the original &#x60;name&#x60;/&#x60;createdAt&#x60; are preserved (the new &#x60;name&#x60; you submitted is ignored).  For brand-new libraries the controller chains an initial &#x60;runLibraryScan&#x60; so courses become visible shortly after the response. No initial scan is fired when the path already existed (the existing library is presumed already scanned). 
   ///
@@ -1340,6 +1593,109 @@ class CatalogApi {
     }
 
     return Response<SearchResultDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Start a transcription run for a library
+  /// Walks the library&#39;s lessons and generates a transcript for every video that has neither a hand-made subtitle track nor an up-to-date generated one. Returns 202 immediately with &#x60;status: running&#x60;; clients poll &#x60;GET /libraries/{id}/transcriptions/latest&#x60;. A second run with no filesystem changes is observably a no-op (&#x60;lessonsTranscribed&#x60; is zero and every lesson lands in &#x60;lessonsSkipped&#x60;). 
+  ///
+  /// Parameters:
+  /// * [id] - Server-generated cuid identifying the library to transcribe.
+  /// * [startTranscriptionRequest] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [TranscriptionDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<TranscriptionDto>> startTranscription({ 
+    required String id,
+    StartTranscriptionRequest? startTranscriptionRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/libraries/{id}/transcriptions'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(StartTranscriptionRequest);
+      _bodyData = startTranscriptionRequest == null ? null : _serializers.serialize(startTranscriptionRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    TranscriptionDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TranscriptionDto),
+      ) as TranscriptionDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<TranscriptionDto>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

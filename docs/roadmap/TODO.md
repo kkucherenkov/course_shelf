@@ -216,10 +216,10 @@ them would quietly reopen a milestone that is finished.
 - [ ] [E25-F01-S02](./tasks/E25-F01-S02.md) `A` — Derived path resolution with its own traversal guard · ⇐ E25-F01-S01
 - [ ] [E25-F01-S03](./tasks/E25-F01-S03.md) `A` — ffmpeg audio extraction for whisper · ⇐ E06-F02-S02
 - [ ] [E25-F01-S04](./tasks/E25-F01-S04.md) `A` — whisper.cpp adapter behind a port · ⇐ E25-F01-S01
-- [ ] [E25-F02-S01](./tasks/E25-F02-S01.md) `A` — Transcript and transcription schema · ⇐ E06-F03-S02
+- [x] [E25-F02-S01](./tasks/E25-F02-S01.md) `A` — Transcript and transcription schema · ⇐ E06-F03-S02
 - [ ] [E25-F02-S02](./tasks/E25-F02-S02.md) `A` — Transcription aggregate · ⇐ E25-F02-S01
 - [ ] [E25-F02-S03](./tasks/E25-F02-S03.md) `A` — The skip rule · ⇐ E25-F02-S01
-- [ ] [E25-F03-S01](./tasks/E25-F03-S01.md) `A` — OpenAPI for transcription runs and generated subtitles · ⇐ E02-F02-S04
+- [x] [E25-F03-S01](./tasks/E25-F03-S01.md) `A` — OpenAPI for transcription runs and generated subtitles · ⇐ E02-F02-S04
 - [ ] [E25-F03-S02](./tasks/E25-F03-S02.md) `A` — The transcription run · ⇐ E25-F01-S02, E25-F01-S03, E25-F01-S04, E25-F02-S02, E25-F02-S03, E25-F03-S01
 - [ ] [E25-F03-S03](./tasks/E25-F03-S03.md) `A` — Serve generated transcripts as subtitle tracks · ⇐ E08-F02-S02, E25-F02-S01
 - [ ] [E25-F04-S01](./tasks/E25-F04-S01.md) `A` — Scan thumbnails to the derived volume, and orphan cleanup · ⇐ E25-F01-S02

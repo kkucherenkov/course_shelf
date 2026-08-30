@@ -9,11 +9,13 @@ All URIs are relative to *http://localhost:3000*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**cancelTranscription**](CatalogApi.md#canceltranscription) | **POST** /api/v1/transcriptions/{id}/cancel | Request cancellation of a running transcription
 [**getContinueWatching**](CatalogApi.md#getcontinuewatching) | **GET** /api/v1/home/continue-watching | List courses the requester is in the middle of
 [**getCourse**](CatalogApi.md#getcourse) | **GET** /api/v1/courses/{id} | Get a single course
 [**getCourseDownloadEstimate**](CatalogApi.md#getcoursedownloadestimate) | **GET** /api/v1/courses/{id}/download-estimate | Total download size for a course
 [**getCourseOutline**](CatalogApi.md#getcourseoutline) | **GET** /api/v1/courses/{id}/outline | Full course outline — sections, lessons (lite), and aggregated materials
 [**getLatestLibraryScan**](CatalogApi.md#getlatestlibraryscan) | **GET** /api/v1/libraries/{id}/scans/latest | Get the most recent scan for a library
+[**getLatestTranscription**](CatalogApi.md#getlatesttranscription) | **GET** /api/v1/libraries/{id}/transcriptions/latest | Get the most recent transcription run for a library
 [**getLesson**](CatalogApi.md#getlesson) | **GET** /api/v1/lessons/{id} | Get a lesson with its materials and subtitles
 [**getLibrary**](CatalogApi.md#getlibrary) | **GET** /api/v1/libraries/{id} | Get a library by id
 [**getRecentlyAdded**](CatalogApi.md#getrecentlyadded) | **GET** /api/v1/home/recently-added | Courses recently added to the requester&#39;s libraries
@@ -21,13 +23,58 @@ Method | HTTP request | Description
 [**getYourWeek**](CatalogApi.md#getyourweek) | **GET** /api/v1/home/your-week | Roll-up of the requester&#39;s last seven days
 [**listCourses**](CatalogApi.md#listcourses) | **GET** /api/v1/courses | List courses (with filtering and sort)
 [**listLibraries**](CatalogApi.md#listlibraries) | **GET** /api/v1/libraries | List all registered libraries
+[**listLibraryTranscriptions**](CatalogApi.md#listlibrarytranscriptions) | **GET** /api/v1/libraries/{id}/transcriptions | List transcription runs for a library
 [**registerLibrary**](CatalogApi.md#registerlibrary) | **POST** /api/v1/libraries | Register a new library (or share an existing path)
 [**removeLibrary**](CatalogApi.md#removelibrary) | **DELETE** /api/v1/libraries/{id} | Hard-delete a library and every dependent row
 [**runLibraryScan**](CatalogApi.md#runlibraryscan) | **POST** /api/v1/libraries/{id}/scans | Trigger a scan of a library
 [**searchCatalogue**](CatalogApi.md#searchcatalogue) | **GET** /api/v1/search | Search the catalogue (courses + lessons)
+[**startTranscription**](CatalogApi.md#starttranscription) | **POST** /api/v1/libraries/{id}/transcriptions | Start a transcription run for a library
 [**updateCourse**](CatalogApi.md#updatecourse) | **PATCH** /api/v1/courses/{id} | Update course metadata
 [**updateLibrary**](CatalogApi.md#updatelibrary) | **PATCH** /api/v1/libraries/{id} | Rename a library
 
+
+# **cancelTranscription**
+> TranscriptionDto cancelTranscription(id)
+
+Request cancellation of a running transcription
+
+Cooperative cancellation: the run stops after the lesson it is currently working on, so the response is 202 rather than 200. Already generated transcripts are kept. Cancelling a run that has already reached a terminal status is a 409.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String id = id_example; // String | Server-generated cuid identifying the transcription run.
+
+try {
+    final response = api.cancelTranscription(id);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->cancelTranscription: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the transcription run. | 
+
+### Return type
+
+[**TranscriptionDto**](TranscriptionDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **getContinueWatching**
 > ContinueWatchingDto getContinueWatching(limit)
@@ -232,6 +279,49 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**ScanDto**](ScanDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getLatestTranscription**
+> TranscriptionDto getLatestTranscription(id)
+
+Get the most recent transcription run for a library
+
+Returns the latest transcription record regardless of status (running, succeeded, failed, cancelled). This is what the admin transcription card polls.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String id = id_example; // String | Server-generated cuid identifying the library.
+
+try {
+    final response = api.getLatestTranscription(id);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->getLatestTranscription: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the library. | 
+
+### Return type
+
+[**TranscriptionDto**](TranscriptionDto.md)
 
 ### Authorization
 
@@ -541,6 +631,51 @@ This endpoint does not need any parameter.
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **listLibraryTranscriptions**
+> TranscriptionListDto listLibraryTranscriptions(id, limit)
+
+List transcription runs for a library
+
+History for one library, ordered by `startedAt` descending (newest first). Capped at `limit` (default 20, max 100).
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String id = id_example; // String | Server-generated cuid identifying the library.
+final int limit = 56; // int | Maximum number of runs to return.
+
+try {
+    final response = api.listLibraryTranscriptions(id, limit);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->listLibraryTranscriptions: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the library. | 
+ **limit** | **int**| Maximum number of runs to return. | [optional] [default to 20]
+
+### Return type
+
+[**TranscriptionListDto**](TranscriptionListDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **registerLibrary**
 > LibraryDto registerLibrary(registerLibraryRequest)
 
@@ -710,6 +845,51 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
  - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **startTranscription**
+> TranscriptionDto startTranscription(id, startTranscriptionRequest)
+
+Start a transcription run for a library
+
+Walks the library's lessons and generates a transcript for every video that has neither a hand-made subtitle track nor an up-to-date generated one. Returns 202 immediately with `status: running`; clients poll `GET /libraries/{id}/transcriptions/latest`. A second run with no filesystem changes is observably a no-op (`lessonsTranscribed` is zero and every lesson lands in `lessonsSkipped`). 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String id = id_example; // String | Server-generated cuid identifying the library to transcribe.
+final StartTranscriptionRequest startTranscriptionRequest = {"force":false}; // StartTranscriptionRequest | 
+
+try {
+    final response = api.startTranscription(id, startTranscriptionRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->startTranscription: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the library to transcribe. | 
+ **startTranscriptionRequest** | [**StartTranscriptionRequest**](StartTranscriptionRequest.md)|  | [optional] 
+
+### Return type
+
+[**TranscriptionDto**](TranscriptionDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
  - **Accept**: application/json, application/problem+json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

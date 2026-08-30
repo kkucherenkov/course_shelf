@@ -13,6 +13,8 @@ class _$SubtitleDto extends SubtitleDto {
   final String language;
   @override
   final String label;
+  @override
+  final bool? generated;
 
   factory _$SubtitleDto([void Function(SubtitleDtoBuilder)? updates]) =>
       (SubtitleDtoBuilder()..update(updates))._build();
@@ -21,6 +23,7 @@ class _$SubtitleDto extends SubtitleDto {
     required this.id,
     required this.language,
     required this.label,
+    this.generated,
   }) : super._();
   @override
   SubtitleDto rebuild(void Function(SubtitleDtoBuilder) updates) =>
@@ -35,7 +38,8 @@ class _$SubtitleDto extends SubtitleDto {
     return other is SubtitleDto &&
         id == other.id &&
         language == other.language &&
-        label == other.label;
+        label == other.label &&
+        generated == other.generated;
   }
 
   @override
@@ -44,6 +48,7 @@ class _$SubtitleDto extends SubtitleDto {
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, language.hashCode);
     _$hash = $jc(_$hash, label.hashCode);
+    _$hash = $jc(_$hash, generated.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -53,7 +58,8 @@ class _$SubtitleDto extends SubtitleDto {
     return (newBuiltValueToStringHelper(r'SubtitleDto')
           ..add('id', id)
           ..add('language', language)
-          ..add('label', label))
+          ..add('label', label)
+          ..add('generated', generated))
         .toString();
   }
 }
@@ -73,6 +79,10 @@ class SubtitleDtoBuilder implements Builder<SubtitleDto, SubtitleDtoBuilder> {
   String? get label => _$this._label;
   set label(String? label) => _$this._label = label;
 
+  bool? _generated;
+  bool? get generated => _$this._generated;
+  set generated(bool? generated) => _$this._generated = generated;
+
   SubtitleDtoBuilder() {
     SubtitleDto._defaults(this);
   }
@@ -83,6 +93,7 @@ class SubtitleDtoBuilder implements Builder<SubtitleDto, SubtitleDtoBuilder> {
       _id = $v.id;
       _language = $v.language;
       _label = $v.label;
+      _generated = $v.generated;
       _$v = null;
     }
     return this;
@@ -116,6 +127,7 @@ class SubtitleDtoBuilder implements Builder<SubtitleDto, SubtitleDtoBuilder> {
             r'SubtitleDto',
             'label',
           ),
+          generated: generated,
         );
     replace(_$result);
     return _$result;

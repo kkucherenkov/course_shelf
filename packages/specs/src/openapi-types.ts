@@ -165,6 +165,29 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/transcriptions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List recent transcription runs across every library
+     * @description Ordered by `startedAt` descending (newest first). Cross-library —
+     *     admin-only; non-admin actors see 403 even if they have READ grants on
+     *     individual libraries. Capped at `limit` (default 20, max 100).
+     *     Mirrors `GET /api/v1/admin/scans`.
+     */
+    get: operations['listAdminTranscriptions'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/libraries': {
     parameters: {
       query?: never;
@@ -1264,6 +1287,75 @@ export interface paths {
     get: operations['getLatestLibraryScan'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/libraries/{id}/transcriptions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List transcription runs for a library
+     * @description History for one library, ordered by `startedAt` descending (newest first). Capped at `limit` (default 20, max 100).
+     */
+    get: operations['listLibraryTranscriptions'];
+    put?: never;
+    /**
+     * Start a transcription run for a library
+     * @description Walks the library's lessons and generates a transcript for every video
+     *     that has neither a hand-made subtitle track nor an up-to-date generated
+     *     one. Returns 202 immediately with `status: running`; clients poll
+     *     `GET /libraries/{id}/transcriptions/latest`. A second run with no
+     *     filesystem changes is observably a no-op (`lessonsTranscribed` is zero
+     *     and every lesson lands in `lessonsSkipped`).
+     */
+    post: operations['startTranscription'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/libraries/{id}/transcriptions/latest': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the most recent transcription run for a library
+     * @description Returns the latest transcription record regardless of status (running, succeeded, failed, cancelled). This is what the admin transcription card polls.
+     */
+    get: operations['getLatestTranscription'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/transcriptions/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Request cancellation of a running transcription
+     * @description Cooperative cancellation: the run stops after the lesson it is currently working on, so the response is 202 rather than 200. Already generated transcripts are kept. Cancelling a run that has already reached a terminal status is a 409.
+     */
+    post: operations['cancelTranscription'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2491,6 +2583,28 @@ export interface components {
       coursesAdded: number;
       errorsCount: number;
     };
+    /** @description Page of recent transcription runs across every library, ordered by `startedAt` descending. The admin transcription table consumes this. */
+    AdminTranscriptionListDto: {
+      items: components['schemas']['AdminTranscriptionListItem'][];
+    };
+    /** @description One row in the admin recent-transcriptions table. Same backbone as `TranscriptionDto` plus `libraryName` (so the table can render the library label without a second round-trip), and with the per-lesson `errors` array collapsed to `errorsCount` — a cross-library list should not ship every run's failures. Follows `AdminScanListItem`. */
+    AdminTranscriptionListItem: {
+      transcriptionId: string;
+      libraryId: string;
+      libraryName: string;
+      status: components['schemas']['TranscriptionStatus'];
+      /** @description When true, the run redid existing generated transcripts — which is why its `lessonsTotal` and `lessonsTranscribed` are close together. */
+      force: boolean;
+      /** Format: date-time */
+      startedAt: string;
+      /** @description null while still `running`. */
+      finishedAt: string | null;
+      lessonsTotal: number;
+      /** @description Lessons for which this run produced a transcript, highlighted as a "+N" badge the way `coursesAdded` is for scans. */
+      lessonsTranscribed: number;
+      /** @description Number of error records attached to this run — the same number as the run's `lessonsFailed`. Fetch the run itself for the details. */
+      errorsCount: number;
+    };
     /**
      * @description A single user-owned bookmark pinned to a position within a lesson.
      * @example {
@@ -3519,6 +3633,95 @@ export interface components {
      */
     ScanStatus: 'running' | 'succeeded' | 'failed' | 'cancelled';
     /**
+     * @description Transcription-run lifecycle. Mirrors `ScanStatus`; `cancelled` is reachable here because a run can be stopped from the admin screen.
+     * @enum {string}
+     */
+    TranscriptionStatus: 'running' | 'succeeded' | 'failed' | 'cancelled';
+    /**
+     * @description A non-fatal per-lesson failure. One unreadable or undecodable video costs its own lesson, never the run.
+     * @example {
+     *       "lessonId": "clxvles0000000000000000001",
+     *       "message": "whisper.cpp exited with code 1.",
+     *       "code": "whisper-failed"
+     *     }
+     */
+    TranscriptionErrorDto: {
+      /** @description cuid of the lesson whose transcription failed. */
+      lessonId: string;
+      /** @description Human-readable description of what went wrong. */
+      message: string;
+      /** @description Machine-readable error key (e.g. `whisper-failed`, `audio-extract-failed`, `no-video-source`). */
+      code?: string;
+    };
+    /**
+     * @description One pass over a library's videos. Lessons that already have a subtitle track, or an up-to-date generated transcript, are skipped — which is why a re-run is cheap and a restart costs at most one lesson.
+     * @example {
+     *       "id": "clxvtrn0000000000000000001",
+     *       "libraryId": "clxvp1234567890abcdefghij",
+     *       "status": "succeeded",
+     *       "force": false,
+     *       "startedAt": "2026-08-30T10:30:00Z",
+     *       "finishedAt": "2026-08-30T11:14:02Z",
+     *       "lessonsTotal": 314,
+     *       "lessonsSkipped": 290,
+     *       "lessonsTranscribed": 23,
+     *       "lessonsFailed": 1,
+     *       "errors": [
+     *         {
+     *           "lessonId": "clxvles0000000000000000001",
+     *           "message": "whisper.cpp exited with code 1.",
+     *           "code": "whisper-failed"
+     *         }
+     *       ]
+     *     }
+     */
+    TranscriptionDto: {
+      /** @description Server-generated cuid identifying this transcription run. */
+      id: string;
+      /** @description cuid of the library that was transcribed. */
+      libraryId: string;
+      status: components['schemas']['TranscriptionStatus'];
+      /** @description When true, existing generated transcripts were redone. */
+      force: boolean;
+      /**
+       * Format: date-time
+       * @description ISO-8601 instant when the run was started.
+       */
+      startedAt: string;
+      /**
+       * Format: date-time
+       * @description Set on terminal status (`succeeded` / `failed` / `cancelled`). Absent while `status: running`.
+       */
+      finishedAt?: string;
+      /** @description Lessons considered by this run. */
+      lessonsTotal: number;
+      /** @description Lessons left alone — a hand-made subtitle sidecar exists, or the generated transcript still matches the video's `(mtime, size)`. */
+      lessonsSkipped: number;
+      /** @description Lessons for which a transcript was produced by this run. */
+      lessonsTranscribed: number;
+      /** @description Lessons that raised an error; one entry each in `errors`. */
+      lessonsFailed: number;
+      /** @description Non-fatal per-lesson errors encountered during the run. */
+      errors: components['schemas']['TranscriptionErrorDto'][];
+    };
+    /** @description One library's transcription history, ordered by `startedAt` descending (newest first). The cross-library admin list uses `AdminTranscriptionListDto` instead — it needs `libraryName` per row and does not ship the nested `errors` arrays. */
+    TranscriptionListDto: {
+      items: components['schemas']['TranscriptionDto'][];
+    };
+    /**
+     * @description Payload for starting a transcription run. Body may be omitted entirely.
+     * @example {
+     *       "force": false
+     *     }
+     */
+    StartTranscriptionRequest: {
+      /**
+       * @description Re-transcribe lessons that already have a generated transcript. Hand-made subtitle sidecars are never overwritten.
+       * @default false
+       */
+      force: boolean;
+    };
+    /**
      * @description A completed metadata-database snapshot plus the short-lived signed URL for downloading it. Shaped after `MaterialDownloadUrlDto` — the extra fields describe the archive itself so the caller can show what it got without a second request.
      * @example {
      *       "id": "20260829T014500-3f9a2c1b8e7d4a6f",
@@ -3614,6 +3817,8 @@ export interface components {
       language: string;
       /** @description Human-readable label for the subtitle track (e.g. "English"). */
       label: string;
+      /** @description True when this track was produced by transcription rather than discovered as a sidecar. Optional and additive — absent means a hand-made sidecar. */
+      generated?: boolean;
     };
     /**
      * @description A section within a course.
@@ -4037,6 +4242,49 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['AdminScanListDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller is authenticated but not an administrator */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listAdminTranscriptions: {
+    parameters: {
+      query?: {
+        /** @description Maximum number of runs to return. */
+        limit?: number;
+        /** @description When set, only return runs for the given library. Unknown library ids return an empty list (not 404 — the view is a filter, not a fetch). */
+        libraryId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Recent-transcriptions list */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminTranscriptionListDto'];
         };
       };
       /** @description Missing or invalid bearer token */
@@ -6503,6 +6751,240 @@ export interface operations {
       };
       /** @description Library not found or no scan has been run yet */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listLibraryTranscriptions: {
+    parameters: {
+      query?: {
+        /** @description Maximum number of runs to return. */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the library. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Transcription history returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TranscriptionListDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Library not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  startTranscription: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the library to transcribe. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['StartTranscriptionRequest'];
+      };
+    };
+    responses: {
+      /** @description Transcription accepted and running */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TranscriptionDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Library not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description A transcription is already running for this library */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description The transcription backend is not usable — the whisper binary or the model file configured for this deployment is missing. Fails fast rather than starting a run that cannot produce anything. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getLatestTranscription: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the library. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Latest transcription returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TranscriptionDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Library not found or no transcription has been run yet */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  cancelTranscription: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the transcription run. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Cancellation requested — the run stops after the current lesson */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TranscriptionDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Transcription not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description The transcription has already reached a terminal status */
+      409: {
         headers: {
           [name: string]: unknown;
         };

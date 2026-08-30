@@ -7,7 +7,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Created: 2026-08-30
 - Completed: 2026-08-30
 - Owner: claude
-- Result: <PR link>
+- Result: https://github.com/kkucherenkov/course_shelf/pull/310
 - Spec: [docs/roadmap/tasks/E26-F01-S03.md](../../docs/roadmap/tasks/E26-F01-S03.md) (#225, closes epic E26 — #247)
 - Goal: read along with the lesson, find a line, jump to it — fifth sidebar tab
   consuming the `useTranscriptCues` composable from E26-F01-S02.

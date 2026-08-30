@@ -8,10 +8,10 @@
    *       users to /sign-in.
    *
    * Sections:
-   *  1. Profile  — avatar (placeholder), display name, email (read-only), password
+   *  1. Profile  — display name, email (read-only), password
    *  2. Appearance — theme (3-up picker), density (3-up picker)
    *  3. Playback — default speed, autoplay, resume, completion threshold
-   *  4. Account  — sign out, sign out other devices, delete account
+   *  4. Account  — sign out, sign out other devices
    */
 
   import { ref, computed, onBeforeUnmount } from 'vue';
@@ -231,37 +231,6 @@
           {{ t('pages.settings.sectionProfile') }}
         </h2>
 
-        <!-- Avatar row -->
-        <div class="settings-row">
-          <div class="settings-row__left">
-            <span class="settings-row__label">{{ t('pages.settings.profileAvatarLabel') }}</span>
-            <span class="settings-row__help">{{
-              t('pages.settings.profileAvatarComingSoon')
-            }}</span>
-          </div>
-          <div class="settings-row__control settings-row__control--avatar">
-            <div class="settings-avatar">
-              <div class="settings-avatar__placeholder" aria-hidden="true">
-                {{ (authStore.user?.displayName ?? authStore.user?.name ?? '?')[0]?.toUpperCase() }}
-              </div>
-            </div>
-            <div class="settings-avatar__actions">
-              <AppButton
-                size="sm"
-                variant="secondary"
-                disabled
-                :label="t('pages.settings.profileAvatarUpload')"
-              />
-              <AppButton
-                size="sm"
-                variant="ghost"
-                disabled
-                :label="t('pages.settings.profileAvatarRemove')"
-              />
-            </div>
-          </div>
-        </div>
-
         <!-- Display name row -->
         <div class="settings-row">
           <div class="settings-row__left">
@@ -289,16 +258,10 @@
         <div class="settings-row">
           <div class="settings-row__left">
             <span class="settings-row__label">{{ t('pages.settings.profileEmailLabel') }}</span>
-            <span class="settings-row__help">{{ t('pages.settings.profileEmailComingSoon') }}</span>
+            <span class="settings-row__help">{{ t('pages.settings.profileEmailHelp') }}</span>
           </div>
           <div class="settings-row__control settings-row__control--inline">
             <span class="settings-row__value">{{ emailDisplay }}</span>
-            <AppButton
-              size="sm"
-              variant="ghost"
-              disabled
-              :label="t('pages.settings.profileEmailChange')"
-            />
           </div>
         </div>
 
@@ -540,23 +503,6 @@
             />
           </div>
         </div>
-
-        <!-- Delete account row -->
-        <div class="settings-row">
-          <div class="settings-row__left">
-            <span class="settings-row__label">{{ t('pages.settings.accountDeleteLabel') }}</span>
-            <span class="settings-row__help">{{
-              t('pages.settings.accountDeleteComingSoon')
-            }}</span>
-          </div>
-          <div class="settings-row__control">
-            <AppButton
-              variant="destructive"
-              disabled
-              :label="t('pages.settings.accountDeleteCta')"
-            />
-          </div>
-        </div>
       </section>
 
       <!-- Confirm: sign out other devices -->
@@ -716,12 +662,6 @@
         align-items: center;
         gap: var(--space-2);
       }
-
-      &--avatar {
-        flex-direction: row;
-        align-items: center;
-        gap: var(--space-3);
-      }
     }
 
     &__input {
@@ -739,34 +679,6 @@
         min-width: 3ch;
         text-align: right;
       }
-    }
-  }
-
-  // ── Avatar placeholder ─────────────────────────────────────────────────────
-
-  $avatar-size: 48px;
-
-  .settings-avatar {
-    flex-shrink: 0;
-
-    &__placeholder {
-      width: $avatar-size;
-      height: $avatar-size;
-      border-radius: 50%;
-      background: var(--surface-raised);
-      border: $border;
-      display: grid;
-      place-items: center;
-      font-size: var(--text-lg);
-      font-weight: 700;
-      color: var(--text-secondary);
-      user-select: none;
-    }
-
-    &__actions {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-1);
     }
   }
 

@@ -371,6 +371,14 @@ string, not a `t()` call inside a design-system package — `@app/ui` and
   > `List<String>` when the wire shape is objects, which would have silently
   > dropped the whole instance config the first time a provider was
   > configured.
+  >
+  > **Reversed for the web in #259** (`E31-F02-S01`). On a single-owner
+  > instance email + password is the whole requirement, so the honest move was
+  > to withdraw the promise rather than keep an always-empty surface: the web
+  > half is un-wired again and `useSsoProviders` is gone. Everything above
+  > still holds — the Flutter twin remains wired, `ssoProviders` stays on the
+  > wire because mobile reads it, and `AppSsoBlock` stays in `@app/ui` as a
+  > component rather than a claim.
   `E13-F02-S10` (build the component) is genuinely done; `E14-F02-S01` (auth
   pages) never consumed it.
 - **`POST /api/v1/progress/batch`** — implemented, no caller. Not dead, see §3.
@@ -411,7 +419,7 @@ Ordered by *damage if left alone*, not by effort.
 | 10 | ~~Add override props for the five hard-coded strings (§8)~~ **done in #204** | Not five — 54, across 17 components. §8 also named one that was already a prop. |
 | 11 | ~~Make `tests/e2e/csp.spec.ts` fail rather than skip when CI runs the prod stack~~ **done in #203** | `E2E_EXPECT_CSP=1` flips skip into throw. |
 | 12 | ~~Narrow the CLAUDE.md issue-mirroring rule to match reality~~ **done in #203** | Mirroring covers E15–E20 only — 133 issues, counted. |
-| 13 | ~~Wire `AppSsoBlock` into sign-in/sign-up~~ **done in #205** | Wired, not deleted — the Flutter twin was already in use. Uncovered a wire-shape bug in mobile. |
+| 13 | ~~Wire `AppSsoBlock` into sign-in/sign-up~~ **done in #205** | Wired, not deleted — the Flutter twin was already in use. Uncovered a wire-shape bug in mobile; re-removed from web in #259 (E31-F02-S01), the Flutter twin still uses it. |
 | 14 | ~~Wire or delete `CachedCatalogDao`~~ **done in #205** | Wired — it is the offline-read half of the pair E20 completed on the write side. |
 | 15 | ~~Add the three binary routes to `openapi.yaml` as typed path items (§7)~~ **done in #206** | Four, not three. Documented; the validator exemption is now about the middleware alone. |
 | 16 | ~~Add coverage thresholds, or delete the "coverage enforcement" claim~~ **done in #199 / #206** | Claim deleted. Thresholds deliberately not added — see §7 note. |

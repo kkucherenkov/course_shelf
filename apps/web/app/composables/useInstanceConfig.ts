@@ -14,6 +14,8 @@ import type { InstanceConfigDto } from '@app/api-client-ts';
 const DEFAULT_CONFIG: InstanceConfigDto = {
   selfRegistration: true,
   emailVerificationRequired: false,
+  // Present only to satisfy the DTO — the web client renders no SSO surface.
+  // The field stays on the wire because the mobile client still reads it.
   ssoProviders: [],
 };
 

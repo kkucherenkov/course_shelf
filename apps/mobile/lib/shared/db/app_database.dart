@@ -1,11 +1,13 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+import 'package:app_mobile/shared/db/daos/bookmark_id_map_dao.dart';
 import 'package:app_mobile/shared/db/daos/bookmarks_outbox_dao.dart';
 import 'package:app_mobile/shared/db/daos/cached_catalog_dao.dart';
 import 'package:app_mobile/shared/db/daos/downloads_dao.dart';
 import 'package:app_mobile/shared/db/daos/notes_outbox_dao.dart';
 import 'package:app_mobile/shared/db/daos/progress_outbox_dao.dart';
+import 'package:app_mobile/shared/db/tables/bookmark_id_map.dart';
 import 'package:app_mobile/shared/db/tables/bookmarks_outbox.dart';
 import 'package:app_mobile/shared/db/tables/cached_courses.dart';
 import 'package:app_mobile/shared/db/tables/cached_lessons.dart';
@@ -19,6 +21,8 @@ import 'package:app_mobile/shared/db/tables/progress_outbox.dart';
 // can reference each DAO without a second import to its own library — a
 // plain `import` does not propagate the type generated in each DAO's own
 // `part` file to files that only import app_database.dart.
+export 'package:app_mobile/shared/db/daos/bookmark_id_map_dao.dart'
+    show BookmarkIdMapDao;
 export 'package:app_mobile/shared/db/daos/bookmarks_outbox_dao.dart'
     show BookmarksOutboxDao;
 export 'package:app_mobile/shared/db/daos/cached_catalog_dao.dart'
@@ -43,6 +47,7 @@ part 'app_database.g.dart';
     ProgressOutbox,
     NotesOutbox,
     BookmarksOutbox,
+    BookmarkIdMap,
     DownloadedLessons,
   ],
   daos: [
@@ -50,6 +55,7 @@ part 'app_database.g.dart';
     ProgressOutboxDao,
     NotesOutboxDao,
     BookmarksOutboxDao,
+    BookmarkIdMapDao,
     DownloadsDao,
   ],
 )
@@ -61,7 +67,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.open() : super(driftDatabase(name: 'course_shelf'));
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -87,6 +93,13 @@ class AppDatabase extends _$AppDatabase {
       if (from < 3) {
         await m.addColumn(downloadedLessons, downloadedLessons.lessonTitle);
         await m.addColumn(downloadedLessons, downloadedLessons.courseTitle);
+      }
+      // v3 -> v4 (E31-F01-S03): bookmarks created offline get a durable
+      // localId -> serverId mapping. Nothing to backfill — every pre-v4
+      // bookmark either never left the device or was already fetched back
+      // under its server id.
+      if (from < 4) {
+        await m.createTable(bookmarkIdMap);
       }
     },
     beforeOpen: (details) async {

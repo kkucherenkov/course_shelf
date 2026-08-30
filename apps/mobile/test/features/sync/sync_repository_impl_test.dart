@@ -22,6 +22,7 @@ void main() {
   late ProgressOutboxDao progress;
   late NotesOutboxDao notes;
   late BookmarksOutboxDao bookmarks;
+  late BookmarkIdMapDao bookmarkIds;
   late RecordingHttpAdapter adapter;
   late SyncRepositoryImpl repository;
 
@@ -34,6 +35,7 @@ void main() {
     progress = ProgressOutboxDao(db);
     notes = NotesOutboxDao(db);
     bookmarks = BookmarksOutboxDao(db);
+    bookmarkIds = BookmarkIdMapDao(db);
 
     respondBody = (RequestOptions options) => '{"id":"srv-new"}';
     adapter = RecordingHttpAdapter(
@@ -53,6 +55,7 @@ void main() {
       progress: progress,
       notes: notes,
       bookmarks: bookmarks,
+      bookmarkIds: bookmarkIds,
     );
   });
 
@@ -408,6 +411,7 @@ void main() {
         progress: progress,
         notes: notes,
         bookmarks: bookmarks,
+        bookmarkIds: bookmarkIds,
       );
 
       await expectLater(repository.drain(), throwsA(isA<DioException>()));

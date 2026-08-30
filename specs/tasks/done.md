@@ -2,6 +2,40 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-30-001 — scan sidecars: subtitle ingest + thumbnail derived-path + orphan cleanup
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude (lane, worktree `e27-scan-sidecars`)
+- Branch: `kkucherenkov/e27-scan-sidecars`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/315
+- Spec: [docs/roadmap/tasks/E27-F01-S01.md](../../docs/roadmap/tasks/E27-F01-S01.md) (#227), [docs/roadmap/tasks/E25-F04-S01.md](../../docs/roadmap/tasks/E25-F04-S01.md) (#220, duplicate report #282)
+- Goal: scan parses `.srt`/`.vtt` sidecars into `Transcript(origin: sidecar)` + cues (re-parse only on
+  changed signature); scan thumbnails move under `<derivedPath>/<libraryId>/…` instead of next to the
+  video (COURSES_PATH is `:ro` in prod); a lesson that vanishes from a scan gets its Transcript rows
+  deleted and the generated file best-effort unlinked.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] `domain/scan/scan.ts` — widen `ScannedSubtitle` with `mtime`/`size`
+  - [x] `domain/transcription/transcript.repository.ts` — add `findExisting`, `replaceSidecar`, `deleteForLesson`
+  - [x] `domain/transcription/derived-path.ts` — add `derivedThumbnailPath`
+  - [x] `infra/prisma-transcript.repository.ts` — implement the three new methods
+  - [x] `application/scan/sidecar-transcript-ingester.ts` — new pure ingest function
+  - [x] `run-scan.handler.ts` — wire sidecar ingest (existing + newly-created lessons), thumbnail
+        derived-path, orphan cleanup
+  - [x] specs for all of the above
+- Notes:
+  - Sidecar ingest for a lesson whose _course_ already existed before this scan required loading that
+    library's existing lessons up front (`lessonRepo.findByCourse` per existing course) keyed by
+    `videoPath`, since v1's "skip on duplicate slug" otherwise makes existing lessons unreachable on a
+    repeat scan — that same map also drives orphan detection (a known videoPath the walk didn't see this
+    pass has vanished).
+  - `run-scan.handler.ts` gained a real `mkdir` call for the thumbnail's parent dir (mirroring
+    `run-transcription.handler.ts`'s existing pattern) — its spec now needs
+    `vi.mock('node:fs/promises', ...)` or every thumbnail-writing test hangs on real disk I/O.
+  - Closed tuxedo #35 (duplicate of #220/#282).
+
 ## T-2026-08-30-012 — run whisper transcription over a library
 
 - Created: 2026-08-30

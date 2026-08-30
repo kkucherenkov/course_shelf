@@ -48,6 +48,14 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// The thumbnail write now mkdir's its parent under the derived volume
+// (E25-F04-S01) — mocked for the same reason run-transcription.handler.spec.ts
+// mocks it: no real disk I/O in a unit test, and FsAdapter isn't the port that
+// call goes through (mirrors `run-transcription.handler.ts`'s own mkdir).
+vi.mock('node:fs/promises', () => ({
+  mkdir: vi.fn(async () => undefined),
+}));
+
 import { Course } from '../../domain/course/course';
 import { Instructor } from '../../domain/instructor/instructor';
 import { InstructorSlugAlreadyTakenError } from '../../domain/instructor/instructor.errors';
@@ -71,6 +79,7 @@ import type { FfmpegAdapter, VideoMetadata } from '../../domain/scan/ffmpeg-adap
 import type { FsAdapter, FsEntry } from '../../domain/scan/fs-adapter';
 import type { LibraryRepository } from '../../domain/library/library.repository';
 import type { ScanRepository } from '../../domain/scan/scan.repository';
+import type { TranscriptRepository } from '../../domain/transcription/transcript.repository';
 import type { AppConfig } from '../../../../common/config/app-config';
 import type { CentrifugoService } from '../../../../common/centrifugo/centrifugo.service';
 
@@ -313,6 +322,9 @@ class FakeFsAdapter implements FsAdapter {
 // ---------------------------------------------------------------------------
 
 class FakeFfmpegAdapter implements FfmpegAdapter {
+  /** Every writeThumbnail call, in order — asserted by the derived-path test. */
+  readonly thumbnailCalls: { videoAbsolutePath: string; outAbsolutePath: string }[] = [];
+
   constructor(
     private readonly probeResults: Map<string, VideoMetadata | Error>,
     private readonly thumbnailResults: Map<string, Error | null>,
@@ -328,7 +340,11 @@ class FakeFfmpegAdapter implements FfmpegAdapter {
     return result;
   }
 
-  async writeThumbnail(req: { videoAbsolutePath: string }): Promise<void> {
+  async writeThumbnail(req: { videoAbsolutePath: string; outAbsolutePath: string }): Promise<void> {
+    this.thumbnailCalls.push({
+      videoAbsolutePath: req.videoAbsolutePath,
+      outAbsolutePath: req.outAbsolutePath,
+    });
     const err = this.thumbnailResults.get(req.videoAbsolutePath);
     if (err) throw err;
   }
@@ -348,7 +364,79 @@ function makeFakeAppConfig(): AppConfig {
     ffprobePath: 'ffprobe',
     ffmpegPath: 'ffmpeg',
     thumbnailJpegQuality: 30,
+    derivedPath: '/derived',
   } as unknown as AppConfig;
+}
+
+// ---------------------------------------------------------------------------
+// In-memory TranscriptRepository fake
+// ---------------------------------------------------------------------------
+
+interface FakeTranscriptRow {
+  origin: 'sidecar' | 'generated';
+  sourceMtime: Date;
+  sourceSize: number;
+}
+
+// Keyed by `${lessonId}:${language}` — mirrors the table's unique constraint.
+function transcriptRowKey(lessonId: string, language: string): string {
+  return `${lessonId}:${language}`;
+}
+
+function makeTranscriptRepo(): TranscriptRepository & { store: Map<string, FakeTranscriptRow> } {
+  const store = new Map<string, FakeTranscriptRow>();
+  const key = transcriptRowKey;
+
+  return {
+    store,
+    findGeneratedForLessons: vi.fn(async (lessonIds: readonly string[], language: string) => {
+      const result = new Map<string, { sourceMtime: Date; sourceSize: number }>();
+      for (const lessonId of lessonIds) {
+        const row = store.get(key(lessonId, language));
+        if (row && row.origin === 'generated') {
+          result.set(lessonId, { sourceMtime: row.sourceMtime, sourceSize: row.sourceSize });
+        }
+      }
+      return result;
+    }),
+    replaceGenerated: vi.fn(
+      async (input: {
+        lessonId: string;
+        language: string;
+        sourceMtime: Date;
+        sourceSize: number;
+      }) => {
+        store.set(key(input.lessonId, input.language), {
+          origin: 'generated',
+          sourceMtime: input.sourceMtime,
+          sourceSize: input.sourceSize,
+        });
+      },
+    ),
+    findExisting: vi.fn(async (lessonId: string, language: string) => {
+      const row = store.get(key(lessonId, language));
+      return row ? { ...row } : null;
+    }),
+    replaceSidecar: vi.fn(
+      async (input: {
+        lessonId: string;
+        language: string;
+        sourceMtime: Date;
+        sourceSize: number;
+      }) => {
+        store.set(key(input.lessonId, input.language), {
+          origin: 'sidecar',
+          sourceMtime: input.sourceMtime,
+          sourceSize: input.sourceSize,
+        });
+      },
+    ),
+    deleteForLesson: vi.fn(async (lessonId: string) => {
+      for (const k of store.keys()) {
+        if (k.startsWith(`${lessonId}:`)) store.delete(k);
+      }
+    }),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -367,6 +455,12 @@ function makeCentrifugoService(): CentrifugoService {
 
 const BASE_TIME = new Date('2026-01-01T00:00:00.000Z');
 const ACTOR_USER_ID = 'user-actor-1';
+
+// Minimal valid SRT — parses to one cue via extractCues(convertSrtToVtt(...)).
+// Fixture .srt/.vtt files that predate sidecar ingestion (E27-F01-S01) carry
+// this so ingesting them succeeds silently instead of adding a stray
+// 'subtitle-sidecar-invalid' ScanError that those tests never asked about.
+const MINIMAL_SRT = '1\n00:00:00,000 --> 00:00:01,000\nHello\n';
 
 function makeFixtureFiles(): FileRecord[] {
   return [
@@ -404,6 +498,16 @@ function makeFixtureFiles(): FileRecord[] {
 
 function makeLibrary(): Library {
   return Library.register({ id: 'lib-1', name: 'Test Library', rootPath: '/lib' });
+}
+
+// toSlug() (run-scan.handler.ts) is module-private; fixture folder names used
+// with it below have no punctuation requiring normalisation beyond
+// lower-casing and hyphenating spaces.
+function toSlugForTest(folder: string): string {
+  return folder
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, '-')
+    .replaceAll(/^-+|-+$/g, '');
 }
 
 // ---------------------------------------------------------------------------
@@ -449,6 +553,7 @@ describe('RunScanHandler', () => {
       lessonRepo,
       fs,
       makePassthroughFfmpeg(),
+      makeTranscriptRepo(),
       makeFakeAppConfig(),
       centrifugo,
       makeMetadataLinker(),
@@ -535,6 +640,7 @@ describe('RunScanHandler', () => {
       makeLessonRepo(),
       badFs,
       makePassthroughFfmpeg(),
+      makeTranscriptRepo(),
       makeFakeAppConfig(),
       centrifugo,
       makeMetadataLinker(),
@@ -560,6 +666,7 @@ describe('RunScanHandler', () => {
       makeLessonRepo(),
       fs,
       makePassthroughFfmpeg(),
+      makeTranscriptRepo(),
       makeFakeAppConfig(),
       centrifugo,
       makeMetadataLinker(),
@@ -593,6 +700,7 @@ describe('RunScanHandler', () => {
       makeLessonRepo(),
       fs,
       makePassthroughFfmpeg(),
+      makeTranscriptRepo(),
       makeFakeAppConfig(),
       centrifugo,
       makeMetadataLinker(),
@@ -635,6 +743,7 @@ describe('RunScanHandler', () => {
           path: '/lib/03 - Neovim Course/01 - Intro.en.srt',
           mtime: BASE_TIME,
           size: 20,
+          content: MINIMAL_SRT,
         },
       ];
 
@@ -647,6 +756,7 @@ describe('RunScanHandler', () => {
         makeLessonRepo(),
         neovimFs,
         makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
@@ -697,6 +807,7 @@ describe('RunScanHandler', () => {
           path: '/lib/04 - Cache Course/01 - Intro.en.srt',
           mtime: BASE_TIME,
           size: 20,
+          content: MINIMAL_SRT,
         },
         {
           // Generated cache — must be silently ignored.
@@ -715,6 +826,7 @@ describe('RunScanHandler', () => {
         makeLessonRepo(),
         cacheFs,
         makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
@@ -740,9 +852,24 @@ describe('RunScanHandler', () => {
 
       const dupFiles: FileRecord[] = [
         { path: '/lib/05 - Dup Course/01 - Intro.mp4', mtime: BASE_TIME, size: 500 },
-        { path: '/lib/05 - Dup Course/01 - Intro.en.srt', mtime: BASE_TIME, size: 20 },
-        { path: '/lib/05 - Dup Course/01 - Intro.en.vtt', mtime: BASE_TIME, size: 22 },
-        { path: '/lib/05 - Dup Course/01 - Intro.ru.srt', mtime: BASE_TIME, size: 24 },
+        {
+          path: '/lib/05 - Dup Course/01 - Intro.en.srt',
+          mtime: BASE_TIME,
+          size: 20,
+          content: MINIMAL_SRT,
+        },
+        {
+          path: '/lib/05 - Dup Course/01 - Intro.en.vtt',
+          mtime: BASE_TIME,
+          size: 22,
+          content: MINIMAL_SRT,
+        },
+        {
+          path: '/lib/05 - Dup Course/01 - Intro.ru.srt',
+          mtime: BASE_TIME,
+          size: 24,
+          content: MINIMAL_SRT,
+        },
       ];
 
       const dupLessonRepo = makeLessonRepo();
@@ -753,6 +880,7 @@ describe('RunScanHandler', () => {
         dupLessonRepo,
         new FakeFsAdapter(dupFiles),
         makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
@@ -798,6 +926,7 @@ describe('RunScanHandler', () => {
         makeLessonRepo(),
         dotFs,
         makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
@@ -864,6 +993,7 @@ describe('RunScanHandler', () => {
         makeLessonRepo(),
         ffFs,
         ffmpegAdapter,
+        makeTranscriptRepo(),
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
@@ -906,6 +1036,432 @@ describe('RunScanHandler', () => {
         (e) => e.code !== 'ffmpeg-thumbnail-failed' && e.code !== 'ffmpeg-probe-failed',
       );
       expect(unexpectedErrors).toHaveLength(0);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // E25-F04-S01: thumbnails move to the derived volume
+  // -------------------------------------------------------------------------
+  describe('E25-F04-S01: thumbnails on the derived volume', () => {
+    it('writes the thumbnail under <derivedPath>/<libraryId>/…, never next to the video', async () => {
+      vi.useRealTimers();
+
+      const video = '/lib/06 - Thumb Course/01 - Intro.mp4';
+      const thumbFiles: FileRecord[] = [{ path: video, mtime: BASE_TIME, size: 500 }];
+
+      const ffmpegAdapter = new FakeFfmpegAdapter(new Map(), new Map());
+      const thumbScanRepo = makeScanRepo();
+      const thumbHandler = new RunScanHandler(
+        libraryRepo,
+        thumbScanRepo,
+        makeCourseRepo(),
+        makeLessonRepo(),
+        new FakeFsAdapter(thumbFiles),
+        ffmpegAdapter,
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await thumbHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = thumbScanRepo.store.get(scan.id)!;
+      expect(saved.status).toBe('succeeded');
+      expect(saved.errors).toHaveLength(0);
+
+      expect(ffmpegAdapter.thumbnailCalls).toHaveLength(1);
+      const call = ffmpegAdapter.thumbnailCalls[0]!;
+      expect(call.videoAbsolutePath).toBe(video);
+      // Never next to the video (the pre-fix location).
+      expect(call.outAbsolutePath).not.toBe('/lib/06 - Thumb Course/01 - Intro.thumb.jpg');
+      // Under <derivedPath>/<libraryId>/<library-relative video path>.thumb.jpg.
+      expect(call.outAbsolutePath).toBe(
+        '/derived/lib-1/06 - Thumb Course/01 - Intro.mp4.thumb.jpg',
+      );
+    });
+
+    it('records ScanError and continues the scan when the thumbnail write fails', async () => {
+      vi.useRealTimers();
+
+      const video = '/lib/07 - Thumb Fail Course/01 - Intro.mp4';
+      const thumbFiles: FileRecord[] = [{ path: video, mtime: BASE_TIME, size: 500 }];
+
+      const ffmpegAdapter = new FakeFfmpegAdapter(
+        new Map(),
+        new Map([[video, new Error('disk full')]]),
+      );
+      const failScanRepo = makeScanRepo();
+      const failHandler = new RunScanHandler(
+        libraryRepo,
+        failScanRepo,
+        makeCourseRepo(),
+        makeLessonRepo(),
+        new FakeFsAdapter(thumbFiles),
+        ffmpegAdapter,
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await failHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = failScanRepo.store.get(scan.id)!;
+      // Failure is per-file, not fatal — the scan still succeeds overall.
+      expect(saved.status).toBe('succeeded');
+      expect(saved.errors).toHaveLength(1);
+      expect(saved.errors[0]?.code).toBe('ffmpeg-thumbnail-failed');
+      expect(saved.coursesDiscovered).toBe(1);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // E27-F01-S01: sidecar subtitles parsed into Transcript(origin: sidecar)
+  //
+  // Every scenario reuses the same fixture shape: a course + lesson already
+  // persisted from a PRIOR scan (course already known → the walk would
+  // otherwise skip it entirely), so these exercise the "existing lesson"
+  // ingestion path — the one that only this feature makes reachable on a
+  // repeat scan.
+  // -------------------------------------------------------------------------
+  describe('E27-F01-S01: sidecar subtitle ingest', () => {
+    const courseFolder = 'Sidecar Course';
+    const videoPath = `/lib/${courseFolder}/01 - Intro.mp4`;
+    const srtPath = `/lib/${courseFolder}/01 - Intro.en.srt`;
+
+    function seedExistingLesson(
+      courseRepo: ReturnType<typeof makeCourseRepo>,
+      lessonRepo: ReturnType<typeof makeLessonRepo>,
+    ): { courseId: string; lessonId: string } {
+      const course = Course.create({
+        id: 'course-sidecar',
+        libraryId: 'lib-1',
+        slug: toSlugForTest(courseFolder),
+        title: courseFolder,
+      });
+      courseRepo.store.set(course.id, course);
+
+      const lesson = Lesson.create({
+        id: 'lesson-sidecar',
+        courseId: course.id,
+        sectionId: 'section-sidecar',
+        position: 1,
+        title: 'Intro',
+        videoPath,
+        mtime: BASE_TIME,
+        sizeBytes: 500,
+      });
+      lessonRepo.store.set(lesson.id, lesson);
+
+      return { courseId: course.id, lessonId: lesson.id };
+    }
+
+    it('ingests a new sidecar into Transcript(origin: sidecar) + cues', async () => {
+      vi.useRealTimers();
+
+      const files: FileRecord[] = [
+        { path: videoPath, mtime: BASE_TIME, size: 500 },
+        {
+          path: srtPath,
+          mtime: BASE_TIME,
+          size: 30,
+          content: '1\n00:00:00,000 --> 00:00:02,000\nHola\n',
+        },
+      ];
+
+      const courseRepo2 = makeCourseRepo();
+      const lessonRepo2 = makeLessonRepo();
+      const { lessonId } = seedExistingLesson(courseRepo2, lessonRepo2);
+      const transcriptRepo = makeTranscriptRepo();
+      const scanRepo2 = makeScanRepo();
+
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        transcriptRepo,
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      expect(saved.errors.filter((e) => e.code === 'subtitle-sidecar-invalid')).toHaveLength(0);
+
+      const row = transcriptRepo.store.get(`${lessonId}:en`);
+      expect(row).toEqual({ origin: 'sidecar', sourceMtime: BASE_TIME, sourceSize: 30 });
+      expect(transcriptRepo.replaceSidecar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lessonId,
+          language: 'en',
+          sourcePath: `${courseFolder}/01 - Intro.en.srt`,
+          cues: [{ startMs: 0, endMs: 2000, text: 'Hola' }],
+        }),
+      );
+    });
+
+    it('unchanged signature performs no reads and leaves the row untouched', async () => {
+      vi.useRealTimers();
+
+      // No `content` — FakeFsAdapter.readUtf8 throws if this is ever read.
+      const files: FileRecord[] = [
+        { path: videoPath, mtime: BASE_TIME, size: 500 },
+        { path: srtPath, mtime: BASE_TIME, size: 30 },
+      ];
+
+      const courseRepo2 = makeCourseRepo();
+      const lessonRepo2 = makeLessonRepo();
+      const { lessonId } = seedExistingLesson(courseRepo2, lessonRepo2);
+      const transcriptRepo = makeTranscriptRepo();
+      transcriptRepo.store.set(`${lessonId}:en`, {
+        origin: 'sidecar',
+        sourceMtime: BASE_TIME,
+        sourceSize: 30,
+      });
+      const scanRepo2 = makeScanRepo();
+
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        transcriptRepo,
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      expect(saved.errors).toHaveLength(0);
+      expect(transcriptRepo.replaceSidecar).not.toHaveBeenCalled();
+      expect(transcriptRepo.store.get(`${lessonId}:en`)).toEqual({
+        origin: 'sidecar',
+        sourceMtime: BASE_TIME,
+        sourceSize: 30,
+      });
+    });
+
+    it('a changed signature replaces the row', async () => {
+      vi.useRealTimers();
+
+      const files: FileRecord[] = [
+        { path: videoPath, mtime: BASE_TIME, size: 500 },
+        {
+          path: srtPath,
+          mtime: new Date(BASE_TIME.getTime() + 60_000),
+          size: 40,
+          content: '1\n00:00:00,000 --> 00:00:03,000\nUpdated\n',
+        },
+      ];
+
+      const courseRepo2 = makeCourseRepo();
+      const lessonRepo2 = makeLessonRepo();
+      const { lessonId } = seedExistingLesson(courseRepo2, lessonRepo2);
+      const transcriptRepo = makeTranscriptRepo();
+      // Stale signature — the old (mtime, size) recorded by an earlier scan.
+      transcriptRepo.store.set(`${lessonId}:en`, {
+        origin: 'sidecar',
+        sourceMtime: BASE_TIME,
+        sourceSize: 30,
+      });
+      const scanRepo2 = makeScanRepo();
+
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        transcriptRepo,
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      expect(transcriptRepo.replaceSidecar).toHaveBeenCalledTimes(1);
+      const row = transcriptRepo.store.get(`${lessonId}:en`)!;
+      expect(row.sourceSize).toBe(40);
+      expect(row.sourceMtime).toEqual(new Date(BASE_TIME.getTime() + 60_000));
+    });
+
+    it('a malformed sidecar costs its own transcript, recorded as a ScanError, never the scan', async () => {
+      vi.useRealTimers();
+
+      // No `content` set — FakeFsAdapter.readUtf8 throws "File not found in fake".
+      const files: FileRecord[] = [
+        { path: videoPath, mtime: BASE_TIME, size: 500 },
+        { path: srtPath, mtime: BASE_TIME, size: 30 },
+      ];
+
+      const courseRepo2 = makeCourseRepo();
+      const lessonRepo2 = makeLessonRepo();
+      const { lessonId } = seedExistingLesson(courseRepo2, lessonRepo2);
+      const transcriptRepo = makeTranscriptRepo();
+      const scanRepo2 = makeScanRepo();
+
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        transcriptRepo,
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      // The scan itself still succeeds — the bad sidecar costs only itself.
+      expect(saved.status).toBe('succeeded');
+      const err = saved.errors.find((e) => e.code === 'subtitle-sidecar-invalid');
+      expect(err).toBeDefined();
+      expect(transcriptRepo.store.has(`${lessonId}:en`)).toBe(false);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // E25-F04-S01: orphan Transcript cleanup
+  // -------------------------------------------------------------------------
+  describe('E25-F04-S01: orphan transcript cleanup', () => {
+    it('deletes Transcript rows for a lesson whose video the scan no longer finds', async () => {
+      vi.useRealTimers();
+
+      const vanishedVideoPath = '/lib/09 - Gone Course/01 - Intro.mp4';
+      const course = Course.create({
+        id: 'course-gone',
+        libraryId: 'lib-1',
+        slug: 'gone-course',
+        title: '09 - Gone Course',
+      });
+      const lesson = Lesson.create({
+        id: 'lesson-gone',
+        courseId: course.id,
+        sectionId: 'section-gone',
+        position: 1,
+        title: 'Intro',
+        videoPath: vanishedVideoPath,
+        mtime: BASE_TIME,
+        sizeBytes: 500,
+      });
+
+      const courseRepo2 = makeCourseRepo();
+      courseRepo2.store.set(course.id, course);
+      const lessonRepo2 = makeLessonRepo();
+      lessonRepo2.store.set(lesson.id, lesson);
+      const transcriptRepo = makeTranscriptRepo();
+      transcriptRepo.store.set(`${lesson.id}:en`, {
+        origin: 'generated',
+        sourceMtime: BASE_TIME,
+        sourceSize: 500,
+      });
+      const scanRepo2 = makeScanRepo();
+
+      // The library now has a DIFFERENT, unrelated course — the "Gone Course"
+      // folder is absent entirely, simulating the video having been deleted.
+      const files: FileRecord[] = [
+        { path: '/lib/10 - Still Here/01 - Intro.mp4', mtime: BASE_TIME, size: 100 },
+      ];
+
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        transcriptRepo,
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      expect(saved.status).toBe('succeeded');
+      expect(transcriptRepo.deleteForLesson).toHaveBeenCalledWith(lesson.id);
+      expect(transcriptRepo.store.has(`${lesson.id}:en`)).toBe(false);
+
+      // The Lesson row itself is untouched — only Transcript rows are cleaned up.
+      expect(lessonRepo2.store.has(lesson.id)).toBe(true);
+    });
+
+    it('a failed cleanup records a ScanError and the scan continues', async () => {
+      vi.useRealTimers();
+
+      const vanishedVideoPath = '/lib/11 - Gone Course/01 - Intro.mp4';
+      const course = Course.create({
+        id: 'course-gone-2',
+        libraryId: 'lib-1',
+        slug: 'gone-course-2',
+        title: '11 - Gone Course',
+      });
+      const lesson = Lesson.create({
+        id: 'lesson-gone-2',
+        courseId: course.id,
+        sectionId: 'section-gone-2',
+        position: 1,
+        title: 'Intro',
+        videoPath: vanishedVideoPath,
+        mtime: BASE_TIME,
+        sizeBytes: 500,
+      });
+
+      const courseRepo2 = makeCourseRepo();
+      courseRepo2.store.set(course.id, course);
+      const lessonRepo2 = makeLessonRepo();
+      lessonRepo2.store.set(lesson.id, lesson);
+      const transcriptRepo = makeTranscriptRepo();
+      transcriptRepo.deleteForLesson = vi.fn(async () => {
+        throw new Error('db unavailable');
+      });
+      const scanRepo2 = makeScanRepo();
+
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter([]),
+        makePassthroughFfmpeg(),
+        transcriptRepo,
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      // Cleanup failure is non-fatal — the scan still reaches a terminal state.
+      expect(saved.status).toBe('succeeded');
+      const err = saved.errors.find((e) => e.code === 'transcript-cleanup-failed');
+      expect(err).toBeDefined();
     });
   });
 
@@ -1109,6 +1665,7 @@ describe('RunScanHandler', () => {
         makeLessonRepo(),
         cleanFs,
         makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
         makeFakeAppConfig(),
         cleanCentrifugo,
         makeMetadataLinker(),
@@ -1149,6 +1706,7 @@ describe('RunScanHandler', () => {
         makeLessonRepo(),
         throwingFs,
         makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
         makeFakeAppConfig(),
         failCentrifugo,
         makeMetadataLinker(),
@@ -1201,6 +1759,7 @@ describe('RunScanHandler', () => {
         lessonRepo,
         new FakeFsAdapter(orderingFiles),
         makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
         makeFakeAppConfig(),
         makeCentrifugoService(),
         makeMetadataLinker(),
@@ -1232,6 +1791,7 @@ describe('RunScanHandler', () => {
         lessonRepo,
         new FakeFsAdapter(orderingFiles),
         makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
         makeFakeAppConfig(),
         makeCentrifugoService(),
         makeMetadataLinker(),
@@ -1301,6 +1861,7 @@ describe('RunScanHandler', () => {
         makeLessonRepo(),
         metadataFs,
         makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
         makeFakeAppConfig(),
         makeCentrifugoService(),
         metadataLinker,
@@ -1377,6 +1938,7 @@ describe('RunScanHandler', () => {
         makeLessonRepo(),
         new FakeFsAdapter(v1Files),
         makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
         makeFakeAppConfig(),
         makeCentrifugoService(),
         v1Linker,
@@ -1432,6 +1994,7 @@ describe('RunScanHandler', () => {
         makeLessonRepo(),
         new FakeFsAdapter(emptyFiles),
         makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
         makeFakeAppConfig(),
         makeCentrifugoService(),
         emptyLinker,
@@ -1484,6 +2047,7 @@ describe('RunScanHandler', () => {
         makeLessonRepo(),
         new FakeFsAdapter(idempotentFiles),
         makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
         makeFakeAppConfig(),
         makeCentrifugoService(),
         idempotentLinker,
@@ -1509,6 +2073,7 @@ describe('RunScanHandler', () => {
         makeLessonRepo(),
         new FakeFsAdapter(idempotentFiles),
         makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
         makeFakeAppConfig(),
         makeCentrifugoService(),
         idempotentLinker,

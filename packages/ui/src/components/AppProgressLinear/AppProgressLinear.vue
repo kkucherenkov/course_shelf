@@ -7,10 +7,15 @@
       value?: number;
       /** Drops track height from 4px to 2px. */
       thin?: boolean;
-      /** aria-label / aria-valuetext text for screen readers. */
+      /**
+       * aria-label / aria-valuetext text for screen readers. Defaults rather
+       * than staying optional: a `role="progressbar"` with no accessible name
+       * is an axe `aria-progressbar-name` failure, so leaving it unset shipped
+       * an unnamed progressbar. Pass a localized string from the page.
+       */
       label?: string;
     }>(),
-    { value: undefined, thin: false, label: undefined },
+    { value: undefined, thin: false, label: 'Progress' },
   );
 
   const indeterminate = computed(() => props.value === undefined);

@@ -40,7 +40,17 @@
   }>();
 
   const isLink = computed(() => Boolean(props.to) && !props.disabled);
-  const rootTag = computed(() => (isLink.value ? resolveComponent('NuxtLink') : 'button'));
+
+  // A removable chip renders a non-interactive root. The remove control is a
+  // real <button>, and a <button> inside a <button> is an axe
+  // `nested-interactive` failure — a screen reader cannot reach the inner one.
+  // Removable chips are dismissable tags whose affordance IS the X, so the
+  // root gives up its own button semantics rather than the X giving up its.
+  const isButtonRoot = computed(() => !isLink.value && !props.removable);
+  const rootTag = computed(() => {
+    if (isLink.value) return resolveComponent('NuxtLink');
+    return isButtonRoot.value ? 'button' : 'span';
+  });
 
   const rootClasses = computed(() => [
     'app-chip',
@@ -77,10 +87,10 @@
   <component
     :is="rootTag"
     :to="to"
-    :type="isLink ? undefined : 'button'"
+    :type="isButtonRoot ? 'button' : undefined"
     :class="rootClasses"
-    :disabled="isLink ? undefined : disabled"
-    :aria-pressed="selected ? 'true' : undefined"
+    :disabled="isButtonRoot ? disabled : undefined"
+    :aria-pressed="isButtonRoot && selected ? 'true' : undefined"
     :aria-disabled="disabled ? 'true' : undefined"
     @click="handleClick"
   >
@@ -88,18 +98,16 @@
     <span v-if="$slots['default'] || label" class="app-chip__label">
       <slot>{{ label }}</slot>
     </span>
-    <span
+    <button
       v-if="removable"
+      type="button"
       class="app-chip__remove"
-      role="button"
-      tabindex="0"
+      :disabled="disabled"
       :aria-label="removeLabel"
       @click="handleRemove"
-      @keydown.enter.prevent="handleRemove"
-      @keydown.space.prevent="handleRemove"
     >
       <IconCS name="x" :size="iconPx" />
-    </span>
+    </button>
   </component>
 </template>
 
@@ -152,6 +160,11 @@
       justify-content: center;
       flex-shrink: 0;
       margin-inline-start: 2px;
+      // Native <button> reset — it used to be a <span role="button">, and the
+      // agent stylesheet's border/background/font would otherwise repaint it.
+      border: 0;
+      background: none;
+      font: inherit;
       padding: 2px;
       border-radius: var(--radius-pill);
       color: currentcolor;

@@ -396,51 +396,56 @@
       </div>
 
       <div class="app-player-chrome__bottom">
-        <div
-          ref="scrubberRef"
-          class="app-player-chrome__scrubber"
-          role="slider"
-          tabindex="0"
-          :aria-valuemin="0"
-          :aria-valuemax="duration"
-          :aria-valuenow="position"
-          :aria-valuetext="sliderValueText"
-          :aria-label="aria.seek"
-          :aria-disabled="isInert ? 'true' : undefined"
-          @click="onScrubberPointer"
-          @keydown="onScrubberKeydown"
-        >
-          <div class="app-player-chrome__scrubber-track" />
+        <div class="app-player-chrome__scrubber-wrap">
           <div
-            class="app-player-chrome__scrubber-buf"
-            :style="{ width: `${String(bufferedFraction * 100)}%` }"
-          />
-          <div
-            class="app-player-chrome__scrubber-played"
-            :style="{ width: `${String(playedFraction * 100)}%` }"
-          />
-          <div
-            class="app-player-chrome__scrubber-thumb"
-            :style="{ left: `${String(playedFraction * 100)}%` }"
-          />
-          <div
-            v-for="(t, i) in chapters"
-            :key="`chap-${String(i)}`"
-            class="app-player-chrome__scrubber-chap"
-            :style="{ left: `${String(clamp01(t) * 100)}%` }"
-            aria-hidden="true"
-          />
-          <button
-            v-for="(bm, i) in bookmarks"
-            :key="`bm-${String(i)}`"
-            type="button"
-            class="app-player-chrome__scrubber-bm"
-            :style="{ left: `${String(clamp01(bm.time / nonZero(duration)) * 100)}%` }"
-            :aria-label="bm.label ?? aria.bookmarkAt.replace('{time}', fmtTime(bm.time))"
-            @click.stop="seekTo(bm.time / nonZero(duration))"
+            ref="scrubberRef"
+            class="app-player-chrome__scrubber"
+            role="slider"
+            tabindex="0"
+            :aria-valuemin="0"
+            :aria-valuemax="duration"
+            :aria-valuenow="position"
+            :aria-valuetext="sliderValueText"
+            :aria-label="aria.seek"
+            :aria-disabled="isInert ? 'true' : undefined"
+            @click="onScrubberPointer"
+            @keydown="onScrubberKeydown"
           >
-            <IconCS name="bookmark" :size="10" />
-          </button>
+            <div class="app-player-chrome__scrubber-track" />
+            <div
+              class="app-player-chrome__scrubber-buf"
+              :style="{ width: `${String(bufferedFraction * 100)}%` }"
+            />
+            <div
+              class="app-player-chrome__scrubber-played"
+              :style="{ width: `${String(playedFraction * 100)}%` }"
+            />
+            <div
+              class="app-player-chrome__scrubber-thumb"
+              :style="{ left: `${String(playedFraction * 100)}%` }"
+            />
+            <div
+              v-for="(t, i) in chapters"
+              :key="`chap-${String(i)}`"
+              class="app-player-chrome__scrubber-chap"
+              :style="{ left: `${String(clamp01(t) * 100)}%` }"
+              aria-hidden="true"
+            />
+          </div>
+
+          <div v-if="bookmarks.length > 0" class="app-player-chrome__scrubber-marks">
+            <button
+              v-for="(bm, i) in bookmarks"
+              :key="`bm-${String(i)}`"
+              type="button"
+              class="app-player-chrome__scrubber-bm"
+              :style="{ left: `${String(clamp01(bm.time / nonZero(duration)) * 100)}%` }"
+              :aria-label="bm.label ?? aria.bookmarkAt.replace('{time}', fmtTime(bm.time))"
+              @click.stop="seekTo(bm.time / nonZero(duration))"
+            >
+              <IconCS name="bookmark" :size="10" />
+            </button>
+          </div>
         </div>
 
         <div class="app-player-chrome__controls">
@@ -698,6 +703,24 @@
     }
 
     // ---- Scrubber ----
+    // The bookmark markers are <button>s and used to live INSIDE the
+    // `role="slider"` element, which is an axe `nested-interactive` failure: a
+    // slider must not contain focusable descendants, and a screen reader
+    // reaching one has no way to describe where it is. They are a sibling
+    // layer now. The wrap is the positioning context shared by the slider and
+    // that layer, so the markers' `left: %` offsets still measure the same box.
+    &__scrubber-wrap {
+      position: relative;
+    }
+
+    &__scrubber-marks {
+      position: absolute;
+      inset: 0;
+      // Transparent to the pointer so clicks on the bar still reach the
+      // slider underneath; each marker re-enables it for itself.
+      pointer-events: none;
+    }
+
     &__scrubber {
       position: relative;
       height: var(--space-4);
@@ -759,6 +782,7 @@
       position: absolute;
       top: $bookmark-offset;
       transform: translateX(-50%);
+      pointer-events: auto;
       color: var(--status-info-fg);
       background: transparent;
       border: 0;

@@ -34,7 +34,7 @@ export const Default: Story = {
   render: (args) => ({
     components: { AppInput },
     setup: () => ({ args }),
-    template: `<AppInput v-bind="args" />`,
+    template: `<AppInput v-bind="args" aria-label="Example input" />`,
   }),
 };
 
@@ -43,7 +43,7 @@ export const WithPlaceholder: Story = {
   render: (args) => ({
     components: { AppInput },
     setup: () => ({ args }),
-    template: `<AppInput v-bind="args" />`,
+    template: `<AppInput v-bind="args" aria-label="Example input" />`,
   }),
 };
 
@@ -52,7 +52,7 @@ export const WithValue: Story = {
   render: (args) => ({
     components: { AppInput },
     setup: () => ({ args }),
-    template: `<AppInput v-bind="args" />`,
+    template: `<AppInput v-bind="args" aria-label="Example input" />`,
   }),
 };
 
@@ -74,7 +74,7 @@ export const Disabled: Story = {
   render: (args) => ({
     components: { AppInput },
     setup: () => ({ args }),
-    template: `<AppInput v-bind="args" />`,
+    template: `<AppInput v-bind="args" aria-label="Example input" />`,
   }),
 };
 
@@ -83,7 +83,7 @@ export const Readonly: Story = {
   render: (args) => ({
     components: { AppInput },
     setup: () => ({ args }),
-    template: `<AppInput v-bind="args" />`,
+    template: `<AppInput v-bind="args" aria-label="Example input" />`,
   }),
 };
 

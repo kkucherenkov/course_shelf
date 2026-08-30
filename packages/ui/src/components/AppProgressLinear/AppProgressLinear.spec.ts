@@ -29,9 +29,11 @@ describe('AppProgressLinear', () => {
     expect(wrapper.attributes('aria-label')).toBe('Upload progress');
   });
 
-  it('does not set aria-label when label is not provided', () => {
+  // A `role="progressbar"` must always carry an accessible name (axe
+  // `aria-progressbar-name`), so the prop defaults rather than staying unset.
+  it('falls back to a default aria-label when label is not provided', () => {
     const wrapper = mount(AppProgressLinear, { props: { value: 30 } });
-    expect(wrapper.attributes('aria-label')).toBeUndefined();
+    expect(wrapper.attributes('aria-label')).toBe('Progress');
   });
 
   // --- fill width ---

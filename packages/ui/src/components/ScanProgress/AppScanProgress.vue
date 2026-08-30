@@ -57,6 +57,13 @@
 
   const clampedPercent = computed(() => Math.max(0, Math.min(100, Math.round(props.percent))));
 
+  // Accessible name for the progress bar, mirroring the header text. A
+  // `role="progressbar"` with no accessible name is an axe
+  // `aria-progressbar-name` failure, and a screen reader announces a bare
+  // percentage with nothing to attach it to. Composed from props the consumer
+  // already passes rather than added as a new required one.
+  const progressLabel = computed(() => `${statusWord.value} \u00B7 ${props.courseName}`);
+
   const showCurrentFile = computed(() => props.status === 'running' && Boolean(props.currentFile));
 
   const showCancelButton = computed(() => props.status === 'running');
@@ -111,6 +118,7 @@
     <div
       class="app-scan-progress__bar"
       role="progressbar"
+      :aria-label="progressLabel"
       :aria-valuenow="clampedPercent"
       aria-valuemin="0"
       aria-valuemax="100"

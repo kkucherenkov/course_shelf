@@ -1,6 +1,14 @@
 <script setup lang="ts">
   withDefaults(
     defineProps<{
+      /**
+       * Visual selection only. No ARIA is emitted: `aria-selected` is valid
+       * solely on `option`/`row`/`tab`/`treeitem`-like roles, and this renders
+       * a plain `<button>` or `<div>` — axe's `aria-allowed-attr` failed on
+       * every selected row. The consumer owns the semantics and passes them
+       * through as fallthrough attrs (AppNavigationShell already sets
+       * `aria-current="page"`, which is the correct one for navigation).
+       */
       selected?: boolean;
       compact?: boolean;
       /** When true, renders as <button type="button">; otherwise <div>. */
@@ -22,7 +30,6 @@
         'app-row--interactive': interactive,
       },
     ]"
-    :aria-selected="selected ? 'true' : undefined"
   >
     <div v-if="$slots['leading']" class="app-row__leading">
       <slot name="leading" />

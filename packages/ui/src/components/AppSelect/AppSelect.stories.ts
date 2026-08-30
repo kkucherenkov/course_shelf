@@ -28,6 +28,10 @@ const meta: Meta<typeof AppSelect> = {
           '',
           'Translations come in as the `placeholder` prop and each option `label`.',
           'Compose inside `AppField` to link label + help/error + ARIA wiring.',
+          '',
+          'The stories below render the primitive on its own, so each passes an',
+          '`aria-label` — a bare `<select>` with no accessible name is an axe',
+          '`select-name` violation. In an app the name comes from `AppField`.',
         ].join('\n'),
       },
     },
@@ -69,7 +73,7 @@ const singleSelectRender: Story['render'] = (rawArgs) => {
     },
     template: `
       <div style="width: 280px;">
-        <AppSelect v-bind="args" v-model="value" :options="options" />
+        <AppSelect v-bind="args" v-model="value" :options="options" aria-label="Favourite fruit" />
         <p style="margin-top: var(--space-4); color: var(--text-secondary); font-family: var(--font-mono); font-size: var(--text-xs);">
           modelValue: {{ value ?? 'null' }}
         </p>
@@ -102,9 +106,9 @@ export const Sizes: Story = {
     },
     template: `
       <div style="display:flex; flex-direction:column; gap: var(--space-8); width: 280px;">
-        <AppSelect size="sm" placeholder="Small" :options="options" v-model="values.sm" />
-        <AppSelect size="md" placeholder="Medium" :options="options" v-model="values.md" />
-        <AppSelect size="lg" placeholder="Large" :options="options" v-model="values.lg" />
+        <AppSelect size="sm" placeholder="Small" :options="options" v-model="values.sm" aria-label="Favourite fruit (small)" />
+        <AppSelect size="md" placeholder="Medium" :options="options" v-model="values.md" aria-label="Favourite fruit (medium)" />
+        <AppSelect size="lg" placeholder="Large" :options="options" v-model="values.lg" aria-label="Favourite fruit (large)" />
       </div>
     `,
   }),
@@ -124,7 +128,7 @@ export const WithDisabledOption: Story = {
     },
     template: `
       <div style="width: 280px;">
-        <AppSelect v-model="value" :options="options" placeholder="Pick a fruit…" />
+        <AppSelect v-model="value" :options="options" placeholder="Pick a fruit…" aria-label="Favourite fruit" />
       </div>
     `,
   }),

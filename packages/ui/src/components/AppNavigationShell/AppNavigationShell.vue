@@ -51,6 +51,14 @@
       adminNavLabel?: string;
       userMenuLabel?: string;
       bottomNavLabel?: string;
+      /**
+       * The shell renders two <aside> landmarks (the sidebar and the optional
+       * right rail). Two unnamed landmarks of the same role are an axe
+       * `landmark-unique` failure and are indistinguishable in a screen
+       * reader's landmark list, so each carries its own name.
+       */
+      sidebarLabel?: string;
+      rightRailLabel?: string;
       /** Visible heading over the admin section; override to translate. */
       adminLabel?: string;
     }>(),
@@ -65,6 +73,8 @@
       adminNavLabel: 'Admin navigation',
       userMenuLabel: 'User menu',
       bottomNavLabel: 'Bottom navigation',
+      sidebarLabel: 'Sidebar',
+      rightRailLabel: 'Secondary content',
       adminLabel: 'Admin',
     },
   );
@@ -193,7 +203,7 @@
 <template>
   <div class="app-navigation-shell" @keydown="onMenuKeydown">
     <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
-    <aside class="app-navigation-shell__sidebar">
+    <aside class="app-navigation-shell__sidebar" :aria-label="sidebarLabel">
       <!-- Brand -->
       <div class="app-navigation-shell__brand">
         <span class="app-navigation-shell__brand-mark">{{ brandMark }}</span>
@@ -366,7 +376,11 @@
         <div class="app-navigation-shell__main-body">
           <slot />
         </div>
-        <aside v-if="hasRightRail" class="app-navigation-shell__main-rail">
+        <aside
+          v-if="hasRightRail"
+          class="app-navigation-shell__main-rail"
+          :aria-label="rightRailLabel"
+        >
           <slot name="right-rail" />
         </aside>
       </main>

@@ -413,11 +413,9 @@ Stated plainly, because finding these by surprise is worse.
 | Limit | Detail |
 | --- | --- |
 | **Browse filters incomplete** | Library, duration-bucket and instructor filters, and sort-by-duration, are designed but not implemented on web. |
-| **Avatar upload, email change, account deletion** | Present in Settings, not functional. |
 | **Backups have no UI** | API only. |
 | **Web ships 2 locales** | English and Russian. Mobile ships four (en, ru, uk, el). |
 | **Greek and Ukrainian are machine-written** | Not yet reviewed by a native speaker. |
-| **SSO** | The provider button row exists in the component library but is not wired into sign-in. Email + password is the only path today. |
 | **Storage bar on mobile** | The free/used disk figures use a native plugin that has not been verified on a real device. |
 
 ---

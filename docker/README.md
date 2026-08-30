@@ -35,6 +35,42 @@ from the same variables, so moving a port does not silently break auth or CORS.
 The centrifugo image tag is namespaced by `COMPOSE_PROJECT_NAME` too — two
 worktrees building at once would otherwise fight over one tag.
 
+## Volumes and transcription
+
+The backend reads course media and writes artefacts it generates from that
+media. The two never share a mount — in `compose.prod.yml` and
+`compose.release.yml` the course mount is `:ro`, so generated files need a
+writable root of their own.
+
+| Variable            | Default (dev) | Mounted at      | Mode | What it holds                                    |
+| ------------------- | ------------- | --------------- | ---- | ------------------------------------------------ |
+| `COURSES_PATH`      | — (prod only) | `/data/courses` | ro   | Your course library                              |
+| `DERIVED_PATH`      | `../derived`  | `/data/derived` | rw   | Whisper transcripts, later scan thumbnails       |
+| `WHISPER_MODEL_DIR` | `../models`   | `/models`       | ro   | ggml whisper models — never baked into the image |
+
+`DERIVED_PATH` is required in `compose.prod.yml` / `compose.release.yml` and
+defaults to `<repo>/derived` in dev (gitignored). Docker creates a missing
+host directory for either bind, so the model mount is inert until you use it.
+
+Both backend images ship a **pinned whisper.cpp** build (`whisper-cli` on
+`PATH`, `WHISPER_CPP_VERSION` build arg, currently `v1.9.3`). The model is not
+in the image: `ggml-medium` is ~1.5 GB and has no business in a registry push.
+
+Transcription stays **off** until you name a model — with `WHISPER_MODEL_PATH`
+empty, `AppConfig.transcription.configured` is `false` and the run endpoint
+refuses instead of starting a run that can only fail:
+
+```sh
+mkdir -p models
+curl -L -o models/ggml-base.bin \
+  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+WHISPER_MODEL_PATH=/models/ggml-base.bin docker compose -f docker/compose.yml up -d backend
+```
+
+`WHISPER_THREADS` (default `4`) and `WHISPER_LANGUAGE` (default `auto`) are
+passed through too; `WHISPER_TIMEOUT_MS` (default six hours) is read straight
+from the environment by `AppConfig`.
+
 ## Services
 
 | Service    | Image                         | Default port | Variable             | Notes                                                                |

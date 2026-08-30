@@ -110,6 +110,16 @@ services:
       # can still hit Nuxt directly when bypassing the proxy.
       CORS_ORIGINS: http://localhost:${CS_PROXY_PORT:-8080},http://localhost:${CS_WEB_PORT:-3001}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4318
+      # Generated artefacts (whisper transcripts, later scan thumbnails) go to
+      # a writable root of their own — /data/courses is read-only in prod.
+      DERIVED_PATH: /data/derived
+      # Transcription stays off until a ggml model is named: with no model path
+      # AppConfig reports `configured: false` and the run endpoint refuses
+      # rather than starting something that can only fail. Drop a model into
+      # $WHISPER_MODEL_DIR and set this to its /models/... path to switch on.
+      WHISPER_MODEL_PATH: "${WHISPER_MODEL_PATH:-}"
+      WHISPER_THREADS: "${WHISPER_THREADS:-4}"
+      WHISPER_LANGUAGE: "${WHISPER_LANGUAGE:-auto}"
     working_dir: /workspace
     # Anonymous volumes mask host node_modules at every package boundary.
     # Without this, host's macOS-pathed pnpm symlinks shadow the container's
@@ -125,6 +135,13 @@ services:
       - /workspace/packages/eslint-config/node_modules
       - /workspace/packages/tsconfig/node_modules
       - /workspace/packages/ui/node_modules
+      # Writable root for generated artefacts. Deliberately NOT under the
+      # read-only course mount — see docs/superpowers/specs/
+      # 2026-08-29-b4-transcription-design.md §4.
+      - "${DERIVED_PATH:-../derived}:/data/derived"
+      # ggml models, read-only. Docker creates the host directory if it is
+      # missing, so this is inert until a model is dropped in.
+      - "${WHISPER_MODEL_DIR:-../models}:/models:ro"
     ports:
       - "${CS_BACKEND_PORT:-3000}:3000"
     healthcheck:

@@ -137,6 +137,15 @@ jobs:
             up -d --build --wait --wait-timeout 600 \
             postgres centrifugo otel-lgtm backend web
 
+      # `=all`, not the default `changed`. The visual spec compares with
+      # `maxDiffPixelRatio: 0.02`, and `changed` only rewrites a baseline when
+      # the comparison *fails* — so a change that lands inside the tolerance is
+      # declined by the job whose entire purpose is to capture current truth.
+      # The palette change in this PR did exactly that: the suite passed, the
+      # job reported "No baseline changes", and the committed PNG kept the old
+      # colours. The next real regression would then be measured against a
+      # reference that no longer matches the code. The gate in e2e.yml keeps
+      # the tolerance; this job is not a gate.
       - name: Regenerate baselines (inside the capture image)
         run: |
           docker run --rm --ipc=host --network=host \
@@ -146,7 +155,7 @@ jobs:
             -e E2E_BACKEND_URL=http://localhost:3000 \
             -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
             mcr.microsoft.com/playwright:v1.59.1-jammy \
-            ./node_modules/.bin/playwright test --config=tests/e2e/playwright.config.ts --update-snapshots
+            ./node_modules/.bin/playwright test --config=tests/e2e/playwright.config.ts --update-snapshots=all
 
       - name: Container state
         if: always()

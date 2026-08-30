@@ -1716,6 +1716,93 @@ export type ScanError = {
 export type ScanStatus = 'running' | 'succeeded' | 'failed' | 'cancelled';
 
 /**
+ * Transcription-run lifecycle. Mirrors `ScanStatus`; `cancelled` is reachable here because a run can be stopped from the admin screen.
+ */
+export type TranscriptionStatus = 'running' | 'succeeded' | 'failed' | 'cancelled';
+
+/**
+ * A non-fatal per-lesson failure. One unreadable or undecodable video costs its own lesson, never the run.
+ */
+export type TranscriptionErrorDto = {
+    /**
+     * cuid of the lesson whose transcription failed.
+     */
+    lessonId: string;
+    /**
+     * Human-readable description of what went wrong.
+     */
+    message: string;
+    /**
+     * Machine-readable error key (e.g. `whisper-failed`, `audio-extract-failed`, `no-video-source`).
+     */
+    code?: string;
+};
+
+/**
+ * One pass over a library's videos. Lessons that already have a subtitle track, or an up-to-date generated transcript, are skipped — which is why a re-run is cheap and a restart costs at most one lesson.
+ */
+export type TranscriptionDto = {
+    /**
+     * Server-generated cuid identifying this transcription run.
+     */
+    id: string;
+    /**
+     * cuid of the library that was transcribed.
+     */
+    libraryId: string;
+    status: TranscriptionStatus;
+    /**
+     * When true, existing generated transcripts were redone.
+     */
+    force: boolean;
+    /**
+     * ISO-8601 instant when the run was started.
+     */
+    startedAt: string;
+    /**
+     * Set on terminal status (`succeeded` / `failed` / `cancelled`). Absent while `status: running`.
+     */
+    finishedAt?: string;
+    /**
+     * Lessons considered by this run.
+     */
+    lessonsTotal: number;
+    /**
+     * Lessons left alone — a hand-made subtitle sidecar exists, or the generated transcript still matches the video's `(mtime, size)`.
+     */
+    lessonsSkipped: number;
+    /**
+     * Lessons for which a transcript was produced by this run.
+     */
+    lessonsTranscribed: number;
+    /**
+     * Lessons that raised an error; one entry each in `errors`.
+     */
+    lessonsFailed: number;
+    /**
+     * Non-fatal per-lesson errors encountered during the run.
+     */
+    errors: Array<TranscriptionErrorDto>;
+};
+
+/**
+ * Transcription runs ordered by `startedAt` descending (newest first). Used both for a single library's history and for the cross-library admin list.
+ */
+export type TranscriptionListDto = {
+    items: Array<TranscriptionDto>;
+};
+
+/**
+ * Payload for starting a transcription run. Body may be omitted entirely.
+ */
+export type StartTranscriptionRequest = {
+    /**
+     * Re-transcribe lessons that already have a generated transcript. Hand-made subtitle sidecars are never overwritten.
+     */
+    force?: boolean;
+};
+
+/**
  * A completed metadata-database snapshot plus the short-lived signed URL for downloading it. Shaped after `MaterialDownloadUrlDto` — the extra fields describe the archive itself so the caller can show what it got without a second request.
  */
 export type BackupCreatedDto = {
@@ -1797,6 +1884,10 @@ export type SubtitleDto = {
      * Human-readable label for the subtitle track (e.g. "English").
      */
     label: string;
+    /**
+     * True when this track was produced by transcription rather than discovered as a sidecar. Optional and additive — absent means a hand-made sidecar.
+     */
+    generated?: boolean;
 };
 
 /**
@@ -2163,6 +2254,44 @@ export type ListAdminScansResponses = {
 };
 
 export type ListAdminScansResponse = ListAdminScansResponses[keyof ListAdminScansResponses];
+
+export type ListAdminTranscriptionsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Maximum number of runs to return.
+         */
+        limit?: number;
+        /**
+         * When set, only return runs for the given library. Unknown library ids return an empty list (not 404 — the view is a filter, not a fetch).
+         */
+        libraryId?: string;
+    };
+    url: '/api/v1/admin/transcriptions';
+};
+
+export type ListAdminTranscriptionsErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller is authenticated but not an administrator
+     */
+    403: Problem;
+};
+
+export type ListAdminTranscriptionsError = ListAdminTranscriptionsErrors[keyof ListAdminTranscriptionsErrors];
+
+export type ListAdminTranscriptionsResponses = {
+    /**
+     * Recent-transcriptions list
+     */
+    200: TranscriptionListDto;
+};
+
+export type ListAdminTranscriptionsResponse = ListAdminTranscriptionsResponses[keyof ListAdminTranscriptionsResponses];
 
 export type ListAdminLibrariesData = {
     body?: never;
@@ -4025,6 +4154,175 @@ export type GetLatestLibraryScanResponses = {
 };
 
 export type GetLatestLibraryScanResponse = GetLatestLibraryScanResponses[keyof GetLatestLibraryScanResponses];
+
+export type ListLibraryTranscriptionsData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the library.
+         */
+        id: string;
+    };
+    query?: {
+        /**
+         * Maximum number of runs to return.
+         */
+        limit?: number;
+    };
+    url: '/api/v1/libraries/{id}/transcriptions';
+};
+
+export type ListLibraryTranscriptionsErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Library not found
+     */
+    404: Problem;
+};
+
+export type ListLibraryTranscriptionsError = ListLibraryTranscriptionsErrors[keyof ListLibraryTranscriptionsErrors];
+
+export type ListLibraryTranscriptionsResponses = {
+    /**
+     * Transcription history returned
+     */
+    200: TranscriptionListDto;
+};
+
+export type ListLibraryTranscriptionsResponse = ListLibraryTranscriptionsResponses[keyof ListLibraryTranscriptionsResponses];
+
+export type StartTranscriptionData = {
+    body?: StartTranscriptionRequest;
+    path: {
+        /**
+         * Server-generated cuid identifying the library to transcribe.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/libraries/{id}/transcriptions';
+};
+
+export type StartTranscriptionErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Library not found
+     */
+    404: Problem;
+    /**
+     * A transcription is already running for this library
+     */
+    409: Problem;
+    /**
+     * The transcription backend is not usable — the whisper binary or the model file configured for this deployment is missing. Fails fast rather than starting a run that cannot produce anything.
+     */
+    503: Problem;
+};
+
+export type StartTranscriptionError = StartTranscriptionErrors[keyof StartTranscriptionErrors];
+
+export type StartTranscriptionResponses = {
+    /**
+     * Transcription accepted and running
+     */
+    202: TranscriptionDto;
+};
+
+export type StartTranscriptionResponse = StartTranscriptionResponses[keyof StartTranscriptionResponses];
+
+export type GetLatestTranscriptionData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the library.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/libraries/{id}/transcriptions/latest';
+};
+
+export type GetLatestTranscriptionErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Library not found or no transcription has been run yet
+     */
+    404: Problem;
+};
+
+export type GetLatestTranscriptionError = GetLatestTranscriptionErrors[keyof GetLatestTranscriptionErrors];
+
+export type GetLatestTranscriptionResponses = {
+    /**
+     * Latest transcription returned
+     */
+    200: TranscriptionDto;
+};
+
+export type GetLatestTranscriptionResponse = GetLatestTranscriptionResponses[keyof GetLatestTranscriptionResponses];
+
+export type CancelTranscriptionData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the transcription run.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/transcriptions/{id}/cancel';
+};
+
+export type CancelTranscriptionErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Transcription not found
+     */
+    404: Problem;
+    /**
+     * The transcription has already reached a terminal status
+     */
+    409: Problem;
+};
+
+export type CancelTranscriptionError = CancelTranscriptionErrors[keyof CancelTranscriptionErrors];
+
+export type CancelTranscriptionResponses = {
+    /**
+     * Cancellation requested — the run stops after the current lesson
+     */
+    202: TranscriptionDto;
+};
+
+export type CancelTranscriptionResponse = CancelTranscriptionResponses[keyof CancelTranscriptionResponses];
 
 export type UpsertNoteData = {
     body: UpsertNoteRequest;

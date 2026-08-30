@@ -114,6 +114,7 @@ Serializers _$serializers =
           ..add(SectionDto.serializer)
           ..add(SectionOutline.serializer)
           ..add(SsoProviderConfig.serializer)
+          ..add(StartTranscriptionRequest.serializer)
           ..add(StreamUrlDto.serializer)
           ..add(StudioDetailDto.serializer)
           ..add(StudioDto.serializer)
@@ -124,6 +125,10 @@ Serializers _$serializers =
           ..add(TagDto.serializer)
           ..add(TagListDto.serializer)
           ..add(TagRef.serializer)
+          ..add(TranscriptionDto.serializer)
+          ..add(TranscriptionErrorDto.serializer)
+          ..add(TranscriptionListDto.serializer)
+          ..add(TranscriptionStatus.serializer)
           ..add(UpdateBookmarkRequest.serializer)
           ..add(UpdateCourseRequest.serializer)
           ..add(UpdateLibraryRequest.serializer)
@@ -352,6 +357,16 @@ Serializers _$serializers =
           ..addBuilderFactory(
             const FullType(BuiltList, const [const FullType(TagDto)]),
             () => ListBuilder<TagDto>(),
+          )
+          ..addBuilderFactory(
+            const FullType(BuiltList, const [const FullType(TranscriptionDto)]),
+            () => ListBuilder<TranscriptionDto>(),
+          )
+          ..addBuilderFactory(
+            const FullType(BuiltList, const [
+              const FullType(TranscriptionErrorDto),
+            ]),
+            () => ListBuilder<TranscriptionErrorDto>(),
           ))
         .build();
 

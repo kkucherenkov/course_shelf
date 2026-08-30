@@ -111,6 +111,7 @@ import 'package:app_api_client/src/model/search_result_dto.dart';
 import 'package:app_api_client/src/model/section_dto.dart';
 import 'package:app_api_client/src/model/section_outline.dart';
 import 'package:app_api_client/src/model/sso_provider_config.dart';
+import 'package:app_api_client/src/model/start_transcription_request.dart';
 import 'package:app_api_client/src/model/stream_url_dto.dart';
 import 'package:app_api_client/src/model/studio_detail_dto.dart';
 import 'package:app_api_client/src/model/studio_dto.dart';
@@ -121,6 +122,10 @@ import 'package:app_api_client/src/model/tag_detail_dto.dart';
 import 'package:app_api_client/src/model/tag_dto.dart';
 import 'package:app_api_client/src/model/tag_list_dto.dart';
 import 'package:app_api_client/src/model/tag_ref.dart';
+import 'package:app_api_client/src/model/transcription_dto.dart';
+import 'package:app_api_client/src/model/transcription_error_dto.dart';
+import 'package:app_api_client/src/model/transcription_list_dto.dart';
+import 'package:app_api_client/src/model/transcription_status.dart';
 import 'package:app_api_client/src/model/update_bookmark_request.dart';
 import 'package:app_api_client/src/model/update_course_request.dart';
 import 'package:app_api_client/src/model/update_library_request.dart';
@@ -231,6 +236,7 @@ part 'serializers.g.dart';
   SectionDto,
   SectionOutline,
   SsoProviderConfig,
+  StartTranscriptionRequest,
   StreamUrlDto,
   StudioDetailDto,
   StudioDto,
@@ -241,6 +247,10 @@ part 'serializers.g.dart';
   TagDto,
   TagListDto,
   TagRef,
+  TranscriptionDto,
+  TranscriptionErrorDto,
+  TranscriptionListDto,
+  TranscriptionStatus,
   UpdateBookmarkRequest,
   UpdateCourseRequest,
   UpdateLibraryRequest,

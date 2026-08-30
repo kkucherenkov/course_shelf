@@ -20,6 +20,7 @@ Method | HTTP request | Description
 [**getIdentifyTask**](AdminApi.md#getidentifytask) | **GET** /api/v1/admin/identify-tasks/{id} | Get one identify task
 [**listAdminLibraries**](AdminApi.md#listadminlibraries) | **GET** /api/v1/admin/libraries | List every library with admin-flavoured counters
 [**listAdminScans**](AdminApi.md#listadminscans) | **GET** /api/v1/admin/scans | List recent scans across every library
+[**listAdminTranscriptions**](AdminApi.md#listadmintranscriptions) | **GET** /api/v1/admin/transcriptions | List recent transcription runs across every library
 [**listAdminUsers**](AdminApi.md#listadminusers) | **GET** /api/v1/admin/users | List every user in the platform
 [**listIdentifyTasks**](AdminApi.md#listidentifytasks) | **GET** /api/v1/admin/identify-tasks | List identify tasks
 [**listScrapers**](AdminApi.md#listscrapers) | **GET** /api/v1/admin/scrapers | List available metadata scrapers
@@ -479,6 +480,51 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**AdminScanListDto**](AdminScanListDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **listAdminTranscriptions**
+> TranscriptionListDto listAdminTranscriptions(limit, libraryId)
+
+List recent transcription runs across every library
+
+Ordered by `startedAt` descending (newest first). Cross-library — admin-only; non-admin actors see 403 even if they have READ grants on individual libraries. Capped at `limit` (default 20, max 100). Mirrors `GET /api/v1/admin/scans`. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getAdminApi();
+final int limit = 56; // int | Maximum number of runs to return.
+final String libraryId = libraryId_example; // String | When set, only return runs for the given library. Unknown library ids return an empty list (not 404 — the view is a filter, not a fetch).
+
+try {
+    final response = api.listAdminTranscriptions(limit, libraryId);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling AdminApi->listAdminTranscriptions: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **limit** | **int**| Maximum number of runs to return. | [optional] [default to 20]
+ **libraryId** | **String**| When set, only return runs for the given library. Unknown library ids return an empty list (not 404 — the view is a filter, not a fetch). | [optional] 
+
+### Return type
+
+[**TranscriptionListDto**](TranscriptionListDto.md)
 
 ### Authorization
 

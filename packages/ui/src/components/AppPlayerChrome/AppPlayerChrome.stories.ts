@@ -37,30 +37,6 @@ const base = {
   bookmarks: [{ time: 640, label: 'Recap' }],
 };
 
-// A 4:3 stand-in for a non-16:9 lesson video. Storybook cannot ship a real
-// media file, and the letterbox rule is `object-fit` on the slotted element —
-// an <img> exercises the exact same rule.
-const FOUR_THREE_MEDIA =
-  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 240'>" +
-  "<rect width='320' height='240' fill='%232f6f5f'/>" +
-  "<text x='160' y='128' font-family='monospace' font-size='24' fill='white' text-anchor='middle'>4:3</text></svg>";
-
-/** A non-16:9 source letterboxes inside the stage instead of overflowing it. */
-export const FourThreeFrame: Story = {
-  args: { ...base, state: 'paused' },
-  render: (args) => ({
-    components: { AppPlayerChrome },
-    setup() {
-      return { args, media: FOUR_THREE_MEDIA };
-    },
-    template: `<div style="max-width: 800px; padding: var(--space-4);">
-      <AppPlayerChrome v-bind="args">
-        <template #frame><img :src="media" alt="4:3 stand-in for a lesson video" /></template>
-      </AppPlayerChrome>
-    </div>`,
-  }),
-};
-
 export const Playing: Story = { args: { ...base, state: 'playing' } };
 
 export const Paused: Story = { args: { ...base, state: 'paused' } };

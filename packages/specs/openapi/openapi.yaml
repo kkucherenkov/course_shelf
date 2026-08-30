@@ -249,6 +249,7 @@ paths:
           description: Server-generated cuid identifying the grant to revoke.
           schema:
             type: string
+            minLength: 1
       responses:
         "204":
           description: Grant revoked — no body
@@ -485,12 +486,14 @@ paths:
           required: true
           schema:
             type: string
+            minLength: 1
           description: Backup id from the create response.
         - name: token
           in: query
           required: true
           schema:
             type: string
+            minLength: 1
           description: Signed backup token, valid for `BACKUP_TOKEN_TTL_SECONDS`.
       responses:
         "200":
@@ -553,6 +556,7 @@ paths:
             a fetch).
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Recent-scans list
@@ -656,6 +660,7 @@ paths:
             fetch).
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Recent-transcriptions list
@@ -820,6 +825,7 @@ paths:
           description: Case-insensitive substring filter on `email` or `name`.
           schema:
             type: string
+            minLength: 1
         - name: limit
           in: query
           required: false
@@ -906,6 +912,7 @@ paths:
           description: User id (uuid).
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: User row
@@ -977,6 +984,7 @@ paths:
           description: User id (uuid).
           schema:
             type: string
+            minLength: 1
       requestBody:
         required: true
         content:
@@ -1385,6 +1393,7 @@ paths:
           description: Server-generated cuid identifying the course.
           schema:
             type: string
+            minLength: 1
       requestBody:
         required: true
         content:
@@ -1519,7 +1528,7 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: string }
+          schema: { type: string, minLength: 1 }
       requestBody:
         required: true
         content:
@@ -1628,7 +1637,7 @@ paths:
         - name: courseId
           in: query
           required: false
-          schema: { type: string }
+          schema: { type: string, minLength: 1 }
       responses:
         "200":
           description: Matching identify tasks
@@ -1698,7 +1707,7 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: string }
+          schema: { type: string, minLength: 1 }
       responses:
         "200":
           description: The identify task
@@ -1781,7 +1790,7 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: string }
+          schema: { type: string, minLength: 1 }
       requestBody:
         required: false
         content:
@@ -1888,7 +1897,7 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: string }
+          schema: { type: string, minLength: 1 }
       responses:
         "200":
           description: The discarded identify task
@@ -2183,6 +2192,7 @@ paths:
           description: Server-generated cuid identifying the bookmark to update.
           schema:
             type: string
+            minLength: 1
       requestBody:
         required: true
         content:
@@ -2278,6 +2288,7 @@ paths:
           description: Server-generated cuid identifying the bookmark to delete.
           schema:
             type: string
+            minLength: 1
       responses:
         "204":
           description: Bookmark deleted — no body
@@ -2347,6 +2358,7 @@ paths:
           description: Filter to a single library; omit for everything visible.
           schema:
             type: string
+            minLength: 1
         - name: status
           in: query
           required: false
@@ -2383,6 +2395,7 @@ paths:
             instructor yields an empty list rather than an error.
           schema:
             type: string
+            minLength: 1
         - name: sort
           in: query
           required: false
@@ -2473,6 +2486,7 @@ paths:
           description: Server-generated cuid identifying the course.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Course found
@@ -2561,6 +2575,7 @@ paths:
           description: Server-generated cuid identifying the course to update.
           schema:
             type: string
+            minLength: 1
       requestBody:
         required: true
         content:
@@ -2693,6 +2708,7 @@ paths:
           description: Server-generated cuid identifying the course.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Course outline returned
@@ -2752,6 +2768,7 @@ paths:
           description: Server-generated cuid identifying the course.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Download estimate returned
@@ -2831,6 +2848,7 @@ paths:
           description: Server-generated cuid identifying the course.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Every lesson marked complete; refreshed outline returned
@@ -2883,6 +2901,7 @@ paths:
           description: Server-generated cuid identifying the course.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Progress cleared; refreshed outline returned
@@ -2947,6 +2966,7 @@ paths:
           description: Case-insensitive substring filter on `displayName`.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Instructor list returned
@@ -3100,6 +3120,7 @@ paths:
           description: Case-insensitive substring filter on `displayName`.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Studio list returned
@@ -3254,12 +3275,14 @@ paths:
           description: Case-insensitive substring filter on `displayName`.
           schema:
             type: string
+            minLength: 1
         - name: category
           in: query
           required: false
           description: Exact match filter on `category`. Omit to return tags from all categories.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Tag list returned
@@ -3627,6 +3650,7 @@ paths:
           description: Server-generated cuid identifying the lesson.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Lesson found
@@ -3737,12 +3761,14 @@ paths:
           required: true
           schema:
             type: string
+            minLength: 1
           description: Lesson cuid.
         - name: token
           in: query
           required: true
           schema:
             type: string
+            minLength: 1
           description: Signed stream token from `issueStreamUrl`.
         - name: Range
           in: header
@@ -3822,18 +3848,21 @@ paths:
           required: true
           schema:
             type: string
+            minLength: 1
           description: Lesson cuid.
         - name: language
           in: path
           required: true
           schema:
             type: string
+            minLength: 1
           description: "Language code as discovered by the scan, e.g. `en`."
         - name: token
           in: query
           required: true
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: The subtitle track.
@@ -3877,12 +3906,14 @@ paths:
           required: true
           schema:
             type: string
+            minLength: 1
           description: Material cuid.
         - name: token
           in: query
           required: true
           schema:
             type: string
+            minLength: 1
           description: Signed material token from `issueMaterialDownloadUrl`.
       responses:
         "200":
@@ -3934,6 +3965,7 @@ paths:
           description: Server-generated cuid identifying the lesson.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Signed stream URL issued
@@ -4014,12 +4046,14 @@ paths:
           description: Server-generated cuid identifying the parent lesson.
           schema:
             type: string
+            minLength: 1
         - name: materialId
           in: path
           required: true
           description: Server-generated cuid identifying the material.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Signed download URL issued
@@ -4093,6 +4127,7 @@ paths:
           description: Server-generated cuid identifying the lesson.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Bookmark list returned
@@ -4186,6 +4221,7 @@ paths:
           description: Server-generated cuid identifying the lesson.
           schema:
             type: string
+            minLength: 1
       requestBody:
         required: true
         content:
@@ -4438,6 +4474,7 @@ paths:
           description: Server-generated cuid identifying the library.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Library found
@@ -4513,6 +4550,7 @@ paths:
           description: Server-generated cuid identifying the library.
           schema:
             type: string
+            minLength: 1
       requestBody:
         required: true
         content:
@@ -4606,6 +4644,7 @@ paths:
           description: Server-generated cuid identifying the library.
           schema:
             type: string
+            minLength: 1
       responses:
         "204":
           description: Library deleted
@@ -4672,6 +4711,7 @@ paths:
           description: Server-generated cuid identifying the library to scan.
           schema:
             type: string
+            minLength: 1
       responses:
         "202":
           description: Scan accepted and running
@@ -4763,6 +4803,7 @@ paths:
           description: Server-generated cuid identifying the library.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Latest scan returned
@@ -4852,6 +4893,7 @@ paths:
           description: Server-generated cuid identifying the library to transcribe.
           schema:
             type: string
+            minLength: 1
       requestBody:
         required: false
         content:
@@ -4974,6 +5016,7 @@ paths:
           description: Server-generated cuid identifying the library.
           schema:
             type: string
+            minLength: 1
         - name: limit
           in: query
           required: false
@@ -5083,6 +5126,7 @@ paths:
           description: Server-generated cuid identifying the library.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Latest transcription returned
@@ -5168,6 +5212,7 @@ paths:
           description: Server-generated cuid identifying the transcription run.
           schema:
             type: string
+            minLength: 1
       responses:
         "202":
           description: Cancellation requested — the run stops after the current lesson
@@ -5353,6 +5398,7 @@ paths:
           description: Server-generated cuid identifying the lesson.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Note returned
@@ -5428,6 +5474,7 @@ paths:
           description: Server-generated cuid identifying the lesson.
           schema:
             type: string
+            minLength: 1
       responses:
         "204":
           description: Note deleted — no body
@@ -5676,6 +5723,7 @@ paths:
           description: Server-generated cuid identifying the lesson.
           schema:
             type: string
+            minLength: 1
       responses:
         "200":
           description: Progress record returned
@@ -5943,6 +5991,7 @@ paths:
           description: Substring to match. Trimmed; case-insensitive.
           schema:
             type: string
+            minLength: 1
         - name: limit
           in: query
           required: false

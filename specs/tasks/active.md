@@ -23,5 +23,5 @@
   - [x] #285: backend — dedupe by (lessonId, userId, idempotencyKey)
   - [x] #285: mobile — pass idempotencyKey from localId in `_drainBookmarks`
   - [x] gates: spec:validate, backend test, backend lint, typecheck, mobile test
-- Status: in-progress (PR open, awaiting review/merge)
+- Status: in-progress — PR open: https://github.com/kkucherenkov/course_shelf/pull/313, CI running. Move to done.md on merge.
 - Blockers: —

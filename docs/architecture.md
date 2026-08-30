@@ -639,7 +639,7 @@ it takes text as a prop and the consuming app supplies the translation.
 | Mobile | `flutter_test` + `bloc_test` | 52 files / ~399 tests | Includes golden tests in `ui_flutter` |
 | Visual (web) | Storybook test-runner in the pinned Playwright image | per story | Baselines committed; `visual-approved` label gates intentional diffs |
 | E2E | Playwright against the production-shaped compose stack | smoke suite | |
-| Contract | Prism/Dredd-style, `pnpm spec:contract-test` | — | **Exists, runs in no workflow** |
+| Contract | Schemathesis, `pnpm spec:contract-test` | — | Runs in `e2e.yml`, after Playwright |
 
 `pnpm exec turbo run typecheck` is green across all 9 packages.
 
@@ -840,13 +840,11 @@ checks, so everything below is enforceable rather than advisory.
    The level cannot simply be raised on the existing job — at `error` the addon
    throws before `postVisit`, so visual baselines would stop being compared. It
    needs a job of its own.
-4. **`pnpm spec:contract-test` runs in no workflow.** The script exists; nothing
-   calls it.
-5. **No coverage thresholds** anywhere. Coverage is reported, never gated. Left
+4. **No coverage thresholds** anywhere. Coverage is reported, never gated. Left
    deliberately: `.claude/CLAUDE.md` says not to tune a threshold number that
    will rot in a greenfield, and the README no longer claims enforcement. Revisit
    when the codebase stops moving.
-6. **`AppSsoBlock` is a component, not a promise.** The web client no longer
+5. **`AppSsoBlock` is a component, not a promise.** The web client no longer
    consumes `InstanceConfigDto.ssoProviders` — this is a single-owner instance
    and email + password is the whole requirement. The field stays on the wire
    because the mobile client still reads it, and the component stays in
@@ -855,7 +853,8 @@ checks, so everything below is enforceable rather than advisory.
 Closed since this list was first written: the `/api/v1` doubling in the mobile
 clients, the missing outbox drain, the design-inventory drift, the ffmpeg and
 CSP gates, the issue-mirroring rule, hard-coded strings in both design systems,
-the two dead components, and the four undocumented binary routes.
+the two dead components, the four undocumented binary routes, and
+`spec:contract-test` running in no workflow.
 
 ---
 

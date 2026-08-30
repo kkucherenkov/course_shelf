@@ -2,6 +2,33 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-30-001 — browser-verify #302 player fixes + #307 browse/backups
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude
+- Result: https://github.com/kkucherenkov/course_shelf/pull/319
+- Spec: [#302](https://github.com/kkucherenkov/course_shelf/issues/302), [#307](https://github.com/kkucherenkov/course_shelf/issues/307), [docs/roadmap/tasks/E26-F01-S04.md](../roadmap/tasks/E26-F01-S04.md)
+- Goal: manually verify in a real browser what unit/e2e tests structurally can't — `?t=` seek, cue placement above chrome (windowed + fullscreen), non-16:9 letterbox, and the `/browse` filters + `/admin/backups` flows, in en and ru.
+- Acceptance:
+  - `?t=90` lands the lesson player at 1:30
+  - subtitle cue never overlaps the chrome control bar, windowed and fullscreen
+  - a non-16:9 video letterboxes inside the frame instead of overflowing it
+  - each `/browse` filter narrows results, duration sort orders, query string survives reload, Clear resets filters but not sort
+  - `/admin/backups` create/in-progress/error/signed-link-expiry states render
+  - both pages render correctly in `ru`
+- Spec diff: none
+- Codegen impact: no
+- Design impact: none — two point fixes in existing `@app/ui`/`apps/web` components, no new tokens or components
+- Tests: manual browser pass (Playwright-driven real Chromium, not the E2E stub) on an isolated docker stack (`COMPOSE_PROJECT_NAME=cs-verify`) against a real fixture course — 2 libraries, 4 courses, a real 16:9 `.mp4` with real `.en.srt`/`.ru.srt` subtitles and a real 1:1 `.mp4`, under `docs/data/fixture-course/` (gitignored). Final pass: 28/28 checks green.
+- Findings:
+  - **#302 fully confirmed, no code change needed.** `?t=90` → `currentTime=90`; the subtitle cue sits clear of the control bar in both windowed and fullscreen (`CUE_LINE_ABOVE_CHROME = -4` didn't need retuning); the non-16:9 lesson letterboxes inside the 16:9 frame (measured aspect ratio held).
+  - **Real bug found & fixed (`packages/ui`):** `AppSelect`'s change handler treated any selection whose value is `''` as the disabled placeholder sentinel and silently dropped it — even when no `placeholder` prop was set and `''` was a legitimate option (browse.vue's "All libraries" / "Any instructor"). Selecting those options did nothing. Scoped the guard to only fire when a placeholder is actually configured; added a regression spec.
+  - **Real bug found & fixed (`apps/web`):** `useQueryStringState`'s setter recomputed the query from `route.query` on every call — fine for one write, but browse.vue's "Clear filters" fires four writes in the same tick, and the real router resolves each `replace` asynchronously and not necessarily in dispatch order, so a stale write could win and re-add a key an earlier one had just dropped (`status` surviving Clear was the one that showed up in testing). Same-tick writes now batch into one `router.replace` per router instance; added a regression spec exercising out-of-order resolution.
+  - **Backend bug found, filed, not fixed (out of lane):** [#317](https://github.com/kkucherenkov/course_shelf/issues/317) — `PrismaLessonRepository.save()` resolves without throwing but the row is not durably committed (confirmed via `psql` from a separate connection); course/section persistence is unaffected. Worked around for this pass by seeding `lesson`/`subtitle` rows via SQL after a real scan.
+  - **Backend/infra gap found, filed, not fixed (out of lane):** [#318](https://github.com/kkucherenkov/course_shelf/issues/318) — `apps/backend/Dockerfile.dev` has no `pg_dump`, so `/admin/backups` can only reach the error state on a fresh dev checkout; success/download/expiry unverifiable without a manual workaround.
+  - **Infra fix (small, in `apps/web`/`packages/ui` Dockerfiles):** neither `apps/web/Dockerfile.dev` nor `packages/ui/Dockerfile.dev` ran `pnpm design:build` before starting their dev server — a fresh checkout 500s on `tokens.generated.css` not existing. Added the missing step to both.
+
 ## T-2026-08-30-012 — run whisper transcription over a library
 
 - Created: 2026-08-30

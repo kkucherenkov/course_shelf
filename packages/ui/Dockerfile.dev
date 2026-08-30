@@ -17,5 +17,6 @@ EXPOSE 6006
 # way as the backend / web dev images.
 CMD ["sh", "-lc", "\
   pnpm install --frozen-lockfile=false && \
+  pnpm --filter @app/design-tokens build && \
   pnpm --filter @app/ui storybook --host 0.0.0.0 \
 "]

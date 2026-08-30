@@ -12,6 +12,18 @@
  * is legitimate and an unknown one simply matches no course.
  */
 import { computed, type WritableComputedRef } from 'vue';
+import type { LocationQuery, Router } from 'vue-router';
+
+// A page that clears several filters at once (browse.vue's "Clear filters")
+// sets several of these refs synchronously, one intended `router.replace` per
+// ref. The real router resolves each `replace` asynchronously and not
+// necessarily in dispatch order, so issuing one `replace` per ref lets a
+// stale, earlier-computed query win the race and re-add a key a later call
+// already dropped. Instead, every same-tick `set()` merges into one pending
+// query per router and only the last one schedules a *single* `replace`, on
+// the next microtask, once all synchronous writes have landed — there is
+// then only one navigation in flight, so there is nothing left to race.
+const pendingQueryByRouter = new WeakMap<Router, LocationQuery>();
 
 export function useQueryStringState<T extends string>(
   key: string,
@@ -32,10 +44,21 @@ export function useQueryStringState<T extends string>(
       return value as T;
     },
     set(next: T) {
+      const isFirstInBatch = !pendingQueryByRouter.has(router);
+      const base = pendingQueryByRouter.get(router) ?? route.query;
       // Rest-destructure rather than `delete` — the default is expressed as the
       // absence of the key, and this drops it without mutating route.query.
-      const { [key]: _dropped, ...rest } = route.query;
-      void router.replace({ query: next === fallback ? rest : { ...rest, [key]: next } });
+      const { [key]: _dropped, ...rest } = base;
+      const query = next === fallback ? rest : { ...rest, [key]: next };
+      pendingQueryByRouter.set(router, query);
+
+      if (isFirstInBatch) {
+        void Promise.resolve().then(() => {
+          const finalQuery = pendingQueryByRouter.get(router);
+          pendingQueryByRouter.delete(router);
+          void router.replace({ query: finalQuery ?? query });
+        });
+      }
     },
   });
 }

@@ -19,12 +19,16 @@ import type * as CoursesListModule from '../../composables/useCoursesList';
 const route = reactive<{ query: LocationQuery }>({ query: {} });
 const replace = vi.fn((to: { query: LocationQuery }) => {
   route.query = to.query;
+  return Promise.resolve();
 });
+// The real useRouter() always returns the same singleton — useQueryStringState
+// batches same-tick writes off router identity, so the mock has to match.
+const router = { replace };
 
 vi.stubGlobal('definePageMeta', () => undefined);
 vi.stubGlobal('useI18n', () => ({ t: (key: string) => key }));
 vi.stubGlobal('useRoute', () => route);
-vi.stubGlobal('useRouter', () => ({ replace }));
+vi.stubGlobal('useRouter', () => router);
 vi.stubGlobal('computed', computed);
 
 // ── Data composables ───────────────────────────────────────────────────────

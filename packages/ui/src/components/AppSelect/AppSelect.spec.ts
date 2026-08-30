@@ -69,6 +69,21 @@ describe('AppSelect', () => {
     expect(events?.[0]?.[0]).toBe('banana');
   });
 
+  it('emits for a real option whose id is "" when no placeholder is configured', async () => {
+    // Regression: apps/web's browse filters use '' as the "no filter" /
+    // "all libraries" option id, with no `placeholder` prop. The sentinel
+    // guard must not swallow that legitimate selection.
+    const options = [{ id: '', label: 'All libraries' }, ...FRUITS];
+    const wrapper = mount(AppSelect, {
+      props: { modelValue: 'apple', options },
+    });
+    const select = wrapper.find('select');
+    await select.setValue('');
+    const events = wrapper.emitted('update:modelValue');
+    expect(events).toHaveLength(1);
+    expect(events?.[0]?.[0]).toBe('');
+  });
+
   it('does not emit when the change event reports the placeholder sentinel', async () => {
     const wrapper = mount(AppSelect, {
       props: {

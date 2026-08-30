@@ -5267,7 +5267,7 @@ paths:
       summary: Service health probe
       description: |
         Reports combined health status of the service and its runtime
-        dependencies (database, cache, realtime bus).
+        dependencies (database, realtime bus).
       tags: [system]
       responses:
         "200":
@@ -5284,7 +5284,6 @@ paths:
                     uptimeSeconds: 42
                     dependencies:
                       db: ok
-                      redis: ok
                       centrifugo: ok
         "503":
           description: One or more dependencies are degraded or down
@@ -5299,8 +5298,7 @@ paths:
                     version: 0.1.0
                     uptimeSeconds: 42
                     dependencies:
-                      db: ok
-                      redis: degraded
+                      db: degraded
                       centrifugo: ok
 
   /api/v1/ping:
@@ -7941,11 +7939,9 @@ components:
           description: Seconds since the backend process started
         dependencies:
           type: object
-          required: [db, redis, centrifugo]
+          required: [db, centrifugo]
           properties:
             db:
-              $ref: "#/components/schemas/DependencyStatus"
-            redis:
               $ref: "#/components/schemas/DependencyStatus"
             centrifugo:
               $ref: "#/components/schemas/DependencyStatus"

@@ -14,6 +14,8 @@
  *   4. Malformed JSON from ffprobe → FfmpegProbeError.
  *   5. Happy thumbnail: exact execFile args asserted.
  *   6. Non-zero exit from ffmpeg → FfmpegThumbnailError.
+ *   7. Audio extraction: exact argv (16 kHz mono PCM, no video) and its own
+ *      transcription-sized timeout; non-zero exit → AudioExtractionFailedError.
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
@@ -26,6 +28,7 @@ vi.mock('node:child_process', () => ({
 // Import AFTER the mock declaration so the binding resolves to the mock.
 import { execFile } from 'node:child_process';
 
+import { AudioExtractionFailedError } from '../domain/transcription/transcription.errors';
 import { FfmpegProbeError, FfmpegThumbnailError } from '../domain/scan/scan.errors';
 import { LocalFfmpegAdapter } from './local-ffmpeg.adapter';
 
@@ -292,6 +295,58 @@ describe('LocalFfmpegAdapter', () => {
 
       const [cmd] = vi.mocked(execFile).mock.calls[0]!;
       expect(cmd).toBe('/usr/local/bin/ffmpeg');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // 7. Audio extraction for whisper — exact argv and its own timeout
+  // -------------------------------------------------------------------------
+  describe('extractAudio()', () => {
+    const REQUEST = {
+      videoAbsolutePath: '/data/courses/a.mp4',
+      outAbsolutePath: '/tmp/a.wav',
+      timeoutMs: 600_000,
+    };
+
+    it('asks ffmpeg for 16 kHz mono PCM and no video', async () => {
+      mockResolve('');
+
+      await adapter.extractAudio(REQUEST);
+
+      const calls = vi.mocked(execFile).mock.calls;
+      expect(calls).toHaveLength(1);
+      const [cmd, args] = calls[0]!;
+      expect(cmd).toBe('ffmpeg');
+      expect(args).toEqual([
+        '-i',
+        '/data/courses/a.mp4',
+        '-vn',
+        '-ac',
+        '1',
+        '-ar',
+        '16000',
+        '-c:a',
+        'pcm_s16le',
+        '-y',
+        '/tmp/a.wav',
+      ]);
+    });
+
+    it('uses the caller-supplied timeout, not the 30s probe budget', async () => {
+      mockResolve('');
+
+      await adapter.extractAudio(REQUEST);
+
+      const opts = vi.mocked(execFile).mock.calls[0]![2];
+      expect(opts).toEqual({ timeout: 600_000 });
+    });
+
+    it('throws AudioExtractionFailedError when execFile rejects (non-zero exit)', async () => {
+      mockReject('Command failed: ffmpeg exited with code 1');
+
+      await expect(adapter.extractAudio(REQUEST)).rejects.toBeInstanceOf(
+        AudioExtractionFailedError,
+      );
     });
   });
 });

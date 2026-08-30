@@ -23,6 +23,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Blockers: —
 - Completed: 2026-08-30
 - Result: https://github.com/kkucherenkov/course_shelf/pull/301
+
 ## T-2026-08-30-008 — E25-F01 whisper foundation (S01, S02, S04)
 
 - Created: 2026-08-30

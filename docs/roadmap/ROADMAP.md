@@ -180,6 +180,56 @@ gantt
     section E24 Realtime / Centrifugo
     AsyncAPI Centrifugo channels + POST /api/v1/realtime/token   :done, e24f01s01, after e04f02s03, 2d
 
+    section E25 Transcription (Whisper)
+    Derived-artifact volume, whisper config, and the binary in t :active, e25f01s01, after e01f02s01, 1d
+    Derived path resolution with its own traversal guard         :active, e25f01s02, after e25f01s01, 1d
+    ffmpeg audio extraction for whisper                          :active, e25f01s03, after e06f02s02, 1d
+    whisper.cpp adapter behind a port                            :active, e25f01s04, after e25f01s01, 1d
+    Transcript and transcription schema                          :active, e25f02s01, after e06f03s02, 1d
+    Transcription aggregate                                      :active, e25f02s02, after e25f02s01, 1d
+    The skip rule                                                :active, e25f02s03, after e25f02s01, 1d
+    OpenAPI for transcription runs and generated subtitles       :active, e25f03s01, after e02f02s04, 1d
+    The transcription run                                        :active, e25f03s02, after e25f01s02 e25f01s03 e25f01s04 e25f02s02 e25f02s03 e25f03s01, 3d
+    Serve generated transcripts as subtitle tracks               :active, e25f03s03, after e08f02s02 e25f02s01, 1d
+    Scan thumbnails to the derived volume, and orphan cleanup    :active, e25f04s01, after e25f01s02, 1d
+    Transcription card in the admin library screen               :active, e25f04s02, after e25f03s01 e14f04s01, 2d
+    Transcription documentation                                  :active, e25f04s03, after e25f03s02, 1d
+
+    section E26 Transcript panel (web)
+    Render the subtitle tracks in the web player                 :active, e26f01s01, after e08f02s02 e14f03s01, 1d
+    useTranscriptCues composable                                 :active, e26f01s02, after e26f01s01, 1d
+    Transcript tab in the player sidebar                         :active, e26f01s03, after e26f01s02, 2d
+    `?t=` deep links into a lesson                               :active, e26f01s04, after e26f01s01, 1d
+
+    section E27 Transcript storage and search
+    Parse existing subtitle sidecars into cues                   :active, e27f01s01, after e25f02s01 e25f03s02, 2d
+    Trigram index over cue text                                  :active, e27f01s02, after e27f01s01, 1d
+    Transcript hits in the search API                            :active, e27f02s01, after e27f01s02, 2d
+    Transcript results on the web search page                    :active, e27f02s02, after e27f02s01 e26f01s04, 1d
+
+    section E28 Notes export
+    Export a lesson or course digest as Markdown                 :crit, active, e28f01s01, after e27f01s01 e09f02s02, 2d
+
+    section E29 Learning mechanics
+    Flashcard and review schedule domain (SM-2)                  :crit, active, e29f01s01, after e09f02s02, 2d
+    Flashcard API                                                :active, e29f01s02, after e29f01s01, 2d
+    Review UI on web                                             :active, e29f01s03, after e29f01s02, 2d
+    Quizzes generated from a transcript                          :crit, active, e29f02s01, after e27f01s01, 3d
+    Learning paths                                               :crit, active, e29f03s01, after e06f03s01, 2d
+
+    section E30 Scraper plugins
+    Declarative scraper definitions                              :crit, active, e30f01s01, after e06f02s01, 3d
+    Scraper inventory in the admin UI                            :active, e30f01s02, after e30f01s01, 1d
+
+    section E31 Honest v1.1
+    Finish the browse filters                                    :active, e31f01s01, after e14f01s02, 2d
+    Backups UI                                                   :active, e31f01s02, after e21f01s02, 1d
+    Fix the duplicated offline bookmark                          :active, e31f01s03, after e20f01s01, 2d
+    Remove the SSO promise                                       :active, e31f02s01, after e14f02s01, 1d
+    Remove the non-functional Settings controls                  :active, e31f02s02, after e14f02s02, 1d
+    Settle the locale parity claim                               :active, e31f02s03, after e15f01s02, 1d
+    Verify or remove the mobile storage bar                      :active, e31f02s04, after e19f01s03, 1d
+
 ```
 
 ## Reading the chart

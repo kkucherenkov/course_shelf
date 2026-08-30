@@ -1,8 +1,17 @@
 # CourseShelf — Roadmap
 
-This directory holds the executable plan for CourseShelf v1: 121 stories
-in 24 epics, each with a one-file task spec and a checkbox in `TODO.md`.
-The roadmap is the static plan; the live work log is `specs/tasks/active.md`.
+This directory holds the executable plan for CourseShelf: **157 stories in
+31 epics**, each with a one-file task spec and a checkbox in `TODO.md`. The
+roadmap is the static plan; the live work log is `specs/tasks/active.md`.
+
+Two milestones live here side by side:
+
+- **v1 — 121 stories in 24 epics (E00–E24), complete.** The shipped product.
+- **v2 — 36 stories in 7 epics (E25–E31), not started.** The transcript-first
+  direction plus the honest-v1.1 cleanup.
+
+Their denominators are kept apart on purpose. Merging them would quietly
+reopen a milestone that is finished.
 
 ## Files
 
@@ -11,7 +20,7 @@ The roadmap is the static plan; the live work log is `specs/tasks/active.md`.
   ships.
 - **[`ROADMAP.md`](./ROADMAP.md)** — Mermaid Gantt of the same stories
   with dependencies and duration estimates.
-- **[`tasks/`](./tasks)** — one markdown file per story (`121` files).
+- **[`tasks/`](./tasks)** — one markdown file per story (`157` files).
   Each file follows the `feature.md` template: status, dependencies,
   goal, acceptance, spec/codegen/design impact, tests, sub-steps, notes.
 - **[`tools/generate.py`](./tools/generate.py)** — regenerates
@@ -20,11 +29,17 @@ The roadmap is the static plan; the live work log is `specs/tasks/active.md`.
 
 ## Counts
 
-- Total stories: **121**
+- Total stories: **157**
+- **v1 (E00–E24)** — **121**
   - Stage A (implementable directly from the design bundle): **114**
   - Stage B (needs a design pre-step): **7**
+- **v2 (E25–E31)** — **36**
+  - Stage A (a design or plan already exists): **31**
+  - Stage B (needs a design pre-step): **5**
 
 ## Epics
+
+### v1 — shipped (E00–E24)
 
 - **E00** Stage the design bundle — 1 story
 - **E01** Repository foundations — 3 stories
@@ -50,6 +65,16 @@ The roadmap is the static plan; the live work log is `specs/tasks/active.md`.
 - **E22** CI/CD — 6 stories
 - **E23** Distribution & docs — 5 stories
 - **E24** Realtime / Centrifugo — 1 story
+
+### v2 — transcript-first (E25–E31)
+
+- **E25** Transcription (Whisper) — 13 stories
+- **E26** Transcript panel (web) — 4 stories
+- **E27** Transcript storage and search — 4 stories
+- **E28** Notes export — 1 story
+- **E29** Learning mechanics — 5 stories
+- **E30** Scraper plugins — 2 stories
+- **E31** Honest v1.1 — 7 stories
 
 ## Two trackers, one direction
 

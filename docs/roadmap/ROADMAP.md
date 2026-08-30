@@ -225,8 +225,8 @@ gantt
     Finish the browse filters                                    :active, e31f01s01, after e14f01s02, 2d
     Backups UI                                                   :active, e31f01s02, after e21f01s02, 1d
     Fix the duplicated offline bookmark                          :done, e31f01s03, after e20f01s01, 2d
-    Remove the SSO promise                                       :active, e31f02s01, after e14f02s01, 1d
-    Remove the non-functional Settings controls                  :active, e31f02s02, after e14f02s02, 1d
+    Remove the SSO promise                                       :done, e31f02s01, after e14f02s01, 1d
+    Remove the non-functional Settings controls                  :done, e31f02s02, after e14f02s02, 1d
     Settle the locale parity claim                               :active, e31f02s03, after e15f01s02, 1d
     Verify or remove the mobile storage bar                      :active, e31f02s04, after e19f01s03, 1d
 

@@ -642,9 +642,11 @@ checks, so everything below is enforceable rather than advisory.
    deliberately: `.claude/CLAUDE.md` says not to tune a threshold number that
    will rot in a greenfield, and the README no longer claims enforcement. Revisit
    when the codebase stops moving.
-6. **`AppSsoBlock` renders nothing on either client** — not a wiring gap any
-   more, both consume `InstanceConfigDto.ssoProviders`, but the backend returns
-   `[]` unconditionally until Better Auth's `genericOAuth` plugin lands in v2.
+6. **`AppSsoBlock` is a component, not a promise.** The web client no longer
+   consumes `InstanceConfigDto.ssoProviders` — this is a single-owner instance
+   and email + password is the whole requirement. The field stays on the wire
+   because the mobile client still reads it, and the component stays in
+   `@app/ui` / `@app/ui_flutter` for whenever a fresh SSO story is decided.
 
 Closed since this list was first written: the `/api/v1` doubling in the mobile
 clients, the missing outbox drain, the design-inventory drift, the ffmpeg and

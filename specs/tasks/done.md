@@ -52,6 +52,28 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - [x] remove the Known-limits row
 - Status: done
 
+## T-2026-08-30-010 — settle the locale parity claim + the mobile storage bar
+
+- Created: 2026-08-30
+- Owner: claude
+- Spec: [docs/roadmap/tasks/E31-F02-S03.md](../../docs/roadmap/tasks/E31-F02-S03.md) (issue #244), [docs/roadmap/tasks/E31-F02-S04.md](../../docs/roadmap/tasks/E31-F02-S04.md) (issue #245)
+- Goal: mobile ships `en`/`ru` like web (the machine-written `uk`/`el` locales go), the storage bar is kept and covered against a stubbed plugin, and the three Known-limits rows that described either as a defect are removed.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] delete `*_uk.i18n.json` / `*_el.i18n.json` and the unused `localeEl` / `localeUk` keys
+  - [x] drop the Greek/Ukrainian entries from the settings language picker
+  - [x] `pnpm check:i18n` green, mobile reported as 2 locales
+  - [x] rewrite both Known-limits rows + the Languages line in `docs/user-guide.md`
+  - [x] correct the locale claim in `README.md`, `README.ru.md`, `.claude/docs/i18n.md`
+  - [x] `flutter analyze && flutter test`
+  - [x] widget tests for `StorageBar` over a stubbed `disk_space_plus` (E31-F02-S04)
+  - [x] remove the "Storage bar on mobile" Known-limits row
+- Status: done
+- Blockers: —
+- Completed: 2026-08-30
+- Result: https://github.com/kkucherenkov/course_shelf/pull/301
+
 ## T-2026-08-30-013 — E26-F01-S02 + E26-F01-S04 transcript cues, `?t=` deep links, two player defects
 
 - Created: 2026-08-30

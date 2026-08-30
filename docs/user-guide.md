@@ -357,8 +357,7 @@ Four groups, saved automatically as you change them.
 **Account** — sign out of this device; sign out of *all other* devices
 (revokes every session but the current one, behind a confirmation dialog).
 
-**Languages.** The mobile app ships English, Russian, Ukrainian and Greek.
-The web app currently ships English and Russian.
+**Languages.** English and Russian, on both web and mobile.
 
 ---
 
@@ -427,11 +426,10 @@ that message names the exact mismatch, which is usually the whole fix.
 
 Stated plainly, because finding these by surprise is worse.
 
-| Limit | Detail |
-| --- | --- |
-| **Web ships 2 locales** | English and Russian. Mobile ships four (en, ru, uk, el). |
-| **Greek and Ukrainian are machine-written** | Not yet reviewed by a native speaker. |
-| **Storage bar on mobile** | The free/used disk figures use a native plugin that has not been verified on a real device. |
+**This release has none left to state.** Every limit this table used to list has
+been closed: the browse filters are built, backups have a screen, the mobile
+client ships only the two locales a human has actually read, and the storage bar
+is covered. When the next one appears it goes here, before anyone trips over it.
 
 ---
 

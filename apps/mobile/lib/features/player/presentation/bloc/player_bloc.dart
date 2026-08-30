@@ -34,6 +34,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     required LessonProgressRecorder progressRecorder,
     required VideoPlaybackPort playback,
     required PlaybackPreferences playbackPreferences,
+    Stream<void>? syncSettled,
     DateTime Function()? now,
   }) : _repository = repository,
        _recorder = progressRecorder,
@@ -53,6 +54,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     on<PlayerBookmarkAddToggled>(_onBookmarkAddToggled);
     on<PlayerBookmarkAdded>(_onBookmarkAdded);
     on<PlayerBookmarkDeleted>(_onBookmarkDeleted);
+    on<PlayerBookmarksRefreshed>(_onBookmarksRefreshed);
     on<PlayerNoteSaved>(_onNoteSaved);
     on<PlayerSleepTimerSet>(_onSleepTimerSet);
     on<PlayerSleepTimerTicked>(_onSleepTimerTicked);
@@ -60,6 +62,13 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
     _snapshotSub = _playback.snapshots.listen(
       (VideoPlaybackSnapshot s) => add(PlayerTicked(s)),
+    );
+    // A plain `Stream<void>`, not a `SyncBloc`: the sync feature already
+    // reaches the player only through the repository's `onEnqueued` callback,
+    // and the injector wires both edges. Keeping the type opaque is what stops
+    // this becoming a player -> sync import.
+    _syncSettledSub = syncSettled?.listen(
+      (void _) => add(const PlayerBookmarksRefreshed()),
     );
   }
 
@@ -70,6 +79,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   final DateTime Function() _now;
 
   late final StreamSubscription<VideoPlaybackSnapshot> _snapshotSub;
+  late final StreamSubscription<void>? _syncSettledSub;
   Timer? _sleepTicker;
 
   String? _lessonId;
@@ -82,6 +92,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   @override
   Future<void> close() async {
     await _snapshotSub.cancel();
+    await _syncSettledSub?.cancel();
     _sleepTicker?.cancel();
     await _playback.dispose();
     return super.close();
@@ -466,6 +477,31 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       // Leave the row in place — a delete that failed server-side must not
       // look like it succeeded.
     }
+  }
+
+  /// Re-reads only the bookmarks, never the lesson.
+  ///
+  /// A drain settling is not a reason to reopen the video: `_load` resolves the
+  /// source and calls `VideoPlaybackPort.open`, which would restart playback
+  /// under the user every time the sync ticker fired. The bookmark list is the
+  /// only thing a drain can change out from under this screen.
+  ///
+  /// A failure is swallowed on purpose. This is a background correction the
+  /// user never asked for, so a refresh that cannot reach the server must leave
+  /// the list exactly as it was rather than empty it or raise an error.
+  Future<void> _onBookmarksRefreshed(
+    PlayerBookmarksRefreshed event,
+    Emitter<PlayerState> emit,
+  ) async {
+    final String? lessonId = _lessonId;
+    if (lessonId == null || state.status == PlayerStatus.loading) return;
+
+    final List<LessonBookmark>? fresh = await _safe(
+      () => _repository.fetchBookmarks(lessonId),
+      null,
+    );
+    if (fresh == null) return;
+    emit(state.copyWith(bookmarks: fresh));
   }
 
   Future<void> _onNoteSaved(

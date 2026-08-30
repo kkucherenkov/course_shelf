@@ -25,7 +25,7 @@
 # runners execute steps directly on the VM (e2e.yml has no `container:`), so
 # that quirk no longer applies — but the production-shaping above is the real,
 # still-load-bearing reason this file exists, independent of any runner. The
-# `ports: !override []` on postgres/redis/otel below was likewise for the
+# `ports: !override []` on postgres/otel below was likewise for the
 # shared homelab runner (ports contended with other stacks); harmless on
 # ephemeral GitHub runners, kept as defensive since the e2e job only needs
 # web/backend/centrifugo reachable.
@@ -49,13 +49,10 @@ services:
     # publishes :3200, others may claim :5432/:6379). The e2e job only
     # needs web (:3001), backend (:3000) and centrifugo (:8000 — the
     # SPA's websocket URL points at the host gateway) reachable from
-    # the job container; postgres/redis/otel-lgtm are internal to the
+    # the job container; postgres/otel-lgtm are internal to the
     # compose network (backend reaches them by service name). Unpublish
     # their host ports so the nightly can't die on
     # "Bind for 0.0.0.0:3200 failed: port is already allocated".
-    ports: !override []
-
-  redis:
     ports: !override []
 
   otel-lgtm:

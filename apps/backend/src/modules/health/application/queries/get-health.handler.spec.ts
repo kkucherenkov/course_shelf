@@ -17,17 +17,15 @@ function makeConfig(version = '1.2.3'): AppConfig {
 
 describe('GetHealthHandler', () => {
   let db: DependencyChecker;
-  let redis: DependencyChecker;
   let centrifugo: DependencyChecker;
   let config: AppConfig;
   let handler: GetHealthHandler;
 
   beforeEach(() => {
     db = makeChecker('ok');
-    redis = makeChecker('ok');
     centrifugo = makeChecker('ok');
     config = makeConfig();
-    handler = new GetHealthHandler(db, redis, centrifugo, config);
+    handler = new GetHealthHandler(db, centrifugo, config);
   });
 
   it('returns ok status when all dependencies are healthy', async () => {
@@ -35,7 +33,6 @@ describe('GetHealthHandler', () => {
 
     expect(result.status).toBe('ok');
     expect(result.dependencies.db).toBe('ok');
-    expect(result.dependencies.redis).toBe('ok');
     expect(result.dependencies.centrifugo).toBe('ok');
   });
 
@@ -52,18 +49,18 @@ describe('GetHealthHandler', () => {
   });
 
   it('returns degraded status when a dependency is degraded', async () => {
-    vi.mocked(redis.check).mockResolvedValue('degraded');
-    handler = new GetHealthHandler(db, redis, centrifugo, config);
+    vi.mocked(centrifugo.check).mockResolvedValue('degraded');
+    handler = new GetHealthHandler(db, centrifugo, config);
 
     const result = await handler.execute(new GetHealthQuery());
 
     expect(result.status).toBe('degraded');
-    expect(result.dependencies.redis).toBe('degraded');
+    expect(result.dependencies.centrifugo).toBe('degraded');
   });
 
   it('returns down status when a dependency is down', async () => {
     vi.mocked(db.check).mockResolvedValue('down');
-    handler = new GetHealthHandler(db, redis, centrifugo, config);
+    handler = new GetHealthHandler(db, centrifugo, config);
 
     const result = await handler.execute(new GetHealthQuery());
 
@@ -73,25 +70,23 @@ describe('GetHealthHandler', () => {
 
   it('returns down when any dependency is down even if others are ok', async () => {
     vi.mocked(centrifugo.check).mockResolvedValue('down');
-    vi.mocked(redis.check).mockResolvedValue('degraded');
-    handler = new GetHealthHandler(db, redis, centrifugo, config);
+    handler = new GetHealthHandler(db, centrifugo, config);
 
     const result = await handler.execute(new GetHealthQuery());
 
     expect(result.status).toBe('down');
   });
 
-  it('calls all three checkers in parallel', async () => {
+  it('calls both checkers in parallel', async () => {
     await handler.execute(new GetHealthQuery());
 
     expect(db.check).toHaveBeenCalledOnce();
-    expect(redis.check).toHaveBeenCalledOnce();
     expect(centrifugo.check).toHaveBeenCalledOnce();
   });
 
   it('centrifugo degraded yields degraded overall', async () => {
     vi.mocked(centrifugo.check).mockResolvedValue('degraded');
-    handler = new GetHealthHandler(db, redis, centrifugo, config);
+    handler = new GetHealthHandler(db, centrifugo, config);
 
     const result = await handler.execute(new GetHealthQuery());
 

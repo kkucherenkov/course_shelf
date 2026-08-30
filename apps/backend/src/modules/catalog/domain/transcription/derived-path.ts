@@ -26,11 +26,47 @@ export interface DerivedTranscriptPathInput {
   readonly language: string;
 }
 
+export interface DerivedThumbnailPathInput {
+  readonly derivedRoot: string;
+  readonly libraryId: string;
+  /** Library-relative video path, exactly as stored on `Lesson.videoPath`. */
+  readonly videoPath: string;
+}
+
 /** Language tags are short ASCII; anything else is a path-injection attempt. */
 const SAFE_LANGUAGE = /^[A-Za-z0-9_-]{1,16}$/;
 
 /** cuid/uuid-shaped ids only — a library id is never a path fragment. */
 const SAFE_LIBRARY_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
+/**
+ * Resolve `<derivedRoot>/<libraryId>/<suffixed videoPath>`, refusing to leave
+ * `<derivedRoot>/<libraryId>`. Shared by `derivedTranscriptPath` and
+ * `derivedThumbnailPath` — same root, same traversal guard, only the file
+ * suffix differs.
+ */
+function resolveUnderLibraryRoot(
+  derivedRoot: string,
+  libraryId: string,
+  suffixedPath: string,
+): string {
+  if (!SAFE_LIBRARY_ID.test(libraryId)) {
+    throw new DerivedPathEscapedError(`libraryId: ${libraryId}`);
+  }
+
+  const libraryRoot = path.resolve(derivedRoot, libraryId);
+  const resolved = path.resolve(libraryRoot, suffixedPath);
+
+  // The empty case (`resolved === libraryRoot`) is unreachable while the name
+  // always carries a suffix; it stays as a fail-closed guard in case a future
+  // caller passes a suffix-free base path.
+  const relative = path.relative(libraryRoot, resolved);
+  if (relative === '' || relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new DerivedPathEscapedError(resolved);
+  }
+
+  return resolved;
+}
 
 /**
  * Absolute path of the generated `.srt` for one lesson in one language.
@@ -45,20 +81,22 @@ export function derivedTranscriptPath(input: DerivedTranscriptPathInput): string
   if (!SAFE_LANGUAGE.test(language)) {
     throw new DerivedPathEscapedError(`language: ${language}`);
   }
-  if (!SAFE_LIBRARY_ID.test(libraryId)) {
-    throw new DerivedPathEscapedError(`libraryId: ${libraryId}`);
-  }
 
-  const libraryRoot = path.resolve(derivedRoot, libraryId);
-  const resolved = path.resolve(libraryRoot, `${videoPath}.${language}.srt`);
+  return resolveUnderLibraryRoot(derivedRoot, libraryId, `${videoPath}.${language}.srt`);
+}
 
-  // The empty case (`resolved === libraryRoot`) is unreachable while the name
-  // always carries a `.srt` suffix; it stays as a fail-closed guard in case a
-  // future caller passes a suffix-free base path.
-  const relative = path.relative(libraryRoot, resolved);
-  if (relative === '' || relative.startsWith('..') || path.isAbsolute(relative)) {
-    throw new DerivedPathEscapedError(resolved);
-  }
+/**
+ * Absolute path of the generated poster thumbnail for one lesson.
+ *
+ * WHY this exists (E25-F04-S01): the scan used to write `*.thumb.jpg` next to
+ * the video, which fails on every production install — `COURSES_PATH` is
+ * mounted `:ro`. Mirroring the transcript's per-library layout under the
+ * writable derived root fixes it the same way.
+ *
+ * @throws DerivedPathEscapedError — see `derivedTranscriptPath`.
+ */
+export function derivedThumbnailPath(input: DerivedThumbnailPathInput): string {
+  const { derivedRoot, libraryId, videoPath } = input;
 
-  return resolved;
+  return resolveUnderLibraryRoot(derivedRoot, libraryId, `${videoPath}.thumb.jpg`);
 }

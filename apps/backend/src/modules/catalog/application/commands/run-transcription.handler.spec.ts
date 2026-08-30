@@ -152,6 +152,11 @@ function makeTranscriptRepo(
     replaceGenerated: vi.fn(async (input: ReplaceGeneratedInput) => {
       written.push(input);
     }),
+    // Not exercised by the transcription run — sidecar ingest (E27-F01-S01)
+    // and orphan cleanup (E25-F04-S01) both live in the scan walk.
+    findExisting: vi.fn(async () => null),
+    replaceSidecar: vi.fn(async () => undefined),
+    deleteForLesson: vi.fn(async () => undefined),
   };
 }
 

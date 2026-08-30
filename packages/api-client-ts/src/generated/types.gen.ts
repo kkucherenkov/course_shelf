@@ -2062,6 +2062,11 @@ export type ListGrantsByUserErrors = {
      * Caller does not have the admin role
      */
     403: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ListGrantsByUserError = ListGrantsByUserErrors[keyof ListGrantsByUserErrors];
@@ -2103,6 +2108,11 @@ export type RegisterGrantErrors = {
      * A grant for this (userId, target) pair already exists
      */
     409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type RegisterGrantError = RegisterGrantErrors[keyof RegisterGrantErrors];
@@ -2130,6 +2140,11 @@ export type RevokeGrantData = {
 
 export type RevokeGrantErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2141,6 +2156,11 @@ export type RevokeGrantErrors = {
      * Grant not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type RevokeGrantError = RevokeGrantErrors[keyof RevokeGrantErrors];
@@ -2163,6 +2183,11 @@ export type GetAdminDashboardData = {
 
 export type GetAdminDashboardErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2170,6 +2195,11 @@ export type GetAdminDashboardErrors = {
      * Caller is authenticated but not an administrator
      */
     403: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetAdminDashboardError = GetAdminDashboardErrors[keyof GetAdminDashboardErrors];
@@ -2192,6 +2222,11 @@ export type CreateBackupData = {
 
 export type CreateBackupErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2199,6 +2234,11 @@ export type CreateBackupErrors = {
      * Caller does not have the admin role
      */
     403: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
     /**
      * The backup could not be produced — `pg_dump` is missing from the image, its major version does not match the server, it exited non-zero, or it exceeded the configured timeout.
      */
@@ -2235,6 +2275,11 @@ export type DownloadBackupData = {
 
 export type DownloadBackupErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Token missing, malformed, expired, or bound to another backup.
      */
     401: Problem;
@@ -2242,6 +2287,11 @@ export type DownloadBackupErrors = {
      * No such backup, or the archive is gone from disk.
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type DownloadBackupError = DownloadBackupErrors[keyof DownloadBackupErrors];
@@ -2273,6 +2323,11 @@ export type ListAdminScansData = {
 
 export type ListAdminScansErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2280,6 +2335,11 @@ export type ListAdminScansErrors = {
      * Caller is authenticated but not an administrator
      */
     403: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ListAdminScansError = ListAdminScansErrors[keyof ListAdminScansErrors];
@@ -2311,6 +2371,11 @@ export type ListAdminTranscriptionsData = {
 
 export type ListAdminTranscriptionsErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2318,6 +2383,11 @@ export type ListAdminTranscriptionsErrors = {
      * Caller is authenticated but not an administrator
      */
     403: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ListAdminTranscriptionsError = ListAdminTranscriptionsErrors[keyof ListAdminTranscriptionsErrors];
@@ -2340,6 +2410,11 @@ export type ListAdminLibrariesData = {
 
 export type ListAdminLibrariesErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2347,6 +2422,11 @@ export type ListAdminLibrariesErrors = {
      * Caller is authenticated but not an administrator
      */
     403: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ListAdminLibrariesError = ListAdminLibrariesErrors[keyof ListAdminLibrariesErrors];
@@ -2378,6 +2458,11 @@ export type ListAdminUsersData = {
 
 export type ListAdminUsersErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2385,6 +2470,11 @@ export type ListAdminUsersErrors = {
      * Caller is authenticated but not an administrator
      */
     403: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ListAdminUsersError = ListAdminUsersErrors[keyof ListAdminUsersErrors];
@@ -2412,6 +2502,11 @@ export type GetAdminUserData = {
 
 export type GetAdminUserErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2423,6 +2518,11 @@ export type GetAdminUserErrors = {
      * User not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetAdminUserError = GetAdminUserErrors[keyof GetAdminUserErrors];
@@ -2465,6 +2565,11 @@ export type UpdateAdminUserErrors = {
      * User not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type UpdateAdminUserError = UpdateAdminUserErrors[keyof UpdateAdminUserErrors];
@@ -2485,6 +2590,21 @@ export type GetAdminHasUsersData = {
     url: '/api/v1/admin/has-users';
 };
 
+export type GetAdminHasUsersErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type GetAdminHasUsersError = GetAdminHasUsersErrors[keyof GetAdminHasUsersErrors];
+
 export type GetAdminHasUsersResponses = {
     /**
      * Boolean signalling whether at least one user exists
@@ -2500,6 +2620,21 @@ export type GetAdminInstanceData = {
     query?: never;
     url: '/api/v1/admin/instance';
 };
+
+export type GetAdminInstanceErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type GetAdminInstanceError = GetAdminInstanceErrors[keyof GetAdminInstanceErrors];
 
 export type GetAdminInstanceResponses = {
     /**
@@ -2534,6 +2669,11 @@ export type UpsertInstructorErrors = {
      * Slug already taken by a different instructor
      */
     409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type UpsertInstructorError = UpsertInstructorErrors[keyof UpsertInstructorErrors];
@@ -2556,6 +2696,11 @@ export type StartBackfillMetadataData = {
 
 export type StartBackfillMetadataErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2563,6 +2708,11 @@ export type StartBackfillMetadataErrors = {
      * Caller does not have the admin role
      */
     403: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type StartBackfillMetadataError = StartBackfillMetadataErrors[keyof StartBackfillMetadataErrors];
@@ -2585,6 +2735,11 @@ export type ListScrapersData = {
 
 export type ListScrapersErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2592,6 +2747,11 @@ export type ListScrapersErrors = {
      * Caller does not have the admin role
      */
     403: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ListScrapersError = ListScrapersErrors[keyof ListScrapersErrors];
@@ -2639,6 +2799,11 @@ export type ScrapeCoursePreviewErrors = {
      */
     422: Problem;
     /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+    /**
      * Upstream fetch or parse failed
      */
     502: Problem;
@@ -2666,6 +2831,11 @@ export type RunIdentifyTaskData = {
 
 export type RunIdentifyTaskErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2677,6 +2847,11 @@ export type RunIdentifyTaskErrors = {
      * Course not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type RunIdentifyTaskError = RunIdentifyTaskErrors[keyof RunIdentifyTaskErrors];
@@ -2702,6 +2877,11 @@ export type ListIdentifyTasksData = {
 
 export type ListIdentifyTasksErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2709,6 +2889,11 @@ export type ListIdentifyTasksErrors = {
      * Caller does not have the admin role
      */
     403: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ListIdentifyTasksError = ListIdentifyTasksErrors[keyof ListIdentifyTasksErrors];
@@ -2733,6 +2918,11 @@ export type GetIdentifyTaskData = {
 
 export type GetIdentifyTaskErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2744,6 +2934,11 @@ export type GetIdentifyTaskErrors = {
      * Identify task not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetIdentifyTaskError = GetIdentifyTaskErrors[keyof GetIdentifyTaskErrors];
@@ -2768,6 +2963,11 @@ export type ApplyIdentifyResultData = {
 
 export type ApplyIdentifyResultErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2783,6 +2983,11 @@ export type ApplyIdentifyResultErrors = {
      * Task is not in the proposed state
      */
     409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ApplyIdentifyResultError = ApplyIdentifyResultErrors[keyof ApplyIdentifyResultErrors];
@@ -2807,6 +3012,11 @@ export type DiscardIdentifyTaskData = {
 
 export type DiscardIdentifyTaskErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2822,6 +3032,11 @@ export type DiscardIdentifyTaskErrors = {
      * Task is not in the proposed state
      */
     409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type DiscardIdentifyTaskError = DiscardIdentifyTaskErrors[keyof DiscardIdentifyTaskErrors];
@@ -2859,6 +3074,11 @@ export type UpsertStudioErrors = {
      * Slug already taken by a different studio
      */
     409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type UpsertStudioError = UpsertStudioErrors[keyof UpsertStudioErrors];
@@ -2896,6 +3116,11 @@ export type UpsertTagErrors = {
      * Slug already taken by a different tag
      */
     409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type UpsertTagError = UpsertTagErrors[keyof UpsertTagErrors];
@@ -2923,6 +3148,11 @@ export type DeleteBookmarkData = {
 
 export type DeleteBookmarkErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -2934,6 +3164,11 @@ export type DeleteBookmarkErrors = {
      * Bookmark not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type DeleteBookmarkError = DeleteBookmarkErrors[keyof DeleteBookmarkErrors];
@@ -2976,6 +3211,11 @@ export type UpdateBookmarkErrors = {
      * Bookmark not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type UpdateBookmarkError = UpdateBookmarkErrors[keyof UpdateBookmarkErrors];
@@ -3036,9 +3276,19 @@ export type ListCoursesData = {
 
 export type ListCoursesErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ListCoursesError = ListCoursesErrors[keyof ListCoursesErrors];
@@ -3066,6 +3316,11 @@ export type GetCourseData = {
 
 export type GetCourseErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -3077,6 +3332,11 @@ export type GetCourseErrors = {
      * Course not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetCourseError = GetCourseErrors[keyof GetCourseErrors];
@@ -3123,6 +3383,11 @@ export type UpdateCourseErrors = {
      * A course with the same slug already exists in this library
      */
     409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type UpdateCourseError = UpdateCourseErrors[keyof UpdateCourseErrors];
@@ -3150,6 +3415,11 @@ export type GetCourseOutlineData = {
 
 export type GetCourseOutlineErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -3161,6 +3431,11 @@ export type GetCourseOutlineErrors = {
      * Course not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetCourseOutlineError = GetCourseOutlineErrors[keyof GetCourseOutlineErrors];
@@ -3188,6 +3463,11 @@ export type GetCourseDownloadEstimateData = {
 
 export type GetCourseDownloadEstimateErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -3199,6 +3479,11 @@ export type GetCourseDownloadEstimateErrors = {
      * Course not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetCourseDownloadEstimateError = GetCourseDownloadEstimateErrors[keyof GetCourseDownloadEstimateErrors];
@@ -3226,6 +3511,11 @@ export type MarkCourseCompleteData = {
 
 export type MarkCourseCompleteErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -3237,6 +3527,11 @@ export type MarkCourseCompleteErrors = {
      * Course not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type MarkCourseCompleteError = MarkCourseCompleteErrors[keyof MarkCourseCompleteErrors];
@@ -3264,6 +3559,11 @@ export type ResetCourseProgressData = {
 
 export type ResetCourseProgressErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -3275,6 +3575,11 @@ export type ResetCourseProgressErrors = {
      * Course not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ResetCourseProgressError = ResetCourseProgressErrors[keyof ResetCourseProgressErrors];
@@ -3310,9 +3615,19 @@ export type ListInstructorsData = {
 
 export type ListInstructorsErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ListInstructorsError = ListInstructorsErrors[keyof ListInstructorsErrors];
@@ -3340,6 +3655,11 @@ export type GetInstructorData = {
 
 export type GetInstructorErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -3347,6 +3667,11 @@ export type GetInstructorErrors = {
      * Instructor not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetInstructorError = GetInstructorErrors[keyof GetInstructorErrors];
@@ -3382,9 +3707,19 @@ export type ListStudiosData = {
 
 export type ListStudiosErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ListStudiosError = ListStudiosErrors[keyof ListStudiosErrors];
@@ -3412,6 +3747,11 @@ export type GetStudioData = {
 
 export type GetStudioErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -3419,6 +3759,11 @@ export type GetStudioErrors = {
      * Studio not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetStudioError = GetStudioErrors[keyof GetStudioErrors];
@@ -3458,9 +3803,19 @@ export type ListTagsData = {
 
 export type ListTagsErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ListTagsError = ListTagsErrors[keyof ListTagsErrors];
@@ -3488,6 +3843,11 @@ export type GetTagData = {
 
 export type GetTagErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -3495,6 +3855,11 @@ export type GetTagErrors = {
      * Tag not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetTagError = GetTagErrors[keyof GetTagErrors];
@@ -3522,9 +3887,19 @@ export type GetContinueWatchingData = {
 
 export type GetContinueWatchingErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetContinueWatchingError = GetContinueWatchingErrors[keyof GetContinueWatchingErrors];
@@ -3552,9 +3927,19 @@ export type GetRecentlyAddedData = {
 
 export type GetRecentlyAddedErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetRecentlyAddedError = GetRecentlyAddedErrors[keyof GetRecentlyAddedErrors];
@@ -3582,9 +3967,19 @@ export type GetRecentlyCompletedData = {
 
 export type GetRecentlyCompletedErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetRecentlyCompletedError = GetRecentlyCompletedErrors[keyof GetRecentlyCompletedErrors];
@@ -3607,9 +4002,19 @@ export type GetYourWeekData = {
 
 export type GetYourWeekErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetYourWeekError = GetYourWeekErrors[keyof GetYourWeekErrors];
@@ -3637,6 +4042,11 @@ export type GetLessonData = {
 
 export type GetLessonErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -3648,6 +4058,11 @@ export type GetLessonErrors = {
      * Lesson not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetLessonError = GetLessonErrors[keyof GetLessonErrors];
@@ -3686,6 +4101,11 @@ export type StreamLessonVideoData = {
 
 export type StreamLessonVideoErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Token missing, malformed, expired, or bound to another lesson.
      */
     401: Problem;
@@ -3697,6 +4117,11 @@ export type StreamLessonVideoErrors = {
      * The `Range` header asks for bytes outside the file.
      */
     416: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type StreamLessonVideoError = StreamLessonVideoErrors[keyof StreamLessonVideoErrors];
@@ -3734,6 +4159,11 @@ export type StreamLessonSubtitleData = {
 
 export type StreamLessonSubtitleErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Token missing, malformed, expired, or bound to another lesson.
      */
     401: Problem;
@@ -3741,6 +4171,11 @@ export type StreamLessonSubtitleErrors = {
      * No such lesson, or no subtitle in that language.
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type StreamLessonSubtitleError = StreamLessonSubtitleErrors[keyof StreamLessonSubtitleErrors];
@@ -3773,6 +4208,11 @@ export type StreamMaterialData = {
 
 export type StreamMaterialErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Token missing, malformed, expired, or bound to another material.
      */
     401: Problem;
@@ -3780,6 +4220,11 @@ export type StreamMaterialErrors = {
      * No such material, or its file is missing on disk.
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type StreamMaterialError = StreamMaterialErrors[keyof StreamMaterialErrors];
@@ -3807,6 +4252,11 @@ export type IssueStreamUrlData = {
 
 export type IssueStreamUrlErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -3818,6 +4268,11 @@ export type IssueStreamUrlErrors = {
      * Lesson not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type IssueStreamUrlError = IssueStreamUrlErrors[keyof IssueStreamUrlErrors];
@@ -3849,6 +4304,11 @@ export type IssueMaterialDownloadUrlData = {
 
 export type IssueMaterialDownloadUrlErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -3860,6 +4320,11 @@ export type IssueMaterialDownloadUrlErrors = {
      * Material or parent lesson not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type IssueMaterialDownloadUrlError = IssueMaterialDownloadUrlErrors[keyof IssueMaterialDownloadUrlErrors];
@@ -3887,6 +4352,11 @@ export type ListLessonBookmarksData = {
 
 export type ListLessonBookmarksErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -3898,6 +4368,11 @@ export type ListLessonBookmarksErrors = {
      * Lesson not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ListLessonBookmarksError = ListLessonBookmarksErrors[keyof ListLessonBookmarksErrors];
@@ -3940,6 +4415,11 @@ export type CreateBookmarkErrors = {
      * Lesson not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type CreateBookmarkError = CreateBookmarkErrors[keyof CreateBookmarkErrors];
@@ -3966,9 +4446,19 @@ export type ListLibrariesData = {
 
 export type ListLibrariesErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ListLibrariesError = ListLibrariesErrors[keyof ListLibrariesErrors];
@@ -4002,6 +4492,11 @@ export type RegisterLibraryErrors = {
      * Caller does not have the Owner-Admin role
      */
     403: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type RegisterLibraryError = RegisterLibraryErrors[keyof RegisterLibraryErrors];
@@ -4029,6 +4524,11 @@ export type RemoveLibraryData = {
 
 export type RemoveLibraryErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -4040,6 +4540,11 @@ export type RemoveLibraryErrors = {
      * Library not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type RemoveLibraryError = RemoveLibraryErrors[keyof RemoveLibraryErrors];
@@ -4067,6 +4572,11 @@ export type GetLibraryData = {
 
 export type GetLibraryErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -4078,6 +4588,11 @@ export type GetLibraryErrors = {
      * Library not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetLibraryError = GetLibraryErrors[keyof GetLibraryErrors];
@@ -4120,6 +4635,11 @@ export type UpdateLibraryErrors = {
      * Library not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type UpdateLibraryError = UpdateLibraryErrors[keyof UpdateLibraryErrors];
@@ -4147,6 +4667,11 @@ export type RunLibraryScanData = {
 
 export type RunLibraryScanErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -4162,6 +4687,11 @@ export type RunLibraryScanErrors = {
      * A scan is already running for this library
      */
     409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type RunLibraryScanError = RunLibraryScanErrors[keyof RunLibraryScanErrors];
@@ -4189,6 +4719,11 @@ export type GetLatestLibraryScanData = {
 
 export type GetLatestLibraryScanErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -4200,6 +4735,11 @@ export type GetLatestLibraryScanErrors = {
      * Library not found or no scan has been run yet
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetLatestLibraryScanError = GetLatestLibraryScanErrors[keyof GetLatestLibraryScanErrors];
@@ -4232,6 +4772,11 @@ export type ListLibraryTranscriptionsData = {
 
 export type ListLibraryTranscriptionsErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -4243,6 +4788,11 @@ export type ListLibraryTranscriptionsErrors = {
      * Library not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type ListLibraryTranscriptionsError = ListLibraryTranscriptionsErrors[keyof ListLibraryTranscriptionsErrors];
@@ -4270,6 +4820,11 @@ export type StartTranscriptionData = {
 
 export type StartTranscriptionErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -4285,6 +4840,11 @@ export type StartTranscriptionErrors = {
      * A transcription is already running for this library
      */
     409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
     /**
      * The transcription backend is not usable — the whisper binary or the model file configured for this deployment is missing. Fails fast rather than starting a run that cannot produce anything.
      */
@@ -4316,6 +4876,11 @@ export type GetLatestTranscriptionData = {
 
 export type GetLatestTranscriptionErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -4327,6 +4892,11 @@ export type GetLatestTranscriptionErrors = {
      * Library not found or no transcription has been run yet
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetLatestTranscriptionError = GetLatestTranscriptionErrors[keyof GetLatestTranscriptionErrors];
@@ -4354,6 +4924,11 @@ export type CancelTranscriptionData = {
 
 export type CancelTranscriptionErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -4369,6 +4944,11 @@ export type CancelTranscriptionErrors = {
      * The transcription has already reached a terminal status
      */
     409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type CancelTranscriptionError = CancelTranscriptionErrors[keyof CancelTranscriptionErrors];
@@ -4406,6 +4986,11 @@ export type UpsertNoteErrors = {
      * Lesson not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type UpsertNoteError = UpsertNoteErrors[keyof UpsertNoteErrors];
@@ -4433,6 +5018,11 @@ export type DeleteNoteData = {
 
 export type DeleteNoteErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -4444,6 +5034,11 @@ export type DeleteNoteErrors = {
      * Lesson not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type DeleteNoteError = DeleteNoteErrors[keyof DeleteNoteErrors];
@@ -4471,6 +5066,11 @@ export type GetNoteData = {
 
 export type GetNoteErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -4482,6 +5082,11 @@ export type GetNoteErrors = {
      * Lesson exists but the requester has not yet created a note
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetNoteError = GetNoteErrors[keyof GetNoteErrors];
@@ -4503,6 +5108,16 @@ export type GetHealthData = {
 };
 
 export type GetHealthErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
     /**
      * One or more dependencies are degraded or down
      */
@@ -4529,9 +5144,19 @@ export type PingData = {
 
 export type PingErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type PingError = PingErrors[keyof PingErrors];
@@ -4569,6 +5194,11 @@ export type RecordLessonProgressErrors = {
      * Lesson not found
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type RecordLessonProgressError = RecordLessonProgressErrors[keyof RecordLessonProgressErrors];
@@ -4596,6 +5226,11 @@ export type GetLessonProgressData = {
 
 export type GetLessonProgressErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
@@ -4607,6 +5242,11 @@ export type GetLessonProgressErrors = {
      * Lesson exists but the requester has not yet recorded any progress
      */
     404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type GetLessonProgressError = GetLessonProgressErrors[keyof GetLessonProgressErrors];
@@ -4636,6 +5276,11 @@ export type RecordLessonProgressBatchErrors = {
      * Missing or invalid bearer token
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type RecordLessonProgressBatchError = RecordLessonProgressBatchErrors[keyof RecordLessonProgressBatchErrors];
@@ -4665,6 +5310,11 @@ export type UpdateMeErrors = {
      * Missing or invalid bearer token
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type UpdateMeError = UpdateMeErrors[keyof UpdateMeErrors];
@@ -4687,9 +5337,19 @@ export type SignOutOtherSessionsData = {
 
 export type SignOutOtherSessionsErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type SignOutOtherSessionsError = SignOutOtherSessionsErrors[keyof SignOutOtherSessionsErrors];
@@ -4721,9 +5381,19 @@ export type SearchCatalogueData = {
 
 export type SearchCatalogueErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type SearchCatalogueError = SearchCatalogueErrors[keyof SearchCatalogueErrors];
@@ -4746,9 +5416,19 @@ export type IssueRealtimeTokenData = {
 
 export type IssueRealtimeTokenErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     */
+    400: Problem;
+    /**
      * No active session
      */
     401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
 };
 
 export type IssueRealtimeTokenError = IssueRealtimeTokenErrors[keyof IssueRealtimeTokenErrors];

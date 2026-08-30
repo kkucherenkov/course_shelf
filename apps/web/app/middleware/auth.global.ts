@@ -38,7 +38,9 @@ async function fetchHasUsers(): Promise<boolean> {
   if (hasUsersCache.value !== null) return hasUsersCache.value;
   try {
     const res = await getAdminHasUsers({ client, throwOnError: false });
-    if (res.error || !res.data) {
+    // See useFirstRun: `!res.data` is unreachable now that the operation
+    // declares its error responses and the generated union discriminates.
+    if (res.error) {
       // Defensive: assume users exist on probe failure to avoid trapping a
       // real user in the setup wizard if the backend is mis-responding.
       hasUsersCache.value = true;

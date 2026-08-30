@@ -43,29 +43,29 @@
     return `${String(minutes)}:${String(secs).padStart(2, '0')}`;
   }
 
+  // The row used to be a `role="button"` div wrapping the edit/delete buttons,
+  // which is an axe `nested-interactive` failure — nothing inside a button is
+  // reachable by a screen reader. The row is a plain container now: selecting
+  // the bookmark is a real <button> over the time + label, and the actions are
+  // its siblings. That also drops the hand-rolled Enter/Space handler, since a
+  // native button already activates on both.
+  const ariaLabel = computed(() =>
+    props.label
+      ? `Bookmark at ${formattedTime.value}: ${props.label}`
+      : `Bookmark at ${formattedTime.value}`,
+  );
+
   function onActivate(): void {
     emit('select');
-  }
-
-  function onKey(event: KeyboardEvent): void {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      onActivate();
-    }
   }
 </script>
 
 <template>
-  <div
-    class="app-bookmark"
-    role="button"
-    tabindex="0"
-    :aria-label="label ? `Bookmark at ${formattedTime}: ${label}` : `Bookmark at ${formattedTime}`"
-    @click="onActivate"
-    @keydown="onKey"
-  >
-    <span class="app-bookmark__time">{{ formattedTime }}</span>
-    <span class="app-bookmark__label">{{ label }}</span>
+  <div class="app-bookmark">
+    <button type="button" class="app-bookmark__main" :aria-label="ariaLabel" @click="onActivate">
+      <span class="app-bookmark__time">{{ formattedTime }}</span>
+      <span class="app-bookmark__label">{{ label }}</span>
+    </button>
     <div v-if="editable" class="app-bookmark__actions">
       <button
         type="button"
@@ -109,18 +109,37 @@
     transition: background var(--dur-fast);
 
     &:hover,
-    &:focus-visible {
+    &:focus-within {
       background: var(--surface-raised);
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--brand-accent);
-      outline-offset: -2px;
     }
 
     &:hover &__actions,
     &:focus-within &__actions {
       opacity: 1;
+    }
+
+    // Spans the row so the click target is unchanged; the flex/gap that used
+    // to live on the root for [time | label] moves here, and the root keeps
+    // the gap between this button and the action cluster.
+    &__main {
+      display: flex;
+      align-items: flex-start;
+      gap: $row-gap;
+      flex: 1 1 auto;
+      min-width: 0;
+      border: 0;
+      background: none;
+      padding: 0;
+      font: inherit;
+      color: inherit;
+      text-align: start;
+      cursor: pointer;
+
+      &:focus-visible {
+        outline: 2px solid var(--brand-accent);
+        outline-offset: 2px;
+        border-radius: var(--radius-sm);
+      }
     }
 
     &__time {

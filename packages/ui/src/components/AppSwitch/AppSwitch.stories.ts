@@ -28,6 +28,10 @@ type Story = StoryObj<typeof AppSwitch>;
 
 // A tiny v-model host — makes every story interactive so the playground's
 // binding arrow actually updates the control.
+// A label-less switch has no accessible name of its own — the component gets
+// one from the `label` prop or from an `aria-label` the consumer passes
+// through. The stories that render it bare pass the latter; without it axe
+// fails them on `button-name`.
 export const Default: Story = {
   render: (args) => ({
     components: { AppSwitch },
@@ -35,7 +39,7 @@ export const Default: Story = {
       const checked = ref(false);
       return { args, checked };
     },
-    template: `<AppSwitch v-bind="args" v-model="checked" />`,
+    template: `<AppSwitch v-bind="args" v-model="checked" aria-label="Email notifications" />`,
   }),
 };
 
@@ -86,9 +90,9 @@ export const Sizes: Story = {
     },
     template: `
       <div style="display:flex; gap: var(--space-5); align-items:center;">
-        <AppSwitch v-bind="args" v-model="sm" size="sm" />
-        <AppSwitch v-bind="args" v-model="md" size="md" />
-        <AppSwitch v-bind="args" v-model="lg" size="lg" />
+        <AppSwitch v-bind="args" v-model="sm" size="sm" aria-label="Small switch" />
+        <AppSwitch v-bind="args" v-model="md" size="md" aria-label="Medium switch" />
+        <AppSwitch v-bind="args" v-model="lg" size="lg" aria-label="Large switch" />
       </div>
     `,
   }),

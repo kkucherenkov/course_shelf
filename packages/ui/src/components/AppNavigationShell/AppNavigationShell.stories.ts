@@ -159,7 +159,10 @@ export const WithRightRail: Story = {
         </div>
         <template #right-rail>
           <div style="padding: var(--space-4);">
-            <h3 style="margin: 0 0 var(--space-3); font-size: var(--text-md); font-weight: 600; color: var(--text-fg);">Filters</h3>
+            <!-- h2, not h3: the page's only other heading is the h1 above, and
+                 skipping a level is an axe heading-order failure. The size is
+                 set inline, so the rendering is unchanged. -->
+            <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-md); font-weight: 600; color: var(--text-fg);">Filters</h2>
             <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Sticky right rail (280px).</p>
           </div>
         </template>

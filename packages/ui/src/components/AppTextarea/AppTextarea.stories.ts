@@ -39,7 +39,7 @@ export const Default: Story = {
   render: (args) => ({
     components: { AppTextarea },
     setup: () => ({ args }),
-    template: `<AppTextarea v-bind="args" />`,
+    template: `<AppTextarea v-bind="args" aria-label="Example textarea" />`,
   }),
 };
 
@@ -48,7 +48,7 @@ export const WithPlaceholder: Story = {
   render: (args) => ({
     components: { AppTextarea },
     setup: () => ({ args }),
-    template: `<AppTextarea v-bind="args" />`,
+    template: `<AppTextarea v-bind="args" aria-label="Example textarea" />`,
   }),
 };
 
@@ -57,7 +57,7 @@ export const WithValue: Story = {
   render: (args) => ({
     components: { AppTextarea },
     setup: () => ({ args }),
-    template: `<AppTextarea v-bind="args" />`,
+    template: `<AppTextarea v-bind="args" aria-label="Example textarea" />`,
   }),
 };
 
@@ -66,7 +66,7 @@ export const AutoGrow: Story = {
   render: (args) => ({
     components: { AppTextarea },
     setup: () => ({ args }),
-    template: `<AppTextarea v-bind="args" />`,
+    template: `<AppTextarea v-bind="args" aria-label="Example textarea" />`,
   }),
 };
 
@@ -89,7 +89,7 @@ export const Disabled: Story = {
   render: (args) => ({
     components: { AppTextarea },
     setup: () => ({ args }),
-    template: `<AppTextarea v-bind="args" />`,
+    template: `<AppTextarea v-bind="args" aria-label="Example textarea" />`,
   }),
 };
 
@@ -98,7 +98,7 @@ export const Readonly: Story = {
   render: (args) => ({
     components: { AppTextarea },
     setup: () => ({ args }),
-    template: `<AppTextarea v-bind="args" />`,
+    template: `<AppTextarea v-bind="args" aria-label="Example textarea" />`,
   }),
 };
 

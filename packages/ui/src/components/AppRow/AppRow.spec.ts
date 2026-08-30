@@ -62,19 +62,31 @@ describe('AppRow', () => {
 
   // --- selected ---
 
-  it('does not set aria-selected when selected=false (default)', () => {
+  it('does not set the selected modifier by default', () => {
     const wrapper = mount(AppRow, { slots: { default: 'x' } });
-    expect(wrapper.attributes('aria-selected')).toBeUndefined();
     expect(wrapper.classes()).not.toContain('app-row--selected');
   });
 
-  it('sets aria-selected="true" and class when selected=true', () => {
+  // `selected` is a visual modifier and emits no ARIA of its own: the row
+  // renders a plain <button> or <div>, and `aria-selected` is only valid on
+  // option/row/tab/treeitem-like roles — axe's `aria-allowed-attr` failed on
+  // every selected row that reached the a11y gate.
+  it('applies the selected modifier without emitting aria-selected', () => {
     const wrapper = mount(AppRow, {
-      props: { selected: true },
+      props: { selected: true, interactive: true },
       slots: { default: 'x' },
     });
-    expect(wrapper.attributes('aria-selected')).toBe('true');
     expect(wrapper.classes()).toContain('app-row--selected');
+    expect(wrapper.attributes('aria-selected')).toBeUndefined();
+  });
+
+  it('lets the consumer supply its own selection semantics', () => {
+    const wrapper = mount(AppRow, {
+      props: { selected: true, interactive: true },
+      attrs: { 'aria-current': 'page' },
+      slots: { default: 'x' },
+    });
+    expect(wrapper.attributes('aria-current')).toBe('page');
   });
 
   // --- compact ---
@@ -116,6 +128,5 @@ describe('AppRow', () => {
     });
     expect(wrapper.classes()).toContain('app-row--selected');
     expect(wrapper.classes()).toContain('app-row--compact');
-    expect(wrapper.attributes('aria-selected')).toBe('true');
   });
 });

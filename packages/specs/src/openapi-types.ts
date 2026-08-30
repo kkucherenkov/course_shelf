@@ -3928,7 +3928,28 @@ export interface components {
       body: string;
     };
   };
-  responses: never;
+  responses: {
+    /** @description Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler. */
+    BadRequest: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/problem+json': components['schemas']['Problem'];
+      };
+    };
+    /** @description Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them. */
+    TooManyRequests: {
+      headers: {
+        /** @description Seconds to wait before retrying. */
+        'Retry-After'?: number;
+        [name: string]: unknown;
+      };
+      content: {
+        'application/problem+json': components['schemas']['Problem'];
+      };
+    };
+  };
   parameters: never;
   requestBodies: never;
   headers: never;
@@ -3984,6 +4005,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   registerGrant: {
@@ -4053,6 +4075,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   revokeGrant: {
@@ -4074,6 +4097,7 @@ export interface operations {
         };
         content?: never;
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -4101,6 +4125,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getAdminDashboard: {
@@ -4121,6 +4146,7 @@ export interface operations {
           'application/json': components['schemas']['AdminDashboardDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -4139,6 +4165,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   createBackup: {
@@ -4159,6 +4186,7 @@ export interface operations {
           'application/json': components['schemas']['BackupCreatedDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -4177,6 +4205,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
       /** @description The backup could not be produced — `pg_dump` is missing from the image, its major version does not match the server, it exited non-zero, or it exceeded the configured timeout. */
       503: {
         headers: {
@@ -4214,6 +4243,7 @@ export interface operations {
           'application/octet-stream': string;
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Token missing, malformed, expired, or bound to another backup. */
       401: {
         headers: {
@@ -4232,6 +4262,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   listAdminScans: {
@@ -4257,6 +4288,7 @@ export interface operations {
           'application/json': components['schemas']['AdminScanListDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -4275,6 +4307,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   listAdminTranscriptions: {
@@ -4300,6 +4333,7 @@ export interface operations {
           'application/json': components['schemas']['AdminTranscriptionListDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -4318,6 +4352,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   listAdminLibraries: {
@@ -4338,6 +4373,7 @@ export interface operations {
           'application/json': components['schemas']['AdminLibraryListDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -4356,6 +4392,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   listAdminUsers: {
@@ -4381,6 +4418,7 @@ export interface operations {
           'application/json': components['schemas']['AdminUserListDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -4399,6 +4437,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getAdminUser: {
@@ -4422,6 +4461,7 @@ export interface operations {
           'application/json': components['schemas']['AdminUserListItem'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -4449,6 +4489,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   updateAdminUser: {
@@ -4512,6 +4553,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getAdminHasUsers: {
@@ -4532,6 +4574,8 @@ export interface operations {
           'application/json': components['schemas']['HasUsersResponse'];
         };
       };
+      400: components['responses']['BadRequest'];
+      429: components['responses']['TooManyRequests'];
     };
   };
   getAdminInstance: {
@@ -4552,6 +4596,8 @@ export interface operations {
           'application/json': components['schemas']['InstanceConfigDto'];
         };
       };
+      400: components['responses']['BadRequest'];
+      429: components['responses']['TooManyRequests'];
     };
   };
   upsertInstructor: {
@@ -4612,6 +4658,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   startBackfillMetadata: {
@@ -4636,6 +4683,7 @@ export interface operations {
           'application/json': components['schemas']['BackfillJobAccepted'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -4654,6 +4702,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   listScrapers: {
@@ -4674,6 +4723,7 @@ export interface operations {
           'application/json': components['schemas']['ScraperListDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -4692,6 +4742,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   scrapeCoursePreview: {
@@ -4764,6 +4815,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
       /** @description Upstream fetch or parse failed */
       502: {
         headers: {
@@ -4799,6 +4851,7 @@ export interface operations {
           'application/json': components['schemas']['IdentifyTaskDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -4826,6 +4879,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   listIdentifyTasks: {
@@ -4849,6 +4903,7 @@ export interface operations {
           'application/json': components['schemas']['IdentifyTaskListDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -4867,6 +4922,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getIdentifyTask: {
@@ -4889,6 +4945,7 @@ export interface operations {
           'application/json': components['schemas']['IdentifyTaskDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -4916,6 +4973,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   applyIdentifyResult: {
@@ -4942,6 +5000,7 @@ export interface operations {
           'application/json': components['schemas']['IdentifyTaskDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -4978,6 +5037,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   discardIdentifyTask: {
@@ -5000,6 +5060,7 @@ export interface operations {
           'application/json': components['schemas']['IdentifyTaskDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5036,6 +5097,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   upsertStudio: {
@@ -5096,6 +5158,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   upsertTag: {
@@ -5156,6 +5219,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   deleteBookmark: {
@@ -5177,6 +5241,7 @@ export interface operations {
         };
         content?: never;
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5204,6 +5269,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   updateBookmark: {
@@ -5267,6 +5333,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   listCourses: {
@@ -5318,6 +5385,7 @@ export interface operations {
           'application/json': components['schemas']['CourseListDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5327,6 +5395,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getCourse: {
@@ -5350,6 +5419,7 @@ export interface operations {
           'application/json': components['schemas']['CourseDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5377,6 +5447,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   updateCourse: {
@@ -5449,6 +5520,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getCourseOutline: {
@@ -5472,6 +5544,7 @@ export interface operations {
           'application/json': components['schemas']['CourseOutlineDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5499,6 +5572,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getCourseDownloadEstimate: {
@@ -5522,6 +5596,7 @@ export interface operations {
           'application/json': components['schemas']['CourseDownloadEstimateDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5549,6 +5624,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   markCourseComplete: {
@@ -5572,6 +5648,7 @@ export interface operations {
           'application/json': components['schemas']['CourseOutlineDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5599,6 +5676,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   resetCourseProgress: {
@@ -5622,6 +5700,7 @@ export interface operations {
           'application/json': components['schemas']['CourseOutlineDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5649,6 +5728,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   listInstructors: {
@@ -5676,6 +5756,7 @@ export interface operations {
           'application/json': components['schemas']['InstructorListDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5685,6 +5766,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getInstructor: {
@@ -5708,6 +5790,7 @@ export interface operations {
           'application/json': components['schemas']['InstructorDetailDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5726,6 +5809,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   listStudios: {
@@ -5753,6 +5837,7 @@ export interface operations {
           'application/json': components['schemas']['StudioListDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5762,6 +5847,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getStudio: {
@@ -5785,6 +5871,7 @@ export interface operations {
           'application/json': components['schemas']['StudioDetailDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5803,6 +5890,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   listTags: {
@@ -5832,6 +5920,7 @@ export interface operations {
           'application/json': components['schemas']['TagListDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5841,6 +5930,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getTag: {
@@ -5864,6 +5954,7 @@ export interface operations {
           'application/json': components['schemas']['TagDetailDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5882,6 +5973,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getContinueWatching: {
@@ -5905,6 +5997,7 @@ export interface operations {
           'application/json': components['schemas']['ContinueWatchingDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5914,6 +6007,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getRecentlyAdded: {
@@ -5937,6 +6031,7 @@ export interface operations {
           'application/json': components['schemas']['RecentlyAddedDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5946,6 +6041,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getRecentlyCompleted: {
@@ -5969,6 +6065,7 @@ export interface operations {
           'application/json': components['schemas']['RecentlyCompletedDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -5978,6 +6075,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getYourWeek: {
@@ -5998,6 +6096,7 @@ export interface operations {
           'application/json': components['schemas']['YourWeekDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -6007,6 +6106,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getLesson: {
@@ -6030,6 +6130,7 @@ export interface operations {
           'application/json': components['schemas']['LessonDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -6057,6 +6158,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   streamLessonVideo: {
@@ -6101,6 +6203,7 @@ export interface operations {
           'application/octet-stream': string;
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Token missing, malformed, expired, or bound to another lesson. */
       401: {
         headers: {
@@ -6128,6 +6231,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   streamLessonSubtitle: {
@@ -6155,6 +6259,7 @@ export interface operations {
           'text/vtt': string;
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Token missing, malformed, expired, or bound to another lesson. */
       401: {
         headers: {
@@ -6173,6 +6278,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   streamMaterial: {
@@ -6201,6 +6307,7 @@ export interface operations {
           'application/octet-stream': string;
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Token missing, malformed, expired, or bound to another material. */
       401: {
         headers: {
@@ -6219,6 +6326,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   issueStreamUrl: {
@@ -6242,6 +6350,7 @@ export interface operations {
           'application/json': components['schemas']['StreamUrlDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -6269,6 +6378,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   issueMaterialDownloadUrl: {
@@ -6294,6 +6404,7 @@ export interface operations {
           'application/json': components['schemas']['MaterialDownloadUrlDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -6321,6 +6432,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   listLessonBookmarks: {
@@ -6344,6 +6456,7 @@ export interface operations {
           'application/json': components['schemas']['BookmarkListDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -6371,6 +6484,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   createBookmark: {
@@ -6443,6 +6557,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   listLibraries: {
@@ -6463,6 +6578,7 @@ export interface operations {
           'application/json': components['schemas']['LibraryListDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -6472,6 +6588,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   registerLibrary: {
@@ -6523,6 +6640,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getLibrary: {
@@ -6546,6 +6664,7 @@ export interface operations {
           'application/json': components['schemas']['LibraryDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -6573,6 +6692,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   removeLibrary: {
@@ -6594,6 +6714,7 @@ export interface operations {
         };
         content?: never;
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -6621,6 +6742,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   updateLibrary: {
@@ -6684,6 +6806,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   runLibraryScan: {
@@ -6707,6 +6830,7 @@ export interface operations {
           'application/json': components['schemas']['ScanDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -6743,6 +6867,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getLatestLibraryScan: {
@@ -6766,6 +6891,7 @@ export interface operations {
           'application/json': components['schemas']['ScanDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -6793,6 +6919,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   listLibraryTranscriptions: {
@@ -6819,6 +6946,7 @@ export interface operations {
           'application/json': components['schemas']['TranscriptionListDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -6846,6 +6974,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   startTranscription: {
@@ -6873,6 +7002,7 @@ export interface operations {
           'application/json': components['schemas']['TranscriptionDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -6909,6 +7039,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
       /** @description The transcription backend is not usable — the whisper binary or the model file configured for this deployment is missing. Fails fast rather than starting a run that cannot produce anything. */
       503: {
         headers: {
@@ -6941,6 +7072,7 @@ export interface operations {
           'application/json': components['schemas']['TranscriptionDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -6968,6 +7100,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   cancelTranscription: {
@@ -6991,6 +7124,7 @@ export interface operations {
           'application/json': components['schemas']['TranscriptionDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -7027,6 +7161,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   upsertNote: {
@@ -7087,6 +7222,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getNote: {
@@ -7110,6 +7246,7 @@ export interface operations {
           'application/json': components['schemas']['NoteDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -7137,6 +7274,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   deleteNote: {
@@ -7158,6 +7296,7 @@ export interface operations {
         };
         content?: never;
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -7185,6 +7324,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getHealth: {
@@ -7205,6 +7345,8 @@ export interface operations {
           'application/json': components['schemas']['HealthStatus'];
         };
       };
+      400: components['responses']['BadRequest'];
+      429: components['responses']['TooManyRequests'];
       /** @description One or more dependencies are degraded or down */
       503: {
         headers: {
@@ -7234,6 +7376,7 @@ export interface operations {
           'application/json': components['schemas']['PingResponse'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -7243,6 +7386,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   recordLessonProgress: {
@@ -7303,6 +7447,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   getLessonProgress: {
@@ -7326,6 +7471,7 @@ export interface operations {
           'application/json': components['schemas']['LessonProgressDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -7353,6 +7499,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   recordLessonProgressBatch: {
@@ -7395,6 +7542,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   updateMe: {
@@ -7437,6 +7585,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   signOutOtherSessions: {
@@ -7455,6 +7604,7 @@ export interface operations {
         };
         content?: never;
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -7464,6 +7614,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   searchCatalogue: {
@@ -7489,6 +7640,7 @@ export interface operations {
           'application/json': components['schemas']['SearchResultDto'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {
@@ -7498,6 +7650,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
   issueRealtimeToken: {
@@ -7518,6 +7671,7 @@ export interface operations {
           'application/json': components['schemas']['RealtimeToken'];
         };
       };
+      400: components['responses']['BadRequest'];
       /** @description No active session */
       401: {
         headers: {
@@ -7527,6 +7681,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      429: components['responses']['TooManyRequests'];
     };
   };
 }

@@ -1,5 +1,27 @@
 /* Override the dark body background injected by @nuxt/ui/vue-plugin.
-   Use the surface token so the canvas matches the active theme. */
-body {
-  background-color: var(--surface-surface) !important;
+   Use the surface token so the canvas matches the active theme.
+
+   `html body` rather than `body !important`: the plugin's rule is a plain
+   `body`, so one extra element selector wins on specificity. `!important` is
+   banned here (see .claude/CLAUDE.md) and it was only ever reaching for
+   ordering that specificity gives for free — the same trick the `--ui-primary`
+   override below uses. */
+html body {
+  background-color: var(--surface-surface);
+}
+
+/* Nuxt UI resolves its `primary` colour from `app.config.ts` at build time
+   (see apps/web/app/app.config.ts, which maps it to the `accent` scale).
+   Storybook runs no Nuxt build, so the plugin injects its stock green-500 at
+   runtime and every UBadge/UButton rendered #00C950 here while the app
+   rendered brand amber — a sandbox that disagrees with production about the
+   brand colour, and an axe `color-contrast` failure at 2.03:1 on a colour the
+   app never ships.
+
+   `html:root` rather than `:root`: the plugin injects its own `:root` rule at
+   runtime, and the extra element selector wins the cascade on specificity
+   instead of depending on injection order. `--brand-accent` is already
+   theme-aware, so one declaration covers light and dark. */
+html:root {
+  --ui-primary: var(--brand-accent);
 }

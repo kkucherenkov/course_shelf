@@ -17,13 +17,27 @@ const args = [
   '-v',
   `${openapi}:/spec.yaml:ro`,
   '--add-host=host.docker.internal:host-gateway',
-  'schemathesis/schemathesis:stable',
+  // Pinned, not `:stable`. That tag moved under us once already: the script
+  // was written against schemathesis 3.x and, because nothing ran it, nobody
+  // noticed until it was wired into CI and died on `--base-url`, a flag 4.x had
+  // renamed. A gate whose tool version floats is not reproducible — the same
+  // commit can pass today and fail tomorrow for reasons no one changed.
+  'schemathesis/schemathesis:4.25.2',
   'run',
-  '--base-url',
+  // Schemathesis 4.x flags. The script was written against 3.x and had never
+  // run — nothing invoked it until e2e.yml did, and the first execution died
+  // with `Error: No such option '--base-url'. Did you mean '--url'?`.
+  //   --base-url                  -> --url
+  //   --hypothesis-max-examples=N -> --max-examples N
+  //   --checks all                -> dropped; every check runs by default in
+  //                                  4.x, and the flag now takes an explicit
+  //                                  comma list (there is --exclude-checks to
+  //                                  narrow). Dropping it keeps the intent:
+  //                                  run everything.
+  '--url',
   baseUrl,
-  '--checks',
-  'all',
-  '--hypothesis-max-examples=25',
+  '--max-examples',
+  '25',
   '/spec.yaml',
 ];
 

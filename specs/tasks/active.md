@@ -1,5 +1,59 @@
 # Active tasks
 
+## T-2026-08-30-L5 — CI honesty: stop masking failures
+
+- Created: 2026-08-30
+- Owner: claude (lane L5)
+- Spec: GitHub issues #269, #265, #296, #264
+- Goal: every green CI run means something was actually checked.
+- Spec diff: —
+- Codegen impact: no
+- Sub-steps:
+  - [x] #269 — csp.spec.ts must fail in CI instead of skipping itself — already
+        landed in `ac87aa9`: `E2E_EXPECT_CSP=1` in e2e.yml turns the skip into a
+        throw on the one stack that runs production nginx + `NODE_ENV=production`
+  - [x] #269 — run `pnpm spec:contract-test` in a workflow (e2e.yml, after
+        Playwright so its generated writes cannot reach the visual snapshots)
+  - [x] #269 — add `push: main` to quality.yml and e2e.yml
+  - [x] #265 — ffmpeg in ci.yml + the `Fix (CI)` section deleted — both already
+        landed in `ac87aa9`; verified, nothing left to change
+  - [x] #296 — drop `test:e2e` from apps/backend/package.json
+  - [x] #264 — all 75 a11y violations fixed and the gate armed:
+        `STORYBOOK_A11Y_LEVEL` is gone from both workflows and from
+        `preview.ts`. Light theme is 285/285 with the a11y level at `error`.
+  - [x] #264 — palette: accent `#9C6612`→`#8A5A10`, tertiary `#8E8773`→`#716B5B`
+        (lightness only), plus the Nuxt UI `primary`/`error` wiring gaps and a
+        dead `AppNoteEditor` mode toggle that those uncovered
+  - [x] #264 — `regen-snapshots.yml` gains a `goldens` job; Flutter goldens had
+        no regen path at all
+  - [x] #269 — `contract-test.ts` itself was broken: the script was written for
+        schemathesis 3.x and, never having run, still passed `--base-url`,
+        `--checks all` and `--hypothesis-max-examples`. Arming it in e2e.yml is
+        what surfaced that. Fixed with the maintainer's go-ahead (L6's path).
+  - [x] Baselines regenerated on the branch via `regen-snapshots.yml`:
+        Storybook, 35 Flutter goldens, and the e2e page screenshot. Two bugs in
+        that workflow had to be fixed first — the goldens job threw away its own
+        capture, and the e2e job declined to regenerate anything.
+  - [x] #269 — the armed contract test found 70 spec/implementation
+        disagreements on its first real run (429 undocumented on all 75
+        operations, 400 on ~59, one 404, 7 lenient-implementation cases).
+        Raised as GH #320 for the spec's lane; the step stays in e2e.yml.
+  - [x] #320 — documented the `400` and `429` every operation can return
+        (429 was absent from all 75, 400 from 59) as shared
+        `components/responses`, with the codegen in its own commit. Taken on
+        here once L6 merged and `openapi.yaml` stopped moving under us.
+  - [x] #320 closed in full — 70 contract-test findings down to zero:
+        `4303 generated, 4303 passed`, all four phases green, 75/75 operations.
+        Two were not drift and were fixed at the cause rather than in the spec
+        (the throttler dominating the run; a generator ignoring `pattern`); one
+        was a bug shipping in the mobile app (`+`-encoded spaces rejected).
+  - [x] Verified the gates fire rather than skip: `csp.spec.ts` both tests
+        executed, 34 e2e tests passed, Storybook a11y at `error`.
+- Status: ready to merge — 8/8 checks green
+- Blockers: none. Merges LAST of the eight lanes (it touches
+  baselines and goldens); baselines and goldens are regenerated on top of the
+  final `main` after the other seven land, not merged by hand.
+
 ## T-2026-08-30-015 — close AUTH_SELF_REGISTRATION gap + bookmark create idempotency
 
 - Created: 2026-08-30

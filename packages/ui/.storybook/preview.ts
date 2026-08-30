@@ -14,6 +14,9 @@ import './preview.css';
 setup((app) => {
   // Register Nuxt UI Vue plugin first so overlay/portal primitives (UModal,
   // UTooltip, etc.) have the required context when rendered in Storybook.
+  // The plugin takes no options — `primary` is resolved from `app.config.ts`
+  // by Nuxt's build, which Storybook does not run. `preview.css` maps
+  // `--ui-primary` onto the brand accent instead.
   app.use(ui);
   app.component('NuxtLink', {
     props: {
@@ -35,19 +38,15 @@ const preview: Preview = {
     a11y: {
       // Blocks the Storybook test-runner in CI: any axe violation fails the
       // visual-regression job. If an author asserts a violation is a false
-      // positive, disable the specific rule in that story's parameters —
-      // never widen this global setting.
+      // positive, disable the specific rule in that story's parameters, with
+      // the reason — never widen this global setting.
       //
-      // STORYBOOK_A11Y_LEVEL lets a CI smoke job run with 'todo' (warn-only)
-      // when its goal is render + interaction coverage rather than a11y.
-      // Default stays 'error' for `pnpm storybook` and any unset env.
-      test:
-        ((import.meta.env as Record<string, string | undefined>)?.STORYBOOK_A11Y_LEVEL as
-          | 'off'
-          | 'todo'
-          | 'warn'
-          | 'error'
-          | undefined) ?? 'error',
+      // Not configurable by environment. This read `STORYBOOK_A11Y_LEVEL` and
+      // both CI workflows set it to 'todo', which downgraded every violation
+      // to a note; 75 stories were failing behind the switch. A gate with a
+      // documented way to turn it off is how that happens, so the switch is
+      // gone rather than merely unset.
+      test: 'error',
     },
   },
   decorators: [

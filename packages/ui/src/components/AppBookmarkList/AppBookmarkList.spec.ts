@@ -42,7 +42,9 @@ describe('AppBookmarkList', () => {
   it('forwards select / edit / delete with the entry id', async () => {
     const wrapper = mount(AppBookmarkList, { props: { bookmarks: sample } });
     const rows = wrapper.findAll('.app-bookmark');
-    await rows[0]!.trigger('click');
+    // The row itself is a plain container now; selecting it is the
+    // `__main` button over the time + label (see AppBookmark).
+    await rows[0]!.find('.app-bookmark__main').trigger('click');
     await rows[1]!.find('button[aria-label="Edit bookmark"]').trigger('click');
     await rows[2]!.find('button[aria-label="Delete bookmark"]').trigger('click');
     expect(wrapper.emitted('select')).toEqual([['a']]);

@@ -35,6 +35,17 @@ export interface AuthorizationCacheConfig {
   readonly maxEntries: number;
 }
 
+export interface RateLimitConfig {
+  /** Sliding window for the global throttler, in milliseconds. Default 60 000 (1 min). */
+  readonly ttlMs: number;
+  /** Requests allowed per window, per client. Default 60. */
+  readonly limit: number;
+  /** Window for the realtime-token route's own, tighter budget. Default 60 000. */
+  readonly realtimeTokenTtlMs: number;
+  /** Requests allowed per window for realtime-token minting. Default 30. */
+  readonly realtimeTokenLimit: number;
+}
+
 export interface FirebaseConfig {
   /** JSON-encoded service account credentials. Empty string = Firebase disabled. */
   readonly serviceAccountJson: string;
@@ -220,6 +231,23 @@ export class AppConfig {
     return {
       ttlMs: this.numberOrDefault('AUTHZ_CACHE_TTL_MS', 30_000),
       maxEntries: this.numberOrDefault('AUTHZ_CACHE_MAX_ENTRIES', 1000),
+    };
+  }
+
+  /**
+   * Global `ThrottlerGuard` budget. The values used to be literals in
+   * `app.module.ts`, which meant the one setting that is genuinely
+   * environment-shaped could not be shaped per environment: production wants
+   * 60/min, and the CI stack that runs `spec:contract-test` needs headroom for
+   * a property-based suite that sends thousands of requests in a minute. With
+   * the literals in place the limiter, not the contract, decided the result.
+   */
+  get rateLimit(): RateLimitConfig {
+    return {
+      ttlMs: this.numberOrDefault('RATE_LIMIT_TTL_MS', 60_000),
+      limit: this.numberOrDefault('RATE_LIMIT_MAX', 60),
+      realtimeTokenTtlMs: this.numberOrDefault('RATE_LIMIT_REALTIME_TOKEN_TTL_MS', 60_000),
+      realtimeTokenLimit: this.numberOrDefault('RATE_LIMIT_REALTIME_TOKEN_MAX', 30),
     };
   }
 

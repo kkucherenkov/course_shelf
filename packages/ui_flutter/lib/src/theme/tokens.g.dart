@@ -7,19 +7,19 @@
 import 'package:flutter/widgets.dart';
 
 abstract final class AppColorsLight {
-  static const Color brandAccent = Color(0xFF9C6612);
+  static const Color brandAccent = Color(0xFF8A5A10);
   static const Color brandAccentHover = Color(0xFF6E480C);
   static const Color brandAccentActive = Color(0xFF6E480C);
   static const Color brandAccentFg = Color(0xFFFFFFFF);
-  static const Color brandAccentSubtle = Color(0xFFF5F0E7);
-  static const Color brandAccentSoft = Color(0x1A9C6612);
+  static const Color brandAccentSubtle = Color(0xFFF3EEE7);
+  static const Color brandAccentSoft = Color(0x1A8A5A10);
   static const Color brandAccent50 = Color(0xFFFCF1DB);
   static const Color brandAccent100 = Color(0xFFF8E3B4);
   static const Color brandAccent200 = Color(0xFFF3D38A);
   static const Color brandAccent300 = Color(0xFFE9BA62);
   static const Color brandAccent400 = Color(0xFFE0A23B);
   static const Color brandAccent500 = Color(0xFFC8821C);
-  static const Color brandAccent600 = Color(0xFF9C6612);
+  static const Color brandAccent600 = Color(0xFF8A5A10);
   static const Color brandAccent700 = Color(0xFF6E480C);
   static const Color brandAccent800 = Color(0xFF4F3409);
   static const Color brandAccent900 = Color(0xFF392506);
@@ -36,16 +36,16 @@ abstract final class AppColorsLight {
   static const Color textFg = Color(0xFF211E15);
   static const Color textLoud = Color(0xFF15130C);
   static const Color textSecondary = Color(0xFF5C5644);
-  static const Color textTertiary = Color(0xFF8E8773);
+  static const Color textTertiary = Color(0xFF716B5B);
   static const Color textDisabled = Color(0xFFBBB4A2);
   static const Color textInverse = Color(0xFFF5F6F8);
-  static const Color textLink = Color(0xFF9C6612);
+  static const Color textLink = Color(0xFF8A5A10);
   static const Color statusSuccessFg = Color(0xFF2D6A63);
   static const Color statusSuccessSubtle = Color(0xFFE5F0EE);
   static const Color statusSuccessSoft = Color(0x1F2D6A63);
-  static const Color statusWarningFg = Color(0xFF9C6612);
+  static const Color statusWarningFg = Color(0xFF8A5A10);
   static const Color statusWarningSubtle = Color(0xFFF5EAD8);
-  static const Color statusWarningSoft = Color(0x1F9C6612);
+  static const Color statusWarningSoft = Color(0x1F8A5A10);
   static const Color statusErrorFg = Color(0xFFA04434);
   static const Color statusErrorSubtle = Color(0xFFF4DED9);
   static const Color statusErrorSoft = Color(0x1FA04434);
@@ -67,7 +67,7 @@ abstract final class AppColorsDark {
   static const Color brandAccent300 = Color(0xFFE9BA62);
   static const Color brandAccent400 = Color(0xFFE0A23B);
   static const Color brandAccent500 = Color(0xFFC8821C);
-  static const Color brandAccent600 = Color(0xFF9C6612);
+  static const Color brandAccent600 = Color(0xFF8A5A10);
   static const Color brandAccent700 = Color(0xFF6E480C);
   static const Color brandAccent800 = Color(0xFF4F3409);
   static const Color brandAccent900 = Color(0xFF392506);

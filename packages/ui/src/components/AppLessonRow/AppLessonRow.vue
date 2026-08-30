@@ -87,6 +87,7 @@
   <div
     v-if="loading"
     class="app-lesson-row app-lesson-row--loading"
+    role="status"
     :aria-busy="true"
     :aria-label="loadingLabel"
   >

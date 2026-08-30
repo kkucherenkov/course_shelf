@@ -152,7 +152,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: "A READ grant for user clxvusr0000000000000000001 on library clxvp1234567890abcdefghij already exists."
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
     get:
       operationId: listGrantsByUser
       summary: List a user's access grants
@@ -231,7 +232,8 @@ paths:
                     title: Forbidden
                     status: 403
                     detail: Only admins may list grants for arbitrary users.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/access/grants/{id}:
     delete:
       operationId: revokeGrant
@@ -250,6 +252,8 @@ paths:
       responses:
         "204":
           description: Grant revoked — no body
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -288,7 +292,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No grant with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/dashboard:
     get:
       operationId: getAdminDashboard
@@ -337,6 +342,8 @@ paths:
                       lessons: 0
                     latestScan: null
                     errorsLast24h: 0
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -362,7 +369,8 @@ paths:
                     title: Forbidden
                     status: 403
                     detail: Administrator role required.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/backups:
     post:
       operationId: createBackup
@@ -400,6 +408,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BackupCreatedDto"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -425,6 +435,8 @@ paths:
                     title: Forbidden
                     status: 403
                     detail: Administrator role required.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
         "503":
           description: >-
             The backup could not be produced — `pg_dump` is missing from the
@@ -493,6 +505,8 @@ paths:
               schema:
                 type: string
                 format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Token missing, malformed, expired, or bound to another backup.
           content:
@@ -505,7 +519,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/scans:
     get:
       operationId: listAdminScans
@@ -581,6 +596,8 @@ paths:
                   summary: No scans have ever run
                   value:
                     items: []
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -606,7 +623,8 @@ paths:
                     title: Forbidden
                     status: 403
                     detail: Administrator role required.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/transcriptions:
     get:
       operationId: listAdminTranscriptions
@@ -674,6 +692,8 @@ paths:
                   summary: No transcription has ever run
                   value:
                     items: []
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -699,7 +719,8 @@ paths:
                     title: Forbidden
                     status: 403
                     detail: Administrator role required.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/libraries:
     get:
       operationId: listAdminLibraries
@@ -749,6 +770,8 @@ paths:
                 empty:
                   value:
                     items: []
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -774,7 +797,8 @@ paths:
                     title: Forbidden
                     status: 403
                     detail: Administrator role required.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/users:
     get:
       operationId: listAdminUsers
@@ -835,6 +859,8 @@ paths:
                 empty:
                   value:
                     items: []
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -860,7 +886,8 @@ paths:
                     title: Forbidden
                     status: 403
                     detail: Administrator role required.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/users/{id}:
     get:
       operationId: getAdminUser
@@ -886,6 +913,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminUserListItem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -924,6 +953,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No user with that id exists.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
     patch:
       operationId: updateAdminUser
       summary: Patch role and/or banned flag on a user
@@ -1017,7 +1048,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No user with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/has-users:
     get:
       operationId: getAdminHasUsers
@@ -1049,7 +1081,10 @@ paths:
                   summary: At least one user exists — setup is locked
                   value:
                     hasUsers: true
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "400":
+          $ref: "#/components/responses/BadRequest"
   /api/v1/admin/instance:
     get:
       operationId: getAdminInstance
@@ -1102,7 +1137,10 @@ paths:
                     selfRegistration: false
                     emailVerificationRequired: false
                     ssoProviders: []
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "400":
+          $ref: "#/components/responses/BadRequest"
   /api/v1/admin/instructors:
     post:
       operationId: upsertInstructor
@@ -1202,7 +1240,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: "Slug 'andrei-neagoie' is already taken by a different instructor."
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/maintenance/backfill-metadata:
     post:
       operationId: startBackfillMetadata
@@ -1242,6 +1281,8 @@ paths:
                 accepted:
                   value:
                     jobId: clxvjob0000000000000000001
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -1267,7 +1308,8 @@ paths:
                     title: Forbidden
                     status: 403
                     detail: Administrator role required.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/scrapers:
     get:
       operationId: listScrapers
@@ -1296,6 +1338,8 @@ paths:
                       - id: json-ld
                         supportedKinds: [url, fragment]
                         configured: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -1321,7 +1365,8 @@ paths:
                     title: Forbidden
                     status: 403
                     detail: Administrator role required.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/courses/{id}/scrape-preview:
     post:
       operationId: scrapeCoursePreview
@@ -1444,6 +1489,8 @@ paths:
                     title: Unprocessable Entity
                     status: 422
                     detail: "Scraper 'json-ld' does not support the 'name' invocation kind."
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
         "502":
           description: Upstream fetch or parse failed
           content:
@@ -1524,6 +1571,8 @@ paths:
                       tags: merge
                       externalIds: merge
                     createdAt: "2026-05-24T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -1559,7 +1608,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No course with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/identify-tasks:
     get:
       operationId: listIdentifyTasks
@@ -1609,6 +1659,8 @@ paths:
                           tags: merge
                           externalIds: merge
                         createdAt: "2026-05-24T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -1632,7 +1684,8 @@ paths:
                     title: Forbidden
                     status: 403
                     detail: Administrator role required.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/identify-tasks/{id}:
     get:
       operationId: getIdentifyTask
@@ -1675,6 +1728,8 @@ paths:
                       tags: merge
                       externalIds: merge
                     createdAt: "2026-05-24T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -1710,7 +1765,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No identify task with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/identify-tasks/{id}/apply:
     post:
       operationId: applyIdentifyResult
@@ -1767,6 +1823,8 @@ paths:
                       externalIds: merge
                     createdAt: "2026-05-24T10:00:00Z"
                     completedAt: "2026-05-24T10:05:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -1814,7 +1872,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: 'Identify task "clx123" is "applied" and can no longer be applied or discarded.'
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/identify-tasks/{id}/discard:
     post:
       operationId: discardIdentifyTask
@@ -1860,6 +1919,8 @@ paths:
                       externalIds: merge
                     createdAt: "2026-05-24T10:00:00Z"
                     completedAt: "2026-05-24T10:03:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -1907,7 +1968,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: 'Identify task "clx123" is "applied" and can no longer be applied or discarded.'
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/studios:
     post:
       operationId: upsertStudio
@@ -2006,7 +2068,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: "Slug 'zero-to-mastery' is already taken by a different studio."
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/tags:
     post:
       operationId: upsertTag
@@ -2100,7 +2163,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: "Slug 'javascript' is already taken by a different tag."
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/bookmarks/{id}:
     patch:
       operationId: updateBookmark
@@ -2198,7 +2262,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No bookmark with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
     delete:
       operationId: deleteBookmark
       summary: Delete a bookmark
@@ -2216,6 +2281,8 @@ paths:
       responses:
         "204":
           description: Bookmark deleted — no body
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -2254,7 +2321,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No bookmark with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/courses:
     get:
       operationId: listCourses
@@ -2374,6 +2442,8 @@ paths:
                           lessonsTotal: 18
                         createdAt: "2026-04-25T09:05:00Z"
                         updatedAt: "2026-04-25T09:05:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -2386,7 +2456,8 @@ paths:
                     type: about:blank
                     title: Unauthorized
                     status: 401
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/courses/{id}:
     get:
       operationId: getCourse
@@ -2430,6 +2501,8 @@ paths:
                       lessonsTotal: 24
                     createdAt: "2026-04-25T09:00:00Z"
                     updatedAt: "2026-04-25T09:00:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -2468,7 +2541,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No course with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
     patch:
       operationId: updateCourse
       summary: Update course metadata
@@ -2591,7 +2665,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: A course with slug 'pragmatic-clean-architecture-2nd-ed' already exists in this library.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/courses/{id}/outline:
     get:
       operationId: getCourseOutline
@@ -2625,6 +2700,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CourseOutlineDto"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -2649,7 +2726,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/courses/{id}/download-estimate:
     get:
       operationId: getCourseDownloadEstimate
@@ -2687,6 +2765,8 @@ paths:
                     courseId: clxvcrs0000000000000000001
                     totalBytes: 1288490188
                     lessonCount: 42
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -2725,7 +2805,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No course with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/courses/{id}/mark-complete:
     post:
       operationId: markCourseComplete
@@ -2757,6 +2838,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CourseOutlineDto"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -2775,7 +2858,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/courses/{id}/reset-progress:
     post:
       operationId: resetCourseProgress
@@ -2806,6 +2890,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CourseOutlineDto"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -2824,7 +2910,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/catalog/instructors:
     get:
       operationId: listInstructors
@@ -2884,6 +2971,8 @@ paths:
                     total: 1
                     offset: 0
                     limit: 20
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -2896,7 +2985,8 @@ paths:
                     type: about:blank
                     title: Unauthorized
                     status: 401
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/catalog/instructors/{slug}:
     get:
       operationId: getInstructor
@@ -2946,6 +3036,8 @@ paths:
                         createdAt: "2026-05-20T08:00:00Z"
                         updatedAt: "2026-05-20T08:00:00Z"
                     coursesTotal: 1
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -2971,7 +3063,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No instructor with slug 'andrei-neagoie' exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/catalog/studios:
     get:
       operationId: listStudios
@@ -3031,6 +3124,8 @@ paths:
                     total: 1
                     offset: 0
                     limit: 20
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -3043,7 +3138,8 @@ paths:
                     type: about:blank
                     title: Unauthorized
                     status: 401
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/catalog/studios/{slug}:
     get:
       operationId: getStudio
@@ -3093,6 +3189,8 @@ paths:
                         createdAt: "2026-05-20T08:00:00Z"
                         updatedAt: "2026-05-20T08:00:00Z"
                     coursesTotal: 1
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -3118,7 +3216,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No studio with slug 'zero-to-mastery' exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/catalog/tags:
     get:
       operationId: listTags
@@ -3183,6 +3282,8 @@ paths:
                     total: 1
                     offset: 0
                     limit: 20
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -3195,7 +3296,8 @@ paths:
                     type: about:blank
                     title: Unauthorized
                     status: 401
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/catalog/tags/{slug}:
     get:
       operationId: getTag
@@ -3243,6 +3345,8 @@ paths:
                         createdAt: "2026-05-20T08:00:00Z"
                         updatedAt: "2026-05-20T08:00:00Z"
                     coursesTotal: 1
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -3268,7 +3372,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No tag with slug 'javascript' exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/home/continue-watching:
     get:
       operationId: getContinueWatching
@@ -3318,6 +3423,8 @@ paths:
                         lessonsTotal: 18
                         lastSeenAt: "2026-04-24T10:10:00Z"
                         lastSeenLessonId: clxvles0000000000000000007
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -3330,7 +3437,8 @@ paths:
                     type: about:blank
                     title: Unauthorized
                     status: 401
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/home/recently-added:
     get:
       operationId: getRecentlyAdded
@@ -3376,6 +3484,8 @@ paths:
                         lessonCount: 12
                         totalDurationSeconds: 6300
                         createdAt: "2026-04-25T17:02:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -3388,7 +3498,8 @@ paths:
                     type: about:blank
                     title: Unauthorized
                     status: 401
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/home/recently-completed:
     get:
       operationId: getRecentlyCompleted
@@ -3428,6 +3539,8 @@ paths:
                         librarySlug: conference-recordings
                         lessonsTotal: 18
                         completedAt: "2026-04-23T20:45:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -3440,7 +3553,8 @@ paths:
                     type: about:blank
                     title: Unauthorized
                     status: 401
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/home/your-week:
     get:
       operationId: getYourWeek
@@ -3478,6 +3592,8 @@ paths:
                     range:
                       from: "2026-04-20T22:00:00Z"
                       to: "2026-04-27T22:00:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -3490,7 +3606,8 @@ paths:
                     type: about:blank
                     title: Unauthorized
                     status: 401
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/lessons/{id}:
     get:
       operationId: getLesson
@@ -3539,6 +3656,8 @@ paths:
                       percent: 0
                       completed: false
                       lastSeenAtSeconds: 0
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -3577,7 +3696,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No lesson with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   # ── Binary streaming endpoints ──────────────────────────────────────────────
   #
   # These serve raw bytes, not JSON, and are reached with a signed query-param
@@ -3661,6 +3781,8 @@ paths:
               schema:
                 type: string
                 format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Token missing, malformed, expired, or bound to another lesson.
           content:
@@ -3679,7 +3801,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/stream/lessons/{id}/subtitles/{language}:
     get:
       operationId: streamLessonSubtitle
@@ -3718,6 +3841,8 @@ paths:
             text/vtt:
               schema:
                 type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Token missing, malformed, expired, or bound to another lesson.
           content:
@@ -3730,7 +3855,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/stream/materials/{materialId}:
     get:
       operationId: streamMaterial
@@ -3771,6 +3897,8 @@ paths:
               schema:
                 type: string
                 format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Token missing, malformed, expired, or bound to another material.
           content:
@@ -3783,7 +3911,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/lessons/{id}/stream-url:
     get:
       operationId: issueStreamUrl
@@ -3818,6 +3947,8 @@ paths:
                     url: "/api/v1/stream/lessons/clxvles0000000000000000001?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibGVzc29uSWQiOiJjbHh2bGVzMDAwMDAwMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzQ1NTc0NDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
                     token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibGVzc29uSWQiOiJjbHh2bGVzMDAwMDAwMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzQ1NTc0NDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
                     expiresAt: "2026-04-25T10:15:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -3856,7 +3987,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No lesson with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/lessons/{lessonId}/materials/{materialId}/download-url:
     get:
       operationId: issueMaterialDownloadUrl
@@ -3901,6 +4033,8 @@ paths:
                     url: "/api/v1/stream/materials/clxvmat0000000000000000001?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IlNUSyIsInYiOjF9.eyJzdWIiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibWlkIjoiY2x4dm1hdDAwMDAwMDAwMDAwMDAwMDAwMSIsInNjcCI6Im1hdGVyaWFsIiwiZXhwIjoxNzQ1NTc0NDAwLCJpYXQiOjE3NDU1NzQxMDB9.k9sQfxCq8wL2pT4N3LKzr8B5jM0hVzG4Yf9X2N1tQp8"
                     token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IlNUSyIsInYiOjF9.eyJzdWIiOiJjbHh2dXNyMDAwMDAwMDAwMDAwMDAwMDAxIiwibWlkIjoiY2x4dm1hdDAwMDAwMDAwMDAwMDAwMDAwMSIsInNjcCI6Im1hdGVyaWFsIiwiZXhwIjoxNzQ1NTc0NDAwLCJpYXQiOjE3NDU1NzQxMDB9.k9sQfxCq8wL2pT4N3LKzr8B5jM0hVzG4Yf9X2N1tQp8"
                     expiresAt: "2026-04-25T10:05:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -3939,7 +4073,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No material with that id exists on this lesson.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/lessons/{lessonId}/bookmarks:
     get:
       operationId: listLessonBookmarks
@@ -3982,6 +4117,8 @@ paths:
                         label: Invariants section
                         createdAt: "2026-04-25T14:12:00Z"
                         updatedAt: "2026-04-25T14:12:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -4020,7 +4157,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No lesson with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
     post:
       operationId: createBookmark
       summary: Create a bookmark on a lesson
@@ -4150,7 +4288,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No lesson with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/libraries:
     post:
       operationId: registerLibrary
@@ -4236,6 +4375,8 @@ paths:
                     title: Forbidden
                     status: 403
                     detail: Only Owner-Admins may register libraries.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
     get:
       operationId: listLibraries
       summary: List all registered libraries
@@ -4266,6 +4407,8 @@ paths:
                         rootPath: /srv/courses/tutorials
                         createdAt: "2026-04-20T14:30:00Z"
                         updatedAt: "2026-04-22T11:00:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -4278,7 +4421,8 @@ paths:
                     type: about:blank
                     title: Unauthorized
                     status: 401
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/libraries/{id}:
     get:
       operationId: getLibrary
@@ -4309,6 +4453,8 @@ paths:
                     rootPath: /srv/courses/conference
                     createdAt: "2026-04-25T09:00:00Z"
                     updatedAt: "2026-04-25T09:00:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -4347,6 +4493,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No library with that id exists.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
     patch:
       operationId: updateLibrary
       summary: Rename a library
@@ -4433,6 +4581,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No library with that id exists.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
     delete:
       operationId: removeLibrary
       summary: Hard-delete a library and every dependent row
@@ -4459,6 +4609,8 @@ paths:
       responses:
         "204":
           description: Library deleted
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -4497,7 +4649,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No library with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/libraries/{id}/scans:
     post:
       operationId: runLibraryScan
@@ -4538,6 +4691,8 @@ paths:
                     filesUpdated: 0
                     coursesDiscovered: 0
                     errors: []
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -4589,7 +4744,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: A scan is already running for library clxvp1234567890abcdefghij.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/libraries/{id}/scans/latest:
     get:
       operationId: getLatestLibraryScan
@@ -4633,6 +4789,8 @@ paths:
                       - path: "04 - Bounded Contexts/course.json"
                         message: "JSON schema validation failed: missing required field 'title'."
                         code: course-json-invalid
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -4671,7 +4829,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No scan record found for this library.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/libraries/{id}/transcriptions:
     post:
       operationId: startTranscription
@@ -4728,6 +4887,8 @@ paths:
                     lessonsTranscribed: 0
                     lessonsFailed: 0
                     errors: []
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -4779,6 +4940,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: A transcription is already running for library clxvp1234567890abcdefghij.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
         "503":
           description: >-
             The transcription backend is not usable — the whisper binary or the
@@ -4860,6 +5023,8 @@ paths:
                   summary: The library has never been transcribed
                   value:
                     items: []
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -4898,7 +5063,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No library with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/libraries/{id}/transcriptions/latest:
     get:
       operationId: getLatestTranscription
@@ -4941,6 +5107,8 @@ paths:
                       - lessonId: clxvles0000000000000000001
                         message: "whisper.cpp exited with code 1."
                         code: whisper-failed
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -4979,7 +5147,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No transcription record found for this library.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/transcriptions/{id}/cancel:
     post:
       operationId: cancelTranscription
@@ -5019,6 +5188,8 @@ paths:
                     lessonsTranscribed: 4
                     lessonsFailed: 0
                     errors: []
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -5070,7 +5241,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: Transcription clxvtrn0000000000000000001 is not running.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/notes:
     put:
       operationId: upsertNote
@@ -5160,7 +5332,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No lesson with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/notes/{lessonId}:
     get:
       operationId: getNote
@@ -5195,6 +5368,8 @@ paths:
                     body: "## Aggregates\n\nKey insight: aggregates enforce invariants across their boundary."
                     createdAt: "2026-04-25T15:00:00Z"
                     updatedAt: "2026-04-25T15:05:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -5235,7 +5410,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No note found for this lesson.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
     delete:
       operationId: deleteNote
       summary: "Clear the requester's note for a lesson"
@@ -5255,6 +5431,8 @@ paths:
       responses:
         "204":
           description: Note deleted — no body
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -5293,7 +5471,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No lesson with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/health:
     get:
       operationId: getHealth
@@ -5318,6 +5497,10 @@ paths:
                     dependencies:
                       db: ok
                       centrifugo: ok
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "503":
           description: One or more dependencies are degraded or down
           content:
@@ -5360,6 +5543,8 @@ paths:
                     id: 0193a1b2-c3d4-7e5f-8a90-1234567890ab
                     role: USER
                     displayName: Sam Reader
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -5372,7 +5557,8 @@ paths:
                     type: about:blank
                     title: Unauthorized
                     status: 401
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/progress:
     post:
       operationId: recordLessonProgress
@@ -5468,7 +5654,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No lesson with that id exists.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/progress/{lessonId}:
     get:
       operationId: getLessonProgress
@@ -5505,6 +5692,8 @@ paths:
                     percent: 60
                     completed: false
                     lastSeenAt: "2026-04-25T14:32:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -5543,7 +5732,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No progress record found for this lesson.
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/progress/batch:
     post:
       operationId: recordLessonProgressBatch
@@ -5637,7 +5827,8 @@ paths:
                     type: about:blank
                     title: Unauthorized
                     status: 401
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/me:
     patch:
       operationId: updateMe
@@ -5691,7 +5882,8 @@ paths:
                     type: about:blank
                     title: Unauthorized
                     status: 401
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/me/sign-out-others:
     post:
       operationId: signOutOtherSessions
@@ -5707,6 +5899,8 @@ paths:
       responses:
         "204":
           description: Other sessions revoked
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -5719,7 +5913,8 @@ paths:
                     type: about:blank
                     title: Unauthorized
                     status: 401
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/search:
     get:
       operationId: searchCatalogue
@@ -5786,6 +5981,8 @@ paths:
                     query: zzz
                     courses: []
                     lessons: []
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: Missing or invalid bearer token
           content:
@@ -5798,7 +5995,8 @@ paths:
                     type: about:blank
                     title: Unauthorized
                     status: 401
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/realtime/token:
     post:
       operationId: issueRealtimeToken
@@ -5823,13 +6021,16 @@ paths:
                   value:
                     token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
                     expiresAt: "2026-04-18T12:05:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           description: No active session
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
 components:
   securitySchemes:
     cookieAuth:
@@ -5840,6 +6041,51 @@ components:
       type: http
       scheme: bearer
       bearerFormat: Better Auth bearer token
+  # Two responses every operation can produce, kept here rather than inlined 75
+  # times over. Both were undocumented until the contract test was armed and
+  # ran for the first time (#320): schemathesis reported 20 undocumented 400s
+  # and 18 undocumented 429s across 4203 generated requests.
+  responses:
+    BadRequest:
+      description: >
+        Request failed validation. Every operation is behind
+        `express-openapi-validator`, so any request carrying an unknown query
+        parameter, a malformed path parameter or a body that does not match the
+        schema is rejected here before it reaches a handler.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          examples:
+            unknownQueryParameter:
+              value:
+                type: about:blank
+                title: Bad Request
+                status: 400
+                detail: "Unknown query parameter 'sortt'"
+    TooManyRequests:
+      description: >
+        Rate limit exceeded. `ThrottlerGuard` is registered as a global
+        `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every
+        operation rather than on a chosen few — which is why it is documented
+        on all of them.
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying.
+          schema:
+            type: integer
+            format: int32
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          examples:
+            throttled:
+              value:
+                type: about:blank
+                title: Too Many Requests
+                status: 429
+                detail: "ThrottlerException: Too Many Requests"
   schemas:
     BackfillJobAccepted:
       type: object

@@ -57,33 +57,85 @@ Five constraints shape everything below:
 
 ## 2 — Topology
 
+```mermaid
+C4Context
+  title System Context — CourseShelf
+
+  Person(learner, "Learner", "Watches courses; keeps progress, notes and bookmarks across web and mobile")
+  Person(owner, "Instance owner", "Runs the box: adds libraries, triggers scans, grants access, takes backups")
+
+  System(courseshelf, "CourseShelf", "Self-hosted media library for video courses. Indexes folders into a catalog, streams the video, tracks learning state.")
+
+  System_Ext(library, "Course library on disk", "Folders of video, subtitle and material files. The source of truth for content.")
+  System_Ext(metadata, "Metadata sources", "YouTube and Udemy pages the scraper plugins read when identifying a course")
+
+  Rel(learner, courseshelf, "Watches lessons and tracks progress", "HTTPS")
+  Rel(owner, courseshelf, "Administers", "HTTPS")
+  Rel(courseshelf, library, "Scans and streams from", "filesystem")
+  Rel(courseshelf, metadata, "Fetches course metadata from", "HTTPS")
+
+  UpdateLayoutConfig($c4ShapeInRow="3")
 ```
-                    ┌──────────────────────────────────┐
-   browser ────────▶│  proxy (nginx)          :8080    │
-                    │  one origin: no CORS, no CORP    │
-                    └────────┬────────────────┬────────┘
-                             │ /              │ /api/v1  /connection
-                             ▼                ▼
-                    ┌────────────────┐  ┌──────────────────────┐
-                    │ web  :3001     │  │ backend  :3000       │
-                    │ Nuxt 4 SPA     │  │ NestJS 11            │
-                    │ static + nginx │  │ CQRS · Prisma 7      │
-                    └────────────────┘  └───┬──────┬───────┬───┘
-                                            │      │       │
-   mobile (Dio, bearer) ────────────────────┘      │       │
-                                                   ▼       ▼
-                                    ┌──────────────┐  ┌──────────┐
-                                    │ postgres 18  │  │ redis 8  │
-                                    └──────────────┘  └────┬─────┘
-                                                           │ broker
-                                                    ┌──────▼──────┐
-                                                    │ centrifugo  │
-                                                    │ v6   :8000  │
-                                                    └─────────────┘
-                                            ┌───────────────────┐
-                                            │ media volume (ro) │
-                                            └───────────────────┘
+
+The two people are roles, not accounts — on a single-owner instance they are
+usually the same human. The split matters because the admin surface and the
+learner surface have different access rules (§5), not because two user types
+exist.
+
+```mermaid
+C4Container
+  title Container Diagram — CourseShelf
+
+  Person(learner, "Learner", "Watches courses")
+  Person(owner, "Instance owner", "Administers the instance")
+
+  System_Boundary(cs, "CourseShelf") {
+    Container(proxy, "Reverse proxy", "nginx", "Folds SPA and API onto one origin — no CORS, no CORP. Terminates CSP for both.")
+    Container(spa, "Web SPA", "Nuxt 4 SPA, Nuxt UI v4, served as static files by nginx", "Every HTTP call goes through the generated @app/api-client-ts")
+    Container(mobile, "Mobile app", "Flutter 3.44, flutter_bloc, Drift", "Offline-first: local DB, outbox writes, encrypted downloads")
+    Container(backend, "API", "NestJS 11, CQRS, Prisma 7, Express 5", "Bounded contexts, RFC 9457 errors, signed stream tokens")
+    ContainerDb(postgres, "Database", "PostgreSQL 18", "Catalog structure, users, learning state, read models")
+    Container(centrifugo, "Realtime hub", "Centrifugo v6", "Per-user channels. The backend publishes; it never subscribes.")
+    ContainerDb(redis, "Redis", "Redis 8", "Reached only by the API health check — see the note below")
+  }
+
+  System_Ext(library, "Course library on disk", "Mounted into the API container")
+
+  Rel(learner, spa, "Uses", "HTTPS")
+  Rel(learner, mobile, "Uses", "HTTPS")
+  Rel(owner, spa, "Administers through", "HTTPS")
+
+  Rel(spa, proxy, "Calls, with a session cookie", "JSON/HTTPS")
+  Rel(mobile, proxy, "Calls, with a bearer token", "JSON/HTTPS · Dio")
+  Rel(proxy, spa, "Serves the built bundle", "static")
+  Rel(proxy, backend, "Routes /api/v1 and /connection to", "HTTP")
+
+  Rel(backend, postgres, "Reads and writes", "SQL · Prisma")
+  Rel(backend, library, "Scans and reads bytes from", "filesystem")
+  Rel(backend, centrifugo, "Publishes events to", "HTTP server API")
+  Rel(backend, redis, "Pings for the health check only", "RESP")
+  Rel(spa, centrifugo, "Subscribes for nudges", "WebSocket")
+  Rel(mobile, centrifugo, "Subscribes for nudges", "WebSocket")
+
+  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
 ```
+
+Two things in that picture are easy to get wrong, so read them off it
+deliberately.
+
+**Nothing uses Redis.** The backend's only call is `ping()`, from
+`modules/health/infra/redis.checker.ts` through `common/redis/redis.service.ts`
+— a health check on a dependency nothing depends on. Centrifugo does not use it
+either: `docker/centrifugo/config.json` declares no engine or broker section, so
+it runs on the default in-memory engine, and the only `REDIS_URL` in any compose
+file belongs to the `backend` service. The container, its `redisdata` volume and
+its healthcheck are currently paying rent for a single `PING`. Whether it should
+exist at all is tracked as an open question, not settled here.
+
+Ports, for the local stack: proxy **8080** (use this in the browser), web 3001,
+backend 3000, Centrifugo 8000. 3000 and 3001 are published for tooling that
+bypasses the proxy; reaching for them in a browser is how you rediscover CORS.
+
 
 **Why a proxy in front of two images rather than one combined image.**
 The SPA and API are separately built, separately versioned, separately scaled,
@@ -115,7 +167,7 @@ packages/specs/openapi/openapi.yaml          ← hand-edited (57 path items)
         └─ spec:codegen
              ├─ openapi-typescript      → @app/specs/openapi-types.ts
              ├─ @hey-api/openapi-ts     → packages/api-client-ts/src/generated/
-             └─ openapi-generator-cli   → packages/api-client-dart/lib/generated/
+             └─ openapi-generator-cli   → packages/api-client-dart/lib/src/
                 (dart-dio, needs a JVM)
 ```
 
@@ -189,6 +241,54 @@ Prisma 7, Express 5.
 
 `catalog` is by far the largest and is the one place where a further split
 (catalog / ingestion) would be justified if it keeps growing.
+
+```mermaid
+C4Component
+  title Component Diagram — the API container
+
+  Container(clients, "Web SPA and mobile app", "generated clients", "Reach the API through the proxy")
+
+  Container_Boundary(api, "API — NestJS 11") {
+    Component(catalog, "catalog", "CQRS module", "Libraries, scans, courses, lessons, materials, subtitles, search, home rows")
+    Component(learning, "learning", "CQRS module", "Lesson progress, notes, bookmarks")
+    Component(access, "access", "CQRS module", "Access grants: user to library or course")
+    Component(streaming, "streaming", "Module", "Signed tokens, byte-range serving, SRT to VTT")
+    Component(admin, "admin", "Module", "Dashboard aggregation, user administration, backups")
+    Component(me, "me", "Module", "Current-user profile and sessions")
+    Component(realtime, "realtime", "Module", "Centrifugo connection-token issuance")
+    Component(integrations, "integrations", "Ports and adapters", "Email, push, object storage — mock adapters today")
+    Component(ops, "ops · health · ping", "Modules", "Operational endpoints")
+    Component(bus, "EventBus", "Nest CQRS", "LessonCompleted · LessonProgressRecorded")
+    ComponentDb(readmodel, "CourseProgressReadModel", "Prisma projection", "What home rows and progress bars query")
+  }
+
+  ContainerDb(postgres, "Database", "PostgreSQL 18", "")
+  System_Ext(library, "Course library on disk", "")
+
+  Rel(clients, catalog, "Browses and searches", "JSON/HTTP")
+  Rel(clients, learning, "Records progress, notes, bookmarks", "JSON/HTTP")
+  Rel(clients, streaming, "Requests a stream URL, then bytes", "JSON/HTTP")
+
+  Rel(learning, bus, "Raises domain events on")
+  Rel(bus, catalog, "Delivers to the projection handler")
+  Rel(catalog, readmodel, "Maintains")
+  Rel(catalog, library, "Scans", "filesystem · ffprobe")
+  Rel(streaming, library, "Serves byte ranges from", "filesystem")
+  Rel(access, postgres, "Reads grants from", "SQL")
+  Rel(catalog, postgres, "Reads and writes", "SQL")
+  Rel(learning, postgres, "Reads and writes", "SQL")
+
+  UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")
+```
+
+The arrow that carries the architecture is `learning → EventBus → catalog`.
+Contexts never call each other's repositories: `learning` raises
+`LessonCompleted` / `LessonProgressRecorded`, `catalog` subscribes and updates
+its projection. Everything else is a module talking to its own storage.
+
+`integrations` is drawn with no outbound arrow on purpose — its adapters are
+mocks today. The ports exist so that adding a real one is a provider swap, not
+a refactor.
 
 ### Layering inside a module
 
@@ -286,6 +386,45 @@ Two-step flow, because `<video src>` cannot carry an `Authorization` header:
    → 206 Partial Content, Accept-Ranges: bytes
 ```
 
+```mermaid
+C4Dynamic
+  title Dynamic Diagram — playing a lesson with a signed token
+
+  Container(spa, "Web SPA", "Nuxt 4", "The player page")
+  Container(proxy, "Reverse proxy", "nginx", "One origin")
+
+  Container_Boundary(api, "API") {
+    Component(lessonCtl, "Lesson controller", "NestJS", "Authenticated edge")
+    Component(signer, "Stream-token signer", "HMAC", "Scoped to (user, lesson), TTL 900 s")
+    Component(streamCtl, "Stream controller", "NestJS", "Token-authenticated edge")
+    Component(locator, "lesson-file-locator", "Guard", "Resolves a lesson id to a path")
+  }
+
+  System_Ext(library, "Course library on disk", "Video and subtitle files")
+
+  Rel(spa, lessonCtl, "1. GET /api/v1/lessons/{id}/stream-url", "session cookie")
+  Rel(lessonCtl, signer, "2. Mint a signed, scoped token")
+  Rel(signer, spa, "3. Return /api/v1/stream/lessons/{id}?token=…")
+  Rel(spa, streamCtl, "4. video src → GET /stream/lessons/{id}?token=…", "no auth header possible")
+  Rel(spa, streamCtl, "5. track src → GET /stream/lessons/{id}/subtitles/{lang}?token=…", "same token")
+  Rel(streamCtl, locator, "6. Resolve the id, refuse traversal")
+  Rel(locator, library, "7. Open the file")
+  Rel(streamCtl, spa, "8. 206 Partial Content · WebVTT")
+
+  UpdateRelStyle(spa, streamCtl, $offsetY="-40")
+  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+```
+
+Steps 4 and 5 are why the token is a query parameter rather than a header:
+neither `<video src>` nor `<track src>` can send `Authorization`. The subtitle
+route was designed for step 5 from the start — and then went unwired on the web
+until `E26-F01-S01`, which is a good reminder that a route existing and a route
+being reachable are different claims.
+
+Step 6 is the security boundary. Path traversal is contained in
+`lesson-file-locator.ts`, not at the controller, so every caller inherits the
+guard instead of each one re-implementing it.
+
 Materials follow the same pattern with a `material`-scoped token; backup
 downloads use a third signer with a 300 s TTL.
 
@@ -300,7 +439,10 @@ an arbitrary path — path traversal is contained there, not at the controller.
 
 ## 7 — Realtime
 
-Centrifugo v6, Redis-brokered, fronted by the same nginx origin.
+Centrifugo v6, single node on its default in-memory engine, fronted by the
+same nginx origin. It is **not** wired to Redis: `docker/centrifugo/config.json`
+declares no engine or broker section, and no compose file sets a Centrifugo
+Redis address.
 
 `POST /api/v1/realtime/token` mints a short-lived connection JWT
 (`CENTRIFUGO_TOKEN_TTL_SECONDS`, default **300 s**). Channels carry the user id
@@ -542,6 +684,57 @@ and `compose.release.yml`.
 Production services: `postgres` · `redis` · `centrifugo` · `backend` · `web` ·
 `proxy`, on one `cs-net` network with named volumes for Postgres and Redis and
 healthchecks wired throughout.
+
+```mermaid
+C4Deployment
+  title Deployment Diagram — production (docker/compose.prod.yml)
+
+  Deployment_Node(device, "Learner's device", "Browser or phone") {
+    Container(spa, "Web SPA", "Nuxt 4 bundle", "Runs in the browser")
+    Container(mobile, "Mobile app", "Flutter", "iOS / Android")
+  }
+
+  Deployment_Node(host, "Self-hosted host", "Docker Compose, network cs-net") {
+    Deployment_Node(edge, "proxy", "nginx container, publishes 8080") {
+      Container(proxyc, "Reverse proxy", "nginx", "One origin for SPA and API")
+    }
+    Deployment_Node(webn, "web", "container") {
+      Container(webc, "Static SPA server", "nginx + built bundle", "")
+    }
+    Deployment_Node(apin, "backend", "container, multi-stage image with postgresql18-client") {
+      Container(apic, "API", "NestJS 11", "pg_dump available in-container for backups")
+    }
+    Deployment_Node(dbn, "postgres", "container, volume pgdata") {
+      ContainerDb(pg, "Database", "PostgreSQL 18", "")
+    }
+    Deployment_Node(rtn, "centrifugo", "container") {
+      Container(cent, "Realtime hub", "Centrifugo v6", "")
+    }
+    Deployment_Node(rdn, "redis", "container, volume redisdata") {
+      ContainerDb(rd, "Redis", "Redis 8", "Health-checked, otherwise unused")
+    }
+  }
+
+  Deployment_Node(disk, "Host filesystem", "COURSES_PATH") {
+    Container_Ext(media, "Course library", "bind mount at /data/courses:ro", "")
+  }
+
+  Rel(spa, proxyc, "HTTPS")
+  Rel(mobile, proxyc, "HTTPS")
+  Rel(proxyc, webc, "HTTP")
+  Rel(proxyc, apic, "HTTP")
+  Rel(apic, pg, "SQL")
+  Rel(apic, cent, "HTTP server API")
+  Rel(apic, rd, "health ping")
+  Rel(apic, media, "reads")
+
+  UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="2")
+```
+
+TLS is deliberately absent from that diagram: it terminates at whatever reverse
+proxy fronts the deployment (Caddy, NPM, your ingress), not inside the compose
+stack. CSP omits `upgrade-insecure-requests` for the same reason — it would
+break plain-HTTP deployments and is redundant behind real TLS.
 
 Both app images are multi-stage. The backend image includes
 `postgresql18-client` so `pg_dump` is available in-container for the backup

@@ -212,6 +212,17 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add packages/ui_flutter/test apps/mobile/test
+
+          # `dart run build_runner build` rewrites the *committed* freezed
+          # output under apps/mobile/lib (see ci.yml — freezed's .freezed.dart
+          # and .g.dart are committed, unlike slang's). That churn is not part
+          # of a golden refresh, and it left the worktree dirty outside the
+          # staged paths, so `git pull --rebase` below refused with "cannot
+          # pull with rebase: You have unstaged changes" and the goldens were
+          # captured and then thrown away. Restore everything that is not
+          # staged; the goldens are already in the index and survive this.
+          git checkout -- .
+
           if git diff --cached --quiet; then
             echo "No golden changes — nothing to commit."
           else

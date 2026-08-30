@@ -45,7 +45,7 @@
       "cache": false
     },
     "@app/design-tokens#build": {
-      "inputs": ["src/**", "../../specs/design/tokens/**"],
+      "inputs": ["src/**", "$TURBO_ROOT$/docs/design/shared/**"],
       "outputs": [
         "../../apps/web/app/assets/css/tokens.generated.css",
         "../../apps/web/app/design-tokens.generated.ts",

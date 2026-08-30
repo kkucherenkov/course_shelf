@@ -22,6 +22,7 @@ import {
   Param,
   Patch,
   Post,
+  Res,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
@@ -31,7 +32,9 @@ import { DeleteBookmarkCommand } from './application/commands/delete-bookmark.co
 import { UpdateBookmarkCommand } from './application/commands/update-bookmark.command';
 import { ListBookmarksQuery } from './application/queries/list-bookmarks.query';
 
+import type { CreateBookmarkResult } from './application/commands/create-bookmark.handler';
 import type { SessionContext } from '../../common/auth/decorators';
+import type { Response } from 'express';
 import type {
   BookmarkDto,
   BookmarkListDto,
@@ -58,18 +61,31 @@ export class BookmarksController {
     );
   }
 
-  /** POST /api/v1/lessons/:lessonId/bookmarks */
+  /**
+   * POST /api/v1/lessons/:lessonId/bookmarks
+   *
+   * `@HttpCode` can't express the 200-on-replay/201-on-create split (#285), so
+   * the status is set explicitly from the handler's `created` flag instead.
+   */
   @Post('lessons/:lessonId/bookmarks')
-  @HttpCode(HttpStatus.CREATED)
   async createBookmark(
     @Param('lessonId') lessonId: string,
     @Body() body: CreateBookmarkRequest,
     @Session() session: SessionContext,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<BookmarkDto> {
     const actor = session.user;
-    return this.commandBus.execute<CreateBookmarkCommand, BookmarkDto>(
-      new CreateBookmarkCommand(lessonId, body.positionSeconds, body.label, actor),
+    const result = await this.commandBus.execute<CreateBookmarkCommand, CreateBookmarkResult>(
+      new CreateBookmarkCommand(
+        lessonId,
+        body.positionSeconds,
+        body.label,
+        body.idempotencyKey,
+        actor,
+      ),
     );
+    res.status(result.created ? HttpStatus.CREATED : HttpStatus.OK);
+    return result.bookmark;
   }
 
   /** PATCH /api/v1/bookmarks/:id */

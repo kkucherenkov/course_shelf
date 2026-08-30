@@ -191,8 +191,8 @@ gantt
     OpenAPI for transcription runs and generated subtitles       :done, e25f03s01, after e02f02s04, 1d
     The transcription run                                        :done, e25f03s02, after e25f01s02 e25f01s03 e25f01s04 e25f02s02 e25f02s03 e25f03s01, 3d
     Serve generated transcripts as subtitle tracks               :active, e25f03s03, after e08f02s02 e25f02s01, 1d
-    Scan thumbnails to the derived volume, and orphan cleanup    :active, e25f04s01, after e25f01s02, 1d
-    Transcription card in the admin library screen               :active, e25f04s02, after e25f03s01 e14f04s01, 2d
+    Scan thumbnails to the derived volume, and orphan cleanup    :done, e25f04s01, after e25f01s02, 1d
+    Transcription card in the admin library screen               :done, e25f04s02, after e25f03s01 e14f04s01, 2d
     Transcription documentation                                  :active, e25f04s03, after e25f03s02, 1d
 
     section E26 Transcript panel (web)
@@ -202,7 +202,7 @@ gantt
     `?t=` deep links into a lesson                               :done, e26f01s04, after e26f01s01, 1d
 
     section E27 Transcript storage and search
-    Parse existing subtitle sidecars into cues                   :active, e27f01s01, after e25f02s01 e25f03s02, 2d
+    Parse existing subtitle sidecars into cues                   :done, e27f01s01, after e25f02s01 e25f03s02, 2d
     Trigram index over cue text                                  :active, e27f01s02, after e27f01s01, 1d
     Transcript hits in the search API                            :active, e27f02s01, after e27f01s02, 2d
     Transcript results on the web search page                    :active, e27f02s02, after e27f02s01 e26f01s04, 1d

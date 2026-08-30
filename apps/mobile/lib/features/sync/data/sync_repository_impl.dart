@@ -186,10 +186,17 @@ class SyncRepositoryImpl implements SyncRepository {
       }
 
       if (serverId == null) {
+        // `localId` as the idempotency key: it is stable across retries of
+        // this same queued row (the outbox coalesces to one row per
+        // bookmark), so a crash after the server accepts the create but
+        // before `_bookmarkIds.record` + `_bookmarks.clear` run below means
+        // the retry replays the same key and gets back the same server
+        // bookmark instead of creating a second, orphaned one.
         final String assigned = await _api.createBookmark(
           lessonId: row.lessonId,
           positionSeconds: row.positionSeconds ?? 0,
           label: row.label,
+          idempotencyKey: row.localId,
         );
         await _bookmarkIds.record(localId: row.localId, serverId: assigned);
       } else if (row.op == OutboxOp.delete) {

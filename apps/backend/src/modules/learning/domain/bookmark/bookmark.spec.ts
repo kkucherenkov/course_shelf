@@ -72,6 +72,11 @@ describe('Bookmark.create', () => {
     const bm = makeBase({ label: '  hello world  ' });
     expect(bm.label).toBe('hello world');
   });
+
+  it('stores idempotencyKey when provided, undefined otherwise (#285)', () => {
+    expect(makeBase().idempotencyKey).toBeUndefined();
+    expect(makeBase({ idempotencyKey: 'retry-key-1' }).idempotencyKey).toBe('retry-key-1');
+  });
 });
 
 // ---------------------------------------------------------------------------

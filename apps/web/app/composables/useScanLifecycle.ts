@@ -11,6 +11,11 @@
  *   Centrifuge instance is reused across component mounts.
  *
  * Returns `{ status }` for diagnostics.
+ *
+ * `subscribeToScansChannel()` below is the reusable seam: any composable that
+ * needs the same per-user channel (e.g. `useTranscriptionProgress`) registers
+ * through it instead of opening a second WebSocket to the same channel — one
+ * Centrifuge instance per tab is the invariant this module exists to hold.
  */
 
 import { ref, onMounted, onUnmounted } from 'vue';
@@ -33,6 +38,12 @@ let _refCount = 0;
 let _currentUserId: string | null = null;
 
 const _sharedStatus = ref<ConnectionStatus>('idle');
+
+// Publication fan-out — every consumer registered via `subscribeToScansChannel`
+// (including this module's own scan-store dispatch) gets every publication on
+// the shared subscription. Consumers filter for the event kinds they care
+// about themselves; this module doesn't know about `transcription-*` events.
+const _handlers = new Set<(data: unknown) => void>();
 
 // ── Token helpers ──────────────────────────────────────────────────────────
 
@@ -98,9 +109,8 @@ function ensureConnected(userId: string): void {
   const sub = centrifuge.newSubscription(channel);
 
   sub.on('publication', (ctx) => {
-    const store = useScanLifecycleStore();
     // The JS SDK deserialises the JSON payload into `ctx.data` automatically.
-    store.applyEvent(ctx.data as ScanLifecycleEvent);
+    for (const handler of _handlers) handler(ctx.data);
   });
 
   sub.subscribe();
@@ -118,6 +128,30 @@ function maybeDisconnect(): void {
   _sharedStatus.value = 'idle';
 }
 
+// ── Reusable seam ────────────────────────────────────────────────────────────
+
+/**
+ * Registers `handler` on the shared per-tab `scans:user:<userId>` connection,
+ * connecting it on first use and reference-counting the teardown. Not a Vue
+ * hook — callers wire the returned unsubscribe function into their own
+ * `onMounted`/`onUnmounted` so two composables mounted at once still share one
+ * WebSocket instead of opening one each.
+ */
+export function subscribeToScansChannel(
+  userId: string,
+  handler: (data: unknown) => void,
+): () => void {
+  _handlers.add(handler);
+  _refCount++;
+  ensureConnected(userId);
+
+  return () => {
+    _handlers.delete(handler);
+    _refCount = Math.max(0, _refCount - 1);
+    maybeDisconnect();
+  };
+}
+
 // ── Public composable ──────────────────────────────────────────────────────
 
 export function useScanLifecycle(): { status: Ref<ConnectionStatus> } {
@@ -126,17 +160,20 @@ export function useScanLifecycle(): { status: Ref<ConnectionStatus> } {
     return { status: ref<ConnectionStatus>('idle') };
   }
 
+  let unsubscribe: (() => void) | null = null;
+
   onMounted(() => {
     const auth = useAuthStore();
     if (!auth.isAuthenticated || !auth.user?.id) return;
 
-    _refCount++;
-    ensureConnected(auth.user.id);
+    unsubscribe = subscribeToScansChannel(auth.user.id, (data) => {
+      useScanLifecycleStore().applyEvent(data as ScanLifecycleEvent);
+    });
   });
 
   onUnmounted(() => {
-    _refCount = Math.max(0, _refCount - 1);
-    maybeDisconnect();
+    unsubscribe?.();
+    unsubscribe = null;
   });
 
   return { status: _sharedStatus };

@@ -11,9 +11,11 @@
  *   - findManyByUserAndLesson: returns aggregates ordered by positionSeconds ASC.
  *   - delete: delegates to prisma.bookmark.delete.
  */
+import { Prisma } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Bookmark } from '../domain/bookmark/bookmark';
+import { BookmarkIdempotencyConflictError } from '../domain/bookmark/bookmark.errors';
 import { PrismaBookmarkRepository } from './prisma-bookmark.repository';
 
 // ---------------------------------------------------------------------------
@@ -44,13 +46,14 @@ function makePrisma(): { bookmark: BookmarkDelegate } {
 
 const T0 = new Date('2026-01-01T00:00:00.000Z');
 
-function makeAggregate(label?: string): Bookmark {
+function makeAggregate(label?: string, idempotencyKey?: string): Bookmark {
   return Bookmark.create({
     id: 'bm-1',
     userId: 'user-1',
     lessonId: 'lesson-1',
     positionSeconds: 30,
     ...(label === undefined ? {} : { label }),
+    ...(idempotencyKey === undefined ? {} : { idempotencyKey }),
   });
 }
 
@@ -61,6 +64,7 @@ function makeRow(
     lessonId: string;
     positionSeconds: number;
     label: string | null;
+    idempotencyKey: string | null;
     createdAt: Date;
     updatedAt: Date;
   }> = {},
@@ -71,10 +75,18 @@ function makeRow(
     lessonId: 'lesson-1',
     positionSeconds: 30,
     label: null,
+    idempotencyKey: null,
     createdAt: T0,
     updatedAt: T0,
     ...overrides,
   };
+}
+
+function p2002(): Prisma.PrismaClientKnownRequestError {
+  return new Prisma.PrismaClientKnownRequestError('Unique constraint', {
+    code: 'P2002',
+    clientVersion: '7.0.0',
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -126,6 +138,71 @@ describe('PrismaBookmarkRepository', () => {
       expect(call?.create.userId).toBe('user-1');
       expect(call?.create.lessonId).toBe('lesson-1');
       expect(call?.create.positionSeconds).toBe(30);
+    });
+
+    it('maps idempotencyKey undefined to null in the create payload (#285)', async () => {
+      await repo.save(makeAggregate());
+
+      const call = vi.mocked(prisma.bookmark.upsert).mock.calls[0]?.[0];
+      expect(call?.create.idempotencyKey).toBeNull();
+    });
+
+    it('passes idempotencyKey through when defined, in create only (never re-set on update)', async () => {
+      await repo.save(makeAggregate(undefined, 'retry-key-1'));
+
+      const call = vi.mocked(prisma.bookmark.upsert).mock.calls[0]?.[0];
+      expect(call?.create.idempotencyKey).toBe('retry-key-1');
+      expect(call?.update).not.toHaveProperty('idempotencyKey');
+    });
+
+    it('translates P2002 to BookmarkIdempotencyConflictError', async () => {
+      vi.mocked(prisma.bookmark.upsert).mockRejectedValue(p2002());
+      await expect(repo.save(makeAggregate(undefined, 'retry-key-1'))).rejects.toBeInstanceOf(
+        BookmarkIdempotencyConflictError,
+      );
+    });
+
+    it('rethrows other Prisma errors unchanged', async () => {
+      const other = new Prisma.PrismaClientKnownRequestError('Unknown', {
+        code: 'P2025',
+        clientVersion: '7.0.0',
+      });
+      vi.mocked(prisma.bookmark.upsert).mockRejectedValue(other);
+      await expect(repo.save(makeAggregate())).rejects.toBe(other);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // findByIdempotencyKey
+  // -------------------------------------------------------------------------
+
+  describe('findByIdempotencyKey', () => {
+    it('returns null when no row matches', async () => {
+      vi.mocked(prisma.bookmark.findUnique).mockResolvedValue(null);
+      const result = await repo.findByIdempotencyKey('user-1', 'lesson-1', 'retry-key-1');
+      expect(result).toBeNull();
+    });
+
+    it('looks up by the compound (userId, lessonId, idempotencyKey) unique', async () => {
+      vi.mocked(prisma.bookmark.findUnique).mockResolvedValue(null);
+      await repo.findByIdempotencyKey('user-1', 'lesson-1', 'retry-key-1');
+
+      const call = vi.mocked(prisma.bookmark.findUnique).mock.calls[0]?.[0];
+      expect(call?.where).toEqual({
+        uq_bookmark_idempotency: {
+          userId: 'user-1',
+          lessonId: 'lesson-1',
+          idempotencyKey: 'retry-key-1',
+        },
+      });
+    });
+
+    it('reconstitutes the aggregate when a row matches', async () => {
+      vi.mocked(prisma.bookmark.findUnique).mockResolvedValue(
+        makeRow({ idempotencyKey: 'retry-key-1' }),
+      );
+      const result = await repo.findByIdempotencyKey('user-1', 'lesson-1', 'retry-key-1');
+      expect(result?.id).toBe('bm-1');
     });
   });
 

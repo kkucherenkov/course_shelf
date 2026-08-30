@@ -591,6 +591,31 @@ export default {
     },
   },
   /**
+   * Admin-surface copy that doesn't live under `pages.admin.*` — kept in its
+   * own top-level namespace so it doesn't collide with page-scoped edits.
+   */
+  admin: {
+    transcription: {
+      title: 'Transcription',
+      idleBody:
+        'Run whisper across every lesson that has no subtitle track and no up-to-date generated transcript.',
+      forceLabel: 'Re-transcribe everything',
+      startCta: 'Start transcription',
+      cancelCta: 'Cancel',
+      statusRunning: 'Running',
+      statusSucceeded: 'Succeeded',
+      statusFailed: 'Failed',
+      statusCancelled: 'Cancelled',
+      statSkipped: 'Skipped',
+      statTranscribed: 'Transcribed',
+      statFailed: 'Failed',
+      statTotal: 'Total',
+      errorsHeading: 'Errors',
+      startError: 'Could not start transcription. Please try again.',
+      cancelError: 'Could not cancel the run. Please try again.',
+    },
+  },
+  /**
    * Copy for `@app/ui` components. The design package ships English defaults
    * and never calls `t()` itself — it has no locale — so every string it
    * renders is passed down from here.

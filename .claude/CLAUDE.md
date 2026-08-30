@@ -222,16 +222,19 @@ pnpm e2e --grep "smoke"
 **GitHub is the sole repo.** The card in `docs/roadmap/tasks/` is always the
 source of truth; issues are stable URLs for cross-referencing, nothing more.
 
-**Mirroring covers epics E15–E20 only** — 133 issues titled
-`[<card-id>] <sub-step or title>`, plus one umbrella per epic titled
-`[<epic-id>] <name>`. E00–E14 and E21–E24 were never mirrored: the practice
-started mid-project and was not backfilled. Do not go looking for an issue for
-`E13-F02-S01` and conclude the work is untracked — check the card.
+**Mirroring covers E15–E20 and every v2 epic (E25–E31).** Issues are titled
+`[<card-id>] <title>`, with one umbrella per epic titled `[<epic-id>] <name>`.
 
-This rule used to claim _every_ card was mirrored, which was true of 46 of 121.
-It is narrowed rather than backfilled because the v1 roadmap is complete: 80
-issues opened and immediately closed would be archaeology, not tracking. New
-work that wants an issue can have one; nothing requires it.
+- **v1 (E00–E24):** only E15–E20 were mirrored — 133 issues. E00–E14 and
+  E21–E24 never were: the practice started mid-project and was not backfilled,
+  and backfilling a finished milestone would be archaeology, not tracking. Do
+  not go looking for an issue for `E13-F02-S01` and conclude the work is
+  untracked — check the card.
+- **v2 (E25–E31):** fully mirrored from the start — 36 story issues plus 7
+  umbrellas, all on the **`v2 — Transcript-first`** milestone.
+
+New v2 work gets a card, an issue on that milestone, and a line in the epic's
+umbrella. Put every one of a card's issue numbers in the PR body as `Closes #N`.
 
 **Look up a card's issues.** Filter by the `[<card-id>]` _prefix_
 — a plain search also returns other cards' issues that merely _mention_ the id in

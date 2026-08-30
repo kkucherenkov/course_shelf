@@ -42,11 +42,15 @@
         (429 was absent from all 75, 400 from 59) as shared
         `components/responses`, with the codegen in its own commit. Taken on
         here once L6 merged and `openapi.yaml` stopped moving under us.
-- Status: in-progress
-- Blockers: the remaining contract-test findings are a third class — the spec's
-  parameter schemas are looser than the backend's validation on ~14 operations,
-  plus one 404 and 7 lenient-implementation cases. Tracked on #320. Merges LAST
-  of the eight lanes (it touches
+  - [x] #320 closed in full — 70 contract-test findings down to zero:
+        `4303 generated, 4303 passed`, all four phases green, 75/75 operations.
+        Two were not drift and were fixed at the cause rather than in the spec
+        (the throttler dominating the run; a generator ignoring `pattern`); one
+        was a bug shipping in the mobile app (`+`-encoded spaces rejected).
+  - [x] Verified the gates fire rather than skip: `csp.spec.ts` both tests
+        executed, 34 e2e tests passed, Storybook a11y at `error`.
+- Status: ready to merge — 8/8 checks green
+- Blockers: none. Merges LAST of the eight lanes (it touches
   baselines and goldens); baselines and goldens are regenerated on top of the
   final `main` after the other seven land, not merged by hand.
 

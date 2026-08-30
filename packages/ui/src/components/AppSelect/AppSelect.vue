@@ -58,7 +58,11 @@
     const target = event.target;
     if (!(target instanceof HTMLSelectElement)) return;
     const next = target.value;
-    if (next === PLACEHOLDER_VALUE) return;
+    // The placeholder sentinel only exists as a real <option> when a
+    // `placeholder` was given — without one, a real option is free to use
+    // `''` as its id (e.g. an "All libraries" / "no filter" choice), and
+    // that selection must emit like any other.
+    if (props.placeholder !== undefined && next === PLACEHOLDER_VALUE) return;
     if (next === props.modelValue) return;
     emit('update:modelValue', next);
   }

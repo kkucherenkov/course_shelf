@@ -14,5 +14,6 @@ EXPOSE 3001
 CMD ["sh", "-lc", "\
   pnpm install --frozen-lockfile=false && \
   pnpm --filter @app/specs bundle && \
+  pnpm --filter @app/design-tokens build && \
   pnpm --filter @app/web dev \
 "]

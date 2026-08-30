@@ -101,20 +101,6 @@ is the flat chronology you read to answer "what happened to this project?".
 
 Append before you report the work as finished.
 
-## Layout
-
-```
-apps/backend    NestJS 11 + Prisma 7 + CQRS + Better Auth
-apps/web        Nuxt 4 (SPA, ssr:false) + Nuxt UI v4 + Tailwind 4 + @app/ui + @nuxtjs/i18n
-apps/mobile     Flutter 3.44 + flutter_bloc + get_it + Dio
-packages/specs  OpenAPI 3.1 + AsyncAPI 3.0 — single source of API truth
-packages/ui     brand component library + colocated Storybook + stories
-packages/api-client-{ts,dart}   generated clients — never edit by hand
-specs/tasks/    active.md (LIFO stack) + done.md (archive)
-specs/design/   tokens JSON + optional JSX mockups under mockups/ (primary design reference when provided)
-docker/         local stack (postgres 18.1, redis 8.6, centrifugo v6)
-```
-
 ## Task stack — read every session
 
 1. Before coding: push entry to `specs/tasks/active.md` (template in `specs/tasks/README.md`).
@@ -153,15 +139,8 @@ Never hand-fix what a fixer can do. Never add `eslint-disable` without a WHY com
 
 Stack is **normally running**. Check first: `docker ps --format '{{.Names}} {{.Status}} {{.Ports}}'`
 
-| Service                   | Port     | URL                          |
-| ------------------------- | -------- | ---------------------------- |
-| **proxy (canonical SPA)** | **8080** | **http://localhost:8080**    |
-| web                       | 3001     | http://localhost:3001        |
-| backend                   | 3000     | http://localhost:3000/api/v1 |
-| postgres                  | 5432     | —                            |
-| redis                     | 6379     | —                            |
-| centrifugo                | 8000     | ws://localhost:8000          |
-| grafana (otel)            | 3200     | http://localhost:3200        |
+Ports and URLs live in `docker/compose.yml` — read it rather than trusting a
+copy here.
 
 The nginx `proxy` service folds web + backend onto a single origin so the
 browser sees same-origin requests (no CORS, no CORP). Use **8080** in the
@@ -234,33 +213,14 @@ source of truth; issues are stable URLs for cross-referencing, nothing more.
   umbrellas, all on the **`v2 — Transcript-first`** milestone.
 
 New v2 work gets a card, an issue on that milestone, and a line in the epic's
-umbrella. Put every one of a card's issue numbers in the PR body as `Closes #N`.
+umbrella. **Put every one of a card's issue numbers in the PR body as
+`Closes #N`** — GitHub only recognises `#N`, so `Closes <card-id>` silently does
+nothing and you will be closing them by hand.
 
-**Look up a card's issues.** Filter by the `[<card-id>]` _prefix_
-— a plain search also returns other cards' issues that merely _mention_ the id in
-their title (e.g. `[E18-F03-S01] … (from E15-F01-S03)` is E18's, not E15's):
-
-```sh
-gh issue list --state all --search "<card-id> in:title" \
-  --json number,title,state \
-  --jq '[.[] | select(.title | startswith("[<card-id>]"))]'
-```
-
-**Opening a PR for a card:** put a `Closes #N` line for **each** of the card's
-issues in the PR body. GitHub only recognises `#N` — `Closes <card-id>` does
-nothing, so the merge won't auto-close and you'll have to close by hand. `Closes`,
-`Fixes`, and `Resolves` all work; GitHub closes them when the PR merges to `main`.
-
-**If a PR already merged without `Closes #N`** (issues still open), the completion
-is real — close them and record it:
-
-```sh
-gh issue close <N> --reason completed --comment "Closed by PR #<pr> (<card-id>)."
-```
-
-**When a card is marked ✅ Done** (see the task-stack rules), reconcile its issues
-in the same pass: confirm every story issue is closed, and once **all** cards
-under an epic are Done, close the epic's umbrella issue too.
+The recipes — looking issues up by prefix, closing what a merged PR missed,
+reconciling a card marked ✅ Done, closing an epic umbrella — live in the
+**`card-bookkeeping`** skill. Invoke it when opening a PR for a card, marking a
+card Done, or auditing whether a card's issues match its status.
 
 ## Commits
 
@@ -275,16 +235,9 @@ Allowed types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `perf`,
 
 ## Subagents (`.claude/agents/`)
 
-Delegate when the task scope is bounded to one of these surfaces:
-
-| Agent               | Use for                                                                                                      |
-| ------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `backend-engineer`  | Anything in `apps/backend` (NestJS / CQRS / Prisma)                                                          |
-| `frontend-engineer` | `apps/web` and `packages/ui`                                                                                 |
-| `flutter-engineer`  | `apps/mobile`                                                                                                |
-| `spec-writer`       | Adding/changing routes or channels in `packages/specs`                                                       |
-| `spec-reviewer`     | Read-only review of spec changes before merge                                                                |
-| `codegen-runner`    | Re-run `spec:validate && spec:bundle && spec:codegen` after a spec edit and stage the diff as its own commit |
+Delegate when the task scope is bounded to one surface. The available agents and
+what each covers are listed for you at session start — read that list rather than
+a copy here, which goes stale the moment an agent is added.
 
 ## Fix root causes, not symptoms
 
@@ -329,82 +282,19 @@ docs.
 | Security, observability, a11y, performance | [`.claude/docs/security.md`](docs/security.md)           |
 | Feature migration from another project     | [`.claude/docs/migration.md`](docs/migration.md)         |
 
+## Codebase intelligence (Repowise)
+
+This repository is indexed by [Repowise](https://repowise.dev) and exposes it as
+an MCP server; the server supplies its own tool instructions at session start.
+Use it for orientation — `get_overview`, `search_codebase`, `get_why`,
+`get_risk` — then **read the actual source before changing anything.**
+
+The index is a snapshot and can be months behind `main`. Treat every answer it
+gives as a lead, never as the current state of the code. Entry points, hotspots,
+dependency lists and script names are all derived from the repository — read the
+repository when they matter, rather than a copy that went stale on the day it
+was written.
+
 <!-- REPOWISE:START — Do not edit below this line. Auto-generated by Repowise. -->
-
-## IMPORTANT: Codebase Intelligence Instructions for courseShelf
-
-> This repository is indexed by [Repowise](https://repowise.dev).
-> Use the MCP tools below for orientation, discovery, and enriched context
-> (documentation, ownership, history, decisions). **Always verify against
-> actual source files before making changes** — the index may be stale.
-
-Last indexed: 2026-05-19 (commit 9899cf5)
-
-### Entry Points
-
-- `packages/ui/src/components/IconCS/index.ts`
-- `packages/specs/src/index.ts`
-- `packages/ui/src/index.ts`
-- `apps/backend/src/common/auth/decorators/index.ts`
-- `apps/backend/src/common/catalog-tokens/index.ts`
-- `apps/backend/src/common/learning-events/index.ts`
-- `apps/backend/src/common/learning-progress/index.ts`
-- `apps/backend/src/main.ts`
-- `docs/design/cs-components/app.jsx`
-- `docs/design/cs-foundation/app.jsx`
-
-### Tech Stack
-
-**Languages:** Node.js, TypeScript
-
-**Infra:** Turborepo### Hotspots (High Churn)
-| File | Churn | 90d Commits | Owner |
-|------|-------|-------------|-------|
-| `packages/specs/src/openapi-types.ts` | 99.9th %ile | 32 | Kirill Kucherenkov |
-| `packages/api-client-ts/src/generated/types.gen.ts` | 99.8th %ile | 30 | Kirill Kucherenkov |
-| `packages/api-client-dart/lib/generated/lib/src/api/catalog_api.dart` | 99.7th %ile | 11 | Kirill Kucherenkov |
-| `apps/backend/src/modules/catalog/application/commands/run-scan.handler.spec.ts` | 99.6th %ile | 11 | Kirill Kucherenkov |
-| `packages/api-client-dart/lib/generated/lib/src/api/learning_api.dart` | 99.4th %ile | 5 | Kirill Kucherenkov |
-
-### Repowise MCP Tools
-
-This project has a Repowise MCP server configured. These tools provide documentation, ownership, architectural decisions, and risk signals. Use them for orientation and discovery — then read actual source to verify before editing.
-
-**Recommended workflow:**
-
-1. Start with `get_overview()` on a new task to orient yourself.
-2. Call `get_context(targets=["path/to/file.py"])` for enriched context on unfamiliar files — but always read the source before editing.
-3. Call `get_risk(targets=["path/to/file.py"])` before changing hotspot files.
-4. Don't know where something lives? Call `search_codebase(query="authentication flow")`.
-5. Need to understand why code is structured a certain way? Call `get_why(query="why JWT over sessions")` before architectural changes.
-6. After **architectural changes**, consider calling `update_decision_records(action="create", ...)` to record the rationale.
-7. Need to understand how two modules connect? Call `get_dependency_path(source="src/auth", target="src/db")`.
-8. Before cleanup tasks, call `get_dead_code()` to find confirmed unused code.
-9. For documentation or diagrams, call `get_architecture_diagram(scope="src/auth")`.
-
-**Note:** MCP tool responses reflect the last index run. If the index is stale, verify against source files.
-
-| Tool                                          | When to use                                    |
-| --------------------------------------------- | ---------------------------------------------- |
-| `get_overview()`                              | Orient yourself on a new task                  |
-| `get_context(targets=[...])`                  | Enriched context on unfamiliar files           |
-| `get_risk(targets=[...])`                     | Before changing hotspot files                  |
-| `get_why(query="...")`                        | Before architectural changes                   |
-| `update_decision_records(action=...)`         | After architectural changes — record decisions |
-| `search_codebase(query="...")`                | When locating code                             |
-| `get_dependency_path(source=..., target=...)` | When tracing module connections                |
-| `get_dead_code()`                             | Before any cleanup or removal                  |
-| `get_architecture_diagram(scope=...)`         | For visual structure or documentation          |
-
-### Codebase Conventions
-
-**Commands:**
-
-- Build: `pnpm build`
-- Test: `pnpm test`
-- Lint: `pnpm lint`
-- Dev: `pnpm dev`
-- Format: `pnpm format`
-- Typecheck: `pnpm typecheck`
 
 <!-- REPOWISE:END -->

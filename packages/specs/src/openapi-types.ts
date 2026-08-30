@@ -1424,7 +1424,7 @@ export interface paths {
     /**
      * Service health probe
      * @description Reports combined health status of the service and its runtime
-     *     dependencies (database, cache, realtime bus).
+     *     dependencies (database, realtime bus).
      */
     get: operations['getHealth'];
     put?: never;
@@ -3179,7 +3179,6 @@ export interface components {
       uptimeSeconds: number;
       dependencies: {
         db: components['schemas']['DependencyStatus'];
-        redis: components['schemas']['DependencyStatus'];
         centrifugo: components['schemas']['DependencyStatus'];
       };
     };

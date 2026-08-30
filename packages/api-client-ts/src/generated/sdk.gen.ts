@@ -1085,7 +1085,7 @@ export const getNote = <ThrowOnError extends boolean = false>(options: Options<G
  * Service health probe
  *
  * Reports combined health status of the service and its runtime
- * dependencies (database, cache, realtime bus).
+ * dependencies (database, realtime bus).
  *
  */
 export const getHealth = <ThrowOnError extends boolean = false>(options?: Options<GetHealthData, ThrowOnError>) => (options?.client ?? client).get<GetHealthResponses, GetHealthErrors, ThrowOnError>({ url: '/api/v1/health', ...options });

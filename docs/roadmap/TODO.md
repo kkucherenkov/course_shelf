@@ -261,7 +261,7 @@ them would quietly reopen a milestone that is finished.
 
 - [ ] [E31-F01-S01](./tasks/E31-F01-S01.md) `A` — Finish the browse filters · ⇐ E14-F01-S02
 - [ ] [E31-F01-S02](./tasks/E31-F01-S02.md) `A` — Backups UI · ⇐ E21-F01-S02
-- [ ] [E31-F01-S03](./tasks/E31-F01-S03.md) `A` — Fix the duplicated offline bookmark · ⇐ E20-F01-S01
+- [x] [E31-F01-S03](./tasks/E31-F01-S03.md) `A` — Fix the duplicated offline bookmark · ⇐ E20-F01-S01
 - [ ] [E31-F02-S01](./tasks/E31-F02-S01.md) `A` — Remove the SSO promise · ⇐ E14-F02-S01
 - [ ] [E31-F02-S02](./tasks/E31-F02-S02.md) `A` — Remove the non-functional Settings controls · ⇐ E14-F02-S02
 - [ ] [E31-F02-S03](./tasks/E31-F02-S03.md) `A` — Settle the locale parity claim · ⇐ E15-F01-S02

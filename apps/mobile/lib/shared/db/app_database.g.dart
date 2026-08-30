@@ -2581,6 +2581,283 @@ class BookmarksOutboxCompanion extends UpdateCompanion<BookmarksOutboxEntry> {
   }
 }
 
+class $BookmarkIdMapTable extends BookmarkIdMap
+    with TableInfo<$BookmarkIdMapTable, BookmarkIdMapEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BookmarkIdMapTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _localIdMeta = const VerificationMeta(
+    'localId',
+  );
+  @override
+  late final GeneratedColumn<String> localId = GeneratedColumn<String>(
+    'local_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _serverIdMeta = const VerificationMeta(
+    'serverId',
+  );
+  @override
+  late final GeneratedColumn<String> serverId = GeneratedColumn<String>(
+    'server_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mappedAtMeta = const VerificationMeta(
+    'mappedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> mappedAt = GeneratedColumn<DateTime>(
+    'mapped_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [localId, serverId, mappedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bookmark_id_map';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BookmarkIdMapEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('local_id')) {
+      context.handle(
+        _localIdMeta,
+        localId.isAcceptableOrUnknown(data['local_id']!, _localIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localIdMeta);
+    }
+    if (data.containsKey('server_id')) {
+      context.handle(
+        _serverIdMeta,
+        serverId.isAcceptableOrUnknown(data['server_id']!, _serverIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_serverIdMeta);
+    }
+    if (data.containsKey('mapped_at')) {
+      context.handle(
+        _mappedAtMeta,
+        mappedAt.isAcceptableOrUnknown(data['mapped_at']!, _mappedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_mappedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {localId};
+  @override
+  BookmarkIdMapEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BookmarkIdMapEntry(
+      localId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_id'],
+      )!,
+      serverId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}server_id'],
+      )!,
+      mappedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}mapped_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BookmarkIdMapTable createAlias(String alias) {
+    return $BookmarkIdMapTable(attachedDatabase, alias);
+  }
+}
+
+class BookmarkIdMapEntry extends DataClass
+    implements Insertable<BookmarkIdMapEntry> {
+  /// The client-generated id the UI still holds. Same value as
+  /// `bookmarks_outbox.local_id`, but this row outlives that one — the outbox
+  /// row is cleared the instant it drains, which is exactly when the mapping
+  /// starts to matter.
+  final String localId;
+
+  /// The server-assigned id. Never null here: a row only exists once the create
+  /// has settled and the server has named the bookmark.
+  final String serverId;
+  final DateTime mappedAt;
+  const BookmarkIdMapEntry({
+    required this.localId,
+    required this.serverId,
+    required this.mappedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['local_id'] = Variable<String>(localId);
+    map['server_id'] = Variable<String>(serverId);
+    map['mapped_at'] = Variable<DateTime>(mappedAt);
+    return map;
+  }
+
+  BookmarkIdMapCompanion toCompanion(bool nullToAbsent) {
+    return BookmarkIdMapCompanion(
+      localId: Value(localId),
+      serverId: Value(serverId),
+      mappedAt: Value(mappedAt),
+    );
+  }
+
+  factory BookmarkIdMapEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BookmarkIdMapEntry(
+      localId: serializer.fromJson<String>(json['localId']),
+      serverId: serializer.fromJson<String>(json['serverId']),
+      mappedAt: serializer.fromJson<DateTime>(json['mappedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'localId': serializer.toJson<String>(localId),
+      'serverId': serializer.toJson<String>(serverId),
+      'mappedAt': serializer.toJson<DateTime>(mappedAt),
+    };
+  }
+
+  BookmarkIdMapEntry copyWith({
+    String? localId,
+    String? serverId,
+    DateTime? mappedAt,
+  }) => BookmarkIdMapEntry(
+    localId: localId ?? this.localId,
+    serverId: serverId ?? this.serverId,
+    mappedAt: mappedAt ?? this.mappedAt,
+  );
+  BookmarkIdMapEntry copyWithCompanion(BookmarkIdMapCompanion data) {
+    return BookmarkIdMapEntry(
+      localId: data.localId.present ? data.localId.value : this.localId,
+      serverId: data.serverId.present ? data.serverId.value : this.serverId,
+      mappedAt: data.mappedAt.present ? data.mappedAt.value : this.mappedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BookmarkIdMapEntry(')
+          ..write('localId: $localId, ')
+          ..write('serverId: $serverId, ')
+          ..write('mappedAt: $mappedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(localId, serverId, mappedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BookmarkIdMapEntry &&
+          other.localId == this.localId &&
+          other.serverId == this.serverId &&
+          other.mappedAt == this.mappedAt);
+}
+
+class BookmarkIdMapCompanion extends UpdateCompanion<BookmarkIdMapEntry> {
+  final Value<String> localId;
+  final Value<String> serverId;
+  final Value<DateTime> mappedAt;
+  final Value<int> rowid;
+  const BookmarkIdMapCompanion({
+    this.localId = const Value.absent(),
+    this.serverId = const Value.absent(),
+    this.mappedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BookmarkIdMapCompanion.insert({
+    required String localId,
+    required String serverId,
+    required DateTime mappedAt,
+    this.rowid = const Value.absent(),
+  }) : localId = Value(localId),
+       serverId = Value(serverId),
+       mappedAt = Value(mappedAt);
+  static Insertable<BookmarkIdMapEntry> custom({
+    Expression<String>? localId,
+    Expression<String>? serverId,
+    Expression<DateTime>? mappedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (localId != null) 'local_id': localId,
+      if (serverId != null) 'server_id': serverId,
+      if (mappedAt != null) 'mapped_at': mappedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BookmarkIdMapCompanion copyWith({
+    Value<String>? localId,
+    Value<String>? serverId,
+    Value<DateTime>? mappedAt,
+    Value<int>? rowid,
+  }) {
+    return BookmarkIdMapCompanion(
+      localId: localId ?? this.localId,
+      serverId: serverId ?? this.serverId,
+      mappedAt: mappedAt ?? this.mappedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (localId.present) {
+      map['local_id'] = Variable<String>(localId.value);
+    }
+    if (serverId.present) {
+      map['server_id'] = Variable<String>(serverId.value);
+    }
+    if (mappedAt.present) {
+      map['mapped_at'] = Variable<DateTime>(mappedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BookmarkIdMapCompanion(')
+          ..write('localId: $localId, ')
+          ..write('serverId: $serverId, ')
+          ..write('mappedAt: $mappedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $DownloadedLessonsTable extends DownloadedLessons
     with TableInfo<$DownloadedLessonsTable, DownloadedLesson> {
   @override
@@ -3488,6 +3765,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $BookmarksOutboxTable bookmarksOutbox = $BookmarksOutboxTable(
     this,
   );
+  late final $BookmarkIdMapTable bookmarkIdMap = $BookmarkIdMapTable(this);
   late final $DownloadedLessonsTable downloadedLessons =
       $DownloadedLessonsTable(this);
   late final Index idxCachedSectionsCourseId = Index(
@@ -3510,6 +3788,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final BookmarksOutboxDao bookmarksOutboxDao = BookmarksOutboxDao(
     this as AppDatabase,
   );
+  late final BookmarkIdMapDao bookmarkIdMapDao = BookmarkIdMapDao(
+    this as AppDatabase,
+  );
   late final DownloadsDao downloadsDao = DownloadsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -3522,6 +3803,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     progressOutbox,
     notesOutbox,
     bookmarksOutbox,
+    bookmarkIdMap,
     downloadedLessons,
     idxCachedSectionsCourseId,
     idxCachedLessonsCourseId,
@@ -5534,6 +5816,172 @@ typedef $$BookmarksOutboxTableProcessedTableManager =
       BookmarksOutboxEntry,
       PrefetchHooks Function()
     >;
+typedef $$BookmarkIdMapTableCreateCompanionBuilder =
+    BookmarkIdMapCompanion Function({
+      required String localId,
+      required String serverId,
+      required DateTime mappedAt,
+      Value<int> rowid,
+    });
+typedef $$BookmarkIdMapTableUpdateCompanionBuilder =
+    BookmarkIdMapCompanion Function({
+      Value<String> localId,
+      Value<String> serverId,
+      Value<DateTime> mappedAt,
+      Value<int> rowid,
+    });
+
+class $$BookmarkIdMapTableFilterComposer
+    extends Composer<_$AppDatabase, $BookmarkIdMapTable> {
+  $$BookmarkIdMapTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get localId => $composableBuilder(
+    column: $table.localId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serverId => $composableBuilder(
+    column: $table.serverId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get mappedAt => $composableBuilder(
+    column: $table.mappedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BookmarkIdMapTableOrderingComposer
+    extends Composer<_$AppDatabase, $BookmarkIdMapTable> {
+  $$BookmarkIdMapTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get localId => $composableBuilder(
+    column: $table.localId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serverId => $composableBuilder(
+    column: $table.serverId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get mappedAt => $composableBuilder(
+    column: $table.mappedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BookmarkIdMapTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BookmarkIdMapTable> {
+  $$BookmarkIdMapTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get localId =>
+      $composableBuilder(column: $table.localId, builder: (column) => column);
+
+  GeneratedColumn<String> get serverId =>
+      $composableBuilder(column: $table.serverId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get mappedAt =>
+      $composableBuilder(column: $table.mappedAt, builder: (column) => column);
+}
+
+class $$BookmarkIdMapTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BookmarkIdMapTable,
+          BookmarkIdMapEntry,
+          $$BookmarkIdMapTableFilterComposer,
+          $$BookmarkIdMapTableOrderingComposer,
+          $$BookmarkIdMapTableAnnotationComposer,
+          $$BookmarkIdMapTableCreateCompanionBuilder,
+          $$BookmarkIdMapTableUpdateCompanionBuilder,
+          (
+            BookmarkIdMapEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $BookmarkIdMapTable,
+              BookmarkIdMapEntry
+            >,
+          ),
+          BookmarkIdMapEntry,
+          PrefetchHooks Function()
+        > {
+  $$BookmarkIdMapTableTableManager(_$AppDatabase db, $BookmarkIdMapTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BookmarkIdMapTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BookmarkIdMapTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BookmarkIdMapTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> localId = const Value.absent(),
+                Value<String> serverId = const Value.absent(),
+                Value<DateTime> mappedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BookmarkIdMapCompanion(
+                localId: localId,
+                serverId: serverId,
+                mappedAt: mappedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String localId,
+                required String serverId,
+                required DateTime mappedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => BookmarkIdMapCompanion.insert(
+                localId: localId,
+                serverId: serverId,
+                mappedAt: mappedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BookmarkIdMapTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BookmarkIdMapTable,
+      BookmarkIdMapEntry,
+      $$BookmarkIdMapTableFilterComposer,
+      $$BookmarkIdMapTableOrderingComposer,
+      $$BookmarkIdMapTableAnnotationComposer,
+      $$BookmarkIdMapTableCreateCompanionBuilder,
+      $$BookmarkIdMapTableUpdateCompanionBuilder,
+      (
+        BookmarkIdMapEntry,
+        BaseReferences<_$AppDatabase, $BookmarkIdMapTable, BookmarkIdMapEntry>,
+      ),
+      BookmarkIdMapEntry,
+      PrefetchHooks Function()
+    >;
 typedef $$DownloadedLessonsTableCreateCompanionBuilder =
     DownloadedLessonsCompanion Function({
       required String lessonId,
@@ -5947,6 +6395,8 @@ class $AppDatabaseManager {
       $$NotesOutboxTableTableManager(_db, _db.notesOutbox);
   $$BookmarksOutboxTableTableManager get bookmarksOutbox =>
       $$BookmarksOutboxTableTableManager(_db, _db.bookmarksOutbox);
+  $$BookmarkIdMapTableTableManager get bookmarkIdMap =>
+      $$BookmarkIdMapTableTableManager(_db, _db.bookmarkIdMap);
   $$DownloadedLessonsTableTableManager get downloadedLessons =>
       $$DownloadedLessonsTableTableManager(_db, _db.downloadedLessons);
 }

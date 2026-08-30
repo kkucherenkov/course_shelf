@@ -63,6 +63,20 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
   /// would double-send rows read before the first pass cleared them.
   bool _draining = false;
 
+  /// Fires once each time a drain completes without throwing.
+  ///
+  /// Deliberately `void` rather than [SyncState]: the one consumer — the
+  /// player, which re-reads its bookmarks because a drain can rename one — only
+  /// needs the edge, and an opaque element type keeps that feature from
+  /// importing this one. [SyncState.lastSyncedAt] is the edge: it is set on
+  /// every successful drain and on nothing else, so `distinct` on it emits
+  /// exactly once per settled drain.
+  Stream<void> get drained => stream
+      .map((SyncState s) => s.lastSyncedAt)
+      .where((DateTime? at) => at != null)
+      .distinct()
+      .map((DateTime? _) {});
+
   Future<void> _onStarted(SyncStarted event, Emitter<SyncState> emit) async {
     emit(state.copyWith(pending: await _repository.pendingCount()));
 

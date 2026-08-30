@@ -9,8 +9,21 @@ void main() {
   setUp(() => db = AppDatabase(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  test('schemaVersion is 3', () {
-    expect(db.schemaVersion, 3);
+  test('schemaVersion is 4', () {
+    expect(db.schemaVersion, 4);
+  });
+
+  test('bookmark_id_map exists', () async {
+    // The table that keeps a bookmark created offline from reading as two
+    // bookmarks once its create syncs. Losing it silently reintroduces the
+    // duplicate and 404s every delete aimed at a local id.
+    final rows = await db
+        .customSelect("PRAGMA table_info('bookmark_id_map')")
+        .get();
+    expect(
+      rows.map((r) => r.read<String>('name')).toSet(),
+      containsAll(<String>['local_id', 'server_id', 'mapped_at']),
+    );
   });
 
   test('downloaded_lessons carries its own display titles', () async {

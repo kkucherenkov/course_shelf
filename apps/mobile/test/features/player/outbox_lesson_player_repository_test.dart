@@ -65,6 +65,7 @@ void main() {
   late AppDatabase db;
   late NotesOutboxDao notes;
   late BookmarksOutboxDao bookmarks;
+  late BookmarkIdMapDao bookmarkIds;
   late _ThrowingInner inner;
   late OutboxLessonPlayerRepository repository;
   late int nudges;
@@ -73,12 +74,14 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     notes = NotesOutboxDao(db);
     bookmarks = BookmarksOutboxDao(db);
+    bookmarkIds = BookmarkIdMapDao(db);
     inner = _ThrowingInner();
     nudges = 0;
     repository = OutboxLessonPlayerRepository(
       inner: inner,
       notes: notes,
       bookmarks: bookmarks,
+      bookmarkIds: bookmarkIds,
       onEnqueued: () => nudges++,
     );
   });
@@ -199,7 +202,11 @@ void main() {
   });
 
   group('reads', () {
-    test('delegate to the inner repository untouched', () async {
+    test('delegate to the inner repository when nothing is queued', () async {
+      // `fetchBookmarks` reconciles against the outbox, but an empty outbox has
+      // nothing to reconcile — the server's answer passes straight through.
+      // The reconciliation itself is covered in
+      // test/features/sync/offline_bookmark_reconciliation_test.dart.
       expect(await repository.fetchNote('l1'), 'from server');
       expect(await repository.fetchBookmarks('l1'), isEmpty);
 
@@ -218,6 +225,7 @@ void main() {
         inner: inner,
         notes: notes,
         bookmarks: bookmarks,
+        bookmarkIds: bookmarkIds,
       );
 
       await bare.saveNote(lessonId: 'l1', body: 'body');

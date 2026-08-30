@@ -14,6 +14,7 @@ import { GetAdminDashboardHandler } from './application/queries/get-admin-dashbo
 import { GetAdminUserHandler } from './application/queries/get-admin-user.handler';
 import { ListAdminLibrariesHandler } from './application/queries/list-admin-libraries.handler';
 import { ListAdminScansHandler } from './application/queries/list-admin-scans.handler';
+import { ListAdminTranscriptionsHandler } from './application/queries/list-admin-transcriptions.handler';
 import { ListAdminUsersHandler } from './application/queries/list-admin-users.handler';
 import { CreateBackupHandler } from './application/commands/create-backup.handler';
 import { UpdateAdminUserHandler } from './application/commands/update-admin-user.handler';
@@ -30,6 +31,7 @@ import { UpdateAdminUserHandler } from './application/commands/update-admin-user
     GetAdminUserHandler,
     ListAdminLibrariesHandler,
     ListAdminScansHandler,
+    ListAdminTranscriptionsHandler,
     ListAdminUsersHandler,
     UpdateAdminUserHandler,
     CreateBackupHandler,

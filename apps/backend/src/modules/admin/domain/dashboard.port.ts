@@ -2,6 +2,7 @@ import type {
   AdminDashboardLatestScan,
   AdminLibraryListItem,
   AdminScanListItem,
+  AdminTranscriptionListItem,
   AdminUserListItem,
   AdminUserRole,
 } from '@app/api-client-ts';
@@ -23,6 +24,10 @@ export interface DashboardPort {
   getSnapshot(): Promise<DashboardSnapshot>;
   hasAnyUser(): Promise<boolean>;
   listRecentScans(limit: number, libraryId?: string): Promise<AdminScanListItem[]>;
+  listRecentTranscriptions(
+    limit: number,
+    libraryId?: string,
+  ): Promise<AdminTranscriptionListItem[]>;
   listAllLibrariesWithCounts(): Promise<AdminLibraryListItem[]>;
   listUsers(filter: { search?: string; limit: number }): Promise<AdminUserListItem[]>;
   findUserById(id: string): Promise<AdminUserListItem | null>;

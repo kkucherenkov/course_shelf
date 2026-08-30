@@ -1313,7 +1313,6 @@ export type HealthStatus = {
     uptimeSeconds: number;
     dependencies: {
         db: DependencyStatus;
-        redis: DependencyStatus;
         centrifugo: DependencyStatus;
     };
 };

@@ -117,7 +117,7 @@ jobs:
         run: pnpm design:build
 
       - name: Pull external images
-        run: docker compose -f docker/compose.yml -f docker/compose.ci.yml pull --quiet redis otel-lgtm
+        run: docker compose -f docker/compose.yml -f docker/compose.ci.yml pull --quiet otel-lgtm
 
       # Identical production-shaped stack to e2e.yml — the baselines must be
       # captured against the same `nuxt generate` build the nightly compares
@@ -127,7 +127,7 @@ jobs:
         run: |
           docker compose -f docker/compose.yml -f docker/compose.ci.yml \
             up -d --build --wait --wait-timeout 600 \
-            postgres redis centrifugo otel-lgtm backend web
+            postgres centrifugo otel-lgtm backend web
 
       - name: Regenerate baselines (inside the capture image)
         run: |

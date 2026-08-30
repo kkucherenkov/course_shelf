@@ -6,7 +6,7 @@
  * "no process.env outside common/config" rule — there is no DI container yet.
  *
  * Call initTelemetry() near the top of bootstrap(), before app.listen(), so
- * that the SDK instruments HTTP, Prisma, and Redis before the first request.
+ * that the SDK instruments HTTP and Prisma before the first request.
  * Wire shutdownTelemetry() into the SIGTERM handler so spans are flushed on
  * graceful shutdown.
  */

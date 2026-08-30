@@ -19,6 +19,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { COURSE_REPOSITORY } from '../../modules/catalog/domain/course/course.repository';
 import { LESSON_REPOSITORY } from '../../modules/catalog/domain/lesson/lesson.repository';
 import { LIBRARY_REPOSITORY } from '../../modules/catalog/domain/library/library.repository';
+import { TRANSCRIPT_REPOSITORY } from '../../modules/catalog/domain/transcription/transcript.repository';
 import { CatalogRepositoriesModule } from './catalog-repositories.module';
 
 // PrismaService is normally contributed by the app's @Global PrismaModule;
@@ -36,7 +37,12 @@ describe('CatalogRepositoriesModule', () => {
       imports: [PrismaStubModule, CatalogRepositoriesModule],
     }).compile();
 
-    for (const token of [LESSON_REPOSITORY, COURSE_REPOSITORY, LIBRARY_REPOSITORY]) {
+    for (const token of [
+      LESSON_REPOSITORY,
+      COURSE_REPOSITORY,
+      LIBRARY_REPOSITORY,
+      TRANSCRIPT_REPOSITORY,
+    ]) {
       expect(moduleRef.get(token)).toBeDefined();
     }
 

@@ -34,7 +34,6 @@ flowchart LR
 
   subgraph infra["local stack · docker/compose.yml"]
     postgres[("postgres 18<br/>:5432")]
-    redis[("redis 8<br/>:6379")]
     centrifugo["centrifugo v6<br/>:8000"]
     otel["grafana + otel-lgtm<br/>:3200"]
   end
@@ -51,7 +50,6 @@ flowchart LR
   web -.->|"ws subscribe"| centrifugo
   mobile -.->|"ws subscribe"| centrifugo
   backend --> postgres
-  backend --> redis
   backend -->|"publish"| centrifugo
   backend -->|"OTLP"| otel
 
@@ -73,7 +71,7 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 
 **Realtime via Centrifugo.** The backend publishes events to Centrifugo over its GRPC API. Web and mobile clients subscribe over websockets using short-lived tokens issued by `POST /api/v1/realtime/token`. Channel definitions are generated from the AsyncAPI spec.
 
-**Observable by default.** Sentry captures errors. OpenTelemetry ships traces and metrics to a local Grafana + LGTM stack at `:3200`. Health checks at `/api/v1/health` report the status of PostgreSQL, Redis, and Centrifugo.
+**Observable by default.** Sentry captures errors. OpenTelemetry ships traces and metrics to a local Grafana + LGTM stack at `:3200`. Health checks at `/api/v1/health` report the status of PostgreSQL and Centrifugo.
 
 **AI-agent-ready workflow.** The repository carries its own task stack (`specs/tasks/active.md`), project rules (`.claude/CLAUDE.md`), domain handbooks (`.claude/docs/*`), and a subagent roster. A fresh Claude Code session picks up the rules automatically and starts from the top of the task stack.
 
@@ -105,9 +103,8 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 | Service    | Version     | Port | Notes                                              |
 | ---------- | ----------- | ---- | -------------------------------------------------- |
 | postgres   | 18.1-alpine | 5432 | Init SQL in `docker/postgres/init.sql`             |
-| redis      | 8.6-alpine  | 6379 | Append-only persistence                            |
 | centrifugo | v6          | 8000 | Realtime websocket, config in `docker/centrifugo/` |
-| backend    | Dockerfile  | 3000 | Waits on postgres, redis, centrifugo               |
+| backend    | Dockerfile  | 3000 | Waits on postgres, centrifugo                      |
 | web        | Dockerfile  | 3001 | Nuxt dev server                                    |
 | nginx      | --          | 8080 | Reverse proxy: same-origin SPA + API               |
 | otel-lgtm  | Grafana     | 3200 | Local Grafana + LGTM observability stack           |
@@ -188,7 +185,7 @@ WHISPER_MODEL_PATH=/models/ggml-base.bin docker compose -f docker/compose.yml up
 
 ```sh
 curl http://localhost:8080/api/v1/health
-# {"status":"ok","dependencies":{"db":"ok","redis":"ok","centrifugo":"ok"}}
+# {"status":"ok","dependencies":{"db":"ok","centrifugo":"ok"}}
 ```
 
 Then open the app:

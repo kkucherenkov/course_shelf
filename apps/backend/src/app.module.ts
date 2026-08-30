@@ -21,7 +21,6 @@ import { NotificationsModule } from './common/notifications/notifications.module
 import { ConfigModule } from './common/config/config.module';
 import { ObservabilityModule } from './common/observability/observability.module';
 import { PrismaModule } from './common/prisma/prisma.module';
-import { RedisModule } from './common/redis/redis.module';
 import { AccessModule } from './modules/access/access.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { MeModule } from './modules/me/me.module';
@@ -61,7 +60,6 @@ const devOnlyModules: ImportableModule[] = [];
     ObservabilityModule,
     DataLoaderModule,
     PrismaModule,
-    RedisModule,
     CentrifugoModule,
     NotificationsModule,
     IntegrationsModule,

@@ -21,6 +21,7 @@ path and repeats what it needs to stand alone.
 - [5 — Check the mounts and permissions](#5--check-the-mounts-and-permissions)
 - [6 — Deploy in Dockge](#6--deploy-in-dockge)
 - [7 — First run](#7--first-run)
+- [Transcription (optional)](#transcription-optional)
 - [Every variable, in one table](#every-variable-in-one-table)
 - [Every mount and volume, in one table](#every-mount-and-volume-in-one-table)
 - [Updating to a new release](#updating-to-a-new-release)
@@ -42,8 +43,8 @@ You need:
   [the user guide](./user-guide.md#how-courseshelf-reads-a-folder) for the
   layout the scanner expects. It is mounted **read-only**; CourseShelf never
   writes to it.
-- **Roughly 2 GB of RAM free.** Six containers: Postgres, Redis, Centrifugo,
-  the API, the SPA, and an nginx proxy.
+- **Roughly 2 GB of RAM free.** Five containers: Postgres, Centrifugo, the
+  API, the SPA, and an nginx proxy.
 
 Find your Dockge stacks directory before anything else — everything below goes
 in a subfolder of it:
@@ -208,11 +209,19 @@ CENTRIFUGO_API_KEY=<openssl rand -hex 24>
 CENTRIFUGO_TOKEN_HMAC_SECRET=<openssl rand -hex 32>
 CENTRIFUGO_TOKEN_TTL_SECONDS=300
 CENTRIFUGO_LOG_LEVEL=info
+
+# ── Derived artefacts + transcription (see §7 below) ───────────────────────
+DERIVED_PATH=/volume1/docker/courseshelf/derived
+WHISPER_MODEL_DIR=/volume1/docker/courseshelf/models
+WHISPER_MODEL_PATH=
+WHISPER_THREADS=4
+WHISPER_LANGUAGE=auto
 ```
 
 Compose refuses to start if `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`,
-`CENTRIFUGO_API_KEY`, `CENTRIFUGO_TOKEN_HMAC_SECRET`, `PUBLIC_BASE_URL` or
-`COURSES_PATH` is missing — you get a named error, not a broken stack.
+`CENTRIFUGO_API_KEY`, `CENTRIFUGO_TOKEN_HMAC_SECRET`, `PUBLIC_BASE_URL`,
+`COURSES_PATH` or `DERIVED_PATH` is missing — you get a named error, not a
+broken stack.
 
 > **`AUTH_SELF_REGISTRATION=false` is a UI setting, not a lock.** It hides the
 > sign-up link and is reported to the apps; the API still accepts a direct
@@ -318,9 +327,9 @@ as above, and option B's `chmod o+rX` is not enough on its own.
 2. Open the stack. Check the **compose** and **.env** tabs show what you copied.
 3. Press **Deploy**.
 
-Dockge pulls six images (about 400 MB) and starts them in dependency order:
-Postgres, Redis and Centrifugo first, then the API once all three are healthy,
-then the SPA and the proxy.
+Dockge pulls five images and starts them in dependency order: Postgres and
+Centrifugo first, then the API once both are healthy, then the SPA and the
+proxy.
 
 **The first start takes a couple of minutes.** The API runs database migrations
 before it answers, and its healthcheck allows a 60-second grace period. Watch
@@ -330,11 +339,11 @@ Then confirm the whole chain end to end:
 
 ```sh
 curl -s http://192.168.1.50:8080/api/v1/health
-# {"status":"ok","dependencies":{"db":"ok","redis":"ok","centrifugo":"ok"}}
+# {"status":"ok","dependencies":{"db":"ok","centrifugo":"ok"}}
 ```
 
-Three `ok`s means the proxy reaches the API, the API reaches Postgres and
-Redis, and Centrifugo is alive. If any says otherwise, go to
+Two `ok`s means the proxy reaches the API, the API reaches Postgres, and
+Centrifugo is alive. If either says otherwise, go to
 [Troubleshooting](#troubleshooting).
 
 ---
@@ -358,9 +367,46 @@ Redis, and Centrifugo is alive. If any says otherwise, go to
 
 ---
 
+## Transcription (optional)
+
+The backend image ships a pinned `whisper-cli`, but it stays off until you
+supply a ggml model — the model is deliberately not baked into the image,
+so upgrading CourseShelf never re-downloads gigabytes you already have.
+
+1. Pick a model and download it to `$WHISPER_MODEL_DIR` on the NAS (over SSH,
+   or File Station):
+
+   ```sh
+   mkdir -p /volume1/docker/courseshelf/models
+   curl -L -o /volume1/docker/courseshelf/models/ggml-base.bin \
+     https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+   ```
+
+   `ggml-base.bin` is ~148 MB and the practical default for a NAS — `small`
+   (~488 MB) transcribes better but costs proportionally more CPU time;
+   `medium` (~1.5 GB) and `large` (~3.1 GB) are workstation-class models, not
+   NAS ones.
+
+2. Set `WHISPER_MODEL_PATH=/models/ggml-base.bin` in `.env` and redeploy
+   (**Pull** is not needed — no image changed, just the container's env).
+   With it empty, `GET /api/v1/health` still reports `ok` and the transcribe
+   endpoint refuses the request rather than starting a run that can only fail.
+3. Trigger a run from **Admin → Libraries → (library) → Transcribe**.
+
+**Be honest with yourself about NAS throughput.** This is CPU inference on
+whatever cores your NAS has spare, not a workstation GPU. A `base` model on a
+NAS-class CPU commonly runs several times slower than real time — a one-hour
+lesson can take well over an hour to transcribe, and a whole course is a
+background job measured in hours, not minutes. `WHISPER_THREADS` (default 4)
+is the only real dial: raise it if the NAS has idle cores to spare, lower it
+if transcription runs are starving Postgres and the API of CPU while everyone
+is trying to watch something.
+
+---
+
 ## Every variable, in one table
 
-Everything the stack reads. Only the six marked **required** have no usable
+Everything the stack reads. Only the seven marked **required** have no usable
 default.
 
 | Variable | Required | Default | What it does |
@@ -381,8 +427,13 @@ default.
 | `AUTH_EMAIL_VERIFICATION` | no | `false` | Adds a code step to sign-up. Needs SMTP, which this release does not configure — leave `false`. |
 | `CENTRIFUGO_TOKEN_TTL_SECONDS` | no | `300` | Realtime token lifetime. Clients re-issue automatically. |
 | `CENTRIFUGO_LOG_LEVEL` | no | `info` | Set `debug` when triaging realtime. |
+| `DERIVED_PATH` | **yes** | — | Host directory for everything CourseShelf generates from your media: whisper transcripts today, scan thumbnails too. Mounted **read-write** at `/data/derived` — deliberately not baked into the image, since it has to survive an image upgrade and outlive any one container. |
+| `WHISPER_MODEL_DIR` | no | `./models` | Host directory holding `.bin` ggml models, mounted read-only at `/models`. Created empty by Docker if it does not exist yet — harmless until you drop a model in. |
+| `WHISPER_MODEL_PATH` | no | *(empty)* | In-container path to the model to use, e.g. `/models/ggml-base.bin`. Empty means transcription is off: the run endpoint refuses rather than starting something that can only fail. See [§7 — Transcription](#transcription-optional) below. |
+| `WHISPER_THREADS` | no | `4` | CPU threads whisper.cpp uses. Match it to what the NAS actually has spare — see the throughput note below. |
+| `WHISPER_LANGUAGE` | no | `auto` | `-l` passed to whisper.cpp. `auto` detects per lesson; pin a code (e.g. `en`) if you know every course is one language — detection has a real cost on a slow CPU. |
 
-Set by `compose.yaml`, **not** by you: `DATABASE_URL`, `REDIS_URL`,
+Set by `compose.yaml`, **not** by you: `DATABASE_URL`,
 `CENTRIFUGO_API_URL`, `CORS_ORIGINS`, `APP_API_BASE_URL`, `APP_AUTH_BASE_URL`,
 `APP_CENTRIFUGO_URL`, `NODE_ENV`, `BETTER_AUTH_BASE_PATH`, and the Centrifugo
 channel namespaces. They are derived from the variables above or are part of
@@ -398,11 +449,11 @@ starts and does not work.
 | Your courses | `$COURSES_PATH` | `backend:/data/courses` | **read-only** | The library the scanner indexes. Never written to. |
 | Proxy config | `./nginx-prod.conf` | `proxy:/etc/nginx/conf.d/default.conf` | read-only | Folds the SPA, the API and the realtime socket onto one origin. Must exist as a **file** in the stack folder. |
 | Database | Docker volume `pgdata` | `postgres:/var/lib/postgresql` | read-write | **All your metadata, users, progress, notes and bookmarks.** The one thing worth backing up. |
-| Redis | Docker volume `redisdata` | `redis:/data` | read-write | Realtime broker state. Disposable. |
+| Derived artefacts | `$DERIVED_PATH` | `backend:/data/derived` | **read-write** | Whisper transcripts and, later, scan thumbnails — everything CourseShelf generates from your media. Separate from `$COURSES_PATH` because that mount is read-only. Disposable: a transcription run regenerates it. |
+| Whisper models | `$WHISPER_MODEL_DIR` | `backend:/models` | read-only | ggml model files. Inert until `WHISPER_MODEL_PATH` names one inside it. |
 
-The two named volumes are created by Docker as
-`courseshelf-release_pgdata` and `courseshelf-release_redisdata`. Find where
-they actually live on the NAS with:
+The one named volume is created by Docker as
+`courseshelf-release_pgdata`. Find where it actually lives on the NAS with:
 
 ```sh
 docker volume inspect courseshelf-release_pgdata --format '{{.Mountpoint}}'

@@ -851,6 +851,16 @@ export const listLessonBookmarks = <ThrowOnError extends boolean = false>(option
  * in listings for other users. The body carries `positionSeconds` and an
  * optional `label`.
  *
+ * **Retries.** Pass `idempotencyKey` to make a retried `POST` safe: a
+ * second call with the same `idempotencyKey` for the same lesson and
+ * caller returns the bookmark created by the first call — `200` instead
+ * of `201` — rather than creating a duplicate. The match is on
+ * `(lessonId, caller, idempotencyKey)`, not on payload equality: a
+ * differing `positionSeconds` or `label` on the retry is ignored, the
+ * already-stored bookmark wins. Omitting `idempotencyKey` disables the
+ * guarantee for that call — every request creates a new bookmark, as
+ * before.
+ *
  */
 export const createBookmark = <ThrowOnError extends boolean = false>(options: Options<CreateBookmarkData, ThrowOnError>) => (options.client ?? client).post<CreateBookmarkResponses, CreateBookmarkErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -1085,7 +1095,7 @@ export const getNote = <ThrowOnError extends boolean = false>(options: Options<G
  * Service health probe
  *
  * Reports combined health status of the service and its runtime
- * dependencies (database, cache, realtime bus).
+ * dependencies (database, realtime bus).
  *
  */
 export const getHealth = <ThrowOnError extends boolean = false>(options?: Options<GetHealthData, ThrowOnError>) => (options?.client ?? client).get<GetHealthResponses, GetHealthErrors, ThrowOnError>({ url: '/api/v1/health', ...options });

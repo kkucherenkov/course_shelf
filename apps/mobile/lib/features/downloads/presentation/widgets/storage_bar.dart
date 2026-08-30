@@ -5,12 +5,12 @@ import 'package:app_mobile/features/downloads/domain/device_storage.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
 import 'package:app_mobile/shared/format/byte_size.dart';
 
-/// The Downloads tab's storage header: a three-segment bar (CourseShelf /
-/// other apps / free) over a legend, per `docs/design/cs-mobile-downloads/`.
+/// The Downloads tab's storage header: a two-segment bar (CourseShelf / free)
+/// over a legend, per `docs/design/cs-mobile-downloads/`.
 ///
-/// Degrades deliberately. When the platform declined to report capacity —
-/// unsupported OS, a plugin failure, a test — [snapshot] is null or carries
-/// null totals, and the widget shows only what CourseShelf itself is holding
+/// Degrades deliberately. When the platform declined to report free space —
+/// unsupported OS, a plugin failure, a test — [snapshot] is null or carries a
+/// null reading, and the widget shows only what CourseShelf itself is holding
 /// rather than inventing a denominator.
 class StorageBar extends StatelessWidget {
   const StorageBar({required this.appUsedBytes, this.snapshot, super.key});
@@ -22,12 +22,12 @@ class StorageBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final StorageSnapshot? reading = snapshot;
-    final bool hasTotals = reading?.hasDeviceTotals ?? false;
+    final bool hasFree = reading?.hasDeviceFree ?? false;
 
-    final String caption = hasTotals
+    final String caption = hasFree
         ? context.t.downloads.storage.summary(
             used: formatDownloadBytes(appUsedBytes),
-            total: formatDownloadBytes(reading!.deviceFreeBytes!),
+            free: formatDownloadBytes(reading!.deviceFreeBytes!),
           )
         : context.t.downloads.storage.appOnly(
             used: formatDownloadBytes(appUsedBytes),
@@ -45,17 +45,12 @@ class StorageBar extends StatelessWidget {
         children: <Widget>[
           Text(caption, style: theme.textTheme.bodyMedium),
           const SizedBox(height: AppSpacing.s2),
-          _Bar(
-            appUsedBytes: appUsedBytes,
-            otherBytes: reading?.otherUsedBytes(appUsedBytes),
-            totalBytes: reading?.deviceTotalBytes,
-          ),
-          if (hasTotals) ...<Widget>[
+          _Bar(appUsedBytes: appUsedBytes, freeBytes: reading?.deviceFreeBytes),
+          if (hasFree) ...<Widget>[
             const SizedBox(height: AppSpacing.s2),
             _Legend(
               labels: <String>[
                 context.t.downloads.storage.legendApp,
-                context.t.downloads.storage.legendOther,
                 context.t.downloads.storage.legendFree,
               ],
             ),
@@ -67,26 +62,21 @@ class StorageBar extends StatelessWidget {
 }
 
 class _Bar extends StatelessWidget {
-  const _Bar({
-    required this.appUsedBytes,
-    required this.otherBytes,
-    required this.totalBytes,
-  });
+  const _Bar({required this.appUsedBytes, required this.freeBytes});
 
   final int appUsedBytes;
-  final int? otherBytes;
-  final int? totalBytes;
+  final int? freeBytes;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final int? total = totalBytes;
+    final int? free = freeBytes;
 
     // Without a denominator there is no proportion to draw. Show a track with
     // a fixed token slice rather than a bar whose fill would silently mean
     // nothing.
-    final bool proportional = total != null && total > 0;
-    final int other = otherBytes ?? 0;
+    final bool proportional = free != null && appUsedBytes + free > 0;
+    final int pool = proportional ? appUsedBytes + free : 0;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -95,20 +85,13 @@ class _Bar extends StatelessWidget {
         child: Row(
           children: <Widget>[
             Expanded(
-              flex: proportional ? appUsedBytes.clamp(0, total) + 1 : 1,
+              flex: proportional ? appUsedBytes.clamp(0, pool) + 1 : 1,
               child: ColoredBox(color: theme.colorScheme.primary),
             ),
-            if (proportional && other > 0)
-              Expanded(
-                flex: other,
-                child: ColoredBox(color: theme.colorScheme.outline),
-              ),
             Expanded(
               // The free remainder. Floored at 1 so a genuinely full device
               // still renders a track: Flutter throws if every flex is zero.
-              flex: proportional
-                  ? (total - appUsedBytes - other).clamp(1, total)
-                  : 12,
+              flex: proportional ? (pool - appUsedBytes).clamp(1, pool) : 12,
               child: ColoredBox(
                 color: theme.colorScheme.surfaceContainerHighest,
               ),
@@ -130,7 +113,6 @@ class _Legend extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final List<Color> colors = <Color>[
       theme.colorScheme.primary,
-      theme.colorScheme.outline,
       theme.colorScheme.surfaceContainerHighest,
     ];
 

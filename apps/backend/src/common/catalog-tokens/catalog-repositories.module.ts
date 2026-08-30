@@ -21,24 +21,30 @@ import { PrismaCourseRepository } from '../../modules/catalog/infra/prisma-cours
 import { PrismaExternalIdRepository } from '../../modules/catalog/infra/prisma-external-id.repository';
 import { PrismaLessonRepository } from '../../modules/catalog/infra/prisma-lesson.repository';
 import { PrismaLibraryRepository } from '../../modules/catalog/infra/prisma-library.repository';
+import { PrismaTranscriptRepository } from '../../modules/catalog/infra/prisma-transcript.repository';
 import { COURSE_REPOSITORY } from '../../modules/catalog/domain/course/course.repository';
 import { LESSON_REPOSITORY } from '../../modules/catalog/domain/lesson/lesson.repository';
 import { LIBRARY_REPOSITORY } from '../../modules/catalog/domain/library/library.repository';
 import { EXTERNAL_ID_REPOSITORY } from '../../modules/catalog/domain/shared-vo/external-id.repository';
+import { TRANSCRIPT_REPOSITORY } from '../../modules/catalog/domain/transcription/transcript.repository';
 
 // LIBRARY_REPOSITORY added for E08-F02-S01: LessonFileLocator resolves
 // lesson.videoPath against library.rootPath to obtain the absolute video path.
 //
+// TRANSCRIPT_REPOSITORY added for E25-F03-S03: LessonFileLocator.locateSubtitle
+// checks for a generated Transcript when no sidecar matches the language.
+//
 // EXTERNAL_ID_REPOSITORY is NOT exported: PrismaCourseRepository's
 // constructor requires it (enrichment, #208), so it must be constructible
-// here — but consumers of this module only get the three domain tokens.
+// here — but consumers of this module only get the four domain tokens below.
 @Module({
   providers: [
     { provide: LESSON_REPOSITORY, useClass: PrismaLessonRepository },
     { provide: COURSE_REPOSITORY, useClass: PrismaCourseRepository },
     { provide: LIBRARY_REPOSITORY, useClass: PrismaLibraryRepository },
     { provide: EXTERNAL_ID_REPOSITORY, useClass: PrismaExternalIdRepository },
+    { provide: TRANSCRIPT_REPOSITORY, useClass: PrismaTranscriptRepository },
   ],
-  exports: [LESSON_REPOSITORY, COURSE_REPOSITORY, LIBRARY_REPOSITORY],
+  exports: [LESSON_REPOSITORY, COURSE_REPOSITORY, LIBRARY_REPOSITORY, TRANSCRIPT_REPOSITORY],
 })
 export class CatalogRepositoriesModule {}

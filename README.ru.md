@@ -34,7 +34,6 @@ flowchart LR
 
   subgraph infra["local stack · docker/compose.yml"]
     postgres[("postgres 18<br/>:5432")]
-    redis[("redis 8<br/>:6379")]
     centrifugo["centrifugo v6<br/>:8000"]
     otel["grafana + otel-lgtm<br/>:3200"]
   end
@@ -51,7 +50,6 @@ flowchart LR
   web -.->|"ws subscribe"| centrifugo
   mobile -.->|"ws subscribe"| centrifugo
   backend --> postgres
-  backend --> redis
   backend -->|"publish"| centrifugo
   backend -->|"OTLP"| otel
 
@@ -73,7 +71,7 @@ flowchart LR
 
 **Работа в реальном времени через Centrifugo.** Бэкенд публикует события в Centrifugo через GRPC API. Веб- и мобильные клиенты подписываются через веб-сокеты, используя кратковременные токены, выдаваемые эндпоинтом `POST /api/v1/realtime/token`. Определения каналов генерируются из спецификации AsyncAPI.
 
-**Наблюдаемость по умолчанию.** Sentry фиксирует ошибки. OpenTelemetry отправляет трейсы и метрики в локальный стек Grafana + LGTM на порту `:3200`. Проверки состояния на `/api/v1/health` сообщают статус PostgreSQL, Redis и Centrifugo.
+**Наблюдаемость по умолчанию.** Sentry фиксирует ошибки. OpenTelemetry отправляет трейсы и метрики в локальный стек Grafana + LGTM на порту `:3200`. Проверки состояния на `/api/v1/health` сообщают статус PostgreSQL и Centrifugo.
 
 **Рабочий процесс для AI-агентов.** Репозиторий содержит собственный стек задач (`specs/tasks/active.md`), правила проекта (`.claude/CLAUDE.md`), предметные справочники (`.claude/docs/*`) и реестр подагентов. Новая сессия Claude Code автоматически подхватывает правила и начинает работу с вершины стека задач.
 
@@ -105,9 +103,8 @@ flowchart LR
 | Сервис     | Версия      | Порт | Примечания                                                        |
 | ---------- | ----------- | ---- | ----------------------------------------------------------------- |
 | postgres   | 18.1-alpine | 5432 | Инициализация SQL в `docker/postgres/init.sql`                    |
-| redis      | 8.6-alpine  | 6379 | Append-only persistence                                           |
 | centrifugo | v6          | 8000 | Веб-сокеты реального времени, конфигурация в `docker/centrifugo/` |
-| backend    | Dockerfile  | 3000 | Ожидает готовности postgres, redis, centrifugo                    |
+| backend    | Dockerfile  | 3000 | Ожидает готовности postgres, centrifugo                           |
 | web        | Dockerfile  | 3001 | Nuxt dev server                                                   |
 | nginx      | --          | 8080 | Обратный прокси: единый origin для SPA и API                      |
 | otel-lgtm  | Grafana     | 3200 | Локальный стек наблюдаемости Grafana + LGTM                       |
@@ -188,7 +185,7 @@ WHISPER_MODEL_PATH=/models/ggml-base.bin docker compose -f docker/compose.yml up
 
 ```sh
 curl http://localhost:8080/api/v1/health
-# {"status":"ok","dependencies":{"db":"ok","redis":"ok","centrifugo":"ok"}}
+# {"status":"ok","dependencies":{"db":"ok","centrifugo":"ok"}}
 ```
 
 Затем откройте приложение:

@@ -11,13 +11,18 @@ class _$CreateBookmarkRequest extends CreateBookmarkRequest {
   final int positionSeconds;
   @override
   final String? label;
+  @override
+  final String? idempotencyKey;
 
   factory _$CreateBookmarkRequest([
     void Function(CreateBookmarkRequestBuilder)? updates,
   ]) => (CreateBookmarkRequestBuilder()..update(updates))._build();
 
-  _$CreateBookmarkRequest._({required this.positionSeconds, this.label})
-    : super._();
+  _$CreateBookmarkRequest._({
+    required this.positionSeconds,
+    this.label,
+    this.idempotencyKey,
+  }) : super._();
   @override
   CreateBookmarkRequest rebuild(
     void Function(CreateBookmarkRequestBuilder) updates,
@@ -32,7 +37,8 @@ class _$CreateBookmarkRequest extends CreateBookmarkRequest {
     if (identical(other, this)) return true;
     return other is CreateBookmarkRequest &&
         positionSeconds == other.positionSeconds &&
-        label == other.label;
+        label == other.label &&
+        idempotencyKey == other.idempotencyKey;
   }
 
   @override
@@ -40,6 +46,7 @@ class _$CreateBookmarkRequest extends CreateBookmarkRequest {
     var _$hash = 0;
     _$hash = $jc(_$hash, positionSeconds.hashCode);
     _$hash = $jc(_$hash, label.hashCode);
+    _$hash = $jc(_$hash, idempotencyKey.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -48,7 +55,8 @@ class _$CreateBookmarkRequest extends CreateBookmarkRequest {
   String toString() {
     return (newBuiltValueToStringHelper(r'CreateBookmarkRequest')
           ..add('positionSeconds', positionSeconds)
-          ..add('label', label))
+          ..add('label', label)
+          ..add('idempotencyKey', idempotencyKey))
         .toString();
   }
 }
@@ -66,6 +74,11 @@ class CreateBookmarkRequestBuilder
   String? get label => _$this._label;
   set label(String? label) => _$this._label = label;
 
+  String? _idempotencyKey;
+  String? get idempotencyKey => _$this._idempotencyKey;
+  set idempotencyKey(String? idempotencyKey) =>
+      _$this._idempotencyKey = idempotencyKey;
+
   CreateBookmarkRequestBuilder() {
     CreateBookmarkRequest._defaults(this);
   }
@@ -75,6 +88,7 @@ class CreateBookmarkRequestBuilder
     if ($v != null) {
       _positionSeconds = $v.positionSeconds;
       _label = $v.label;
+      _idempotencyKey = $v.idempotencyKey;
       _$v = null;
     }
     return this;
@@ -103,6 +117,7 @@ class CreateBookmarkRequestBuilder
             'positionSeconds',
           ),
           label: label,
+          idempotencyKey: idempotencyKey,
         );
     replace(_$result);
     return _$result;

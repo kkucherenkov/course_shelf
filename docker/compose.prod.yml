@@ -8,7 +8,9 @@
 #   4. Browse to http://localhost:${PROXY_PORT:-8080}.
 #
 # Layout:
-#   - postgres / redis / centrifugo: stateful services, named volumes.
+#   - postgres / centrifugo: stateful services, named volumes (Postgres) or
+#     none (Centrifugo runs its default in-memory engine — a single instance
+#     needs neither presence nor history to survive a restart).
 #   - backend / web: built from this repo (multi-stage Dockerfiles).
 #   - proxy: nginx folding web + backend onto a single origin (PROXY_PORT).
 #
@@ -25,7 +27,6 @@ networks:
 
 volumes:
   pgdata:
-  redisdata:
 
 services:
   postgres:
@@ -41,19 +42,6 @@ services:
     healthcheck:
       test:
         ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-courseshelf} -d ${POSTGRES_DB:-courseshelf}"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-    networks: [cs-net]
-
-  redis:
-    image: redis:8.6-alpine
-    restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - redisdata:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -93,13 +81,11 @@ services:
     restart: unless-stopped
     depends_on:
       postgres: { condition: service_healthy }
-      redis: { condition: service_healthy }
       centrifugo: { condition: service_healthy }
     environment:
       NODE_ENV: production
       PORT: "3000"
       DATABASE_URL: "postgresql://${POSTGRES_USER:-courseshelf}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-courseshelf}"
-      REDIS_URL: "redis://redis:6379/0"
       BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required (openssl rand -hex 32)}"
       BETTER_AUTH_URL: "${PUBLIC_BASE_URL:?PUBLIC_BASE_URL is required (e.g. https://courseshelf.example.com)}"
       BETTER_AUTH_BASE_PATH: /api/v1/auth

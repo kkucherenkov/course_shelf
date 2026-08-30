@@ -6,7 +6,6 @@ networks:
 
 volumes:
   pgdata:
-  redisdata:
   otel_lgtm_data:
 
 services:
@@ -25,21 +24,6 @@ services:
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U course-shelf -d course-shelf"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-    networks: ["course-shelf-net"]
-
-  redis:
-    image: redis:8.6-alpine
-    restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "${CS_REDIS_PORT:-6379}:6379"
-    volumes:
-      - redisdata:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -91,14 +75,12 @@ services:
     restart: unless-stopped
     depends_on:
       postgres: { condition: service_healthy }
-      redis: { condition: service_healthy }
       centrifugo: { condition: service_healthy }
       otel-lgtm: { condition: service_started }
     environment:
       NODE_ENV: development
       PORT: "3000"
       DATABASE_URL: "postgresql://course-shelf:course-shelf@postgres:5432/course-shelf"
-      REDIS_URL: redis://redis:6379/0
       BETTER_AUTH_SECRET: dev-secret-change-me
       BETTER_AUTH_URL: http://localhost:${CS_BACKEND_PORT:-3000}
       BETTER_AUTH_BASE_PATH: /api/v1/auth

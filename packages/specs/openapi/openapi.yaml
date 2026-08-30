@@ -4028,6 +4028,16 @@ paths:
         Bookmarks are personal — even your own admin role does not surface them
         in listings for other users. The body carries `positionSeconds` and an
         optional `label`.
+
+        **Retries.** Pass `idempotencyKey` to make a retried `POST` safe: a
+        second call with the same `idempotencyKey` for the same lesson and
+        caller returns the bookmark created by the first call — `200` instead
+        of `201` — rather than creating a duplicate. The match is on
+        `(lessonId, caller, idempotencyKey)`, not on payload equality: a
+        differing `positionSeconds` or `label` on the retry is ignored, the
+        already-stored bookmark wins. Omitting `idempotencyKey` disables the
+        guarantee for that call — every request creates a new bookmark, as
+        before.
       tags: [Learning]
       security:
         - bearerAuth: []
@@ -4050,7 +4060,30 @@ paths:
                 value:
                   positionSeconds: 187
                   label: Aggregates intro
+              withIdempotencyKey:
+                summary: Retry-safe create
+                value:
+                  positionSeconds: 187
+                  label: Aggregates intro
+                  idempotencyKey: 8f14e45f-ceea-4b7a-9c2a-3e3d1f6d0a1b
       responses:
+        "200":
+          description: >-
+            Replay of an already-applied `idempotencyKey` — returns the
+            bookmark the first call created; nothing new was made.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookmarkDto"
+              examples:
+                replayed:
+                  value:
+                    id: clxvbkm0000000000000000001
+                    lessonId: clxvles0000000000000000001
+                    positionSeconds: 187
+                    label: Aggregates intro
+                    createdAt: "2026-04-25T14:00:00Z"
+                    updatedAt: "2026-04-25T14:00:00Z"
         "201":
           description: Bookmark created
           content:
@@ -5267,7 +5300,7 @@ paths:
       summary: Service health probe
       description: |
         Reports combined health status of the service and its runtime
-        dependencies (database, cache, realtime bus).
+        dependencies (database, realtime bus).
       tags: [system]
       responses:
         "200":
@@ -5284,7 +5317,6 @@ paths:
                     uptimeSeconds: 42
                     dependencies:
                       db: ok
-                      redis: ok
                       centrifugo: ok
         "503":
           description: One or more dependencies are degraded or down
@@ -5299,8 +5331,7 @@ paths:
                     version: 0.1.0
                     uptimeSeconds: 42
                     dependencies:
-                      db: ok
-                      redis: degraded
+                      db: degraded
                       centrifugo: ok
 
   /api/v1/ping:
@@ -7156,6 +7187,14 @@ components:
           minLength: 1
           maxLength: 200
           description: Optional free-form label. Trimmed server-side.
+        idempotencyKey:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: >-
+            Client-generated key (e.g. a local UUID) scoping retries of this
+            create to one bookmark. See the operation description for replay
+            semantics.
       example:
         positionSeconds: 187
         label: Aggregates intro
@@ -7941,11 +7980,9 @@ components:
           description: Seconds since the backend process started
         dependencies:
           type: object
-          required: [db, redis, centrifugo]
+          required: [db, centrifugo]
           properties:
             db:
-              $ref: "#/components/schemas/DependencyStatus"
-            redis:
               $ref: "#/components/schemas/DependencyStatus"
             centrifugo:
               $ref: "#/components/schemas/DependencyStatus"

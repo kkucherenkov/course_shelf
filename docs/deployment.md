@@ -37,19 +37,16 @@ table in `.claude/CLAUDE.md`.
               │ (nginx + SPA)  │   │ (NestJS + node) │             │
               └────────────────┘   └────────┬────────┘             │
                                             │                      │
-                                            ▼                      │
-                              ┌──────────────────────────┐         │
-                              │   $COURSES_PATH (RO)     │ ◀───────┘
-                              │   /data/courses inside   │   bind-mount
-                              │   the backend container  │
-                              └──────────────────────────┘
-                                            │
-                       ┌────────────────────┼─────────────────────┐
-                       │                    │                     │
-                       ▼                    ▼                     ▼
-                  postgres              redis              centrifugo
-              (named volume)       (named volume)
+                 ┌───────────────┬──────────┼──────────┬───────────┘
+                 │               │          │          │
+                 ▼               ▼          ▼          ▼
+            postgres        centrifugo  $COURSES_PATH  $DERIVED_PATH
+        (named volume)                  (RO bind mount) (RW bind mount)
 ```
+
+`$COURSES_PATH` is mounted read-only; `$DERIVED_PATH` is mounted read-write —
+see [Derived artefacts and transcription](#derived-artefacts-and-transcription)
+below for why they are two separate mounts with two different access modes.
 
 ## Path 1 — pull a tagged release
 
@@ -143,6 +140,7 @@ default for secrets. Generate them with `openssl rand -hex 32` unless noted.
 | `PUBLIC_BASE_URL`              | The single origin browsers hit (proxy URL).             |
 | `PROXY_PORT`                   | Host port for the nginx proxy (default `8080`).         |
 | `COURSES_PATH`                 | Host directory holding your course folders, mounted RO. |
+| `DERIVED_PATH`                 | Host directory for generated artefacts (whisper transcripts, scan thumbnails), mounted RW. |
 | `POSTGRES_PASSWORD`            | Postgres superuser password.                            |
 | `BETTER_AUTH_SECRET`           | Session signing key.                                    |
 | `CENTRIFUGO_API_KEY`           | Backend → Centrifugo publishing key.                    |
@@ -154,6 +152,10 @@ Optional toggles (sensible defaults shipped):
   When `false`, only existing admins can add users from the Users page.
 - `CENTRIFUGO_TOKEN_TTL_SECONDS=300`
 - `POSTGRES_DB=courseshelf` / `POSTGRES_USER=courseshelf`
+- `WHISPER_MODEL_DIR=../models` — host directory of ggml models, mounted RO.
+- `WHISPER_MODEL_PATH=` (empty) — set to switch transcription on. See
+  [Derived artefacts and transcription](#derived-artefacts-and-transcription).
+- `WHISPER_THREADS=4`, `WHISPER_LANGUAGE=auto`, `WHISPER_TIMEOUT_MS=21600000`
 
 ## Course data layout
 
@@ -179,6 +181,52 @@ rows, and the SPA picks them up.
 
 To swap content: stop the stack, change `COURSES_PATH`, restart. No
 image rebuild needed.
+
+## Derived artefacts and transcription
+
+`DERIVED_PATH` is a second, separate host directory — mounted **read-write**
+at `/data/derived` — for everything CourseShelf generates from your media:
+whisper transcripts today, scan thumbnails later. It is not part of
+`COURSES_PATH` on purpose: that mount is read-only, and generated artefacts
+have to survive both a container restart and an image upgrade, so they live
+on their own bind mount rather than inside the image or in an anonymous
+volume that `docker compose down -v` would happily delete.
+
+Transcription itself stays off until you point `WHISPER_MODEL_PATH` at a
+ggml model — the model is deliberately **not** baked into either backend
+image. Baking one in would add the model's full size to every pull for every
+deployment, including the majority that never transcribes anything; a model
+you already have on disk should not be re-downloaded on every upgrade either.
+
+Fetch a model into the host directory bound at `WHISPER_MODEL_DIR` (default
+`../models`, read-only in the container):
+
+```sh
+mkdir -p ../models
+curl -L -o ../models/ggml-base.bin \
+  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+```
+
+Real sizes, so you can budget disk and bandwidth before choosing:
+
+| Model | Size (approx.) | Use it when |
+| --- | --- | --- |
+| `ggml-base.bin` | ~148 MB | Default. Good accuracy-for-cost trade-off on modest CPUs. |
+| `ggml-small.bin` | ~488 MB | Better accuracy, proportionally more CPU time per lesson. |
+| `ggml-medium.bin` | ~1.5 GB | Workstation-class hardware, not a NAS. |
+| `ggml-large-v3.bin` | ~3.1 GB | Best accuracy; multi-hour runs are the norm even off a NAS. |
+
+Set `WHISPER_MODEL_PATH=/models/ggml-base.bin` (or whichever you downloaded)
+and redeploy — no rebuild, the env var alone flips `AppConfig.transcription
+.configured` to `true`. Left empty, `POST /libraries/{id}/transcriptions`
+refuses the request instead of starting a run that can only fail.
+
+`WHISPER_THREADS` (default 4) is the only dial that matters in practice: the
+run is sequential by design (one lesson at a time), so this is CPU cores per
+whisper invocation, not overall concurrency. This is CPU inference, not GPU —
+on modest hardware a lesson can take well over its own runtime to transcribe;
+see [`deploy-ugreen-nas-dockge.md`](./deploy-ugreen-nas-dockge.md#transcription-optional)
+for the NAS-specific throughput expectations.
 
 ## Per-deployment URL
 

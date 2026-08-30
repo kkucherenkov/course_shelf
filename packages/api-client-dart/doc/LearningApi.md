@@ -28,7 +28,7 @@ Method | HTTP request | Description
 
 Create a bookmark on a lesson
 
-Bookmarks are personal — even your own admin role does not surface them in listings for other users. The body carries `positionSeconds` and an optional `label`. 
+Bookmarks are personal — even your own admin role does not surface them in listings for other users. The body carries `positionSeconds` and an optional `label`.  **Retries.** Pass `idempotencyKey` to make a retried `POST` safe: a second call with the same `idempotencyKey` for the same lesson and caller returns the bookmark created by the first call — `200` instead of `201` — rather than creating a duplicate. The match is on `(lessonId, caller, idempotencyKey)`, not on payload equality: a differing `positionSeconds` or `label` on the retry is ignored, the already-stored bookmark wins. Omitting `idempotencyKey` disables the guarantee for that call — every request creates a new bookmark, as before. 
 
 ### Example
 ```dart

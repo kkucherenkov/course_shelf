@@ -843,6 +843,10 @@ export type CreateBookmarkRequest = {
      * Optional free-form label. Trimmed server-side.
      */
     label?: string;
+    /**
+     * Client-generated key (e.g. a local UUID) scoping retries of this create to one bookmark. See the operation description for replay semantics.
+     */
+    idempotencyKey?: string;
 };
 
 /**
@@ -1309,7 +1313,6 @@ export type HealthStatus = {
     uptimeSeconds: number;
     dependencies: {
         db: DependencyStatus;
-        redis: DependencyStatus;
         centrifugo: DependencyStatus;
     };
 };
@@ -3942,6 +3945,10 @@ export type CreateBookmarkErrors = {
 export type CreateBookmarkError = CreateBookmarkErrors[keyof CreateBookmarkErrors];
 
 export type CreateBookmarkResponses = {
+    /**
+     * Replay of an already-applied `idempotencyKey` — returns the bookmark the first call created; nothing new was made.
+     */
+    200: BookmarkDto;
     /**
      * Bookmark created
      */

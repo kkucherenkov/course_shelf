@@ -193,10 +193,6 @@ export class AppConfig {
     return this.requireString('DATABASE_URL');
   }
 
-  get redisUrl(): string {
-    return this.requireString('REDIS_URL');
-  }
-
   get betterAuth(): BetterAuthConfig {
     return {
       secret: this.requireString('BETTER_AUTH_SECRET'),

@@ -6,6 +6,7 @@ import { GetAdminDashboardQuery } from './application/queries/get-admin-dashboar
 import { GetAdminUserQuery } from './application/queries/get-admin-user.query';
 import { ListAdminLibrariesQuery } from './application/queries/list-admin-libraries.query';
 import { ListAdminScansQuery } from './application/queries/list-admin-scans.query';
+import { ListAdminTranscriptionsQuery } from './application/queries/list-admin-transcriptions.query';
 import { ListAdminUsersQuery } from './application/queries/list-admin-users.query';
 import { CreateBackupCommand } from './application/commands/create-backup.command';
 import { UpdateAdminUserCommand } from './application/commands/update-admin-user.command';
@@ -17,6 +18,7 @@ import type {
   BackupCreatedDto,
   AdminLibraryListDto,
   AdminScanListDto,
+  AdminTranscriptionListDto,
   AdminUpdateUserRequest,
   AdminUserListDto,
   AdminUserListItem,
@@ -45,6 +47,17 @@ export class AdminController {
     const parsed = limit === undefined ? undefined : Number.parseInt(limit, 10);
     return this.queryBus.execute<ListAdminScansQuery, AdminScanListDto>(
       new ListAdminScansQuery(parsed, libraryId),
+    );
+  }
+
+  @Get('transcriptions')
+  listTranscriptions(
+    @Query('limit') limit?: string,
+    @Query('libraryId') libraryId?: string,
+  ): Promise<AdminTranscriptionListDto> {
+    const parsed = limit === undefined ? undefined : Number.parseInt(limit, 10);
+    return this.queryBus.execute<ListAdminTranscriptionsQuery, AdminTranscriptionListDto>(
+      new ListAdminTranscriptionsQuery(parsed, libraryId),
     );
   }
 

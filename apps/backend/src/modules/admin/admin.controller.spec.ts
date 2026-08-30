@@ -5,6 +5,7 @@ import { GetAdminDashboardQuery } from './application/queries/get-admin-dashboar
 import { GetAdminUserQuery } from './application/queries/get-admin-user.query';
 import { ListAdminLibrariesQuery } from './application/queries/list-admin-libraries.query';
 import { ListAdminScansQuery } from './application/queries/list-admin-scans.query';
+import { ListAdminTranscriptionsQuery } from './application/queries/list-admin-transcriptions.query';
 import { ListAdminUsersQuery } from './application/queries/list-admin-users.query';
 import { CreateBackupCommand } from './application/commands/create-backup.command';
 import { UpdateAdminUserCommand } from './application/commands/update-admin-user.command';
@@ -114,6 +115,57 @@ describe('AdminController', () => {
       const query = (queryBus.execute as ReturnType<typeof vi.fn>).mock
         .calls[0]?.[0] as ListAdminScansQuery;
       expect(query.libraryId).toBeUndefined();
+    });
+  });
+
+  describe('GET /admin/transcriptions', () => {
+    it('dispatches ListAdminTranscriptionsQuery with parsed limit', async () => {
+      const queryBus = makeQueryBus();
+      const controller = makeController(queryBus);
+
+      await controller.listTranscriptions('5');
+
+      expect(queryBus.execute).toHaveBeenCalledOnce();
+      const query = (queryBus.execute as ReturnType<typeof vi.fn>).mock
+        .calls[0]?.[0] as ListAdminTranscriptionsQuery;
+      expect(query).toBeInstanceOf(ListAdminTranscriptionsQuery);
+      expect(query.limit).toBe(5);
+    });
+
+    it('dispatches ListAdminTranscriptionsQuery with undefined when no limit is provided', async () => {
+      const queryBus = makeQueryBus();
+      const controller = makeController(queryBus);
+
+      await controller.listTranscriptions(undefined);
+
+      const query = (queryBus.execute as ReturnType<typeof vi.fn>).mock
+        .calls[0]?.[0] as ListAdminTranscriptionsQuery;
+      expect(query).toBeInstanceOf(ListAdminTranscriptionsQuery);
+      expect(query.limit).toBeUndefined();
+    });
+
+    it('threads libraryId into ListAdminTranscriptionsQuery', async () => {
+      const queryBus = makeQueryBus();
+      const controller = makeController(queryBus);
+
+      await controller.listTranscriptions('10', 'lib-99');
+
+      const query = (queryBus.execute as ReturnType<typeof vi.fn>).mock
+        .calls[0]?.[0] as ListAdminTranscriptionsQuery;
+      expect(query).toBeInstanceOf(ListAdminTranscriptionsQuery);
+      expect(query.libraryId).toBe('lib-99');
+    });
+
+    it('returns the value resolved by the QueryBus', async () => {
+      const expectedDto = { items: [] };
+      const queryBus = {
+        execute: vi.fn().mockResolvedValue(expectedDto),
+      } as unknown as QueryBus;
+      const controller = makeController(queryBus);
+
+      const result = await controller.listTranscriptions('10');
+
+      expect(result).toBe(expectedDto);
     });
   });
 

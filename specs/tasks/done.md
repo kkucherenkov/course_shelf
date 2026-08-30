@@ -2,7 +2,11 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
-## T-2026-08-30-001 — browser-verify #302 player fixes + #307 browse/backups
+## T-2026-08-30-019 — browser-verify #302 player fixes + #307 browse/backups
+
+## T-2026-08-30-018 — transcript delivery, admin transcription list, docs, drop Redis
+
+## T-2026-08-30-017 — E26-F01-S03: transcript tab in the player sidebar
 
 - Created: 2026-08-30
 - Completed: 2026-08-30
@@ -28,6 +32,100 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - **Backend bug found, filed, not fixed (out of lane):** [#317](https://github.com/kkucherenkov/course_shelf/issues/317) — `PrismaLessonRepository.save()` resolves without throwing but the row is not durably committed (confirmed via `psql` from a separate connection); course/section persistence is unaffected. Worked around for this pass by seeding `lesson`/`subtitle` rows via SQL after a real scan.
   - **Backend/infra gap found, filed, not fixed (out of lane):** [#318](https://github.com/kkucherenkov/course_shelf/issues/318) — `apps/backend/Dockerfile.dev` has no `pg_dump`, so `/admin/backups` can only reach the error state on a fresh dev checkout; success/download/expiry unverifiable without a manual workaround.
   - **Infra fix (small, in `apps/web`/`packages/ui` Dockerfiles):** neither `apps/web/Dockerfile.dev` nor `packages/ui/Dockerfile.dev` ran `pnpm design:build` before starting their dev server — a fresh checkout 500s on `tokens.generated.css` not existing. Added the missing step to both.
+
+- Result: https://github.com/kkucherenkov/course_shelf/pull/314
+- Spec: [E25-F03-S03](../../docs/roadmap/tasks/E25-F03-S03.md), [E25-F04-S03](../../docs/roadmap/tasks/E25-F04-S03.md), #309, #290
+- Goal: a generated transcript plays as a subtitle track with no new endpoint; `GET /admin/transcriptions` actually exists behind its spec; transcription deployment is documented; Redis is gone (dead dependency — health-check-only `ping()`, nothing else ever used it).
+- Acceptance:
+  - `locateSubtitle` falls back to a generated `Transcript` when no sidecar matches the language; sidecar still wins when both exist
+  - `LessonDto.subtitles[]` unions sidecars and generated tracks, `generated: true` on the latter
+  - `GET /api/v1/admin/transcriptions` returns `AdminTranscriptionListDto`, mirroring `list-admin-scans`
+  - README\*, deployment.md, deploy-ugreen-nas-dockge.md, user-guide.md, architecture.md document DERIVED_PATH/WHISPER\_\* and no longer mention Redis
+  - Redis removed from every compose file, AppConfig, .env.example, ioredis
+- Spec diff: openapi.yaml — `HealthStatus.dependencies` drops `redis` (the only real diff; `/admin/transcriptions` + Admin\*Transcription\* schemas already landed in #217/#256)
+- Codegen impact: yes — health types only, landed in its own commit
+- Design impact: none
+- Tests: locator spec (generated served, sidecar precedence, derived-root traversal guard), get-lesson handler spec (flag + one-of-each lesson), list-admin-transcriptions handler/adapter/controller specs, get-health handler spec (drop redis) — 1725 backend tests green
+- Sub-steps:
+  - [x] Redis removal: backend code, all compose files, .env.example, docs
+  - [x] Docs: README\*, deployment.md, deploy-ugreen-nas-dockge.md, user-guide.md, architecture.md
+  - [x] Locator fallback + LessonDto union (#219)
+  - [x] Admin transcription list endpoint (#309)
+  - [x] Gates: test, lint, format, typecheck, spec:validate
+- Status: shipped
+- Blockers: — (docker stack boot not verified end-to-end — no `docker` binary in this sandbox; compose edits reviewed by hand)
+
+- Result: https://github.com/kkucherenkov/course_shelf/pull/310
+- Spec: [docs/roadmap/tasks/E26-F01-S03.md](../../docs/roadmap/tasks/E26-F01-S03.md) (#225, closes epic E26 — #247)
+- Goal: read along with the lesson, find a line, jump to it — fifth sidebar tab
+  consuming the `useTranscriptCues` composable from E26-F01-S02.
+- Acceptance:
+  - fifth tab beside sections / notes / bookmarks / materials
+  - the cue under the playhead is highlighted and `aria-current`
+  - clicking a cue emits the sidebar's `seek` event, in seconds
+  - a filter box narrows the visible cues, case-insensitively, in-memory
+  - empty and no-match states are distinct and translated
+- Spec diff: none
+- Codegen impact: no
+- Design impact: not promoted into `@app/ui` — single-use scrollable list,
+  same call as `PlayerNotesTab`
+- Tests: `PlayerTranscriptTab.spec.ts` — one row per cue, active marking,
+  `seek` payload in seconds, formatted timestamps, filtering, no-match, and
+  the empty state hiding the filter box
+
+## T-2026-08-30-016 — E25-F04-S02 transcription card in admin library screen
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude (frontend-engineer, lane L3)
+- Branch: `kkucherenkov/e25-admin-transcription-card`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/311
+- Spec: [docs/roadmap/tasks/E25-F04-S02.md](../../docs/roadmap/tasks/E25-F04-S02.md) (#221)
+- Goal: idle/running/terminal transcription card on `admin/libraries/[id].vue` — Start
+  (with force checkbox), Cancel, live counters + error list over the Centrifugo channel
+  the scan card already subscribes to.
+- Spec diff: none — `@app/api-client-ts` already had the three transcription routes.
+- Codegen impact: no
+- Sub-steps:
+  - [x] `AdminTranscriptionCard.vue` + spec
+  - [x] `useTranscriptionProgress` composable (new file) + spec
+  - [x] Page wiring on `admin/libraries/[id].vue`
+  - [x] Locale keys (`admin.transcription.*`) in `en` and `ru`
+- Status: done
+
+## T-2026-08-30-001 — scan sidecars: subtitle ingest + thumbnail derived-path + orphan cleanup
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude (lane, worktree `e27-scan-sidecars`)
+- Branch: `kkucherenkov/e27-scan-sidecars`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/315
+- Spec: [docs/roadmap/tasks/E27-F01-S01.md](../../docs/roadmap/tasks/E27-F01-S01.md) (#227), [docs/roadmap/tasks/E25-F04-S01.md](../../docs/roadmap/tasks/E25-F04-S01.md) (#220, duplicate report #282)
+- Goal: scan parses `.srt`/`.vtt` sidecars into `Transcript(origin: sidecar)` + cues (re-parse only on
+  changed signature); scan thumbnails move under `<derivedPath>/<libraryId>/…` instead of next to the
+  video (COURSES_PATH is `:ro` in prod); a lesson that vanishes from a scan gets its Transcript rows
+  deleted and the generated file best-effort unlinked.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] `domain/scan/scan.ts` — widen `ScannedSubtitle` with `mtime`/`size`
+  - [x] `domain/transcription/transcript.repository.ts` — add `findExisting`, `replaceSidecar`, `deleteForLesson`
+  - [x] `domain/transcription/derived-path.ts` — add `derivedThumbnailPath`
+  - [x] `infra/prisma-transcript.repository.ts` — implement the three new methods
+  - [x] `application/scan/sidecar-transcript-ingester.ts` — new pure ingest function
+  - [x] `run-scan.handler.ts` — wire sidecar ingest (existing + newly-created lessons), thumbnail
+        derived-path, orphan cleanup
+  - [x] specs for all of the above
+- Notes:
+  - Sidecar ingest for a lesson whose _course_ already existed before this scan required loading that
+    library's existing lessons up front (`lessonRepo.findByCourse` per existing course) keyed by
+    `videoPath`, since v1's "skip on duplicate slug" otherwise makes existing lessons unreachable on a
+    repeat scan — that same map also drives orphan detection (a known videoPath the walk didn't see this
+    pass has vanished).
+  - `run-scan.handler.ts` gained a real `mkdir` call for the thumbnail's parent dir (mirroring
+    `run-transcription.handler.ts`'s existing pattern) — its spec now needs
+    `vi.mock('node:fs/promises', ...)` or every thumbnail-writing test hangs on real disk I/O.
+  - Closed tuxedo #35 (duplicate of #220/#282).
 
 ## T-2026-08-30-012 — run whisper transcription over a library
 

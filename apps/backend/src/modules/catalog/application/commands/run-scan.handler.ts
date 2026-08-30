@@ -28,6 +28,7 @@
 import { Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { nanoid } from 'nanoid';
+import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { AppConfig } from '../../../../common/config/app-config';
@@ -50,8 +51,11 @@ import { stemMatch } from '../../domain/scan/stem-match';
 import { Scan } from '../../domain/scan/scan';
 import { ScanAlreadyRunningError } from '../../domain/scan/scan.errors';
 import { SCAN_REPOSITORY } from '../../domain/scan/scan.repository';
+import { derivedThumbnailPath } from '../../domain/transcription/derived-path';
+import { TRANSCRIPT_REPOSITORY } from '../../domain/transcription/transcript.repository';
 
 import { MetadataLinker } from '../scan/metadata-linker';
+import { ingestSidecarTranscripts } from '../scan/sidecar-transcript-ingester';
 import { isCourseLevel } from '../../domain/course/course';
 import { RunScanCommand } from './run-scan.command';
 
@@ -61,6 +65,7 @@ import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { LibraryRepository } from '../../domain/library/library.repository';
 import type { FsAdapter } from '../../domain/scan/fs-adapter';
 import type { ScanRepository } from '../../domain/scan/scan.repository';
+import type { TranscriptRepository } from '../../domain/transcription/transcript.repository';
 import type { NormalisedCourseJsonV2 } from '../../domain/scan/course-json.schema';
 import type {
   DiscoveredFileEntry,
@@ -107,6 +112,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
     @Inject(LESSON_REPOSITORY) private readonly lessonRepo: LessonRepository,
     @Inject(FS_ADAPTER) private readonly fs: FsAdapter,
     @Inject(FFMPEG_ADAPTER) private readonly ffmpeg: FfmpegAdapter,
+    @Inject(TRANSCRIPT_REPOSITORY) private readonly transcripts: TranscriptRepository,
     private readonly appConfig: AppConfig,
     private readonly centrifugo: CentrifugoService,
     private readonly linker: MetadataLinker,
@@ -230,6 +236,23 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       const existingCourses = await this.courseRepo.findManyByLibrary(libraryId);
       const existingSlugSet = new Set(existingCourses.map((c) => c.slug));
 
+      // Every lesson already known for this library, keyed by its stored
+      // videoPath — the same absolute-path string the walk produces, since
+      // that is what Lesson.create() was given when the row was first written.
+      // Two uses (E27-F01-S01, E25-F04-S01):
+      //   - a video whose course is already known still gets its sidecars
+      //     re-checked every scan (v1 otherwise never revisits it at all);
+      //   - a video that WAS in this map but is not in `seenVideoPaths` once
+      //     the walk finishes has vanished from disk — its lesson's Transcript
+      //     rows get cleaned up below.
+      const existingLessonByVideoPath = new Map<string, Lesson>();
+      for (const course of existingCourses) {
+        for (const lesson of await this.lessonRepo.findByCourse(course.id)) {
+          existingLessonByVideoPath.set(lesson.videoPath, lesson);
+        }
+      }
+      const seenVideoPaths = new Set<string>();
+
       // Process each course folder.
       for (const [folderName, files] of courseEntries) {
         const courseFolder = `${rootPath}/${folderName}`;
@@ -273,7 +296,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           {
             video: { path: string; mtime: Date; size: number } | undefined;
             materials: { path: string; size: number }[];
-            subtitles: { path: string; language: string }[];
+            subtitles: { path: string; language: string; mtime: Date; size: number }[];
             unsupported: { path: string; ext: string }[];
           }
         >();
@@ -313,7 +336,12 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               break;
             }
             case 'subtitle': {
-              group.subtitles.push({ path: file.path, language: languageOf(fileBasename) });
+              group.subtitles.push({
+                path: file.path,
+                language: languageOf(fileBasename),
+                mtime: file.mtime,
+                size: file.size,
+              });
               break;
             }
             case 'ignored': {
@@ -377,6 +405,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           if (group.video) {
             const videoFile = group.video;
             lessonFiles.push(videoFile.path);
+            seenVideoPaths.add(videoFile.path);
 
             // Incremental comparison for the video file only.
             const prev = prevFileMap.get(videoFile.path);
@@ -405,7 +434,31 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
             const subtitles: ScannedSubtitle[] = group.subtitles.map((s) => ({
               path: s.path,
               language: s.language,
+              mtime: s.mtime,
+              size: s.size,
             }));
+
+            // -----------------------------------------------------------------------
+            // Sidecar ingest (E27-F01-S01) for a lesson that already exists.
+            //
+            // A brand-new lesson (course not yet in `existingLessonByVideoPath`) is
+            // ingested after it is persisted, further down — there is no lessonId
+            // yet at this point in the walk. An existing lesson's course may or may
+            // not itself get touched below (v1 skips re-persisting a known course),
+            // but its sidecars are re-checked every scan regardless: this is the
+            // only place that happens, so it does not wait on that decision.
+            // -----------------------------------------------------------------------
+            const existingLesson = existingLessonByVideoPath.get(videoFile.path);
+            if (existingLesson) {
+              const sidecarErrors = await ingestSidecarTranscripts({
+                fs: this.fs,
+                transcripts: this.transcripts,
+                lessonId: existingLesson.id,
+                rootPath,
+                subtitles,
+              });
+              for (const sidecarError of sidecarErrors) scan.recordError(sidecarError);
+            }
 
             // -----------------------------------------------------------------------
             // ffprobe + thumbnail extraction (E06-F02-S02)
@@ -414,7 +467,9 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
             // ScanError with code 'ffmpeg-probe-failed' and continue — no metadata,
             // no thumbnail attempt for this lesson.
             //
-            // On probe success: write a 320×180 JPEG poster next to the source file.
+            // On probe success: write a 320×180 JPEG poster under the derived
+            // volume (E25-F04-S01) — never next to the video, which fails on
+            // every production install because COURSES_PATH is mounted `:ro`.
             // The thumbnail write is idempotent: skip if the existing thumbnail's
             // mtime is newer than the video's mtime (meaning it was already generated
             // for the current version of the video).
@@ -436,26 +491,26 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
             }
 
             if (metadata !== undefined) {
-              // Derive thumbnail path: <stem without final ext>.thumb.jpg
-              const videoExt = path.extname(videoFile.path);
-              const stemWithoutExt = videoFile.path.slice(
-                0,
-                videoFile.path.length - videoExt.length,
-              );
-              const thumbPath = `${stemWithoutExt}.thumb.jpg`;
+              try {
+                const relativeVideoPath = path.relative(rootPath, videoFile.path);
+                const thumbPath = derivedThumbnailPath({
+                  derivedRoot: this.appConfig.derivedPath,
+                  libraryId,
+                  videoPath: relativeVideoPath,
+                });
 
-              // Idempotency: skip write if the thumbnail is newer than the
-              // source video. videoFile.mtime is already known from the walk,
-              // so we only need to stat the thumbnail. Routed through the
-              // FsAdapter port (returns null on ENOENT) so unit tests stay
-              // off the real filesystem.
-              const thumbMtime = await this.fs.statMtime(thumbPath);
-              const shouldWriteThumb =
-                thumbMtime === null || thumbMtime.getTime() <= videoFile.mtime.getTime();
+                // Idempotency: skip write if the thumbnail is newer than the
+                // source video. videoFile.mtime is already known from the walk,
+                // so we only need to stat the thumbnail. Routed through the
+                // FsAdapter port (returns null on ENOENT) so unit tests stay
+                // off the real filesystem.
+                const thumbMtime = await this.fs.statMtime(thumbPath);
+                const shouldWriteThumb =
+                  thumbMtime === null || thumbMtime.getTime() <= videoFile.mtime.getTime();
 
-              if (shouldWriteThumb) {
-                const atSecond = Math.max(metadata.durationSeconds / 4, 1);
-                try {
+                if (shouldWriteThumb) {
+                  const atSecond = Math.max(metadata.durationSeconds / 4, 1);
+                  await mkdir(path.dirname(thumbPath), { recursive: true });
                   await this.ffmpeg.writeThumbnail({
                     videoAbsolutePath: videoFile.path,
                     outAbsolutePath: thumbPath,
@@ -464,13 +519,13 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
                     heightPx: 180,
                     jpegQuality: this.appConfig.thumbnailJpegQuality,
                   });
-                } catch (error) {
-                  scan.recordError({
-                    path: path.relative(rootPath, videoFile.path),
-                    message: error instanceof Error ? error.message : String(error),
-                    code: 'ffmpeg-thumbnail-failed',
-                  });
                 }
+              } catch (error) {
+                scan.recordError({
+                  path: path.relative(rootPath, videoFile.path),
+                  message: error instanceof Error ? error.message : String(error),
+                  code: 'ffmpeg-thumbnail-failed',
+                });
               }
             }
 
@@ -651,6 +706,18 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
                 }
 
                 await this.lessonRepo.save(lesson);
+
+                // Sidecar ingest (E27-F01-S01) for the lesson just created. A
+                // pre-existing lesson's sidecars are handled earlier in the walk,
+                // where its id was already known — see `existingLessonByVideoPath`.
+                const sidecarErrors = await ingestSidecarTranscripts({
+                  fs: this.fs,
+                  transcripts: this.transcripts,
+                  lessonId: lesson.id,
+                  rootPath,
+                  subtitles: entry.subtitles,
+                });
+                for (const sidecarError of sidecarErrors) scan.recordError(sidecarError);
               } catch (error) {
                 scan.recordError({
                   path: path.relative(rootPath, entry.videoPath),
@@ -731,6 +798,27 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
         // event per scan (even for single-course libraries).
         if (Date.now() - lastProgressPublishedAt >= 1000) {
           publishProgress();
+        }
+      }
+
+      // -----------------------------------------------------------------------
+      // Orphan cleanup (E25-F04-S01): a lesson this library used to have but
+      // whose video the walk did not encounter this time has vanished from
+      // disk. Its Transcript rows (both origins) are deleted and each row's
+      // generated file is unlinked best-effort — the Lesson row itself is left
+      // alone, matching the v1 "skip on duplicate slug" idempotency the rest of
+      // this walk already lives with.
+      // -----------------------------------------------------------------------
+      for (const [videoPath, lesson] of existingLessonByVideoPath) {
+        if (seenVideoPaths.has(videoPath)) continue;
+        try {
+          await this.transcripts.deleteForLesson(lesson.id);
+        } catch (error) {
+          scan.recordError({
+            path: path.relative(rootPath, videoPath),
+            message: error instanceof Error ? error.message : String(error),
+            code: 'transcript-cleanup-failed',
+          });
         }
       }
 

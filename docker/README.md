@@ -73,16 +73,15 @@ from the environment by `AppConfig`.
 
 ## Services
 
-| Service    | Image                         | Default port | Variable             | Notes                                                                |
-| ---------- | ----------------------------- | ------------ | -------------------- | -------------------------------------------------------------------- |
-| postgres   | `postgres:18.1-alpine`        | 5432         | `CS_POSTGRES_PORT`   | PGDATA is `/var/lib/postgresql/18/docker` (Postgres 18 layout)       |
-| redis      | `redis:8.6-alpine`            | 6379         | `CS_REDIS_PORT`      | `--appendonly yes`                                                   |
-| centrifugo | `centrifugo/centrifugo:v6`    | 8000         | `CS_CENTRIFUGO_PORT` | HMAC secret + API key from `centrifugo/config.json`                  |
-| otel-lgtm  | `grafana/otel-lgtm:0.8.1`     | 3200         | `CS_GRAFANA_PORT`    | Grafana UI; OTLP gRPC `CS_OTLP_GRPC_PORT` / HTTP `CS_OTLP_HTTP_PORT` |
-| backend    | `apps/backend/Dockerfile.dev` | 3000         | `CS_BACKEND_PORT`    | Mounts repo, runs `nest start --watch`                               |
-| web        | `apps/web/Dockerfile.dev`     | 3001         | `CS_WEB_PORT`        | Mounts repo, runs `nuxt dev`                                         |
-| proxy      | `nginx:1.27-alpine`           | 8080         | `CS_PROXY_PORT`      | Single origin for the browser — web + backend behind one host        |
-| storybook  | `packages/ui/Dockerfile.dev`  | 6006         | `CS_STORYBOOK_PORT`  | Mounts repo, runs `storybook dev --host 0.0.0.0`                     |
+| Service    | Image                         | Default port | Variable             | Notes                                                                 |
+| ---------- | ----------------------------- | ------------ | -------------------- | --------------------------------------------------------------------- |
+| postgres   | `postgres:18.1-alpine`        | 5432         | `CS_POSTGRES_PORT`   | PGDATA is `/var/lib/postgresql/18/docker` (Postgres 18 layout)        |
+| centrifugo | `centrifugo/centrifugo:v6`    | 8000         | `CS_CENTRIFUGO_PORT` | HMAC secret + API key from `centrifugo/config.json`, in-memory engine |
+| otel-lgtm  | `grafana/otel-lgtm:0.8.1`     | 3200         | `CS_GRAFANA_PORT`    | Grafana UI; OTLP gRPC `CS_OTLP_GRPC_PORT` / HTTP `CS_OTLP_HTTP_PORT`  |
+| backend    | `apps/backend/Dockerfile.dev` | 3000         | `CS_BACKEND_PORT`    | Mounts repo, runs `nest start --watch`                                |
+| web        | `apps/web/Dockerfile.dev`     | 3001         | `CS_WEB_PORT`        | Mounts repo, runs `nuxt dev`                                          |
+| proxy      | `nginx:1.27-alpine`           | 8080         | `CS_PROXY_PORT`      | Single origin for the browser — web + backend behind one host         |
+| storybook  | `packages/ui/Dockerfile.dev`  | 6006         | `CS_STORYBOOK_PORT`  | Mounts repo, runs `storybook dev --host 0.0.0.0`                      |
 
 After `pnpm dev:up`, point your browser at:
 

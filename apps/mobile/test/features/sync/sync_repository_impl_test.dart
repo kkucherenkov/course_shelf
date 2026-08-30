@@ -262,6 +262,7 @@ void main() {
       expect(adapter.lastRequest.data, <String, dynamic>{
         'positionSeconds': 42,
         'label': 'chapter two',
+        'idempotencyKey': 'loc-1',
       });
       expect(outcome.sent, 1);
       expect(await bookmarks.pending(), isEmpty);
@@ -278,6 +279,25 @@ void main() {
         isFalse,
       );
     });
+
+    test(
+      'the create POST carries the outbox row localId as idempotencyKey (#285)',
+      () async {
+        // A crash after the server accepts the create but before this drain
+        // pass records the id and clears the row means the next drain retries
+        // this exact call. The localId is stable across that retry — it is
+        // the outbox's primary key — so it is what makes the retry return the
+        // same bookmark instead of creating a second, orphaned one.
+        await queueBookmark(localId: 'loc-retry-key', op: OutboxOp.create);
+
+        await repository.drain();
+
+        expect(
+          (adapter.lastRequest.data as Map<String, dynamic>)['idempotencyKey'],
+          'loc-retry-key',
+        );
+      },
+    );
 
     test('null serverId + delete drops the row without a request', () async {
       // Created and deleted while offline: the server never saw it.

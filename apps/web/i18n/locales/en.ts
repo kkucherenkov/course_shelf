@@ -196,11 +196,17 @@ export default {
       tabNotes: 'Notes',
       tabBookmarks: 'Bookmarks',
       tabMaterials: 'Materials',
+      tabTranscript: 'Transcript',
       bookmarksEmptyTitle: 'No bookmarks yet',
       bookmarksEmptyBody: 'Add a bookmark from the player to mark a moment for later.',
       materialsEmpty: 'No materials for this lesson.',
       sectionLabel: 'Section {n} · {title}',
       bookmarkAdd: '+ Bookmark current position',
+      transcript: {
+        empty: 'No transcript for this lesson.',
+        noMatch: 'No lines match your search.',
+        filterPlaceholder: 'Filter transcript',
+      },
       aria: {
         player: 'Lesson video player',
         buffering: 'Buffering',
@@ -582,6 +588,31 @@ export default {
       toastFailedTitle: '{name} scan failed',
       toastFailedSummary: '{errors} error | {errors} errors',
       dismissAria: 'Dismiss scan notification',
+    },
+  },
+  /**
+   * Admin-surface copy that doesn't live under `pages.admin.*` — kept in its
+   * own top-level namespace so it doesn't collide with page-scoped edits.
+   */
+  admin: {
+    transcription: {
+      title: 'Transcription',
+      idleBody:
+        'Run whisper across every lesson that has no subtitle track and no up-to-date generated transcript.',
+      forceLabel: 'Re-transcribe everything',
+      startCta: 'Start transcription',
+      cancelCta: 'Cancel',
+      statusRunning: 'Running',
+      statusSucceeded: 'Succeeded',
+      statusFailed: 'Failed',
+      statusCancelled: 'Cancelled',
+      statSkipped: 'Skipped',
+      statTranscribed: 'Transcribed',
+      statFailed: 'Failed',
+      statTotal: 'Total',
+      errorsHeading: 'Errors',
+      startError: 'Could not start transcription. Please try again.',
+      cancelError: 'Could not cancel the run. Please try again.',
     },
   },
   /**

@@ -21,6 +21,15 @@
  *   - Returns { absolutePath, extension, courseId, libraryId }.
  *   - Missing language or unrecognised extension → SubtitleNotFoundError (404).
  *
+ *   Fallback to a generated transcript (E25-F03-S03): when no sidecar matches
+ *   the language, check TRANSCRIPT_REPOSITORY for a `generated` Transcript in
+ *   that language. If one exists, resolve its path with `derivedTranscriptPath`
+ *   against `AppConfig.derivedPath` — a second, separate traversal guard from
+ *   the one above, because the derived root is a different (writable) root
+ *   than the library root (see derived-path.ts for why the guards don't share
+ *   a code path). A sidecar always wins when both exist — the sidecar branch
+ *   returns before this one runs.
+ *
  * locateMaterial adds a parallel path for material sidecar files (PDF / MD / image):
  *   - Same lesson/course/library load + traversal guard.
  *   - Finds the material on lesson.materials by id → MaterialNotFoundError (404).
@@ -38,11 +47,14 @@ import path from 'node:path';
 
 import { Inject, Injectable } from '@nestjs/common';
 
+import { AppConfig } from '../../../common/config/app-config';
 import {
   COURSE_REPOSITORY,
   LESSON_REPOSITORY,
   LIBRARY_REPOSITORY,
   LessonNotFoundError,
+  TRANSCRIPT_REPOSITORY,
+  derivedTranscriptPath,
 } from '../../../common/catalog-tokens';
 import {
   LessonFileNotFoundError,
@@ -57,6 +69,7 @@ import type {
   LessonRepository,
   LibraryRepository,
   MaterialKindValue,
+  TranscriptRepository,
 } from '../../../common/catalog-tokens';
 
 export interface LocatedFile {
@@ -88,6 +101,8 @@ export class LessonFileLocator {
     @Inject(LESSON_REPOSITORY) private readonly lessonRepo: LessonRepository,
     @Inject(COURSE_REPOSITORY) private readonly courseRepo: CourseRepository,
     @Inject(LIBRARY_REPOSITORY) private readonly libraryRepo: LibraryRepository,
+    @Inject(TRANSCRIPT_REPOSITORY) private readonly transcriptRepo: TranscriptRepository,
+    private readonly appConfig: AppConfig,
   ) {}
 
   async locate(lessonId: string): Promise<LocatedFile> {
@@ -138,7 +153,13 @@ export class LessonFileLocator {
     const langLower = language.toLowerCase();
     const subtitle = lesson.subtitles.find((s) => s.language.toLowerCase() === langLower);
     if (!subtitle) {
-      throw new SubtitleNotFoundError(lessonId, language);
+      return this.locateGeneratedSubtitle(
+        lessonId,
+        lesson.courseId,
+        lesson.videoPath,
+        course.libraryId,
+        langLower,
+      );
     }
 
     // Resolve and guard the subtitle path the same way as the video path.
@@ -220,6 +241,35 @@ export class LessonFileLocator {
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
+
+  /**
+   * Fallback for locateSubtitle when no sidecar matches the language: check
+   * for a `generated` Transcript in that language and, if one exists, resolve
+   * its `.srt` path against the derived root. Recomputes the path with
+   * `derivedTranscriptPath` rather than trusting a stored path column, so the
+   * same guard that governed the write governs the read.
+   */
+  private async locateGeneratedSubtitle(
+    lessonId: string,
+    courseId: string,
+    videoPath: string,
+    libraryId: string,
+    language: string,
+  ): Promise<LocatedSubtitle> {
+    const generated = await this.transcriptRepo.findGeneratedForLessons([lessonId], language);
+    if (!generated.has(lessonId)) {
+      throw new SubtitleNotFoundError(lessonId, language);
+    }
+
+    const absolutePath = derivedTranscriptPath({
+      derivedRoot: this.appConfig.derivedPath,
+      libraryId,
+      videoPath,
+      language,
+    });
+
+    return { absolutePath, extension: '.srt', courseId, libraryId };
+  }
 
   /**
    * Load and validate the lesson → course → library chain.

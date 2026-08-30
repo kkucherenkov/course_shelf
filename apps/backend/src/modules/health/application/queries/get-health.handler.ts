@@ -7,7 +7,6 @@ import {
   DB_CHECKER,
   DependencyChecker,
   HealthSnapshot,
-  REDIS_CHECKER,
   rollUp,
 } from '../../domain/health';
 
@@ -19,23 +18,18 @@ export class GetHealthHandler implements IQueryHandler<GetHealthQuery, HealthSna
 
   constructor(
     @Inject(DB_CHECKER) private readonly db: DependencyChecker,
-    @Inject(REDIS_CHECKER) private readonly redis: DependencyChecker,
     @Inject(CENTRIFUGO_CHECKER) private readonly centrifugo: DependencyChecker,
     private readonly config: AppConfig,
   ) {}
 
   async execute(_query: GetHealthQuery): Promise<HealthSnapshot> {
-    const [db, redis, centrifugo] = await Promise.all([
-      this.db.check(),
-      this.redis.check(),
-      this.centrifugo.check(),
-    ]);
+    const [db, centrifugo] = await Promise.all([this.db.check(), this.centrifugo.check()]);
 
     return {
-      status: rollUp([db, redis, centrifugo]),
+      status: rollUp([db, centrifugo]),
       version: this.config.runtime.version,
       uptimeSeconds: Math.round((Date.now() - this.startedAt) / 1000),
-      dependencies: { db, redis, centrifugo },
+      dependencies: { db, centrifugo },
     };
   }
 }

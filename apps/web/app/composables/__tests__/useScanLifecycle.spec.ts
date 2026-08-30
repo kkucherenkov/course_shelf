@@ -108,7 +108,7 @@ vi.mock('#imports', () => ({
 // ── Import after mocks ─────────────────────────────────────────────────────────
 // useScanLifecycle uses module-level singletons; reset them by reimporting.
 
-import { useScanLifecycle } from '../useScanLifecycle';
+import { useScanLifecycle, subscribeToScansChannel } from '../useScanLifecycle';
 
 // ── Mount/unmount helpers ──────────────────────────────────────────────────────
 // We capture onMounted/onUnmounted callbacks via the vue mock.
@@ -237,5 +237,86 @@ describe('useScanLifecycle', () => {
 
     await expect(_capturedGetToken!()).rejects.toThrow();
     expect(mockIssueRealtimeToken).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('subscribeToScansChannel', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.clearAllMocks();
+    _capturedGetToken = null;
+    _pubHandler = null;
+
+    mockIssueRealtimeToken.mockResolvedValue({
+      data: { token: 'jwt-abc', expiresAt: null },
+      error: null,
+      response: { status: 200 },
+    });
+  });
+
+  it('a second subscriber shares the existing connection instead of opening a new one', () => {
+    const unsub1 = subscribeToScansChannel('user-42', vi.fn());
+    expect(mockNewSubscription).toHaveBeenCalledTimes(1);
+    expect(mockConnect).toHaveBeenCalledTimes(1);
+
+    const unsub2 = subscribeToScansChannel('user-42', vi.fn());
+    expect(mockNewSubscription).toHaveBeenCalledTimes(1);
+    expect(mockConnect).toHaveBeenCalledTimes(1);
+
+    unsub1();
+    unsub2();
+  });
+
+  it('fans out one publication to every registered handler', () => {
+    const handler1 = vi.fn();
+    const handler2 = vi.fn();
+    const unsub1 = subscribeToScansChannel('user-42', handler1);
+    const unsub2 = subscribeToScansChannel('user-42', handler2);
+
+    const event = { kind: 'transcription-progress', libraryId: 'lib-1' };
+    _pubHandler!({ data: event });
+
+    expect(handler1).toHaveBeenCalledWith(event);
+    expect(handler2).toHaveBeenCalledWith(event);
+
+    unsub1();
+    unsub2();
+  });
+
+  it('disconnects only after the last consumer unsubscribes', () => {
+    const unsub1 = subscribeToScansChannel('user-42', vi.fn());
+    const unsub2 = subscribeToScansChannel('user-42', vi.fn());
+
+    unsub1();
+    expect(mockDisconnect).not.toHaveBeenCalled();
+
+    unsub2();
+    expect(mockDisconnect).toHaveBeenCalledOnce();
+  });
+
+  it("useScanLifecycle's own store dispatch keeps working alongside another subscriber", () => {
+    const otherHandler = vi.fn();
+    const unsubOther = subscribeToScansChannel('user-42', otherHandler);
+
+    useScanLifecycle();
+    triggerMount();
+
+    // Only one connection for both consumers.
+    expect(mockNewSubscription).toHaveBeenCalledTimes(1);
+
+    const event = {
+      kind: 'started' as const,
+      scanId: 'scan-1',
+      libraryId: 'lib-1',
+      libraryName: 'CS Library',
+      at: '2026-04-28T10:00:00.000Z',
+    };
+    _pubHandler!({ data: event });
+
+    expect(mockApplyEvent).toHaveBeenCalledWith(event);
+    expect(otherHandler).toHaveBeenCalledWith(event);
+
+    triggerUnmount();
+    unsubOther();
   });
 });

@@ -38,3 +38,24 @@ export class BookmarkOwnershipMismatchError extends DomainError {
     this.name = 'BookmarkOwnershipMismatchError';
   }
 }
+
+/**
+ * WHY: Thrown by the Prisma adapter (P2002 on `uq_bookmark_idempotency`) when
+ * two creates race on the same (userId, lessonId, idempotencyKey) — the
+ * losing insert failed, not the request. CreateBookmarkHandler catches this
+ * internally and re-fetches the winner via `findByIdempotencyKey` to answer
+ * with its bookmark instead; it is not expected to reach HttpExceptionFilter
+ * (see #285). The 409 mapping exists only as an honest fallback if the
+ * re-fetch itself somehow comes up empty.
+ */
+export class BookmarkIdempotencyConflictError extends DomainError {
+  constructor() {
+    super({
+      code: 'bookmark-idempotency-conflict',
+      status: 409,
+      title: 'Bookmark idempotency conflict',
+      detail: 'A concurrent request already created a bookmark for this idempotency key.',
+    });
+    this.name = 'BookmarkIdempotencyConflictError';
+  }
+}

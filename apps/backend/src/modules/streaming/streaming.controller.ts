@@ -66,7 +66,7 @@ import { IssueStreamTokenQuery } from './application/queries/issue-stream-token.
 import { IssueMaterialDownloadQuery } from './application/queries/issue-material-download.query';
 import { LessonFileLocator } from './domain/lesson-file-locator';
 import { parseRangeHeader } from './domain/range-request-parser';
-import { convertSrtToVtt } from './domain/subtitle-converter';
+import { convertSrtToVtt } from '../../shared/subtitle-converter';
 import { StreamTokenSigner } from './domain/stream-token/stream-token-signer';
 import { StreamTokenInvalidError } from './domain/stream-token/stream-token.errors';
 

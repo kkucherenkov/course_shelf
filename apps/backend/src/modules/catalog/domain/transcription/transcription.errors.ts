@@ -29,17 +29,53 @@ export class DerivedPathEscapedError extends DomainError {
 
 /**
  * Thrown when a transcription is requested while WHISPER_MODEL_PATH is unset.
- * 422 — the request is well-formed but the instance cannot honour it.
+ *
+ * WHY 503 and not the 422 this class first carried: `POST /libraries/{id}/
+ * transcriptions` documents exactly one status for an unusable engine — 503,
+ * "the whisper binary or the model file configured for this deployment is
+ * missing" — and documents no 422 at all. A 422 here would be response drift:
+ * `express-openapi-validator` has no schema for it and turns the reply into a
+ * 400 outside production. The contract is the source of truth, so the error
+ * moved to meet it.
  */
 export class TranscriptionNotConfiguredError extends DomainError {
   constructor() {
     super({
       code: 'transcription-not-configured',
-      status: 422,
-      title: 'Transcription is not configured',
+      status: 503,
+      title: 'Service Unavailable',
       detail: 'WHISPER_MODEL_PATH is unset, so no whisper model is available.',
     });
     this.name = 'TranscriptionNotConfiguredError';
+  }
+}
+
+/**
+ * Thrown when a run is requested for a library that already has one going.
+ * Mirrors `ScanAlreadyRunningError`; the contract documents 409 for it.
+ */
+export class TranscriptionAlreadyRunningError extends DomainError {
+  constructor(libraryId: string) {
+    super({
+      code: 'transcription-already-running',
+      status: 409,
+      title: 'Conflict',
+      detail: `A transcription is already running for library ${libraryId}.`,
+    });
+    this.name = 'TranscriptionAlreadyRunningError';
+  }
+}
+
+/** No transcription run with that id, or none has ever run for the library. */
+export class TranscriptionNotFoundError extends DomainError {
+  constructor(detail: string) {
+    super({
+      code: 'transcription-not-found',
+      status: 404,
+      title: 'Not Found',
+      detail,
+    });
+    this.name = 'TranscriptionNotFoundError';
   }
 }
 

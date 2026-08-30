@@ -3,6 +3,7 @@
  * Composition root for the Catalog bounded context. It wires together:
  *   - CatalogController (HTTP entry point for library CRUD)
  *   - ScansController (HTTP entry point for scan operations)
+ *   - TranscriptionsController + TranscriptionCancelController (transcription runs)
  *   - CoursesController (HTTP entry point for course CRUD)
  *   - LessonsController (HTTP entry point for lesson reads)
  *   - HomeController (HTTP entry point for home-row endpoints)
@@ -21,8 +22,11 @@
  *   - PrismaStudioRepository bound behind STUDIO_REPOSITORY
  *   - PrismaTagRepository bound behind TAG_REPOSITORY
  *   - PrismaExternalIdRepository bound behind EXTERNAL_ID_REPOSITORY
+ *   - PrismaTranscriptionRepository bound behind TRANSCRIPTION_REPOSITORY
+ *   - PrismaTranscriptRepository bound behind TRANSCRIPT_REPOSITORY
  *   - NodeFsAdapter bound behind the FS_ADAPTER port token
  *   - LocalFfmpegAdapter bound behind the FFMPEG_ADAPTER port token
+ *   - LocalWhisperAdapter bound behind the WHISPER_ADAPTER port token
  *   - AdminGuard (provided here for ScansController/CoursesController)
  *   - SCRAPER_REGISTRY factory: mock or real (YouTube/Udemy/JsonLd) depending
  *     on AppConfig.scrapers.mode / youtube.configured / udemy.enabled
@@ -58,6 +62,8 @@ import { RegisterLibraryHandler } from './application/commands/register-library.
 import { UpdateLibraryHandler } from './application/commands/update-library.handler';
 import { RemoveLibraryHandler } from './application/commands/remove-library.handler';
 import { RunScanHandler } from './application/commands/run-scan.handler';
+import { RunTranscriptionHandler } from './application/commands/run-transcription.handler';
+import { CancelTranscriptionHandler } from './application/commands/cancel-transcription.handler';
 import { UpdateCourseMetadataHandler } from './application/commands/update-course-metadata.handler';
 import { MarkCourseCompleteHandler } from './application/commands/mark-course-complete.handler';
 import { ResetCourseProgressHandler } from './application/commands/reset-course-progress.handler';
@@ -70,6 +76,8 @@ import { SetCourseStudiosHandler } from './application/commands/set-course-studi
 import { SetCourseTagsHandler } from './application/commands/set-course-tags.handler';
 import { GetLibraryHandler } from './application/queries/get-library.handler';
 import { GetLatestScanHandler } from './application/queries/get-latest-scan.handler';
+import { GetLatestTranscriptionHandler } from './application/queries/get-latest-transcription.handler';
+import { ListTranscriptionsHandler } from './application/queries/list-transcriptions.handler';
 import { ListLibrariesHandler } from './application/queries/list-libraries.handler';
 import { GetCourseHandler } from './application/queries/get-course.handler';
 import { ListCoursesHandler } from './application/queries/list-courses.handler';
@@ -104,9 +112,14 @@ import { HomeController } from './home.controller';
 import { IdentifyAdminController } from './identify-admin.controller';
 import { LessonsController } from './lessons.controller';
 import { ScansController } from './scans.controller';
+import { TranscriptionsController } from './transcriptions.controller';
+import { TranscriptionCancelController } from './transcription-cancel.controller';
 import { SearchController } from './search.controller';
 import { LIBRARY_REPOSITORY } from './domain/library/library.repository';
 import { SCAN_REPOSITORY } from './domain/scan/scan.repository';
+import { TRANSCRIPTION_REPOSITORY } from './domain/transcription/transcription.repository';
+import { TRANSCRIPT_REPOSITORY } from './domain/transcription/transcript.repository';
+import { WHISPER_ADAPTER } from './domain/transcription/whisper.port';
 import { COURSE_REPOSITORY } from './domain/course/course.repository';
 import { LESSON_REPOSITORY } from './domain/lesson/lesson.repository';
 import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from './domain/progress/course-progress-read-model.repository';
@@ -119,6 +132,8 @@ import { TAG_REPOSITORY } from './domain/tag/tag.repository';
 import { EXTERNAL_ID_REPOSITORY } from './domain/shared-vo/external-id.repository';
 import { PrismaLibraryRepository } from './infra/prisma-library.repository';
 import { PrismaScanRepository } from './infra/prisma-scan.repository';
+import { PrismaTranscriptionRepository } from './infra/prisma-transcription.repository';
+import { PrismaTranscriptRepository } from './infra/prisma-transcript.repository';
 import { PrismaCourseRepository } from './infra/prisma-course.repository';
 import { PrismaLessonRepository } from './infra/prisma-lesson.repository';
 import { PrismaCourseProgressReadModelRepository } from './infra/prisma-course-progress-read-model.repository';
@@ -129,6 +144,7 @@ import { PrismaExternalIdRepository } from './infra/prisma-external-id.repositor
 import { PrismaIdentifyTaskRepository } from './infra/prisma-identify-task.repository';
 import { PrismaSearchAdapter } from './infra/prisma-search.adapter';
 import { LocalFfmpegAdapter } from './infra/local-ffmpeg.adapter';
+import { LocalWhisperAdapter } from './infra/local-whisper.adapter';
 import { NodeFsAdapter } from './infra/node-fs-adapter';
 import { IDENTIFY_TASK_REPOSITORY } from './domain/identify/identify-task.repository';
 
@@ -141,6 +157,8 @@ import { IDENTIFY_TASK_REPOSITORY } from './domain/identify/identify-task.reposi
     CatalogScrapeAdminController,
     IdentifyAdminController,
     ScansController,
+    TranscriptionsController,
+    TranscriptionCancelController,
     CoursesController,
     LessonsController,
     HomeController,
@@ -154,6 +172,10 @@ import { IDENTIFY_TASK_REPOSITORY } from './domain/identify/identify-task.reposi
     ListLibrariesHandler,
     RunScanHandler,
     GetLatestScanHandler,
+    RunTranscriptionHandler,
+    CancelTranscriptionHandler,
+    GetLatestTranscriptionHandler,
+    ListTranscriptionsHandler,
     UpdateCourseMetadataHandler,
     MarkCourseCompleteHandler,
     ResetCourseProgressHandler,
@@ -215,6 +237,8 @@ import { IDENTIFY_TASK_REPOSITORY } from './domain/identify/identify-task.reposi
     { provide: IDENTIFY_TASK_REPOSITORY, useClass: PrismaIdentifyTaskRepository },
     { provide: LIBRARY_REPOSITORY, useClass: PrismaLibraryRepository },
     { provide: SCAN_REPOSITORY, useClass: PrismaScanRepository },
+    { provide: TRANSCRIPTION_REPOSITORY, useClass: PrismaTranscriptionRepository },
+    { provide: TRANSCRIPT_REPOSITORY, useClass: PrismaTranscriptRepository },
     { provide: COURSE_REPOSITORY, useClass: PrismaCourseRepository },
     { provide: LESSON_REPOSITORY, useClass: PrismaLessonRepository },
     {
@@ -226,6 +250,7 @@ import { IDENTIFY_TASK_REPOSITORY } from './domain/identify/identify-task.reposi
     { provide: TAG_REPOSITORY, useClass: PrismaTagRepository },
     { provide: FS_ADAPTER, useClass: NodeFsAdapter },
     { provide: FFMPEG_ADAPTER, useClass: LocalFfmpegAdapter },
+    { provide: WHISPER_ADAPTER, useClass: LocalWhisperAdapter },
     { provide: SEARCH_PORT, useClass: PrismaSearchAdapter },
   ],
   exports: [

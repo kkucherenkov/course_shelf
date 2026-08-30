@@ -1,7 +1,7 @@
 /**
- * Unit tests for convertSrtToVtt.
+ * Unit tests for convertSrtToVtt and extractCues.
  *
- * Covers:
+ * convertSrtToVtt covers:
  *   - Cue counter stripping.
  *   - Comma → dot timestamp normalisation.
  *   - Multi-cue SRT.
@@ -9,10 +9,17 @@
  *   - UTF-8 BOM stripped.
  *   - Empty string → `WEBVTT\n\n`.
  *   - Already-VTT input (starts with `WEBVTT`) → returned unchanged.
+ *
+ * extractCues covers:
+ *   - A normal WebVTT file.
+ *   - CRLF input.
+ *   - A file with no trailing newline (last cue still lands).
+ *   - A malformed timing line skipped rather than throwing.
+ *   - Raw SRT (comma separator, cue counters) parsed without a prior convert.
  */
 import { describe, expect, it } from 'vitest';
 
-import { convertSrtToVtt } from './subtitle-converter';
+import { convertSrtToVtt, extractCues } from './subtitle-converter';
 
 const BOM = '﻿';
 
@@ -123,5 +130,66 @@ describe('convertSrtToVtt', () => {
     const srt = '1\n00:00:01,000 --> 00:00:02,000\n<i>Italics</i> and <b>Bold</b>\n';
     const result = convertSrtToVtt(srt);
     expect(result).toContain('<i>Italics</i> and <b>Bold</b>');
+  });
+});
+
+describe('extractCues', () => {
+  it('parses a normal WebVTT file', () => {
+    const vtt =
+      'WEBVTT\n\n' +
+      '00:00:01.500 --> 00:00:04.000\nHello there\n\n' +
+      '00:01:02.250 --> 00:01:05.000\nSecond cue\nover two lines\n';
+
+    expect(extractCues(vtt)).toEqual([
+      { startMs: 1500, endMs: 4000, text: 'Hello there' },
+      { startMs: 62_250, endMs: 65_000, text: 'Second cue\nover two lines' },
+    ]);
+  });
+
+  it('reads hours', () => {
+    const vtt = 'WEBVTT\n\n01:02:03.004 --> 01:02:04.005\nLate\n';
+    expect(extractCues(vtt)).toEqual([{ startMs: 3_723_004, endMs: 3_724_005, text: 'Late' }]);
+  });
+
+  it('handles CRLF input', () => {
+    const vtt = 'WEBVTT\r\n\r\n00:00:01.000 --> 00:00:02.000\r\nHello\r\n';
+    expect(extractCues(vtt)).toEqual([{ startMs: 1000, endMs: 2000, text: 'Hello' }]);
+  });
+
+  it('keeps the last cue when the file has no trailing newline', () => {
+    const vtt = 'WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nNo newline at EOF';
+    expect(extractCues(vtt)).toEqual([{ startMs: 1000, endMs: 2000, text: 'No newline at EOF' }]);
+  });
+
+  it('skips a malformed timing line rather than throwing', () => {
+    const vtt =
+      'WEBVTT\n\n' +
+      '00:00:01.000 --> 00:00:02.000\nGood\n\n' +
+      '00:00:0X.000 --> broken\nOrphaned text\n\n' +
+      '00:00:03.000 --> 00:00:04.000\nAlso good\n';
+
+    expect(extractCues(vtt)).toEqual([
+      { startMs: 1000, endMs: 2000, text: 'Good' },
+      { startMs: 3000, endMs: 4000, text: 'Also good' },
+    ]);
+  });
+
+  it('ignores WebVTT cue settings trailing the timings', () => {
+    const vtt = 'WEBVTT\n\n00:00:01.000 --> 00:00:02.000 align:start position:0%\nPositioned\n';
+    expect(extractCues(vtt)).toEqual([{ startMs: 1000, endMs: 2000, text: 'Positioned' }]);
+  });
+
+  it('parses raw SRT, cue counters and commas included', () => {
+    const srt =
+      '1\n00:00:01,500 --> 00:00:04,000\nHello\n\n2\n00:00:05,000 --> 00:00:06,000\nBye\n';
+    expect(extractCues(srt)).toEqual([
+      { startMs: 1500, endMs: 4000, text: 'Hello' },
+      { startMs: 5000, endMs: 6000, text: 'Bye' },
+    ]);
+  });
+
+  it('returns no cues for an empty document', () => {
+    expect(extractCues('WEBVTT\n\n')).toEqual([]);
+    expect(extractCues('')).toEqual([]);
   });
 });

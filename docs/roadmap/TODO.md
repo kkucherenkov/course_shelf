@@ -11,7 +11,7 @@ denominator below.
 Progress (update by hand):
 
 - **v1** — `119 / 119` complete. 121 cards, 2 cancelled.
-- **v2** — `6 / 36` complete. 36 cards across E25–E31.
+- **v2** — `9 / 36` complete. 36 cards across E25–E31.
 
 v1 is the shipped product; v2 is the transcript-first direction and the
 honest-v1.1 cleanup. The two denominators are kept apart on purpose — merging
@@ -212,10 +212,10 @@ them would quietly reopen a milestone that is finished.
 
 ## E25 — Transcription (Whisper)
 
-- [ ] [E25-F01-S01](./tasks/E25-F01-S01.md) `A` — Derived-artifact volume, whisper config, and the binary in the image · ⇐ E01-F02-S01
-- [ ] [E25-F01-S02](./tasks/E25-F01-S02.md) `A` — Derived path resolution with its own traversal guard · ⇐ E25-F01-S01
+- [x] [E25-F01-S01](./tasks/E25-F01-S01.md) `A` — Derived-artifact volume, whisper config, and the binary in the image · ⇐ E01-F02-S01
+- [x] [E25-F01-S02](./tasks/E25-F01-S02.md) `A` — Derived path resolution with its own traversal guard · ⇐ E25-F01-S01
 - [ ] [E25-F01-S03](./tasks/E25-F01-S03.md) `A` — ffmpeg audio extraction for whisper · ⇐ E06-F02-S02
-- [ ] [E25-F01-S04](./tasks/E25-F01-S04.md) `A` — whisper.cpp adapter behind a port · ⇐ E25-F01-S01
+- [x] [E25-F01-S04](./tasks/E25-F01-S04.md) `A` — whisper.cpp adapter behind a port · ⇐ E25-F01-S01
 - [x] [E25-F02-S01](./tasks/E25-F02-S01.md) `A` — Transcript and transcription schema · ⇐ E06-F03-S02
 - [ ] [E25-F02-S02](./tasks/E25-F02-S02.md) `A` — Transcription aggregate · ⇐ E25-F02-S01
 - [ ] [E25-F02-S03](./tasks/E25-F02-S03.md) `A` — The skip rule · ⇐ E25-F02-S01

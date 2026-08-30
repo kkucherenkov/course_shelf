@@ -164,16 +164,42 @@ export class PrismaCourseRepository implements CourseRepository {
           },
         });
 
-        // Sections: delete all existing, then recreate from aggregate state.
-        await tx.section.deleteMany({ where: { courseId: course.id } });
-        if (course.sections.length > 0) {
-          await tx.section.createMany({
-            data: course.sections.map((s) => ({
+        // Sections: upsert in place, and delete only the ones that disappeared.
+        //
+        // NOT delete-and-recreate, unlike the join rows below. `Lesson.section`
+        // is `onDelete: Cascade`, so dropping the section rows takes every
+        // lesson of the course with it — silently, since the sections come
+        // straight back and nothing raises. A scan saves a course twice, once
+        // with its sections and again after metadata linking, with the lessons
+        // written in between; that second save used to leave the course with
+        // zero lessons (#317).
+        //
+        // Ceiling: the upserts run one at a time, so reordering two sections
+        // while keeping their ids would transiently collide on
+        // `@@unique([courseId, position])`. Nothing reorders today — the scan
+        // assigns positions by index at creation and re-saves the same
+        // aggregate. Give the positions a two-phase update if that changes.
+        const keptSectionIds = course.sections.map((s) => s.id);
+        await tx.section.deleteMany({
+          where:
+            keptSectionIds.length > 0
+              ? { courseId: course.id, id: { notIn: keptSectionIds } }
+              : { courseId: course.id },
+        });
+        for (const s of course.sections) {
+          await tx.section.upsert({
+            where: { id: s.id },
+            create: {
               id: s.id,
               courseId: course.id,
               position: s.position,
               title: s.title,
-            })),
+            },
+            update: {
+              courseId: course.id,
+              position: s.position,
+              title: s.title,
+            },
           });
         }
 

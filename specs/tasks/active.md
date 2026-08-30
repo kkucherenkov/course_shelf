@@ -18,13 +18,18 @@
   - [x] #265 — ffmpeg in ci.yml + the `Fix (CI)` section deleted — both already
         landed in `ac87aa9`; verified, nothing left to change
   - [x] #296 — drop `test:e2e` from apps/backend/package.json
-  - [~] #264 — 44 of 75 a11y violations fixed; the remaining 31 are all
-    `color-contrast` on shipped brand tokens and need a palette decision,
-    so `STORYBOOK_A11Y_LEVEL` stays as it is rather than being armed onto a
-    red build. See the PR body for the numbers.
+  - [x] #264 — all 75 a11y violations fixed and the gate armed:
+        `STORYBOOK_A11Y_LEVEL` is gone from both workflows and from
+        `preview.ts`. Light theme is 285/285 with the a11y level at `error`.
+  - [x] #264 — palette: accent `#9C6612`→`#8A5A10`, tertiary `#8E8773`→`#716B5B`
+        (lightness only), plus the Nuxt UI `primary`/`error` wiring gaps and a
+        dead `AppNoteEditor` mode toggle that those uncovered
+  - [x] #264 — `regen-snapshots.yml` gains a `goldens` job; Flutter goldens had
+        no regen path at all
 - Status: in-progress
-- Blockers: #264 cannot be closed until the brand-palette contrast pairs are
-  decided (tuxedo #59).
+- Blockers: none for the work itself. Merges LAST of the eight lanes (it touches
+  baselines and goldens); baselines and goldens are regenerated on top of the
+  final `main` after the other seven land, not merged by hand.
 
 ## T-2026-08-30-015 — close AUTH_SELF_REGISTRATION gap + bookmark create idempotency
 

@@ -107,6 +107,15 @@ void main() {
           now: v1UpdatedAt.add(const Duration(minutes: 1)),
         );
         expect(next?.lessonId, 'v1-lesson');
+
+        // 6. The chain ran all the way to v4: `bookmark_id_map` is created by
+        // the v3 -> v4 step, not by `onCreate`, so its absence here would mean
+        // an upgrading device silently loses offline bookmark reconciliation.
+        await migrated.bookmarkIdMapDao.record(
+          localId: 'local-1',
+          serverId: 'srv-1',
+        );
+        expect(await migrated.bookmarkIdMapDao.serverIdFor('local-1'), 'srv-1');
       },
     );
   });

@@ -113,8 +113,9 @@ void configureDependencies() {
     ..registerLazySingleton<SearchRepository>(
       () => SearchRepositoryImpl(getIt<Dio>()),
     )
-    // The player's note and bookmark writes go through the outboxes; every
-    // read still goes straight at `LessonPlayerApi`. `onEnqueued` resolves
+    // The player's note and bookmark writes go through the outboxes, and the
+    // bookmark read is reconciled against them; every other read still goes
+    // straight at `LessonPlayerApi`. `onEnqueued` resolves
     // `SyncBloc` lazily *inside* the closure — resolving it here instead would
     // make the two singletons construct each other.
     ..registerLazySingleton<LessonPlayerRepository>(
@@ -126,6 +127,7 @@ void configureDependencies() {
         ),
         notes: NotesOutboxDao(getIt<AppDatabase>()),
         bookmarks: BookmarksOutboxDao(getIt<AppDatabase>()),
+        bookmarkIds: BookmarkIdMapDao(getIt<AppDatabase>()),
         onEnqueued: () => getIt<SyncBloc>().add(const SyncManualRequested()),
       ),
     )
@@ -214,6 +216,12 @@ void configureDependencies() {
         progressRecorder: getIt<LessonProgressRecorder>(),
         playback: VideoPlayerAdapter(),
         playbackPreferences: getIt<PlaybackPreferences>(),
+        // The return edge of the wire above: the player nudges a drain after
+        // each write, and a settled drain tells the player to re-read its
+        // bookmarks. Without it, a bookmark added offline keeps its local id on
+        // screen until the lesson is reopened, which is the duplicate
+        // E31-F01-S03 removed at the repository layer.
+        syncSettled: getIt<SyncBloc>().drained,
       ),
     )
     ..registerLazySingleton<DeviceStorage>(DiskSpaceDeviceStorage.new)
@@ -224,6 +232,7 @@ void configureDependencies() {
         progress: ProgressOutboxDao(getIt<AppDatabase>()),
         notes: NotesOutboxDao(getIt<AppDatabase>()),
         bookmarks: BookmarksOutboxDao(getIt<AppDatabase>()),
+        bookmarkIds: BookmarkIdMapDao(getIt<AppDatabase>()),
       ),
     )
     // Singleton, not a factory: one sync engine per app. A second instance

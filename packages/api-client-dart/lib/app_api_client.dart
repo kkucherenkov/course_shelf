@@ -34,6 +34,8 @@ export 'package:app_api_client/src/model/admin_library_list_item.dart';
 export 'package:app_api_client/src/model/admin_library_list_item_scan.dart';
 export 'package:app_api_client/src/model/admin_scan_list_dto.dart';
 export 'package:app_api_client/src/model/admin_scan_list_item.dart';
+export 'package:app_api_client/src/model/admin_transcription_list_dto.dart';
+export 'package:app_api_client/src/model/admin_transcription_list_item.dart';
 export 'package:app_api_client/src/model/admin_update_user_request.dart';
 export 'package:app_api_client/src/model/admin_user_list_dto.dart';
 export 'package:app_api_client/src/model/admin_user_list_item.dart';

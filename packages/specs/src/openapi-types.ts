@@ -2583,6 +2583,28 @@ export interface components {
       coursesAdded: number;
       errorsCount: number;
     };
+    /** @description Page of recent transcription runs across every library, ordered by `startedAt` descending. The admin transcription table consumes this. */
+    AdminTranscriptionListDto: {
+      items: components['schemas']['AdminTranscriptionListItem'][];
+    };
+    /** @description One row in the admin recent-transcriptions table. Same backbone as `TranscriptionDto` plus `libraryName` (so the table can render the library label without a second round-trip), and with the per-lesson `errors` array collapsed to `errorsCount` — a cross-library list should not ship every run's failures. Follows `AdminScanListItem`. */
+    AdminTranscriptionListItem: {
+      transcriptionId: string;
+      libraryId: string;
+      libraryName: string;
+      status: components['schemas']['TranscriptionStatus'];
+      /** @description When true, the run redid existing generated transcripts — which is why its `lessonsTotal` and `lessonsTranscribed` are close together. */
+      force: boolean;
+      /** Format: date-time */
+      startedAt: string;
+      /** @description null while still `running`. */
+      finishedAt: string | null;
+      lessonsTotal: number;
+      /** @description Lessons for which this run produced a transcript, highlighted as a "+N" badge the way `coursesAdded` is for scans. */
+      lessonsTranscribed: number;
+      /** @description Number of error records attached to this run — the same number as the run's `lessonsFailed`. Fetch the run itself for the details. */
+      errorsCount: number;
+    };
     /**
      * @description A single user-owned bookmark pinned to a position within a lesson.
      * @example {
@@ -3682,7 +3704,7 @@ export interface components {
       /** @description Non-fatal per-lesson errors encountered during the run. */
       errors: components['schemas']['TranscriptionErrorDto'][];
     };
-    /** @description Transcription runs ordered by `startedAt` descending (newest first). Used both for a single library's history and for the cross-library admin list. */
+    /** @description One library's transcription history, ordered by `startedAt` descending (newest first). The cross-library admin list uses `AdminTranscriptionListDto` instead — it needs `libraryName` per row and does not ship the nested `errors` arrays. */
     TranscriptionListDto: {
       items: components['schemas']['TranscriptionDto'][];
     };
@@ -4262,7 +4284,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['TranscriptionListDto'];
+          'application/json': components['schemas']['AdminTranscriptionListDto'];
         };
       };
       /** @description Missing or invalid bearer token */

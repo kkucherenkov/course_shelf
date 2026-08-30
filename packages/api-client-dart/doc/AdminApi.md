@@ -493,7 +493,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **listAdminTranscriptions**
-> TranscriptionListDto listAdminTranscriptions(limit, libraryId)
+> AdminTranscriptionListDto listAdminTranscriptions(limit, libraryId)
 
 List recent transcription runs across every library
 
@@ -524,7 +524,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**TranscriptionListDto**](TranscriptionListDto.md)
+[**AdminTranscriptionListDto**](AdminTranscriptionListDto.md)
 
 ### Authorization
 

@@ -18,6 +18,8 @@ Serializers _$serializers =
           ..add(AdminLibraryListItemScan.serializer)
           ..add(AdminScanListDto.serializer)
           ..add(AdminScanListItem.serializer)
+          ..add(AdminTranscriptionListDto.serializer)
+          ..add(AdminTranscriptionListItem.serializer)
           ..add(AdminUpdateUserRequest.serializer)
           ..add(AdminUserListDto.serializer)
           ..add(AdminUserListItem.serializer)
@@ -153,6 +155,12 @@ Serializers _$serializers =
               const FullType(AdminScanListItem),
             ]),
             () => ListBuilder<AdminScanListItem>(),
+          )
+          ..addBuilderFactory(
+            const FullType(BuiltList, const [
+              const FullType(AdminTranscriptionListItem),
+            ]),
+            () => ListBuilder<AdminTranscriptionListItem>(),
           )
           ..addBuilderFactory(
             const FullType(BuiltList, const [

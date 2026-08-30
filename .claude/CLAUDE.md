@@ -258,6 +258,23 @@ after the other:
    its own worktree (`isolation: "worktree"`), dispatched in a single message so
    they actually run concurrently.
 
+**Every lane runs as the agent that owns its surface** — a lane touching
+`apps/backend` is `backend-engineer`, `apps/web` or `packages/ui` is
+`frontend-engineer`, `apps/mobile` is `flutter-engineer`, `packages/specs` is
+`spec-writer`. A generic session re-derives from scratch what those files
+already say, and skips the skills they name.
+
+Orca spawns a terminal running a command, so name the agent in the command:
+
+```sh
+orca terminal create --worktree path:<lane worktree> \
+  --command 'claude --agent backend-engineer' --json
+```
+
+With the `Agent` tool it is the `subagent_type`. Either way the name is the
+agent's `name:` in `.claude/agents/<name>.md`. A lane that genuinely spans two
+surfaces is two lanes, not one generic session.
+
 Either way the lane discipline is the same:
 
 - One lane = one worktree = one branch = one PR. Lanes never share a branch.

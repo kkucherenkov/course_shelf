@@ -67,7 +67,7 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 
 **Spec-first API contract.** One OpenAPI 3.1 file and one AsyncAPI 3.0 file generate both the TypeScript and Dart API clients. A CI drift guard regenerates every client and fails the PR if the committed output does not match. At runtime, `express-openapi-validator` rejects requests that are not in the spec -- the backend cannot serve an undocumented route.
 
-**Multi-platform from day one.** Nuxt 4 SPA for the web, Flutter 3.44 for mobile. Both consume the same generated client and the same design-token pipeline. Mobile ships four locales (en, ru, uk, el); web ships two (en, ru). `pnpm check:i18n` verifies key parity within each app.
+**Multi-platform from day one.** Nuxt 4 SPA for the web, Flutter 3.44 for mobile. Both consume the same generated client and the same design-token pipeline. Both ship two locales (en, ru). `pnpm check:i18n` verifies key parity within each app.
 
 **Design system with enforcement.** W3C Design Tokens flow from JSON into CSS custom properties, TypeScript constants, and a Dart theme. `@app/ui` ships 50 Vue brand components, each with a colocated Storybook story and a Vitest spec (878 tests total). Stylelint bans hex literals and `!important` -- every color comes from a token.
 

@@ -86,6 +86,21 @@ services:
       # where compose published the ports.
       BETTER_AUTH_URL: "http://${E2E_HOST:-localhost}:3000"
       CORS_ORIGINS: "http://${E2E_HOST:-localhost}:3001,http://${E2E_HOST:-localhost}:8080"
+      # `spec:contract-test` is property-based: it sends ~4200 requests across
+      # 75 operations in about a minute. Against the production budget of
+      # 60/min the global ThrottlerGuard answers most of them, and the run
+      # measures the rate limiter instead of the contract — 18 operations were
+      # reported for an undocumented 429, and schemathesis logged 7 false
+      # "API accepted schema-violating request" failures because it stripped
+      # the auth header, expected a 4xx, and got a 429 from the guard that
+      # runs before auth.
+      #
+      # The limit is raised here, not removed, and only in the CI stack. The
+      # 429 itself stays documented on every operation in openapi.yaml: it is
+      # a real response the API can produce and the clients need to know about
+      # it. This only stops the limiter from deciding what the contract test
+      # measures.
+      RATE_LIMIT_MAX: "100000"
     # CMD inherits from the prod Dockerfile:
     #   prisma migrate deploy && node dist/main.js
 

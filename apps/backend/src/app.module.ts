@@ -27,6 +27,7 @@ import { MeModule } from './modules/me/me.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { LearningModule } from './modules/learning/learning.module';
 import { OpsModule } from './modules/ops/ops.module';
+import { AppConfig } from './common/config/app-config';
 import { StreamingModule } from './modules/streaming/streaming.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { HealthModule } from './modules/health/health.module';
@@ -41,8 +42,14 @@ const devOnlyModules: ImportableModule[] = [];
   imports: [
     ConfigModule,
     CqrsModule.forRoot(),
-    ThrottlerModule.forRoot({
-      throttlers: [{ ttl: 60_000, limit: 60 }],
+    // Async so the budget comes from AppConfig rather than a literal — see
+    // `AppConfig.rateLimit`. Defaults are unchanged at 60 requests / 60 s.
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [AppConfig],
+      useFactory: (config: AppConfig) => ({
+        throttlers: [{ ttl: config.rateLimit.ttlMs, limit: config.rateLimit.limit }],
+      }),
     }),
     I18nModule.forRoot({
       fallbackLanguage: 'en',

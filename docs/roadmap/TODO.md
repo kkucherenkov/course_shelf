@@ -228,7 +228,7 @@ them would quietly reopen a milestone that is finished.
 
 ## E26 — Transcript panel (web)
 
-- [ ] [E26-F01-S01](./tasks/E26-F01-S01.md) `A` — Render the subtitle tracks in the web player · ⇐ E08-F02-S02, E14-F03-S01
+- [x] [E26-F01-S01](./tasks/E26-F01-S01.md) `A` — Render the subtitle tracks in the web player · ⇐ E08-F02-S02, E14-F03-S01
 - [ ] [E26-F01-S02](./tasks/E26-F01-S02.md) `A` — useTranscriptCues composable · ⇐ E26-F01-S01
 - [ ] [E26-F01-S03](./tasks/E26-F01-S03.md) `A` — Transcript tab in the player sidebar · ⇐ E26-F01-S02
 - [ ] [E26-F01-S04](./tasks/E26-F01-S04.md) `A` — `?t=` deep links into a lesson · ⇐ E26-F01-S01

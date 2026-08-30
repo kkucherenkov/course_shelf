@@ -51,3 +51,17 @@ apps/backend/src/modules/<context>/
 4. Write a unit test for the query/command handler before the infrastructure adapter.
 5. Wire the controller, run `pnpm --filter @app/backend dev`, curl the endpoint — `express-openapi-validator` will slap you if the response shape drifts.
 6. Add an E2E test that covers the happy path end-to-end.
+
+## Skills
+
+Invoke these before writing code, not after:
+
+| Skill                       | When                                                                         |
+| --------------------------- | ---------------------------------------------------------------------------- |
+| `nestjs-expert`             | Module wiring, providers, guards, interceptors, pipes — anything Nest-shaped |
+| `cqrs-implementation`       | A new command or query handler, or an event that crosses a context           |
+| `postgresql-table-design`   | A schema change in `prisma/schema.prisma`                                    |
+| `sql-optimization-patterns` | A list query, a fan-out, or a query that already showed up as slow           |
+| `security-and-hardening`    | Auth, sessions, tokens, uploads, anything reachable without a session        |
+| `vitest`                    | Writing or fixing the tests for the above                                    |
+| `context7`                  | Before trusting your memory of any library's current API                     |

@@ -2,7 +2,7 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
-## T-2026-08-30-006 — E26-F01-S02 + E26-F01-S04 transcript cues, `?t=` deep links, two player defects
+## T-2026-08-30-011 — E26-F01-S02 + E26-F01-S04 transcript cues, `?t=` deep links, two player defects
 
 - Created: 2026-08-30
 - Completed: 2026-08-30
@@ -39,6 +39,35 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
     git-ignored `app/design-tokens.generated.ts`. Not a code defect — the
     artefact simply does not exist before the first build.
 
+## T-2026-08-30-007 — backend: error mapping + subtitle track identity/label
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude (lane L4, worktree `agent-a144a2781c8088411`)
+- Branch: `kkucherenkov/backend-error-and-subtitle-fixes`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/294
+- Cards: none — three defects found outside a roadmap card (GitHub #289, #291, #286)
+- Goal: unknown routes answer 404/405 as problem+json; one subtitle track per
+  language, labelled with the language rather than the video file name.
+- Spec diff: none — `SubtitleDto.label` already documents `"English"`, and
+  `/api/v1/stream/lessons/{id}/subtitles/{language}` keeps its shape.
+- Codegen impact: no
+- Sub-steps:
+  - [x] `HttpExceptionFilter` narrows on a numeric HTTP status instead of a
+        class, so every express-openapi-validator error becomes problem+json;
+        `Allow` survives on the 405 (#289)
+  - [x] `http-exception.filter.spec.ts` boots the real middleware against an
+        inline document — 404, 405 + `Allow`, 200, and a plain `Error` still 500
+  - [x] scan collapses a lesson's subtitle files to one per language, `.vtt`
+        preferred; file signatures stay per-file so rescan detection is
+        unchanged (#291)
+  - [x] `Subtitle.label` derived from the language via `Intl.DisplayNames`
+        rather than the video stem (#286)
+  - [x] `docs/user-guide.md` + `docs/architecture.md` updated in the same pass
+  - [x] gates: lint --fix, typecheck, test (1612 passing), format, spec:validate
+- Status: done
+- Blockers: —
+
 ## T-2026-08-30-005 — E25 transcription domain + ffmpeg audio extraction
 
 - Created: 2026-08-30
@@ -72,6 +101,26 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - Card status was flipped by editing the cards and `TODO.md` directly, then
     `generate.py --roadmap-only`. A plain generator run is refused by
     `refuse_if_seeded()` and its `write_todo()` rewrites every row as unticked.
+
+## T-2026-08-30-006 — parametrise the compose host ports and project name
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude
+- Spec: none (tuxedo #39 · GitHub #284)
+- Goal: two worktrees can bring up the dev stack at the same time, and a host
+  process already holding :3000 does not block the stack.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] every published host port in `docker/compose.yml` reads `${CS_*_PORT:-<default>}`
+  - [x] the URLs derived from those ports (`BETTER_AUTH_URL`, `CORS_ORIGINS`, `NUXT_PUBLIC_*`) follow the same vars
+  - [x] `name:` reads `${COMPOSE_PROJECT_NAME:-course-shelf}`
+  - [x] `docker/README.md` documents the vars and stops telling the reader to hand-edit `compose.yml`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/263
+- Status: done
+- Blockers: none — verified with `docker-compose config` at the defaults and
+  with every variable overridden; the stack itself was not brought up
 
 ## T-2026-08-30-004 — E31-F01-S03 fix the duplicated offline bookmark
 

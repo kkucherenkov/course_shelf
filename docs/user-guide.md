@@ -139,7 +139,11 @@ grouped with it as course material or subtitles:
 ```
 
 Subtitle language is read from the `.<lang>.srt` / `.vtt` suffix. `.srt` files
-are converted to WebVTT on the fly for the browser.
+are converted to WebVTT on the fly for the browser. A track is identified by
+its language, so each language gives you exactly one entry in the player's
+subtitle menu, named after the language (`English`, `Russian`) rather than
+after the file. If you ship both `1.1 Why Vim.en.srt` and
+`1.1 Why Vim.en.vtt`, the `.vtt` is the one that gets used.
 
 **Video duration, resolution and thumbnails** are extracted with ffprobe/ffmpeg
 during the scan. If those binaries are missing on the server, the scan still

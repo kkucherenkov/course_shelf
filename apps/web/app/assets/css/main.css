@@ -97,3 +97,19 @@ html[data-theme='light'] {
 html[data-theme='dark'] {
   color-scheme: dark;
 }
+
+/* Nuxt UI names its danger colour `error`; our token layer calls it
+   `--status-error-fg`. Nothing mapped the two, so `UBadge color="error"` (and
+   every other Nuxt UI error surface) shipped the library's stock red
+   #FB2C36 — 3.30:1 as text on its own 10 % tint and 3.80:1 white-on-solid,
+   both below 4.5:1. Our own #A04434 clears the bar at 5.22 and 6.23, so this
+   is a wiring gap, not a palette one, and it was shipping in the app as well
+   as in Storybook.
+
+   `html:root` rather than `:root`: Nuxt UI injects its own `:root` rule at
+   runtime, and the extra element selector wins on specificity instead of
+   depending on injection order. `--status-error-fg` is already theme-aware,
+   so one declaration covers light and dark. */
+html:root {
+  --ui-error: var(--status-error-fg);
+}

@@ -390,9 +390,26 @@
       transition: opacity var(--dur-fast);
     }
 
+    // View mode dims the formatting tools, which are inert without a textarea
+    // to act on. The mode toggle is NOT one of them: it is the only way back
+    // to edit mode, and it used to sit inside a dimmed, `pointer-events: none`
+    // toolbar — visible, still tab-focusable, announced as a pressed toggle,
+    // and impossible to click. It also failed axe `color-contrast` at 2.46:1,
+    // which is how the dead control was found.
+
+    // The dimming moves onto the tools themselves rather than the container: a
+    // child cannot undo an ancestor's `opacity`, which composites the whole
+    // subtree, so exempting the toggle only works if the toolbar never dims.
     &[data-mode='view'] &__toolbar {
-      opacity: 0.4;
       pointer-events: none;
+    }
+
+    &[data-mode='view'] &__tool {
+      opacity: 0.4;
+    }
+
+    &[data-mode='view'] &__toggle {
+      pointer-events: auto;
     }
 
     &__tool {

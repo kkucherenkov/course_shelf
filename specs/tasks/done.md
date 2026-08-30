@@ -2,6 +2,40 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-30-005 — E25 transcription domain + ffmpeg audio extraction
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Result: https://github.com/kkucherenkov/course_shelf/pull/293
+- Owner: claude
+- Cards: [E25-F02-S02](../../docs/roadmap/tasks/E25-F02-S02.md) (#215),
+  [E25-F02-S03](../../docs/roadmap/tasks/E25-F02-S03.md) (#216),
+  [E25-F01-S03](../../docs/roadmap/tasks/E25-F01-S03.md) (#212)
+- Spec: [B4 transcription design](../../docs/superpowers/specs/2026-08-29-b4-transcription-design.md) §5, §6
+- Goal: the pure pieces the transcription run is built from — the run aggregate,
+  the skip rule that makes a re-run cheap, and the whisper-shaped audio extraction
+  on the existing ffmpeg port.
+- Spec diff: none (routes already landed in E25-F03-S01)
+- Codegen impact: no
+- Sub-steps:
+  - [x] `transcription.errors.ts` — the two errors these three cards need
+  - [x] `transcription.ts` aggregate + spec (E25-F02-S02)
+  - [x] `skip-rule.ts` + table-driven spec (E25-F02-S03)
+  - [x] `AudioExtractRequest` + `extractAudio` on `FfmpegAdapter`, implementation
+        and spec in `LocalFfmpegAdapter` (E25-F01-S03)
+  - [x] gates: lint / typecheck / test / format
+  - [x] card bookkeeping + PR
+- Status: shipped
+- Notes:
+  - `TranscriptionInTerminalStateError` is a 409, not the 422 `Scan` uses: the one
+    handler that can reach it is `POST /transcriptions/{id}/cancel`, whose contract
+    documents 409.
+  - The extraction timeout is a per-call parameter, not an `AppConfig` value —
+    E25-F01-S01 (whisper config) is not in `main`, and nothing here needed it.
+  - Card status was flipped by editing the cards and `TODO.md` directly, then
+    `generate.py --roadmap-only`. A plain generator run is refused by
+    `refuse_if_seeded()` and its `write_todo()` rewrites every row as unticked.
+
 ## T-2026-08-30-004 — E31-F01-S03 fix the duplicated offline bookmark
 
 - Created: 2026-08-30

@@ -26,6 +26,14 @@
         dead `AppNoteEditor` mode toggle that those uncovered
   - [x] #264 — `regen-snapshots.yml` gains a `goldens` job; Flutter goldens had
         no regen path at all
+  - [x] #269 — `contract-test.ts` itself was broken: the script was written for
+        schemathesis 3.x and, never having run, still passed `--base-url`,
+        `--checks all` and `--hypothesis-max-examples`. Arming it in e2e.yml is
+        what surfaced that. Fixed with the maintainer's go-ahead (L6's path).
+  - [x] Baselines regenerated on the branch via `regen-snapshots.yml`:
+        Storybook, 35 Flutter goldens, and the e2e page screenshot. Two bugs in
+        that workflow had to be fixed first — the goldens job threw away its own
+        capture, and the e2e job declined to regenerate anything.
 - Status: in-progress
 - Blockers: none for the work itself. Merges LAST of the eight lanes (it touches
   baselines and goldens); baselines and goldens are regenerated on top of the

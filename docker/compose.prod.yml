@@ -110,10 +110,27 @@ services:
       CENTRIFUGO_TOKEN_HMAC_SECRET: "${CENTRIFUGO_TOKEN_HMAC_SECRET:?CENTRIFUGO_TOKEN_HMAC_SECRET is required}"
       CENTRIFUGO_TOKEN_TTL_SECONDS: "${CENTRIFUGO_TOKEN_TTL_SECONDS:-300}"
       CORS_ORIGINS: "${PUBLIC_BASE_URL}"
+      # Writable root for artefacts CourseShelf generates from the media it
+      # reads. /data/courses below is read-only, so this is where whisper
+      # transcripts (and, later, scan thumbnails) land.
+      DERIVED_PATH: /data/derived
+      # Transcription is off until a ggml model is named. Put the model file in
+      # $WHISPER_MODEL_DIR on the host and set WHISPER_MODEL_PATH to its
+      # in-container path, e.g. /models/ggml-medium.bin. Left empty, AppConfig
+      # reports `configured: false` and the run endpoint refuses the request
+      # instead of starting a run that can only fail.
+      WHISPER_MODEL_PATH: "${WHISPER_MODEL_PATH:-}"
+      WHISPER_THREADS: "${WHISPER_THREADS:-4}"
+      WHISPER_LANGUAGE: "${WHISPER_LANGUAGE:-auto}"
     volumes:
       # Course content lives on the host. Mount read-only — the backend
       # only ever reads files from libraries; writes go to the DB.
       - "${COURSES_PATH:?COURSES_PATH is required (host directory holding your courses)}:/data/courses:ro"
+      # Writable, deliberately: everything generated goes here.
+      - "${DERIVED_PATH:?DERIVED_PATH is required (writable host directory for generated transcripts and thumbnails)}:/data/derived"
+      # ggml models, read-only. Docker creates the directory if absent, so this
+      # stays inert until a model is dropped in and WHISPER_MODEL_PATH is set.
+      - "${WHISPER_MODEL_DIR:-../models}:/models:ro"
     healthcheck:
       test:
         - CMD-SHELL

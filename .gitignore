@@ -106,3 +106,9 @@ architecture.pptx
 
 # example data
 docs/data
+
+# derived artefacts + whisper models — the default host binds of the dev stack
+# (docker/compose.yml: DERIVED_PATH, WHISPER_MODEL_DIR). Generated transcripts
+# are reproducible output and ggml models are hundreds of megabytes.
+/derived/
+/models/

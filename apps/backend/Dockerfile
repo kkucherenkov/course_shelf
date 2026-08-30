@@ -9,12 +9,38 @@
 #   contained directory tree at `/app` with workspace symlinks inlined and
 #   devDependencies stripped.
 #
-#   Stage 3 (runtime) is a slim alpine with node + ffmpeg + pg_dump + the
-#   deployed tree. Entrypoint runs `prisma migrate deploy` then
+#   Stage W (whisper) compiles whisper.cpp from a pinned tag and contributes
+#   the single `whisper-cli` binary. It has no dependency on the app build,
+#   so it caches independently and only rebuilds when the pin moves.
+#
+#   Stage 3 (runtime) is a slim alpine with node + ffmpeg + whisper-cli +
+#   pg_dump + the deployed tree. Entrypoint runs `prisma migrate deploy` then
 #   `node dist/main.js`.
 #
 # Build:    docker build -f apps/backend/Dockerfile -t courseshelf/backend:latest .
 # (build context = repo root so the Dockerfile can see every workspace package)
+
+# ─── Stage W — whisper.cpp ────────────────────────────────────────────────
+# The BINARY only. The ggml model is a read-only bind mount (see
+# WHISPER_MODEL_PATH in docker/compose.prod.yml): `ggml-medium` is ~1.5 GB and
+# has no business in an image pushed to a registry on every release.
+#
+# Pinned to a tag rather than a branch — an unpinned clone would make the image
+# non-reproducible and could change transcription output between releases.
+FROM node:24-alpine AS whisper
+
+ARG WHISPER_CPP_VERSION=v1.9.3
+
+RUN apk add --no-cache build-base cmake git \
+    && git clone --depth 1 --branch "${WHISPER_CPP_VERSION}" \
+        https://github.com/ggml-org/whisper.cpp /usr/src/whisper.cpp \
+    && cmake -S /usr/src/whisper.cpp -B /usr/src/whisper.cpp/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DWHISPER_BUILD_TESTS=OFF \
+        -DWHISPER_BUILD_SERVER=OFF \
+    && cmake --build /usr/src/whisper.cpp/build --config Release \
+        -j "$(nproc)" --target whisper-cli
 
 # ─── Stage 1 — install + build ────────────────────────────────────────────
 FROM node:24-alpine AS build
@@ -96,7 +122,15 @@ FROM node:24-alpine AS runtime
 # admin tries to take a backup. The endpoint compares the two majors at
 # request time and answers 503 rather than writing a partial archive, so a
 # mismatch is loud — but the pin is what stops it happening.
-RUN apk add --no-cache ffmpeg openssl libc6-compat tini postgresql18-client
+#
+# libgomp is whisper-cli's only runtime dependency beyond what node already
+# pulls in (`ldd whisper-cli` → libgomp, libstdc++, libgcc_s, musl). Dropping
+# it would make the binary fail to start, not fail to build.
+RUN apk add --no-cache ffmpeg openssl libc6-compat tini postgresql18-client libgomp
+
+# whisper.cpp CLI, built in stage W. AppConfig's WHISPER_PATH default is the
+# bare name, resolved via PATH.
+COPY --from=whisper /usr/src/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
 
 WORKDIR /app
 
@@ -113,16 +147,21 @@ ENV NODE_ENV=production \
     # dev host. In the image the directory below is created and owned by `node`,
     # so point at it — and mount a volume there if archives should outlive the
     # container.
-    BACKUP_DIR=/data/backups
+    BACKUP_DIR=/data/backups \
+    # Everything CourseShelf generates from the media it reads (whisper
+    # transcripts, later scan thumbnails) goes here. /data/courses is mounted
+    # read-only in prod and release, so generated artefacts need their own
+    # writable root. Bind a host directory over it via DERIVED_PATH.
+    DERIVED_PATH=/data/derived
 
 COPY --from=deploy /app/ ./
 
-# Default mount point for course data. Admins point libraries here from
-# the SPA. Override via the `COURSES_PATH` host bind in compose. The
-# chown lets the non-root `node` user write thumbnails next to videos
-# when the host bind doesn't override ownership.
-RUN mkdir -p /data/courses /data/backups \
-    && chown -R node:node /app /data/courses /data/backups
+# Default mount points for course data and generated artefacts. Admins point
+# libraries at /data/courses from the SPA; override via the `COURSES_PATH` host
+# bind in compose. The chown lets the non-root `node` user write into
+# /data/derived when the host bind doesn't override ownership.
+RUN mkdir -p /data/courses /data/backups /data/derived \
+    && chown -R node:node /app /data/courses /data/backups /data/derived
 
 EXPOSE 3000
 

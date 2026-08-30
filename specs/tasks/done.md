@@ -2,6 +2,33 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-30-002 — transcript delivery, admin transcription list, docs, drop Redis
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude
+- Result: https://github.com/kkucherenkov/course_shelf/pull/314
+- Spec: [E25-F03-S03](../../docs/roadmap/tasks/E25-F03-S03.md), [E25-F04-S03](../../docs/roadmap/tasks/E25-F04-S03.md), #309, #290
+- Goal: a generated transcript plays as a subtitle track with no new endpoint; `GET /admin/transcriptions` actually exists behind its spec; transcription deployment is documented; Redis is gone (dead dependency — health-check-only `ping()`, nothing else ever used it).
+- Acceptance:
+  - `locateSubtitle` falls back to a generated `Transcript` when no sidecar matches the language; sidecar still wins when both exist
+  - `LessonDto.subtitles[]` unions sidecars and generated tracks, `generated: true` on the latter
+  - `GET /api/v1/admin/transcriptions` returns `AdminTranscriptionListDto`, mirroring `list-admin-scans`
+  - README\*, deployment.md, deploy-ugreen-nas-dockge.md, user-guide.md, architecture.md document DERIVED_PATH/WHISPER\_\* and no longer mention Redis
+  - Redis removed from every compose file, AppConfig, .env.example, ioredis
+- Spec diff: openapi.yaml — `HealthStatus.dependencies` drops `redis` (the only real diff; `/admin/transcriptions` + Admin\*Transcription\* schemas already landed in #217/#256)
+- Codegen impact: yes — health types only, landed in its own commit
+- Design impact: none
+- Tests: locator spec (generated served, sidecar precedence, derived-root traversal guard), get-lesson handler spec (flag + one-of-each lesson), list-admin-transcriptions handler/adapter/controller specs, get-health handler spec (drop redis) — 1725 backend tests green
+- Sub-steps:
+  - [x] Redis removal: backend code, all compose files, .env.example, docs
+  - [x] Docs: README\*, deployment.md, deploy-ugreen-nas-dockge.md, user-guide.md, architecture.md
+  - [x] Locator fallback + LessonDto union (#219)
+  - [x] Admin transcription list endpoint (#309)
+  - [x] Gates: test, lint, format, typecheck, spec:validate
+- Status: shipped
+- Blockers: — (docker stack boot not verified end-to-end — no `docker` binary in this sandbox; compose edits reviewed by hand)
+
 ## T-2026-08-30-012 — run whisper transcription over a library
 
 - Created: 2026-08-30

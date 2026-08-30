@@ -8,7 +8,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Completed: 2026-08-30
 - Owner: claude (lane v1.1 web, worktree `agent-aa63298f92fa237a6`)
 - Branch: `kkucherenkov/e31-close-the-real-gaps`
-- Result: PR_URL_PLACEHOLDER
+- Result: https://github.com/kkucherenkov/course_shelf/pull/303
 - Cards: [E31-F01-S01](../../docs/roadmap/tasks/E31-F01-S01.md) · GH #239
 - Goal: library / duration-bucket / instructor filters and sort-by-duration on
   `/browse`, with the whole filter set surviving a reload through the query
@@ -37,7 +37,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Completed: 2026-08-30
 - Owner: claude (lane v1.1 web, worktree `agent-aa63298f92fa237a6`)
 - Branch: `kkucherenkov/e31-close-the-real-gaps`
-- Result: PR_URL_PLACEHOLDER
+- Result: https://github.com/kkucherenkov/course_shelf/pull/303
 - Cards: [E31-F01-S02](../../docs/roadmap/tasks/E31-F01-S02.md) · GH #240
 - Goal: an admin screen that takes a metadata backup and offers the existing
   signed short-lived download link, with the in-progress and failure states

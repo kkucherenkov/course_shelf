@@ -2,6 +2,115 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-30-004 — E31-F01-S03 fix the duplicated offline bookmark
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude (lane L5, worktree `e31-offline-bookmark`)
+- Branch: `kkucherenkov/e31-f01-s03-offline-bookmark-id-map`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/258
+- Cards: [E31-F01-S03](../../docs/roadmap/tasks/E31-F01-S03.md) · GitHub #241
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] Drift `bookmark_id_map` table, schema v3 → v4 with a real migration step
+  - [x] Mapping written when the outbox entry settles, dropped on a settled delete
+  - [x] Reconcile on fetch in `OutboxLessonPlayerRepository`
+  - [x] `SyncBloc.drained` → `PlayerBloc`, so the open screen corrects without a refetch
+  - [x] Known-limits row removed from `docs/user-guide.md`
+- Notes:
+  - Review found the acceptance bullet "no duplicate **without a refetch**" unmet at the
+    UI layer: the guard lived only in `fetchBookmarks`, which runs on `_onStarted`/`_onRetry`.
+    Closed by passing an opaque `Stream<void>` into `PlayerBloc` — no sync type crosses
+    into the player feature — wired at `injector.dart:224`, the return direction of the
+    `onEnqueued` edge that already existed.
+  - Fixed a defect the card did not name: deleting a bookmark created offline and since
+    synced sent the `localId`, which 404s, and a failing leg wedged every later drain of
+    progress, notes and bookmarks alike.
+  - Out of scope, filed: `POST /lessons/{id}/bookmarks` has no idempotency key, so an
+    interrupted drain can create a second bookmark the id map cannot reconcile.
+
+## T-2026-08-30-003 — E31-F02-S01/S02 withdraw the promises
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude (lane L4, worktree `e31-withdraw-promises`)
+- Branch: `kkucherenkov/e31-withdraw-promises`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/259
+- Cards: [E31-F02-S01](../../docs/roadmap/tasks/E31-F02-S01.md), [E31-F02-S02](../../docs/roadmap/tasks/E31-F02-S02.md) · GitHub #242, #243
+- Spec diff: none — the contract keeps `ssoProviders` because the Flutter client still reads it
+- Codegen impact: no
+- Sub-steps:
+  - [x] `useSsoProviders` deleted, `AppSsoBlock` dropped from sign-in and sign-up
+  - [x] Avatar upload, email change and account deletion removed from Settings
+  - [x] 12 dead i18n keys removed from `en.ts` and `ru.ts` in parity
+  - [x] Settings page spec asserts the controls are absent
+  - [x] Both Known-limits rows removed
+- Notes:
+  - The card's premise was one revision stale: PR #205 had wired `AppSsoBlock` the day
+    before, so it was a live-but-always-empty surface, not an unread fetch. Same conclusion.
+  - `AppSsoBlock` stays in `@app/ui` with its story and spec — a component, not a claim.
+  - Review found two stale prose claims the card did not name: `docs/user-guide.md` still
+    said avatar upload, email change and account deletion were "visible but not yet
+    functional", and `docs/audit/2026-08-29-plan-vs-code.md` item 13 still read
+    "Wired, not deleted". Both retired in the same PR.
+  - tuxedo 11 asked for the opposite wiring; closed against the card.
+
+## T-2026-08-30-002 — E26-F01-S01 render the subtitle tracks in the web player
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude (lane L3, worktree `e26-subtitle-tracks`)
+- Branch: `kkucherenkov/e26-subtitle-tracks`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/257
+- Cards: [E26-F01-S01](../../docs/roadmap/tasks/E26-F01-S01.md) · GitHub #223
+- Spec diff: none — `LessonDto.subtitles[]` and the route have existed since E06/E08
+- Codegen impact: no
+- Sub-steps:
+  - [x] Pure `buildSubtitleUrl` and `buildSubtitleTracks` with a 14-case spec
+  - [x] One `<track>` per entry, unbuildable entries dropped rather than `src="undefined"`
+  - [x] Exactly one `default`, matched to the UI locale
+  - [x] Verified in Chromium against the running stack on the proxy origin
+- Notes:
+  - Subtitles had never worked on the web since E14: `useLessonPlayer` toggled
+    `videoEl.textTracks` while the page rendered no `<track>` at all.
+  - Also fixed the toggle, which set **every** track to `showing` and never followed the
+    real track modes, so a browser-enabled default left the button reading "off".
+  - Review found two `<track default>` when a lesson carries two sidecars in one language —
+    reachable, because `model Subtitle` has no `@@unique([lessonId, language])`. Closed by
+    moving list building into a pure function with a single-assignment latch.
+  - No unit test for the toggle: happy-dom's `TextTrack` silently drops `mode='hidden'`,
+    so the test would assert the shim rather than the browser.
+  - Five out-of-scope defects filed rather than folded into the diff.
+
+## T-2026-08-30-001 — E25-F03-S01/F02-S01 transcription contract and schema
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude (lane L1, worktree `e25-contract-schema`)
+- Branch: `kkucherenkov/e25-contract-schema`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/256
+- Cards: [E25-F03-S01](../../docs/roadmap/tasks/E25-F03-S01.md), [E25-F02-S01](../../docs/roadmap/tasks/E25-F02-S01.md) · GitHub #217, #214
+- Spec diff: 5 transcription routes, 7 schemas, `SubtitleDto.generated`
+- Codegen impact: yes — landed in its own commits
+- Sub-steps:
+  - [x] Routes and schemas mirroring the scan surface
+  - [x] `spec:validate && spec:bundle && spec:codegen`, artefacts in separate commits
+  - [x] Prisma models and enums; migration SQL reviewed for an accidental FK
+  - [x] `AdminTranscriptionListDto` / `AdminTranscriptionListItem` for the cross-library list
+- Notes:
+  - Contract only. Handlers, the whisper adapter and run logic are E25-F01-\* and E25-F03-S02.
+  - The migration creates exactly two foreign keys, both internal. Nothing references
+    `lesson` or `subtitle`: `prisma-lesson.repository.ts` recreates every subtitle row on
+    each save, so a cascade would erase transcripts on the next ordinary scan.
+  - Review found the admin list reusing the plain `TranscriptionDto` while all three other
+    cross-library admin listings have a denormalised pair carrying `libraryName` and an
+    error count. Fixed before merge, while the generated clients were still cheap to change.
+  - The migration was produced with `prisma migrate diff`, not `migrate dev` — no database
+    was reachable from the worktree — and the SQL was reviewed by hand.
+  - `pnpm spec:contract-test` was not run: it needs Docker and a live backend, and it is
+    wired into no GitHub workflow. It belongs with E25-F03-S02.
+
 ## T-2026-08-29-013 — Audit items 15 & 16 · the last undocumented routes
 
 - Created: 2026-08-29

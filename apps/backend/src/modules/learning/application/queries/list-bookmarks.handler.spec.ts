@@ -45,6 +45,7 @@ function makeBookmarkRepo(bookmarks: Bookmark[] = []): BookmarkRepository {
   return {
     save: vi.fn().mockResolvedValue(undefined),
     findById: vi.fn().mockResolvedValue(null),
+    findByIdempotencyKey: vi.fn().mockResolvedValue(null),
     findManyByUserAndLesson: vi.fn().mockResolvedValue(bookmarks),
     delete: vi.fn().mockResolvedValue(undefined),
   };

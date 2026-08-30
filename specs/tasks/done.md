@@ -36,6 +36,26 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
     `generate.py --roadmap-only`. A plain generator run is refused by
     `refuse_if_seeded()` and its `write_todo()` rewrites every row as unticked.
 
+## T-2026-08-30-006 — parametrise the compose host ports and project name
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude
+- Spec: none (tuxedo #39 · GitHub #284)
+- Goal: two worktrees can bring up the dev stack at the same time, and a host
+  process already holding :3000 does not block the stack.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] every published host port in `docker/compose.yml` reads `${CS_*_PORT:-<default>}`
+  - [x] the URLs derived from those ports (`BETTER_AUTH_URL`, `CORS_ORIGINS`, `NUXT_PUBLIC_*`) follow the same vars
+  - [x] `name:` reads `${COMPOSE_PROJECT_NAME:-course-shelf}`
+  - [x] `docker/README.md` documents the vars and stops telling the reader to hand-edit `compose.yml`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/263
+- Status: done
+- Blockers: none — verified with `docker-compose config` at the defaults and
+  with every variable overridden; the stack itself was not brought up
+
 ## T-2026-08-30-004 — E31-F01-S03 fix the duplicated offline bookmark
 
 - Created: 2026-08-30

@@ -169,6 +169,7 @@ paths:
           schema:
             type: string
             minLength: 1
+            pattern: "^[A-Za-z0-9_-]+$"
       responses:
         "200":
           description: Grant list returned
@@ -494,6 +495,7 @@ paths:
           schema:
             type: string
             minLength: 1
+            pattern: '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'
           description: Signed backup token, valid for `BACKUP_TOKEN_TTL_SECONDS`.
       responses:
         "200":
@@ -557,6 +559,7 @@ paths:
           schema:
             type: string
             minLength: 1
+            pattern: "^[A-Za-z0-9_-]+$"
       responses:
         "200":
           description: Recent-scans list
@@ -661,6 +664,7 @@ paths:
           schema:
             type: string
             minLength: 1
+            pattern: "^[A-Za-z0-9_-]+$"
       responses:
         "200":
           description: Recent-transcriptions list
@@ -1643,7 +1647,7 @@ paths:
         - name: courseId
           in: query
           required: false
-          schema: { type: string, minLength: 1 }
+          schema: { type: string, minLength: 1, pattern: "^[A-Za-z0-9_-]+$" }
       responses:
         "200":
           description: Matching identify tasks
@@ -2365,6 +2369,7 @@ paths:
           schema:
             type: string
             minLength: 1
+            pattern: "^[A-Za-z0-9_-]+$"
         - name: status
           in: query
           required: false
@@ -2402,6 +2407,7 @@ paths:
           schema:
             type: string
             minLength: 1
+            pattern: "^[A-Za-z0-9_-]+$"
         - name: sort
           in: query
           required: false
@@ -3799,6 +3805,7 @@ paths:
           schema:
             type: string
             minLength: 1
+            pattern: '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'
           description: Signed stream token from `issueStreamUrl`.
         - name: Range
           in: header
@@ -3893,6 +3900,7 @@ paths:
           schema:
             type: string
             minLength: 1
+            pattern: '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'
       responses:
         "200":
           description: The subtitle track.
@@ -3944,6 +3952,7 @@ paths:
           schema:
             type: string
             minLength: 1
+            pattern: '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'
           description: Signed material token from `issueMaterialDownloadUrl`.
       responses:
         "200":

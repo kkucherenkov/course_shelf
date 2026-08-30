@@ -67,9 +67,13 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 
 **Multi-platform from day one.** Nuxt 4 SPA for the web, Flutter 3.44 for mobile. Both consume the same generated client and the same design-token pipeline. Both ship two locales (en, ru). `pnpm check:i18n` verifies key parity within each app.
 
-**Design system with enforcement.** W3C Design Tokens flow from JSON into CSS custom properties, TypeScript constants, and a Dart theme. `@app/ui` ships 50 Vue brand components, each with a colocated Storybook story and a Vitest spec (878 tests total). Stylelint bans hex literals and `!important` -- every color comes from a token.
+**Design system with enforcement.** W3C Design Tokens flow from JSON into CSS custom properties, TypeScript constants, and a Dart theme. `@app/ui` ships 50 Vue brand components, each with a colocated Storybook story and a Vitest spec. Stylelint bans hex literals and `!important` -- every color comes from a token.
 
 **Realtime via Centrifugo.** The backend publishes events to Centrifugo over its GRPC API. Web and mobile clients subscribe over websockets using short-lived tokens issued by `POST /api/v1/realtime/token`. Channel definitions are generated from the AsyncAPI spec.
+
+**Offline-first mobile.** The Flutter app keeps a local Drift (SQLite) mirror of the catalogue and resolves a lesson from disk before the network. Downloads are resumable and encrypted at rest, driven by a background `workmanager` queue, so a course stays watchable with the backend unreachable.
+
+**Transcription with Whisper.** The backend image ships a pinned `whisper-cli`; supply a ggml model at runtime and lessons without subtitles get transcribed into cues stored alongside the imported sidecars. The web player renders them as a searchable transcript tab, and `?t=` deep-links a lesson to a timestamp. See [Transcription](#2b--transcription-optional).
 
 **Observable by default.** Sentry captures errors. OpenTelemetry ships traces and metrics to a local Grafana + LGTM stack at `:3200`. Health checks at `/api/v1/health` report the status of PostgreSQL and Centrifugo.
 
@@ -79,11 +83,11 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 
 ### Apps
 
-| App                | Stack                                 | Key libraries                                                              |
-| ------------------ | ------------------------------------- | -------------------------------------------------------------------------- |
-| **`apps/backend`** | NestJS 11, Prisma 7, CQRS             | Better Auth, express-openapi-validator, nestjs-i18n, Sentry, OpenTelemetry |
-| **`apps/web`**     | Nuxt 4 (SPA), Nuxt UI v4, Tailwind v4 | @nuxtjs/i18n, generated api-client-ts, SCSS + BEM                          |
-| **`apps/mobile`**  | Flutter 3.44                          | flutter_bloc, get_it, Dio, slang (i18n), Firebase Messaging, Sentry        |
+| App                | Stack                                 | Key libraries                                                                                                   |
+| ------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **`apps/backend`** | NestJS 11, Prisma 7, CQRS             | Better Auth, express-openapi-validator, nestjs-i18n, Sentry, OpenTelemetry                                      |
+| **`apps/web`**     | Nuxt 4 (SPA), Nuxt UI v4, Tailwind v4 | @nuxtjs/i18n, generated api-client-ts, SCSS + BEM                                                               |
+| **`apps/mobile`**  | Flutter 3.44                          | flutter_bloc, get_it, Dio, Drift (offline), workmanager, video_player, slang (i18n), Firebase Messaging, Sentry |
 
 ### Shared Packages
 
@@ -107,6 +111,7 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 | backend    | Dockerfile  | 3000 | Waits on postgres, centrifugo                      |
 | web        | Dockerfile  | 3001 | Nuxt dev server                                    |
 | nginx      | --          | 8080 | Reverse proxy: same-origin SPA + API               |
+| storybook  | Dockerfile  | 6006 | `@app/ui` Storybook (`pnpm storybook` runs it too) |
 | otel-lgtm  | Grafana     | 3200 | Local Grafana + LGTM observability stack           |
 
 Containers mount the repository as a volume, so edits reach the running container without a rebuild. Do not run `pnpm dev` alongside `docker compose up` -- they share the same host ports.
@@ -327,6 +332,10 @@ scripts/            setup.sh + cross-repo helpers
 | Project rules (canonical, superset of this README) | [`.claude/CLAUDE.md`](.claude/CLAUDE.md)                               |
 | Design workflow and component inventory            | [`specs/design/README.md`](specs/design/README.md)                     |
 | Docker stack details                               | [`docker/README.md`](docker/README.md)                                 |
+| Release images, env vars, production deployment    | [`docs/deployment.md`](docs/deployment.md)                             |
+| Cutting a release                                  | [`docs/release.md`](docs/release.md)                                   |
+| Known upstream issues and workarounds              | [`docs/troubleshooting.md`](docs/troubleshooting.md)                   |
+| Roadmap, epics, per-story task cards               | [`docs/roadmap/`](docs/roadmap/)                                       |
 
 ## Contributing
 

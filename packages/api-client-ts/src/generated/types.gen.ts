@@ -3004,13 +3004,29 @@ export type ListCoursesData = {
          */
         status?: 'all' | 'not-started' | 'in-progress' | 'completed';
         /**
+         * Filter by total course runtime — the sum of every lesson's duration,
+         * with lessons of unknown duration counted as zero.
+         * - `all` (default) — no filter.
+         * - `lt5`     — under 5 hours.
+         * - `5to10`   — 5 hours up to (not including) 10.
+         * - `10to20`  — 10 hours up to (not including) 20.
+         * - `gt20`    — 20 hours and over.
+         *
+         */
+        durationBucket?: 'all' | 'lt5' | '5to10' | '10to20' | 'gt20';
+        /**
+         * Filter to courses linked to this instructor. An id that matches no instructor yields an empty list rather than an error.
+         */
+        instructorId?: string;
+        /**
          * Server-side sort. `recently-watched` (default) uses
          * `updatedAt` as a proxy for last activity until a dedicated
          * `lastViewedAt` field is added. `newest` is `createdAt` desc.
-         * `alphabetical` is title asc, locale-insensitive.
+         * `alphabetical` is title asc, locale-insensitive. `duration` is
+         * total runtime desc, using the same sum as `durationBucket`.
          *
          */
-        sort?: 'recently-watched' | 'newest' | 'alphabetical';
+        sort?: 'recently-watched' | 'newest' | 'alphabetical' | 'duration';
     };
     url: '/api/v1/courses';
 };

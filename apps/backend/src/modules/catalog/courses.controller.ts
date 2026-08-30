@@ -37,6 +37,7 @@ import { MarkCourseCompleteCommand } from './application/commands/mark-course-co
 import { ResetCourseProgressCommand } from './application/commands/reset-course-progress.command';
 import {
   ListCoursesQuery,
+  type CourseListDurationBucket,
   type CourseListSort,
   type CourseListStatus,
 } from './application/queries/list-courses.query';
@@ -63,6 +64,14 @@ const VALID_SORTS: ReadonlySet<CourseListSort> = new Set([
   'recently-watched',
   'newest',
   'alphabetical',
+  'duration',
+]);
+const VALID_DURATION_BUCKETS: ReadonlySet<CourseListDurationBucket> = new Set([
+  'all',
+  'lt5',
+  '5to10',
+  '10to20',
+  'gt20',
 ]);
 
 function parseStatus(raw: string | undefined): CourseListStatus {
@@ -75,6 +84,12 @@ function parseSort(raw: string | undefined): CourseListSort {
     : 'recently-watched';
 }
 
+function parseDurationBucket(raw: string | undefined): CourseListDurationBucket {
+  return raw && VALID_DURATION_BUCKETS.has(raw as CourseListDurationBucket)
+    ? (raw as CourseListDurationBucket)
+    : 'all';
+}
+
 @Controller({ path: 'courses', version: '1' })
 export class CoursesController {
   constructor(
@@ -82,17 +97,26 @@ export class CoursesController {
     private readonly queryBus: QueryBus,
   ) {}
 
-  /** GET /api/v1/courses?libraryId=…&status=…&sort=… */
+  /** GET /api/v1/courses?libraryId=…&status=…&durationBucket=…&instructorId=…&sort=… */
   @Get()
   async listCourses(
     @Session() session: SessionContext,
     @Query('libraryId') libraryId?: string,
     @Query('status') status?: string,
     @Query('sort') sort?: string,
+    @Query('durationBucket') durationBucket?: string,
+    @Query('instructorId') instructorId?: string,
   ): Promise<CourseListDto> {
     const actor = session.user;
     const items = await this.queryBus.execute<ListCoursesQuery, CourseDto[]>(
-      new ListCoursesQuery(actor, libraryId, parseStatus(status), parseSort(sort)),
+      new ListCoursesQuery(
+        actor,
+        libraryId,
+        parseStatus(status),
+        parseSort(sort),
+        parseDurationBucket(durationBucket),
+        instructorId,
+      ),
     );
     return { items };
   }

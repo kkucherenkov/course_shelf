@@ -1022,12 +1022,14 @@ class CatalogApi {
   }
 
   /// List courses (with filtering and sort)
-  /// Returns courses the requester can see. Non-admins see only courses inside libraries they have a READ AccessGrant for; admins see all.  The &#x60;status&#x60; and &#x60;sort&#x60; query params back the Browse page (E14-F01-S02). &#x60;status&#x60; filters by per-user progress derived from the CourseProgressReadModel projection. &#x60;sort&#x60; is server-applied so the SPA never needs to re-sort the response. 
+  /// Returns courses the requester can see. Non-admins see only courses inside libraries they have a READ AccessGrant for; admins see all.  The &#x60;status&#x60; and &#x60;sort&#x60; query params back the Browse page (E14-F01-S02); &#x60;durationBucket&#x60; and &#x60;instructorId&#x60;, and the &#x60;duration&#x60; sort, complete that filter set (E31-F01-S01). &#x60;status&#x60; filters by per-user progress derived from the CourseProgressReadModel projection. Every filter and the sort are server-applied so the SPA never needs to re-filter or re-sort the response. 
   ///
   /// Parameters:
   /// * [libraryId] - Filter to a single library; omit for everything visible.
   /// * [status] - Filter by per-user progress state.   - `all` (default) — no filter.   - `not-started` — `progress.percent == 0` and no `lessonsCompleted`.   - `in-progress` — `0 < progress.percent < 100`.   - `completed`   — `progress.percent == 100`. 
-  /// * [sort] - Server-side sort. `recently-watched` (default) uses `updatedAt` as a proxy for last activity until a dedicated `lastViewedAt` field is added. `newest` is `createdAt` desc. `alphabetical` is title asc, locale-insensitive. 
+  /// * [durationBucket] - Filter by total course runtime — the sum of every lesson's duration, with lessons of unknown duration counted as zero.   - `all` (default) — no filter.   - `lt5`     — under 5 hours.   - `5to10`   — 5 hours up to (not including) 10.   - `10to20`  — 10 hours up to (not including) 20.   - `gt20`    — 20 hours and over. 
+  /// * [instructorId] - Filter to courses linked to this instructor. An id that matches no instructor yields an empty list rather than an error.
+  /// * [sort] - Server-side sort. `recently-watched` (default) uses `updatedAt` as a proxy for last activity until a dedicated `lastViewedAt` field is added. `newest` is `createdAt` desc. `alphabetical` is title asc, locale-insensitive. `duration` is total runtime desc, using the same sum as `durationBucket`. 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -1040,6 +1042,8 @@ class CatalogApi {
   Future<Response<CourseListDto>> listCourses({ 
     String? libraryId,
     String? status = 'all',
+    String? durationBucket = 'all',
+    String? instructorId,
     String? sort = 'recently-watched',
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -1070,6 +1074,8 @@ class CatalogApi {
     final _queryParameters = <String, dynamic>{
       if (libraryId != null) r'libraryId': encodeQueryParameter(_serializers, libraryId, const FullType(String)),
       if (status != null) r'status': encodeQueryParameter(_serializers, status, const FullType(String)),
+      if (durationBucket != null) r'durationBucket': encodeQueryParameter(_serializers, durationBucket, const FullType(String)),
+      if (instructorId != null) r'instructorId': encodeQueryParameter(_serializers, instructorId, const FullType(String)),
       if (sort != null) r'sort': encodeQueryParameter(_serializers, sort, const FullType(String)),
     };
 

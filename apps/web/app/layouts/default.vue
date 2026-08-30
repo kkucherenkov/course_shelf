@@ -83,6 +83,12 @@
         icon: 'lock',
         to: '/admin/permissions',
       },
+      {
+        key: 'admin-backups',
+        label: t('pages.admin.navBackups'),
+        icon: 'download',
+        to: '/admin/backups',
+      },
     ];
   });
 
@@ -93,6 +99,7 @@
 
   const activeRoute = computed<string>(() => {
     const p = route.path;
+    if (p.startsWith('/admin/backups')) return 'admin-backups';
     if (p.startsWith('/admin/permissions')) return 'admin-permissions';
     if (p.startsWith('/admin/users')) return 'admin-users';
     if (p.startsWith('/admin/libraries')) return 'admin-libraries';

@@ -6,10 +6,12 @@
  * useCourseOutline). `useAsyncData` keeps the SPA semantics consistent
  * with the rest of the app (`server: false`).
  *
- * Browse filters/sort (E14-F01-S02): pass refs for `status` and `sort` and
- * the composable refetches whenever either changes. The cache key embeds
- * the active filter+sort so each combination has its own entry — switching
- * back to a previous filter hits cache instantly.
+ * Browse filters/sort (E14-F01-S02, completed in E31-F01-S01): pass refs for
+ * any of status / sort / library / duration bucket / instructor and the
+ * composable refetches whenever one changes. Every one of them is applied by
+ * the server, so the response is the answer — there is no client-side
+ * post-filtering to keep in sync. The cache key embeds the whole active
+ * combination, so returning to a previous one hits cache instantly.
  */
 
 import { client, listCourses } from '@app/api-client-ts';
@@ -20,11 +22,24 @@ import type { CourseListDto } from '@app/api-client-ts';
 import type { RowStatus } from './useHome';
 
 export type CourseListStatusFilter = 'all' | 'not-started' | 'in-progress' | 'completed';
-export type CourseListSort = 'recently-watched' | 'newest' | 'alphabetical';
+export type CourseListSort = 'recently-watched' | 'newest' | 'alphabetical' | 'duration';
+export type CourseListDurationBucket = 'all' | 'lt5' | '5to10' | '10to20' | 'gt20';
+
+/** The value each filter takes when it is not narrowing anything. */
+export const COURSE_LIST_DEFAULTS = {
+  status: 'all',
+  sort: 'recently-watched',
+  durationBucket: 'all',
+  libraryId: '',
+  instructorId: '',
+} as const;
 
 export interface UseCoursesListOptions {
   status?: Ref<CourseListStatusFilter>;
   sort?: Ref<CourseListSort>;
+  durationBucket?: Ref<CourseListDurationBucket>;
+  libraryId?: Ref<string>;
+  instructorId?: Ref<string>;
 }
 
 export function useCoursesList(options: UseCoursesListOptions = {}): {
@@ -33,11 +48,23 @@ export function useCoursesList(options: UseCoursesListOptions = {}): {
   error: Ref<Error | null>;
   refetch: () => Promise<void>;
 } {
-  const statusRef = options.status;
-  const sortRef = options.sort;
+  const {
+    status: statusRef,
+    sort: sortRef,
+    durationBucket: durationRef,
+    libraryId: libraryRef,
+    instructorId: instructorRef,
+  } = options;
 
-  const cacheKey = computed(
-    () => `courses:list:${statusRef?.value ?? 'all'}:${sortRef?.value ?? 'recently-watched'}`,
+  const cacheKey = computed(() =>
+    [
+      'courses:list',
+      statusRef?.value ?? COURSE_LIST_DEFAULTS.status,
+      sortRef?.value ?? COURSE_LIST_DEFAULTS.sort,
+      durationRef?.value ?? COURSE_LIST_DEFAULTS.durationBucket,
+      libraryRef?.value ?? COURSE_LIST_DEFAULTS.libraryId,
+      instructorRef?.value ?? COURSE_LIST_DEFAULTS.instructorId,
+    ].join(':'),
   );
 
   // `useAsyncData`'s `watch` option is `MultiWatchSources` — Refs of any
@@ -45,15 +72,31 @@ export function useCoursesList(options: UseCoursesListOptions = {}): {
   // string-literal-union types of each individual ref don't pollute the
   // array element type and break the overload match.
   const watchSources: Ref<unknown>[] = [];
-  if (statusRef !== undefined) watchSources.push(statusRef);
-  if (sortRef !== undefined) watchSources.push(sortRef);
+  for (const source of [statusRef, sortRef, durationRef, libraryRef, instructorRef]) {
+    if (source !== undefined) watchSources.push(source as Ref<unknown>);
+  }
 
   const { data, status, error, refresh } = useAsyncData<CourseListDto>(
     cacheKey,
     async () => {
-      const query: { status?: CourseListStatusFilter; sort?: CourseListSort } = {};
-      if (statusRef && statusRef.value !== 'all') query.status = statusRef.value;
-      if (sortRef && sortRef.value !== 'recently-watched') query.sort = sortRef.value;
+      // Defaults are omitted rather than sent — the server applies the same
+      // fallbacks, and a bare `GET /courses` is the cacheable common case.
+      const query: {
+        status?: CourseListStatusFilter;
+        sort?: CourseListSort;
+        durationBucket?: CourseListDurationBucket;
+        libraryId?: string;
+        instructorId?: string;
+      } = {};
+      if (statusRef && statusRef.value !== COURSE_LIST_DEFAULTS.status)
+        query.status = statusRef.value;
+      if (sortRef && sortRef.value !== COURSE_LIST_DEFAULTS.sort) query.sort = sortRef.value;
+      if (durationRef && durationRef.value !== COURSE_LIST_DEFAULTS.durationBucket)
+        query.durationBucket = durationRef.value;
+      if (libraryRef && libraryRef.value !== COURSE_LIST_DEFAULTS.libraryId)
+        query.libraryId = libraryRef.value;
+      if (instructorRef && instructorRef.value !== COURSE_LIST_DEFAULTS.instructorId)
+        query.instructorId = instructorRef.value;
 
       const res = await listCourses({
         client,

@@ -472,10 +472,12 @@ export const updateBookmark = <ThrowOnError extends boolean = false>(options: Op
  * Returns courses the requester can see. Non-admins see only courses inside
  * libraries they have a READ AccessGrant for; admins see all.
  *
- * The `status` and `sort` query params back the Browse page (E14-F01-S02).
- * `status` filters by per-user progress derived from the
- * CourseProgressReadModel projection. `sort` is server-applied so the
- * SPA never needs to re-sort the response.
+ * The `status` and `sort` query params back the Browse page (E14-F01-S02);
+ * `durationBucket` and `instructorId`, and the `duration` sort, complete
+ * that filter set (E31-F01-S01). `status` filters by per-user progress
+ * derived from the CourseProgressReadModel projection. Every filter and
+ * the sort are server-applied so the SPA never needs to re-filter or
+ * re-sort the response.
  *
  */
 export const listCourses = <ThrowOnError extends boolean = false>(options?: Options<ListCoursesData, ThrowOnError>) => (options?.client ?? client).get<ListCoursesResponses, ListCoursesErrors, ThrowOnError>({

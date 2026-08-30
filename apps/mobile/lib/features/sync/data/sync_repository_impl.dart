@@ -23,15 +23,18 @@ class SyncRepositoryImpl implements SyncRepository {
     required ProgressOutboxDao progress,
     required NotesOutboxDao notes,
     required BookmarksOutboxDao bookmarks,
+    required BookmarkIdMapDao bookmarkIds,
   }) : _api = api,
        _progress = progress,
        _notes = notes,
-       _bookmarks = bookmarks;
+       _bookmarks = bookmarks,
+       _bookmarkIds = bookmarkIds;
 
   final SyncApi _api;
   final ProgressOutboxDao _progress;
   final NotesOutboxDao _notes;
   final BookmarksOutboxDao _bookmarks;
+  final BookmarkIdMapDao _bookmarkIds;
 
   @override
   Future<int> pendingCount() async {
@@ -166,9 +169,12 @@ class SyncRepositoryImpl implements SyncRepository {
   ///   - null           → POST, whatever `op` says.
   ///   - non-null       → PATCH or DELETE by that id, per `op`.
   ///
-  /// A created bookmark's new server id is not written back: the row is cleared
-  /// on success, so nothing is left to carry it. A later edit of that bookmark
-  /// enqueues against the id the player refetched.
+  /// A created bookmark's new server id is recorded in `bookmark_id_map`
+  /// against the `localId` the UI is still holding. Without that, the local
+  /// copy and the freshly created server copy are two unrelated bookmarks: a
+  /// delete aimed at the `localId` 404s and wedges this queue, and a read that
+  /// sees both renders the bookmark twice. A settled delete drops the mapping
+  /// again — the bookmark it named no longer exists on either side.
   Future<void> _drainBookmarks(_Tally tally) async {
     for (final BookmarksOutboxEntry row in await _bookmarks.pending()) {
       final String? serverId = row.serverId;
@@ -180,13 +186,15 @@ class SyncRepositoryImpl implements SyncRepository {
       }
 
       if (serverId == null) {
-        await _api.createBookmark(
+        final String assigned = await _api.createBookmark(
           lessonId: row.lessonId,
           positionSeconds: row.positionSeconds ?? 0,
           label: row.label,
         );
+        await _bookmarkIds.record(localId: row.localId, serverId: assigned);
       } else if (row.op == OutboxOp.delete) {
         await _api.deleteBookmark(serverId);
+        await _bookmarkIds.forget(row.localId);
       } else {
         await _api.updateBookmark(
           id: serverId,

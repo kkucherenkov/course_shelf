@@ -412,7 +412,6 @@ Stated plainly, because finding these by surprise is worse.
 
 | Limit | Detail |
 | --- | --- |
-| **A bookmark added offline may appear twice, briefly** | Until the app refetches that lesson's bookmarks, one copy carries a local id and the server's copy carries its own. Reopening the lesson clears it. |
 | **Browse filters incomplete** | Library, duration-bucket and instructor filters, and sort-by-duration, are designed but not implemented on web. |
 | **Avatar upload, email change, account deletion** | Present in Settings, not functional. |
 | **Backups have no UI** | API only. |

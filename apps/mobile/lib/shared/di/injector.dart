@@ -113,8 +113,9 @@ void configureDependencies() {
     ..registerLazySingleton<SearchRepository>(
       () => SearchRepositoryImpl(getIt<Dio>()),
     )
-    // The player's note and bookmark writes go through the outboxes; every
-    // read still goes straight at `LessonPlayerApi`. `onEnqueued` resolves
+    // The player's note and bookmark writes go through the outboxes, and the
+    // bookmark read is reconciled against them; every other read still goes
+    // straight at `LessonPlayerApi`. `onEnqueued` resolves
     // `SyncBloc` lazily *inside* the closure — resolving it here instead would
     // make the two singletons construct each other.
     ..registerLazySingleton<LessonPlayerRepository>(
@@ -126,6 +127,7 @@ void configureDependencies() {
         ),
         notes: NotesOutboxDao(getIt<AppDatabase>()),
         bookmarks: BookmarksOutboxDao(getIt<AppDatabase>()),
+        bookmarkIds: BookmarkIdMapDao(getIt<AppDatabase>()),
         onEnqueued: () => getIt<SyncBloc>().add(const SyncManualRequested()),
       ),
     )
@@ -224,6 +226,7 @@ void configureDependencies() {
         progress: ProgressOutboxDao(getIt<AppDatabase>()),
         notes: NotesOutboxDao(getIt<AppDatabase>()),
         bookmarks: BookmarksOutboxDao(getIt<AppDatabase>()),
+        bookmarkIds: BookmarkIdMapDao(getIt<AppDatabase>()),
       ),
     )
     // Singleton, not a factory: one sync engine per app. A second instance

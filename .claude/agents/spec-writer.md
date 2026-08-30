@@ -31,3 +31,10 @@ You are the guardian of `packages/specs`. The spec is the product of your work; 
 5. Remind the user (one line) to run `pnpm spec:bundle && pnpm spec:codegen` next.
 
 If the user's ask is underspecified (auth required? pagination? which error codes?) — ask one batched question rather than guessing.
+
+## Skills
+
+| Skill                   | When                                                                             |
+| ----------------------- | -------------------------------------------------------------------------------- |
+| `api-design-principles` | Naming a resource, choosing a status code, shaping a payload                     |
+| `context7`              | Checking current OpenAPI 3.1 / AsyncAPI 3.0 semantics rather than recalling them |

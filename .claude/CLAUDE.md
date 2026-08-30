@@ -239,6 +239,37 @@ Delegate when the task scope is bounded to one surface. The available agents and
 what each covers are listed for you at session start — read that list rather than
 a copy here, which goes stale the moment an agent is added.
 
+Each agent file ends with a **Skills** section naming the skills that agent
+should reach for. Invoke the skill before writing code in its area, not after.
+Those skills come from the host's plugin and global skill set, not from this
+repository — if one is missing on the machine you are on, carry on without it
+rather than stopping.
+
+### Parallel work
+
+Two or more lanes that touch different surfaces run in parallel, never one
+after the other:
+
+1. **Orca first.** If the `orca` CLI is on `PATH`, use Orca orchestration — the
+   `orca-cli` skill for worktrees and terminals, the `orchestration` skill when
+   lanes need to message each other, wait on one another, or pass a decision
+   back. It gives each lane a real worktree and keeps the lanes addressable.
+2. **Otherwise fan out subagents** with the `Agent` tool, one per lane, each in
+   its own worktree (`isolation: "worktree"`), dispatched in a single message so
+   they actually run concurrently.
+
+Either way the lane discipline is the same:
+
+- One lane = one worktree = one branch = one PR. Lanes never share a branch.
+- Say in each lane's brief which paths belong to other lanes and are therefore
+  off limits — file collisions between lanes are the failure mode that costs
+  the most to unpick.
+- A file two lanes both need (`packages/specs/openapi/openapi.yaml`,
+  `docker/compose.yml`, a shared module) belongs to exactly one of them; the
+  others wait for that PR to land.
+- `specs/tasks/active.md` is the exception — every lane appends its own entry
+  at the top and the union is resolved at merge.
+
 ## Fix root causes, not symptoms
 
 When a toolchain error appears, prefer a structural fix over a workaround:

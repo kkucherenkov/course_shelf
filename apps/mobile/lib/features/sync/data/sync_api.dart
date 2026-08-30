@@ -77,10 +77,15 @@ class SyncApi {
   ///
   /// `label` is omitted when null or empty — the spec gives it `minLength: 1`,
   /// so sending `""` is a 400 rather than "no label".
+  ///
+  /// `idempotencyKey` makes a retried create return the bookmark the first
+  /// call made instead of a duplicate — the drain passes the outbox row's
+  /// `localId`, stable across retries of the same queued row.
   Future<String> createBookmark({
     required String lessonId,
     required int positionSeconds,
     String? label,
+    required String idempotencyKey,
   }) async {
     final Response<Map<String, dynamic>> response = await _dio
         .post<Map<String, dynamic>>(
@@ -88,6 +93,7 @@ class SyncApi {
           data: <String, dynamic>{
             'positionSeconds': positionSeconds,
             if (label != null && label.isNotEmpty) 'label': label,
+            'idempotencyKey': idempotencyKey,
           },
         );
     final String? id = response.data?['id'] as String?;

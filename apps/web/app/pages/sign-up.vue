@@ -7,7 +7,6 @@
     AppPasswordField,
     AppSelect,
     AppNoPermission,
-    AppSsoBlock,
   } from '@app/ui';
   import type { AppSelectOption } from '@app/ui';
   import { ref, computed, watch } from 'vue';
@@ -17,7 +16,6 @@
 
   import { useAuthStore } from '~/stores/auth';
   import { useInstanceConfig } from '~/composables/useInstanceConfig';
-  import { useSsoProviders } from '~/composables/useSsoProviders';
   import { useFirstRun } from '~/composables/useFirstRun';
   import { useOtpInput } from '~/composables/useOtpInput';
   import { AUTH_ERROR_CODES } from '~/constants/authErrorCodes';
@@ -28,7 +26,6 @@
   const { t } = useI18n();
   const authStore = useAuthStore();
   const { config } = useInstanceConfig();
-  const ssoProviders = useSsoProviders();
   const { hasUsers } = useFirstRun();
 
   // First-run: no users exist yet, so this account becomes the first admin.
@@ -322,15 +319,6 @@
             :disabled="!email || !password || password.length < 8"
           />
         </form>
-
-        <!-- SSO — renders nothing until the backend advertises a provider.
-             Step 1 only: the later steps are verification and library setup,
-             where a provider button would make no sense. -->
-        <AppSsoBlock
-          v-if="ssoProviders.length > 0"
-          :providers="ssoProviders"
-          :group-label="t('ui.sso.group')"
-        />
 
         <p class="page-sign-up__footnote-link">
           {{ t('pages.signUp.alreadyHaveAccount') }}

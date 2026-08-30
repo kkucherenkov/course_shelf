@@ -326,7 +326,6 @@ Two rules are worth knowing:
 Four groups, saved automatically as you change them.
 
 **Profile** — display name, email (read-only), password change.
-Avatar upload and email change are visible but not yet functional.
 
 **Appearance** — theme (dark / light / system) and density
 (comfortable / cozy / compact).
@@ -342,7 +341,6 @@ Avatar upload and email change are visible but not yet functional.
 
 **Account** — sign out of this device; sign out of *all other* devices
 (revokes every session but the current one, behind a confirmation dialog).
-Account deletion is shown but not yet functional.
 
 **Languages.** The mobile app ships English, Russian, Ukrainian and Greek.
 The web app currently ships English and Russian.
@@ -413,11 +411,9 @@ Stated plainly, because finding these by surprise is worse.
 | Limit | Detail |
 | --- | --- |
 | **Browse filters incomplete** | Library, duration-bucket and instructor filters, and sort-by-duration, are designed but not implemented on web. |
-| **Avatar upload, email change, account deletion** | Present in Settings, not functional. |
 | **Backups have no UI** | API only. |
 | **Web ships 2 locales** | English and Russian. Mobile ships four (en, ru, uk, el). |
 | **Greek and Ukrainian are machine-written** | Not yet reviewed by a native speaker. |
-| **SSO** | The provider button row exists in the component library but is not wired into sign-in. Email + password is the only path today. |
 | **Storage bar on mobile** | The free/used disk figures use a native plugin that has not been verified on a real device. |
 
 ---

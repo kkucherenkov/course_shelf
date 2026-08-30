@@ -20,9 +20,15 @@ import { execFile } from 'node:child_process';
 import { Injectable } from '@nestjs/common';
 
 import { AppConfig } from '../../../common/config/app-config';
+import { AudioExtractionFailedError } from '../domain/transcription/transcription.errors';
 import { FfmpegProbeError, FfmpegThumbnailError } from '../domain/scan/scan.errors';
 
-import type { FfmpegAdapter, ThumbnailRequest, VideoMetadata } from '../domain/scan/ffmpeg-adapter';
+import type {
+  AudioExtractRequest,
+  FfmpegAdapter,
+  ThumbnailRequest,
+  VideoMetadata,
+} from '../domain/scan/ffmpeg-adapter';
 
 /**
  * Manual promise wrapper around execFile.
@@ -150,6 +156,31 @@ export class LocalFfmpegAdapter implements FfmpegAdapter {
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       throw new FfmpegThumbnailError(videoAbsolutePath, msg);
+    }
+  }
+
+  async extractAudio(req: AudioExtractRequest): Promise<void> {
+    const { videoAbsolutePath, outAbsolutePath, timeoutMs } = req;
+
+    const args = [
+      '-i',
+      videoAbsolutePath,
+      '-vn',
+      '-ac',
+      '1',
+      '-ar',
+      '16000',
+      '-c:a',
+      'pcm_s16le',
+      '-y',
+      outAbsolutePath,
+    ];
+
+    try {
+      await execFileAsync(this.appConfig.ffmpegPath, args, { timeout: timeoutMs });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new AudioExtractionFailedError(videoAbsolutePath, msg);
     }
   }
 }

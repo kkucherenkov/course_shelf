@@ -1,5 +1,31 @@
 # Active tasks
 
+## T-2026-08-30-L5 — CI honesty: stop masking failures
+
+- Created: 2026-08-30
+- Owner: claude (lane L5)
+- Spec: GitHub issues #269, #265, #296, #264
+- Goal: every green CI run means something was actually checked.
+- Spec diff: —
+- Codegen impact: no
+- Sub-steps:
+  - [x] #269 — csp.spec.ts must fail in CI instead of skipping itself — already
+        landed in `ac87aa9`: `E2E_EXPECT_CSP=1` in e2e.yml turns the skip into a
+        throw on the one stack that runs production nginx + `NODE_ENV=production`
+  - [x] #269 — run `pnpm spec:contract-test` in a workflow (e2e.yml, after
+        Playwright so its generated writes cannot reach the visual snapshots)
+  - [x] #269 — add `push: main` to quality.yml and e2e.yml
+  - [x] #265 — ffmpeg in ci.yml + the `Fix (CI)` section deleted — both already
+        landed in `ac87aa9`; verified, nothing left to change
+  - [x] #296 — drop `test:e2e` from apps/backend/package.json
+  - [~] #264 — 44 of 75 a11y violations fixed; the remaining 31 are all
+    `color-contrast` on shipped brand tokens and need a palette decision,
+    so `STORYBOOK_A11Y_LEVEL` stays as it is rather than being armed onto a
+    red build. See the PR body for the numbers.
+- Status: in-progress
+- Blockers: #264 cannot be closed until the brand-palette contrast pairs are
+  decided (tuxedo #59).
+
 ## T-2026-08-30-015 — close AUTH_SELF_REGISTRATION gap + bookmark create idempotency
 
 - Created: 2026-08-30

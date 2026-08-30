@@ -91,6 +91,7 @@ interface CourseDelegate {
 interface SectionDelegate {
   deleteMany: ReturnType<typeof vi.fn>;
   createMany: ReturnType<typeof vi.fn>;
+  upsert: ReturnType<typeof vi.fn>;
 }
 
 interface CourseInstructorDelegate {
@@ -132,6 +133,7 @@ function makePrisma(): MockPrisma {
     section: {
       deleteMany: vi.fn().mockResolvedValue(undefined),
       createMany: vi.fn().mockResolvedValue(undefined),
+      upsert: vi.fn().mockResolvedValue(undefined),
     },
     courseInstructor: {
       deleteMany: vi.fn().mockResolvedValue(undefined),
@@ -206,13 +208,35 @@ describe('PrismaCourseRepository', () => {
     expect(call?.create.title).toBe('My Course');
   });
 
-  it('deletes and recreates sections inside transaction', async () => {
+  it('upserts sections instead of recreating them, so the lesson cascade never fires', async () => {
+    // Regression for #317. `Lesson.section` is `onDelete: Cascade`, so an
+    // unscoped `section.deleteMany` silently takes every lesson of the course
+    // with it — which is what a scan's second save of a course used to do,
+    // leaving courses and sections intact and zero lessons behind.
     const course = makeCourse();
     course.addSection({ id: 's1', title: 'Intro' });
+    course.addSection({ id: 's2', title: 'Basics' });
+    await repo.save(course);
+
+    // Never a wholesale delete: the surviving sections must be excluded.
+    expect(prisma.section.deleteMany).toHaveBeenCalledWith({
+      where: { courseId: 'course-1', id: { notIn: ['s1', 's2'] } },
+    });
+    expect(prisma.section.createMany).not.toHaveBeenCalled();
+    expect(prisma.section.upsert).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(prisma.section.upsert).mock.calls[0]?.[0]).toMatchObject({
+      where: { id: 's1' },
+      create: { id: 's1', courseId: 'course-1', position: 1, title: 'Intro' },
+      update: { courseId: 'course-1', position: 1, title: 'Intro' },
+    });
+  });
+
+  it('deletes every section of a course that no longer has any', async () => {
+    const course = makeCourse();
     await repo.save(course);
 
     expect(prisma.section.deleteMany).toHaveBeenCalledWith({ where: { courseId: 'course-1' } });
-    expect(prisma.section.createMany).toHaveBeenCalledOnce();
+    expect(prisma.section.upsert).not.toHaveBeenCalled();
   });
 
   it('writes null for optional scalar fields when undefined on aggregate', async () => {

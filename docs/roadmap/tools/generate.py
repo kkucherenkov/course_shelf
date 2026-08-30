@@ -2310,6 +2310,345 @@ add(
     ],
 )
 
+
+# ============================================================ E25 ============
+add(
+    id="E25-F01-S01",
+    epic="E25", epic_title="Transcription (Whisper)",
+    feature="F01", feature_title="Engine foundations",
+    title="Derived-artifact volume, whisper config, and the binary in the image",
+    duration=1, stage="A",
+    deps=["E01-F02-S01"],
+    goal="Give CourseShelf somewhere legal to write what it generates. `COURSES_PATH` is mounted `:ro` in both production composes, so transcripts and thumbnails need a separate writable volume, and whisper.cpp needs to exist inside the backend image.",
+)
+add(
+    id="E25-F01-S02",
+    epic="E25", epic_title="Transcription (Whisper)",
+    feature="F01", feature_title="Engine foundations",
+    title="Derived path resolution with its own traversal guard",
+    duration=1, stage="A",
+    deps=["E25-F01-S01"],
+    goal="One pure function that maps a lesson to the path of its generated transcript, and one guard that keeps that path inside the derived root.",
+)
+add(
+    id="E25-F01-S03",
+    epic="E25", epic_title="Transcription (Whisper)",
+    feature="F01", feature_title="Engine foundations",
+    title="ffmpeg audio extraction for whisper",
+    duration=1, stage="A",
+    deps=["E06-F02-S02"],
+    goal="whisper.cpp consumes 16 kHz mono PCM. The existing `FfmpegAdapter` owns every ffmpeg call, so the new one goes there rather than into the whisper adapter.",
+)
+add(
+    id="E25-F01-S04",
+    epic="E25", epic_title="Transcription (Whisper)",
+    feature="F01", feature_title="Engine foundations",
+    title="whisper.cpp adapter behind a port",
+    duration=1, stage="A",
+    deps=["E25-F01-S01"],
+    goal="Speech-to-text behind a port, so the application layer never learns the engine is whisper.cpp, a child process, or local at all.",
+)
+add(
+    id="E25-F02-S01",
+    epic="E25", epic_title="Transcription (Whisper)",
+    feature="F02", feature_title="Domain",
+    title="Transcript and transcription schema",
+    duration=1, stage="A",
+    deps=["E06-F03-S02"],
+    goal="Four tables and two enums: the transcript index that doubles as the skip marker, its cues, the run, and the run's per-lesson errors.",
+)
+add(
+    id="E25-F02-S02",
+    epic="E25", epic_title="Transcription (Whisper)",
+    feature="F02", feature_title="Domain",
+    title="Transcription aggregate",
+    duration=1, stage="A",
+    deps=["E25-F02-S01"],
+    goal="The run's lifecycle and counters, shaped like `Scan` — status transitions, per-item errors that do not fail the run.",
+)
+add(
+    id="E25-F02-S03",
+    epic="E25", epic_title="Transcription (Whisper)",
+    feature="F02", feature_title="Domain",
+    title="The skip rule",
+    duration=1, stage="A",
+    deps=["E25-F02-S01"],
+    goal="The rule that makes a re-run cheap and a restart survivable, so no durable queue is needed.",
+)
+add(
+    id="E25-F03-S01",
+    epic="E25", epic_title="Transcription (Whisper)",
+    feature="F03", feature_title="Contract and run",
+    title="OpenAPI for transcription runs and generated subtitles",
+    duration=1, stage="A",
+    deps=["E02-F02-S04"],
+    goal="Describe the routes before they exist — `express-openapi-validator` rejects anything the contract does not cover.",
+)
+add(
+    id="E25-F03-S02",
+    epic="E25", epic_title="Transcription (Whisper)",
+    feature="F03", feature_title="Contract and run",
+    title="The transcription run",
+    duration=3, stage="A",
+    deps=["E25-F01-S02", "E25-F01-S03", "E25-F01-S04", "E25-F02-S02", "E25-F02-S03", "E25-F03-S01"],
+    goal="A pass over a library's videos, modelled on the scan: `202`, work continues after the response, per-lesson failures recorded without failing the run.",
+)
+add(
+    id="E25-F03-S03",
+    epic="E25", epic_title="Transcription (Whisper)",
+    feature="F03", feature_title="Contract and run",
+    title="Serve generated transcripts as subtitle tracks",
+    duration=1, stage="A",
+    deps=["E08-F02-S02", "E25-F02-S01"],
+    goal="A generated transcript should reach the player through the route that already serves subtitles, with no new endpoint.",
+)
+add(
+    id="E25-F04-S01",
+    epic="E25", epic_title="Transcription (Whisper)",
+    feature="F04", feature_title="Integration",
+    title="Scan thumbnails to the derived volume, and orphan cleanup",
+    duration=1, stage="A",
+    deps=["E25-F01-S02"],
+    goal="Finish the writable-artifact fix instead of half-applying it. The scanner writes `*.thumb.jpg` next to the video, which fails on every production install because `COURSES_PATH` is read-only.",
+)
+add(
+    id="E25-F04-S02",
+    epic="E25", epic_title="Transcription (Whisper)",
+    feature="F04", feature_title="Integration",
+    title="Transcription card in the admin library screen",
+    duration=2, stage="A",
+    deps=["E25-F03-S01", "E14-F04-S01"],
+    goal="Somewhere to start, watch and stop a run. A job measured in days must show honest progress rather than a spinner.",
+)
+add(
+    id="E25-F04-S03",
+    epic="E25", epic_title="Transcription (Whisper)",
+    feature="F04", feature_title="Integration",
+    title="Transcription documentation",
+    duration=1, stage="A",
+    deps=["E25-F03-S02"],
+    goal="Nobody can deploy this without being told about two mounts and a model download.",
+)
+
+# ============================================================ E26 ============
+add(
+    id="E26-F01-S01",
+    epic="E26", epic_title="Transcript panel (web)",
+    feature="F01", feature_title="In-lesson transcript",
+    title="Render the subtitle tracks in the web player",
+    duration=1, stage="A",
+    deps=["E08-F02-S02", "E14-F03-S01"],
+    goal="Fix a defect that has been shipped since E14: **subtitles have never worked on the web.** `useLessonPlayer` toggles `videoEl.textTracks`, but the lesson page renders no `<track>`, so the list is always empty and the player's subtitle button does nothing.",
+)
+add(
+    id="E26-F01-S02",
+    epic="E26", epic_title="Transcript panel (web)",
+    feature="F01", feature_title="In-lesson transcript",
+    title="useTranscriptCues composable",
+    duration=1, stage="A",
+    deps=["E26-F01-S01"],
+    goal="Lift the cues the browser has already parsed off the `<video>` into a reactive array, so the tab can stay presentational and testable without a real media element.",
+)
+add(
+    id="E26-F01-S03",
+    epic="E26", epic_title="Transcript panel (web)",
+    feature="F01", feature_title="In-lesson transcript",
+    title="Transcript tab in the player sidebar",
+    duration=2, stage="A",
+    deps=["E26-F01-S02"],
+    goal="Read along with the lesson, find a line, and jump to it.",
+)
+add(
+    id="E26-F01-S04",
+    epic="E26", epic_title="Transcript panel (web)",
+    feature="F01", feature_title="In-lesson transcript",
+    title="`?t=` deep links into a lesson",
+    duration=1, stage="A",
+    deps=["E26-F01-S01"],
+    goal="A link to a moment should land on that moment. This is also what the later transcript search links to.",
+)
+
+# ============================================================ E27 ============
+add(
+    id="E27-F01-S01",
+    epic="E27", epic_title="Transcript storage and search",
+    feature="F01", feature_title="Cue storage",
+    title="Parse existing subtitle sidecars into cues",
+    duration=2, stage="A",
+    deps=["E25-F02-S01", "E25-F03-S02"],
+    goal="Courses that shipped with subtitles should be searchable too. The transcription run already fills cues for what it generates; this covers everything discovered on disk.",
+)
+add(
+    id="E27-F01-S02",
+    epic="E27", epic_title="Transcript storage and search",
+    feature="F01", feature_title="Cue storage",
+    title="Trigram index over cue text",
+    duration=1, stage="A",
+    deps=["E27-F01-S01"],
+    goal="Make cue text searchable without dragging raw SQL into application code.",
+)
+add(
+    id="E27-F02-S01",
+    epic="E27", epic_title="Transcript storage and search",
+    feature="F02", feature_title="Search",
+    title="Transcript hits in the search API",
+    duration=2, stage="A",
+    deps=["E27-F01-S02"],
+    goal="Answer “where was this said, and what minute?” from the existing search endpoint.",
+)
+add(
+    id="E27-F02-S02",
+    epic="E27", epic_title="Transcript storage and search",
+    feature="F02", feature_title="Search",
+    title="Transcript results on the web search page",
+    duration=1, stage="A",
+    deps=["E27-F02-S01", "E26-F01-S04"],
+    goal="Click a spoken line in search results and land on that second of that lesson.",
+)
+
+# ============================================================ E28 ============
+add(
+    id="E28-F01-S01",
+    epic="E28", epic_title="Notes export",
+    feature="F01", feature_title="Markdown digest",
+    title="Export a lesson or course digest as Markdown",
+    duration=2, stage="B",
+    deps=["E27-F01-S01", "E09-F02-S02"],
+    goal="Take what you wrote and what was said out of the app in a form you can keep.",
+)
+
+# ============================================================ E29 ============
+add(
+    id="E29-F01-S01",
+    epic="E29", epic_title="Learning mechanics",
+    feature="F01", feature_title="Flashcards and spaced repetition",
+    title="Flashcard and review schedule domain (SM-2)",
+    duration=2, stage="B",
+    deps=["E09-F02-S02"],
+    goal="Turn a personal library from something you watched into something you remember.",
+)
+add(
+    id="E29-F01-S02",
+    epic="E29", epic_title="Learning mechanics",
+    feature="F01", feature_title="Flashcards and spaced repetition",
+    title="Flashcard API",
+    duration=2, stage="A",
+    deps=["E29-F01-S01"],
+    goal="Create, review and grade cards over the wire.",
+)
+add(
+    id="E29-F01-S03",
+    epic="E29", epic_title="Learning mechanics",
+    feature="F01", feature_title="Flashcards and spaced repetition",
+    title="Review UI on web",
+    duration=2, stage="A",
+    deps=["E29-F01-S02"],
+    goal="A review session that takes a minute and is worth doing daily.",
+)
+add(
+    id="E29-F02-S01",
+    epic="E29", epic_title="Learning mechanics",
+    feature="F02", feature_title="Generated quizzes",
+    title="Quizzes generated from a transcript",
+    duration=3, stage="B",
+    deps=["E27-F01-S01"],
+    goal="Check whether a lesson actually landed, using the words it actually used.",
+)
+add(
+    id="E29-F03-S01",
+    epic="E29", epic_title="Learning mechanics",
+    feature="F03", feature_title="Learning paths",
+    title="Learning paths",
+    duration=2, stage="B",
+    deps=["E06-F03-S01"],
+    goal="An ordered sequence of courses with progress across the whole sequence.",
+)
+
+# ============================================================ E30 ============
+add(
+    id="E30-F01-S01",
+    epic="E30", epic_title="Scraper plugins",
+    feature="F01", feature_title="Configuration-defined scrapers",
+    title="Declarative scraper definitions",
+    duration=3, stage="B",
+    deps=["E06-F02-S01"],
+    goal="Add a metadata source without rebuilding the backend.",
+)
+add(
+    id="E30-F01-S02",
+    epic="E30", epic_title="Scraper plugins",
+    feature="F01", feature_title="Configuration-defined scrapers",
+    title="Scraper inventory in the admin UI",
+    duration=1, stage="A",
+    deps=["E30-F01-S01"],
+    goal="See which scrapers loaded, which were rejected, and why — without reading container logs.",
+)
+
+# ============================================================ E31 ============
+add(
+    id="E31-F01-S01",
+    epic="E31", epic_title="Honest v1.1",
+    feature="F01", feature_title="Close the real gaps",
+    title="Finish the browse filters",
+    duration=2, stage="A",
+    deps=["E14-F01-S02"],
+    goal="The library, duration-bucket and instructor filters and sort-by-duration were designed and never implemented. With a large library this is a daily cost.",
+)
+add(
+    id="E31-F01-S02",
+    epic="E31", epic_title="Honest v1.1",
+    feature="F01", feature_title="Close the real gaps",
+    title="Backups UI",
+    duration=1, stage="A",
+    deps=["E21-F01-S02"],
+    goal="The API has shipped since E21. On a one-person instance, being able to take and download a backup without curl is exactly the point.",
+)
+add(
+    id="E31-F01-S03",
+    epic="E31", epic_title="Honest v1.1",
+    feature="F01", feature_title="Close the real gaps",
+    title="Fix the duplicated offline bookmark",
+    duration=2, stage="A",
+    deps=["E20-F01-S01"],
+    goal="A bookmark created offline carries a local id the server has never seen, so after the outbox drains the same bookmark can appear twice until the lesson is refetched.",
+)
+add(
+    id="E31-F02-S01",
+    epic="E31", epic_title="Honest v1.1",
+    feature="F02", feature_title="Withdraw the promises",
+    title="Remove the SSO promise",
+    duration=1, stage="A",
+    deps=["E14-F02-S01"],
+    goal="For a personal instance, email and password is the whole requirement. The honest move is to withdraw the promise, not to implement it.",
+)
+add(
+    id="E31-F02-S02",
+    epic="E31", epic_title="Honest v1.1",
+    feature="F02", feature_title="Withdraw the promises",
+    title="Remove the non-functional Settings controls",
+    duration=1, stage="A",
+    deps=["E14-F02-S02"],
+    goal="Three controls sit in Settings and do nothing. On a single-owner instance, account deletion is meaningless and the other two are cosmetic.",
+)
+add(
+    id="E31-F02-S03",
+    epic="E31", epic_title="Honest v1.1",
+    feature="F02", feature_title="Withdraw the promises",
+    title="Settle the locale parity claim",
+    duration=1, stage="A",
+    deps=["E15-F01-S02"],
+    goal="Web ships `en`/`ru`; mobile ships `en`/`ru`/`uk`/`el`, two of them machine-written and unreviewed. The mismatch is recorded as a defect, which it is not — it is an unmade decision.",
+)
+add(
+    id="E31-F02-S04",
+    epic="E31", epic_title="Honest v1.1",
+    feature="F02", feature_title="Withdraw the promises",
+    title="Verify or remove the mobile storage bar",
+    duration=1, stage="A",
+    deps=["E19-F01-S03"],
+    goal="The free/used figures come from a native plugin that has never executed on a real device. Either it works or the bar goes.",
+)
+
 # -------------------------------------------------------------------------- #
 # Renderers                                                                  #
 # -------------------------------------------------------------------------- #

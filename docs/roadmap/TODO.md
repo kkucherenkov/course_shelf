@@ -8,7 +8,14 @@ Legend: **A** = implementable now from the bundle · **B** = needs design pre-st
 A row marked ❌ is cancelled — the card records why, and it is out of the
 denominator below.
 
-Progress: `119 / 119` complete — 121 cards, 2 cancelled (update by hand).
+Progress (update by hand):
+
+- **v1** — `119 / 119` complete. 121 cards, 2 cancelled.
+- **v2** — `0 / 36` complete. 36 cards across E25–E31.
+
+v1 is the shipped product; v2 is the transcript-first direction and the
+honest-v1.1 cleanup. The two denominators are kept apart on purpose — merging
+them would quietly reopen a milestone that is finished.
 
 ## E00 — Stage the design bundle
 
@@ -202,3 +209,60 @@ Progress: `119 / 119` complete — 121 cards, 2 cancelled (update by hand).
 ## E24 — Realtime / Centrifugo
 
 - [x] [E24-F01-S01](./tasks/E24-F01-S01.md) `A` — AsyncAPI Centrifugo channels + POST /api/v1/realtime/token · ⇐ E04-F02-S03
+
+## E25 — Transcription (Whisper)
+
+- [ ] [E25-F01-S01](./tasks/E25-F01-S01.md) `A` — Derived-artifact volume, whisper config, and the binary in the image · ⇐ E01-F02-S01
+- [ ] [E25-F01-S02](./tasks/E25-F01-S02.md) `A` — Derived path resolution with its own traversal guard · ⇐ E25-F01-S01
+- [ ] [E25-F01-S03](./tasks/E25-F01-S03.md) `A` — ffmpeg audio extraction for whisper · ⇐ E06-F02-S02
+- [ ] [E25-F01-S04](./tasks/E25-F01-S04.md) `A` — whisper.cpp adapter behind a port · ⇐ E25-F01-S01
+- [ ] [E25-F02-S01](./tasks/E25-F02-S01.md) `A` — Transcript and transcription schema · ⇐ E06-F03-S02
+- [ ] [E25-F02-S02](./tasks/E25-F02-S02.md) `A` — Transcription aggregate · ⇐ E25-F02-S01
+- [ ] [E25-F02-S03](./tasks/E25-F02-S03.md) `A` — The skip rule · ⇐ E25-F02-S01
+- [ ] [E25-F03-S01](./tasks/E25-F03-S01.md) `A` — OpenAPI for transcription runs and generated subtitles · ⇐ E02-F02-S04
+- [ ] [E25-F03-S02](./tasks/E25-F03-S02.md) `A` — The transcription run · ⇐ E25-F01-S02, E25-F01-S03, E25-F01-S04, E25-F02-S02, E25-F02-S03, E25-F03-S01
+- [ ] [E25-F03-S03](./tasks/E25-F03-S03.md) `A` — Serve generated transcripts as subtitle tracks · ⇐ E08-F02-S02, E25-F02-S01
+- [ ] [E25-F04-S01](./tasks/E25-F04-S01.md) `A` — Scan thumbnails to the derived volume, and orphan cleanup · ⇐ E25-F01-S02
+- [ ] [E25-F04-S02](./tasks/E25-F04-S02.md) `A` — Transcription card in the admin library screen · ⇐ E25-F03-S01, E14-F04-S01
+- [ ] [E25-F04-S03](./tasks/E25-F04-S03.md) `A` — Transcription documentation · ⇐ E25-F03-S02
+
+## E26 — Transcript panel (web)
+
+- [ ] [E26-F01-S01](./tasks/E26-F01-S01.md) `A` — Render the subtitle tracks in the web player · ⇐ E08-F02-S02, E14-F03-S01
+- [ ] [E26-F01-S02](./tasks/E26-F01-S02.md) `A` — useTranscriptCues composable · ⇐ E26-F01-S01
+- [ ] [E26-F01-S03](./tasks/E26-F01-S03.md) `A` — Transcript tab in the player sidebar · ⇐ E26-F01-S02
+- [ ] [E26-F01-S04](./tasks/E26-F01-S04.md) `A` — `?t=` deep links into a lesson · ⇐ E26-F01-S01
+
+## E27 — Transcript storage and search
+
+- [ ] [E27-F01-S01](./tasks/E27-F01-S01.md) `A` — Parse existing subtitle sidecars into cues · ⇐ E25-F02-S01, E25-F03-S02
+- [ ] [E27-F01-S02](./tasks/E27-F01-S02.md) `A` — Trigram index over cue text · ⇐ E27-F01-S01
+- [ ] [E27-F02-S01](./tasks/E27-F02-S01.md) `A` — Transcript hits in the search API · ⇐ E27-F01-S02
+- [ ] [E27-F02-S02](./tasks/E27-F02-S02.md) `A` — Transcript results on the web search page · ⇐ E27-F02-S01, E26-F01-S04
+
+## E28 — Notes export
+
+- [ ] [E28-F01-S01](./tasks/E28-F01-S01.md) `B` — Export a lesson or course digest as Markdown · ⇐ E27-F01-S01, E09-F02-S02
+
+## E29 — Learning mechanics
+
+- [ ] [E29-F01-S01](./tasks/E29-F01-S01.md) `B` — Flashcard and review schedule domain (SM-2) · ⇐ E09-F02-S02
+- [ ] [E29-F01-S02](./tasks/E29-F01-S02.md) `A` — Flashcard API · ⇐ E29-F01-S01
+- [ ] [E29-F01-S03](./tasks/E29-F01-S03.md) `A` — Review UI on web · ⇐ E29-F01-S02
+- [ ] [E29-F02-S01](./tasks/E29-F02-S01.md) `B` — Quizzes generated from a transcript · ⇐ E27-F01-S01
+- [ ] [E29-F03-S01](./tasks/E29-F03-S01.md) `B` — Learning paths · ⇐ E06-F03-S01
+
+## E30 — Scraper plugins
+
+- [ ] [E30-F01-S01](./tasks/E30-F01-S01.md) `B` — Declarative scraper definitions · ⇐ E06-F02-S01
+- [ ] [E30-F01-S02](./tasks/E30-F01-S02.md) `A` — Scraper inventory in the admin UI · ⇐ E30-F01-S01
+
+## E31 — Honest v1.1
+
+- [ ] [E31-F01-S01](./tasks/E31-F01-S01.md) `A` — Finish the browse filters · ⇐ E14-F01-S02
+- [ ] [E31-F01-S02](./tasks/E31-F01-S02.md) `A` — Backups UI · ⇐ E21-F01-S02
+- [ ] [E31-F01-S03](./tasks/E31-F01-S03.md) `A` — Fix the duplicated offline bookmark · ⇐ E20-F01-S01
+- [ ] [E31-F02-S01](./tasks/E31-F02-S01.md) `A` — Remove the SSO promise · ⇐ E14-F02-S01
+- [ ] [E31-F02-S02](./tasks/E31-F02-S02.md) `A` — Remove the non-functional Settings controls · ⇐ E14-F02-S02
+- [ ] [E31-F02-S03](./tasks/E31-F02-S03.md) `A` — Settle the locale parity claim · ⇐ E15-F01-S02
+- [ ] [E31-F02-S04](./tasks/E31-F02-S04.md) `A` — Verify or remove the mobile storage bar · ⇐ E19-F01-S03

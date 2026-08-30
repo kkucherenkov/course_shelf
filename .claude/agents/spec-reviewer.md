@@ -37,3 +37,9 @@ Use this shape:
 ```
 
 Be specific. "This is wrong" without a line number is useless.
+
+## Skills
+
+| Skill                   | When                                                     |
+| ----------------------- | -------------------------------------------------------- |
+| `api-design-principles` | The yardstick for naming, status codes and payload shape |

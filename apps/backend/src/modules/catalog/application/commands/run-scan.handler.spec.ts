@@ -332,6 +332,11 @@ class FakeFfmpegAdapter implements FfmpegAdapter {
     const err = this.thumbnailResults.get(req.videoAbsolutePath);
     if (err) throw err;
   }
+
+  /** Never exercised by the scan walk — the transcription run is the only caller. */
+  async extractAudio(): Promise<void> {
+    throw new Error('extractAudio is not part of the scan walk');
+  }
 }
 
 function makePassthroughFfmpeg(): FakeFfmpegAdapter {

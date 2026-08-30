@@ -2,7 +2,7 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
-## T-2026-08-30-005 — backend: error mapping + subtitle track identity/label
+## T-2026-08-30-007 — backend: error mapping + subtitle track identity/label
 
 - Created: 2026-08-30
 - Completed: 2026-08-30
@@ -30,6 +30,60 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - [x] gates: lint --fix, typecheck, test (1612 passing), format, spec:validate
 - Status: done
 - Blockers: —
+
+## T-2026-08-30-005 — E25 transcription domain + ffmpeg audio extraction
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Result: https://github.com/kkucherenkov/course_shelf/pull/293
+- Owner: claude
+- Cards: [E25-F02-S02](../../docs/roadmap/tasks/E25-F02-S02.md) (#215),
+  [E25-F02-S03](../../docs/roadmap/tasks/E25-F02-S03.md) (#216),
+  [E25-F01-S03](../../docs/roadmap/tasks/E25-F01-S03.md) (#212)
+- Spec: [B4 transcription design](../../docs/superpowers/specs/2026-08-29-b4-transcription-design.md) §5, §6
+- Goal: the pure pieces the transcription run is built from — the run aggregate,
+  the skip rule that makes a re-run cheap, and the whisper-shaped audio extraction
+  on the existing ffmpeg port.
+- Spec diff: none (routes already landed in E25-F03-S01)
+- Codegen impact: no
+- Sub-steps:
+  - [x] `transcription.errors.ts` — the two errors these three cards need
+  - [x] `transcription.ts` aggregate + spec (E25-F02-S02)
+  - [x] `skip-rule.ts` + table-driven spec (E25-F02-S03)
+  - [x] `AudioExtractRequest` + `extractAudio` on `FfmpegAdapter`, implementation
+        and spec in `LocalFfmpegAdapter` (E25-F01-S03)
+  - [x] gates: lint / typecheck / test / format
+  - [x] card bookkeeping + PR
+- Status: shipped
+- Notes:
+  - `TranscriptionInTerminalStateError` is a 409, not the 422 `Scan` uses: the one
+    handler that can reach it is `POST /transcriptions/{id}/cancel`, whose contract
+    documents 409.
+  - The extraction timeout is a per-call parameter, not an `AppConfig` value —
+    E25-F01-S01 (whisper config) is not in `main`, and nothing here needed it.
+  - Card status was flipped by editing the cards and `TODO.md` directly, then
+    `generate.py --roadmap-only`. A plain generator run is refused by
+    `refuse_if_seeded()` and its `write_todo()` rewrites every row as unticked.
+
+## T-2026-08-30-006 — parametrise the compose host ports and project name
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude
+- Spec: none (tuxedo #39 · GitHub #284)
+- Goal: two worktrees can bring up the dev stack at the same time, and a host
+  process already holding :3000 does not block the stack.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] every published host port in `docker/compose.yml` reads `${CS_*_PORT:-<default>}`
+  - [x] the URLs derived from those ports (`BETTER_AUTH_URL`, `CORS_ORIGINS`, `NUXT_PUBLIC_*`) follow the same vars
+  - [x] `name:` reads `${COMPOSE_PROJECT_NAME:-course-shelf}`
+  - [x] `docker/README.md` documents the vars and stops telling the reader to hand-edit `compose.yml`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/263
+- Status: done
+- Blockers: none — verified with `docker-compose config` at the defaults and
+  with every variable overridden; the stack itself was not brought up
 
 ## T-2026-08-30-004 — E31-F01-S03 fix the duplicated offline bookmark
 

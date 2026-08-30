@@ -35,6 +35,20 @@ export interface ThumbnailRequest {
   jpegQuality: number;
 }
 
+/**
+ * Request to extract a whisper-ready audio track from a video.
+ *
+ * WHY the timeout is a parameter rather than the 30s the probe/thumbnail calls
+ * hard-code: decoding a two-hour lecture's audio is minutes, not seconds, and a
+ * probe-sized timeout would kill every long lesson.
+ */
+export interface AudioExtractRequest {
+  readonly videoAbsolutePath: string;
+  readonly outAbsolutePath: string;
+  /** Transcription-sized wall-clock budget, in milliseconds. */
+  readonly timeoutMs: number;
+}
+
 export interface FfmpegAdapter {
   /**
    * Run ffprobe on the given video file and return its metadata.
@@ -47,4 +61,10 @@ export interface FfmpegAdapter {
    * Throws FfmpegThumbnailError on non-zero exit.
    */
   writeThumbnail(req: ThumbnailRequest): Promise<void>;
+
+  /**
+   * Decode the video's audio to 16 kHz mono signed 16-bit PCM, which is what
+   * whisper.cpp consumes. Throws AudioExtractionFailedError on failure.
+   */
+  extractAudio(req: AudioExtractRequest): Promise<void>;
 }

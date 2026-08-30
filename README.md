@@ -114,6 +114,11 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 
 Containers mount the repository as a volume, so edits reach the running container without a rebuild. Do not run `pnpm dev` alongside `docker compose up` -- they share the same host ports.
 
+Those ports are defaults. Every one of them, and the project name, is an
+environment variable (`CS_BACKEND_PORT`, `CS_WEB_PORT`, `COMPOSE_PROJECT_NAME`,
+...), so a second checkout can run its own stack beside the first -- see
+[`docker/README.md`](docker/README.md).
+
 ### CI (GitHub Actions)
 
 - **Backend:** lint, typecheck, test (coverage is reported, not gated on a threshold)

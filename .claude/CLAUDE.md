@@ -32,14 +32,14 @@ A change is not done when the code works. If the change alters behaviour,
 structure, contracts, or setup, the docs that describe it change **in the
 same commit or PR**:
 
-| You changed                                                           | Update                                                                        |
-| --------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| A route or channel                                                    | `packages/specs/` **first** (spec-first loop below)                           |
-| Architecture, a bounded context, a data flow                          | `docs/architecture.md`, and an ADR under `docs/adr/` if the _decision_ is new |
-| User-visible behaviour, admin flows, folder/`course.json` conventions | `docs/user-guide.md`                                                          |
-| Setup, ports, versions, env vars                                      | `README.md` **and** `README.ru.md` (they are kept in sync)                    |
-| A CI gate, a script, a command                                        | the section of `.claude/CLAUDE.md` or `README.md` that names it               |
-| A story's status                                                      | its card in `docs/roadmap/tasks/`, `TODO.md`, and `specs/tasks/done.md`       |
+| You changed                                                           | Update                                                                               |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| A route or channel                                                    | `packages/specs/` **first** (spec-first loop below)                                  |
+| Architecture, a bounded context, a data flow                          | `docs/architecture.md`, and an ADR under `docs/adr/` if the _decision_ is new        |
+| User-visible behaviour, admin flows, folder/`course.json` conventions | `docs/user-guide.md`                                                                 |
+| Setup, ports, versions, env vars                                      | `README.md` **and** `README.ru.md` (they are kept in sync)                           |
+| A CI gate, a script, a command                                        | the section of `.claude/CLAUDE.md` or `README.md` that names it                      |
+| A story's status                                                      | its card in `docs/roadmap/tasks/`, `docs/roadmap/TODO.md`, and `specs/tasks/done.md` |
 
 **Never leave a document asserting something that is no longer true.** A
 stale claim is worse than no claim — see
@@ -261,7 +261,15 @@ docs.
 
 ## Things Claude must never do
 
-- Edit `packages/api-client-ts/src/generated/` or `packages/api-client-dart/lib/generated/`.
+- Hand-edit generated client output. The two packages differ, so check which
+  you are in:
+  - `packages/api-client-ts/` — only `src/generated/` is generated; `index.ts`
+    and `realtime/` are hand-written.
+  - `packages/api-client-dart/` — **everything except `pubspec.yaml`** is
+    generated: `lib/`, `doc/` and `test/` alike. There is no nested
+    `lib/generated/`, because dart-dio requires `lib/src/` to be the package's
+    real `lib/` (see `packages/specs/scripts/codegen.ts` and that package's
+    `.openapi-generator-ignore`).
 - Introduce an HTTP route without updating `packages/specs/openapi/openapi.yaml` first.
 - Read `process.env` directly — use `AppConfig`.
 - Use `any` to escape a type error.

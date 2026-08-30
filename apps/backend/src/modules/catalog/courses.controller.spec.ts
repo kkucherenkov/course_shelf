@@ -14,6 +14,7 @@ import { BadRequestException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CoursesController } from './courses.controller';
+import { ListCoursesQuery } from './application/queries/list-courses.query';
 
 import type { CommandBus, QueryBus } from '@nestjs/cqrs';
 import type { SessionContext } from '../../common/auth/decorators';
@@ -156,5 +157,44 @@ describe('CoursesController › updateCourse — enrichment patch fields', () =>
     ).patch;
     expect(patch['level']).toBe('advanced');
     expect(patch['language']).toBe('en');
+  });
+});
+
+// ── GET /courses — query-param whitelisting (E31-F01-S01) ─────────────────────
+
+/** Dispatch a GET /courses with the given raw params and return the query built. */
+function dispatch(query: {
+  durationBucket?: string;
+  instructorId?: string;
+  sort?: string;
+}): ListCoursesQuery {
+  const queryBus = makeQueryBus([]);
+  const controller = new CoursesController(makeCommandBus(undefined), queryBus);
+  void controller.listCourses(
+    session,
+    undefined,
+    undefined,
+    query.sort,
+    query.durationBucket,
+    query.instructorId,
+  );
+  return vi.mocked(queryBus.execute).mock.calls[0]![0] as ListCoursesQuery;
+}
+
+describe('CoursesController › listCourses — filter params', () => {
+  it('passes a valid durationBucket through', () => {
+    expect(dispatch({ durationBucket: '10to20' }).durationBucket).toBe('10to20');
+  });
+
+  it('falls back to `all` for an unknown durationBucket rather than failing', () => {
+    expect(dispatch({ durationBucket: 'forever' }).durationBucket).toBe('all');
+  });
+
+  it('accepts the duration sort', () => {
+    expect(dispatch({ sort: 'duration' }).sort).toBe('duration');
+  });
+
+  it('forwards instructorId verbatim — an unknown id is an empty list, not an error', () => {
+    expect(dispatch({ instructorId: 'i-1' }).instructorId).toBe('i-1');
   });
 });

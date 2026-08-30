@@ -12,12 +12,19 @@
  * CourseProgressReadModel projection via a single bulk lookup
  * (findManyByCourseIdsForUser). This avoids N+1 against lesson_progress.
  * When no projection row exists, the zero placeholder is returned unchanged.
+ *
+ * Duration: as of E31-F01-S01 the handler also serves `durationBucket` and
+ * `sort=duration`. Total runtime is not on CourseDto, so it comes from one
+ * bulk `getLessonStatsByCourseIds` groupBy — fetched only when a duration
+ * filter or sort is actually requested, so the common Browse request keeps
+ * the same query count it had before.
  */
 import { Inject } from '@nestjs/common';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 
 import { AUTHORIZATION_SERVICE } from '../../../../common/access/authorization.service';
 import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
+import { LESSON_REPOSITORY } from '../../domain/lesson/lesson.repository';
 import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from '../../domain/progress/course-progress-read-model.repository';
 import { toCourseDto } from '../../courses.dto';
 
@@ -25,9 +32,24 @@ import { ListCoursesQuery } from './list-courses.query';
 
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
 import type { CourseRepository } from '../../domain/course/course.repository';
+import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
 import type { CourseDto } from '@app/api-client-ts';
 import type { LibraryId } from '../../../../common/access/authorization.service';
+import type { CourseListDurationBucket } from './list-courses.query';
+
+const HOUR_SECONDS = 3600;
+
+/** Inclusive lower bound and exclusive upper bound, in seconds. */
+const DURATION_BUCKETS: Record<
+  Exclude<CourseListDurationBucket, 'all'>,
+  { min: number; max: number }
+> = {
+  lt5: { min: 0, max: 5 * HOUR_SECONDS },
+  '5to10': { min: 5 * HOUR_SECONDS, max: 10 * HOUR_SECONDS },
+  '10to20': { min: 10 * HOUR_SECONDS, max: 20 * HOUR_SECONDS },
+  gt20: { min: 20 * HOUR_SECONDS, max: Number.POSITIVE_INFINITY },
+};
 
 @QueryHandler(ListCoursesQuery)
 export class ListCoursesHandler implements IQueryHandler<ListCoursesQuery, CourseDto[]> {
@@ -36,6 +58,7 @@ export class ListCoursesHandler implements IQueryHandler<ListCoursesQuery, Cours
     @Inject(AUTHORIZATION_SERVICE) private readonly authz: AuthorizationService,
     @Inject(COURSE_PROGRESS_READ_MODEL_REPOSITORY)
     private readonly progressRepo: CourseProgressReadModelRepository,
+    @Inject(LESSON_REPOSITORY) private readonly lessonRepo: LessonRepository,
   ) {}
 
   async execute(query: ListCoursesQuery): Promise<CourseDto[]> {
@@ -66,7 +89,7 @@ export class ListCoursesHandler implements IQueryHandler<ListCoursesQuery, Cours
     // Status filter — operates on the projected percent so a course with
     // no progress row falls into 'not-started' (toCourseDto returns the
     // zero placeholder when progressMap.get is undefined).
-    const filtered =
+    let filtered =
       query.status === 'all'
         ? dtos
         : dtos.filter((d) => {
@@ -87,6 +110,34 @@ export class ListCoursesHandler implements IQueryHandler<ListCoursesQuery, Cours
             }
           });
 
+    // Instructor filter — cheap, applied before the duration lookup so the
+    // groupBy below runs over the smallest possible id set.
+    const { instructorId } = query;
+    if (instructorId !== undefined && instructorId !== '') {
+      filtered = filtered.filter((d) => (d.instructors ?? []).some((i) => i.id === instructorId));
+    }
+
+    // Duration is not part of CourseDto, so it needs its own lookup. Skip it
+    // entirely unless a duration filter or the duration sort was requested.
+    const needsDuration = query.durationBucket !== 'all' || query.sort === 'duration';
+    let durationByCourseId = new Map<string, number>();
+    if (needsDuration && filtered.length > 0) {
+      const stats = await this.lessonRepo.getLessonStatsByCourseIds(filtered.map((d) => d.id));
+      durationByCourseId = new Map(
+        [...stats].map(([courseId, s]) => [courseId, s.totalDurationSeconds]),
+      );
+    }
+    // Courses with no lessons are absent from the groupBy result — 0 seconds.
+    const durationOf = (id: string): number => durationByCourseId.get(id) ?? 0;
+
+    if (query.durationBucket !== 'all') {
+      const { min, max } = DURATION_BUCKETS[query.durationBucket];
+      filtered = filtered.filter((d) => {
+        const seconds = durationOf(d.id);
+        return seconds >= min && seconds < max;
+      });
+    }
+
     // Server-side sort. `recently-watched` uses updatedAt as a proxy for
     // last activity until a dedicated lastViewedAt lands.
     const sorted = [...filtered].toSorted((a, b) => {
@@ -96,6 +147,11 @@ export class ListCoursesHandler implements IQueryHandler<ListCoursesQuery, Cours
         }
         case 'alphabetical': {
           return a.title.localeCompare(b.title);
+        }
+        case 'duration': {
+          // Longest first — the useful end of the scale when you are picking
+          // what to commit to. Ties fall back to title so the order is stable.
+          return durationOf(b.id) - durationOf(a.id) || a.title.localeCompare(b.title);
         }
         default: {
           // 'recently-watched' (default).

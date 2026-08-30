@@ -199,7 +199,7 @@ Mirrors the existing scan routes (`/api/v1/admin/scans`,
 | `GET /api/v1/libraries/{id}/transcriptions` | History for a library. |
 | `GET /api/v1/libraries/{id}/transcriptions/latest` | Current or last run — what the admin screen polls. |
 | `POST /api/v1/transcriptions/{id}/cancel` | Request cancellation. |
-| `GET /api/v1/admin/transcriptions` | Cross-library list, mirroring `/admin/scans`. |
+| `GET /api/v1/admin/transcriptions` | Cross-library list, mirroring `/admin/scans` — including its denormalised row DTO: `AdminTranscriptionListDto` / `AdminTranscriptionListItem`, carrying `libraryName` and an `errorsCount` rather than the nested `errors` array. |
 
 `LessonDto.subtitles[]` gains an optional `generated?: boolean` so a player can
 label a machine-made track honestly. Additive, so no client breaks.

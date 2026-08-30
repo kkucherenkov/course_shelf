@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.18.0
+  version: 0.19.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -579,6 +579,99 @@ paths:
                         errorsCount: 1
                 empty:
                   summary: No scans have ever run
+                  value:
+                    items: []
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller is authenticated but not an administrator
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+
+  /api/v1/admin/transcriptions:
+    get:
+      operationId: listAdminTranscriptions
+      summary: List recent transcription runs across every library
+      description: |
+        Ordered by `startedAt` descending (newest first). Cross-library —
+        admin-only; non-admin actors see 403 even if they have READ grants on
+        individual libraries. Capped at `limit` (default 20, max 100).
+        Mirrors `GET /api/v1/admin/scans`.
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of runs to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: libraryId
+          in: query
+          required: false
+          description: >-
+            When set, only return runs for the given library. Unknown library
+            ids return an empty list (not 404 — the view is a filter, not a
+            fetch).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Recent-transcriptions list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTranscriptionListDto"
+              examples:
+                twoRuns:
+                  summary: Two runs from two libraries, one still going
+                  value:
+                    items:
+                      - transcriptionId: clxvtrn0000000000000000003
+                        libraryId: clxvlib0000000000000000001
+                        libraryName: Computer Science
+                        status: running
+                        force: false
+                        startedAt: "2026-08-30T12:00:00Z"
+                        finishedAt: null
+                        lessonsTotal: 412
+                        lessonsTranscribed: 6
+                        errorsCount: 0
+                      - transcriptionId: clxvtrn0000000000000000002
+                        libraryId: clxvlib0000000000000000002
+                        libraryName: Mathematics
+                        status: cancelled
+                        force: true
+                        startedAt: "2026-08-29T09:55:00Z"
+                        finishedAt: "2026-08-29T10:12:31Z"
+                        lessonsTotal: 312
+                        lessonsTranscribed: 18
+                        errorsCount: 2
+                empty:
+                  summary: No transcription has ever run
                   value:
                     items: []
         "401":
@@ -4520,6 +4613,405 @@ paths:
                     status: 404
                     detail: No scan record found for this library.
 
+  /api/v1/libraries/{id}/transcriptions:
+    post:
+      operationId: startTranscription
+      summary: Start a transcription run for a library
+      description: |
+        Walks the library's lessons and generates a transcript for every video
+        that has neither a hand-made subtitle track nor an up-to-date generated
+        one. Returns 202 immediately with `status: running`; clients poll
+        `GET /libraries/{id}/transcriptions/latest`. A second run with no
+        filesystem changes is observably a no-op (`lessonsTranscribed` is zero
+        and every lesson lands in `lessonsSkipped`).
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the library to transcribe.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartTranscriptionRequest"
+            examples:
+              incremental:
+                summary: Default — skip what is already transcribed
+                value:
+                  force: false
+              redoEverything:
+                summary: Re-transcribe every generated transcript
+                value:
+                  force: true
+      responses:
+        "202":
+          description: Transcription accepted and running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptionDto"
+              examples:
+                accepted:
+                  value:
+                    id: clxvtrn0000000000000000001
+                    libraryId: clxvp1234567890abcdefghij
+                    status: running
+                    force: false
+                    startedAt: "2026-08-30T10:30:00Z"
+                    lessonsTotal: 0
+                    lessonsSkipped: 0
+                    lessonsTranscribed: 0
+                    lessonsFailed: 0
+                    errors: []
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only admins may start transcription runs.
+        "404":
+          description: Library not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No library with that id exists.
+        "409":
+          description: A transcription is already running for this library
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                conflict:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: A transcription is already running for library clxvp1234567890abcdefghij.
+        "503":
+          description: >-
+            The transcription backend is not usable — the whisper binary or the
+            model file configured for this deployment is missing. Fails fast
+            rather than starting a run that cannot produce anything.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                modelMissing:
+                  value:
+                    type: about:blank
+                    title: Service Unavailable
+                    status: 503
+                    detail: The configured whisper model file was not found.
+    get:
+      operationId: listLibraryTranscriptions
+      summary: List transcription runs for a library
+      description: >-
+        History for one library, ordered by `startedAt` descending
+        (newest first). Capped at `limit` (default 20, max 100).
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the library.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of runs to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Transcription history returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptionListDto"
+              examples:
+                twoRuns:
+                  summary: One finished run and one still going
+                  value:
+                    items:
+                      - id: clxvtrn0000000000000000002
+                        libraryId: clxvp1234567890abcdefghij
+                        status: running
+                        force: false
+                        startedAt: "2026-08-30T12:00:00Z"
+                        lessonsTotal: 314
+                        lessonsSkipped: 300
+                        lessonsTranscribed: 4
+                        lessonsFailed: 0
+                        errors: []
+                      - id: clxvtrn0000000000000000001
+                        libraryId: clxvp1234567890abcdefghij
+                        status: succeeded
+                        force: false
+                        startedAt: "2026-08-30T10:30:00Z"
+                        finishedAt: "2026-08-30T11:14:02Z"
+                        lessonsTotal: 314
+                        lessonsSkipped: 290
+                        lessonsTranscribed: 23
+                        lessonsFailed: 1
+                        errors:
+                          - lessonId: clxvles0000000000000000001
+                            message: "whisper.cpp exited with code 1."
+                            code: whisper-failed
+                empty:
+                  summary: The library has never been transcribed
+                  value:
+                    items: []
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only admins may view transcription records.
+        "404":
+          description: Library not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No library with that id exists.
+
+  /api/v1/libraries/{id}/transcriptions/latest:
+    get:
+      operationId: getLatestTranscription
+      summary: Get the most recent transcription run for a library
+      description: >-
+        Returns the latest transcription record regardless of status
+        (running, succeeded, failed, cancelled). This is what the admin
+        transcription card polls.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the library.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Latest transcription returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptionDto"
+              examples:
+                succeeded:
+                  value:
+                    id: clxvtrn0000000000000000001
+                    libraryId: clxvp1234567890abcdefghij
+                    status: succeeded
+                    force: false
+                    startedAt: "2026-08-30T10:30:00Z"
+                    finishedAt: "2026-08-30T11:14:02Z"
+                    lessonsTotal: 314
+                    lessonsSkipped: 290
+                    lessonsTranscribed: 23
+                    lessonsFailed: 1
+                    errors:
+                      - lessonId: clxvles0000000000000000001
+                        message: "whisper.cpp exited with code 1."
+                        code: whisper-failed
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only admins may view transcription records.
+        "404":
+          description: Library not found or no transcription has been run yet
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No transcription record found for this library.
+
+  /api/v1/transcriptions/{id}/cancel:
+    post:
+      operationId: cancelTranscription
+      summary: Request cancellation of a running transcription
+      description: >-
+        Cooperative cancellation: the run stops after the lesson it is
+        currently working on, so the response is 202 rather than 200. Already
+        generated transcripts are kept. Cancelling a run that has already
+        reached a terminal status is a 409.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the transcription run.
+          schema:
+            type: string
+      responses:
+        "202":
+          description: Cancellation requested — the run stops after the current lesson
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptionDto"
+              examples:
+                cancelling:
+                  value:
+                    id: clxvtrn0000000000000000002
+                    libraryId: clxvp1234567890abcdefghij
+                    status: running
+                    force: false
+                    startedAt: "2026-08-30T12:00:00Z"
+                    lessonsTotal: 314
+                    lessonsSkipped: 300
+                    lessonsTranscribed: 4
+                    lessonsFailed: 0
+                    errors: []
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only admins may cancel transcription runs.
+        "404":
+          description: Transcription not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No transcription with that id exists.
+        "409":
+          description: The transcription has already reached a terminal status
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                conflict:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: Transcription clxvtrn0000000000000000001 is not running.
+
   /api/v1/notes:
     put:
       operationId: upsertNote
@@ -6487,6 +6979,79 @@ components:
           type: integer
           minimum: 0
 
+    AdminTranscriptionListDto:
+      type: object
+      required: [items]
+      additionalProperties: false
+      description: >-
+        Page of recent transcription runs across every library, ordered by
+        `startedAt` descending. The admin transcription table consumes this.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTranscriptionListItem"
+
+    AdminTranscriptionListItem:
+      type: object
+      required:
+        - transcriptionId
+        - libraryId
+        - libraryName
+        - status
+        - force
+        - startedAt
+        - finishedAt
+        - lessonsTotal
+        - lessonsTranscribed
+        - errorsCount
+      additionalProperties: false
+      description: >-
+        One row in the admin recent-transcriptions table. Same backbone as
+        `TranscriptionDto` plus `libraryName` (so the table can render the
+        library label without a second round-trip), and with the per-lesson
+        `errors` array collapsed to `errorsCount` — a cross-library list
+        should not ship every run's failures. Follows `AdminScanListItem`.
+      properties:
+        transcriptionId:
+          type: string
+        libraryId:
+          type: string
+        libraryName:
+          type: string
+          minLength: 1
+        status:
+          $ref: "#/components/schemas/TranscriptionStatus"
+        force:
+          type: boolean
+          description: >-
+            When true, the run redid existing generated transcripts — which is
+            why its `lessonsTotal` and `lessonsTranscribed` are close together.
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+          description: null while still `running`.
+        lessonsTotal:
+          type: integer
+          minimum: 0
+        lessonsTranscribed:
+          type: integer
+          minimum: 0
+          description: >-
+            Lessons for which this run produced a transcript, highlighted as a
+            "+N" badge the way `coursesAdded` is for scans.
+        errorsCount:
+          type: integer
+          minimum: 0
+          description: >-
+            Number of error records attached to this run — the same number as
+            the run's `lessonsFailed`. Fetch the run itself for the details.
+
     BookmarkDto:
       type: object
       required: [id, lessonId, positionSeconds, createdAt, updatedAt]
@@ -8043,6 +8608,142 @@ components:
         Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans
         only ever transition `running → {succeeded, failed}`.
 
+    TranscriptionStatus:
+      type: string
+      enum: [running, succeeded, failed, cancelled]
+      description: >-
+        Transcription-run lifecycle. Mirrors `ScanStatus`; `cancelled` is
+        reachable here because a run can be stopped from the admin screen.
+
+    TranscriptionErrorDto:
+      type: object
+      required: [lessonId, message]
+      description: >-
+        A non-fatal per-lesson failure. One unreadable or undecodable video
+        costs its own lesson, never the run.
+      properties:
+        lessonId:
+          type: string
+          description: cuid of the lesson whose transcription failed.
+        message:
+          type: string
+          description: Human-readable description of what went wrong.
+        code:
+          type: string
+          description: >-
+            Machine-readable error key
+            (e.g. `whisper-failed`, `audio-extract-failed`, `no-video-source`).
+      example:
+        lessonId: clxvles0000000000000000001
+        message: "whisper.cpp exited with code 1."
+        code: whisper-failed
+
+    TranscriptionDto:
+      type: object
+      required:
+        - id
+        - libraryId
+        - status
+        - force
+        - startedAt
+        - lessonsTotal
+        - lessonsSkipped
+        - lessonsTranscribed
+        - lessonsFailed
+        - errors
+      description: >-
+        One pass over a library's videos. Lessons that already have a subtitle
+        track, or an up-to-date generated transcript, are skipped — which is why
+        a re-run is cheap and a restart costs at most one lesson.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid identifying this transcription run.
+        libraryId:
+          type: string
+          description: cuid of the library that was transcribed.
+        status:
+          $ref: "#/components/schemas/TranscriptionStatus"
+        force:
+          type: boolean
+          description: When true, existing generated transcripts were redone.
+        startedAt:
+          type: string
+          format: date-time
+          description: ISO-8601 instant when the run was started.
+        finishedAt:
+          type: string
+          format: date-time
+          description: >-
+            Set on terminal status (`succeeded` / `failed` / `cancelled`).
+            Absent while `status: running`.
+        lessonsTotal:
+          type: integer
+          minimum: 0
+          description: Lessons considered by this run.
+        lessonsSkipped:
+          type: integer
+          minimum: 0
+          description: >-
+            Lessons left alone — a hand-made subtitle sidecar exists, or the
+            generated transcript still matches the video's `(mtime, size)`.
+        lessonsTranscribed:
+          type: integer
+          minimum: 0
+          description: Lessons for which a transcript was produced by this run.
+        lessonsFailed:
+          type: integer
+          minimum: 0
+          description: Lessons that raised an error; one entry each in `errors`.
+        errors:
+          type: array
+          minItems: 0
+          items:
+            $ref: "#/components/schemas/TranscriptionErrorDto"
+          description: Non-fatal per-lesson errors encountered during the run.
+      example:
+        id: clxvtrn0000000000000000001
+        libraryId: clxvp1234567890abcdefghij
+        status: succeeded
+        force: false
+        startedAt: "2026-08-30T10:30:00Z"
+        finishedAt: "2026-08-30T11:14:02Z"
+        lessonsTotal: 314
+        lessonsSkipped: 290
+        lessonsTranscribed: 23
+        lessonsFailed: 1
+        errors:
+          - lessonId: clxvles0000000000000000001
+            message: "whisper.cpp exited with code 1."
+            code: whisper-failed
+
+    TranscriptionListDto:
+      type: object
+      required: [items]
+      description: >-
+        One library's transcription history, ordered by `startedAt` descending
+        (newest first). The cross-library admin list uses
+        `AdminTranscriptionListDto` instead — it needs `libraryName` per row
+        and does not ship the nested `errors` arrays.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TranscriptionDto"
+
+    StartTranscriptionRequest:
+      type: object
+      description: Payload for starting a transcription run. Body may be omitted entirely.
+      properties:
+        force:
+          type: boolean
+          default: false
+          description: >-
+            Re-transcribe lessons that already have a generated transcript.
+            Hand-made subtitle sidecars are never overwritten.
+      example:
+        force: false
+
     BackupCreatedDto:
       type: object
       required: [id, createdAt, sizeBytes, url, token, expiresAt]
@@ -8187,6 +8888,12 @@ components:
           type: string
           minLength: 1
           description: Human-readable label for the subtitle track (e.g. "English").
+        generated:
+          type: boolean
+          description: >-
+            True when this track was produced by transcription rather than
+            discovered as a sidecar. Optional and additive — absent means a
+            hand-made sidecar.
       example:
         id: clxvsub0000000000000000001
         language: en

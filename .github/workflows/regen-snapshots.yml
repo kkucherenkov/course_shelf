@@ -12,6 +12,13 @@ name: Regenerate visual snapshots
 #
 # Run it after any change that legitimately shifts rendering (design tokens,
 # component markup), then review the committed image diff on the PR.
+#
+# Flutter goldens are captured by the `goldens` job for exactly the same reason
+# and with the same pin: golden PNGs are rendering-engine artefacts, so they
+# have to come off the Flutter version `.github/actions/setup-cs` pins, on
+# Linux. A dev host on any other Flutter build regenerates pixels that then
+# fail ci.yml. It was missing from this workflow, which meant a token change
+# left 19 golden directories with no supported way to refresh them.
 
 on:
   workflow_dispatch:
@@ -23,6 +30,7 @@ on:
           - both
           - storybook
           - e2e
+          - goldens
         default: both
 
 permissions:
@@ -52,12 +60,12 @@ jobs:
       - name: Build design tokens
         run: pnpm design:build
 
+      # This used to build with `STORYBOOK_A11Y_LEVEL: todo`, because the a11y
+      # addon threw on violating stories *before* the test-runner's postVisit
+      # screenshot hook ran and their baselines were silently never rewritten.
+      # With the violations fixed there is nothing left to throw, so the
+      # override is gone and this builds exactly what quality.yml builds.
       - name: Build Storybook static
-        env:
-          # Without this the a11y addon fails ~75 stories *before* the
-          # test-runner's postVisit screenshot hook runs, silently leaving
-          # those baselines stale. Same value quality.yml builds with.
-          STORYBOOK_A11Y_LEVEL: todo
         run: pnpm --filter @app/ui storybook:build
 
       - name: Capture baselines (capture-only mode)
@@ -163,5 +171,59 @@ jobs:
               sleep 5
             done
             echo "::error::could not push regenerated baselines after 3 attempts"
+            exit 1
+          fi
+
+  goldens:
+    if: ${{ inputs.suite == 'goldens' || inputs.suite == 'both' }}
+    name: Regenerate Flutter goldens
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v6
+
+      # Same pin ci.yml's Flutter job uses — goldens captured on any other
+      # version fail there for reasons that have nothing to do with the code.
+      # No Node: tokens.g.dart is committed, so nothing has to run design:build.
+      - uses: ./.github/actions/setup-cs
+        with:
+          node: "false"
+          flutter: "true"
+
+      - name: ui_flutter — update goldens
+        working-directory: packages/ui_flutter
+        run: flutter pub get && flutter test --update-goldens
+
+      # apps/mobile carries goldens too, and its analyzer/test run needs the
+      # generated sources first — same order ci.yml uses (build_runner, then
+      # slang, because slang_build_runner skips generation but errors if
+      # strings.g.dart is already there).
+      - name: mobile — codegen, then update goldens
+        working-directory: apps/mobile
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          dart run slang
+          flutter test --update-goldens
+
+      - name: Commit regenerated goldens
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/ui_flutter/test apps/mobile/test
+          if git diff --cached --quiet; then
+            echo "No golden changes — nothing to commit."
+          else
+            git commit -m "chore(ui_flutter): regenerate Flutter goldens from CI"
+            # See the storybook job — the three regen jobs race on the same
+            # branch. They stage disjoint paths, so replaying onto whoever
+            # landed first cannot conflict.
+            for attempt in 1 2 3; do
+              git pull --rebase origin "$GITHUB_REF_NAME" && git push && exit 0
+              echo "push attempt $attempt lost the race — retrying"
+              sleep 5
+            done
+            echo "::error::could not push regenerated goldens after 3 attempts"
             exit 1
           fi

@@ -26,9 +26,10 @@ import { parseDiffPercent, recordDrift, resetReport } from './visual-report';
  * `mcr.microsoft.com/playwright:v1.59.1-jammy` image leads to a few-pixel
  * font-metric drift that fails every story.
  *
- * Note: the Storybook build must set `STORYBOOK_A11Y_LEVEL=todo`. At the
- * default level the a11y addon throws on violating stories *before*
- * `postVisit` runs, so their baselines are silently never rewritten.
+ * Note: the a11y addon runs at `error`, so a story with an axe violation
+ * throws *before* `postVisit` and never gets a baseline written. That is
+ * intended — fix the violation rather than reaching for an override; the one
+ * that used to exist is why 75 stories could fail unnoticed.
  */
 const SNAPSHOTS_DIR = `${process.cwd()}/test/__snapshots__`;
 const REGEN_MODE = process.env['STORYBOOK_REGEN'] === '1';

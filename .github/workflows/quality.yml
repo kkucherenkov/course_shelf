@@ -68,9 +68,11 @@ jobs:
       - name: Build design tokens
         run: pnpm design:build
 
+      # No a11y override: `parameters.a11y.test` is `error`, so this job now
+      # asserts accessibility as well as pixels. It ran with
+      # `STORYBOOK_A11Y_LEVEL: todo` for months, which downgraded every axe
+      # violation to a note — 75 stories were failing behind it.
       - name: Build Storybook static
-        env:
-          STORYBOOK_A11Y_LEVEL: todo
         run: pnpm --filter @app/ui storybook:build
 
       # `continue-on-error` here is NOT a masked failure: the "Verdict" step

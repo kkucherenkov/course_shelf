@@ -9,7 +9,13 @@
  *
  * The returned LessonDto carries:
  *   - materials: { id, kind, label, sizeBytes } — no path field.
- *   - subtitles: { id, language, label } — no path field.
+ *   - subtitles: { id, language, label } — no path field. Unions sidecar
+ *     subtitles with a generated transcript in the instance's configured
+ *     transcription language (E25-F03-S03), flagged `generated: true`. A
+ *     sidecar in that same language wins — the generated entry is added only
+ *     when no sidecar already covers it. The port only supports checking one
+ *     language at a time, which matches this instance running one configured
+ *     WHISPER_LANGUAGE — see AppConfig.transcription.
  *   - progress: populated from CourseProgressReadModel (E10-F01-S01).
  *     Falls back to zero placeholder when no projection row exists yet.
  *
@@ -24,11 +30,14 @@ import { Inject } from '@nestjs/common';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 
 import { AUTHORIZATION_SERVICE } from '../../../../common/access/authorization.service';
+import { AppConfig } from '../../../../common/config/app-config';
 import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
 import { LESSON_REPOSITORY } from '../../domain/lesson/lesson.repository';
 import { LessonNotFoundError } from '../../domain/lesson/lesson.errors';
+import { languageLabel } from '../../domain/lesson/subtitle';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from '../../domain/progress/course-progress-read-model.repository';
+import { TRANSCRIPT_REPOSITORY } from '../../domain/transcription/transcript.repository';
 
 import { GetLessonQuery } from './get-lesson.query';
 
@@ -36,6 +45,7 @@ import type { AuthorizationService } from '../../../../common/access/authorizati
 import type { CourseRepository } from '../../domain/course/course.repository';
 import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
+import type { TranscriptRepository } from '../../domain/transcription/transcript.repository';
 import type { LessonDto } from '@app/api-client-ts';
 import type { CourseId, LibraryId } from '../../../../common/access/authorization.service';
 
@@ -54,6 +64,8 @@ export class GetLessonHandler implements IQueryHandler<GetLessonQuery, LessonDto
     @Inject(AUTHORIZATION_SERVICE) private readonly authz: AuthorizationService,
     @Inject(COURSE_PROGRESS_READ_MODEL_REPOSITORY)
     private readonly progressRepo: CourseProgressReadModelRepository,
+    @Inject(TRANSCRIPT_REPOSITORY) private readonly transcripts: TranscriptRepository,
+    private readonly appConfig: AppConfig,
   ) {}
 
   async execute(query: GetLessonQuery): Promise<LessonDto> {
@@ -98,6 +110,18 @@ export class GetLessonHandler implements IQueryHandler<GetLessonQuery, LessonDto
           }
         : LESSON_PROGRESS_PLACEHOLDER;
 
+    // 'auto' means whisper detects the language per lesson rather than the
+    // config naming one; the recorded transcript language is then `und`,
+    // mirroring Subtitle.fromFile's own default for a suffix-less sidecar.
+    const transcriptionLanguage =
+      this.appConfig.transcription.language === 'auto'
+        ? 'und'
+        : this.appConfig.transcription.language;
+    const sidecarLanguages = new Set(lesson.subtitles.map((s) => s.language.toLowerCase()));
+    const generated = sidecarLanguages.has(transcriptionLanguage.toLowerCase())
+      ? new Map<string, unknown>()
+      : await this.transcripts.findGeneratedForLessons([lesson.id], transcriptionLanguage);
+
     // Map to DTO — raw filesystem paths are deliberately omitted (NFR-S-01).
     return {
       id: lesson.id,
@@ -112,11 +136,23 @@ export class GetLessonHandler implements IQueryHandler<GetLessonQuery, LessonDto
         label: m.label,
         sizeBytes: m.sizeBytes,
       })),
-      subtitles: lesson.subtitles.map((s) => ({
-        id: s.id,
-        language: s.language,
-        label: s.label,
-      })),
+      subtitles: [
+        ...lesson.subtitles.map((s) => ({
+          id: s.id,
+          language: s.language,
+          label: s.label,
+        })),
+        ...(generated.has(lesson.id)
+          ? [
+              {
+                id: `generated:${lesson.id}:${transcriptionLanguage}`,
+                language: transcriptionLanguage,
+                label: languageLabel(transcriptionLanguage),
+                generated: true,
+              },
+            ]
+          : []),
+      ],
       progress,
     };
   }

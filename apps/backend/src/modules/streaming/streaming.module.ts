@@ -9,8 +9,9 @@
  *   - StreamTokenSigner (domain service)
  *   - LessonFileLocator (domain service, E08-F02-S01)
  *   - CatalogRepositoriesModule (provides LESSON_REPOSITORY + COURSE_REPOSITORY +
- *     LIBRARY_REPOSITORY via src/common/ so we never import catalog source files
- *     directly; LIBRARY_REPOSITORY added for E08-F02-S01)
+ *     LIBRARY_REPOSITORY + TRANSCRIPT_REPOSITORY via src/common/ so we never
+ *     import catalog source files directly; LIBRARY_REPOSITORY added for
+ *     E08-F02-S01, TRANSCRIPT_REPOSITORY added for E25-F03-S03)
  *   - CommonAccessModule (provides AUTHORIZATION_SERVICE)
  *
  * Dependency-boundary note:

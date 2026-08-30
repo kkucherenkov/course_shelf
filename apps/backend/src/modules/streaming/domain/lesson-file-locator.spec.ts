@@ -34,7 +34,7 @@ import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { LessonNotFoundError } from '../../../common/catalog-tokens';
+import { DerivedPathEscapedError, LessonNotFoundError } from '../../../common/catalog-tokens';
 import {
   LessonFileNotFoundError,
   LessonFilePathEscapedError,
@@ -44,10 +44,12 @@ import {
 } from './stream-token/stream-file.errors';
 import { LessonFileLocator } from './lesson-file-locator';
 
+import type { AppConfig } from '../../../common/config/app-config';
 import type {
   CourseRepository,
   LessonRepository,
   LibraryRepository,
+  TranscriptRepository,
 } from '../../../common/catalog-tokens';
 
 // ---------------------------------------------------------------------------
@@ -132,12 +134,26 @@ function makeLibraryRepo(overrides?: Partial<LibraryRepository>): LibraryReposit
   };
 }
 
+function makeTranscriptRepo(overrides?: Partial<TranscriptRepository>): TranscriptRepository {
+  return {
+    findGeneratedForLessons: vi.fn().mockResolvedValue(new Map()),
+    replaceGenerated: vi.fn(),
+    ...overrides,
+  };
+}
+
+function makeAppConfig(derivedPath = '/srv/derived'): AppConfig {
+  return { derivedPath } as unknown as AppConfig;
+}
+
 function makeLocator(
   lessonRepo: LessonRepository,
   courseRepo: CourseRepository,
   libraryRepo: LibraryRepository,
+  transcriptRepo: TranscriptRepository = makeTranscriptRepo(),
+  appConfig: AppConfig = makeAppConfig(),
 ): LessonFileLocator {
-  return new LessonFileLocator(lessonRepo, courseRepo, libraryRepo);
+  return new LessonFileLocator(lessonRepo, courseRepo, libraryRepo, transcriptRepo, appConfig);
 }
 
 // ---------------------------------------------------------------------------
@@ -298,7 +314,7 @@ describe('LessonFileLocator', () => {
     expect(result.extension).toBe('.vtt');
   });
 
-  it('locateSubtitle throws SubtitleNotFoundError when language is missing', async () => {
+  it('locateSubtitle throws SubtitleNotFoundError when language is missing and no generated transcript exists', async () => {
     const lessonNoSubtitles = makeLessonWithSubtitles([]);
     const locator = makeLocator(
       makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonNoSubtitles) }),
@@ -308,6 +324,73 @@ describe('LessonFileLocator', () => {
 
     await expect(locator.locateSubtitle(LESSON_ID, 'fr')).rejects.toBeInstanceOf(
       SubtitleNotFoundError,
+    );
+  });
+
+  it('locateSubtitle falls back to a generated transcript when no sidecar matches the language', async () => {
+    const lessonNoSubtitles = makeLessonWithSubtitles([]);
+    const transcriptRepo = makeTranscriptRepo({
+      findGeneratedForLessons: vi
+        .fn()
+        .mockResolvedValue(new Map([[LESSON_ID, { sourceMtime: new Date(), sourceSize: 1 }]])),
+    });
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonNoSubtitles) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+      transcriptRepo,
+      makeAppConfig('/srv/derived'),
+    );
+
+    const result = await locator.locateSubtitle(LESSON_ID, 'fr');
+
+    expect(result.extension).toBe('.srt');
+    expect(result.absolutePath).toBe(
+      path.resolve('/srv/derived', LIBRARY_ID, `${VIDEO_RELATIVE}.fr.srt`),
+    );
+    expect(transcriptRepo.findGeneratedForLessons).toHaveBeenCalledWith([LESSON_ID], 'fr');
+  });
+
+  it('locateSubtitle prefers a sidecar over a generated transcript in the same language', async () => {
+    const lessonWithVtt = makeLessonWithSubtitles([
+      { language: 'en', path: SUBTITLE_VTT_RELATIVE },
+    ]);
+    const transcriptRepo = makeTranscriptRepo();
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithVtt) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+      transcriptRepo,
+    );
+
+    const result = await locator.locateSubtitle(LESSON_ID, 'en');
+
+    expect(result.absolutePath).toBe(path.resolve(ROOT, SUBTITLE_VTT_RELATIVE));
+    expect(transcriptRepo.findGeneratedForLessons).not.toHaveBeenCalled();
+  });
+
+  it('locateSubtitle throws DerivedPathEscapedError when the generated path would escape the derived root', async () => {
+    const traversalLesson = {
+      id: LESSON_ID,
+      courseId: COURSE_ID,
+      videoPath: '../../etc/passwd',
+      subtitles: [],
+      materials: [],
+    };
+    const transcriptRepo = makeTranscriptRepo({
+      findGeneratedForLessons: vi
+        .fn()
+        .mockResolvedValue(new Map([[LESSON_ID, { sourceMtime: new Date(), sourceSize: 1 }]])),
+    });
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(traversalLesson) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+      transcriptRepo,
+    );
+
+    await expect(locator.locateSubtitle(LESSON_ID, 'fr')).rejects.toBeInstanceOf(
+      DerivedPathEscapedError,
     );
   });
 

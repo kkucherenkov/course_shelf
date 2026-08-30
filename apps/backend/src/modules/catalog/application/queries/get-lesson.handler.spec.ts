@@ -25,8 +25,10 @@ import { GetLessonHandler } from './get-lesson.handler';
 
 import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { CourseRepository } from '../../domain/course/course.repository';
+import type { AppConfig } from '../../../../common/config/app-config';
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
 import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
+import type { TranscriptRepository } from '../../domain/transcription/transcript.repository';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -61,6 +63,18 @@ function makeAuthz(allow: boolean): AuthorizationService {
     invalidate: vi.fn(),
     listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
   };
+}
+
+function makeTranscriptRepo(overrides?: Partial<TranscriptRepository>): TranscriptRepository {
+  return {
+    findGeneratedForLessons: vi.fn().mockResolvedValue(new Map()),
+    replaceGenerated: vi.fn(),
+    ...overrides,
+  };
+}
+
+function makeAppConfig(language = 'auto'): AppConfig {
+  return { transcription: { language } } as unknown as AppConfig;
 }
 
 function makeProgressRepo(
@@ -160,6 +174,8 @@ describe('GetLessonHandler', () => {
         courseRepo,
         makeAuthz(true),
         makeProgressRepo(),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       const result = await handler.execute(new GetLessonQuery('lesson-1', adminActor));
@@ -183,6 +199,8 @@ describe('GetLessonHandler', () => {
         courseRepo,
         makeAuthz(true),
         makeProgressRepo(null),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       const result = await handler.execute(new GetLessonQuery('lesson-1', adminActor));
@@ -199,6 +217,8 @@ describe('GetLessonHandler', () => {
         courseRepo,
         makeAuthz(true),
         makeProgressRepo(progressRow),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       const result = await handler.execute(new GetLessonQuery('lesson-1', adminActor));
@@ -216,6 +236,8 @@ describe('GetLessonHandler', () => {
         courseRepo,
         makeAuthz(true),
         makeProgressRepo(progressRow),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       const result = await handler.execute(new GetLessonQuery('lesson-1', adminActor));
@@ -231,6 +253,8 @@ describe('GetLessonHandler', () => {
         courseRepo,
         makeAuthz(true),
         makeProgressRepo(),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       const result = await handler.execute(new GetLessonQuery('lesson-1', adminActor));
@@ -242,7 +266,14 @@ describe('GetLessonHandler', () => {
       vi.mocked(lessonRepo.findById).mockResolvedValue(makeLesson());
       vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
       const progressRepo = makeProgressRepo(null);
-      const handler = new GetLessonHandler(lessonRepo, courseRepo, makeAuthz(true), progressRepo);
+      const handler = new GetLessonHandler(
+        lessonRepo,
+        courseRepo,
+        makeAuthz(true),
+        progressRepo,
+        makeTranscriptRepo(),
+        makeAppConfig(),
+      );
 
       await handler.execute(new GetLessonQuery('lesson-1', adminActor));
 
@@ -264,6 +295,8 @@ describe('GetLessonHandler', () => {
         courseRepo,
         makeAuthz(true),
         makeProgressRepo(),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       const result = await handler.execute(new GetLessonQuery('lesson-1', userActor));
@@ -286,6 +319,8 @@ describe('GetLessonHandler', () => {
         courseRepo,
         makeAuthz(false),
         makeProgressRepo(),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       await expect(
@@ -307,6 +342,8 @@ describe('GetLessonHandler', () => {
         courseRepo,
         makeAuthz(true),
         makeProgressRepo(),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       await expect(
@@ -329,6 +366,8 @@ describe('GetLessonHandler', () => {
         courseRepo,
         makeAuthz(true),
         makeProgressRepo(),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       await expect(
@@ -351,11 +390,86 @@ describe('GetLessonHandler', () => {
         courseRepo,
         makeAuthz(true),
         makeProgressRepo(),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       const result = await handler.execute(new GetLessonQuery('lesson-1', adminActor));
 
       assertNoPaths(result);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Generated transcript union (E25-F03-S03)
+  // -------------------------------------------------------------------------
+  describe('generated transcript union', () => {
+    it('appends a generated: true track for the configured language when no sidecar covers it', async () => {
+      lessonRepo = makeLessonRepo();
+      courseRepo = makeCourseRepo();
+      vi.mocked(lessonRepo.findById).mockResolvedValue(makeLesson()); // sidecar: en
+      vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
+      const transcriptRepo = makeTranscriptRepo({
+        findGeneratedForLessons: vi.fn().mockResolvedValue(new Map([['lesson-1', {}]])),
+      });
+      const handler = new GetLessonHandler(
+        lessonRepo,
+        courseRepo,
+        makeAuthz(true),
+        makeProgressRepo(),
+        transcriptRepo,
+        makeAppConfig('fr'),
+      );
+
+      const result = await handler.execute(new GetLessonQuery('lesson-1', adminActor));
+
+      expect(result.subtitles).toHaveLength(2);
+      expect(result.subtitles[0]).toMatchObject({ language: 'en' });
+      expect(result.subtitles[0]).not.toHaveProperty('generated');
+      expect(result.subtitles[1]).toMatchObject({ language: 'fr', generated: true });
+      expect(transcriptRepo.findGeneratedForLessons).toHaveBeenCalledWith(['lesson-1'], 'fr');
+    });
+
+    it('does not add a generated track, and does not query the port, when a sidecar already covers the configured language', async () => {
+      lessonRepo = makeLessonRepo();
+      courseRepo = makeCourseRepo();
+      vi.mocked(lessonRepo.findById).mockResolvedValue(makeLesson()); // sidecar: en
+      vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
+      const transcriptRepo = makeTranscriptRepo();
+      const handler = new GetLessonHandler(
+        lessonRepo,
+        courseRepo,
+        makeAuthz(true),
+        makeProgressRepo(),
+        transcriptRepo,
+        makeAppConfig('en'),
+      );
+
+      const result = await handler.execute(new GetLessonQuery('lesson-1', adminActor));
+
+      expect(result.subtitles).toHaveLength(1);
+      expect(result.subtitles[0]).not.toHaveProperty('generated');
+      expect(transcriptRepo.findGeneratedForLessons).not.toHaveBeenCalled();
+    });
+
+    it('resolves "auto" to "und" before checking for a generated track', async () => {
+      lessonRepo = makeLessonRepo();
+      courseRepo = makeCourseRepo();
+      vi.mocked(lessonRepo.findById).mockResolvedValue(makeLesson()); // sidecar: en
+      vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
+      const transcriptRepo = makeTranscriptRepo();
+      const handler = new GetLessonHandler(
+        lessonRepo,
+        courseRepo,
+        makeAuthz(true),
+        makeProgressRepo(),
+        transcriptRepo,
+        makeAppConfig('auto'),
+      );
+
+      await handler.execute(new GetLessonQuery('lesson-1', adminActor));
+
+      expect(transcriptRepo.findGeneratedForLessons).toHaveBeenCalledWith(['lesson-1'], 'und');
     });
   });
 });

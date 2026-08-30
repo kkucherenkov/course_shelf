@@ -28,3 +28,10 @@ export type { LibraryRepository } from '../../modules/catalog/domain/library/lib
 // Added for material download: LessonFileLocator.locateMaterial returns kind so
 // the controller can derive the Content-Type without importing catalog sources.
 export type { MaterialKindValue } from '../../modules/catalog/domain/lesson/material';
+// Added for E25-F03-S03: LessonFileLocator.locateSubtitle falls back to a
+// generated Transcript when no sidecar matches the requested language.
+// derivedTranscriptPath is a pure function (no DI token) — re-exported as-is.
+export { TRANSCRIPT_REPOSITORY } from '../../modules/catalog/domain/transcription/transcript.repository';
+export type { TranscriptRepository } from '../../modules/catalog/domain/transcription/transcript.repository';
+export { derivedTranscriptPath } from '../../modules/catalog/domain/transcription/derived-path';
+export { DerivedPathEscapedError } from '../../modules/catalog/domain/transcription/transcription.errors';

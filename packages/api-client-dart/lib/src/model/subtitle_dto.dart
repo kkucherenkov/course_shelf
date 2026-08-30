@@ -14,6 +14,7 @@ part 'subtitle_dto.g.dart';
 /// * [id] - Server-generated cuid identifying this subtitle track.
 /// * [language] - BCP-47-ish language code parsed from the filename suffix (`Lesson.en.srt` → `en`). `und` when no suffix is present.
 /// * [label] - Human-readable label for the subtitle track (e.g. \"English\").
+/// * [generated] - True when this track was produced by transcription rather than discovered as a sidecar. Optional and additive — absent means a hand-made sidecar.
 @BuiltValue()
 abstract class SubtitleDto implements Built<SubtitleDto, SubtitleDtoBuilder> {
   /// Server-generated cuid identifying this subtitle track.
@@ -27,6 +28,10 @@ abstract class SubtitleDto implements Built<SubtitleDto, SubtitleDtoBuilder> {
   /// Human-readable label for the subtitle track (e.g. \"English\").
   @BuiltValueField(wireName: r'label')
   String get label;
+
+  /// True when this track was produced by transcription rather than discovered as a sidecar. Optional and additive — absent means a hand-made sidecar.
+  @BuiltValueField(wireName: r'generated')
+  bool? get generated;
 
   SubtitleDto._();
 
@@ -66,6 +71,13 @@ class _$SubtitleDtoSerializer implements PrimitiveSerializer<SubtitleDto> {
       object.label,
       specifiedType: const FullType(String),
     );
+    if (object.generated != null) {
+      yield r'generated';
+      yield serializers.serialize(
+        object.generated,
+        specifiedType: const FullType(bool),
+      );
+    }
   }
 
   @override
@@ -109,6 +121,13 @@ class _$SubtitleDtoSerializer implements PrimitiveSerializer<SubtitleDto> {
             specifiedType: const FullType(String),
           ) as String;
           result.label = valueDes;
+          break;
+        case r'generated':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(bool),
+          ) as bool;
+          result.generated = valueDes;
           break;
         default:
           unhandled.add(key);

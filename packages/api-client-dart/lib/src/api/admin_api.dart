@@ -31,6 +31,7 @@ import 'package:app_api_client/src/model/scrape_preview_response.dart';
 import 'package:app_api_client/src/model/scraper_list_dto.dart';
 import 'package:app_api_client/src/model/studio_dto.dart';
 import 'package:app_api_client/src/model/tag_dto.dart';
+import 'package:app_api_client/src/model/transcription_list_dto.dart';
 import 'package:app_api_client/src/model/upsert_instructor_request.dart';
 import 'package:app_api_client/src/model/upsert_studio_request.dart';
 import 'package:app_api_client/src/model/upsert_tag_request.dart';
@@ -930,6 +931,95 @@ class AdminApi {
     }
 
     return Response<AdminScanListDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// List recent transcription runs across every library
+  /// Ordered by &#x60;startedAt&#x60; descending (newest first). Cross-library — admin-only; non-admin actors see 403 even if they have READ grants on individual libraries. Capped at &#x60;limit&#x60; (default 20, max 100). Mirrors &#x60;GET /api/v1/admin/scans&#x60;. 
+  ///
+  /// Parameters:
+  /// * [limit] - Maximum number of runs to return.
+  /// * [libraryId] - When set, only return runs for the given library. Unknown library ids return an empty list (not 404 — the view is a filter, not a fetch).
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [TranscriptionListDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<TranscriptionListDto>> listAdminTranscriptions({ 
+    int? limit = 20,
+    String? libraryId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/admin/transcriptions';
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      if (limit != null) r'limit': encodeQueryParameter(_serializers, limit, const FullType(int)),
+      if (libraryId != null) r'libraryId': encodeQueryParameter(_serializers, libraryId, const FullType(String)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    TranscriptionListDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TranscriptionListDto),
+      ) as TranscriptionListDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<TranscriptionListDto>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

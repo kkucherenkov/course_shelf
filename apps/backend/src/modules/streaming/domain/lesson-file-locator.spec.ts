@@ -138,6 +138,9 @@ function makeTranscriptRepo(overrides?: Partial<TranscriptRepository>): Transcri
   return {
     findGeneratedForLessons: vi.fn().mockResolvedValue(new Map()),
     replaceGenerated: vi.fn(),
+    findExisting: vi.fn().mockResolvedValue(null),
+    replaceSidecar: vi.fn(),
+    deleteForLesson: vi.fn(),
     ...overrides,
   };
 }

@@ -2,6 +2,23 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-30-020 — README drift audit (en + ru)
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude
+- Result: https://github.com/kkucherenkov/course_shelf/pull/324
+- Spec: none — maintenance, no card
+- Goal: re-verify every factual claim in `README.md` / `README.ru.md` against the tree and fix what had gone stale, without restructuring the document.
+- Acceptance:
+  - no version, port, count or path in either README contradicts the tree
+  - shipped features with no mention (offline-first mobile, Whisper transcription) are covered
+  - `docs/deployment.md`, `docs/release.md`, `docs/troubleshooting.md`, `docs/roadmap/` are linked
+  - both files stay in sync, Prettier clean
+- Spec diff: none
+- Codegen impact: no
+- Design impact: none
+
 ## T-2026-08-30-L5 — CI honesty: stop masking failures
 
 - Created: 2026-08-30

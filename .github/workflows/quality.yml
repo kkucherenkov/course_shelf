@@ -19,6 +19,11 @@ name: Quality (on-demand)
 # `pull_request` types do not include them — without those, applying the label
 # would change nothing until the next push.
 on:
+  # `push: main` as well as `pull_request`: a squash-merge produces a commit
+  # that no PR run ever tested — the merged tree differs from every head the
+  # PR built. Without this, main could sit broken with every check green.
+  push:
+    branches: [main]
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_dispatch:

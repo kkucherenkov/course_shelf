@@ -21,6 +21,11 @@ name: E2E smoke
 # failure has no PR and no author attached to it, which is precisely why the
 # IBM Plex reflow (7eb328d) went unexplained for two days.
 on:
+  # `push: main` as well as `pull_request`: a squash-merge produces a commit
+  # that no PR run ever tested — the merged tree differs from every head the
+  # PR built. Without this, main could sit broken with every check green.
+  push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
   schedule:
@@ -84,6 +89,25 @@ jobs:
             -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
             mcr.microsoft.com/playwright:v1.59.1-jammy \
             ./node_modules/.bin/playwright test --config=tests/e2e/playwright.config.ts
+
+      # Schemathesis against the running backend. `pnpm spec:contract-test` has
+      # existed since E02-F02-S04 and ran in no workflow, so the one gate that
+      # checks the implementation against the spec at runtime (rather than the
+      # spec against itself, as `spec:validate` does) had never fired once.
+      # This workflow is its only possible home: it is the only one that boots
+      # a backend.
+      #
+      # AFTER Playwright, deliberately: schemathesis is property-based and
+      # sends generated POST/PATCH/DELETE traffic, so running it first would
+      # leave fuzz data in the database that the visual specs then screenshot.
+      # It still reports as itself when it fails.
+      #
+      # The script's default base URL is `host.docker.internal:3000` and it
+      # passes `--add-host=…:host-gateway`, which resolves to the runner's
+      # docker bridge gateway — that reaches the compose-published port on the
+      # host, so no URL override is needed here.
+      - name: Spec contract test (Schemathesis)
+        run: pnpm spec:contract-test
 
       - name: Container state after Playwright
         if: always()

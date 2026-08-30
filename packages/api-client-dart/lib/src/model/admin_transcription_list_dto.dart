@@ -3,56 +3,56 @@
 //
 
 // ignore_for_file: unused_element
-import 'package:app_api_client/src/model/transcription_dto.dart';
 import 'package:built_collection/built_collection.dart';
+import 'package:app_api_client/src/model/admin_transcription_list_item.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
-part 'transcription_list_dto.g.dart';
+part 'admin_transcription_list_dto.g.dart';
 
-/// One library's transcription history, ordered by `startedAt` descending (newest first). The cross-library admin list uses `AdminTranscriptionListDto` instead — it needs `libraryName` per row and does not ship the nested `errors` arrays.
+/// Page of recent transcription runs across every library, ordered by `startedAt` descending. The admin transcription table consumes this.
 ///
 /// Properties:
 /// * [items] 
 @BuiltValue()
-abstract class TranscriptionListDto implements Built<TranscriptionListDto, TranscriptionListDtoBuilder> {
+abstract class AdminTranscriptionListDto implements Built<AdminTranscriptionListDto, AdminTranscriptionListDtoBuilder> {
   @BuiltValueField(wireName: r'items')
-  BuiltList<TranscriptionDto> get items;
+  BuiltList<AdminTranscriptionListItem> get items;
 
-  TranscriptionListDto._();
+  AdminTranscriptionListDto._();
 
-  factory TranscriptionListDto([void updates(TranscriptionListDtoBuilder b)]) = _$TranscriptionListDto;
+  factory AdminTranscriptionListDto([void updates(AdminTranscriptionListDtoBuilder b)]) = _$AdminTranscriptionListDto;
 
   @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(TranscriptionListDtoBuilder b) => b;
+  static void _defaults(AdminTranscriptionListDtoBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<TranscriptionListDto> get serializer => _$TranscriptionListDtoSerializer();
+  static Serializer<AdminTranscriptionListDto> get serializer => _$AdminTranscriptionListDtoSerializer();
 }
 
-class _$TranscriptionListDtoSerializer implements PrimitiveSerializer<TranscriptionListDto> {
+class _$AdminTranscriptionListDtoSerializer implements PrimitiveSerializer<AdminTranscriptionListDto> {
   @override
-  final Iterable<Type> types = const [TranscriptionListDto, _$TranscriptionListDto];
+  final Iterable<Type> types = const [AdminTranscriptionListDto, _$AdminTranscriptionListDto];
 
   @override
-  final String wireName = r'TranscriptionListDto';
+  final String wireName = r'AdminTranscriptionListDto';
 
   Iterable<Object?> _serializeProperties(
     Serializers serializers,
-    TranscriptionListDto object, {
+    AdminTranscriptionListDto object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
     yield r'items';
     yield serializers.serialize(
       object.items,
-      specifiedType: const FullType(BuiltList, [FullType(TranscriptionDto)]),
+      specifiedType: const FullType(BuiltList, [FullType(AdminTranscriptionListItem)]),
     );
   }
 
   @override
   Object serialize(
     Serializers serializers,
-    TranscriptionListDto object, {
+    AdminTranscriptionListDto object, {
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
@@ -63,7 +63,7 @@ class _$TranscriptionListDtoSerializer implements PrimitiveSerializer<Transcript
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
     required List<Object?> serializedList,
-    required TranscriptionListDtoBuilder result,
+    required AdminTranscriptionListDtoBuilder result,
     required List<Object?> unhandled,
   }) {
     for (var i = 0; i < serializedList.length; i += 2) {
@@ -73,8 +73,8 @@ class _$TranscriptionListDtoSerializer implements PrimitiveSerializer<Transcript
         case r'items':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(BuiltList, [FullType(TranscriptionDto)]),
-          ) as BuiltList<TranscriptionDto>;
+            specifiedType: const FullType(BuiltList, [FullType(AdminTranscriptionListItem)]),
+          ) as BuiltList<AdminTranscriptionListItem>;
           result.items.replace(valueDes);
           break;
         default:
@@ -86,12 +86,12 @@ class _$TranscriptionListDtoSerializer implements PrimitiveSerializer<Transcript
   }
 
   @override
-  TranscriptionListDto deserialize(
+  AdminTranscriptionListDto deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = TranscriptionListDtoBuilder();
+    final result = AdminTranscriptionListDtoBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(

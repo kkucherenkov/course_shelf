@@ -12,6 +12,7 @@ import 'package:app_api_client/src/api_util.dart';
 import 'package:app_api_client/src/model/admin_dashboard_dto.dart';
 import 'package:app_api_client/src/model/admin_library_list_dto.dart';
 import 'package:app_api_client/src/model/admin_scan_list_dto.dart';
+import 'package:app_api_client/src/model/admin_transcription_list_dto.dart';
 import 'package:app_api_client/src/model/admin_update_user_request.dart';
 import 'package:app_api_client/src/model/admin_user_list_dto.dart';
 import 'package:app_api_client/src/model/admin_user_list_item.dart';
@@ -31,7 +32,6 @@ import 'package:app_api_client/src/model/scrape_preview_response.dart';
 import 'package:app_api_client/src/model/scraper_list_dto.dart';
 import 'package:app_api_client/src/model/studio_dto.dart';
 import 'package:app_api_client/src/model/tag_dto.dart';
-import 'package:app_api_client/src/model/transcription_list_dto.dart';
 import 'package:app_api_client/src/model/upsert_instructor_request.dart';
 import 'package:app_api_client/src/model/upsert_studio_request.dart';
 import 'package:app_api_client/src/model/upsert_tag_request.dart';
@@ -955,9 +955,9 @@ class AdminApi {
   /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
   /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
   ///
-  /// Returns a [Future] containing a [Response] with a [TranscriptionListDto] as data
+  /// Returns a [Future] containing a [Response] with a [AdminTranscriptionListDto] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TranscriptionListDto>> listAdminTranscriptions({ 
+  Future<Response<AdminTranscriptionListDto>> listAdminTranscriptions({ 
     int? limit = 20,
     String? libraryId,
     CancelToken? cancelToken,
@@ -1000,14 +1000,14 @@ class AdminApi {
       onReceiveProgress: onReceiveProgress,
     );
 
-    TranscriptionListDto? _responseData;
+    AdminTranscriptionListDto? _responseData;
 
     try {
       final rawResponse = _response.data;
       _responseData = rawResponse == null ? null : _serializers.deserialize(
         rawResponse,
-        specifiedType: const FullType(TranscriptionListDto),
-      ) as TranscriptionListDto;
+        specifiedType: const FullType(AdminTranscriptionListDto),
+      ) as AdminTranscriptionListDto;
 
     } catch (error, stackTrace) {
       throw DioException(
@@ -1019,7 +1019,7 @@ class AdminApi {
       );
     }
 
-    return Response<TranscriptionListDto>(
+    return Response<AdminTranscriptionListDto>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

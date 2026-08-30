@@ -760,6 +760,41 @@ export type AdminScanListItem = {
 };
 
 /**
+ * Page of recent transcription runs across every library, ordered by `startedAt` descending. The admin transcription table consumes this.
+ */
+export type AdminTranscriptionListDto = {
+    items: Array<AdminTranscriptionListItem>;
+};
+
+/**
+ * One row in the admin recent-transcriptions table. Same backbone as `TranscriptionDto` plus `libraryName` (so the table can render the library label without a second round-trip), and with the per-lesson `errors` array collapsed to `errorsCount` — a cross-library list should not ship every run's failures. Follows `AdminScanListItem`.
+ */
+export type AdminTranscriptionListItem = {
+    transcriptionId: string;
+    libraryId: string;
+    libraryName: string;
+    status: TranscriptionStatus;
+    /**
+     * When true, the run redid existing generated transcripts — which is why its `lessonsTotal` and `lessonsTranscribed` are close together.
+     */
+    force: boolean;
+    startedAt: string;
+    /**
+     * null while still `running`.
+     */
+    finishedAt: string | null;
+    lessonsTotal: number;
+    /**
+     * Lessons for which this run produced a transcript, highlighted as a "+N" badge the way `coursesAdded` is for scans.
+     */
+    lessonsTranscribed: number;
+    /**
+     * Number of error records attached to this run — the same number as the run's `lessonsFailed`. Fetch the run itself for the details.
+     */
+    errorsCount: number;
+};
+
+/**
  * A single user-owned bookmark pinned to a position within a lesson.
  */
 export type BookmarkDto = {
@@ -1786,7 +1821,7 @@ export type TranscriptionDto = {
 };
 
 /**
- * Transcription runs ordered by `startedAt` descending (newest first). Used both for a single library's history and for the cross-library admin list.
+ * One library's transcription history, ordered by `startedAt` descending (newest first). The cross-library admin list uses `AdminTranscriptionListDto` instead — it needs `libraryName` per row and does not ship the nested `errors` arrays.
  */
 export type TranscriptionListDto = {
     items: Array<TranscriptionDto>;
@@ -2288,7 +2323,7 @@ export type ListAdminTranscriptionsResponses = {
     /**
      * Recent-transcriptions list
      */
-    200: TranscriptionListDto;
+    200: AdminTranscriptionListDto;
 };
 
 export type ListAdminTranscriptionsResponse = ListAdminTranscriptionsResponses[keyof ListAdminTranscriptionsResponses];

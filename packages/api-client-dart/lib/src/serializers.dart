@@ -24,6 +24,8 @@ import 'package:app_api_client/src/model/admin_library_list_item.dart';
 import 'package:app_api_client/src/model/admin_library_list_item_scan.dart';
 import 'package:app_api_client/src/model/admin_scan_list_dto.dart';
 import 'package:app_api_client/src/model/admin_scan_list_item.dart';
+import 'package:app_api_client/src/model/admin_transcription_list_dto.dart';
+import 'package:app_api_client/src/model/admin_transcription_list_item.dart';
 import 'package:app_api_client/src/model/admin_update_user_request.dart';
 import 'package:app_api_client/src/model/admin_user_list_dto.dart';
 import 'package:app_api_client/src/model/admin_user_list_item.dart';
@@ -149,6 +151,8 @@ part 'serializers.g.dart';
   AdminLibraryListItemScan,
   AdminScanListDto,
   AdminScanListItem,
+  AdminTranscriptionListDto,
+  AdminTranscriptionListItem,
   AdminUpdateUserRequest,
   AdminUserListDto,
   AdminUserListItem,

@@ -176,6 +176,8 @@ Class | Method | HTTP request | Description
  - [AdminLibraryListItemScan](doc/AdminLibraryListItemScan.md)
  - [AdminScanListDto](doc/AdminScanListDto.md)
  - [AdminScanListItem](doc/AdminScanListItem.md)
+ - [AdminTranscriptionListDto](doc/AdminTranscriptionListDto.md)
+ - [AdminTranscriptionListItem](doc/AdminTranscriptionListItem.md)
  - [AdminUpdateUserRequest](doc/AdminUpdateUserRequest.md)
  - [AdminUserListDto](doc/AdminUserListDto.md)
  - [AdminUserListItem](doc/AdminUserListItem.md)

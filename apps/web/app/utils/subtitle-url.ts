@@ -26,3 +26,47 @@ export function buildSubtitleUrl(
   url.pathname = `${url.pathname.replace(/\/+$/, '')}/subtitles/${encodeURIComponent(language)}`;
   return url.toString();
 }
+
+/** The shape `buildSubtitleTracks` needs from a `LessonDto.subtitles[]` entry. */
+export interface SubtitleTrackInput {
+  id: string;
+  language: string;
+  label: string;
+}
+
+export interface SubtitleTrack extends SubtitleTrackInput {
+  src: string;
+  isDefault: boolean;
+}
+
+/**
+ * Turn `LessonDto.subtitles[]` into the `<track>` list for the player.
+ *
+ * Entries whose URL cannot be derived are dropped rather than rendered with
+ * an undefined `src`, and **at most one** track is marked `default`: nothing
+ * stops a lesson from carrying two sidecars for the same language
+ * (`Lesson.en.srt` next to `Lesson.en.vtt` is two rows — there is no
+ * `@@unique([lessonId, language])`, and both files are legitimate), while a
+ * second `<track default>` on one `<video>` is an HTML conformance error that
+ * leaves the activated track, and therefore the chrome's toggle, up to the
+ * implementation.
+ */
+export function buildSubtitleTracks(
+  streamUrl: string | null | undefined,
+  subtitles: readonly SubtitleTrackInput[] | null | undefined,
+  locale: string | null | undefined,
+): SubtitleTrack[] {
+  const uiLanguage = (locale ?? '').split('-')[0];
+  const tracks: SubtitleTrack[] = [];
+  let defaultTaken = false;
+
+  for (const sub of subtitles ?? []) {
+    const src = buildSubtitleUrl(streamUrl, sub.language);
+    if (!src) continue;
+    const isDefault = !defaultTaken && Boolean(uiLanguage) && sub.language === uiLanguage;
+    if (isDefault) defaultTaken = true;
+    tracks.push({ id: sub.id, language: sub.language, label: sub.label, src, isDefault });
+  }
+
+  return tracks;
+}

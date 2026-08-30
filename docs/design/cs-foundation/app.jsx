@@ -78,7 +78,7 @@ const ColorSection = () => {
     { name: 'amber 200', token: 'amber.200', value: '#F3D38A', fg: '#15130C' },
     { name: 'amber 400', token: 'amber.400', value: '#E0A23B', fg: '#15130C' },
     { name: 'amber 500', token: 'amber.500', value: '#C8821C' },
-    { name: 'amber 600', token: 'amber.600', value: '#9C6612' },
+    { name: 'amber 600', token: 'amber.600', value: '#8A5A10' },
     { name: 'teal 400', token: 'teal.400', value: '#5BA89F' },
     { name: 'teal 500', token: 'teal.500', value: '#3F8C84' },
     { name: 'indigo 400', token: 'indigo.400', value: '#8189C7' },

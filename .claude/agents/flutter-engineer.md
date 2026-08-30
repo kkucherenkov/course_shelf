@@ -45,3 +45,16 @@ lib/
 - Domain logic → plain Dart unit tests under `test/`.
 - Widget tests for presentation when the widget has branching logic.
 - Integration tests live under `integration_test/` and run with `flutter test integration_test`.
+
+## Skills
+
+Invoke these before writing code, not after:
+
+| Skill                                       | When                                                       |
+| ------------------------------------------- | ---------------------------------------------------------- |
+| `flutter-expert`                            | Widgets, blocs, navigation, platform channels              |
+| `flutter-apply-architecture-best-practices` | A new feature's domain/data/presentation layering          |
+| `flutter-add-widget-test`                   | Covering a widget's rendering and interactions             |
+| `flutter-fix-layout-issues`                 | A `RenderFlex overflowed` or an unbounded-constraint error |
+| `flutter-setup-localization`                | Any user-visible string                                    |
+| `dart-run-static-analysis`                  | Before you call a change done                              |

@@ -41,6 +41,21 @@ gh issue close <N> --reason completed --comment "Closed by PR #<pr> (<card-id>).
 
 ## When a card is marked ✅ Done
 
+Edit the card itself — `docs/roadmap/tasks/<ID>.md` gets `**Status:** ✅ Done`,
+its sub-steps ticked, and `Completed` / `Result` under Notes. Then tick the
+story's row in `docs/roadmap/TODO.md` and bump that milestone's progress
+counter by hand.
+
+**Never run `docs/roadmap/tools/generate.py` without `--roadmap-only`.** It is a
+one-shot seeder: a plain run resets every card to `⬜ Not started`, wipes every
+`Completed` / `Result` note, and rewrites the progress counter to `0 / N`.
+`refuse_if_seeded()` blocks it, and `--force` past that guard destroys the
+record. The only safe invocation regenerates the Gantt chart:
+
+```sh
+python3 docs/roadmap/tools/generate.py --roadmap-only
+```
+
 Reconcile in the same pass: confirm every story issue for that card is closed,
 and once **every** card under an epic is Done, close the epic's umbrella issue
 too.

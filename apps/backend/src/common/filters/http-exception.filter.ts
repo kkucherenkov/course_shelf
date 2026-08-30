@@ -22,6 +22,61 @@ interface ProblemDocument {
   errors?: unknown;
 }
 
+/**
+ * An HTTP error raised outside the Nest pipeline.
+ *
+ * `express-openapi-validator` is mounted with `app.use('/api', …)`, so it runs
+ * before the Nest router and reports failures by calling `next(err)` with its
+ * own `HttpError` — `Not Found` (404) for a path the spec does not describe,
+ * `Method Not Allowed` (405) for a method the path does not define, plus
+ * `Bad Request` / `Unsupported Media Type` / … for request-validation
+ * failures. Nest's express error handler funnels those into this filter, but
+ * they are neither `DomainError` nor `HttpException`, so they used to fall
+ * through to the generic 500 branch. Anything built by `http-errors` (`status`
+ * or `statusCode`) is picked up by the same narrowing.
+ */
+interface ExternalHttpError {
+  readonly status: number;
+  readonly name: string;
+  readonly message: string;
+  readonly headers: Record<string, string> | undefined;
+  readonly errors: unknown[] | undefined;
+}
+
+function numericStatus(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 400 && value <= 599
+    ? value
+    : undefined;
+}
+
+function stringHeaders(value: unknown): Record<string, string> | undefined {
+  if (typeof value !== 'object' || value === null) return undefined;
+  const entries = Object.entries(value).filter(
+    (entry): entry is [string, string] => typeof entry[1] === 'string',
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+function externalHttpError(exception: unknown): ExternalHttpError | undefined {
+  if (!(exception instanceof Error)) return undefined;
+  const candidate = exception as Error & {
+    status?: unknown;
+    statusCode?: unknown;
+    headers?: unknown;
+    errors?: unknown;
+  };
+  const status = numericStatus(candidate.status) ?? numericStatus(candidate.statusCode);
+  if (status === undefined) return undefined;
+
+  return {
+    status,
+    name: candidate.name,
+    message: candidate.message,
+    headers: stringHeaders(candidate.headers),
+    errors: Array.isArray(candidate.errors) ? candidate.errors : undefined,
+  };
+}
+
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
@@ -30,7 +85,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const http = host.switchToHttp();
     const response = http.getResponse<Response>();
     const request = http.getRequest<Request>();
-    const problem = this.toProblem(exception, request.originalUrl || request.url);
+    const external = externalHttpError(exception);
+    const problem = this.toProblem(exception, external, request.originalUrl || request.url);
+
+    // RFC 9110 §15.5.6 requires `Allow` on a 405; the validator already knows
+    // which methods the path defines, so pass its headers straight through.
+    for (const [name, value] of Object.entries(external?.headers ?? {})) {
+      response.setHeader(name, value);
+    }
 
     if (problem.status >= 500) {
       this.logger.error(
@@ -46,7 +108,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
     response.status(problem.status).type('application/problem+json').send(problem);
   }
 
-  private toProblem(exception: unknown, instance: string): ProblemDocument {
+  private toProblem(
+    exception: unknown,
+    external: ExternalHttpError | undefined,
+    instance: string,
+  ): ProblemDocument {
     if (exception instanceof DomainError) {
       const problem: ProblemDocument = {
         type: `urn:problem-type:${exception.code}`,
@@ -84,6 +150,24 @@ export class HttpExceptionFilter implements ExceptionFilter {
       return problem;
     }
 
+    if (external) {
+      const problem: ProblemDocument = {
+        type: 'about:blank',
+        // `HttpError.name` is already the reason phrase ("Not Found",
+        // "Method Not Allowed"); a bare `Error` falls back to the status table.
+        title: external.name === 'Error' ? this.titleFor(external.status) : external.name,
+        status: external.status,
+        instance,
+      };
+      if (external.message) {
+        problem.detail = external.message;
+      }
+      if (external.errors) {
+        problem.errors = external.errors;
+      }
+      return problem;
+    }
+
     return {
       type: 'about:blank',
       title: 'Internal Server Error',
@@ -105,6 +189,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
       case 404: {
         return 'Not Found';
+      }
+      case 405: {
+        return 'Method Not Allowed';
       }
       case 409: {
         return 'Conflict';

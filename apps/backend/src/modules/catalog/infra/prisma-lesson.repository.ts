@@ -229,10 +229,11 @@ export class PrismaLessonRepository implements LessonRepository {
         }),
       ),
       subtitles: row.subtitles.map((s) =>
+        // `label` is derived from `language` — the stored column is written,
+        // never read back (see subtitle.ts).
         Subtitle.reconstitute({
           id: s.id,
           language: s.language,
-          label: s.label,
           path: s.path,
         }),
       ),

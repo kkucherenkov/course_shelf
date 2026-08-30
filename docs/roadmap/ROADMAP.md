@@ -181,17 +181,10 @@ gantt
     AsyncAPI Centrifugo channels + POST /api/v1/realtime/token   :done, e24f01s01, after e04f02s03, 2d
 
     section E25 Transcription (Whisper)
-<<<<<<< HEAD
     Derived-artifact volume, whisper config, and the binary in t :done, e25f01s01, after e01f02s01, 1d
     Derived path resolution with its own traversal guard         :done, e25f01s02, after e25f01s01, 1d
-    ffmpeg audio extraction for whisper                          :active, e25f01s03, after e06f02s02, 1d
-    whisper.cpp adapter behind a port                            :done, e25f01s04, after e25f01s01, 1d
-=======
-    Derived-artifact volume, whisper config, and the binary in t :active, e25f01s01, after e01f02s01, 1d
-    Derived path resolution with its own traversal guard         :active, e25f01s02, after e25f01s01, 1d
     ffmpeg audio extraction for whisper                          :done, e25f01s03, after e06f02s02, 1d
-    whisper.cpp adapter behind a port                            :active, e25f01s04, after e25f01s01, 1d
->>>>>>> origin/main
+    whisper.cpp adapter behind a port                            :done, e25f01s04, after e25f01s01, 1d
     Transcript and transcription schema                          :done, e25f02s01, after e06f03s02, 1d
     Transcription aggregate                                      :done, e25f02s02, after e25f02s01, 1d
     The skip rule                                                :done, e25f02s03, after e25f02s01, 1d

@@ -38,6 +38,35 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Left to other lanes: E25-F01-S03 (ffmpeg audio extraction) and the
   `Transcription` aggregate / repository / skip rule.
 
+## T-2026-08-30-007 — backend: error mapping + subtitle track identity/label
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude (lane L4, worktree `agent-a144a2781c8088411`)
+- Branch: `kkucherenkov/backend-error-and-subtitle-fixes`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/294
+- Cards: none — three defects found outside a roadmap card (GitHub #289, #291, #286)
+- Goal: unknown routes answer 404/405 as problem+json; one subtitle track per
+  language, labelled with the language rather than the video file name.
+- Spec diff: none — `SubtitleDto.label` already documents `"English"`, and
+  `/api/v1/stream/lessons/{id}/subtitles/{language}` keeps its shape.
+- Codegen impact: no
+- Sub-steps:
+  - [x] `HttpExceptionFilter` narrows on a numeric HTTP status instead of a
+        class, so every express-openapi-validator error becomes problem+json;
+        `Allow` survives on the 405 (#289)
+  - [x] `http-exception.filter.spec.ts` boots the real middleware against an
+        inline document — 404, 405 + `Allow`, 200, and a plain `Error` still 500
+  - [x] scan collapses a lesson's subtitle files to one per language, `.vtt`
+        preferred; file signatures stay per-file so rescan detection is
+        unchanged (#291)
+  - [x] `Subtitle.label` derived from the language via `Intl.DisplayNames`
+        rather than the video stem (#286)
+  - [x] `docs/user-guide.md` + `docs/architecture.md` updated in the same pass
+  - [x] gates: lint --fix, typecheck, test (1612 passing), format, spec:validate
+- Status: done
+- Blockers: —
+
 ## T-2026-08-30-005 — E25 transcription domain + ffmpeg audio extraction
 
 - Created: 2026-08-30

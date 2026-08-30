@@ -39,7 +39,7 @@ import { Lesson } from '../../domain/lesson/lesson';
 import { MaterialKindUnsupportedError } from '../../domain/lesson/lesson.errors';
 import { Material } from '../../domain/lesson/material';
 import { LESSON_REPOSITORY } from '../../domain/lesson/lesson.repository';
-import { Subtitle } from '../../domain/lesson/subtitle';
+import { Subtitle, dedupeSubtitlePathsByLanguage, languageOf } from '../../domain/lesson/subtitle';
 import { LibraryNotFoundError } from '../../domain/library/library.errors';
 import { LIBRARY_REPOSITORY } from '../../domain/library/library.repository';
 import { parseCourseJson, normaliseCourseJson } from '../../domain/scan/course-json.schema';
@@ -313,10 +313,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               break;
             }
             case 'subtitle': {
-              // Extract the language from the subtitle filename for ScannedSubtitle.
-              const langMatch = /\.([a-z]{2,3})\.(srt|vtt)$/i.exec(fileBasename);
-              const lang = langMatch?.[1]?.toLowerCase() ?? 'und';
-              group.subtitles.push({ path: file.path, language: lang });
+              group.subtitles.push({ path: file.path, language: languageOf(fileBasename) });
               break;
             }
             case 'ignored': {
@@ -643,8 +640,14 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
                   }
                 }
 
-                for (const s of entry.subtitles) {
-                  lesson.addSubtitle(Subtitle.fromFile({ id: nanoid(), path: s.path }));
+                // One row per language: `Lesson.en.srt` + `Lesson.en.vtt` are
+                // the same track twice, and the stream route addresses a track
+                // by its language. Every discovered file still keeps its own
+                // signature entry above, so incremental detection is unaffected.
+                for (const subtitlePath of dedupeSubtitlePathsByLanguage(
+                  entry.subtitles.map((s) => s.path),
+                )) {
+                  lesson.addSubtitle(Subtitle.fromFile({ id: nanoid(), path: subtitlePath }));
                 }
 
                 await this.lessonRepo.save(lesson);

@@ -13,7 +13,7 @@ import 'package:app_mobile/features/downloads/domain/device_storage.dart';
 /// **Never throws.** The storage bar is decoration; a plugin that fails on some
 /// OS version, or is simply absent (desktop, tests), must not take the whole
 /// Downloads tab with it. Every failure degrades to `null`, and the bar falls
-/// back to showing CourseShelf's own usage without the device totals.
+/// back to showing CourseShelf's own usage without the device free space.
 class DiskSpaceDeviceStorage implements DeviceStorage {
   DiskSpaceDeviceStorage({DiskSpacePlus? plugin})
     : _plugin = plugin ?? DiskSpacePlus();
@@ -24,11 +24,10 @@ class DiskSpaceDeviceStorage implements DeviceStorage {
   static const int _bytesPerMegabyte = 1024 * 1024;
 
   @override
-  Future<({int? freeBytes, int? totalBytes})> read() async {
+  Future<int?> read() async {
     try {
       final double? freeMb = await _plugin.getFreeDiskSpace;
-      final double? totalMb = await _plugin.getTotalDiskSpace;
-      return (freeBytes: _toBytes(freeMb), totalBytes: _toBytes(totalMb));
+      return _toBytes(freeMb);
     } on Object catch (error) {
       // Deliberately broad: this is a platform channel, and the failure modes
       // are a MissingPluginException on an unsupported platform, a
@@ -37,7 +36,7 @@ class DiskSpaceDeviceStorage implements DeviceStorage {
       // beyond "no reading available" — so the message is logged and the stack
       // is not.
       debugPrint('DiskSpaceDeviceStorage: storage unavailable ($error)');
-      return (freeBytes: null, totalBytes: null);
+      return null;
     }
   }
 

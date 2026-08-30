@@ -6,8 +6,15 @@
  *   1. Load lesson. Missing → LessonNotFoundError.
  *   2. Load parent course for libraryId.
  *   3. AuthorizationService.canSee → PermissionDenied if non-admin without grant.
- *   4. Create Bookmark aggregate via nanoid id stamped with actor.id.
- *   5. Persist. Return BookmarkDto.
+ *   4. When idempotencyKey is given, look up an existing bookmark for
+ *      (actor, lessonId, idempotencyKey) first — a retry of an already-applied
+ *      create returns that bookmark (`created: false`) instead of making a
+ *      second one (#285).
+ *   5. Otherwise create a Bookmark aggregate via nanoid id stamped with
+ *      actor.id and persist. A concurrent create that wins the race on the
+ *      same key surfaces as BookmarkIdempotencyConflictError from the repo —
+ *      re-fetch and answer with the winner rather than propagate a 409 for
+ *      what is, from the retrying client's point of view, a success.
  *
  * No NestJS HTTP exceptions. HttpExceptionFilter translates DomainError subclasses.
  */
@@ -23,6 +30,7 @@ import {
 } from '../../../../common/catalog-tokens';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { Bookmark } from '../../domain/bookmark/bookmark';
+import { BookmarkIdempotencyConflictError } from '../../domain/bookmark/bookmark.errors';
 import { BOOKMARK_REPOSITORY } from '../../domain/bookmark/bookmark.repository';
 
 import { CreateBookmarkCommand } from './create-bookmark.command';
@@ -36,6 +44,12 @@ import type { CourseRepository, LessonRepository } from '../../../../common/cata
 import type { BookmarkRepository } from '../../domain/bookmark/bookmark.repository';
 import type { BookmarkDto } from '@app/api-client-ts';
 
+/** created: false means this was an idempotent replay — controller answers 200, not 201. */
+export interface CreateBookmarkResult {
+  readonly bookmark: BookmarkDto;
+  readonly created: boolean;
+}
+
 function toDto(bm: Bookmark): BookmarkDto {
   return {
     id: bm.id,
@@ -48,7 +62,10 @@ function toDto(bm: Bookmark): BookmarkDto {
 }
 
 @CommandHandler(CreateBookmarkCommand)
-export class CreateBookmarkHandler implements ICommandHandler<CreateBookmarkCommand, BookmarkDto> {
+export class CreateBookmarkHandler implements ICommandHandler<
+  CreateBookmarkCommand,
+  CreateBookmarkResult
+> {
   constructor(
     @Inject(LESSON_REPOSITORY) private readonly lessonRepo: LessonRepository,
     @Inject(COURSE_REPOSITORY) private readonly courseRepo: CourseRepository,
@@ -56,8 +73,8 @@ export class CreateBookmarkHandler implements ICommandHandler<CreateBookmarkComm
     @Inject(BOOKMARK_REPOSITORY) private readonly bookmarkRepo: BookmarkRepository,
   ) {}
 
-  async execute(command: CreateBookmarkCommand): Promise<BookmarkDto> {
-    const { lessonId, positionSeconds, label, actor } = command;
+  async execute(command: CreateBookmarkCommand): Promise<CreateBookmarkResult> {
+    const { lessonId, positionSeconds, label, idempotencyKey, actor } = command;
 
     const lesson = await this.lessonRepo.findById(lessonId);
     if (!lesson) {
@@ -79,15 +96,42 @@ export class CreateBookmarkHandler implements ICommandHandler<CreateBookmarkComm
       throw new PermissionDenied('You do not have access to this lesson.');
     }
 
+    if (idempotencyKey !== undefined) {
+      const existing = await this.bookmarkRepo.findByIdempotencyKey(
+        actor.id,
+        lessonId,
+        idempotencyKey,
+      );
+      if (existing) {
+        return { bookmark: toDto(existing), created: false };
+      }
+    }
+
     const bookmark = Bookmark.create({
       id: nanoid(),
       userId: actor.id,
       lessonId,
       positionSeconds,
       ...(label === undefined ? {} : { label }),
+      ...(idempotencyKey === undefined ? {} : { idempotencyKey }),
     });
 
-    await this.bookmarkRepo.save(bookmark);
-    return toDto(bookmark);
+    try {
+      await this.bookmarkRepo.save(bookmark);
+    } catch (error) {
+      if (idempotencyKey !== undefined && error instanceof BookmarkIdempotencyConflictError) {
+        const winner = await this.bookmarkRepo.findByIdempotencyKey(
+          actor.id,
+          lessonId,
+          idempotencyKey,
+        );
+        if (winner) {
+          return { bookmark: toDto(winner), created: false };
+        }
+      }
+      throw error;
+    }
+
+    return { bookmark: toDto(bookmark), created: true };
   }
 }

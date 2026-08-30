@@ -186,12 +186,10 @@ void main() {
       build: () => DownloadsBloc(repository),
       seed: () => const DownloadsState(
         isLoading: false,
-        storage: StorageSnapshot(deviceFreeBytes: 1, deviceTotalBytes: 2),
+        storage: StorageSnapshot(deviceFreeBytes: 1),
       ),
       act: (DownloadsBloc bloc) => bloc.add(
-        const DownloadsStorageUpdated(
-          StorageSnapshot(deviceFreeBytes: 1, deviceTotalBytes: 2),
-        ),
+        const DownloadsStorageUpdated(StorageSnapshot(deviceFreeBytes: 1)),
       ),
       // Capacity moves slowly; rebuilding the tab on every identical reading
       // after every queue tick is pure churn.

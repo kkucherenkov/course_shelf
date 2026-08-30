@@ -484,9 +484,16 @@ model Bookmark {
   lessonId        String
   positionSeconds Int
   label           String?
+  // Client-generated retry key (#285). Nullable and part of a unique
+  // constraint: Postgres treats each NULL as distinct, so rows created
+  // without a key (or before this column existed) never collide with each
+  // other — only two creates that share (userId, lessonId, idempotencyKey)
+  // do, which is exactly the retry this exists to catch.
+  idempotencyKey  String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  @@unique([userId, lessonId, idempotencyKey], name: "uq_bookmark_idempotency")
   @@index([userId, lessonId])
   @@index([userId, id])
   @@map("bookmark")

@@ -10,7 +10,7 @@
   import { useProgressReporter } from '~/composables/useProgressReporter';
   import { useStreamUrl } from '~/composables/useStreamUrl';
   import { usePreferencesStore } from '~/stores/preferences';
-  import { buildSubtitleUrl } from '~/utils/subtitle-url';
+  import { buildSubtitleTracks } from '~/utils/subtitle-url';
 
   import PlayerSidebar from '~/components/lesson-player/PlayerSidebar.vue';
 
@@ -70,25 +70,11 @@
   // ── Subtitle tracks ──────────────────────────────────────────────────────────
 
   // The subtitle route takes the same signed token as the video, so every
-  // `<track>` src is derived from the resolved stream URL. Entries we cannot
-  // build a URL for are dropped rather than rendered with an undefined src.
-  const subtitleTracks = computed(() => {
-    const uiLanguage = locale.value.split('-')[0];
-    return (lessonData.value?.subtitles ?? []).flatMap((sub) => {
-      const src = buildSubtitleUrl(streamUrl.value, sub.language);
-      return src
-        ? [
-            {
-              id: sub.id,
-              src,
-              language: sub.language,
-              label: sub.label,
-              isDefault: sub.language === uiLanguage,
-            },
-          ]
-        : [];
-    });
-  });
+  // `<track>` src is derived from the resolved stream URL. Unbuildable entries
+  // are dropped and at most one track is marked `default` — see the helper.
+  const subtitleTracks = computed(() =>
+    buildSubtitleTracks(streamUrl.value, lessonData.value?.subtitles, locale.value),
+  );
 
   // ── Player state ─────────────────────────────────────────────────────────────
 

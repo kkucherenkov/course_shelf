@@ -2,7 +2,7 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
-## T-2026-08-30-011 — E26-F01-S02 + E26-F01-S04 transcript cues, `?t=` deep links, two player defects
+## T-2026-08-30-013 — E26-F01-S02 + E26-F01-S04 transcript cues, `?t=` deep links, two player defects
 
 - Created: 2026-08-30
 - Completed: 2026-08-30
@@ -38,6 +38,42 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
     `app/pages/dev/foundations.vue` until `pnpm design:build` writes the
     git-ignored `app/design-tokens.generated.ts`. Not a code defect — the
     artefact simply does not exist before the first build.
+
+## T-2026-08-30-008 — E25-F01 whisper foundation (S01, S02, S04)
+
+- Created: 2026-08-30
+- Completed: 2026-08-30
+- Owner: claude (lane L1, worktree `e25-whisper-foundation`)
+- Branch: `kkucherenkov/e25-whisper-foundation`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/298
+- Spec: [docs/superpowers/specs/2026-08-29-b4-transcription-design.md](../../docs/superpowers/specs/2026-08-29-b4-transcription-design.md)
+- Cards: [E25-F01-S01](../../docs/roadmap/tasks/E25-F01-S01.md) (#210),
+  [E25-F01-S02](../../docs/roadmap/tasks/E25-F01-S02.md) (#211),
+  [E25-F01-S04](../../docs/roadmap/tasks/E25-F01-S04.md) (#213)
+- Goal: give the transcription work a writable derived volume, whisper config,
+  a pinned whisper.cpp binary in the backend image, a guarded derived-path
+  resolver, and speech-to-text behind a port.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] `AppConfig.derivedPath` + `AppConfig.transcription` with a colocated spec
+  - [x] writable `/data/derived` in `compose.yml`, `compose.prod.yml`, `compose.release.yml`
+  - [x] ggml model mounted read-only; env wired in prod and release
+  - [x] `.env.example` + `.gitignore` cover `DERIVED_PATH` and every `WHISPER_*`
+  - [x] whisper.cpp pinned in both backend Dockerfiles, both binaries verified in-container
+  - [x] `transcription.errors.ts`
+  - [x] `derived-path.ts` + spec (guard separate from `lesson-file-locator.ts`)
+  - [x] `whisper.port.ts` + `WHISPER_ADAPTER` token
+  - [x] `local-whisper.adapter.ts` + spec (`execFile` mocked, no real binary)
+  - [x] docs: `README.md`, `README.ru.md`, `docker/README.md`
+- Status: done
+- Blockers: —
+- Deviation: the ggml model is bound through a read-only `/models` directory
+  (`WHISPER_MODEL_DIR`) with `WHISPER_MODEL_PATH` naming the file, not the
+  plan's required single-file mount — a required mount would break every
+  existing prod stack on upgrade. `DERIVED_PATH` is required in prod/release.
+- Left to other lanes: E25-F01-S03 (ffmpeg audio extraction) and the
+  `Transcription` aggregate / repository / skip rule.
 
 ## T-2026-08-30-007 — backend: error mapping + subtitle track identity/label
 

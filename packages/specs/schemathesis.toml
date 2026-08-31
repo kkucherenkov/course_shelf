@@ -131,9 +131,35 @@ parameters = { "path.id" = "seed-library-main" }
 include-name = "GET /api/v1/courses/{id}"
 parameters = { "path.id" = "seed-course-fundamentals" }
 
+# `positive_data_acceptance` treats any non-2xx answer to schema-valid data as a
+# finding, and a *documented* 422 is still a rejection to it. Two invariants on
+# this payload cannot be pushed into the schema, so 422 is added to the expected
+# set rather than the check being turned off:
+#
+#   - `ratingAverage: 0, ratingCount: null`. `dependentRequired` already forces
+#     the pair to be present together, but the fields are nullable and the
+#     handler reads an explicit `null` as "not supplied", so a present-but-null
+#     count breaks the pair. JSON Schema has no way to say "both null or both
+#     non-null" without an `if`/`then` pair that fights `additionalProperties`.
+#     Whether `null` should instead mean "leave unchanged" here — as it already
+#     does for the relation arrays on this same payload — is a real API question,
+#     filed separately.
+#   - `language`, which is validated as a BCP-47 tag by ICU at runtime.
+#
+# Known cost: a genuine over-rejection on this operation would now be reported
+# only if it used a status other than 422.
 [[operations]]
 include-name = "PATCH /api/v1/courses/{id}"
 parameters = { "path.id" = "seed-course-fundamentals" }
+checks.positive_data_acceptance.expected-statuses = ["2xx", 401, 403, 404, 409, 422, "5xx"]
+
+# Same treatment, different reason: the 422 here is raised by the scraped
+# fragment stored on the task, not by anything in the request, so there is no
+# request schema that could have prevented it. The Stateful phase reaches this
+# operation now that a seeded course id lets it create an identify task first.
+[[operations]]
+include-name = "POST /api/v1/admin/identify-tasks/{id}/apply"
+checks.positive_data_acceptance.expected-statuses = ["2xx", 401, 403, 404, 409, 422, "5xx"]
 
 [[operations]]
 include-name = "GET /api/v1/courses/{id}/outline"

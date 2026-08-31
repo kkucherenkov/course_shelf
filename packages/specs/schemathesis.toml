@@ -123,9 +123,12 @@ parameters = { "path.id" = "seed-library-main" }
 #     `${VAR}` substitution, but `PATCH` would then fuzz the run's own admin
 #     account — role, ban flag and all — and take the rest of the run with it.
 #     Reaching this one needs a second, disposable user.
-#   * `POST /admin/courses/{id}/scrape-preview` and `.../identify` — reachable
-#     with a seeded course id, but `SCRAPERS_MODE` defaults to `real`, so
-#     unblocking them would fire dozens of live outbound scrapes per CI run.
+#   * `POST /admin/courses/{id}/scrape-preview` and `.../identify` — the
+#     Stateful phase already reaches both by chaining a course id out of an
+#     earlier response, and their outcome depends on what the scraper returns,
+#     which is not something a path parameter fixes. (`compose.ci.yml` now sets
+#     `SCRAPERS_MODE=mock` so that chain stops fetching generated URLs off the
+#     public internet.)
 
 [[operations]]
 include-name = "GET /api/v1/courses/{id}"
@@ -235,14 +238,15 @@ parameters = { "path.id" = "seed-library-main" }
 include-name = "PATCH /api/v1/libraries/{id}"
 parameters = { "path.id" = "seed-library-main" }
 
-# The scratch library, not the main one. This operation really deletes what it
-# is pointed at, and cascades, so pinning it at `seed-library-main` would take
-# the course, the lesson and every other override's target with it — in an
-# order nobody controls. The seed creates a second, empty library for exactly
-# this. After the first success the rest of the budget gets a documented 404.
-[[operations]]
-include-name = "DELETE /api/v1/libraries/{id}"
-parameters = { "path.id" = "seed-library-scratch" }
+# `DELETE /api/v1/libraries/{id}` is deliberately NOT pinned, and the seed no
+# longer carries a sacrificial library for it. An override wins over a stateful
+# link, so pinning the id broke the one mechanism that already covered this
+# operation properly: the Stateful phase creates a library through
+# `POST /api/v1/libraries` and follows the inferred link to delete it. With the
+# override in place that DELETE went to the seeded library instead, which the
+# previous scenario had already removed, and `ensure_resource_availability`
+# correctly reported "the API returned 404 for a resource that was just
+# created". Deletes belong to the Stateful phase; leave them there.
 
 # `/data/courses` exists and is empty in the backend image, so a scan is a real
 # 202 over an empty tree — and it gives `scans/latest` a row to return.

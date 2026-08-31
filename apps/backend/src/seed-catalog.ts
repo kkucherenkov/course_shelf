@@ -57,12 +57,6 @@ import type { TagRepository } from './modules/catalog/domain/tag/tag.repository'
 export const SEED_IDS = {
   /** Library the read operations address. Points at the image's media mount. */
   library: 'seed-library-main',
-  /**
-   * A second library that exists only to be deleted. `DELETE /libraries/{id}`
-   * is pinned at this one so the contract run gets a real 204 without taking
-   * the rest of the spine with it.
-   */
-  scratchLibrary: 'seed-library-scratch',
   course: 'seed-course-fundamentals',
   section: 'seed-section-getting-started',
   lesson: 'seed-lesson-welcome',
@@ -95,9 +89,6 @@ export const SEED_EPOCH = new Date('2026-01-01T00:00:00.000Z');
  * gives `GET /libraries/{id}/scans/latest` something to return.
  */
 const SEED_LIBRARY_ROOT = '/data/courses';
-const SEED_SCRATCH_ROOT = '/data/seed-scratch';
-
-const SEED_LIBRARY_IDS = new Set<string>([SEED_IDS.library, SEED_IDS.scratchLibrary]);
 
 /** Repository ports the seed writes through. Resolved from DI by `seed.ts`. */
 export interface SeedPorts {
@@ -163,30 +154,20 @@ export async function seedCatalog(ports: SeedPorts, logger: SeedLogger): Promise
     ports.tags.save(tag),
   ]);
 
-  await Promise.all([
-    ports.libraries.save(
-      Library.register({
-        id: SEED_IDS.library,
-        name: 'Seed library',
-        rootPath: SEED_LIBRARY_ROOT,
-        now: SEED_EPOCH,
-      }),
-    ),
-    ports.libraries.save(
-      Library.register({
-        id: SEED_IDS.scratchLibrary,
-        name: 'Seed scratch library',
-        rootPath: SEED_SCRATCH_ROOT,
-        now: SEED_EPOCH,
-      }),
-    ),
-  ]);
+  await ports.libraries.save(
+    Library.register({
+      id: SEED_IDS.library,
+      name: 'Seed library',
+      rootPath: SEED_LIBRARY_ROOT,
+      now: SEED_EPOCH,
+    }),
+  );
 
   await ports.courses.save(buildSeedCourse());
   await ports.lessons.save(buildSeedLesson());
 
   logger.log(
-    `Seeded catalog: libraries ${SEED_IDS.library} + ${SEED_IDS.scratchLibrary}, ` +
+    `Seeded catalog: library ${SEED_IDS.library}, ` +
       `course ${SEED_IDS.course}, lesson ${SEED_IDS.lesson}.`,
   );
 }
@@ -283,7 +264,7 @@ async function assertDatabaseIsSeedable(ports: SeedPorts): Promise<void> {
   ]);
 
   const conflicts = [
-    ...libraries.filter((l) => !SEED_LIBRARY_IDS.has(l.id)).map((l) => `library:${l.id}`),
+    ...libraries.filter((l) => l.id !== SEED_IDS.library).map((l) => `library:${l.id}`),
     ...courses.filter((c) => c.id !== SEED_IDS.course).map((c) => `course:${c.id}`),
   ];
 

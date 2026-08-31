@@ -8568,6 +8568,12 @@ components:
         name:
           type: string
           minLength: 1
+          # This path writes the column directly — no `Library.register`, so no
+          # trim check — and `minLength` alone let `"   "` through as a library
+          # name. The create payload carries the same rule for the opposite
+          # reason: there the aggregate rejects it, with a 422 the operation does
+          # not document.
+          pattern: "\\S"
           maxLength: 200
 
     SearchResultDto:
@@ -9057,8 +9063,14 @@ components:
         name:
           type: string
           minLength: 1
+          # `Library.register` trims before checking for emptiness and throws
+          # LibraryNameRequiredError (422), a status neither library write
+          # documents. Stating the trim rule keeps the rejection a 400 at the
+          # boundary. On the update payload it also closes the inverse gap: that
+          # path writes the column directly, so `"   "` was stored as a name.
+          pattern: "\\S"
           maxLength: 200
-          description: Human-readable label.
+          description: Human-readable label. Must contain a non-whitespace character.
         rootPath:
           type: string
           minLength: 1
@@ -9561,6 +9573,10 @@ components:
         title:
           type: string
           minLength: 1
+          # The Title value object trims before checking for emptiness, so a
+          # whitespace-only title satisfied minLength and came back 422. Same
+          # trim rule as the note body and the bookmark label.
+          pattern: "\\S"
           maxLength: 200
         description:
           type: string
@@ -9678,10 +9694,15 @@ components:
         body:
           type: string
           minLength: 1
+          # The aggregate trims before testing for emptiness, so a lone `\v`
+          # satisfied minLength and came back 422 — while the description below
+          # promised a 400. `\S` is that trim rule, and it makes the promise
+          # true. Same fix as ExternalIdRef.source (#321) and the bookmark label.
+          pattern: "\\S"
           maxLength: 16384
           description: >-
-            Plain Markdown. Trimmed server-side; an empty post-trim body is
-            rejected as 400.
+            Plain Markdown. Trimmed server-side; a body with no non-whitespace
+            character is rejected as 400.
       example:
         lessonId: clxvles0000000000000000001
         body: "## Aggregates\n\nKey insight: aggregates enforce invariants across their boundary."

@@ -1,6 +1,6 @@
 # Active tasks
 
-## T-2026-08-31-003 — backend e2e layer + authenticated contract test
+## T-2026-08-31-005 — backend e2e layer + authenticated contract test
 
 - Created: 2026-08-31
 - Owner: claude (lane L1 — backend-e2e-auth-contract)
@@ -34,6 +34,29 @@
   `minLength: 1` on the course grant target, documenting 422 and 404 on four
   operations, and a decision on how the spec expresses "no NUL bytes").
   Tracked as `tuxedo` 26–29; details in the PR body.
+
+## T-2026-08-31-003 — mobile: Android emulator in CI + integration tests for offline playback, sync and the download queue
+
+- Created: 2026-08-31
+- Owner: claude (lane L3)
+- Spec: [docs/roadmap/tasks/E19-F01-S02.md](../../docs/roadmap/tasks/E19-F01-S02.md)
+- Goal: `apps/mobile`'s `integration_test/` suite actually executes somewhere.
+  Today nothing runs it, so every platform channel the app depends on
+  (`path_provider`, `flutter_secure_storage`, `disk_space_plus`, `video_player`,
+  drift's bundled SQLite) has never been exercised by a check.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] `flutter-integration` job on `reactivecircus/android-emulator-runner`
+        (separate from the fast `flutter` analyze/test job)
+  - [x] `integration_test/offline_playback_test.dart` — loopback decrypt URL
+        played by the real `video_player`, plus the file-removed fallback
+  - [x] `integration_test/download_queue_test.dart` — smoke through real HTTP,
+        real Keystore, real path_provider, real `disk_space_plus`
+  - [x] `integration_test/sync_drain_test.dart` — outbox drain smoke over real SQLite
+  - [x] `AppProgressBadge` call sites pass localized copy (#268, Flutter half)
+- Status: in-review
+- Blockers: — (no emulator on the dev host; CI is the first execution)
 
 ## T-2026-08-31-004 — backfill GitHub issue mirroring for E00–E14 / E21–E24
 

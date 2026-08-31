@@ -3,6 +3,8 @@ import 'package:widgetbook/widgetbook.dart';
 
 import 'package:app_ui/app_ui.dart';
 
+import 'package:app_mobile/i18n/strings.g.dart';
+
 /// Widgetbook component cataloguing the `app_ui` [AppProgressBadge] — the
 /// ring / bar / pill progress indicator (E17-F02-S05).
 WidgetbookComponent buildProgressBadgeComponent() {
@@ -14,6 +16,31 @@ WidgetbookComponent buildProgressBadgeComponent() {
       WidgetbookUseCase(name: 'Pill', builder: _pillStates),
       WidgetbookUseCase(name: 'Variant × state matrix', builder: _matrix),
     ],
+  );
+}
+
+/// The one place the catalog builds a badge.
+///
+/// `app_ui` owns no locale and looks nothing up (see [AppProgressBadge]'s own
+/// doc), so its English defaults only disappear if a consumer passes copy in.
+/// This is `apps/mobile`'s only [AppProgressBadge] call site, so it is also the
+/// only place that can — #268.
+AppProgressBadge _badge(
+  BuildContext context,
+  AppProgressBadgeVariant variant,
+  AppProgressBadgeState state,
+) {
+  final TranslationsUiProgressBadgeEn copy = context.t.ui.progressBadge;
+  return AppProgressBadge(
+    variant: variant,
+    state: state,
+    completed: 4,
+    total: 12,
+    doneLabel: copy.done,
+    lockedLabel: copy.locked,
+    notStartedLabel: copy.notStarted,
+    progressLabel: (int completed, int total) =>
+        copy.progress(completed: completed, total: total),
   );
 }
 
@@ -43,15 +70,7 @@ Widget _row(List<Widget> children) => Center(
 
 Widget _ringStates(BuildContext context) => _row(<Widget>[
   for (final state in AppProgressBadgeState.values)
-    _labelled(
-      state.name,
-      AppProgressBadge(
-        variant: AppProgressBadgeVariant.ring,
-        state: state,
-        completed: 4,
-        total: 12,
-      ),
-    ),
+    _labelled(state.name, _badge(context, AppProgressBadgeVariant.ring, state)),
 ]);
 
 Widget _barStates(BuildContext context) => Center(
@@ -66,12 +85,7 @@ Widget _barStates(BuildContext context) => Center(
           for (final state in AppProgressBadgeState.values) ...<Widget>[
             Text(state.name, style: const TextStyle(fontSize: 11)),
             const SizedBox(height: 4),
-            AppProgressBadge(
-              variant: AppProgressBadgeVariant.bar,
-              state: state,
-              completed: 4,
-              total: 12,
-            ),
+            _badge(context, AppProgressBadgeVariant.bar, state),
             const SizedBox(height: 16),
           ],
         ],
@@ -82,15 +96,7 @@ Widget _barStates(BuildContext context) => Center(
 
 Widget _pillStates(BuildContext context) => _row(<Widget>[
   for (final state in AppProgressBadgeState.values)
-    _labelled(
-      state.name,
-      AppProgressBadge(
-        variant: AppProgressBadgeVariant.pill,
-        state: state,
-        completed: 4,
-        total: 12,
-      ),
-    ),
+    _labelled(state.name, _badge(context, AppProgressBadgeVariant.pill, state)),
 ]);
 
 Widget _matrix(BuildContext context) => Center(
@@ -116,12 +122,7 @@ Widget _matrix(BuildContext context) => Center(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   for (final state in AppProgressBadgeState.values) ...<Widget>[
-                    AppProgressBadge(
-                      variant: variant,
-                      state: state,
-                      completed: 4,
-                      total: 12,
-                    ),
+                    _badge(context, variant, state),
                     const SizedBox(height: 8),
                   ],
                 ],
@@ -134,12 +135,7 @@ Widget _matrix(BuildContext context) => Center(
               crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
                 for (final state in AppProgressBadgeState.values)
-                  AppProgressBadge(
-                    variant: variant,
-                    state: state,
-                    completed: 4,
-                    total: 12,
-                  ),
+                  _badge(context, variant, state),
               ],
             ),
         ],

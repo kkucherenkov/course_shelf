@@ -26,7 +26,18 @@ dependencies:
   uuid: ^4.5.1
   firebase_core: ^4.7.0
   firebase_messaging: ^16.2.0
-  sentry_flutter: ^8.14.0
+  # 9.x, not 8.x: `sentry_flutter-8.x/android/build.gradle` hardcodes
+  # `kotlinOptions.languageVersion = "1.6"`, and the Kotlin plugin this app
+  # pins (2.3.20, in `android/settings.gradle.kts`) rejects it outright —
+  # "Language version 1.6 is no longer supported". That made *every* Android
+  # build fail at `:sentry_flutter:compileDebugKotlin`, which nothing noticed
+  # because nothing had ever built the Android app; the emulator job added in
+  # this PR is what surfaced it. 9.28.0 dropped the pin, so the fix is
+  # upstream's rather than a `subprojects {}` override here. The Dart surface
+  # this app touches (`SentryFlutter.init`, `options.dsn`,
+  # `options.tracesSampleRate`, `appRunner` — all in `main.dart`) is unchanged
+  # across the major.
+  sentry_flutter: ^9.28.0
   app_ui:
     path: ../../packages/ui_flutter
   app_api_client:

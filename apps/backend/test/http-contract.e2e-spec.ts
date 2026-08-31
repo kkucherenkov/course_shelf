@@ -33,6 +33,11 @@ beforeAll(() => {
   }
 });
 
+/** A `RunIdentifyRequest` that is valid apart from whatever the date says. */
+function identifyBody(releaseDate: string): Record<string, unknown> {
+  return { source: 'youtube', fragment: { title: 'Fixture', releaseDate } };
+}
+
 describe('express-openapi-validator', () => {
   it('rejects a body with an undeclared property as RFC 9457 problem+json', async () => {
     ctx = await createE2eApp();
@@ -60,6 +65,26 @@ describe('express-openapi-validator', () => {
     ctx = await createE2eApp();
 
     const res = await request(ctx.server).patch('/api/v1/me').send({ displayName: 42 });
+
+    expect(res.status).toBe(400);
+    expect(res.headers['content-type']).toContain('application/problem+json');
+  });
+
+  it('rejects a calendar-impossible date, not just a date-shaped string', async () => {
+    ctx = await createE2eApp();
+
+    // ajv-formats' `fast` mode — the validator's default — checks `format: date`
+    // with `\d{4}-\d{2}-\d{2}` and nothing else, so month 13 used to be stored
+    // and then handed back by a response schema that promises a real date.
+    const ok = await request(ctx.server)
+      .post('/api/v1/admin/courses/some-course/identify')
+      .send(identifyBody('2024-03-15'));
+    // Not 400: the payload itself is fine, so this gets as far as the guard.
+    expect(ok.status).not.toBe(400);
+
+    const res = await request(ctx.server)
+      .post('/api/v1/admin/courses/some-course/identify')
+      .send(identifyBody('2024-13-01'));
 
     expect(res.status).toBe(400);
     expect(res.headers['content-type']).toContain('application/problem+json');

@@ -30,11 +30,13 @@ false` on 14 request bodies, a reusable 422, the NUL 400 documented
         missing optional body, NUL bytes anywhere, a 404 that broke the
         batch's documented no-oracle rule, a URL violating its own
         `format: uri`) and every schema-vs-API mismatch closed in the spec.
-- Status: in-progress — awaiting review.
-- Blockers: none. One contract-test failure is left on purpose:
-  `POST /libraries/{id}/transcriptions` answers a documented 503 when whisper
-  is unconfigured, and whether that should be a 4xx at all is a maintainer
-  call, not drift (`tuxedo` 28). `E2E smoke` stays red until it is decided.
+- Status: in-progress — awaiting merge. All checks green.
+- Blockers: none. The last contract failure was the documented 503 on
+  `POST /libraries/{id}/transcriptions`; on the maintainer's call
+  `not_a_server_error` is disabled for that one operation, with the cost stated
+  in `packages/specs/schemathesis.toml`. Whether 503 is the right status stays
+  open as `tuxedo` 28. The biggest remaining hole is `tuxedo` 27 — the e2e
+  stack has no seed, so 24 path-parameter operations still only reach a 404.
 
 ## T-2026-08-31-003 — mobile: Android emulator in CI + integration tests for offline playback, sync and the download queue
 

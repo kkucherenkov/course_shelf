@@ -52,7 +52,14 @@ export const ExternalIdRefVO = {
             `url must use http or https protocol; got "${parsed.protocol}"`,
           );
         }
-        url = rawUrl;
+        // Store the canonical form, not the raw string. `new URL()` accepts a
+        // non-ASCII host ("https://\u00cf") and the raw value was persisted and
+        // echoed back verbatim — which does not satisfy the `format: uri` the
+        // response schema declares, so the API was serving values its own
+        // contract rejects. `.href` is IDNA/percent-encoded and always a valid
+        // URI; ordinary inputs pass through unchanged. Found by the
+        // authenticated contract run (#321).
+        url = parsed.href;
       } catch (error) {
         if (error instanceof ExternalIdRefInvalidError) {
           throw error;

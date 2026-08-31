@@ -100,6 +100,17 @@ describe('ExternalIdRefVO.from', () => {
       ).toThrow(ExternalIdRefInvalidError);
     });
 
+    it('canonicalises a non-ASCII host so the stored value satisfies format: uri', () => {
+      // `new URL()` accepts this and the raw string used to be persisted and
+      // echoed back, failing the response schema's own `format: uri` (#321).
+      const ref = ExternalIdRefVO.from({
+        source: 'imdb',
+        externalId: 'tt1',
+        url: 'https://\u00CF',
+      });
+      expect(ref.url).toBe('https://xn--gda/');
+    });
+
     it('rejects an empty url string', () => {
       expect(() => ExternalIdRefVO.from({ source: 'imdb', externalId: 'tt1', url: '' })).toThrow(
         ExternalIdRefInvalidError,

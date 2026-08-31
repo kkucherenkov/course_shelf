@@ -143,7 +143,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Completed: 2026-08-30
 - Result: https://github.com/kkucherenkov/course_shelf/pull/316
 - Status: done
-
+- Blockers: none for the work itself. Merges LAST of the eight lanes (it touches
   baselines and goldens); baselines and goldens are regenerated on top of the
   final `main` after the other seven land, not merged by hand.
 
@@ -193,15 +193,11 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 
 ## T-2026-08-30-019 — browser-verify #302 player fixes + #307 browse/backups
 
-## T-2026-08-30-018 — transcript delivery, admin transcription list, docs, drop Redis
-
-## T-2026-08-30-017 — E26-F01-S03: transcript tab in the player sidebar
-
 - Created: 2026-08-30
 - Completed: 2026-08-30
 - Owner: claude
 - Result: https://github.com/kkucherenkov/course_shelf/pull/319
-- Spec: [#302](https://github.com/kkucherenkov/course_shelf/issues/302), [#307](https://github.com/kkucherenkov/course_shelf/issues/307), [docs/roadmap/tasks/E26-F01-S04.md](../roadmap/tasks/E26-F01-S04.md)
+- Spec: [#302](https://github.com/kkucherenkov/course_shelf/issues/302), [#307](https://github.com/kkucherenkov/course_shelf/issues/307), [docs/roadmap/tasks/E26-F01-S04.md](../../docs/roadmap/tasks/E26-F01-S04.md)
 - Goal: manually verify in a real browser what unit/e2e tests structurally can't — `?t=` seek, cue placement above chrome (windowed + fullscreen), non-16:9 letterbox, and the `/browse` filters + `/admin/backups` flows, in en and ru.
 - Acceptance:
   - `?t=90` lands the lesson player at 1:30
@@ -221,7 +217,13 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - **Backend bug found, filed, not fixed (out of lane):** [#317](https://github.com/kkucherenkov/course_shelf/issues/317) — `PrismaLessonRepository.save()` resolves without throwing but the row is not durably committed (confirmed via `psql` from a separate connection); course/section persistence is unaffected. Worked around for this pass by seeding `lesson`/`subtitle` rows via SQL after a real scan.
   - **Backend/infra gap found, filed, not fixed (out of lane):** [#318](https://github.com/kkucherenkov/course_shelf/issues/318) — `apps/backend/Dockerfile.dev` has no `pg_dump`, so `/admin/backups` can only reach the error state on a fresh dev checkout; success/download/expiry unverifiable without a manual workaround.
   - **Infra fix (small, in `apps/web`/`packages/ui` Dockerfiles):** neither `apps/web/Dockerfile.dev` nor `packages/ui/Dockerfile.dev` ran `pnpm design:build` before starting their dev server — a fresh checkout 500s on `tokens.generated.css` not existing. Added the missing step to both.
+- Status: done
 
+## T-2026-08-30-018 — transcript delivery, admin transcription list, docs, drop Redis
+
+- Created: 2026-08-30
+- Owner: claude (backend-engineer) — lane label not recorded, recovered from the surfaces PR #314 touches
+- Completed: 2026-08-30
 - Result: https://github.com/kkucherenkov/course_shelf/pull/314
 - Spec: [E25-F03-S03](../../docs/roadmap/tasks/E25-F03-S03.md), [E25-F04-S03](../../docs/roadmap/tasks/E25-F04-S03.md), #309, #290
 - Goal: a generated transcript plays as a subtitle track with no new endpoint; `GET /admin/transcriptions` actually exists behind its spec; transcription deployment is documented; Redis is gone (dead dependency — health-check-only `ping()`, nothing else ever used it).
@@ -241,9 +243,14 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - [x] Locator fallback + LessonDto union (#219)
   - [x] Admin transcription list endpoint (#309)
   - [x] Gates: test, lint, format, typecheck, spec:validate
-- Status: shipped
+- Status: done
 - Blockers: — (docker stack boot not verified end-to-end — no `docker` binary in this sandbox; compose edits reviewed by hand)
 
+## T-2026-08-30-017 — E26-F01-S03: transcript tab in the player sidebar
+
+- Created: 2026-08-30
+- Owner: claude (frontend-engineer) — lane label not recorded, recovered from the surfaces PR #310 touches
+- Completed: 2026-08-30
 - Result: https://github.com/kkucherenkov/course_shelf/pull/310
 - Spec: [docs/roadmap/tasks/E26-F01-S03.md](../../docs/roadmap/tasks/E26-F01-S03.md) (#225, closes epic E26 — #247)
 - Goal: read along with the lesson, find a line, jump to it — fifth sidebar tab
@@ -261,6 +268,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Tests: `PlayerTranscriptTab.spec.ts` — one row per cue, active marking,
   `seek` payload in seconds, formatted timestamps, filtering, no-match, and
   the empty state hiding the filter box
+- Status: done
 
 ## T-2026-08-30-016 — E25-F04-S02 transcription card in admin library screen
 

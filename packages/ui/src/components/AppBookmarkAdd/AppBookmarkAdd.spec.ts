@@ -73,4 +73,10 @@ describe('AppBookmarkAdd', () => {
     });
     expect((wrapper.find('input').element as HTMLInputElement).disabled).toBe(true);
   });
+  it('renders the overridden save label', () => {
+    const wrapper = mount(AppBookmarkAdd, {
+      props: { time: 305, saveLabel: 'Сохранить' },
+    });
+    expect(wrapper.find('.app-button').text()).toBe('Сохранить');
+  });
 });

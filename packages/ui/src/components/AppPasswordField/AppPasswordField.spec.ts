@@ -110,4 +110,15 @@ describe('AppPasswordField', () => {
       expect(wrapper.find('.app-password-field__meter-label').exists()).toBe(false);
     });
   });
+  it('renders the overridden strength labels and meter hint', () => {
+    const wrapper = mount(AppPasswordField, {
+      props: {
+        modelValue: 'abcdefghijkl1!',
+        withMeter: true,
+        strengthLabels: ['Пусто', 'Слабый', 'Нормальный', 'Надёжный'],
+        meterHint: '12+ символов',
+      },
+    });
+    expect(wrapper.find('.app-password-field__meter-label').text()).toBe('Надёжный · 12+ символов');
+  });
 });

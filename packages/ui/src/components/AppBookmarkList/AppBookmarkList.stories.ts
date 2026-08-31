@@ -107,3 +107,20 @@ export const Interactive: Story = {
     `,
   }),
 };
+
+/** Every string the list forwards to its rows is overridable — here in Russian. */
+export const Localised: Story = {
+  args: {
+    bookmarks: sample,
+    addTime: 1024,
+    emptyTitle: 'Пока нет закладок',
+    emptyBody: 'Добавьте закладку из плеера, чтобы отметить момент.',
+    editLabel: 'Изменить закладку',
+    deleteLabel: 'Удалить закладку',
+    formatAriaLabel: (time: string, label: string) =>
+      label ? `Закладка на ${time}: ${label}` : `Закладка на ${time}`,
+    addGroupLabel: 'Добавить закладку',
+    addPlaceholder: 'Добавьте подпись (необязательно)',
+    addSaveLabel: 'Сохранить',
+  },
+};

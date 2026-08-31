@@ -622,11 +622,35 @@ export default {
    */
   ui: {
     chip: { remove: 'Remove' },
-    lessonRow: { loading: 'Loading lesson', materials: 'Materials available' },
+    lessonRow: {
+      loading: 'Loading lesson',
+      materials: 'Materials available',
+      watched: '{n}% watched',
+    },
+    sectionHeader: {
+      section: 'Section',
+      lessons: '{n} lesson | {n} lessons',
+      durationHm: '{h}h {m}m',
+      durationH: '{h}h',
+      durationM: '{m}m',
+    },
     bookmark: {
       edit: 'Edit bookmark',
       delete: 'Delete bookmark',
       addGroup: 'Add bookmark',
+      at: 'Bookmark at {time}',
+      atLabelled: 'Bookmark at {time}: {label}',
+      addPlaceholder: 'Add a label (optional)',
+      addSave: 'Save',
+    },
+    passwordField: {
+      show: 'Show password',
+      hide: 'Hide password',
+      strengthEmpty: 'Empty',
+      strengthWeak: 'Weak',
+      strengthOkay: 'Okay',
+      strengthStrong: 'Strong',
+      meterHint: '12+ chars w/ a symbol = strong',
     },
     nav: {
       primary: 'Primary navigation',
@@ -649,6 +673,8 @@ export default {
       preview: 'Preview',
       edit: 'Edit',
       textarea: 'Note text',
+      retry: 'Retry',
+      placeholder: 'Write a note in Markdown — # heading, **bold**, *italic*, - list',
       agoJustNow: 'just now',
       agoSeconds: '{n}s ago',
       agoMinutes: '{n}m ago',

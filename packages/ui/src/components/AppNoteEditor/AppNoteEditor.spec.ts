@@ -222,4 +222,10 @@ describe('AppNoteEditor', () => {
       expect(sync.attributes('aria-live')).toBe('polite');
     });
   });
+  it('renders the overridden retry label', () => {
+    const wrapper = mount(AppNoteEditor, {
+      props: { modelValue: '', syncState: 'failed', retryLabel: 'Повторить' },
+    });
+    expect(wrapper.find('.app-note-editor__retry').text()).toBe('Повторить');
+  });
 });

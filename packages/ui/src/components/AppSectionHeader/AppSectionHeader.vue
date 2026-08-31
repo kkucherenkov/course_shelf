@@ -15,17 +15,36 @@
       duration: number;
       /** Open/closed state — drives chevron rotation + aria-expanded. */
       open?: boolean;
+      /** Word before the padded index in the title; override to translate. */
+      sectionLabel?: string;
+      /**
+       * Renders the lesson count. Callbacks rather than plain strings because
+       * both readings embed a number and pluralise per locale — `@app/ui` has
+       * no locale and never calls `t()` itself.
+       */
+      formatLessons?: (count: number) => string;
+      /** Renders the section runtime; receives the raw seconds. */
+      formatDuration?: (seconds: number) => string;
     }>(),
-    { open: true },
+    {
+      open: true,
+      sectionLabel: 'Section',
+      formatLessons: undefined,
+      formatDuration: undefined,
+    },
   );
 
   const emit = defineEmits<{ toggle: [] }>();
 
-  const formattedDuration = computed(() => fmtDuration(props.duration));
+  // `defineProps` defaults are hoisted out of setup() and cannot reference a
+  // function declared here, so the fallbacks live at the call sites.
+  const formattedDuration = computed(() => (props.formatDuration ?? fmtDuration)(props.duration));
 
-  const lessonsLabel = computed(() =>
-    props.count === 1 ? '1 lesson' : `${String(props.count)} lessons`,
-  );
+  const lessonsLabel = computed(() => (props.formatLessons ?? defaultFormatLessons)(props.count));
+
+  function defaultFormatLessons(count: number): string {
+    return count === 1 ? '1 lesson' : `${String(count)} lessons`;
+  }
 
   function fmtDuration(seconds: number): string {
     const total = Math.max(0, Math.floor(seconds));
@@ -61,7 +80,7 @@
   >
     <IconCS name="chevron-down" :size="14" class="app-section-header__chev" />
     <div class="app-section-header__title">
-      Section {{ String(idx).padStart(2, '0') }} · {{ title }}
+      {{ sectionLabel }} {{ String(idx).padStart(2, '0') }} · {{ title }}
     </div>
     <div class="app-section-header__meta">{{ lessonsLabel }} · {{ formattedDuration }}</div>
   </div>

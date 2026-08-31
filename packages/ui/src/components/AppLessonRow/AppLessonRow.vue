@@ -30,6 +30,12 @@
       loadingLabel?: string;
       /** Accessible name; override to translate. */
       materialsLabel?: string;
+      /**
+       * Renders the "<n>% watched" meta line. A callback rather than a plain
+       * string because only the consumer knows where its locale puts the
+       * number; `@app/ui` never calls `t()` itself.
+       */
+      formatWatched?: (percent: number) => string;
     }>(),
     {
       state: 'not-started',
@@ -39,6 +45,7 @@
       loading: false,
       loadingLabel: 'Loading lesson',
       materialsLabel: 'Materials available',
+      formatWatched: undefined,
     },
   );
 
@@ -58,6 +65,16 @@
   const clampedProgress = computed(() => Math.max(0, Math.min(100, Math.round(props.progress))));
 
   const formattedDuration = computed(() => fmtTime(props.duration));
+
+  // `defineProps` defaults are hoisted out of setup() and cannot reference a
+  // function declared here, so the fallback lives at the call site.
+  const watchedLabel = computed(() =>
+    (props.formatWatched ?? defaultFormatWatched)(clampedProgress.value),
+  );
+
+  function defaultFormatWatched(percent: number): string {
+    return `${String(percent)}% watched`;
+  }
 
   function fmtTime(seconds: number): string {
     const total = Math.max(0, Math.floor(seconds));
@@ -128,7 +145,7 @@
         <div class="app-lesson-row__progress-fill" :style="{ width: `${clampedProgress}%` }" />
       </div>
       <div v-if="state === 'in-progress'" class="app-lesson-row__meta">
-        <span>{{ clampedProgress }}% watched</span>
+        <span>{{ watchedLabel }}</span>
       </div>
     </div>
     <div class="app-lesson-row__trailing">

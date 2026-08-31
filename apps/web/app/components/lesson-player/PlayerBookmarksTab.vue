@@ -27,6 +27,11 @@
   const adding = ref(false);
   const showAddRow = ref(false);
 
+  // `@app/ui` has no locale, so the row's accessible name is built here.
+  function formatBookmarkLabel(time: string, label: string): string {
+    return label ? t('ui.bookmark.atLabelled', { time, label }) : t('ui.bookmark.at', { time });
+  }
+
   const bookmarkEntries = computed<BookmarkEntry[]>(() =>
     props.bookmarks.map((b) => ({
       id: b.id,
@@ -85,6 +90,9 @@
       :edit-label="t('ui.bookmark.edit')"
       :delete-label="t('ui.bookmark.delete')"
       :add-group-label="t('ui.bookmark.addGroup')"
+      :add-placeholder="t('ui.bookmark.addPlaceholder')"
+      :add-save-label="t('ui.bookmark.addSave')"
+      :format-aria-label="formatBookmarkLabel"
       :bookmarks="bookmarkEntries"
       :add-time="showAddRow ? props.currentTime : undefined"
       :adding="adding"

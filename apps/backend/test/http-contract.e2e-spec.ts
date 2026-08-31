@@ -94,6 +94,49 @@ describe('express-openapi-validator', () => {
   });
 });
 
+describe('NUL bytes in the payload', () => {
+  // `"\u0000"` is legal JSON and satisfies `type: string`, so the OpenAPI
+  // validator passes it — and Postgres then refuses the byte with a
+  // DriverAdapterError that maps to nothing, so the write answered 500. Found
+  // by the first authenticated schemathesis run on POST /admin/studios (#321);
+  // the guard is global because the hole is.
+  it('400 problem+json for a NUL inside a string value', async () => {
+    ctx = await createE2eApp();
+
+    const res = await request(ctx.server).patch('/api/v1/me').send({ displayName: 'Ele\u0000na' });
+
+    expect(res.status).toBe(400);
+    expect(res.headers['content-type']).toContain('application/problem+json');
+    expect((res.body as { code?: string }).code).toBe('null-byte-in-payload');
+  });
+
+  it('400 for a NUL inside an object key', async () => {
+    ctx = await createE2eApp();
+
+    const res = await request(ctx.server)
+      .patch('/api/v1/me')
+      .send({ 'display\u0000Name': 'Elena' });
+
+    // On a closed schema (`UpdateMeRequest` is `additionalProperties: false`)
+    // the OpenAPI validator gets there first and rejects the unknown property —
+    // also a correct 400. The guard's own key branch is pinned in
+    // `src/common/http/reject-null-bytes.middleware.spec.ts`; it is the backstop
+    // for the payloads the spec leaves open.
+    expect(res.status).toBe(400);
+    expect(res.headers['content-type']).toContain('application/problem+json');
+  });
+
+  it('lets a clean body through to the handler', async () => {
+    ctx = await createE2eApp({
+      commandBusExecute: () => ({ id: 'user-1', email: 'e@example.com', displayName: 'Elena' }),
+    });
+
+    const res = await request(ctx.server).patch('/api/v1/me').send({ displayName: 'Elena' });
+
+    expect(res.status).not.toBe(400);
+  });
+});
+
 describe('secure headers', () => {
   it('production responses carry the CSP and the rest of the Helmet set', async () => {
     ctx = await createE2eApp({ nodeEnv: 'production' });

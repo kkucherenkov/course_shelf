@@ -2,6 +2,7 @@ import { RequestMethod, ValidationPipe, VersioningType } from '@nestjs/common';
 import helmet from 'helmet';
 
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { rejectNullBytes } from './common/http/reject-null-bytes.middleware';
 import { SentryInterceptor } from './common/observability/sentry.interceptor';
 import { registerOpenApiValidator } from './common/openapi/openapi-validator.middleware';
 
@@ -104,4 +105,11 @@ export function configureApp(
   app.useGlobalInterceptors(new SentryInterceptor());
 
   registerOpenApiValidator(app, nodeEnv);
+
+  // After the validator, because it needs the body `express.json()` (mounted by
+  // `registerOpenApiValidator`) produced, and before the Nest router. See the
+  // file header: a NUL byte anywhere in a JSON payload is valid JSON, satisfies
+  // every `type: string` in the spec, and 500s the first write that touches
+  // Postgres.
+  app.use('/api', rejectNullBytes);
 }

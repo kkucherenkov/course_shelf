@@ -100,15 +100,22 @@ describe('ExternalIdRefVO.from', () => {
       ).toThrow(ExternalIdRefInvalidError);
     });
 
-    it('canonicalises a non-ASCII host so the stored value satisfies format: uri', () => {
-      // `new URL()` accepts this and the raw string used to be persisted and
-      // echoed back, failing the response schema's own `format: uri` (#321).
+    it('rejects a non-ASCII url — a URI is ASCII by definition', () => {
+      // `new URL()` accepts this and IDNA-encodes the host, so the API used to
+      // take input its own `format: uri` calls invalid and store something the
+      // caller never wrote (#321).
+      expect(() =>
+        ExternalIdRefVO.from({ source: 'imdb', externalId: 'tt1', url: 'https://\u00CF' }),
+      ).toThrow(ExternalIdRefInvalidError);
+    });
+
+    it('canonicalises a valid url so the response always satisfies format: uri', () => {
       const ref = ExternalIdRefVO.from({
         source: 'imdb',
         externalId: 'tt1',
-        url: 'https://\u00CF',
+        url: 'https://example.com',
       });
-      expect(ref.url).toBe('https://xn--gda/');
+      expect(ref.url).toBe('https://example.com/');
     });
 
     it('rejects an empty url string', () => {

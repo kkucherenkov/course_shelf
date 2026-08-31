@@ -9,7 +9,7 @@ import 'package:built_value/serializer.dart';
 
 part 'admin_update_user_request.g.dart';
 
-/// Patch body for `PATCH /admin/users/{id}`. At least one field must be set — the handler returns 400 on an empty body.
+/// Patch body for `PATCH /admin/users/{id}`. At least one of `role` or `banned` must be set.
 ///
 /// Properties:
 /// * [role] 

@@ -8,7 +8,7 @@ import 'package:built_value/serializer.dart';
 
 part 'update_library_request.g.dart';
 
-/// Patch body for `PATCH /libraries/{id}`. Currently only `name` is mutable; changing `rootPath` is intentionally unsupported.
+/// Patch body for `PATCH /libraries/{id}`. At least one field must be set. Currently only `name` is mutable; changing `rootPath` is intentionally unsupported.
 ///
 /// Properties:
 /// * [name] 

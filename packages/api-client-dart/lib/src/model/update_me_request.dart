@@ -8,7 +8,7 @@ import 'package:built_value/serializer.dart';
 
 part 'update_me_request.g.dart';
 
-/// Patch body for `PATCH /me`. At least one field must be set; the handler returns 400 on an empty body. Currently only `displayName` is exposed for self-edit.
+/// Patch body for `PATCH /me`. At least one field must be set. Currently only `displayName` is exposed for self-edit.
 ///
 /// Properties:
 /// * [displayName] 

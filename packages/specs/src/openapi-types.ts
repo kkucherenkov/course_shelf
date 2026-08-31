@@ -1725,13 +1725,13 @@ export interface components {
      *     }
      */
     ExternalIdRef: {
-      /** @description Namespace identifying the external system (e.g. `udemy`, `youtube`). Scrapers are responsible for namespacing their ids (e.g. `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`). */
+      /** @description Namespace identifying the external system (e.g. `udemy`, `youtube`). Must contain a non-whitespace character. Scrapers are responsible for namespacing their ids (e.g. `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`). */
       source: string;
-      /** @description Identifier within the source system. */
+      /** @description Identifier within the source system. Must contain a non-whitespace character. */
       externalId: string;
       /**
        * Format: uri
-       * @description Optional canonical URL of the entity on the source platform.
+       * @description Optional canonical URL of the entity on the source platform. Must be an absolute `http` or `https` URL.
        */
       url?: string;
     };
@@ -2571,7 +2571,7 @@ export interface components {
      * @enum {string}
      */
     AdminUserRole: 'admin' | 'user' | 'guest';
-    /** @description Patch body for `PATCH /admin/users/{id}`. At least one field must be set — the handler returns 400 on an empty body. */
+    /** @description Patch body for `PATCH /admin/users/{id}`. At least one of `role` or `banned` must be set. */
     AdminUpdateUserRequest: {
       role?: components['schemas']['AdminUserRole'];
       banned?: boolean;
@@ -3224,12 +3224,12 @@ export interface components {
       displayName: string | null;
       role: components['schemas']['AdminUserRole'];
     };
-    /** @description Patch body for `PATCH /me`. At least one field must be set; the handler returns 400 on an empty body. Currently only `displayName` is exposed for self-edit. */
+    /** @description Patch body for `PATCH /me`. At least one field must be set. Currently only `displayName` is exposed for self-edit. */
     UpdateMeRequest: {
       /** @description Optional user-facing name separate from the Better Auth `name` field. Pass `null` to clear it (the topbar avatar then falls back to `name`). */
       displayName?: string | null;
     };
-    /** @description Patch body for `PATCH /libraries/{id}`. Currently only `name` is mutable; changing `rootPath` is intentionally unsupported. */
+    /** @description Patch body for `PATCH /libraries/{id}`. At least one field must be set. Currently only `name` is mutable; changing `rootPath` is intentionally unsupported. */
     UpdateLibraryRequest: {
       name?: string;
     };
@@ -3868,8 +3868,11 @@ export interface components {
      *     least one of `title`, `description`, `slug`, `instructorIds`,
      *     `studioIds`, `tagIds`, `posterUrl`, `level`, `language`,
      *     `releaseDate`, `sourceUpdatedAt`, `ratingAverage`, `ratingCount`, or
-     *     `externalIds` must be present (server-side validation rule — OpenAPI
-     *     does not have a native "at-least-one" constraint).
+     *     `externalIds` must be present.
+     *
+     *     `ratingAverage` and `ratingCount` are supplied together or not at all —
+     *     a rating average without its sample size is not a number anyone can
+     *     interpret. Passing one alone is a 400.
      *
      *     **Set-replace semantics for relation arrays:** `null` means "leave the
      *     existing set alone"; `[]` (empty array) means "remove all links";
@@ -3929,8 +3932,21 @@ export interface components {
     };
   };
   responses: {
-    /** @description Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler. */
+    /**
+     * @description Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     *     One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     */
     BadRequest: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/problem+json': components['schemas']['Problem'];
+      };
+    };
+    /** @description The request matched the schema but violated a domain invariant that JSON Schema cannot express — a display name that reduces to an empty slug, an external-id reference whose parts contradict each other, and so on. `code` names the specific rule. Documented since #321, when the authenticated contract run reported 422 as an undocumented status on four operations. */
+    UnprocessableEntity: {
       headers: {
         [name: string]: unknown;
       };
@@ -4075,6 +4091,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      422: components['responses']['UnprocessableEntity'];
       429: components['responses']['TooManyRequests'];
     };
   };
@@ -4658,6 +4675,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      422: components['responses']['UnprocessableEntity'];
       429: components['responses']['TooManyRequests'];
     };
   };
@@ -5158,6 +5176,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      422: components['responses']['UnprocessableEntity'];
       429: components['responses']['TooManyRequests'];
     };
   };
@@ -5219,6 +5238,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      422: components['responses']['UnprocessableEntity'];
       429: components['responses']['TooManyRequests'];
     };
   };
@@ -5734,7 +5754,7 @@ export interface operations {
   listInstructors: {
     parameters: {
       query?: {
-        /** @description Number of items to skip (zero-based). */
+        /** @description Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321). */
         offset?: number;
         /** @description Maximum number of items to return. */
         limit?: number;
@@ -5815,7 +5835,7 @@ export interface operations {
   listStudios: {
     parameters: {
       query?: {
-        /** @description Number of items to skip (zero-based). */
+        /** @description Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321). */
         offset?: number;
         /** @description Maximum number of items to return. */
         limit?: number;
@@ -5896,7 +5916,7 @@ export interface operations {
   listTags: {
     parameters: {
       query?: {
-        /** @description Number of items to skip (zero-based). */
+        /** @description Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321). */
         offset?: number;
         /** @description Maximum number of items to return. */
         limit?: number;

@@ -69,15 +69,15 @@ export type EntitySlug = string;
  */
 export type ExternalIdRef = {
     /**
-     * Namespace identifying the external system (e.g. `udemy`, `youtube`). Scrapers are responsible for namespacing their ids (e.g. `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`).
+     * Namespace identifying the external system (e.g. `udemy`, `youtube`). Must contain a non-whitespace character. Scrapers are responsible for namespacing their ids (e.g. `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`).
      */
     source: string;
     /**
-     * Identifier within the source system.
+     * Identifier within the source system. Must contain a non-whitespace character.
      */
     externalId: string;
     /**
-     * Optional canonical URL of the entity on the source platform.
+     * Optional canonical URL of the entity on the source platform. Must be an absolute `http` or `https` URL.
      */
     url?: string;
 };
@@ -724,7 +724,7 @@ export type AdminUserListItem = {
 export type AdminUserRole = 'admin' | 'user' | 'guest';
 
 /**
- * Patch body for `PATCH /admin/users/{id}`. At least one field must be set — the handler returns 400 on an empty body.
+ * Patch body for `PATCH /admin/users/{id}`. At least one of `role` or `banned` must be set.
  */
 export type AdminUpdateUserRequest = {
     role?: AdminUserRole;
@@ -1346,7 +1346,7 @@ export type MeDto = {
 };
 
 /**
- * Patch body for `PATCH /me`. At least one field must be set; the handler returns 400 on an empty body. Currently only `displayName` is exposed for self-edit.
+ * Patch body for `PATCH /me`. At least one field must be set. Currently only `displayName` is exposed for self-edit.
  */
 export type UpdateMeRequest = {
     /**
@@ -1356,7 +1356,7 @@ export type UpdateMeRequest = {
 };
 
 /**
- * Patch body for `PATCH /libraries/{id}`. Currently only `name` is mutable; changing `rootPath` is intentionally unsupported.
+ * Patch body for `PATCH /libraries/{id}`. At least one field must be set. Currently only `name` is mutable; changing `rootPath` is intentionally unsupported.
  */
 export type UpdateLibraryRequest = {
     name?: string;
@@ -1965,8 +1965,11 @@ export type UpdateBookmarkRequest = {
  * least one of `title`, `description`, `slug`, `instructorIds`,
  * `studioIds`, `tagIds`, `posterUrl`, `level`, `language`,
  * `releaseDate`, `sourceUpdatedAt`, `ratingAverage`, `ratingCount`, or
- * `externalIds` must be present (server-side validation rule — OpenAPI
- * does not have a native "at-least-one" constraint).
+ * `externalIds` must be present.
+ *
+ * `ratingAverage` and `ratingCount` are supplied together or not at all —
+ * a rating average without its sample size is not a number anyone can
+ * interpret. Passing one alone is a 400.
  *
  * **Set-replace semantics for relation arrays:** `null` means "leave the
  * existing set alone"; `[]` (empty array) means "remove all links";
@@ -2109,6 +2112,11 @@ export type RegisterGrantErrors = {
      */
     409: Problem;
     /**
+     * The request matched the schema but violated a domain invariant that JSON Schema cannot express — a display name that reduces to an empty slug, an external-id reference whose parts contradict each other, and so on. `code` names the specific rule. Documented since #321, when the authenticated contract run reported 422 as an undocumented status on four operations.
+     *
+     */
+    422: Problem;
+    /**
      * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
      *
      */
@@ -2141,6 +2149,8 @@ export type RevokeGrantData = {
 export type RevokeGrantErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -2185,6 +2195,8 @@ export type GetAdminDashboardErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -2223,6 +2235,8 @@ export type CreateBackupData = {
 export type CreateBackupErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -2277,6 +2291,8 @@ export type DownloadBackupErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -2324,6 +2340,8 @@ export type ListAdminScansData = {
 export type ListAdminScansErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -2373,6 +2391,8 @@ export type ListAdminTranscriptionsErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -2411,6 +2431,8 @@ export type ListAdminLibrariesData = {
 export type ListAdminLibrariesErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -2460,6 +2482,8 @@ export type ListAdminUsersErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -2503,6 +2527,8 @@ export type GetAdminUserData = {
 export type GetAdminUserErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -2594,6 +2620,8 @@ export type GetAdminHasUsersErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -2624,6 +2652,8 @@ export type GetAdminInstanceData = {
 export type GetAdminInstanceErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -2670,6 +2700,11 @@ export type UpsertInstructorErrors = {
      */
     409: Problem;
     /**
+     * The request matched the schema but violated a domain invariant that JSON Schema cannot express — a display name that reduces to an empty slug, an external-id reference whose parts contradict each other, and so on. `code` names the specific rule. Documented since #321, when the authenticated contract run reported 422 as an undocumented status on four operations.
+     *
+     */
+    422: Problem;
+    /**
      * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
      *
      */
@@ -2697,6 +2732,8 @@ export type StartBackfillMetadataData = {
 export type StartBackfillMetadataErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -2736,6 +2773,8 @@ export type ListScrapersData = {
 export type ListScrapersErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -2833,6 +2872,8 @@ export type RunIdentifyTaskErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -2879,6 +2920,8 @@ export type ListIdentifyTasksErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -2919,6 +2962,8 @@ export type GetIdentifyTaskData = {
 export type GetIdentifyTaskErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -2964,6 +3009,8 @@ export type ApplyIdentifyResultData = {
 export type ApplyIdentifyResultErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -3013,6 +3060,8 @@ export type DiscardIdentifyTaskData = {
 export type DiscardIdentifyTaskErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -3075,6 +3124,11 @@ export type UpsertStudioErrors = {
      */
     409: Problem;
     /**
+     * The request matched the schema but violated a domain invariant that JSON Schema cannot express — a display name that reduces to an empty slug, an external-id reference whose parts contradict each other, and so on. `code` names the specific rule. Documented since #321, when the authenticated contract run reported 422 as an undocumented status on four operations.
+     *
+     */
+    422: Problem;
+    /**
      * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
      *
      */
@@ -3117,6 +3171,11 @@ export type UpsertTagErrors = {
      */
     409: Problem;
     /**
+     * The request matched the schema but violated a domain invariant that JSON Schema cannot express — a display name that reduces to an empty slug, an external-id reference whose parts contradict each other, and so on. `code` names the specific rule. Documented since #321, when the authenticated contract run reported 422 as an undocumented status on four operations.
+     *
+     */
+    422: Problem;
+    /**
      * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
      *
      */
@@ -3149,6 +3208,8 @@ export type DeleteBookmarkData = {
 export type DeleteBookmarkErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -3278,6 +3339,8 @@ export type ListCoursesErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -3317,6 +3380,8 @@ export type GetCourseData = {
 export type GetCourseErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -3417,6 +3482,8 @@ export type GetCourseOutlineErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -3464,6 +3531,8 @@ export type GetCourseDownloadEstimateData = {
 export type GetCourseDownloadEstimateErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -3513,6 +3582,8 @@ export type MarkCourseCompleteErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -3561,6 +3632,8 @@ export type ResetCourseProgressErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -3598,7 +3671,7 @@ export type ListInstructorsData = {
     path?: never;
     query?: {
         /**
-         * Number of items to skip (zero-based).
+         * Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321).
          */
         offset?: number;
         /**
@@ -3616,6 +3689,8 @@ export type ListInstructorsData = {
 export type ListInstructorsErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -3657,6 +3732,8 @@ export type GetInstructorErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -3690,7 +3767,7 @@ export type ListStudiosData = {
     path?: never;
     query?: {
         /**
-         * Number of items to skip (zero-based).
+         * Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321).
          */
         offset?: number;
         /**
@@ -3708,6 +3785,8 @@ export type ListStudiosData = {
 export type ListStudiosErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -3749,6 +3828,8 @@ export type GetStudioErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -3782,7 +3863,7 @@ export type ListTagsData = {
     path?: never;
     query?: {
         /**
-         * Number of items to skip (zero-based).
+         * Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321).
          */
         offset?: number;
         /**
@@ -3804,6 +3885,8 @@ export type ListTagsData = {
 export type ListTagsErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -3844,6 +3927,8 @@ export type GetTagData = {
 export type GetTagErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -3889,6 +3974,8 @@ export type GetContinueWatchingErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -3928,6 +4015,8 @@ export type GetRecentlyAddedData = {
 export type GetRecentlyAddedErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -3969,6 +4058,8 @@ export type GetRecentlyCompletedErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -4003,6 +4094,8 @@ export type GetYourWeekData = {
 export type GetYourWeekErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -4043,6 +4136,8 @@ export type GetLessonData = {
 export type GetLessonErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -4103,6 +4198,8 @@ export type StreamLessonVideoErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -4161,6 +4258,8 @@ export type StreamLessonSubtitleErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -4210,6 +4309,8 @@ export type StreamMaterialErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -4253,6 +4354,8 @@ export type IssueStreamUrlData = {
 export type IssueStreamUrlErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -4306,6 +4409,8 @@ export type IssueMaterialDownloadUrlErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -4353,6 +4458,8 @@ export type ListLessonBookmarksData = {
 export type ListLessonBookmarksErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -4448,6 +4555,8 @@ export type ListLibrariesErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -4526,6 +4635,8 @@ export type RemoveLibraryErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -4573,6 +4684,8 @@ export type GetLibraryData = {
 export type GetLibraryErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -4669,6 +4782,8 @@ export type RunLibraryScanErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -4720,6 +4835,8 @@ export type GetLatestLibraryScanData = {
 export type GetLatestLibraryScanErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -4774,6 +4891,8 @@ export type ListLibraryTranscriptionsErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -4821,6 +4940,8 @@ export type StartTranscriptionData = {
 export type StartTranscriptionErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -4878,6 +4999,8 @@ export type GetLatestTranscriptionErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -4925,6 +5048,8 @@ export type CancelTranscriptionData = {
 export type CancelTranscriptionErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -5020,6 +5145,8 @@ export type DeleteNoteErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -5068,6 +5195,8 @@ export type GetNoteErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -5111,6 +5240,8 @@ export type GetHealthErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -5145,6 +5276,8 @@ export type PingData = {
 export type PingErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -5227,6 +5360,8 @@ export type GetLessonProgressData = {
 export type GetLessonProgressErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;
@@ -5339,6 +5474,8 @@ export type SignOutOtherSessionsErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -5383,6 +5520,8 @@ export type SearchCatalogueErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
      *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
      */
     400: Problem;
     /**
@@ -5417,6 +5556,8 @@ export type IssueRealtimeTokenData = {
 export type IssueRealtimeTokenErrors = {
     /**
      * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
      *
      */
     400: Problem;

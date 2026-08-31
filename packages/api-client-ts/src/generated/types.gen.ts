@@ -3273,6 +3273,11 @@ export type UpdateBookmarkErrors = {
      */
     404: Problem;
     /**
+     * The request matched the schema but violated a domain invariant that JSON Schema cannot express — a display name that reduces to an empty slug, an external-id reference whose parts contradict each other, and so on. `code` names the specific rule. Documented since #321, when the authenticated contract run reported 422 as an undocumented status on four operations.
+     *
+     */
+    422: Problem;
+    /**
      * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
      *
      */
@@ -3448,6 +3453,11 @@ export type UpdateCourseErrors = {
      * A course with the same slug already exists in this library
      */
     409: Problem;
+    /**
+     * The request matched the schema but violated a domain invariant that JSON Schema cannot express — a display name that reduces to an empty slug, an external-id reference whose parts contradict each other, and so on. `code` names the specific rule. Documented since #321, when the authenticated contract run reported 422 as an undocumented status on four operations.
+     *
+     */
+    422: Problem;
     /**
      * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
      *

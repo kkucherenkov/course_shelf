@@ -5353,6 +5353,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      422: components['responses']['UnprocessableEntity'];
       429: components['responses']['TooManyRequests'];
     };
   };
@@ -5540,6 +5541,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      422: components['responses']['UnprocessableEntity'];
       429: components['responses']['TooManyRequests'];
     };
   };

@@ -1731,7 +1731,7 @@ export interface components {
       externalId: string;
       /**
        * Format: uri
-       * @description Optional canonical URL of the entity on the source platform. Must be an absolute `http` or `https` URL.
+       * @description Optional canonical URL of the entity on the source platform. Must be an absolute `http` or `https` URL, ASCII-only — percent-encode any non-ASCII characters.
        */
       url?: string;
     };
@@ -2684,7 +2684,7 @@ export interface components {
     CreateBookmarkRequest: {
       /** @description Playback position in seconds to pin the bookmark at. */
       positionSeconds: number;
-      /** @description Optional free-form label. Trimmed server-side. */
+      /** @description Optional free-form label. Trimmed server-side, so it must contain a non-whitespace character. */
       label?: string;
       /** @description Client-generated key (e.g. a local UUID) scoping retries of this create to one bookmark. See the operation description for replay semantics. */
       idempotencyKey?: string;
@@ -3566,7 +3566,7 @@ export interface components {
      *     }
      */
     RegisterLibraryRequest: {
-      /** @description Human-readable label. */
+      /** @description Human-readable label. Must contain a non-whitespace character. */
       name: string;
       /** @description Absolute filesystem path to the library root. Accepts POSIX paths starting with `/` or Windows drive paths starting with `[A-Za-z]:\`. Trailing slashes are allowed. */
       rootPath: string;
@@ -3860,7 +3860,7 @@ export interface components {
     UpdateBookmarkRequest: {
       /** @description New playback position in seconds. */
       positionSeconds?: number;
-      /** @description Pass an explicit `null` to clear the label; omit to leave it untouched. */
+      /** @description Pass an explicit `null` to clear the label; omit to leave it untouched. A non-null label must contain a non-whitespace character — the server trims before storing. */
       label?: string | null;
     };
     /**
@@ -3927,7 +3927,7 @@ export interface components {
     UpsertNoteRequest: {
       /** @description Server-generated cuid identifying the lesson. */
       lessonId: string;
-      /** @description Plain Markdown. Trimmed server-side; an empty post-trim body is rejected as 400. */
+      /** @description Plain Markdown. Trimmed server-side; a body with no non-whitespace character is rejected as 400. */
       body: string;
     };
   };
@@ -5055,6 +5055,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      422: components['responses']['UnprocessableEntity'];
       429: components['responses']['TooManyRequests'];
     };
   };
@@ -5353,6 +5354,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      422: components['responses']['UnprocessableEntity'];
       429: components['responses']['TooManyRequests'];
     };
   };
@@ -5540,6 +5542,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+      422: components['responses']['UnprocessableEntity'];
       429: components['responses']['TooManyRequests'];
     };
   };

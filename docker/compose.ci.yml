@@ -107,6 +107,17 @@ services:
       # 429 during the fuzz run, which is what the last two contract-test
       # failures were.
       RATE_LIMIT_REALTIME_TOKEN_MAX: "100000"
+      # `mock.scrapers.ts` exists for exactly this — "deterministic,
+      # network-free scrapers used when SCRAPERS_MODE=mock (e2e/CI)" — and
+      # nothing had ever set it, so the CI stack ran the real ones. That was
+      # invisible while every /admin/courses/{id}/scrape-preview answered 404
+      # on a generated course id. Once the seed gave the contract run a real
+      # course, schemathesis' Stateful phase chained into it and the backend
+      # started fetching generated URLs off the public internet — reported as
+      # a 502 `scrape-fetch-failed`, which is a correct response to a request
+      # this suite should never have made. A contract test must not depend on
+      # the internet being reachable, or on what a third party serves.
+      SCRAPERS_MODE: mock
     # CMD inherits from the prod Dockerfile:
     #   prisma migrate deploy && node dist/main.js
 

@@ -1895,6 +1895,12 @@ paths:
                     title: Conflict
                     status: 409
                     detail: 'Identify task "clx123" is "applied" and can no longer be applied or discarded.'
+        "422":
+          # Reached when the scraped fragment being applied carries a value the
+          # domain refuses — an instructor or studio display name that reduces to
+          # an empty slug, for instance. The offending data came from the scrape,
+          # not from this request, so no request schema can rule it out.
+          $ref: "#/components/responses/UnprocessableEntity"
         "429":
           $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/identify-tasks/{id}/discard:
@@ -2290,6 +2296,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No bookmark with that id exists.
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
         "429":
           $ref: "#/components/responses/TooManyRequests"
     delete:
@@ -2700,6 +2708,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: A course with slug 'pragmatic-clean-architecture-2nd-ed' already exists in this library.
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
         "429":
           $ref: "#/components/responses/TooManyRequests"
   /api/v1/courses/{id}/outline:
@@ -6318,10 +6328,15 @@ components:
           # ExternalIdRef.from() rejects any scheme other than http/https with
           # a 422; `format: uri` alone also admits mailto:, file: and friends,
           # so the schema promised more than the domain accepts (#321).
-          pattern: "^https?://"
+          # `[!-~]` is printable ASCII: ExternalIdRef.from() also requires the
+          # URL to be ASCII (RFC 3986 — non-ASCII must be percent-encoded) and
+          # answered 422 to `https://Ï`, which the pattern above admitted. Found
+          # by the contract run once seeded ids let it reach PATCH /courses/{id}.
+          pattern: "^https?://[!-~]*$"
           description: >-
             Optional canonical URL of the entity on the source platform.
-            Must be an absolute `http` or `https` URL.
+            Must be an absolute `http` or `https` URL, ASCII-only —
+            percent-encode any non-ASCII characters.
       examples:
         - source: udemy
           externalId: "udemy:instructor:42"
@@ -7631,12 +7646,24 @@ components:
         positionSeconds:
           type: integer
           minimum: 0
+          # The column is a PostgreSQL `integer` (32-bit). Without the bound the
+          # schema advertised a range the storage cannot hold, and a value above
+          # it reached Prisma and came back as a 500 — found by the contract run
+          # once seeded ids let it past the 404 (`{"positionSeconds": 9002854629}`).
+          # Stated here so the validator answers 400 at the edge instead.
+          maximum: 2147483647
           description: Playback position in seconds to pin the bookmark at.
         label:
           type: string
           minLength: 1
           maxLength: 200
-          description: Optional free-form label. Trimmed server-side.
+          # The aggregate trims before testing for emptiness, so " " satisfied
+          # minLength and was then rejected 422. `\S` is that trim rule, stated
+          # here — same fix as ExternalIdRef.source (#321).
+          pattern: "\\S"
+          description: >-
+            Optional free-form label. Trimmed server-side, so it must contain a
+            non-whitespace character.
         idempotencyKey:
           type: string
           minLength: 1
@@ -8541,6 +8568,12 @@ components:
         name:
           type: string
           minLength: 1
+          # This path writes the column directly — no `Library.register`, so no
+          # trim check — and `minLength` alone let `"   "` through as a library
+          # name. The create payload carries the same rule for the opposite
+          # reason: there the aggregate rejects it, with a 422 the operation does
+          # not document.
+          pattern: "\\S"
           maxLength: 200
 
     SearchResultDto:
@@ -8887,12 +8920,16 @@ components:
         positionSeconds:
           type: integer
           minimum: 0
+          # PostgreSQL `integer` column — see CreateBookmarkRequest.
+          maximum: 2147483647
           description: >-
             Last reported watch position in seconds. Clamped server-side to
             `[0, durationSeconds]`.
         durationSeconds:
           type: integer
           minimum: 1
+          # PostgreSQL `integer` column — see CreateBookmarkRequest.
+          maximum: 2147483647
           description: >-
             Lesson video duration in seconds. Clients pass the player's
             `duration` from the `loadedmetadata` event; it must match the
@@ -9026,8 +9063,14 @@ components:
         name:
           type: string
           minLength: 1
+          # `Library.register` trims before checking for emptiness and throws
+          # LibraryNameRequiredError (422), a status neither library write
+          # documents. Stating the trim rule keeps the rejection a 400 at the
+          # boundary. On the update payload it also closes the inverse gap: that
+          # path writes the column directly, so `"   "` was stored as a name.
+          pattern: "\\S"
           maxLength: 200
-          description: Human-readable label.
+          description: Human-readable label. Must contain a non-whitespace character.
         rootPath:
           type: string
           minLength: 1
@@ -9468,6 +9511,11 @@ components:
     UpdateBookmarkRequest:
       type: object
       additionalProperties: false
+      # `minProperties` is the native "at-least-one" constraint, and without it
+      # the description below was simply false: `{}` is schema-valid, so it
+      # reached the handler and came back 422 `bookmark-update-empty`, not the
+      # documented 400. Same fix UpdateCourseRequest already carries.
+      minProperties: 1
       description: |
         Payload for updating a bookmark. All fields are optional, but at least
         one of `positionSeconds` or `label` must be present — the server returns
@@ -9476,13 +9524,21 @@ components:
         positionSeconds:
           type: integer
           minimum: 0
+          # PostgreSQL `integer` column — see CreateBookmarkRequest.
+          maximum: 2147483647
           description: New playback position in seconds.
         label:
           type: ["string", "null"]
+          minLength: 1
+          # `minLength` and `pattern` constrain strings only, so `null` still
+          # clears the label. Mirrors CreateBookmarkRequest.label, which had
+          # both and this one did not.
+          pattern: "\\S"
           maxLength: 200
           description: >-
             Pass an explicit `null` to clear the label; omit to leave it
-            untouched.
+            untouched. A non-null label must contain a non-whitespace
+            character — the server trims before storing.
       example:
         positionSeconds: 210
         label: Aggregate boundaries explained
@@ -9517,6 +9573,10 @@ components:
         title:
           type: string
           minLength: 1
+          # The Title value object trims before checking for emptiness, so a
+          # whitespace-only title satisfied minLength and came back 422. Same
+          # trim rule as the note body and the bookmark label.
+          pattern: "\\S"
           maxLength: 200
         description:
           type: string
@@ -9634,10 +9694,15 @@ components:
         body:
           type: string
           minLength: 1
+          # The aggregate trims before testing for emptiness, so a lone `\v`
+          # satisfied minLength and came back 422 — while the description below
+          # promised a 400. `\S` is that trim rule, and it makes the promise
+          # true. Same fix as ExternalIdRef.source (#321) and the bookmark label.
+          pattern: "\\S"
           maxLength: 16384
           description: >-
-            Plain Markdown. Trimmed server-side; an empty post-trim body is
-            rejected as 400.
+            Plain Markdown. Trimmed server-side; a body with no non-whitespace
+            character is rejected as 400.
       example:
         lessonId: clxvles0000000000000000001
         body: "## Aggregates\n\nKey insight: aggregates enforce invariants across their boundary."

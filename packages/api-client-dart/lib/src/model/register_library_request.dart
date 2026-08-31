@@ -11,11 +11,11 @@ part 'register_library_request.g.dart';
 /// RegisterLibraryRequest
 ///
 /// Properties:
-/// * [name] - Human-readable label.
+/// * [name] - Human-readable label. Must contain a non-whitespace character.
 /// * [rootPath] - Absolute filesystem path to the library root. Accepts POSIX paths starting with `/` or Windows drive paths starting with `[A-Za-z]:\\`. Trailing slashes are allowed.
 @BuiltValue()
 abstract class RegisterLibraryRequest implements Built<RegisterLibraryRequest, RegisterLibraryRequestBuilder> {
-  /// Human-readable label.
+  /// Human-readable label. Must contain a non-whitespace character.
   @BuiltValueField(wireName: r'name')
   String get name;
 

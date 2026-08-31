@@ -12,7 +12,7 @@ part 'create_bookmark_request.g.dart';
 ///
 /// Properties:
 /// * [positionSeconds] - Playback position in seconds to pin the bookmark at.
-/// * [label] - Optional free-form label. Trimmed server-side.
+/// * [label] - Optional free-form label. Trimmed server-side, so it must contain a non-whitespace character.
 /// * [idempotencyKey] - Client-generated key (e.g. a local UUID) scoping retries of this create to one bookmark. See the operation description for replay semantics.
 @BuiltValue()
 abstract class CreateBookmarkRequest implements Built<CreateBookmarkRequest, CreateBookmarkRequestBuilder> {
@@ -20,7 +20,7 @@ abstract class CreateBookmarkRequest implements Built<CreateBookmarkRequest, Cre
   @BuiltValueField(wireName: r'positionSeconds')
   int get positionSeconds;
 
-  /// Optional free-form label. Trimmed server-side.
+  /// Optional free-form label. Trimmed server-side, so it must contain a non-whitespace character.
   @BuiltValueField(wireName: r'label')
   String? get label;
 

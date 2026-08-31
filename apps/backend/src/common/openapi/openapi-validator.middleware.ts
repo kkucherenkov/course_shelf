@@ -46,6 +46,17 @@ export function registerOpenApiValidator(app: INestApplication, nodeEnv: string)
     OpenApiValidator.middleware({
       apiSpec,
       validateRequests: true,
+      // Without this the validator defaults to ajv-formats' `fast` mode, where
+      // `date` is the bare regex `\d{4}-\d{2}-\d{2}`: `2024-13-01` is a valid
+      // request date and month 13 goes into the database. It then comes back
+      // out of `GET /api/v1/admin/identify-tasks`, where the response schema
+      // says `format: date` and a stricter reader disagrees — the contract run
+      // caught exactly that once seeded ids let it reach the operation, on a
+      // scraped fragment an admin had posted. `full` validates the calendar
+      // date, so the request is rejected at the boundary instead of poisoning a
+      // list endpoint for every later reader. It costs a real date parse per
+      // `date`/`date-time` field, which is not a budget anyone is watching.
+      ajvFormats: { mode: 'full' },
       validateResponses:
         nodeEnv === 'production'
           ? false

@@ -20,7 +20,7 @@
     "prisma:db:push": "prisma db push --accept-data-loss",
     "prisma:baseline": "node --experimental-strip-types scripts/baseline-migrations.ts",
     "prisma:studio": "prisma studio",
-    "db:seed": "node --experimental-strip-types prisma/seed.ts",
+    "db:seed": "nest build && node dist/seed.js",
     "db:reset": "prisma migrate reset --force && pnpm db:seed",
     "auth:generate-schema": "better-auth generate --output prisma/schema.prisma",
     "auth:schema": "better-auth generate --output prisma/schema.prisma -y",

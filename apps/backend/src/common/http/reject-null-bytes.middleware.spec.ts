@@ -11,9 +11,9 @@ import type { NextFunction, Request, Response } from 'express';
 
 const NUL = '\u0000';
 
-function run(body: unknown): unknown {
+function run(body: unknown, originalUrl = '/api/v1/me'): unknown {
   const next: NextFunction = vi.fn();
-  rejectNullBytes({ body } as Request, {} as Response, next);
+  rejectNullBytes({ body, originalUrl, url: originalUrl } as Request, {} as Response, next);
   return (next as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
 }
 
@@ -44,6 +44,21 @@ describe('rejectNullBytes', () => {
     const error = run({ a: NUL }) as NullByteInPayloadError;
     expect(error.status).toBe(400);
     expect(error.code).toBe('null-byte-in-payload');
+  });
+
+  it('rejects a percent-encoded NUL in the query string', () => {
+    // `GET /search?q=…%00…` reached Postgres through a query param, not a body.
+    expect(run(undefined, '/api/v1/search?q=%C2%BE%00%C3%AA')).toBeInstanceOf(
+      NullByteInPayloadError,
+    );
+  });
+
+  it('rejects a percent-encoded NUL in a path segment', () => {
+    expect(run(undefined, '/api/v1/courses/abc%00def')).toBeInstanceOf(NullByteInPayloadError);
+  });
+
+  it('leaves an ordinary query string alone', () => {
+    expect(run(undefined, '/api/v1/search?q=clean&limit=20')).toBeUndefined();
   });
 
   it('gives up rather than recursing forever on a pathologically deep body', () => {

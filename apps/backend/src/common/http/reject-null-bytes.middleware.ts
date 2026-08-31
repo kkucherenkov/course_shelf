@@ -18,7 +18,8 @@
  * operation in openapi.yaml, so the answer stays inside the contract.
  *
  * Mounted in `configureApp()` after `express.json()` (the body has to exist
- * first) and before the Nest router.
+ * first) and before the Nest router. It covers the request line as well as the
+ * body — `GET /api/v1/search?q=…%00…` 500'd for exactly the same reason.
  */
 import { DomainError } from '../../shared/domain-error';
 
@@ -55,8 +56,19 @@ function containsNullByte(value: unknown, depth: number): boolean {
   return false;
 }
 
+/**
+ * A NUL cannot travel raw in a URL, so in the request line it is always the
+ * `%00` escape — one `includes` on the raw URL covers every query parameter and
+ * every path segment at once, before routing has even happened.
+ * `GET /api/v1/search?q=…%00…` was the second 500 of this shape.
+ */
+function urlHasEncodedNullByte(url: string): boolean {
+  return url.toLowerCase().includes('%00');
+}
+
 export function rejectNullBytes(req: Request, _res: Response, next: NextFunction): void {
-  if (req.body !== undefined && containsNullByte(req.body, 0)) {
+  const url = req.originalUrl || req.url;
+  if (urlHasEncodedNullByte(url) || (req.body !== undefined && containsNullByte(req.body, 0))) {
     next(new NullByteInPayloadError());
     return;
   }

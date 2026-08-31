@@ -225,12 +225,19 @@ broken stack.
 
 > **`AUTH_SELF_REGISTRATION=false` is enforced server-side.** It hides the
 > sign-up link, is reported to the apps, and `POST /api/v1/auth/sign-up/*`
-> answers `403 self-registration-disabled`. (It was a UI-only setting until
-> #266 — the middleware that enforces it was mounted on the wrong path and
-> never ran.)
+> answers `403 self-registration-disabled`.
 >
 > It does **not** block first-run setup — creating the owner account works
 > either way, because the guard steps aside while the user table is empty.
+>
+> ⚠️ **Upgrading from a release before #266?** Both auth middlewares were
+> mounted on the wrong path and had never executed, so on those images:
+> `AUTH_SELF_REGISTRATION=false` blocked nothing (anyone who could reach
+> `/api/v1/auth/sign-up/email` could create an account, whatever the toggle
+> said), and sign-in had **no brute-force rate limit** at all. If such an
+> instance was ever reachable from the internet, audit Admin → Users for
+> accounts you did not create and rotate `BETTER_AUTH_SECRET` (which
+> invalidates every existing session).
 
 ---
 

@@ -1,0 +1,29 @@
+# Per-pointer suppressions for Redocly lint. Auto-discovered next to
+# `redocly.yaml`; regenerate with `redocly lint --generate-ignore-file`.
+#
+# Every entry needs a WHY. A pointer listed here is a rule that is wrong at
+# that exact location — never a real finding waved through. The list is
+# location-scoped, so the same rule still fails on any new occurrence
+# elsewhere in the document.
+#
+# ── no-required-schema-properties-undefined / ScrapePreviewRequest ──────────
+# The rule resolves a `required` entry by walking the schema's own
+# `properties`, `allOf`, `anyOf` and `oneOf` *downward*. It never inspects an
+# enclosing schema, so a `required` inside an `if`/`then` branch can never see
+# the properties the parent declares — and `ScrapePreviewRequest` declares all
+# of `url`, `query`, `source` and `fragment` on the parent, with `kind` in the
+# parent's `required` so the `if` clauses fire as intended. The document is
+# correct; the rule cannot see it.
+#
+# Restating each property inside its `then` branch does silence the rule, but
+# it is not free: giving `then` its own `properties` changes the schema's
+# evaluated-property surface, and a strict validator then rejects `kind` in
+# every request body as an unevaluated property (Redocly's own example checks
+# catch this immediately — 4 warnings become 6). A suppression that leaves the
+# contract untouched beats a restructure that alters it.
+openapi/openapi.yaml:
+  no-required-schema-properties-undefined:
+    - "#/components/schemas/ScrapePreviewRequest/allOf/0/then/required/0"
+    - "#/components/schemas/ScrapePreviewRequest/allOf/1/then/required/0"
+    - "#/components/schemas/ScrapePreviewRequest/allOf/1/then/required/1"
+    - "#/components/schemas/ScrapePreviewRequest/allOf/2/then/required/0"

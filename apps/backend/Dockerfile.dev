@@ -26,7 +26,14 @@ FROM node:24-alpine
 #
 # `libgomp` is whisper-cli's only extra runtime dependency (it is built with
 # OpenMP); without it the binary fails to start rather than failing to build.
-RUN apk add --no-cache openssl libc6-compat ffmpeg libgomp && corepack enable
+#
+# `postgresql18-client` ships `pg_dump` for POST /api/v1/admin/backups. Without
+# it Admin → Backups can only ever reach its error state on a fresh dev stack.
+# Same pinned major as the production image and as `docker/compose.yml`'s
+# `postgres:18.1-alpine`: pg_dump refuses to dump a server newer than itself,
+# and the unversioned `postgresql-client` would float with the base image.
+RUN apk add --no-cache openssl libc6-compat ffmpeg libgomp postgresql18-client \
+    && corepack enable
 
 # Same binary as production. WHISPER_PATH defaults to the bare name, so PATH
 # resolution is all that is needed.

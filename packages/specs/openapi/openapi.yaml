@@ -2290,6 +2290,8 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No bookmark with that id exists.
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
         "429":
           $ref: "#/components/responses/TooManyRequests"
     delete:
@@ -2700,6 +2702,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: A course with slug 'pragmatic-clean-architecture-2nd-ed' already exists in this library.
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
         "429":
           $ref: "#/components/responses/TooManyRequests"
   /api/v1/courses/{id}/outline:
@@ -7631,6 +7635,12 @@ components:
         positionSeconds:
           type: integer
           minimum: 0
+          # The column is a PostgreSQL `integer` (32-bit). Without the bound the
+          # schema advertised a range the storage cannot hold, and a value above
+          # it reached Prisma and came back as a 500 — found by the contract run
+          # once seeded ids let it past the 404 (`{"positionSeconds": 9002854629}`).
+          # Stated here so the validator answers 400 at the edge instead.
+          maximum: 2147483647
           description: Playback position in seconds to pin the bookmark at.
         label:
           type: string
@@ -8887,12 +8897,16 @@ components:
         positionSeconds:
           type: integer
           minimum: 0
+          # PostgreSQL `integer` column — see CreateBookmarkRequest.
+          maximum: 2147483647
           description: >-
             Last reported watch position in seconds. Clamped server-side to
             `[0, durationSeconds]`.
         durationSeconds:
           type: integer
           minimum: 1
+          # PostgreSQL `integer` column — see CreateBookmarkRequest.
+          maximum: 2147483647
           description: >-
             Lesson video duration in seconds. Clients pass the player's
             `duration` from the `loadedmetadata` event; it must match the
@@ -9476,6 +9490,8 @@ components:
         positionSeconds:
           type: integer
           minimum: 0
+          # PostgreSQL `integer` column — see CreateBookmarkRequest.
+          maximum: 2147483647
           description: New playback position in seconds.
         label:
           type: ["string", "null"]

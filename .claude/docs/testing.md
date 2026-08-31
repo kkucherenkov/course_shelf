@@ -24,7 +24,20 @@ Rule: don't mock what you own — mock ports (interfaces), not Prisma or the HTT
 ### Web test locations
 
 - Unit: `packages/ui/src/**/*.spec.ts` — component tests (Vitest + Vue test utils).
-- E2E: `apps/web/tests/e2e/**` — Playwright, seeds DB in `global-setup.ts`.
+- E2E: `tests/e2e/**` — Playwright against the compose stack. The page-driven
+  specs stub the API through `page.route`; there is no global setup and no DB
+  seeding on this path.
+
+### Database fixtures
+
+`pnpm --filter @app/backend db:seed` (→ `src/seed.ts`, compiled to
+`dist/seed.js`) writes a deterministic catalog spine through the domain
+aggregates and repositories. It is idempotent, creates **no** users, and
+refuses to run against a database holding catalog rows it did not create.
+`e2e.yml` runs it inside the backend container before the Schemathesis step;
+`packages/specs/schemathesis.toml` pins its fixed ids as parameter overrides,
+which is what makes the path-parameter operations reach a real resource
+instead of a 404.
 
 ### Mobile test locations
 

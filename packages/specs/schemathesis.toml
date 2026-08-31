@@ -67,3 +67,183 @@ checks.negative_data_rejection.enabled = false
 [[operations]]
 include-name = "POST /api/v1/libraries/{id}/transcriptions"
 checks.not_a_server_error.enabled = false
+# Seeded library id — see the "Seeded path parameters" section below. It lives
+# in this block rather than one of its own because two `[[operations]]` blocks
+# matching the same operation have no defined merge order.
+parameters = { "path.id" = "seed-library-main" }
+
+# ---------------------------------------------------------------------------
+# Seeded path parameters
+# ---------------------------------------------------------------------------
+#
+# 40 of the 75 operations take a path parameter, and every one of them is
+# `type: string` in the schema. Schemathesis generates those from the schema —
+# it invents a string — so no row in Postgres can ever match one. The result:
+# those operations answered 404 (or 403, where the handler hides existence) on
+# every request, the fuzzer never reached a handler, and their 200 responses
+# were never compared against their schemas. Schemathesis names this exact
+# condition in its own output: the `missing_test_data` warning, "API returns
+# mostly 404 responses, suggesting test data doesn't match existing resources".
+#
+# Seeding the database alone does NOT fix that — the generated id still misses
+# the seeded row. There are three mechanisms that can make a generated request
+# address a real resource, and only one of them fits here:
+#
+#   * OpenAPI `links` — the Stateful phase chains a create response into a
+#     later request's path parameter. The right answer for anything creatable
+#     over the API, and it needs no seed. It does not reach the catalog: a
+#     course, section, lesson, instructor, studio or tag is created by a
+#     filesystem scan, not by an HTTP POST, so there is no create response to
+#     chain from. openapi.yaml declares no `links` today; adding them is worth
+#     doing for the runtime-created resources (identify tasks, transcriptions,
+#     bookmarks, grants) and is tracked separately.
+#
+#   * `example` on the parameter in openapi.yaml — read by the Examples phase.
+#     Rejected: it would put fixture ids in the published contract, where every
+#     generated client and every reader of the docs would see them.
+#
+#   * parameter overrides here — test-only, invisible to the contract, applied
+#     in every phase. This is what the blocks below use.
+#
+# The values come from `apps/backend/src/seed-catalog.ts` (`SEED_IDS` /
+# `SEED_SLUGS`) and must change in both places together; the seed's ids are
+# deliberately fixed constants rather than cuids for exactly this reason.
+#
+# NOT overridden, deliberately:
+#
+#   * `/stream/**` and `/admin/backups/{id}/download` — gated on a short-lived
+#     HMAC token minted at request time, which the run cannot forge. A seeded
+#     id changes nothing; these stay on the 401 path.
+#   * `/admin/identify-tasks/{id}`, `/transcriptions/{id}/cancel`,
+#     `/bookmarks/{id}`, `/access/grants/{id}` — the row is created at runtime
+#     and owned by the principal, so its id cannot be a constant. These need
+#     OpenAPI `links`, not a seed.
+#   * `GET`/`PATCH /admin/users/{id}` — the only user is the principal, whose id
+#     is minted at sign-up. It could be threaded in through this file's
+#     `${VAR}` substitution, but `PATCH` would then fuzz the run's own admin
+#     account — role, ban flag and all — and take the rest of the run with it.
+#     Reaching this one needs a second, disposable user.
+#   * `POST /admin/courses/{id}/scrape-preview` and `.../identify` — reachable
+#     with a seeded course id, but `SCRAPERS_MODE` defaults to `real`, so
+#     unblocking them would fire dozens of live outbound scrapes per CI run.
+
+[[operations]]
+include-name = "GET /api/v1/courses/{id}"
+parameters = { "path.id" = "seed-course-fundamentals" }
+
+[[operations]]
+include-name = "PATCH /api/v1/courses/{id}"
+parameters = { "path.id" = "seed-course-fundamentals" }
+
+[[operations]]
+include-name = "GET /api/v1/courses/{id}/outline"
+parameters = { "path.id" = "seed-course-fundamentals" }
+
+[[operations]]
+include-name = "GET /api/v1/courses/{id}/download-estimate"
+parameters = { "path.id" = "seed-course-fundamentals" }
+
+[[operations]]
+include-name = "POST /api/v1/courses/{id}/mark-complete"
+parameters = { "path.id" = "seed-course-fundamentals" }
+
+[[operations]]
+include-name = "POST /api/v1/courses/{id}/reset-progress"
+parameters = { "path.id" = "seed-course-fundamentals" }
+
+[[operations]]
+include-name = "GET /api/v1/lessons/{id}"
+parameters = { "path.id" = "seed-lesson-welcome" }
+
+[[operations]]
+include-name = "GET /api/v1/lessons/{id}/stream-url"
+parameters = { "path.id" = "seed-lesson-welcome" }
+
+[[operations]]
+include-name = "GET /api/v1/lessons/{lessonId}/bookmarks"
+parameters = { "path.lessonId" = "seed-lesson-welcome" }
+
+[[operations]]
+include-name = "POST /api/v1/lessons/{lessonId}/bookmarks"
+parameters = { "path.lessonId" = "seed-lesson-welcome" }
+
+[[operations]]
+include-name = "GET /api/v1/lessons/{lessonId}/materials/{materialId}/download-url"
+parameters = { "path.lessonId" = "seed-lesson-welcome", "path.materialId" = "seed-material-welcome-handout" }
+
+# `PUT /notes` and `POST /progress` carry the lesson id in the BODY, not the
+# path, which is why they showed up in the same `missing_test_data` list. The
+# override syntax reaches into the body the same way.
+#
+# They are also what makes the two reads below reachable: the note and the
+# progress row are keyed on (userId, lessonId) and the principal is created at
+# runtime, so no seed can pre-create them — but a write earlier in the run can.
+# Schemathesis walks operations in schema order and both writes are declared
+# ahead of their reads, so the reads usually find a row; when they do not, they
+# now get a real 404 from the handler instead of a 403 from the authz check.
+[[operations]]
+include-name = "PUT /api/v1/notes"
+parameters = { "body.lessonId" = "seed-lesson-welcome" }
+
+[[operations]]
+include-name = "POST /api/v1/progress"
+parameters = { "body.lessonId" = "seed-lesson-welcome" }
+
+[[operations]]
+include-name = "GET /api/v1/notes/{lessonId}"
+parameters = { "path.lessonId" = "seed-lesson-welcome" }
+
+[[operations]]
+include-name = "DELETE /api/v1/notes/{lessonId}"
+parameters = { "path.lessonId" = "seed-lesson-welcome" }
+
+[[operations]]
+include-name = "GET /api/v1/progress/{lessonId}"
+parameters = { "path.lessonId" = "seed-lesson-welcome" }
+
+[[operations]]
+include-name = "GET /api/v1/libraries/{id}"
+parameters = { "path.id" = "seed-library-main" }
+
+[[operations]]
+include-name = "PATCH /api/v1/libraries/{id}"
+parameters = { "path.id" = "seed-library-main" }
+
+# The scratch library, not the main one. This operation really deletes what it
+# is pointed at, and cascades, so pinning it at `seed-library-main` would take
+# the course, the lesson and every other override's target with it — in an
+# order nobody controls. The seed creates a second, empty library for exactly
+# this. After the first success the rest of the budget gets a documented 404.
+[[operations]]
+include-name = "DELETE /api/v1/libraries/{id}"
+parameters = { "path.id" = "seed-library-scratch" }
+
+# `/data/courses` exists and is empty in the backend image, so a scan is a real
+# 202 over an empty tree — and it gives `scans/latest` a row to return.
+[[operations]]
+include-name = "POST /api/v1/libraries/{id}/scans"
+parameters = { "path.id" = "seed-library-main" }
+
+[[operations]]
+include-name = "GET /api/v1/libraries/{id}/scans/latest"
+parameters = { "path.id" = "seed-library-main" }
+
+[[operations]]
+include-name = "GET /api/v1/libraries/{id}/transcriptions"
+parameters = { "path.id" = "seed-library-main" }
+
+[[operations]]
+include-name = "GET /api/v1/libraries/{id}/transcriptions/latest"
+parameters = { "path.id" = "seed-library-main" }
+
+[[operations]]
+include-name = "GET /api/v1/catalog/instructors/{slug}"
+parameters = { "path.slug" = "seed-instructor-ada-lovelace" }
+
+[[operations]]
+include-name = "GET /api/v1/catalog/studios/{slug}"
+parameters = { "path.slug" = "seed-studio-analytical-engine" }
+
+[[operations]]
+include-name = "GET /api/v1/catalog/tags/{slug}"
+parameters = { "path.slug" = "seed-tag-fundamentals" }

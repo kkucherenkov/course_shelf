@@ -640,7 +640,7 @@ it takes text as a prop and the consuming app supplies the translation.
 | Visual (web) | Storybook test-runner in the pinned Playwright image | per story | Baselines committed; `visual-approved` label gates intentional diffs |
 | Backend e2e | vitest + supertest against a booted Nest app | `apps/backend/test/**/*.e2e-spec.ts` | Better Auth on an in-memory adapter; runs in the default `pnpm --filter @app/backend test` |
 | E2E | Playwright against the production-shaped compose stack | smoke suite | |
-| Contract | Schemathesis, `pnpm spec:contract-test` | — | Runs in `e2e.yml`, after Playwright, **authenticated** as the seeded admin |
+| Contract | Schemathesis, `pnpm spec:contract-test` | — | Runs in `e2e.yml`, after Playwright, **authenticated** as an admin the workflow signs up, against the catalog fixtures `dist/seed.js` writes |
 
 `pnpm exec turbo run typecheck` is green across all 9 packages.
 

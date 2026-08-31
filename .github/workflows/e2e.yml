@@ -129,6 +129,29 @@ jobs:
             mcr.microsoft.com/playwright:v1.59.1-jammy \
             ./node_modules/.bin/playwright test --config=tests/e2e/playwright.config.ts
 
+      # Catalog fixtures for the contract test. Runs HERE — after Playwright,
+      # before Schemathesis — for two reasons:
+      #
+      #   - It must not run before the sign-up step above. It creates no user
+      #     rows (see apps/backend/src/seed-catalog.ts), so the ADMIN promotion
+      #     would survive either way, but keeping the seed downstream leaves
+      #     "nothing touches the database before the sign-up" literally true
+      #     rather than true-by-argument.
+      #   - Playwright's page-driven specs stub the API through `page.route`,
+      #     so seeded rows are invisible to them — but a visual baseline is an
+      #     expensive thing to be wrong about, and seeding after the screenshots
+      #     costs nothing.
+      #
+      # `exec` into the backend container rather than seeding from the runner:
+      # compose.ci.yml unpublishes postgres' host port, and the production image
+      # already carries `dist/seed.js` (it is compiled from src/ with the app).
+      # `pnpm db:seed` is the same entry point with a `nest build` in front,
+      # which the image does not need.
+      - name: Seed the catalog
+        run: |
+          docker compose -f docker/compose.yml -f docker/compose.ci.yml \
+            exec -T backend node dist/seed.js
+
       # Schemathesis against the running backend. `pnpm spec:contract-test` has
       # existed since E02-F02-S04 and ran in no workflow, so the one gate that
       # checks the implementation against the spec at runtime (rather than the

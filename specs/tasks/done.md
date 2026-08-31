@@ -7,7 +7,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Created: 2026-08-31
 - Owner: claude (backend-engineer, lane L4)
 - Completed: 2026-08-31
-- Result: PR_URL_PLACEHOLDER
+- Result: https://github.com/kkucherenkov/course_shelf/pull/397
 - Spec: GitHub #318, #274, #272 (plus one docs cleanup with no issue)
 - Goal: four independent small fixes in one PR.
 - Spec diff: none — `openapi.yaml` is byte-identical; the #274 fix is a

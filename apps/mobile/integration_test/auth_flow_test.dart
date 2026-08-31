@@ -9,7 +9,6 @@ import 'package:app_mobile/features/auth/domain/auth_user.dart';
 import 'package:app_mobile/features/auth/domain/instance_config.dart';
 import 'package:app_mobile/features/auth/domain/instance_repository.dart';
 import 'package:app_mobile/features/auth/domain/library_repository.dart';
-import 'package:app_mobile/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:app_mobile/features/auth/presentation/sign_in_screen.dart';
 import 'package:app_mobile/features/auth/presentation/sign_up_screen.dart';
 import 'package:app_mobile/i18n/strings.g.dart';
@@ -44,11 +43,24 @@ void main() {
       () => instance.getInstanceConfig(),
     ).thenAnswer((_) async => InstanceConfig.defaults);
 
+    // The real composition root, then three ports swapped for mocks.
+    //
+    // This used to hand-register exactly the four things `App` needed on the
+    // day it was written, which rotted the moment `App` grew a fifth: by the
+    // time an emulator finally ran this suite (#280) it was failing on an
+    // unregistered `SettingsCubit`. Building the real graph and overriding only
+    // what must not reach the network cannot rot that way — a new dependency
+    // registers itself.
+    configureDependencies();
+    await bootstrapPreferences();
+    getIt.allowReassignment = true;
     getIt
-      ..registerFactory<AuthCubit>(() => AuthCubit(auth))
       ..registerLazySingleton<AuthRepository>(() => auth)
       ..registerLazySingleton<InstanceRepository>(() => instance)
       ..registerLazySingleton<LibraryRepository>(() => library);
+    // `AuthCubit` is a factory over `AuthRepository`, so it picks the mock up
+    // on its own — no override needed, and none wanted: overriding it is how
+    // the cubit under test stops being the one the app builds.
   });
 
   tearDown(resetInjector);

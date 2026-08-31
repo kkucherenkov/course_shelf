@@ -233,6 +233,127 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  # ── Flutter integration tests (Android emulator) ───────────────────────────
+  # `apps/mobile/integration_test/` existed since E18 and had never executed
+  # anywhere: there is no emulator on the maintainer's host, and `flutter test`
+  # only picks up `test/`. Everything reached through a platform channel was
+  # therefore unverified end to end — `video_player`'s ExoPlayer, drift's
+  # bundled SQLite, `path_provider`, `flutter_secure_storage`'s Keystore, and
+  # `disk_space_plus`, whose native side had literally never run (#280).
+  #
+  # A GitHub-hosted `ubuntu-latest` runner does expose `/dev/kvm`, so the
+  # emulator is hardware-accelerated rather than the hour-long ARM-under-QEMU
+  # crawl. The udev rule below is what makes the device group-writable for the
+  # runner user; without it the emulator silently falls back to software and
+  # this job times out.
+  #
+  # Deliberately a separate job from `flutter` above: booting an AVD costs
+  # minutes, and the analyze/test/golden signal must not wait behind it.
+  flutter-integration:
+    name: Flutter (integration_test · Android emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      # Pinned, not "latest": a system-image bump changes the decoder, the
+      # SQLite build and the Keystore implementation all at once, which is not
+      # something a green build should be able to do to itself overnight.
+      API_LEVEL: "34"
+      ARCH: x86_64
+      TARGET: google_apis
+      PROFILE: pixel_6
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-cs
+        with:
+          node: "false"
+          flutter: "true"
+
+      # The Gradle build behind `flutter test integration_test` needs a JDK.
+      # The image's default has moved before; pinning 17 keeps AGP happy and
+      # makes the failure mode a version mismatch here rather than an opaque
+      # Gradle stack trace.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # Same ordering as the `flutter` job, and load-bearing for the same
+      # reason: slang_build_runner skips generation, so build_runner never
+      # writes strings.g.dart — but errors if it is already there.
+      - name: mobile — codegen (drift, then slang i18n)
+        working-directory: apps/mobile
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          dart run slang
+
+      # Creating the AVD and letting it write a cold-boot snapshot is ~2 of the
+      # job's minutes, and the result is byte-identical for a fixed
+      # api-level/arch/target — exactly what a cache key is for.
+      - name: Cache the AVD + its cold-boot snapshot
+        uses: actions/cache@v5
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-${{ env.API_LEVEL }}-${{ env.ARCH }}-${{ env.TARGET }}
+
+      # The emulator-runner docs are explicit that the two invocations must
+      # agree on every AVD-shaping input, or the second one rebuilds the image
+      # the first just cached. Keep these blocks in sync.
+      - name: Create the AVD and snapshot it
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ env.API_LEVEL }}
+          arch: ${{ env.ARCH }}
+          target: ${{ env.TARGET }}
+          profile: ${{ env.PROFILE }}
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot-load
+          disable-animations: false
+          script: echo "AVD created; snapshot written."
+
+      - name: mobile — integration_test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ env.API_LEVEL }}
+          arch: ${{ env.ARCH }}
+          target: ${{ env.TARGET }}
+          profile: ${{ env.PROFILE }}
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          # Frame-timing-sensitive assertions do not survive window animations.
+          disable-animations: true
+          # `flutter test integration_test` builds one debug APK per file and
+          # drives it on the booted AVD. `working-directory` is not an input of
+          # this action, hence the `cd`.
+          script: cd apps/mobile && flutter test integration_test
+
+      # An emulator failure is usually only legible from logcat — the Dart-side
+      # message is often just "the app crashed".
+      - name: Upload the emulator log
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: emulator-logcat
+          path: |
+            ~/.android/avd/**/*.log
+            apps/mobile/build/**/reports/**
+          if-no-files-found: ignore
+          retention-days: 7
+
   # ── Security (secrets + licenses + vulnerabilities) ────────────────────────
   security:
     name: Security (secret scan · license audit · vulnerabilities)

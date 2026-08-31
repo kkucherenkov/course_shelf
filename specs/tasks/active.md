@@ -8,8 +8,10 @@
 - Goal: the backend gains a real supertest-driven e2e layer, and
   `pnpm spec:contract-test` finally exercises the 62 authenticated
   operations it has always skipped.
-- Spec diff: none (openapi.yaml is owned by another lane)
-- Codegen impact: no
+- Spec diff: openapi.yaml — `minProperties`, `dependentRequired`, `maximum` on
+  `offset`, `minLength`/`pattern` on ids and free text, `additionalProperties:
+false` on 14 request bodies, a reusable 422, the NUL 400 documented
+- Codegen impact: yes — landed in its own commit
 - Sub-steps:
   - [x] extract the bootstrap wiring out of `main.ts` so tests boot the same app
   - [x] `apps/backend/test/**` e2e suite: Better Auth round-trip, SessionGuard
@@ -23,17 +25,16 @@
         `turbo.json` lets the variable actually reach it
   - [x] `e2e.yml` mints that token against the running stack, before anything
         else can claim the first-user-is-ADMIN slot
-  - [x] triage the first authenticated run — 13/75 → 69/75 operations
-        authenticated; three real 500s fixed (bigint `OFFSET` overflow, a
-        missing optional body, NUL bytes anywhere in a payload or URL)
-- Status: in-progress — the code is complete; the `E2E smoke` gate stays red on
-  spec drift this lane may not touch.
-- Blockers: the remaining contract-test findings all need
-  `packages/specs/openapi/openapi.yaml` (`minProperties: 1` on three PATCH
-  bodies, `dependentRequired` on the rating pair, `maximum` on `offset`,
-  `minLength: 1` on the course grant target, documenting 422 and 404 on four
-  operations, and a decision on how the spec expresses "no NUL bytes").
-  Tracked as `tuxedo` 26–29; details in the PR body.
+  - [x] triage the run — 13/75 → 69/75 operations authenticated, 23 → 1 unique
+        failures. Five real backend bugs fixed (bigint `OFFSET` overflow, a
+        missing optional body, NUL bytes anywhere, a 404 that broke the
+        batch's documented no-oracle rule, a URL violating its own
+        `format: uri`) and every schema-vs-API mismatch closed in the spec.
+- Status: in-progress — awaiting review.
+- Blockers: none. One contract-test failure is left on purpose:
+  `POST /libraries/{id}/transcriptions` answers a documented 503 when whisper
+  is unconfigured, and whether that should be a 4xx at all is a maintainer
+  call, not drift (`tuxedo` 28). `E2E smoke` stays red until it is decided.
 
 ## T-2026-08-31-003 — mobile: Android emulator in CI + integration tests for offline playback, sync and the download queue
 

@@ -1,5 +1,28 @@
 # Active tasks
 
+## T-2026-08-31-004 — backfill GitHub issue mirroring for E00–E14 / E21–E24
+
+- Created: 2026-08-31
+- Owner: claude
+- Spec: [docs/roadmap/TODO.md](../../docs/roadmap/TODO.md) · GitHub #271
+- Goal: every roadmap card has a stable issue URL, so the card-bookkeeping rule
+  in `.claude/CLAUDE.md` holds for the whole repo instead of carrying an
+  exception for the epics that predate issue mirroring.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] inventory the 81 cards in E00–E14 / E21–E24 (E05 has no cards) and
+        cross-check statuses against `docs/roadmap/TODO.md`
+  - [x] confirm no issue already carries an `[<card-id>]` title in that range
+  - [x] create 18 epic umbrellas + 81 story issues, matching the label shape
+        the existing v1 issues use (`epic` / `story`, no milestone)
+  - [x] close each one as a historical backfill (`completed`, or `not planned`
+        for the two cancelled E23-F01 cards)
+  - [x] narrow the card-bookkeeping section of `.claude/CLAUDE.md` so it
+        describes every epic as mirrored
+- Status: in-review
+- Blockers: —
+
 ## T-2026-08-31-002 — override props for the hard-coded `@app/ui` strings (web half)
 
 - Created: 2026-08-31

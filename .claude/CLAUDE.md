@@ -201,15 +201,16 @@ pnpm e2e --grep "smoke"
 **GitHub is the sole repo.** The card in `docs/roadmap/tasks/` is always the
 source of truth; issues are stable URLs for cross-referencing, nothing more.
 
-**Mirroring covers E15–E20 and every v2 epic (E25–E31).** Issues are titled
-`[<card-id>] <title>`, with one umbrella per epic titled `[<epic-id>] <name>`.
+**Every epic is mirrored.** Issues are titled `[<card-id>] <title>`, with one
+umbrella per epic titled `[<epic-id>] <name>`. Every card has an issue — if a
+lookup comes up empty, the search was wrong, not the record.
 
-- **v1 (E00–E24):** only E15–E20 were mirrored — 133 issues. E00–E14 and
-  E21–E24 never were: the practice started mid-project and was not backfilled,
-  and backfilling a finished milestone would be archaeology, not tracking. Do
-  not go looking for an issue for `E13-F02-S01` and conclude the work is
-  untracked — check the card.
-- **v2 (E25–E31):** fully mirrored from the start — 36 story issues plus 7
+- **v1 (E00–E24):** E15–E20 were mirrored as the work happened, down to
+  per-sub-step `task` issues. E00–E14 and E21–E24 were backfilled in one pass
+  (#271) — one `story` issue per card plus an epic umbrella, created and
+  immediately closed, since the cards were already resolved. They carry no
+  milestone and no sub-step issues; the card holds the detail.
+- **v2 (E25–E31):** mirrored from the start — 36 story issues plus 7
   umbrellas, all on the **`v2 — Transcript-first`** milestone.
 
 New v2 work gets a card, an issue on that milestone, and a line in the epic's

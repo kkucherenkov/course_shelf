@@ -114,3 +114,26 @@ export const Interactive: Story = {
     `,
   }),
 };
+
+/** Every string the editor renders is overridable — here in Russian. */
+export const Localised: Story = {
+  args: {
+    modelValue: sampleMd,
+    syncState: 'failed',
+    placeholder: 'Заметка в Markdown — # заголовок, **жирный**, *курсив*, - список',
+    syncingLabel: 'Синхронизация…',
+    savedLabel: 'Сохранено',
+    failedLabel: 'Ошибка — повтор',
+    offlineLabel: 'Офлайн — в очереди',
+    toolbarLabel: 'Форматирование заметки',
+    boldLabel: 'Полужирный',
+    italicLabel: 'Курсив',
+    headingLabel: 'Заголовок',
+    listLabel: 'Список',
+    linkLabel: 'Ссылка',
+    previewLabel: 'Просмотр',
+    editLabel: 'Правка',
+    textareaLabel: 'Текст заметки',
+    retryLabel: 'Повторить',
+  },
+};

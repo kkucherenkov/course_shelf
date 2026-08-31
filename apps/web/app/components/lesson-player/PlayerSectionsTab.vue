@@ -2,6 +2,7 @@
   import { ref } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { AppSectionHeader, AppLessonRow } from '@app/ui';
+  import { useSectionHeaderLabels } from '~/composables/useSectionHeaderLabels';
   import type { SectionOutline } from '@app/api-client-ts';
 
   const props = defineProps<{
@@ -11,6 +12,11 @@
   }>();
 
   const { t } = useI18n();
+  const { sectionLabel, formatLessons, formatDuration } = useSectionHeaderLabels();
+
+  function formatWatched(percent: number): string {
+    return t('ui.lessonRow.watched', { n: percent });
+  }
 
   // Track collapsed state per section id
   const openSections = ref<Record<string, boolean>>({});
@@ -36,6 +42,9 @@
         :count="section.lessons.length"
         :duration="section.totalDurationSeconds"
         :open="isOpen(section.id)"
+        :section-label="sectionLabel"
+        :format-lessons="formatLessons"
+        :format-duration="formatDuration"
         @toggle="toggleSection(section.id)"
       />
       <div v-show="isOpen(section.id)" class="player-sections-tab__lessons">
@@ -48,6 +57,7 @@
           <AppLessonRow
             :loading-label="t('ui.lessonRow.loading')"
             :materials-label="t('ui.lessonRow.materials')"
+            :format-watched="formatWatched"
             :num="lesson.position"
             :title="lesson.title"
             :duration="lesson.durationSeconds"

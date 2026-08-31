@@ -89,6 +89,8 @@
       :preview-label="t('ui.noteEditor.preview')"
       :edit-label="t('ui.noteEditor.edit')"
       :textarea-label="t('ui.noteEditor.textarea')"
+      :retry-label="t('ui.noteEditor.retry')"
+      :placeholder="t('ui.noteEditor.placeholder')"
       :format-saved-at="formatSavedAt"
       @update:model-value="noteBody = $event"
       @update:mode="noteMode = $event"

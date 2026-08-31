@@ -54,3 +54,13 @@ export const Interactive: Story = {
     `,
   }),
 };
+
+/** Every string the row renders is overridable — here in Russian. */
+export const Localised: Story = {
+  args: {
+    time: 305,
+    placeholder: 'Добавьте подпись (необязательно)',
+    groupLabel: 'Добавить закладку',
+    saveLabel: 'Сохранить',
+  },
+};

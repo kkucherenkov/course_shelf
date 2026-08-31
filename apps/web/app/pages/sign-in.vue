@@ -123,6 +123,8 @@
           v-model="password"
           :label="t('pages.signIn.passwordLabel')"
           :hint="t('pages.signIn.passwordHint')"
+          :show-label="t('ui.passwordField.show')"
+          :hide-label="t('ui.passwordField.hide')"
           auto-complete="current-password"
           required
         />

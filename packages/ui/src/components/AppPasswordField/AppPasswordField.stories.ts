@@ -61,3 +61,17 @@ export const WithMeterOkay: Story = {
 export const WithMeterStrong: Story = {
   args: { modelValue: 'abcdefghijkl1!', withMeter: true, autoComplete: 'new-password' },
 };
+
+/** Every string the field renders is overridable — here in Russian. */
+export const Localised: Story = {
+  args: {
+    modelValue: 'abcdefghijkl1!',
+    label: 'Пароль',
+    withMeter: true,
+    autoComplete: 'new-password',
+    showLabel: 'Показать пароль',
+    hideLabel: 'Скрыть пароль',
+    strengthLabels: ['Пусто', 'Слабый', 'Нормальный', 'Надёжный'],
+    meterHint: '12+ символов и спецсимвол — надёжно',
+  },
+};

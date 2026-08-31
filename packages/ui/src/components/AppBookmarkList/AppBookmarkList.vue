@@ -28,7 +28,10 @@
        */
       editLabel?: string;
       deleteLabel?: string;
+      formatAriaLabel?: (time: string, label: string) => string;
       addGroupLabel?: string;
+      addPlaceholder?: string;
+      addSaveLabel?: string;
     }>(),
     {
       addTime: undefined,
@@ -38,7 +41,10 @@
       emptyBody: 'Add a bookmark from the player to mark a moment for later.',
       editLabel: 'Edit bookmark',
       deleteLabel: 'Delete bookmark',
+      formatAriaLabel: undefined,
       addGroupLabel: 'Add bookmark',
+      addPlaceholder: 'Add a label (optional)',
+      addSaveLabel: 'Save',
     },
   );
 
@@ -58,6 +64,8 @@
       :time="addTime"
       :submitting="adding"
       :group-label="addGroupLabel"
+      :placeholder="addPlaceholder"
+      :save-label="addSaveLabel"
       @save="(p) => emit('addSave', p)"
       @cancel="emit('addCancel')"
     />
@@ -71,6 +79,7 @@
         :editable="editable"
         :edit-label="editLabel"
         :delete-label="deleteLabel"
+        :format-aria-label="formatAriaLabel"
         @select="emit('select', b.id)"
         @edit="emit('edit', b.id)"
         @delete="emit('delete', b.id)"

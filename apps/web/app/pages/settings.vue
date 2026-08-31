@@ -292,18 +292,24 @@
             <AppPasswordField
               v-model="currentPassword"
               :label="t('pages.settings.profilePasswordCurrent')"
+              :show-label="t('ui.passwordField.show')"
+              :hide-label="t('ui.passwordField.hide')"
               auto-complete="current-password"
               class="settings-password-form__input"
             />
             <AppPasswordField
               v-model="newPassword"
               :label="t('pages.settings.profilePasswordNew')"
+              :show-label="t('ui.passwordField.show')"
+              :hide-label="t('ui.passwordField.hide')"
               auto-complete="new-password"
               class="settings-password-form__input"
             />
             <AppPasswordField
               v-model="confirmPassword"
               :label="t('pages.settings.profilePasswordConfirm')"
+              :show-label="t('ui.passwordField.show')"
+              :hide-label="t('ui.passwordField.hide')"
               auto-complete="new-password"
               class="settings-password-form__input"
             />

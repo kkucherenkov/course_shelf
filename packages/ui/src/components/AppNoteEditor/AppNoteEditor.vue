@@ -34,6 +34,7 @@
       previewLabel?: string;
       editLabel?: string;
       textareaLabel?: string;
+      retryLabel?: string;
       /**
        * Renders the "saved N ago" suffix. A callback rather than a set of
        * strings because the component owns the ticking clock but not the
@@ -61,6 +62,7 @@
       previewLabel: 'Preview',
       editLabel: 'Edit',
       textareaLabel: 'Note text',
+      retryLabel: 'Retry',
       formatSavedAt: undefined,
     },
   );
@@ -346,7 +348,7 @@
         class="app-note-editor__retry"
         @click="emit('retry')"
       >
-        Retry
+        {{ retryLabel }}
       </button>
     </div>
   </div>

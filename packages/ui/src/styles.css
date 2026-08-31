@@ -93,12 +93,45 @@ html[data-theme='dark'] {
    #FB2C36 — 3.30:1 as text on its own 10 % tint and 3.80:1 white-on-solid,
    both below 4.5:1. Our own #A04434 clears the bar at 5.22 and 6.23, so this
    is a wiring gap, not a palette one, and it was shipping in the app as well
-   as in Storybook.
+   as in Storybook. `success` / `warning` / `info` had the same gap and are
+   mapped here for the same reason.
+
+   The neutral ramp was the larger hole. Nuxt UI derives every one of its
+   surface, border and text slots from `--ui-color-neutral-*`, which defaults
+   to Tailwind's `slate` — so `--ui-bg-accented` and `--ui-border-accented`
+   resolved to #314158 (1.73:1 against our dark page) in Storybook, and to zinc
+   in the app, because `app.config.ts` is a Nuxt build artefact that Storybook
+   never runs. Two sandboxes, two neutral ramps, neither of them ours. Mapping
+   the semantic slots rather than the 11 `--ui-color-neutral-*` steps is
+   deliberate: the steps exist only to define these slots (grep the shipped
+   `@nuxt/ui/dist/runtime/index.css`), and our own tokens carry the semantics
+   the slot names are asking for, already audited for contrast per theme.
 
    `html:root` rather than `:root`: Nuxt UI injects its own `:root` rule at
    runtime, and the extra element selector wins on specificity instead of
-   depending on injection order. `--status-error-fg` is already theme-aware,
-   so one declaration covers light and dark. */
+   depending on injection order. Every token below is already theme-aware, so
+   one declaration each covers light and dark. */
 html:root {
   --ui-error: var(--status-error-fg);
+  --ui-success: var(--status-success-fg);
+  --ui-warning: var(--status-warning-fg);
+  --ui-info: var(--status-info-fg);
+
+  --ui-bg: var(--surface-surface);
+  --ui-bg-muted: var(--surface-page);
+  --ui-bg-elevated: var(--surface-raised);
+  --ui-bg-accented: var(--surface-overlay);
+  --ui-bg-inverted: var(--text-fg);
+
+  --ui-border: var(--border-default);
+  --ui-border-muted: var(--border-default);
+  --ui-border-accented: var(--border-strong);
+  --ui-border-inverted: var(--text-fg);
+
+  --ui-text-dimmed: var(--text-tertiary);
+  --ui-text-muted: var(--text-secondary);
+  --ui-text-toned: var(--text-secondary);
+  --ui-text: var(--text-fg);
+  --ui-text-highlighted: var(--text-loud);
+  --ui-text-inverted: var(--text-inverse);
 }

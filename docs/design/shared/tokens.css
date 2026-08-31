@@ -1,4 +1,8 @@
-/* CourseShelf design tokens — generated from shared/tokens.json */
+/* CourseShelf design tokens — the JSX prototype's copy of shared/tokens.json.
+   Hand-mirrored, NOT emitted: `pnpm design:build` writes the web CSS, the
+   @app/ui CSS, the two TS bundles and tokens.g.dart, and nothing else. Change
+   a colour in tokens.json and this file has to be edited in the same pass, or
+   the prototype and the app drift apart. */
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 
 :root, [data-mode="dark"] {
@@ -11,25 +15,25 @@
   --border:        #2D3037;
   --border-strong: #454952;
   /* Text */
-  --text-muted: #9CA0A8;
+  --text-muted: #C9CCD2;
   --text:       #E8EAEE;
   --text-loud:  #F5F6F8;
-  --text-subtle:#6B6F78;
+  --text-subtle:#9CA0A8;
   /* Accent */
-  --primary:       #C8821C;
+  --primary:       #CC8522;
   --primary-hover: #E0A23B;
-  --primary-soft:  rgba(200, 130, 28, 0.14);
+  --primary-soft:  rgba(204, 133, 34, 0.14);
   --primary-text:  #15130C;
   --focus-ring:    #E0A23B;
   /* Semantic */
   --success: #5BA89F;
   --warning: #E0A23B;
-  --error:   #D26B5C;
-  --info:    #8189C7;
+  --error:   #DF7767;
+  --info:    #8891CF;
   --success-soft: rgba(91, 168, 159, 0.14);
   --warning-soft: rgba(224, 162, 59, 0.14);
-  --error-soft:   rgba(210, 107, 92, 0.14);
-  --info-soft:    rgba(129, 137, 199, 0.14);
+  --error-soft:   rgba(223, 119, 103, 0.14);
+  --info-soft:    rgba(136, 145, 207, 0.14);
   /* Elevation */
   --shadow-1: 0 1px 2px rgba(0,0,0,0.35);
   --shadow-2: 0 8px 24px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.25);
@@ -50,12 +54,12 @@
   --text-muted: #5C5644;
   --text:       #211E15;
   --text-loud:  #15130C;
-  --text-subtle:#716B5B;
+  --text-subtle:#686253;
   --primary:       #8A5A10;
   --primary-hover: #6E480C;
   --primary-soft:  rgba(138, 90, 16, 0.10);
   --primary-text:  #FFFFFF;
-  --focus-ring:    #C8821C;
+  --focus-ring:    #8A5A10;
   --success: #2D6A63;
   --warning: #8A5A10;
   --error:   #A04434;

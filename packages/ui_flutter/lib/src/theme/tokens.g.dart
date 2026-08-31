@@ -32,11 +32,11 @@ abstract final class AppColorsLight {
   static const Color surfaceSkeletonShine = Color(0xFFF4F3EE);
   static const Color borderDefault = Color(0xFFD9D5C9);
   static const Color borderStrong = Color(0xFFBBB4A2);
-  static const Color borderFocus = Color(0xFFC8821C);
+  static const Color borderFocus = Color(0xFF8A5A10);
   static const Color textFg = Color(0xFF211E15);
   static const Color textLoud = Color(0xFF15130C);
   static const Color textSecondary = Color(0xFF5C5644);
-  static const Color textTertiary = Color(0xFF716B5B);
+  static const Color textTertiary = Color(0xFF686253);
   static const Color textDisabled = Color(0xFFBBB4A2);
   static const Color textInverse = Color(0xFFF5F6F8);
   static const Color textLink = Color(0xFF8A5A10);
@@ -55,12 +55,12 @@ abstract final class AppColorsLight {
 }
 
 abstract final class AppColorsDark {
-  static const Color brandAccent = Color(0xFFC8821C);
+  static const Color brandAccent = Color(0xFFCC8522);
   static const Color brandAccentHover = Color(0xFFE0A23B);
   static const Color brandAccentActive = Color(0xFFE0A23B);
   static const Color brandAccentFg = Color(0xFF15130C);
   static const Color brandAccentSubtle = Color(0xFF2E2620);
-  static const Color brandAccentSoft = Color(0x24C8821C);
+  static const Color brandAccentSoft = Color(0x24CC8522);
   static const Color brandAccent50 = Color(0xFFFCF1DB);
   static const Color brandAccent100 = Color(0xFFF8E3B4);
   static const Color brandAccent200 = Color(0xFFF3D38A);
@@ -83,23 +83,23 @@ abstract final class AppColorsDark {
   static const Color borderFocus = Color(0xFFE0A23B);
   static const Color textFg = Color(0xFFE8EAEE);
   static const Color textLoud = Color(0xFFF5F6F8);
-  static const Color textSecondary = Color(0xFF9CA0A8);
-  static const Color textTertiary = Color(0xFF6B6F78);
+  static const Color textSecondary = Color(0xFFC9CCD2);
+  static const Color textTertiary = Color(0xFF9CA0A8);
   static const Color textDisabled = Color(0xFF454952);
   static const Color textInverse = Color(0xFF15130C);
-  static const Color textLink = Color(0xFFC8821C);
+  static const Color textLink = Color(0xFFCC8522);
   static const Color statusSuccessFg = Color(0xFF5BA89F);
   static const Color statusSuccessSubtle = Color(0xFF1F2A28);
   static const Color statusSuccessSoft = Color(0x245BA89F);
   static const Color statusWarningFg = Color(0xFFE0A23B);
   static const Color statusWarningSubtle = Color(0xFF2E2620);
   static const Color statusWarningSoft = Color(0x24E0A23B);
-  static const Color statusErrorFg = Color(0xFFD26B5C);
+  static const Color statusErrorFg = Color(0xFFDF7767);
   static const Color statusErrorSubtle = Color(0xFF2E1F1B);
-  static const Color statusErrorSoft = Color(0x24D26B5C);
-  static const Color statusInfoFg = Color(0xFF8189C7);
+  static const Color statusErrorSoft = Color(0x24DF7767);
+  static const Color statusInfoFg = Color(0xFF8891CF);
   static const Color statusInfoSubtle = Color(0xFF1F2230);
-  static const Color statusInfoSoft = Color(0x248189C7);
+  static const Color statusInfoSoft = Color(0x248891CF);
 }
 
 abstract final class AppVerticalColors {
@@ -298,7 +298,7 @@ abstract final class AppShadowsLight {
   static const List<BoxShadow> sm = <BoxShadow>[BoxShadow(color: Color(0x0F141108), offset: Offset(0, 1), blurRadius: 2, spreadRadius: 0), BoxShadow(color: Color(0x0A141108), offset: Offset(0, 2), blurRadius: 4, spreadRadius: 0)];
   static const List<BoxShadow> md = <BoxShadow>[BoxShadow(color: Color(0x1A141108), offset: Offset(0, 8), blurRadius: 24, spreadRadius: 0), BoxShadow(color: Color(0x0D141108), offset: Offset(0, 2), blurRadius: 6, spreadRadius: 0)];
   static const List<BoxShadow> lg = <BoxShadow>[BoxShadow(color: Color(0x2E141108), offset: Offset(0, 24), blurRadius: 64, spreadRadius: 0), BoxShadow(color: Color(0x14141108), offset: Offset(0, 8), blurRadius: 16, spreadRadius: 0)];
-  static const List<BoxShadow> focus = <BoxShadow>[BoxShadow(color: Color(0x59C8821C), offset: Offset(0, 0), blurRadius: 0, spreadRadius: 3)];
+  static const List<BoxShadow> focus = <BoxShadow>[BoxShadow(color: Color(0x598A5A10), offset: Offset(0, 0), blurRadius: 0, spreadRadius: 3)];
 }
 
 abstract final class AppShadowsDark {

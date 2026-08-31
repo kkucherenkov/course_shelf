@@ -62,6 +62,39 @@ packages/ui/src/components/<Name>/
 
 `tokens.generated.css` emits light-theme values under `:root, [data-theme='light']` so they resolve without an explicit attribute. `[data-theme='dark']` overrides. If a CSS variable is undefined in devtools, fix the emitter (`packages/design-tokens/src/emit-scss.ts`), not the page.
 
+## Contrast contract (WCAG 2.2 AA) — both themes
+
+A colour token change is only done when it still satisfies all of these. Light
+and dark are held to the same rules; dark was the one that had never been
+measured, and it carried 28 `color-contrast` violations across 21 stories.
+
+- **≥ 4.5:1** — every `text.*` token (except `text.disabled`) on all four
+  surfaces: `surface.page`, `surface.surface`, `surface.raised`,
+  `surface.overlay`.
+- **≥ 4.5:1** — every `status.*Fg` / `brand.accent*` on those four surfaces,
+  on its **own** `*Soft` tint composited over `page` / `surface` / `raised`,
+  and on its own `*Subtle` fill. A `*Soft` tint is painted over a body
+  surface, never over an already-elevated overlay panel, so the tint set stops
+  at `raised`.
+- **≥ 4.5:1** — `text.secondary` and `text.tertiary` on **every** family's
+  tints: a muted caption inside a tinted banner is real markup, and axe found
+  it.
+- **≥ 3:1** — `border.focus` on all four surfaces.
+- **Exempt** — `text.disabled`, and `border.default` / `border.strong`. Those
+  two are decorative separators, not the "visual information required to
+  identify a component" of SC 1.4.11; component identity is carried by the
+  fill, and focus state by `border.focus`.
+
+Reaching a ratio is a **lightness/chroma** move along the token's existing
+OKLCH hue. Changing hue is a brand change and needs the maintainer, not a
+contrast calculator.
+
+Both themes are gated in CI (`.github/workflows/quality.yml`): the Storybook
+a11y addon audits light at `error`, and `.storybook/test-runner.ts` re-runs
+`color-contrast` per story with the document flipped to dark. The dark verdict
+is its own workflow step ahead of the visual one — `visual-approved` waves
+past pixel drift, never a contrast regression.
+
 ## Component parity checklist (blocking review)
 
 - [ ] Storybook story covers every variant × light/dark.

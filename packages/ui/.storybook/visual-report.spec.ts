@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { parseDiffPercent, recordDrift, resetReport } from './visual-report';
+import { parseDiffPercent, recordA11y, recordDrift } from './visual-report';
 
 describe('parseDiffPercent', () => {
   it('reads the percentage out of a real jest-image-snapshot message', () => {
@@ -36,7 +36,6 @@ describe('report file', () => {
   });
 
   it('appends one JSON object per line', () => {
-    resetReport(file);
     recordDrift({ story: 'primitives-appbutton--all-variants', diffPercent: 7.4 }, file);
     recordDrift({ story: 'icons-iconcs--grid', diffPercent: null }, file);
 
@@ -48,13 +47,31 @@ describe('report file', () => {
     ]);
   });
 
-  it('drops a stale report so a previous run cannot name healthy stories', () => {
-    recordDrift({ story: 'stale--story', diffPercent: 99 }, file);
-    resetReport(file);
-    recordDrift({ story: 'fresh--story', diffPercent: 1 }, file);
+  // Append-only, and truncated by the `test:visual` script rather than by the
+  // runner's `setup()` — jest calls `setup()` once per worker, so resetting
+  // there deleted entries other workers had already written and the run ended
+  // reporting nothing at all.
+  it('appends a11y entries without disturbing what is already there', () => {
+    recordDrift({ story: 'primitives-appbutton--all-variants', diffPercent: 7.4 }, file);
+    recordA11y(
+      {
+        story: 'domain-applessonrow--stack',
+        theme: 'dark',
+        rule: 'color-contrast',
+        nodes: 4,
+        detail: null,
+      },
+      file,
+    );
 
     const lines = readFileSync(file, 'utf8').split('\n').filter(Boolean);
-    expect(lines).toHaveLength(1);
-    expect(JSON.parse(lines[0] as string).story).toBe('fresh--story');
+    expect(lines).toHaveLength(2);
+    expect(JSON.parse(lines[1] as string)).toEqual({
+      story: 'domain-applessonrow--stack',
+      theme: 'dark',
+      rule: 'color-contrast',
+      nodes: 4,
+      detail: null,
+    });
   });
 });

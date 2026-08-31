@@ -33,7 +33,7 @@
     "build": "vite build",
     "storybook": "storybook dev -p 6006 --no-open",
     "storybook:build": "storybook build -o storybook-static",
-    "test:visual": "test-storybook --url http://127.0.0.1:6006",
+    "test:visual": "rm -f visual-report.ndjson a11y-report.ndjson && test-storybook --url http://127.0.0.1:6006",
     "test:visual:ci": "concurrently -k -s first -n \"sb,tests\" -c \"magenta,blue\" \"http-server storybook-static -p 6006 --silent\" \"wait-on tcp:6006 && pnpm test:visual\""
   },
   "peerDependencies": {
@@ -48,18 +48,19 @@
     "@app/tsconfig": "workspace:*",
     "@storybook/addon-a11y": "^10.3.5",
     "@storybook/addon-themes": "^10.3.5",
+    "@storybook/test-runner": "^0.24.0",
     "@storybook/vue3": "^10.3.5",
     "@storybook/vue3-vite": "^10.3.5",
-    "@storybook/test-runner": "^0.24.0",
-    "jest-image-snapshot": "^6.4.0",
-    "@types/jest-image-snapshot": "^6.4.0",
     "@tailwindcss/vite": "^4.2.4",
+    "@types/jest-image-snapshot": "^6.4.0",
     "@vitejs/plugin-vue": "^6.0.6",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.9.1",
+    "axe-core": "4.11.3",
     "concurrently": "^9.1.0",
     "happy-dom": "^20.9.0",
     "http-server": "^14.1.1",
+    "jest-image-snapshot": "^6.4.0",
     "playwright": "^1.49.0",
     "sass": "^1.83.0",
     "storybook": "^10.3.5",
@@ -67,9 +68,9 @@
     "typescript": "^6.0.3",
     "vite": "^8.0.10",
     "vitest": "^4.1.0",
-    "wait-on": "^9.0.5",
     "vue": "^3.5.13",
     "vue-router": "^5.0.4",
-    "vue-tsc": "^3.2.0"
+    "vue-tsc": "^3.2.0",
+    "wait-on": "^9.0.5"
   }
 }

@@ -28,6 +28,7 @@ coverage
 **/__snapshots__/__diff_output__/
 # Drift log written by packages/ui/.storybook/test-runner.ts, consumed by CI.
 packages/ui/visual-report.ndjson
+packages/ui/a11y-report.ndjson
 
 # tooling
 .DS_Store

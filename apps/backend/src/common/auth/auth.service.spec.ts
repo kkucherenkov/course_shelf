@@ -119,9 +119,11 @@ describe('AuthService', () => {
   it('constructs from Prisma, AppConfig, the email port and i18n', () => {
     // The phoneNumber plugin was the only consumer of SMS_PORT (removed in
     // #157). #173 added the EMAIL_PORT + I18nService dependencies to deliver
-    // the password-reset email, so the constructor now takes four args.
+    // the password-reset email. #266 added the optional AUTH_DATABASE seam the
+    // e2e suite binds to Better Auth's memory adapter — unbound in the running
+    // app, but `?:` carries no default so it still counts toward arity.
     expect(() => bootService()).not.toThrow();
-    expect(AuthService.length).toBe(4);
+    expect(AuthService.length).toBe(5);
   });
 
   it('keeps the email + password routes mobile and web depend on', () => {

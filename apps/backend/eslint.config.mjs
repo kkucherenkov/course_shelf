@@ -10,7 +10,6 @@ export default [
       'test/fixtures/**',
       'eslint.config.mjs',
       'vitest.config.ts',
-      'vitest.e2e.config.ts',
       'prisma.config.ts',
     ],
   },
@@ -27,7 +26,9 @@ export default [
     },
   },
   {
-    files: ['src/common/openapi/**/*.ts', 'src/app.module.ts'],
+    // `__dirname` under `module: CommonJS` — the i18n loader path and the
+    // OpenAPI bundle lookup both resolve relative to the compiled file.
+    files: ['src/common/openapi/**/*.ts', 'src/app.module.ts', 'test/e2e-app.ts'],
     rules: {
       'unicorn/prefer-module': 'off',
     },

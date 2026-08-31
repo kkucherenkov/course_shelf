@@ -284,6 +284,18 @@ describe('CatalogEntitiesAdminController › startBackfillMetadata', () => {
     expect(call).toBeInstanceOf(BackfillCourseMetadataCommand);
   });
 
+  it('accepts a request with no body at all (requestBody is optional)', async () => {
+    // Express 5 leaves `req.body` undefined when no JSON arrives, and the spec
+    // marks this requestBody `required: false` — "backfill everything" is the
+    // no-body call. `body.libraryId` used to throw, so the endpoint answered
+    // 500 to its own documented happy path (#321).
+    const result = controller.startBackfillMetadata();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(typeof result.jobId).toBe('string');
+    const cmd = vi.mocked(commandBus.execute).mock.calls[0]?.[0] as BackfillCourseMetadataCommand;
+    expect(cmd.libraryId).toBeUndefined();
+  });
+
   it('passes libraryId from body to the command', async () => {
     controller.startBackfillMetadata({ libraryId: 'lib-xyz' });
     await new Promise<void>((resolve) => setImmediate(resolve));

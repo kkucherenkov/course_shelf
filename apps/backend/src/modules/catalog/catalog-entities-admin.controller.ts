@@ -123,13 +123,18 @@ export class CatalogEntitiesAdminController {
    */
   @Post('maintenance/backfill-metadata')
   @HttpCode(HttpStatus.ACCEPTED)
-  startBackfillMetadata(@Body() body: BackfillMetadataRequest): BackfillJobAccepted {
+  startBackfillMetadata(@Body() body?: BackfillMetadataRequest): BackfillJobAccepted {
     const jobId = nanoid();
     const channel = `maintenance:backfill:${jobId}`;
 
+    // `requestBody` is `required: false` in the spec — "backfill everything" is
+    // the no-body call — and Express 5 leaves `req.body` undefined when no JSON
+    // arrives, so `body.libraryId` threw and the endpoint answered 500 to its
+    // own documented happy path. Found by the first authenticated schemathesis
+    // run (#321).
     // Dispatch is intentionally not awaited — the handler runs in the background.
     void this.commandBus
-      .execute(new BackfillCourseMetadataCommand(body.libraryId, jobId, channel))
+      .execute(new BackfillCourseMetadataCommand(body?.libraryId, jobId, channel))
       .catch((error: unknown) => {
         // The handler is expected to swallow its own errors and publish BackfillFinished.
         // This catch is a defensive net for genuinely unexpected throws.

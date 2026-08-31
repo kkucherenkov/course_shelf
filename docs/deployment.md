@@ -149,7 +149,9 @@ default for secrets. Generate them with `openssl rand -hex 32` unless noted.
 Optional toggles (sensible defaults shipped):
 
 - `AUTH_SELF_REGISTRATION=false` — when `true`, the SPA exposes `/sign-up`.
-  When `false`, only existing admins can add users from the Users page.
+  When `false`, only existing admins can add users from the Users page, and
+  `POST /api/v1/auth/sign-up/*` answers 403. The owner account on a fresh
+  instance is exempt, so first-run setup works with the toggle off.
 - `CENTRIFUGO_TOKEN_TTL_SECONDS=300`
 - `POSTGRES_DB=courseshelf` / `POSTGRES_USER=courseshelf`
 - `WHISPER_MODEL_DIR=../models` — host directory of ggml models, mounted RO.

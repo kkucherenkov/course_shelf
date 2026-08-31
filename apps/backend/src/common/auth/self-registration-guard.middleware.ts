@@ -17,29 +17,47 @@
  * shape as every other 403 in this API — the filter already funnels Express
  * `next(err)` errors through the same `DomainError` branch (see its doc
  * comment on `ExternalHttpError`).
+ *
+ * First-run setup is exempt. An empty user table means there is no admin to
+ * "add users from the Users page" yet, so enforcing the toggle there would
+ * brick a fresh install — and the recommended NAS deployment ships
+ * `AUTH_SELF_REGISTRATION=false` in its .env. The probe is the same
+ * `count({ take: 1 })` the first-user-is-admin hook in `auth.service.ts`
+ * already runs, so the two agree by construction: the one account this lets
+ * through is exactly the one that gets promoted to ADMIN.
  */
 import { Injectable } from '@nestjs/common';
 
 import { PermissionDenied } from '../../shared/domain-error';
 import { AppConfig } from '../config/app-config';
+import { PrismaService } from '../prisma/prisma.service';
 
 import type { NestMiddleware } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
 
 @Injectable()
 export class SelfRegistrationGuardMiddleware implements NestMiddleware {
-  constructor(private readonly config: AppConfig) {}
+  constructor(
+    private readonly config: AppConfig,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  use(_req: Request, _res: Response, next: NextFunction): void {
-    if (!this.config.instance.selfRegistration) {
-      next(
-        new PermissionDenied(
-          'Self-registration is disabled on this instance.',
-          'self-registration-disabled',
-        ),
-      );
+  async use(_req: Request, _res: Response, next: NextFunction): Promise<void> {
+    if (this.config.instance.selfRegistration) {
+      next();
       return;
     }
-    next();
+
+    if ((await this.prisma.user.count({ take: 1 })) === 0) {
+      next();
+      return;
+    }
+
+    next(
+      new PermissionDenied(
+        'Self-registration is disabled on this instance.',
+        'self-registration-disabled',
+      ),
+    );
   }
 }

@@ -161,7 +161,7 @@ Returns a paginated list of instructors. The optional `search` parameter perform
 import 'package:app_api_client/api.dart';
 
 final api = AppApiClient().getEntitiesApi();
-final int offset = 56; // int | Number of items to skip (zero-based).
+final int offset = 56; // int | Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321).
 final int limit = 56; // int | Maximum number of items to return.
 final String search = search_example; // String | Case-insensitive substring filter on `displayName`.
 
@@ -177,7 +177,7 @@ try {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **offset** | **int**| Number of items to skip (zero-based). | [optional] [default to 0]
+ **offset** | **int**| Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321). | [optional] [default to 0]
  **limit** | **int**| Maximum number of items to return. | [optional] [default to 20]
  **search** | **String**| Case-insensitive substring filter on `displayName`. | [optional] 
 
@@ -208,7 +208,7 @@ Returns a paginated list of studios. The optional `search` parameter performs a 
 import 'package:app_api_client/api.dart';
 
 final api = AppApiClient().getEntitiesApi();
-final int offset = 56; // int | Number of items to skip (zero-based).
+final int offset = 56; // int | Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321).
 final int limit = 56; // int | Maximum number of items to return.
 final String search = search_example; // String | Case-insensitive substring filter on `displayName`.
 
@@ -224,7 +224,7 @@ try {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **offset** | **int**| Number of items to skip (zero-based). | [optional] [default to 0]
+ **offset** | **int**| Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321). | [optional] [default to 0]
  **limit** | **int**| Maximum number of items to return. | [optional] [default to 20]
  **search** | **String**| Case-insensitive substring filter on `displayName`. | [optional] 
 
@@ -255,7 +255,7 @@ Returns a paginated list of tags. The optional `search` parameter performs a cas
 import 'package:app_api_client/api.dart';
 
 final api = AppApiClient().getEntitiesApi();
-final int offset = 56; // int | Number of items to skip (zero-based).
+final int offset = 56; // int | Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321).
 final int limit = 56; // int | Maximum number of items to return.
 final String search = search_example; // String | Case-insensitive substring filter on `displayName`.
 final String category = category_example; // String | Exact match filter on `category`. Omit to return tags from all categories.
@@ -272,7 +272,7 @@ try {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **offset** | **int**| Number of items to skip (zero-based). | [optional] [default to 0]
+ **offset** | **int**| Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321). | [optional] [default to 0]
  **limit** | **int**| Maximum number of items to return. | [optional] [default to 20]
  **search** | **String**| Case-insensitive substring filter on `displayName`. | [optional] 
  **category** | **String**| Exact match filter on `category`. Omit to return tags from all categories. | [optional] 

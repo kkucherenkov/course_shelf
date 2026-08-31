@@ -1,4 +1,4 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Optional, OnModuleInit } from '@nestjs/common';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { admin, bearer, emailOTP } from 'better-auth/plugins';
@@ -8,8 +8,21 @@ import { EMAIL_PORT } from '../../modules/integrations/domain/email.port';
 import { AppConfig } from '../config/app-config';
 import { PrismaService } from '../prisma/prisma.service';
 
+import { AUTH_DATABASE } from './auth.tokens';
+
 import type { IEmailService } from '../../modules/integrations/domain/email.port';
 import type { Request } from 'express';
+
+/**
+ * The adapter-factory shape Better Auth's `database` option accepts.
+ *
+ * Derived from `prismaAdapter`'s return type rather than
+ * `BetterAuthOptions['database']`: that union also admits a raw Kysely
+ * dialect and a `better-sqlite3` handle, both typed `any`, which collapses
+ * the whole union to `any`. Every adapter this project could plausibly use
+ * (prisma, memory) is a factory.
+ */
+export type AuthDatabaseAdapter = ReturnType<typeof prismaAdapter>;
 
 // TS2883/TS2322: the Better Auth plugins expose zod v4 core internals ($strip)
 // in the inferred return type, which cannot be named portably, while the
@@ -23,6 +36,7 @@ function createInstance(
   config: AppConfig,
   email: IEmailService,
   i18n: I18nService,
+  database: AuthDatabaseAdapter | undefined,
 ): ReturnType<typeof betterAuth> {
   const { basePath, secret, baseUrl } = config.betterAuth;
   // The same toggle `GET /admin/instance` advertises to the SPA, which is what
@@ -32,7 +46,7 @@ function createInstance(
   // cannot sign in.
   const { emailVerificationRequired } = config.instance;
   const instance = betterAuth({
-    database: prismaAdapter(prisma, { provider: 'postgresql' }),
+    database: database ?? prismaAdapter(prisma, { provider: 'postgresql' }),
     secret,
     baseURL: baseUrl,
     basePath,
@@ -146,10 +160,13 @@ export class AuthService implements OnModuleInit {
     private readonly config: AppConfig,
     @Inject(EMAIL_PORT) private readonly email: IEmailService,
     private readonly i18n: I18nService,
+    // Test seam — see AUTH_DATABASE. Unbound in the running app, in which case
+    // the Prisma adapter below is used.
+    @Optional() @Inject(AUTH_DATABASE) private readonly database?: AuthDatabaseAdapter,
   ) {}
 
   onModuleInit(): void {
-    this.instance = createInstance(this.prisma, this.config, this.email, this.i18n);
+    this.instance = createInstance(this.prisma, this.config, this.email, this.i18n, this.database);
   }
 
   /**

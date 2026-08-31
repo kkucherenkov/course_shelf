@@ -1,0 +1,69 @@
+# Schemathesis configuration for `pnpm spec:contract-test`.
+#
+# Mounted into the container at /schemathesis.toml by scripts/contract-test.ts.
+# Everything else — target URL, example budget, the bearer header — is still
+# passed on the command line, because it is environment-dependent and this file
+# is committed.
+
+# The API rejects U+0000 anywhere in a request with 400 `null-byte-in-payload`
+# (see `components.responses.BadRequest` in openapi.yaml): PostgreSQL cannot
+# store the byte in a `text` column. That is a real constraint, but JSON Schema
+# can only express it as a `pattern` repeated on every string in the document,
+# so it lives as one check at the trust boundary instead — and Schemathesis,
+# reading only the schema, generated NUL-bearing strings as *positive* cases and
+# reported the correct 400 as "API rejected schema-compliant request".
+#
+# `allow-x00` is the knob for exactly this. It narrows what the generator emits;
+# it does not weaken what is checked. Every check still runs at full strength on
+# every operation, and the guard is still there — this only stops the fuzzer
+# spending its budget on the one byte the transport cannot carry. Turning off
+# `positive_data_acceptance`, or widening its expected statuses to include 400,
+# would have hidden real findings; this hides none.
+[generation]
+allow-x00 = false
+
+# POST /api/v1/realtime/token is the one operation in openapi.yaml that declares
+# TWO alternative security schemes (`cookieAuth` OR `bearerAuth`); every other
+# protected operation declares `bearerAuth` alone.
+#
+# The contract run supplies a bearer token on every request (it has to — see
+# #321), so when Schemathesis drops or corrupts the *cookie* to check that the
+# API rejects it, the bearer is still there and the API correctly answers 200.
+# Both `ignored_auth` and `negative_data_rejection` then report a finding that
+# describes our test setup, not the API: the spec says either credential is
+# sufficient, and it is.
+#
+# Nothing real is lost. This operation takes no path parameters, no query
+# parameters and no request body, so authentication is the only thing
+# `negative_data_rejection` had to negate here.
+#
+# If a future operation gains a second security scheme, it belongs in this
+# block too — and if the fix is instead to stop injecting a static credential
+# (Schemathesis can log in dynamically via `[auth.dynamic]`), this whole block
+# goes away.
+[[operations]]
+include-name = "POST /api/v1/realtime/token"
+checks.ignored_auth.enabled = false
+checks.negative_data_rejection.enabled = false
+
+# POST /api/v1/libraries/{id}/transcriptions answers 503
+# `transcription-not-configured` when WHISPER_MODEL_PATH is unset. That status
+# is documented on the operation and the API conforms to its own spec here —
+# this is not a crash and not drift.
+#
+# The CI stack ships no whisper model (a ggml file is ~75 MB and nothing in a
+# contract run would transcribe anything), so the endpoint takes that branch on
+# every request. `not_a_server_error` flags any 5xx and cannot tell a documented
+# 503 from a real one, so it is off for this operation only; every other check
+# stays armed on it.
+#
+# Known cost, taken deliberately: a genuine 500 on this path would now go
+# unreported here.
+#
+# Open question, tracked as `tuxedo` 28: whether 503 is the right status at all.
+# It means *temporarily* unable and invites retry, but "no model configured" is
+# permanent until an operator edits env, so a client honouring `Retry-After`
+# retries forever. If that is reclassified to a 4xx, delete this block.
+[[operations]]
+include-name = "POST /api/v1/libraries/{id}/transcriptions"
+checks.not_a_server_error.enabled = false

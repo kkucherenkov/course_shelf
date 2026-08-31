@@ -163,7 +163,9 @@ describe('Instructor.setExternalIds', () => {
       { source: 'yt', externalId: 'abc', url: 'https://new.example.com' },
     ]);
     expect(i.externalIds).toHaveLength(1);
-    expect(i.externalIds[0]!.url).toBe('https://new.example.com');
+    // Trailing slash: ExternalIdRef canonicalises through `new URL().href`
+    // since #321, so a bare host round-trips as the URI it actually is.
+    expect(i.externalIds[0]!.url).toBe('https://new.example.com/');
   });
 
   it('clears all external ids when called with empty array', () => {

@@ -1,5 +1,43 @@
 # Active tasks
 
+## T-2026-08-31-005 — backend e2e layer + authenticated contract test
+
+- Created: 2026-08-31
+- Owner: claude (lane L1 — backend-e2e-auth-contract)
+- Spec: GitHub #266, #321 — PR https://github.com/kkucherenkov/course_shelf/pull/433
+- Goal: the backend gains a real supertest-driven e2e layer, and
+  `pnpm spec:contract-test` finally exercises the 62 authenticated
+  operations it has always skipped.
+- Spec diff: openapi.yaml — `minProperties`, `dependentRequired`, `maximum` on
+  `offset`, `minLength`/`pattern` on ids and free text, `additionalProperties:
+false` on 14 request bodies, a reusable 422, the NUL 400 documented
+- Codegen impact: yes — landed in its own commit
+- Sub-steps:
+  - [x] extract the bootstrap wiring out of `main.ts` so tests boot the same app
+  - [x] `apps/backend/test/**` e2e suite: Better Auth round-trip, SessionGuard
+        401, openapi-validator 400 problem+json, secure headers
+  - [x] make `*.e2e-spec.ts` actually run (vitest excluded the one glob the
+        handbook names)
+  - [x] fix the two `AuthModule` middlewares the new suite caught: both were
+        mounted at `/api/api/v1/auth/…` and had never run, so sign-in was
+        unlimited and `AUTH_SELF_REGISTRATION=false` was cosmetic (#283's hole)
+  - [x] `contract-test.ts` forwards a bearer token to schemathesis, and
+        `turbo.json` lets the variable actually reach it
+  - [x] `e2e.yml` mints that token against the running stack, before anything
+        else can claim the first-user-is-ADMIN slot
+  - [x] triage the run — 13/75 → 69/75 operations authenticated, 23 → 1 unique
+        failures. Five real backend bugs fixed (bigint `OFFSET` overflow, a
+        missing optional body, NUL bytes anywhere, a 404 that broke the
+        batch's documented no-oracle rule, a URL violating its own
+        `format: uri`) and every schema-vs-API mismatch closed in the spec.
+- Status: in-progress — awaiting merge. All checks green.
+- Blockers: none. The last contract failure was the documented 503 on
+  `POST /libraries/{id}/transcriptions`; on the maintainer's call
+  `not_a_server_error` is disabled for that one operation, with the cost stated
+  in `packages/specs/schemathesis.toml`. Whether 503 is the right status stays
+  open as `tuxedo` 28. The biggest remaining hole is `tuxedo` 27 — the e2e
+  stack has no seed, so 24 path-parameter operations still only reach a 404.
+
 ## T-2026-08-31-003 — mobile: Android emulator in CI + integration tests for offline playback, sync and the download queue
 
 - Created: 2026-08-31

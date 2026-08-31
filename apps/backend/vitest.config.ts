@@ -11,8 +11,14 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['src/**/*.spec.ts', 'test/**/*.spec.ts'],
-    exclude: ['**/*.e2e-spec.ts', 'node_modules', 'dist'],
+    // `test/**/*.e2e-spec.ts` is the documented home of the backend e2e layer
+    // (see .claude/docs/testing.md), and it used to be excluded here — so the
+    // one location the handbook names was the one location vitest ignored.
+    // The suite boots Nest in-process with supertest and fakes every external
+    // system (see test/e2e-app.ts), so it needs no services and belongs in the
+    // default run.
+    include: ['src/**/*.spec.ts', 'test/**/*.spec.ts', 'test/**/*.e2e-spec.ts'],
+    exclude: ['node_modules', 'dist'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

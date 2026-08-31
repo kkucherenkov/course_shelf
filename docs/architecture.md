@@ -638,15 +638,23 @@ it takes text as a prop and the consuming app supplies the translation.
 | `@app/ui` | vitest | 50 | One per component, colocated |
 | Mobile | `flutter_test` + `bloc_test` | 52 files / ~399 tests | Includes golden tests in `ui_flutter` |
 | Visual (web) | Storybook test-runner in the pinned Playwright image | per story | Baselines committed; `visual-approved` label gates intentional diffs |
+| Backend e2e | vitest + supertest against a booted Nest app | `apps/backend/test/**/*.e2e-spec.ts` | Better Auth on an in-memory adapter; runs in the default `pnpm --filter @app/backend test` |
 | E2E | Playwright against the production-shaped compose stack | smoke suite | |
-| Contract | Schemathesis, `pnpm spec:contract-test` | — | Runs in `e2e.yml`, after Playwright |
+| Contract | Schemathesis, `pnpm spec:contract-test` | — | Runs in `e2e.yml`, after Playwright, **authenticated** as the seeded admin |
 
 `pnpm exec turbo run typecheck` is green across all 9 packages.
 
-Two structural gaps: there is **no backend e2e layer** (supertest is installed
-and used in two specs, but nothing exercises the full pipeline —
-guard → validator → handler → Prisma), and `integration_test` on mobile is
-empty because no emulator exists on the dev host or in CI.
+The backend e2e layer landed with #266: `apps/backend/test/` boots the real
+`configureApp()` wiring (helmet → `express-openapi-validator` → `SessionGuard`
+→ controller) with supertest in front of it, and fakes only the external
+systems — Better Auth runs on `memoryAdapter` through the `AUTH_DATABASE`
+seam, so the sign-up → sign-in → session → sign-out round trip is exercised
+without Postgres. It caught its first regression on the day it was written:
+both `AuthModule` middlewares were mounted at `/api/api/v1/auth/…` (Nest
+prepends the global prefix to middleware routes) and had therefore never run.
+
+One structural gap remains: `integration_test` on mobile is empty because no
+emulator exists on the dev host or in CI.
 
 Single-test invocation has a repo-specific trap worth repeating: **no `--`
 separator before args.** A literal `--` makes vitest silently run the full

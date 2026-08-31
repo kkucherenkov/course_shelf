@@ -364,6 +364,15 @@ describe('CatalogEntitiesController › listTags', () => {
       BadRequestException,
     );
   });
+
+  it('throws BadRequestException for an offset past MAX_SAFE_INTEGER', () => {
+    // `Number.isInteger(6.1e19)` is true, so the old guards let it through to
+    // Prisma, where Postgres OFFSET overflowed bigint and the endpoint
+    // answered 500. Found by the first authenticated schemathesis run (#321).
+    expect(() =>
+      controller.listTags('60974847408913309696', undefined, undefined, undefined),
+    ).toThrow(BadRequestException);
+  });
 });
 
 // ── getTag ────────────────────────────────────────────────────────────────────

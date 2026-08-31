@@ -42,7 +42,17 @@
     },
     "@app/specs#contract-test": {
       "dependsOn": ["@app/specs#bundle"],
-      "cache": false
+      "cache": false,
+      // Turbo 2 hands tasks a strictly filtered environment. Without this the
+      // script saw neither variable no matter what the caller exported: the
+      // first authenticated contract run in e2e.yml minted a valid admin token
+      // and then ran unauthenticated anyway, reporting the same "63 operations
+      // returned only 401" warning the token was there to remove.
+      "passThroughEnv": [
+        "CONTRACT_TEST_BASE_URL",
+        "CONTRACT_TEST_BEARER_TOKEN",
+        "CONTRACT_TEST_REQUIRE_AUTH"
+      ]
     },
     "@app/design-tokens#build": {
       "inputs": ["src/**", "$TURBO_ROOT$/docs/design/shared/**"],

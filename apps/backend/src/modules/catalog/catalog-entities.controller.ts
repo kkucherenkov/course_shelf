@@ -75,6 +75,19 @@ function parsePagination(
         detail: `offset must be >= 0; got ${String(parsed)}.`,
       });
     }
+    // `Number.isInteger` is true for 6.1e19 — it is a whole float, just not an
+    // exact integer any more, and Prisma hands it to Postgres OFFSET where it
+    // overflows bigint and comes back as a 500. Found by the first
+    // authenticated schemathesis run (#321):
+    //   GET /catalog/tags?offset=60974847408913309696 → 500.
+    // Above MAX_SAFE_INTEGER the value no longer means what the caller typed,
+    // so 400 is the honest answer.
+    if (parsed > Number.MAX_SAFE_INTEGER) {
+      throw new BadRequestException({
+        code: 'invalid-pagination-param',
+        detail: `offset must be <= ${String(Number.MAX_SAFE_INTEGER)}; got "${rawOffset}".`,
+      });
+    }
     offset = parsed;
   }
 

@@ -276,7 +276,7 @@ class EntitiesApi {
   /// Returns a paginated list of instructors. The optional &#x60;search&#x60; parameter performs a case-insensitive substring match on &#x60;displayName&#x60;. Results are ordered by &#x60;displayName&#x60; ascending. 
   ///
   /// Parameters:
-  /// * [offset] - Number of items to skip (zero-based).
+  /// * [offset] - Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321).
   /// * [limit] - Maximum number of items to return.
   /// * [search] - Case-insensitive substring filter on `displayName`.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
@@ -368,7 +368,7 @@ class EntitiesApi {
   /// Returns a paginated list of studios. The optional &#x60;search&#x60; parameter performs a case-insensitive substring match on &#x60;displayName&#x60;. Results are ordered by &#x60;displayName&#x60; ascending. 
   ///
   /// Parameters:
-  /// * [offset] - Number of items to skip (zero-based).
+  /// * [offset] - Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321).
   /// * [limit] - Maximum number of items to return.
   /// * [search] - Case-insensitive substring filter on `displayName`.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
@@ -460,7 +460,7 @@ class EntitiesApi {
   /// Returns a paginated list of tags. The optional &#x60;search&#x60; parameter performs a case-insensitive substring match on &#x60;displayName&#x60;. The optional &#x60;category&#x60; parameter filters by exact category value. Results are ordered by &#x60;displayName&#x60; ascending. 
   ///
   /// Parameters:
-  /// * [offset] - Number of items to skip (zero-based).
+  /// * [offset] - Number of items to skip (zero-based). Capped at 2^53-1: past that JavaScript cannot hold the value exactly, so the number the server would page from is not the number the caller typed. It also overflows Postgres' bigint OFFSET, which used to surface as a 500 (#321).
   /// * [limit] - Maximum number of items to return.
   /// * [search] - Case-insensitive substring filter on `displayName`.
   /// * [category] - Exact match filter on `category`. Omit to return tags from all categories.

@@ -44,6 +44,20 @@ export const ExternalIdRefVO = {
         throw new ExternalIdRefInvalidError('url must be a non-empty string when present');
       }
       const rawUrl: string = raw.url.trim();
+      // A URI is ASCII by definition (RFC 3986 §2), and the schema declares
+      // `format: uri` on this field. `new URL()` is happy to take
+      // "https://\u00cf" and IDNA-encode the host, which meant the API accepted
+      // input its own contract says is invalid and then stored something the
+      // caller never wrote. Enforce the promise instead of papering over it —
+      // a caller with a non-ASCII URL sends the percent-encoded form, which is
+      // what every HTTP client puts on the wire anyway. Found by the
+      // authenticated contract run (#321).
+      // eslint-disable-next-line no-control-regex -- the whole point is the non-ASCII range
+      if (/[^\u0000-\u007F]/.test(rawUrl)) {
+        throw new ExternalIdRefInvalidError(
+          `url must be ASCII (RFC 3986); percent-encode non-ASCII characters. Got "${rawUrl}"`,
+        );
+      }
       try {
         const parsed = new URL(rawUrl);
         // Only absolute HTTP(S) and other common protocol URLs are accepted
@@ -52,7 +66,11 @@ export const ExternalIdRefVO = {
             `url must use http or https protocol; got "${parsed.protocol}"`,
           );
         }
-        url = rawUrl;
+        // Store the canonical form rather than the raw string, so what the
+        // response serves always satisfies the `format: uri` it declares.
+        // Ordinary inputs pass through unchanged; a bare host gains its
+        // trailing slash.
+        url = parsed.href;
       } catch (error) {
         if (error instanceof ExternalIdRefInvalidError) {
           throw error;

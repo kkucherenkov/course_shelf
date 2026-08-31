@@ -15,7 +15,11 @@ Rule: don't mock what you own — mock ports (interfaces), not Prisma or the HTT
 ### Backend test locations
 
 - Unit: `apps/backend/src/**/*.spec.ts` — handlers with mocked ports.
-- E2E: `apps/backend/test/**/*.e2e-spec.ts` — minimal Nest module + supertest + mocked external systems.
+- E2E: `apps/backend/test/**/*.e2e-spec.ts` — minimal Nest module + supertest +
+  mocked external systems. Built by `test/e2e-app.ts`, which calls the same
+  `configureApp()` `main.ts` uses, so helmet / validator / guard ordering is the
+  real thing rather than a copy. Runs in the default `pnpm --filter @app/backend
+  test` — the suite needs no services.
 
 ### Web test locations
 

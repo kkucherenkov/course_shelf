@@ -11,20 +11,20 @@ part 'external_id_ref.g.dart';
 /// A reference to an entity in an external system (e.g. Udemy, YouTube).
 ///
 /// Properties:
-/// * [source_] - Namespace identifying the external system (e.g. `udemy`, `youtube`). Scrapers are responsible for namespacing their ids (e.g. `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`).
-/// * [externalId] - Identifier within the source system.
-/// * [url] - Optional canonical URL of the entity on the source platform.
+/// * [source_] - Namespace identifying the external system (e.g. `udemy`, `youtube`). Must contain a non-whitespace character. Scrapers are responsible for namespacing their ids (e.g. `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`).
+/// * [externalId] - Identifier within the source system. Must contain a non-whitespace character.
+/// * [url] - Optional canonical URL of the entity on the source platform. Must be an absolute `http` or `https` URL.
 @BuiltValue()
 abstract class ExternalIdRef implements Built<ExternalIdRef, ExternalIdRefBuilder> {
-  /// Namespace identifying the external system (e.g. `udemy`, `youtube`). Scrapers are responsible for namespacing their ids (e.g. `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`).
+  /// Namespace identifying the external system (e.g. `udemy`, `youtube`). Must contain a non-whitespace character. Scrapers are responsible for namespacing their ids (e.g. `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`).
   @BuiltValueField(wireName: r'source')
   String get source_;
 
-  /// Identifier within the source system.
+  /// Identifier within the source system. Must contain a non-whitespace character.
   @BuiltValueField(wireName: r'externalId')
   String get externalId;
 
-  /// Optional canonical URL of the entity on the source platform.
+  /// Optional canonical URL of the entity on the source platform. Must be an absolute `http` or `https` URL.
   @BuiltValueField(wireName: r'url')
   String? get url;
 

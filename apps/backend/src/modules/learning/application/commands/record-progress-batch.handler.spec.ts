@@ -6,6 +6,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 
+import { LessonNotFoundError } from '../../../../common/catalog-tokens';
 import { PermissionDenied } from '../../../../shared/domain-error';
 
 import { RecordProgressBatchCommand } from './record-progress-batch.command';
@@ -118,6 +119,47 @@ describe('RecordProgressBatchHandler', () => {
       );
 
       expect(results[0]).toMatchObject({ status: 'accepted' });
+    });
+  });
+
+  describe('an unknown lesson is forbidden, not 404 (the no-oracle rule)', () => {
+    it('reports forbidden for the missing item and still processes the rest', async () => {
+      // The spec says `forbidden` covers both "no READ grant" and "lesson does
+      // not exist". Only PermissionDenied was caught until #321, so a
+      // LessonNotFoundError escaped as a 404 that aborted the whole batch and
+      // confirmed the lesson's non-existence to the caller — an offline client
+      // syncing 200 writes lost 199 of them because one lesson had been
+      // deleted server-side.
+      const ts = '2026-04-25T14:00:00.000Z';
+      const commandBus = makeCommandBus(async (cmd) => {
+        const { lessonId } = cmd as { lessonId: string };
+        if (lessonId === 'lessonGone') throw new LessonNotFoundError('lessonGone');
+        return makeDto(lessonId, ts);
+      });
+      const handler = new RecordProgressBatchHandler(commandBus as never);
+
+      const { results } = await handler.execute(
+        new RecordProgressBatchCommand(
+          [
+            {
+              lessonId: 'lessonGone',
+              positionSeconds: 10,
+              durationSeconds: 100,
+              clientUpdatedAt: new Date(ts),
+            },
+            {
+              lessonId: 'lessonHere',
+              positionSeconds: 20,
+              durationSeconds: 100,
+              clientUpdatedAt: new Date(ts),
+            },
+          ],
+          ACTOR,
+        ),
+      );
+
+      expect(results[0]).toEqual({ status: 'forbidden', lessonId: 'lessonGone' });
+      expect(results[1]).toMatchObject({ status: 'accepted' });
     });
   });
 

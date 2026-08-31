@@ -32,10 +32,13 @@ describe('seedCatalog', () => {
 
     await seedCatalog(ports, { log: vi.fn() });
 
+    // Two libraries: the one every read operation addresses, and the
+    // sacrificial one DELETE /libraries/{id} is pinned at so the contract run
+    // cannot cascade-delete the spine it is meant to be testing.
     const savedLibraryIds = vi
       .mocked(ports.libraries.save)
       .mock.calls.map(([library]) => library.id);
-    expect(savedLibraryIds).toStrictEqual([SEED_IDS.library]);
+    expect(savedLibraryIds).toStrictEqual([SEED_IDS.library, SEED_IDS.scratchLibrary]);
 
     expect(vi.mocked(ports.instructors.save).mock.calls[0]?.[0].slug).toBe(SEED_SLUGS.instructor);
     expect(vi.mocked(ports.studios.save).mock.calls[0]?.[0].slug).toBe(SEED_SLUGS.studio);

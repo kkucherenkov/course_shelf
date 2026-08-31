@@ -238,15 +238,33 @@ parameters = { "path.id" = "seed-library-main" }
 include-name = "PATCH /api/v1/libraries/{id}"
 parameters = { "path.id" = "seed-library-main" }
 
-# `DELETE /api/v1/libraries/{id}` is deliberately NOT pinned, and the seed no
-# longer carries a sacrificial library for it. An override wins over a stateful
-# link, so pinning the id broke the one mechanism that already covered this
-# operation properly: the Stateful phase creates a library through
-# `POST /api/v1/libraries` and follows the inferred link to delete it. With the
-# override in place that DELETE went to the seeded library instead, which the
-# previous scenario had already removed, and `ensure_resource_availability`
-# correctly reported "the API returned 404 for a resource that was just
-# created". Deletes belong to the Stateful phase; leave them there.
+# This operation must be pinned, and it must be pinned at something disposable.
+#
+# It really deletes what it is pointed at and cascades — the repository's own
+# comment lists the order: lessonProgress → bookmark → note →
+# courseProgressReadModel → accessGrant → scan → course → library. Left
+# unpinned, the Stateful phase chains a library id out of an earlier response
+# straight into it and takes the entire seed with it, mid-run: one CI run had 33
+# operations on 404 and 0 stateful links covered, because the fixtures had been
+# deleted by the suite testing them. Pinning it at `seed-library-main` would do
+# the same thing on purpose. Hence the second, empty library the seed creates
+# for no other reason.
+#
+# `ensure_resource_availability` is off here, and only here, because the
+# override is what breaks it: the Stateful phase creates a library through
+# `POST /api/v1/libraries` and expects the DELETE it links to to reach that
+# library, but a parameter override wins over a link, so the DELETE goes to the
+# scratch library — already gone if an earlier scenario removed it. The check
+# then reports "the API returned 404 for a resource that was just created",
+# which describes this configuration, not the API. Same reasoning as the
+# `POST /realtime/token` block at the top of this file.
+#
+# Known cost: a real "deleted resource is still there" bug on libraries would
+# now go unreported by this check. `use_after_free` still covers the inverse.
+[[operations]]
+include-name = "DELETE /api/v1/libraries/{id}"
+parameters = { "path.id" = "seed-library-scratch" }
+checks.ensure_resource_availability.enabled = false
 
 # `/data/courses` exists and is empty in the backend image, so a scan is a real
 # 202 over an empty tree — and it gives `scans/latest` a row to return.

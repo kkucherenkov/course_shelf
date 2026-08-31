@@ -72,6 +72,12 @@ jobs:
       # asserts accessibility as well as pixels. It ran with
       # `STORYBOOK_A11Y_LEVEL: todo` for months, which downgraded every axe
       # violation to a note — 75 stories were failing behind it.
+      #
+      # That addon run only ever sees the *default* theme, which is `light`.
+      # The dark ramp was therefore never audited and carried 28 colour-contrast
+      # violations across 21 stories. `.storybook/test-runner.ts` adds a second
+      # axe pass per story with the document flipped to dark; its findings land
+      # in `packages/ui/a11y-report.ndjson` and are re-raised below.
       - name: Build Storybook static
         run: pnpm --filter @app/ui storybook:build
 
@@ -170,6 +176,24 @@ jobs:
               await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
             }
 
+      # Deliberately its own step, ahead of the label-aware verdict: a
+      # contrast regression is never "approved visual drift", and drift plus an
+      # a11y regression can arrive in the same push. Sharing the verdict with
+      # the label would let `visual-approved` wave this past.
+      - name: Verdict — dark-theme accessibility
+        run: |
+          set -euo pipefail
+          report=packages/ui/a11y-report.ndjson
+          if [ ! -s "$report" ]; then
+            echo "No dark-theme axe violations."
+            exit 0
+          fi
+          echo "::error::$(wc -l < "$report" | tr -d ' ') dark-theme axe violation(s). The light theme is audited by the a11y addon; this is the second pass over the dark ramp."
+          while IFS= read -r line; do
+            echo "$line"
+          done < "$report"
+          exit 1
+
       - name: Verdict
         env:
           VISUAL_OUTCOME: ${{ steps.visual.outcome }}
@@ -183,7 +207,7 @@ jobs:
           fi
 
           if [ "$DRIFT_COUNT" = "0" ]; then
-            echo "::error::The Storybook test-runner failed without reporting any image drift — this is a build or runner failure, not a visual change. The visual-approved label does not apply."
+            echo "::error::The Storybook test-runner failed without reporting any image drift or dark-theme axe violation — this is a build or runner failure, not a visual change. The visual-approved label does not apply."
             exit 1
           fi
 

@@ -87,8 +87,8 @@ const ColorSection = () => {
   const semantic = [
     { name: 'success', token: 'success', value: '#5BA89F' },
     { name: 'warning', token: 'warning', value: '#E0A23B', fg: '#15130C' },
-    { name: 'error', token: 'error', value: '#D26B5C' },
-    { name: 'info', token: 'info', value: '#8189C7' },
+    { name: 'error', token: 'error', value: '#DF7767' },
+    { name: 'info', token: 'info', value: '#8891CF' },
   ];
 
   return (

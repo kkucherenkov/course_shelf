@@ -8,9 +8,13 @@
 - Goal: `pnpm db:seed` points at a file that does not exist, so `db:seed` and
   `db:reset` both fail, and the Schemathesis contract test never reaches a real
   row on any of the 40 path-parameter operations.
-- Spec diff: none — the lever turned out to be `schemathesis.toml` parameter
-  overrides, not OpenAPI `example`s or `links` (see PR #442).
-- Codegen impact: no
+- Spec diff: none for the mechanism — that turned out to be `schemathesis.toml`
+  parameter overrides, not OpenAPI `example`s or `links` (see PR #442). The
+  openapi.yaml edits that did land are the drift the newly-reachable handlers
+  exposed: an int4 bound on `positionSeconds`/`durationSeconds`, `minProperties`
+  and a `\S` label pattern on the bookmark payloads, ASCII-only
+  `ExternalIdRef.url`, and 422 documented on three operations.
+- Codegen impact: yes — regenerated, in its own commits
 - Sub-steps:
   - [x] prove which mechanism actually gates the path-parameter operations
   - [x] write the seed against the domain aggregates + repositories
@@ -18,5 +22,6 @@
   - [x] pin the seeded ids in `packages/specs/schemathesis.toml`
   - [x] run the seed in `e2e.yml` between Playwright and Schemathesis
   - [x] unit test for the seed's data shape
+  - [x] fix the four drifts the seeded run surfaced (one 500, three 422s)
 - Status: in-review — PR #442
 - Blockers: —

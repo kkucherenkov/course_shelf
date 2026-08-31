@@ -2,6 +2,35 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-31-002 — `multipleOf: 0.01` rejected valid two-decimal ratings
+
+- Created: 2026-08-31
+- Owner: claude (specs)
+- Completed: 2026-08-31
+- Result: https://github.com/kkucherenkov/course_shelf/pull/329
+- Spec: found by the Schemathesis contract test armed in #316 — its third find
+- Goal: `PATCH /api/v1/courses/{id}` with `ratingAverage: 4.68` must not answer
+  `400 — request/body/ratingAverage must be multiple of 0.01`.
+- Root cause: ajv (under `express-openapi-validator`) enforces `multipleOf` as
+  `value / 0.01` landing on an integer, and IEEE-754 makes that a coin toss —
+  `4.68 / 0.01 = 467.99999999999994` and `0.07 / 0.01 = 7.000000000000001` are
+  rejected while `2.31`, `3.29`, `4.99` divide cleanly. ajv's remedy,
+  `multipleOfPrecision`, is unreachable: `validateRequests` takes
+  `ValidateRequestOpts`, which does not extend ajv's options.
+- Spec diff: yes — `multipleOf` dropped from both schemas carrying
+  `ratingAverage`; range and the `Decimal(3,2)` column keep the invariant.
+- Codegen impact: no
+- Sub-steps:
+  - [x] Drop `multipleOf: 0.01` from `Course` and the PATCH body, moving the
+        two-decimal intent into `description`
+  - [x] `scripts/validate.ts` fails on any fractional `multipleOf` in the
+        document, naming file and line — verified by reintroducing the
+        constraint and watching it fail
+- Notes:
+  - Guarded rather than patched: the check runs in CI and in the pre-commit
+    hook on spec edits, so the whole class is closed, not this one field.
+- Status: done
+
 ## T-2026-08-31-001 — #317: a course's second save cascade-deletes its lessons
 
 - Created: 2026-08-31

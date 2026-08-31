@@ -150,6 +150,12 @@ jobs:
       # it 62 of the 75 operations answered 401 before a handler ran, so no
       # response body had ever been compared against its schema (#321).
       - name: Spec contract test (Schemathesis)
+        # REQUIRE_AUTH turns a missing token into a failure instead of a
+        # warning. The token reaching the script is a two-link chain (GITHUB_ENV
+        # → turbo `passThroughEnv`) and the first CI run broke on the second
+        # link while still reporting success.
+        env:
+          CONTRACT_TEST_REQUIRE_AUTH: "1"
         run: pnpm spec:contract-test
 
       - name: Container state after Playwright

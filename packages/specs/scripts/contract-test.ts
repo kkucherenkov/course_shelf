@@ -19,20 +19,32 @@ const baseUrl = process.env['CONTRACT_TEST_BASE_URL'] ?? 'http://host.docker.int
  *
  *   CONTRACT_TEST_BEARER_TOKEN=$(…) pnpm spec:contract-test
  *
- * Unset is still a valid (weaker) run — the unauthenticated surface is worth
- * checking on its own, and a missing token must not turn into a hard failure
- * for someone poking at a stack they have no credentials for.
+ * Unset is a valid (weaker) run for someone poking at a stack they have no
+ * credentials for — but not in CI, where it silently reverts the gate to the
+ * blind spot #321 closed. `CONTRACT_TEST_REQUIRE_AUTH=1` turns the warning
+ * into a failure; e2e.yml sets it, having just minted the token.
+ *
+ * This is not theoretical: the first CI run passed the token through
+ * `$GITHUB_ENV` and the script still saw nothing, because Turbo 2 filters the
+ * task environment (fixed by `passThroughEnv` in turbo.json). A warning was
+ * the only signal, and warnings do not fail builds.
  */
 const bearerToken = process.env['CONTRACT_TEST_BEARER_TOKEN'] ?? '';
+const requireAuth = process.env['CONTRACT_TEST_REQUIRE_AUTH'] === '1';
 
 // `--output-sanitize` is left at its default (on) so the token never reaches
 // the CI log through a reported request.
 const authArgs = bearerToken ? ['--header', `Authorization: Bearer ${bearerToken}`] : [];
 
 if (!bearerToken) {
-  console.warn(
-    '\n⚠ CONTRACT_TEST_BEARER_TOKEN is unset — only the unauthenticated surface will be exercised.',
-  );
+  const message =
+    'CONTRACT_TEST_BEARER_TOKEN is unset — only the unauthenticated surface would be exercised.';
+  if (requireAuth) {
+    console.error(`\n✗ ${message} CONTRACT_TEST_REQUIRE_AUTH=1, so this is a failure.`);
+    // eslint-disable-next-line unicorn/no-process-exit -- CLI script; nothing above main to throw to
+    process.exit(1);
+  }
+  console.warn(`\n⚠ ${message}`);
 }
 
 // Array-args + no shell: the env-provided base URL is passed as a single

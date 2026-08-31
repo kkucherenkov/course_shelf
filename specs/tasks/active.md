@@ -12,8 +12,9 @@
   parameter overrides, not OpenAPI `example`s or `links` (see PR #442). The
   openapi.yaml edits that did land are the drift the newly-reachable handlers
   exposed: an int4 bound on `positionSeconds`/`durationSeconds`, `minProperties`
-  and a `\S` label pattern on the bookmark payloads, ASCII-only
-  `ExternalIdRef.url`, and 422 documented on three operations.
+  on the bookmark patch, `pattern: "\S"` across every free-text field whose
+  aggregate trims before checking emptiness, ASCII-only `ExternalIdRef.url`, and
+  422 documented on three operations.
 - Codegen impact: yes — regenerated, in its own commits
 - Sub-steps:
   - [x] prove which mechanism actually gates the path-parameter operations
@@ -22,6 +23,10 @@
   - [x] pin the seeded ids in `packages/specs/schemathesis.toml`
   - [x] run the seed in `e2e.yml` between Playwright and Schemathesis
   - [x] unit test for the seed's data shape
-  - [x] fix the four drifts the seeded run surfaced (one 500, three 422s)
+  - [x] fix the five defects the seeded run surfaced (a 500 on an int4 overflow,
+        `format: date` never really validated, and three 422s on schema-valid
+        input)
+  - [x] stop the run fetching the internet (`SCRAPERS_MODE=mock`) and stop it
+        cascade-deleting its own fixtures
 - Status: in-review — PR #442
 - Blockers: —

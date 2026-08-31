@@ -626,11 +626,35 @@ export default {
    */
   ui: {
     chip: { remove: 'Удалить' },
-    lessonRow: { loading: 'Загрузка урока', materials: 'Есть материалы' },
+    lessonRow: {
+      loading: 'Загрузка урока',
+      materials: 'Есть материалы',
+      watched: 'Просмотрено {n}%',
+    },
+    sectionHeader: {
+      section: 'Раздел',
+      lessons: '{n} урок | {n} урока | {n} уроков',
+      durationHm: '{h} ч {m} мин',
+      durationH: '{h} ч',
+      durationM: '{m} мин',
+    },
     bookmark: {
       edit: 'Изменить закладку',
       delete: 'Удалить закладку',
       addGroup: 'Добавить закладку',
+      at: 'Закладка на {time}',
+      atLabelled: 'Закладка на {time}: {label}',
+      addPlaceholder: 'Добавьте подпись (необязательно)',
+      addSave: 'Сохранить',
+    },
+    passwordField: {
+      show: 'Показать пароль',
+      hide: 'Скрыть пароль',
+      strengthEmpty: 'Пусто',
+      strengthWeak: 'Слабый',
+      strengthOkay: 'Нормальный',
+      strengthStrong: 'Надёжный',
+      meterHint: '12+ символов и спецсимвол — надёжно',
     },
     nav: {
       primary: 'Основная навигация',
@@ -653,6 +677,8 @@ export default {
       preview: 'Просмотр',
       edit: 'Правка',
       textarea: 'Текст заметки',
+      retry: 'Повторить',
+      placeholder: 'Заметка в Markdown — # заголовок, **жирный**, *курсив*, - список',
       agoJustNow: 'только что',
       agoSeconds: '{n} с назад',
       agoMinutes: '{n} мин назад',

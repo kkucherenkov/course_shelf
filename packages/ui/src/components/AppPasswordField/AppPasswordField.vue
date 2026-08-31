@@ -21,6 +21,10 @@
       showLabel?: string;
       /** aria-label for the visibility toggle when password is shown. */
       hideLabel?: string;
+      /** Meter readings for score 0..3; override to translate. */
+      strengthLabels?: readonly [string, string, string, string];
+      /** Advice appended after the meter reading; override to translate. */
+      meterHint?: string;
     }>(),
     {
       label: 'Password',
@@ -33,6 +37,8 @@
       placeholder: '••••••••••',
       showLabel: 'Show password',
       hideLabel: 'Hide password',
+      strengthLabels: () => ['Empty', 'Weak', 'Okay', 'Strong'],
+      meterHint: '12+ chars w/ a symbol = strong',
     },
   );
 
@@ -56,10 +62,7 @@
     return 2;
   });
 
-  const scoreLabel = computed<'Empty' | 'Weak' | 'Okay' | 'Strong'>(() => {
-    const labels = ['Empty', 'Weak', 'Okay', 'Strong'] as const;
-    return labels[score.value];
-  });
+  const scoreLabel = computed<string>(() => props.strengthLabels[score.value]);
 
   function onInput(event: Event): void {
     emit('update:modelValue', (event.target as HTMLInputElement).value);
@@ -122,7 +125,7 @@
       {{ hint }}
     </p>
     <p v-else-if="withMeter" :id="descId" class="app-password-field__meter-label">
-      {{ scoreLabel }} · 12+ chars w/ a symbol = strong
+      {{ scoreLabel }} · {{ meterHint }}
     </p>
   </div>
 </template>

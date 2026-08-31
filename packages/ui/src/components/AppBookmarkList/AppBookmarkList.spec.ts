@@ -70,4 +70,22 @@ describe('AppBookmarkList', () => {
     });
     expect(wrapper.findAll('.app-bookmark__actions')).toHaveLength(0);
   });
+  it('forwards the add-row and aria-label overrides down to its children', () => {
+    const wrapper = mount(AppBookmarkList, {
+      props: {
+        bookmarks: [{ id: 'b1', time: 305, label: 'Кворумные чтения' }],
+        addTime: 60,
+        addPlaceholder: 'Добавьте подпись',
+        addSaveLabel: 'Сохранить',
+        formatAriaLabel: (time: string, label: string) => `Закладка на ${time}: ${label}`,
+      },
+    });
+    expect(wrapper.find('.app-bookmark-add input').attributes('placeholder')).toBe(
+      'Добавьте подпись',
+    );
+    expect(wrapper.find('.app-bookmark-add .app-button').text()).toBe('Сохранить');
+    expect(wrapper.find('.app-bookmark__main').attributes('aria-label')).toBe(
+      'Закладка на 5:05: Кворумные чтения',
+    );
+  });
 });

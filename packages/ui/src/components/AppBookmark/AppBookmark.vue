@@ -15,12 +15,19 @@
       editLabel?: string;
       /** Accessible name for the delete action; override to translate. */
       deleteLabel?: string;
+      /**
+       * Builds the row's accessible name from the formatted timestamp and the
+       * (possibly empty) label. A callback rather than a plain string because
+       * the timestamp is interpolated and `@app/ui` never calls `t()` itself.
+       */
+      formatAriaLabel?: (time: string, label: string) => string;
     }>(),
     {
       label: '',
       editable: true,
       editLabel: 'Edit bookmark',
       deleteLabel: 'Delete bookmark',
+      formatAriaLabel: undefined,
     },
   );
 
@@ -49,11 +56,16 @@
   // the bookmark is a real <button> over the time + label, and the actions are
   // its siblings. That also drops the hand-rolled Enter/Space handler, since a
   // native button already activates on both.
+  //
+  // `defineProps` defaults are hoisted out of setup() and cannot reference a
+  // function declared here, so the fallback lives at the call site.
   const ariaLabel = computed(() =>
-    props.label
-      ? `Bookmark at ${formattedTime.value}: ${props.label}`
-      : `Bookmark at ${formattedTime.value}`,
+    (props.formatAriaLabel ?? defaultFormatAriaLabel)(formattedTime.value, props.label),
   );
+
+  function defaultFormatAriaLabel(time: string, label: string): string {
+    return label ? `Bookmark at ${time}: ${label}` : `Bookmark at ${time}`;
+  }
 
   function onActivate(): void {
     emit('select');

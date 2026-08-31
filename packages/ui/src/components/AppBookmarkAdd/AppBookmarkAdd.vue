@@ -14,11 +14,14 @@
       placeholder?: string;
       /** Accessible name for the group; override to translate. */
       groupLabel?: string;
+      /** Submit button text; override to translate. */
+      saveLabel?: string;
     }>(),
     {
       submitting: false,
       placeholder: 'Add a label (optional)',
       groupLabel: 'Add bookmark',
+      saveLabel: 'Save',
     },
   );
 
@@ -78,7 +81,13 @@
       :disabled="submitting"
       @keydown="onKey"
     />
-    <AppButton variant="primary" size="sm" label="Save" :loading="submitting" @click="onSave" />
+    <AppButton
+      variant="primary"
+      size="sm"
+      :label="saveLabel"
+      :loading="submitting"
+      @click="onSave"
+    />
   </div>
 </template>
 

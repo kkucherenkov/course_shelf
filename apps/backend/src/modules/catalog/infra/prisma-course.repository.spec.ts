@@ -4,7 +4,8 @@
  * are mocked so no real DB connection is required. Tests cover:
  *   - save → findById roundtrip.
  *   - P2002 on (libraryId, slug) → CourseSlugAlreadyTakenError.
- *   - Other Prisma errors propagate unchanged.
+ *   - P2002 on (courseId, position) → SectionPositionConflictError.
+ *   - P2002 on any other constraint, and other Prisma errors, propagate unchanged.
  *   - findById returns null for unknown id.
  *   - findManyByLibrary returns aggregates with sections.
  *   - findAll returns all aggregates.
@@ -20,7 +21,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Prisma } from '@prisma/client';
 
 import { Course } from '../domain/course/course';
-import { CourseSlugAlreadyTakenError } from '../domain/course/course.errors';
+import {
+  CourseSlugAlreadyTakenError,
+  SectionPositionConflictError,
+} from '../domain/course/course.errors';
 import { PrismaCourseRepository } from './prisma-course.repository';
 
 // ---------------------------------------------------------------------------
@@ -318,16 +322,49 @@ describe('PrismaCourseRepository', () => {
     expect(refs).toHaveLength(1);
   });
 
-  it('throws CourseSlugAlreadyTakenError on P2002', async () => {
-    const p2002 = new Prisma.PrismaClientKnownRequestError('Unique constraint', {
-      code: 'P2002',
-      clientVersion: '7.0.0',
-    });
-    // Make the transaction itself reject with the P2002 error.
-    vi.mocked(prisma.$transaction).mockRejectedValue(p2002);
+  /** Reject the save transaction with a P2002 naming the given constraint. */
+  const rejectSaveWithP2002 = (target: string | string[] | undefined) => {
+    vi.mocked(prisma.$transaction).mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint', {
+        code: 'P2002',
+        clientVersion: '7.0.0',
+        ...(target === undefined ? {} : { meta: { target } }),
+      }),
+    );
+  };
 
-    const course = makeCourse();
-    await expect(repo.save(course)).rejects.toBeInstanceOf(CourseSlugAlreadyTakenError);
+  // The save transaction writes under two unique constraints, so the adapter has
+  // to tell them apart — a section collision reported as a slug clash is skipped
+  // silently by run-scan.handler (#326). `meta.target` is the constraint name
+  // under the pg driver adapter and a column-name array under the Rust engine.
+  it.each([['uq_course_library_slug'], [['libraryId', 'slug']]])(
+    'throws CourseSlugAlreadyTakenError on P2002 targeting %j',
+    async (target) => {
+      rejectSaveWithP2002(target);
+      await expect(repo.save(makeCourse())).rejects.toBeInstanceOf(CourseSlugAlreadyTakenError);
+    },
+  );
+
+  it.each([['uq_section_course_position'], [['courseId', 'position']]])(
+    'throws SectionPositionConflictError on P2002 targeting %j',
+    async (target) => {
+      rejectSaveWithP2002(target);
+      await expect(repo.save(makeCourse())).rejects.toBeInstanceOf(SectionPositionConflictError);
+    },
+  );
+
+  it('propagates a P2002 on an unrecognised constraint unchanged', async () => {
+    rejectSaveWithP2002('uq_something_else');
+    const save = repo.save(makeCourse());
+    await expect(save).rejects.toBeInstanceOf(Prisma.PrismaClientKnownRequestError);
+    await expect(save).rejects.not.toBeInstanceOf(CourseSlugAlreadyTakenError);
+  });
+
+  it('propagates a P2002 with no target unchanged', async () => {
+    rejectSaveWithP2002(undefined);
+    await expect(repo.save(makeCourse())).rejects.toBeInstanceOf(
+      Prisma.PrismaClientKnownRequestError,
+    );
   });
 
   it('propagates other Prisma errors unchanged', async () => {

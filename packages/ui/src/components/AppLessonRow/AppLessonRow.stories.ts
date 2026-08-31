@@ -59,3 +59,17 @@ export const Stack: Story = {
     `,
   }),
 };
+
+/** Every string the row renders is overridable — here in Russian. */
+export const Localised: Story = {
+  args: {
+    ...base,
+    title: 'Размеченные объединения на практике',
+    state: 'in-progress',
+    progress: 42,
+    materials: true,
+    materialsLabel: 'Есть материалы',
+    loadingLabel: 'Загрузка урока',
+    formatWatched: (percent: number) => `Просмотрено ${String(percent)}%`,
+  },
+};

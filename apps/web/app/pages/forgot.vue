@@ -13,6 +13,15 @@
   const authStore = useAuthStore();
   const { hasUsers } = useFirstRun();
 
+  // `AppPasswordField` renders the meter reading itself; `@app/ui` has no
+  // locale, so the four readings are handed to it translated.
+  const strengthLabels = computed<[string, string, string, string]>(() => [
+    t('ui.passwordField.strengthEmpty'),
+    t('ui.passwordField.strengthWeak'),
+    t('ui.passwordField.strengthOkay'),
+    t('ui.passwordField.strengthStrong'),
+  ]);
+
   type StepId = 'email' | 'sent' | 'reset';
 
   // If ?token= is in the URL, skip directly to reset step.
@@ -178,6 +187,10 @@
           <AppPasswordField
             v-model="newPassword"
             :label="t('pages.forgot.newPasswordLabel')"
+            :show-label="t('ui.passwordField.show')"
+            :hide-label="t('ui.passwordField.hide')"
+            :strength-labels="strengthLabels"
+            :meter-hint="t('ui.passwordField.meterHint')"
             auto-complete="new-password"
             with-meter
             required
@@ -186,6 +199,8 @@
           <AppPasswordField
             v-model="confirmPassword"
             :label="t('pages.forgot.confirmPasswordLabel')"
+            :show-label="t('ui.passwordField.show')"
+            :hide-label="t('ui.passwordField.hide')"
             auto-complete="new-password"
             required
           />

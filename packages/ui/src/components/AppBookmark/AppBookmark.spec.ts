@@ -56,4 +56,28 @@ describe('AppBookmark', () => {
     expect(wrapper.emitted('delete')).toEqual([[]]);
     expect(wrapper.emitted('select')).toBeUndefined();
   });
+  it('builds the accessible name through formatAriaLabel when provided', () => {
+    const withLabel = mount(AppBookmark, {
+      props: {
+        time: 305,
+        label: 'Кворумные чтения',
+        formatAriaLabel: (time: string, label: string) =>
+          label ? `Закладка на ${time}: ${label}` : `Закладка на ${time}`,
+      },
+    });
+    expect(withLabel.find('.app-bookmark__main').attributes('aria-label')).toBe(
+      'Закладка на 5:05: Кворумные чтения',
+    );
+
+    const withoutLabel = mount(AppBookmark, {
+      props: {
+        time: 60,
+        formatAriaLabel: (time: string, label: string) =>
+          label ? `Закладка на ${time}: ${label}` : `Закладка на ${time}`,
+      },
+    });
+    expect(withoutLabel.find('.app-bookmark__main').attributes('aria-label')).toBe(
+      'Закладка на 1:00',
+    );
+  });
 });

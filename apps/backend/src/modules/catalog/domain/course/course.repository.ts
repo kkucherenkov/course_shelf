@@ -22,7 +22,9 @@ export interface CourseRepository {
    * Persist the aggregate atomically (course row + section rows).
    *
    * Throws CourseSlugAlreadyTakenError when the (libraryId, slug) unique
-   * constraint is violated (Prisma P2002 → translated in the adapter).
+   * constraint is violated, and SectionPositionConflictError when two sections
+   * claim the same (courseId, position) (Prisma P2002 → translated in the
+   * adapter, which tells the two constraints apart).
    */
   save(course: Course): Promise<void>;
 

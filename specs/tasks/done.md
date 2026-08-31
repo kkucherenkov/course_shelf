@@ -2,6 +2,60 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-31-003 — small-fixes batch: pg_dump in dev, Redocly warnings, docs, done.md
+
+- Created: 2026-08-31
+- Owner: claude (backend-engineer, lane L4)
+- Completed: 2026-08-31
+- Result: https://github.com/kkucherenkov/course_shelf/pull/397
+- Spec: GitHub #318, #274, #272 (plus one docs cleanup with no issue)
+- Goal: four independent small fixes in one PR.
+- Spec diff: none — `openapi.yaml` is byte-identical; the #274 fix is a
+  per-pointer Redocly lint suppression, not a schema change
+- Codegen impact: no — `spec:bundle` + `spec:codegen` produce an empty diff in
+  both generated clients, verified rather than assumed
+- Sub-steps:
+  - [x] #318 — `postgresql18-client` in `Dockerfile.dev`. The production image
+        already had it, pinned to the same major for the same reason
+        (`pg_dump` refuses to dump a server newer than itself, compose runs
+        `postgres:18.1-alpine`). Package verified to provide `pg_dump` against
+        the alpine package index.
+  - [x] #274 — the 4 `no-required-schema-properties-undefined` warnings, via
+        `packages/specs/.redocly.lint-ignore.yaml`. Restating each property
+        inside its `then` branch was tried first and backed out: it gives
+        `then` its own `properties`, which changes the schema's
+        evaluated-property surface and makes `kind` read as an unevaluated
+        property — Redocly's own example checks turn the 4 warnings into 6.
+  - [x] #274 — verified the suppression is location-scoped by planting a bogus
+        `required` on a different schema and watching the rule still warn.
+  - [x] #274 — the two "uncalled" operations are called. `apps/mobile` hits
+        both by hand-written Dio path (`/courses/{id}/download-estimate` in
+        `course_detail_repository_impl.dart`, `/progress/batch` in
+        `sync_api.dart`), never through the generated `app_api_client`, so a
+        grep for the generated method names finds nothing. `apps/web` calls
+        neither, correctly — downloads and the offline outbox are mobile-only.
+        Neither operation is dead; nothing deleted.
+  - [x] #272 — `docs/troubleshooting.md`: five entries removed whose fix now
+        lives in this repo's config (fvm/`.fvmrc`, Prisma 7 `P1012`,
+        `pnpm/action-setup@v6`, Trufflehog refs, `license-checker`), and two
+        false claims corrected in the entries that stay.
+  - [x] #272 — Storybook `:6006` verified present in all three tables of both
+        `README.md` and `README.ru.md`; both files left untouched.
+  - [x] done.md — 019/018/017 bodies reattached to their own headings, the
+        L5 entry's orphaned `Blockers:` tail restored, one broken relative
+        link fixed.
+  - [x] Gates: `pnpm spec:validate` (0 warnings), `pnpm format`
+- Notes:
+  - Docker was **not** available in this sandbox (no `docker` binary on
+    `PATH`), so the dev image change is reviewed by hand, not built. Anyone
+    with a daemon should confirm `docker compose -f docker/compose.yml build
+backend` and that Admin → Backups reaches its success state.
+  - Follow-up filed, not done here: `apps/mobile` bypasses the generated Dart
+    client in ~10 files, each citing a codegen layout bug that
+    `packages/api-client-dart` no longer has — `lib/src/` is the package's real
+    lib now, so `package:app_api_client/…` resolves. Those comments are stale.
+- Status: done
+
 ## T-2026-08-31-002 — `multipleOf: 0.01` rejected valid two-decimal ratings
 
 - Created: 2026-08-31
@@ -143,7 +197,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Completed: 2026-08-30
 - Result: https://github.com/kkucherenkov/course_shelf/pull/316
 - Status: done
-
+- Blockers: none for the work itself. Merges LAST of the eight lanes (it touches
   baselines and goldens); baselines and goldens are regenerated on top of the
   final `main` after the other seven land, not merged by hand.
 
@@ -193,15 +247,11 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 
 ## T-2026-08-30-019 — browser-verify #302 player fixes + #307 browse/backups
 
-## T-2026-08-30-018 — transcript delivery, admin transcription list, docs, drop Redis
-
-## T-2026-08-30-017 — E26-F01-S03: transcript tab in the player sidebar
-
 - Created: 2026-08-30
 - Completed: 2026-08-30
 - Owner: claude
 - Result: https://github.com/kkucherenkov/course_shelf/pull/319
-- Spec: [#302](https://github.com/kkucherenkov/course_shelf/issues/302), [#307](https://github.com/kkucherenkov/course_shelf/issues/307), [docs/roadmap/tasks/E26-F01-S04.md](../roadmap/tasks/E26-F01-S04.md)
+- Spec: [#302](https://github.com/kkucherenkov/course_shelf/issues/302), [#307](https://github.com/kkucherenkov/course_shelf/issues/307), [docs/roadmap/tasks/E26-F01-S04.md](../../docs/roadmap/tasks/E26-F01-S04.md)
 - Goal: manually verify in a real browser what unit/e2e tests structurally can't — `?t=` seek, cue placement above chrome (windowed + fullscreen), non-16:9 letterbox, and the `/browse` filters + `/admin/backups` flows, in en and ru.
 - Acceptance:
   - `?t=90` lands the lesson player at 1:30
@@ -221,7 +271,13 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - **Backend bug found, filed, not fixed (out of lane):** [#317](https://github.com/kkucherenkov/course_shelf/issues/317) — `PrismaLessonRepository.save()` resolves without throwing but the row is not durably committed (confirmed via `psql` from a separate connection); course/section persistence is unaffected. Worked around for this pass by seeding `lesson`/`subtitle` rows via SQL after a real scan.
   - **Backend/infra gap found, filed, not fixed (out of lane):** [#318](https://github.com/kkucherenkov/course_shelf/issues/318) — `apps/backend/Dockerfile.dev` has no `pg_dump`, so `/admin/backups` can only reach the error state on a fresh dev checkout; success/download/expiry unverifiable without a manual workaround.
   - **Infra fix (small, in `apps/web`/`packages/ui` Dockerfiles):** neither `apps/web/Dockerfile.dev` nor `packages/ui/Dockerfile.dev` ran `pnpm design:build` before starting their dev server — a fresh checkout 500s on `tokens.generated.css` not existing. Added the missing step to both.
+- Status: done
 
+## T-2026-08-30-018 — transcript delivery, admin transcription list, docs, drop Redis
+
+- Created: 2026-08-30
+- Owner: claude (backend-engineer) — lane label not recorded, recovered from the surfaces PR #314 touches
+- Completed: 2026-08-30
 - Result: https://github.com/kkucherenkov/course_shelf/pull/314
 - Spec: [E25-F03-S03](../../docs/roadmap/tasks/E25-F03-S03.md), [E25-F04-S03](../../docs/roadmap/tasks/E25-F04-S03.md), #309, #290
 - Goal: a generated transcript plays as a subtitle track with no new endpoint; `GET /admin/transcriptions` actually exists behind its spec; transcription deployment is documented; Redis is gone (dead dependency — health-check-only `ping()`, nothing else ever used it).
@@ -241,9 +297,14 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - [x] Locator fallback + LessonDto union (#219)
   - [x] Admin transcription list endpoint (#309)
   - [x] Gates: test, lint, format, typecheck, spec:validate
-- Status: shipped
+- Status: done
 - Blockers: — (docker stack boot not verified end-to-end — no `docker` binary in this sandbox; compose edits reviewed by hand)
 
+## T-2026-08-30-017 — E26-F01-S03: transcript tab in the player sidebar
+
+- Created: 2026-08-30
+- Owner: claude (frontend-engineer) — lane label not recorded, recovered from the surfaces PR #310 touches
+- Completed: 2026-08-30
 - Result: https://github.com/kkucherenkov/course_shelf/pull/310
 - Spec: [docs/roadmap/tasks/E26-F01-S03.md](../../docs/roadmap/tasks/E26-F01-S03.md) (#225, closes epic E26 — #247)
 - Goal: read along with the lesson, find a line, jump to it — fifth sidebar tab
@@ -261,6 +322,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Tests: `PlayerTranscriptTab.spec.ts` — one row per cue, active marking,
   `seek` payload in seconds, formatted timestamps, filtering, no-match, and
   the empty state hiding the filter box
+- Status: done
 
 ## T-2026-08-30-016 — E25-F04-S02 transcription card in admin library screen
 

@@ -67,3 +67,18 @@ export const InteractiveOutline: Story = {
     `,
   }),
 };
+
+/** Every string the header renders is overridable — here in Russian. */
+export const Localised: Story = {
+  args: {
+    idx: 1,
+    title: 'Основы TypeScript',
+    count: 6,
+    duration: 4500,
+    open: true,
+    sectionLabel: 'Раздел',
+    formatLessons: (count: number) => `${String(count)} уроков`,
+    formatDuration: (seconds: number) =>
+      `${String(Math.floor(seconds / 3600))} ч ${String(Math.floor((seconds % 3600) / 60))} мин`,
+  },
+};

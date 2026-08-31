@@ -64,4 +64,16 @@ describe('AppSectionHeader', () => {
     await wrapper.find('.app-section-header').trigger('keydown', { key: 'Tab' });
     expect(wrapper.emitted('toggle')).toEqual([[], [], []]);
   });
+  it('renders the overridden section word, lesson count and duration', () => {
+    const wrapper = mount(AppSectionHeader, {
+      props: {
+        ...baseProps,
+        sectionLabel: 'Раздел',
+        formatLessons: (count: number) => `${String(count)} уроков`,
+        formatDuration: (seconds: number) => `${String(Math.round(seconds / 60))} мин`,
+      },
+    });
+    expect(wrapper.find('.app-section-header__title').text()).toBe('Раздел 02 · Type narrowing');
+    expect(wrapper.find('.app-section-header__meta').text()).toBe('5 уроков · 75 мин');
+  });
 });

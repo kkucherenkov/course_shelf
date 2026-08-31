@@ -40,3 +40,15 @@ export const Stack: Story = {
     `,
   }),
 };
+
+/** Every string the row renders is overridable — here in Russian. */
+export const Localised: Story = {
+  args: {
+    time: 305,
+    label: 'Разбор кворумных чтений',
+    editLabel: 'Изменить закладку',
+    deleteLabel: 'Удалить закладку',
+    formatAriaLabel: (time: string, label: string) =>
+      label ? `Закладка на ${time}: ${label}` : `Закладка на ${time}`,
+  },
+};

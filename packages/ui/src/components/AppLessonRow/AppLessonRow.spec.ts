@@ -118,4 +118,15 @@ describe('AppLessonRow', () => {
     expect(wrapper.findAll('.app-skeleton').length).toBeGreaterThanOrEqual(4);
     expect(wrapper.find('.app-lesson-row__title').exists()).toBe(false);
   });
+  it('renders the watched meta through formatWatched when provided', () => {
+    const wrapper = mount(AppLessonRow, {
+      props: {
+        ...baseProps,
+        state: 'in-progress',
+        progress: 42,
+        formatWatched: (percent: number) => `Просмотрено ${String(percent)}%`,
+      },
+    });
+    expect(wrapper.find('.app-lesson-row__meta').text()).toBe('Просмотрено 42%');
+  });
 });

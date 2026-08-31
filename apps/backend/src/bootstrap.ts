@@ -47,7 +47,11 @@ export function configureApp(
   //  - object-src 'none'          legacy plugins forbidden
   //
   // CSP stays disabled in dev so hot-reload, Vite eval'd modules, and
-  // Storybook iframes work without per-tool exemptions.
+  // Storybook iframes work without per-tool exemptions. CodeQL flags that
+  // branch (`js/insecure-helmet-configuration`); it is suppressed inline
+  // below rather than silenced globally, because the rule is right about
+  // every other call site. The alert is new only because this block moved
+  // out of main.ts in #266 — the configuration itself is unchanged.
   app.use(
     nodeEnv === 'production'
       ? helmet({
@@ -77,7 +81,8 @@ export function configureApp(
           crossOriginResourcePolicy: { policy: 'same-origin' },
           referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
         })
-      : helmet({ contentSecurityPolicy: false }),
+      : // codeql[js/insecure-helmet-configuration] -- dev-only branch; see above
+        helmet({ contentSecurityPolicy: false }),
   );
 
   app.setGlobalPrefix('api', {

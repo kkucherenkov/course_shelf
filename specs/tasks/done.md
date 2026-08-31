@@ -2,6 +2,60 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-08-31-003 — small-fixes batch: pg_dump in dev, Redocly warnings, docs, done.md
+
+- Created: 2026-08-31
+- Owner: claude (backend-engineer, lane L4)
+- Completed: 2026-08-31
+- Result: PR_URL_PLACEHOLDER
+- Spec: GitHub #318, #274, #272 (plus one docs cleanup with no issue)
+- Goal: four independent small fixes in one PR.
+- Spec diff: none — `openapi.yaml` is byte-identical; the #274 fix is a
+  per-pointer Redocly lint suppression, not a schema change
+- Codegen impact: no — `spec:bundle` + `spec:codegen` produce an empty diff in
+  both generated clients, verified rather than assumed
+- Sub-steps:
+  - [x] #318 — `postgresql18-client` in `Dockerfile.dev`. The production image
+        already had it, pinned to the same major for the same reason
+        (`pg_dump` refuses to dump a server newer than itself, compose runs
+        `postgres:18.1-alpine`). Package verified to provide `pg_dump` against
+        the alpine package index.
+  - [x] #274 — the 4 `no-required-schema-properties-undefined` warnings, via
+        `packages/specs/.redocly.lint-ignore.yaml`. Restating each property
+        inside its `then` branch was tried first and backed out: it gives
+        `then` its own `properties`, which changes the schema's
+        evaluated-property surface and makes `kind` read as an unevaluated
+        property — Redocly's own example checks turn the 4 warnings into 6.
+  - [x] #274 — verified the suppression is location-scoped by planting a bogus
+        `required` on a different schema and watching the rule still warn.
+  - [x] #274 — the two "uncalled" operations are called. `apps/mobile` hits
+        both by hand-written Dio path (`/courses/{id}/download-estimate` in
+        `course_detail_repository_impl.dart`, `/progress/batch` in
+        `sync_api.dart`), never through the generated `app_api_client`, so a
+        grep for the generated method names finds nothing. `apps/web` calls
+        neither, correctly — downloads and the offline outbox are mobile-only.
+        Neither operation is dead; nothing deleted.
+  - [x] #272 — `docs/troubleshooting.md`: five entries removed whose fix now
+        lives in this repo's config (fvm/`.fvmrc`, Prisma 7 `P1012`,
+        `pnpm/action-setup@v6`, Trufflehog refs, `license-checker`), and two
+        false claims corrected in the entries that stay.
+  - [x] #272 — Storybook `:6006` verified present in all three tables of both
+        `README.md` and `README.ru.md`; both files left untouched.
+  - [x] done.md — 019/018/017 bodies reattached to their own headings, the
+        L5 entry's orphaned `Blockers:` tail restored, one broken relative
+        link fixed.
+  - [x] Gates: `pnpm spec:validate` (0 warnings), `pnpm format`
+- Notes:
+  - Docker was **not** available in this sandbox (no `docker` binary on
+    `PATH`), so the dev image change is reviewed by hand, not built. Anyone
+    with a daemon should confirm `docker compose -f docker/compose.yml build
+backend` and that Admin → Backups reaches its success state.
+  - Follow-up filed, not done here: `apps/mobile` bypasses the generated Dart
+    client in ~10 files, each citing a codegen layout bug that
+    `packages/api-client-dart` no longer has — `lib/src/` is the package's real
+    lib now, so `package:app_api_client/…` resolves. Those comments are stale.
+- Status: done
+
 ## T-2026-08-31-002 — `multipleOf: 0.01` rejected valid two-decimal ratings
 
 - Created: 2026-08-31

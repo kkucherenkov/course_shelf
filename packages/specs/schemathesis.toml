@@ -1,0 +1,30 @@
+# Schemathesis configuration for `pnpm spec:contract-test`.
+#
+# Mounted into the container at /schemathesis.toml by scripts/contract-test.ts.
+# Everything else — target URL, example budget, the bearer header — is still
+# passed on the command line, because it is environment-dependent and this file
+# is committed.
+
+# POST /api/v1/realtime/token is the one operation in openapi.yaml that declares
+# TWO alternative security schemes (`cookieAuth` OR `bearerAuth`); every other
+# protected operation declares `bearerAuth` alone.
+#
+# The contract run supplies a bearer token on every request (it has to — see
+# #321), so when Schemathesis drops or corrupts the *cookie* to check that the
+# API rejects it, the bearer is still there and the API correctly answers 200.
+# Both `ignored_auth` and `negative_data_rejection` then report a finding that
+# describes our test setup, not the API: the spec says either credential is
+# sufficient, and it is.
+#
+# Nothing real is lost. This operation takes no path parameters, no query
+# parameters and no request body, so authentication is the only thing
+# `negative_data_rejection` had to negate here.
+#
+# If a future operation gains a second security scheme, it belongs in this
+# block too — and if the fix is instead to stop injecting a static credential
+# (Schemathesis can log in dynamically via `[auth.dynamic]`), this whole block
+# goes away.
+[[operations]]
+include-name = "POST /api/v1/realtime/token"
+checks.ignored_auth.enabled = false
+checks.negative_data_rejection.enabled = false

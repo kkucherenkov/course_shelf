@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
 const openapi = path.resolve(root, 'openapi/openapi.yaml');
+const config = path.resolve(root, 'schemathesis.toml');
 
 const baseUrl = process.env['CONTRACT_TEST_BASE_URL'] ?? 'http://host.docker.internal:3000';
 
@@ -55,6 +56,8 @@ const args = [
   '--rm',
   '-v',
   `${openapi}:/spec.yaml:ro`,
+  '-v',
+  `${config}:/schemathesis.toml:ro`,
   '--add-host=host.docker.internal:host-gateway',
   // Pinned, not `:stable`. That tag moved under us once already: the script
   // was written against schemathesis 3.x and, because nothing ran it, nobody
@@ -62,6 +65,9 @@ const args = [
   // renamed. A gate whose tool version floats is not reproducible — the same
   // commit can pass today and fail tomorrow for reasons no one changed.
   'schemathesis/schemathesis:4.25.2',
+  // `--config-file` is a top-level flag and must precede the `run` subcommand.
+  '--config-file',
+  '/schemathesis.toml',
   'run',
   // Schemathesis 4.x flags. The script was written against 3.x and had never
   // run — nothing invoked it until e2e.yml did, and the first execution died

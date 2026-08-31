@@ -67,10 +67,13 @@ checks.negative_data_rejection.enabled = false
 [[operations]]
 include-name = "POST /api/v1/libraries/{id}/transcriptions"
 checks.not_a_server_error.enabled = false
-# Seeded library id — see the "Seeded path parameters" section below. It lives
-# in this block rather than one of its own because two `[[operations]]` blocks
-# matching the same operation have no defined merge order.
+# Seeded library id, and the same `ensure_resource_availability` exemption the
+# rest of the `/libraries/{id}` family carries — see that section below for the
+# reasoning. Both live in this block rather than one of their own because two
+# `[[operations]]` blocks matching the same operation have no defined merge
+# order.
 parameters = { "path.id" = "seed-library-main" }
+checks.ensure_resource_availability.enabled = false
 
 # ---------------------------------------------------------------------------
 # Seeded path parameters
@@ -204,12 +207,20 @@ parameters = { "path.lessonId" = "seed-lesson-welcome", "path.materialId" = "see
 # path, which is why they showed up in the same `missing_test_data` list. The
 # override syntax reaches into the body the same way.
 #
-# They are also what makes the two reads below reachable: the note and the
-# progress row are keyed on (userId, lessonId) and the principal is created at
-# runtime, so no seed can pre-create them — but a write earlier in the run can.
-# Schemathesis walks operations in schema order and both writes are declared
-# ahead of their reads, so the reads usually find a row; when they do not, they
-# now get a real 404 from the handler instead of a 403 from the authz check.
+# These are the only route to the two reads below: a note and a progress row are
+# keyed on (userId, lessonId) and the principal is created at sign-up, so no
+# seed can pre-create either — only a write during the run can. Both writes are
+# declared ahead of their reads in the schema, and schemathesis walks operations
+# in that order, so a read can find what a write left behind. It is not
+# guaranteed and CI still reports both reads as 404-dominant; what the pinned
+# lesson id does buy unconditionally is that they reach the handler at all,
+# rather than being turned away at the authz check with a 403.
+#
+# The two reads therefore also carry the `ensure_resource_availability`
+# exemption: `PUT /notes` creates a note and schemathesis links from it into
+# `GET /notes/{lessonId}`, where a 404 means "no row for this principal yet",
+# not "the API lost what it just created". Same shape as the `/libraries/{id}`
+# family below.
 [[operations]]
 include-name = "PUT /api/v1/notes"
 parameters = { "body.lessonId" = "seed-lesson-welcome" }
@@ -221,6 +232,7 @@ parameters = { "body.lessonId" = "seed-lesson-welcome" }
 [[operations]]
 include-name = "GET /api/v1/notes/{lessonId}"
 parameters = { "path.lessonId" = "seed-lesson-welcome" }
+checks.ensure_resource_availability.enabled = false
 
 [[operations]]
 include-name = "DELETE /api/v1/notes/{lessonId}"
@@ -229,60 +241,80 @@ parameters = { "path.lessonId" = "seed-lesson-welcome" }
 [[operations]]
 include-name = "GET /api/v1/progress/{lessonId}"
 parameters = { "path.lessonId" = "seed-lesson-welcome" }
+checks.ensure_resource_availability.enabled = false
+
+# ---- the /libraries/{id} family --------------------------------------------
+#
+# `ensure_resource_availability` is disabled on every operation in this group,
+# for one structural reason: `POST /api/v1/libraries` is the only create
+# endpoint in the API whose id feeds a whole family of sub-resources, so
+# schemathesis infers a link from it into each of them — and a parameter
+# override wins over a link. The DELETE, the scans and the transcriptions all
+# therefore address the seeded library rather than the one the scenario just
+# created, and the check reports "the API returned 404 for a resource that was
+# just created" whenever the pinned target legitimately has nothing to return:
+# no transcription has ever been recorded (`POST` answers 503 without a whisper
+# model), and `scans/latest` is empty until the first scan lands. Those 404s
+# describe this configuration, not the API. Same reasoning as the
+# `POST /realtime/token` block at the top of this file.
+#
+# It is switched off across the family rather than on the two operations that
+# happened to trip it, because which ones trip depends on the order scenarios
+# run in — a gate that fails on a coin flip is worse than one with a documented
+# hole. Every other check stays armed on all of them.
+#
+# Known cost: a genuine "created library is not readable" bug would now be
+# caught only by the read operations' own checks, not by this one.
 
 [[operations]]
 include-name = "GET /api/v1/libraries/{id}"
 parameters = { "path.id" = "seed-library-main" }
+checks.ensure_resource_availability.enabled = false
 
 [[operations]]
 include-name = "PATCH /api/v1/libraries/{id}"
 parameters = { "path.id" = "seed-library-main" }
+checks.ensure_resource_availability.enabled = false
 
-# This operation must be pinned, and it must be pinned at something disposable.
-#
-# It really deletes what it is pointed at and cascades — the repository's own
-# comment lists the order: lessonProgress → bookmark → note →
-# courseProgressReadModel → accessGrant → scan → course → library. Left
-# unpinned, the Stateful phase chains a library id out of an earlier response
-# straight into it and takes the entire seed with it, mid-run: one CI run had 33
-# operations on 404 and 0 stateful links covered, because the fixtures had been
-# deleted by the suite testing them. Pinning it at `seed-library-main` would do
+# Pinned at something disposable, deliberately. This operation really deletes
+# what it is pointed at and cascades — the repository's own comment lists the
+# order: lessonProgress → bookmark → note → courseProgressReadModel →
+# accessGrant → scan → course → library. Left unpinned, the Stateful phase
+# chains a library id out of an earlier response straight into it and takes the
+# entire seed with it, mid-run: one CI run had 33 operations back on 404 and 0
+# of 265 stateful links covered, because the fixtures had been deleted by the
+# suite that exists to exercise them. Pinning it at `seed-library-main` would do
 # the same thing on purpose. Hence the second, empty library the seed creates
 # for no other reason.
-#
-# `ensure_resource_availability` is off here, and only here, because the
-# override is what breaks it: the Stateful phase creates a library through
-# `POST /api/v1/libraries` and expects the DELETE it links to to reach that
-# library, but a parameter override wins over a link, so the DELETE goes to the
-# scratch library — already gone if an earlier scenario removed it. The check
-# then reports "the API returned 404 for a resource that was just created",
-# which describes this configuration, not the API. Same reasoning as the
-# `POST /realtime/token` block at the top of this file.
-#
-# Known cost: a real "deleted resource is still there" bug on libraries would
-# now go unreported by this check. `use_after_free` still covers the inverse.
 [[operations]]
 include-name = "DELETE /api/v1/libraries/{id}"
 parameters = { "path.id" = "seed-library-scratch" }
 checks.ensure_resource_availability.enabled = false
 
 # `/data/courses` exists and is empty in the backend image, so a scan is a real
-# 202 over an empty tree — and it gives `scans/latest` a row to return.
+# 202 over an empty tree — and it gives `scans/latest` a row to return. Safe to
+# point at the seeded library: a scan reconciles transcripts only and leaves
+# course and lesson rows alone (see the orphan-cleanup block in
+# run-scan.handler.ts), so it cannot erase what the other overrides address.
 [[operations]]
 include-name = "POST /api/v1/libraries/{id}/scans"
 parameters = { "path.id" = "seed-library-main" }
+checks.ensure_resource_availability.enabled = false
 
 [[operations]]
 include-name = "GET /api/v1/libraries/{id}/scans/latest"
 parameters = { "path.id" = "seed-library-main" }
+checks.ensure_resource_availability.enabled = false
 
 [[operations]]
 include-name = "GET /api/v1/libraries/{id}/transcriptions"
 parameters = { "path.id" = "seed-library-main" }
+checks.ensure_resource_availability.enabled = false
 
 [[operations]]
 include-name = "GET /api/v1/libraries/{id}/transcriptions/latest"
 parameters = { "path.id" = "seed-library-main" }
+checks.ensure_resource_availability.enabled = false
 
 [[operations]]
 include-name = "GET /api/v1/catalog/instructors/{slug}"

@@ -12,7 +12,7 @@ The only durable record of what Claude (or a human) is working on, what is block
    example:
 
    ```md
-   ## T-2026-04-18-001 — add booking endpoint
+   ## T-2026-04-18-booking-create — add booking endpoint
 
    - Created: 2026-04-18
    - Owner: claude
@@ -39,7 +39,32 @@ The only durable record of what Claude (or a human) is working on, what is block
 
 ## Task ID format
 
-`T-YYYY-MM-DD-NNN` where NNN is a zero-padded counter per-day. Unique forever.
+`T-YYYY-MM-DD-<branch-slug>` — the date the entry was created, then the task's
+own branch with its Conventional-Commits type prefix dropped and `/` replaced
+by `-`:
+
+| Branch                           | Id                                       |
+| -------------------------------- | ---------------------------------------- |
+| `fix/dark-theme-contrast`        | `T-2026-08-31-dark-theme-contrast`       |
+| `feat/backend-e2e-auth-contract` | `T-2026-08-31-backend-e2e-auth-contract` |
+| `chore/backfill-issue-mirroring` | `T-2026-08-31-backfill-issue-mirroring`  |
+
+**Do not allocate a number.** The id used to be `T-YYYY-MM-DD-NNN`, a
+zero-padded counter per day, and that counter has no allocator: a lane picks
+the next free number by reading the two files, so two lanes working at the
+same time read the same state and pick the same number. On 2026-08-31 five
+parallel lanes collided three times — two both took `-001`, and a third took
+an id another lane had already written into `done.md`. Every collision surfaced
+as a merge conflict in a file whose entries do not otherwise overlap.
+
+A branch slug needs no allocator because the uniqueness already exists further
+up: one lane is one branch is one PR (see **Parallel work** in
+`.claude/CLAUDE.md`), and git will not let two lanes hold the same branch name.
+The id stops being a second identifier that has to be kept unique by hand and
+becomes a restatement of one that already is.
+
+Entries written before this change keep their numeric ids — `done.md` is an
+archive, and rewriting history there would break every link that points at it.
 
 ## Why this exists
 

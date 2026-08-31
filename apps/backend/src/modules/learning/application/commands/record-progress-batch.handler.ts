@@ -7,8 +7,16 @@
  *      predictable; parallel writes would race on the same (userId, lessonId) row.
  *   2. Preserves input order deterministically in the output array.
  *
- * Per-item PermissionDenied (covers both "forbidden" and "lesson not found" per the
- * no-oracle rule) is caught and turned into `{ status: 'forbidden', lessonId }`.
+ * Per-item PermissionDenied AND LessonNotFoundError both become
+ * `{ status: 'forbidden', lessonId }` — that is the no-oracle rule the spec
+ * states for this operation: "`forbidden` covers both 'no READ grant' and
+ * 'lesson does not exist'". Only PermissionDenied was caught until #321, so an
+ * unknown lesson id escaped as a 404 that (a) aborted the whole batch, which
+ * the spec says per-item failures must never do, and (b) told the caller the
+ * lesson does not exist, which is the oracle the rule exists to deny — and it
+ * echoed the id back in `detail`. An offline client syncing a batch that
+ * happens to include a since-deleted lesson lost the other 199 writes.
+ *
  * Any other error re-throws, allowing the whole batch to 500 cleanly.
  *
  * `stale` vs `accepted` classification:
@@ -18,6 +26,7 @@
  */
 import { CommandHandler, CommandBus, ICommandHandler } from '@nestjs/cqrs';
 
+import { LessonNotFoundError } from '../../../../common/catalog-tokens';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { RecordProgressCommand } from './record-progress.command';
 import { RecordProgressBatchCommand } from './record-progress-batch.command';
@@ -60,7 +69,7 @@ export class RecordProgressBatchHandler implements ICommandHandler<
 
         result = serverTs > clientTs ? { status: 'stale', state } : { status: 'accepted', state };
       } catch (error) {
-        if (error instanceof PermissionDenied) {
+        if (error instanceof PermissionDenied || error instanceof LessonNotFoundError) {
           result = { status: 'forbidden', lessonId: item.lessonId };
         } else {
           throw error;

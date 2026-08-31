@@ -152,6 +152,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: "A READ grant for user clxvusr0000000000000000001 on library clxvp1234567890abcdefghij already exists."
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
         "429":
           $ref: "#/components/responses/TooManyRequests"
     get:
@@ -1258,6 +1260,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: "Slug 'andrei-neagoie' is already taken by a different instructor."
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
         "429":
           $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/maintenance/backfill-metadata:
@@ -2087,6 +2091,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: "Slug 'zero-to-mastery' is already taken by a different studio."
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
         "429":
           $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/tags:
@@ -2182,6 +2188,8 @@ paths:
                     title: Conflict
                     status: 409
                     detail: "Slug 'javascript' is already taken by a different tag."
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
         "429":
           $ref: "#/components/responses/TooManyRequests"
   /api/v1/bookmarks/{id}:
@@ -2958,10 +2966,16 @@ paths:
         - name: offset
           in: query
           required: false
-          description: Number of items to skip (zero-based).
+          description: >-
+            Number of items to skip (zero-based). Capped at 2^53-1: past that
+            JavaScript cannot hold the value exactly, so the number the server
+            would page from is not the number the caller typed. It also
+            overflows Postgres' bigint OFFSET, which used to surface as a 500
+            (#321).
           schema:
             type: integer
             minimum: 0
+            maximum: 9007199254740991
             default: 0
         - name: limit
           in: query
@@ -3118,10 +3132,16 @@ paths:
         - name: offset
           in: query
           required: false
-          description: Number of items to skip (zero-based).
+          description: >-
+            Number of items to skip (zero-based). Capped at 2^53-1: past that
+            JavaScript cannot hold the value exactly, so the number the server
+            would page from is not the number the caller typed. It also
+            overflows Postgres' bigint OFFSET, which used to surface as a 500
+            (#321).
           schema:
             type: integer
             minimum: 0
+            maximum: 9007199254740991
             default: 0
         - name: limit
           in: query
@@ -3279,10 +3299,16 @@ paths:
         - name: offset
           in: query
           required: false
-          description: Number of items to skip (zero-based).
+          description: >-
+            Number of items to skip (zero-based). Capped at 2^53-1: past that
+            JavaScript cannot hold the value exactly, so the number the server
+            would page from is not the number the caller typed. It also
+            overflows Postgres' bigint OFFSET, which used to surface as a 500
+            (#321).
           schema:
             type: integer
             minimum: 0
+            maximum: 9007199254740991
             default: 0
         - name: limit
           in: query
@@ -6146,6 +6172,15 @@ components:
         `express-openapi-validator`, so any request carrying an unknown query
         parameter, a malformed path parameter or a body that does not match the
         schema is rejected here before it reaches a handler.
+
+
+        One rule is enforced ahead of the schema rather than by it: a `U+0000`
+        (NUL) anywhere in the request line or in any string of the body is
+        rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the
+        byte in a `text` column, and JSON Schema can only forbid it with a
+        `pattern` repeated on every string in this document — so it lives as one
+        check at the trust boundary instead. It is not expressible per-field,
+        which is why it is written here rather than in the schemas.
       content:
         application/problem+json:
           schema:
@@ -6157,6 +6192,38 @@ components:
                 title: Bad Request
                 status: 400
                 detail: "Unknown query parameter 'sortt'"
+            nullByteInPayload:
+              value:
+                type: "urn:problem-type:null-byte-in-payload"
+                title: Bad Request
+                status: 400
+                code: null-byte-in-payload
+                detail: >-
+                  Request body contains a NUL character (U+0000), which cannot
+                  be stored.
+    UnprocessableEntity:
+      description: >
+        The request matched the schema but violated a domain invariant that
+        JSON Schema cannot express — a display name that reduces to an empty
+        slug, an external-id reference whose parts contradict each other, and
+        so on. `code` names the specific rule. Documented since #321, when the
+        authenticated contract run reported 422 as an undocumented status on
+        four operations.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          examples:
+            invariantViolation:
+              value:
+                type: "urn:problem-type:entity-slug-invalid"
+                title: Invariant violation
+                status: 422
+                code: entity-slug-invalid
+                detail: >-
+                  Entity slug "***" is invalid. Must be 1-100 chars, lowercase
+                  ASCII letters, digits, and hyphens; cannot start or end with
+                  a hyphen.
     TooManyRequests:
       description: >
         Rate limit exceeded. `ThrottlerGuard` is registered as a global
@@ -6194,6 +6261,7 @@ components:
 
     BackfillMetadataRequest:
       type: object
+      additionalProperties: false
       description: |
         Optional scope for a metadata backfill job. When both fields are
         omitted the backfill runs across all libraries.
@@ -6230,18 +6298,30 @@ components:
         source:
           type: string
           minLength: 1
+          # ExternalIdRef.from() trims before testing for emptiness, so " "
+          # satisfied minLength and was then rejected 422 — schema-valid data
+          # the API refuses (#321). `\S` is that trim rule, stated here.
+          pattern: "\\S"
           description: >-
             Namespace identifying the external system (e.g. `udemy`,
-            `youtube`). Scrapers are responsible for namespacing their ids
-            (e.g. `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`).
+            `youtube`). Must contain a non-whitespace character. Scrapers are
+            responsible for namespacing their ids (e.g.
+            `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`).
         externalId:
           type: string
           minLength: 1
-          description: Identifier within the source system.
+          pattern: "\\S"
+          description: Identifier within the source system. Must contain a non-whitespace character.
         url:
           type: string
           format: uri
-          description: Optional canonical URL of the entity on the source platform.
+          # ExternalIdRef.from() rejects any scheme other than http/https with
+          # a 422; `format: uri` alone also admits mailto:, file: and friends,
+          # so the schema promised more than the domain accepts (#321).
+          pattern: "^https?://"
+          description: >-
+            Optional canonical URL of the entity on the source platform.
+            Must be an absolute `http` or `https` URL.
       examples:
         - source: udemy
           externalId: "udemy:instructor:42"
@@ -6546,6 +6626,7 @@ components:
 
     RunIdentifyRequest:
       type: object
+      additionalProperties: false
       required: [fragment, source]
       description: >-
         Create an identify proposal from a chosen scrape candidate. The fragment
@@ -6565,6 +6646,7 @@ components:
 
     ApplyIdentifyRequest:
       type: object
+      additionalProperties: false
       description: Apply a proposed identify task, optionally overriding its merge policy.
       properties:
         mergePolicy:
@@ -6967,6 +7049,7 @@ components:
 
     UpsertInstructorRequest:
       type: object
+      additionalProperties: false
       required: [displayName]
       description: Payload for creating or updating an instructor.
       properties:
@@ -6974,6 +7057,13 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+          # slugify() derives the slug from this when `slug` is omitted, and an
+          # input with no ASCII alphanumeric reduces to "" and is rejected 422
+          # `entity-slug-invalid`. `pattern` is a search, not a full match, so
+          # "Ólafur Arnalds 2" passes and "«»" does not. Stated here so the
+          # contract no longer promises to accept input the domain refuses
+          # (#321).
+          pattern: "[A-Za-z0-9]"
           description: Human-readable name displayed in the UI.
         slug:
           $ref: "#/components/schemas/EntitySlug"
@@ -6993,6 +7083,7 @@ components:
 
     UpsertStudioRequest:
       type: object
+      additionalProperties: false
       required: [displayName]
       description: Payload for creating or updating a studio.
       properties:
@@ -7000,6 +7091,13 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+          # slugify() derives the slug from this when `slug` is omitted, and an
+          # input with no ASCII alphanumeric reduces to "" and is rejected 422
+          # `entity-slug-invalid`. `pattern` is a search, not a full match, so
+          # "Ólafur Arnalds 2" passes and "«»" does not. Stated here so the
+          # contract no longer promises to accept input the domain refuses
+          # (#321).
+          pattern: "[A-Za-z0-9]"
           description: Human-readable studio name.
         slug:
           $ref: "#/components/schemas/EntitySlug"
@@ -7019,6 +7117,7 @@ components:
 
     UpsertTagRequest:
       type: object
+      additionalProperties: false
       required: [displayName]
       description: Payload for creating or updating a tag.
       properties:
@@ -7026,6 +7125,13 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+          # slugify() derives the slug from this when `slug` is omitted, and an
+          # input with no ASCII alphanumeric reduces to "" and is rejected 422
+          # `entity-slug-invalid`. `pattern` is a search, not a full match, so
+          # "Ólafur Arnalds 2" passes and "«»" does not. Stated here so the
+          # contract no longer promises to accept input the domain refuses
+          # (#321).
+          pattern: "[A-Za-z0-9]"
           description: Human-readable tag name.
         slug:
           $ref: "#/components/schemas/EntitySlug"
@@ -7306,9 +7412,12 @@ components:
     AdminUpdateUserRequest:
       type: object
       additionalProperties: false
+      # Same rule, same reason as UpdateMeRequest — `{}` used to answer 400
+      # `user-patch-empty` from the handler.
+      minProperties: 1
       description: >-
-        Patch body for `PATCH /admin/users/{id}`. At least one field must
-        be set — the handler returns 400 on an empty body.
+        Patch body for `PATCH /admin/users/{id}`. At least one of `role` or
+        `banned` must be set.
       properties:
         role:
           $ref: "#/components/schemas/AdminUserRole"
@@ -7515,6 +7624,7 @@ components:
 
     CreateBookmarkRequest:
       type: object
+      additionalProperties: false
       required: [positionSeconds]
       description: Payload for creating a new bookmark on a lesson.
       properties:
@@ -8233,6 +8343,7 @@ components:
               description: Discriminator value indicating a library-scoped grant.
             libraryId:
               type: string
+              minLength: 1
               description: Server-generated cuid of the target library.
           additionalProperties: false
           example:
@@ -8248,6 +8359,7 @@ components:
               description: Discriminator value indicating a course-scoped grant. Accepted in v1 even though the Course aggregate (E06-F03-S01) has not landed yet — keeps the contract stable for E14-F04-S01.
             courseId:
               type: string
+              minLength: 1
               description: Server-generated cuid of the target course (e.g. "DDD by Eric Evans").
           additionalProperties: false
           example:
@@ -8396,10 +8508,13 @@ components:
     UpdateMeRequest:
       type: object
       additionalProperties: false
+      # The "at least one field" rule was prose-only until #321: an empty `{}`
+      # validated, reached the handler, and came back 400 `me-patch-empty` — a
+      # rejection of schema-valid data, which is drift by definition.
+      minProperties: 1
       description: >-
-        Patch body for `PATCH /me`. At least one field must be set; the
-        handler returns 400 on an empty body. Currently only
-        `displayName` is exposed for self-edit.
+        Patch body for `PATCH /me`. At least one field must be set. Currently
+        only `displayName` is exposed for self-edit.
       properties:
         displayName:
           oneOf:
@@ -8415,9 +8530,13 @@ components:
     UpdateLibraryRequest:
       type: object
       additionalProperties: false
+      # Same rule, same reason as UpdateMeRequest — `{}` used to answer 400
+      # `library-update-empty` from the handler.
+      minProperties: 1
       description: >-
-        Patch body for `PATCH /libraries/{id}`. Currently only `name` is
-        mutable; changing `rootPath` is intentionally unsupported.
+        Patch body for `PATCH /libraries/{id}`. At least one field must be set.
+        Currently only `name` is mutable; changing `rootPath` is intentionally
+        unsupported.
       properties:
         name:
           type: string
@@ -8758,6 +8877,7 @@ components:
 
     RecordProgressRequest:
       type: object
+      additionalProperties: false
       required: [lessonId, positionSeconds, durationSeconds, clientUpdatedAt]
       description: Payload for upserting the requester's progress on a lesson.
       properties:
@@ -8880,6 +9000,7 @@ components:
 
     RegisterGrantRequest:
       type: object
+      additionalProperties: false
       required: [userId, target, level]
       description: Payload for issuing a new access grant.
       properties:
@@ -8899,6 +9020,7 @@ components:
 
     RegisterLibraryRequest:
       type: object
+      additionalProperties: false
       required: [name, rootPath]
       properties:
         name:
@@ -9155,6 +9277,7 @@ components:
 
     StartTranscriptionRequest:
       type: object
+      additionalProperties: false
       description: Payload for starting a transcription run. Body may be omitted entirely.
       properties:
         force:
@@ -9344,6 +9467,7 @@ components:
 
     UpdateBookmarkRequest:
       type: object
+      additionalProperties: false
       description: |
         Payload for updating a bookmark. All fields are optional, but at least
         one of `positionSeconds` or `label` must be present — the server returns
@@ -9365,13 +9489,26 @@ components:
 
     UpdateCourseRequest:
       type: object
+      additionalProperties: false
+      # `minProperties` IS the native "at-least-one" constraint the comment
+      # below used to say OpenAPI lacked; `dependentRequired` (JSON Schema
+      # 2019-09, which OpenAPI 3.1 uses) is the native form of the rating rule.
+      # Both were server-side-only until #321, so the controller's 400s were
+      # rejections of schema-valid data.
+      minProperties: 1
+      dependentRequired:
+        ratingAverage: [ratingCount]
+        ratingCount: [ratingAverage]
       description: |
         Payload for updating course metadata. All fields are optional, but at
         least one of `title`, `description`, `slug`, `instructorIds`,
         `studioIds`, `tagIds`, `posterUrl`, `level`, `language`,
         `releaseDate`, `sourceUpdatedAt`, `ratingAverage`, `ratingCount`, or
-        `externalIds` must be present (server-side validation rule — OpenAPI
-        does not have a native "at-least-one" constraint).
+        `externalIds` must be present.
+
+        `ratingAverage` and `ratingCount` are supplied together or not at all —
+        a rating average without its sample size is not a number anyone can
+        interpret. Passing one alone is a 400.
 
         **Set-replace semantics for relation arrays:** `null` means "leave the
         existing set alone"; `[]` (empty array) means "remove all links";
@@ -9487,6 +9624,7 @@ components:
 
     UpsertNoteRequest:
       type: object
+      additionalProperties: false
       required: [lessonId, body]
       description: Payload for creating or replacing the requester's note on a lesson.
       properties:

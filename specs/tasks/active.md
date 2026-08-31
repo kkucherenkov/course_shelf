@@ -21,3 +21,19 @@
   - [x] lint / stylelint / format / test / typecheck / `pnpm check:i18n`
 - Status: in-review
 - Blockers: —
+
+## T-2026-08-31-001 — distinguish the two unique constraints behind P2002 in PrismaCourseRepository.save
+
+- Created: 2026-08-31
+- Owner: claude
+- Spec: [GH #326](https://github.com/kkucherenkov/course_shelf/issues/326)
+- Goal: a section position collision surfaces as its own 409 instead of masquerading
+  as a slug clash, which `run-scan.handler` skips silently.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] match `P2002.meta.target` against the two constraints the save tx writes under
+  - [x] rethrow unrecognised P2002 unchanged
+  - [x] cover all three branches in `prisma-course.repository.spec.ts`
+- Status: in-review
+- Blockers: —

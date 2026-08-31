@@ -5,15 +5,19 @@
  * `courseInstructor`, `courseStudio`, `courseTag`, and `externalId` tables.
  * All other layers (domain, application, controller) depend only on the port.
  *
- * Save strategy: delete-and-recreate sections, instructor/studio/tag join rows,
- * and external ids inside a transaction so the course row and its children always
- * land atomically. v1 never has concurrent section edits (the aggregate serialises
- * them), so delete-and-recreate is safe and simpler than a diff-based upsert.
- * See the comment on $transaction below.
+ * Save strategy: upsert sections in place, delete-and-recreate the
+ * instructor/studio/tag join rows and external ids, all inside a transaction so
+ * the course row and its children always land atomically. v1 never has
+ * concurrent section edits (the aggregate serialises them). Sections are the
+ * exception to delete-and-recreate because dropping them cascades to their
+ * lessons — see the comment on the section block below.
  *
- * P2002 translation: Prisma raises PrismaClientKnownRequestError with code P2002
- * on the (libraryId, slug) unique constraint. We catch it here and rethrow as
- * CourseSlugAlreadyTakenError so the application layer stays free of Prisma types.
+ * P2002 translation: the save transaction writes under two unique constraints,
+ * `uq_course_library_slug` and `uq_section_course_position`. We match
+ * `meta.target` before translating — slug → CourseSlugAlreadyTakenError, section
+ * position → SectionPositionConflictError — so the application layer stays free
+ * of Prisma types without one constraint's failure being reported as the other's.
+ * Any other P2002 propagates unchanged rather than being mislabelled.
  *
  * External ids are loaded in a batched query (one findMany per multi-result
  * method) and grouped in memory — never N+1 per course.
@@ -28,7 +32,10 @@ import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { Course } from '../domain/course/course';
-import { CourseSlugAlreadyTakenError } from '../domain/course/course.errors';
+import {
+  CourseSlugAlreadyTakenError,
+  SectionPositionConflictError,
+} from '../domain/course/course.errors';
 import { EXTERNAL_ID_REPOSITORY } from '../domain/shared-vo/external-id.repository';
 
 import type { CourseRepository } from '../domain/course/course.repository';
@@ -112,6 +119,24 @@ const COURSE_WITH_SECTIONS_SELECT = {
     orderBy: { tag: { displayName: 'asc' as const } },
   },
 } as const;
+
+/**
+ * P2002 targets the save transaction can hit, keyed by what they mean.
+ *
+ * Both spellings are listed because `meta.target` is the constraint name under
+ * the pg driver adapter and a column-name array under the Rust query engine.
+ */
+const UNIQUE_CONSTRAINTS = {
+  courseLibrarySlug: ['uq_course_library_slug', 'libraryId,slug'],
+  sectionCoursePosition: ['uq_section_course_position', 'courseId,position'],
+} as const;
+
+/** Normalise `P2002.meta.target` to a single comparable string. */
+function p2002Target(error: Prisma.PrismaClientKnownRequestError): string {
+  const target: unknown = error.meta?.['target'];
+  if (Array.isArray(target)) return target.join(',');
+  return typeof target === 'string' ? target : '';
+}
 
 @Injectable()
 export class PrismaCourseRepository implements CourseRepository {
@@ -240,8 +265,22 @@ export class PrismaCourseRepository implements CourseRepository {
         await this.externalIds.replaceForEntity('course', course.id, course.externalIds, tx);
       });
     } catch (error) {
+      // The transaction writes under two unique constraints, so a bare P2002 does
+      // not say which one lost. Translating every one of them to
+      // CourseSlugAlreadyTakenError made a section position collision look like a
+      // slug clash — and run-scan.handler treats that as an idempotent skip, so the
+      // course disappeared from the scan without a recorded error (#326). Match the
+      // constraint first; anything unrecognised propagates as-is and gets recorded.
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new CourseSlugAlreadyTakenError(course.slug);
+        const target = p2002Target(error);
+        if ((UNIQUE_CONSTRAINTS.courseLibrarySlug as readonly string[]).includes(target)) {
+          throw new CourseSlugAlreadyTakenError(course.slug);
+        }
+        if ((UNIQUE_CONSTRAINTS.sectionCoursePosition as readonly string[]).includes(target)) {
+          throw new SectionPositionConflictError(
+            `Two sections of course "${course.id}" claim the same position.`,
+          );
+        }
       }
       throw error;
     }

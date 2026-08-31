@@ -3566,7 +3566,7 @@ export interface components {
      *     }
      */
     RegisterLibraryRequest: {
-      /** @description Human-readable label. */
+      /** @description Human-readable label. Must contain a non-whitespace character. */
       name: string;
       /** @description Absolute filesystem path to the library root. Accepts POSIX paths starting with `/` or Windows drive paths starting with `[A-Za-z]:\`. Trailing slashes are allowed. */
       rootPath: string;
@@ -3927,7 +3927,7 @@ export interface components {
     UpsertNoteRequest: {
       /** @description Server-generated cuid identifying the lesson. */
       lessonId: string;
-      /** @description Plain Markdown. Trimmed server-side; an empty post-trim body is rejected as 400. */
+      /** @description Plain Markdown. Trimmed server-side; a body with no non-whitespace character is rejected as 400. */
       body: string;
     };
   };

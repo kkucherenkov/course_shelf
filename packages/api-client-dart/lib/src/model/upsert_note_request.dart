@@ -12,14 +12,14 @@ part 'upsert_note_request.g.dart';
 ///
 /// Properties:
 /// * [lessonId] - Server-generated cuid identifying the lesson.
-/// * [body] - Plain Markdown. Trimmed server-side; an empty post-trim body is rejected as 400.
+/// * [body] - Plain Markdown. Trimmed server-side; a body with no non-whitespace character is rejected as 400.
 @BuiltValue()
 abstract class UpsertNoteRequest implements Built<UpsertNoteRequest, UpsertNoteRequestBuilder> {
   /// Server-generated cuid identifying the lesson.
   @BuiltValueField(wireName: r'lessonId')
   String get lessonId;
 
-  /// Plain Markdown. Trimmed server-side; an empty post-trim body is rejected as 400.
+  /// Plain Markdown. Trimmed server-side; a body with no non-whitespace character is rejected as 400.
   @BuiltValueField(wireName: r'body')
   String get body;
 

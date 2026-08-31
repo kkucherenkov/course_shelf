@@ -1678,7 +1678,7 @@ export type RegisterGrantRequest = {
 
 export type RegisterLibraryRequest = {
     /**
-     * Human-readable label.
+     * Human-readable label. Must contain a non-whitespace character.
      */
     name: string;
     /**
@@ -2035,7 +2035,7 @@ export type UpsertNoteRequest = {
      */
     lessonId: string;
     /**
-     * Plain Markdown. Trimmed server-side; an empty post-trim body is rejected as 400.
+     * Plain Markdown. Trimmed server-side; a body with no non-whitespace character is rejected as 400.
      */
     body: string;
 };

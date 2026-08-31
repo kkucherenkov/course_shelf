@@ -223,14 +223,14 @@ Compose refuses to start if `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`,
 `COURSES_PATH` or `DERIVED_PATH` is missing — you get a named error, not a
 broken stack.
 
-> **`AUTH_SELF_REGISTRATION=false` is a UI setting, not a lock.** It hides the
-> sign-up link and is reported to the apps; the API still accepts a direct
-> sign-up call. Treat it as tidiness, not as access control, and do not expose
-> this stack to the internet without a reverse proxy that authenticates in
-> front of it.
+> **`AUTH_SELF_REGISTRATION=false` is enforced server-side.** It hides the
+> sign-up link, is reported to the apps, and `POST /api/v1/auth/sign-up/*`
+> answers `403 self-registration-disabled`. (It was a UI-only setting until
+> #266 — the middleware that enforces it was mounted on the wrong path and
+> never ran.)
 >
 > It does **not** block first-run setup — creating the owner account works
-> either way, because that path keys off "this instance has no users yet".
+> either way, because the guard steps aside while the user table is empty.
 
 ---
 
@@ -423,7 +423,7 @@ default.
 | `REGISTRY_NAMESPACE` | no | `kkucherenkov` | Same. |
 | `POSTGRES_DB` | no | `courseshelf` | Database name. |
 | `POSTGRES_USER` | no | `courseshelf` | Database user. |
-| `AUTH_SELF_REGISTRATION` | no | `false` | Shows or hides the sign-up link. **Not** an access control — see the note in step 4. |
+| `AUTH_SELF_REGISTRATION` | no | `false` | Whether anyone may create an account. Enforced server-side (403 on `/auth/sign-up/*`), not just in the UI — see the note in step 4. |
 | `AUTH_EMAIL_VERIFICATION` | no | `false` | Adds a code step to sign-up. Needs SMTP, which this release does not configure — leave `false`. |
 | `CENTRIFUGO_TOKEN_TTL_SECONDS` | no | `300` | Realtime token lifetime. Clients re-issue automatically. |
 | `CENTRIFUGO_LOG_LEVEL` | no | `info` | Set `debug` when triaging realtime. |

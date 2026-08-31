@@ -74,6 +74,45 @@ jobs:
       - name: Verify web
         run: curl -fsS http://localhost:3001/ > /dev/null
 
+      # Credentials for the Schemathesis step further down. This has to run
+      # HERE, before anything else can touch the database: the stack comes up
+      # with an empty schema and `databaseHooks.user.create.before` in
+      # apps/backend/src/common/auth/auth.service.ts promotes the FIRST account
+      # to ADMIN. Sign up second and the contract test gets a plain USER, which
+      # still answers 403 on every /admin operation.
+      #
+      # Playwright is unaffected: every page-driven spec stubs the API through
+      # `page.route`, so an extra row in the users table is invisible to it.
+      - name: Mint an admin bearer token for the contract test
+        run: |
+          set -euo pipefail
+          password="contract-$(openssl rand -hex 16)"
+          headers=$(curl -fsS -D - -o /dev/null \
+            -X POST http://localhost:3000/api/v1/auth/sign-up/email \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"contract-test@example.invalid\",\"password\":\"${password}\",\"name\":\"Contract Test\"}")
+          # Better Auth's `bearer()` plugin returns the session token in this
+          # response header (the cookie is the browser's channel; the header is
+          # the mobile/API one, and the spec's `bearerAuth` scheme describes it).
+          token=$(printf '%s' "$headers" | tr -d '\r' | sed -n 's/^[Ss]et-[Aa]uth-[Tt]oken: *//p')
+          if [ -z "$token" ]; then
+            echo "::error::Sign-up returned no set-auth-token header — the contract test would silently fall back to the unauthenticated surface, which is exactly the blind spot #321 closed."
+            exit 1
+          fi
+          echo "::add-mask::$token"
+
+          # Prove the token is not just present but ADMIN-shaped before four
+          # thousand generated requests depend on it.
+          role=$(curl -fsS http://localhost:3000/api/v1/auth/get-session \
+            -H "Authorization: Bearer ${token}" | tr ',' '\n' | sed -n 's/.*"role":"\([^"]*\)".*/\1/p' | head -1)
+          echo "contract-test principal role: ${role:-<none>}"
+          if [ "${role}" != "ADMIN" ]; then
+            echo "::error::The contract-test account is '${role:-<none>}', not ADMIN — every /admin operation would answer 403 and go unchecked. Something created a user before this step."
+            exit 1
+          fi
+
+          echo "CONTRACT_TEST_BEARER_TOKEN=$token" >> "$GITHUB_ENV"
+
       # --network=host lets the container's localhost reach the published
       # ports; --ipc=host is Chromium's shared-memory recommendation. The
       # repo mounts read-write because Playwright writes its report and
@@ -106,6 +145,10 @@ jobs:
       # passes `--add-host=…:host-gateway`, which resolves to the runner's
       # docker bridge gateway — that reaches the compose-published port on the
       # host, so no URL override is needed here.
+      #
+      # CONTRACT_TEST_BEARER_TOKEN comes from the sign-up step above. Without
+      # it 62 of the 75 operations answered 401 before a handler ran, so no
+      # response body had ever been compared against its schema (#321).
       - name: Spec contract test (Schemathesis)
         run: pnpm spec:contract-test
 

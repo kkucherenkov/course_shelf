@@ -1,11 +1,12 @@
 # Feature task template
 
 Copy this block into the top of `specs/tasks/active.md` when starting a new
-feature. Replace the placeholder values. The `T-YYYY-MM-DD-NNN` id format is
-described in [`specs/tasks/README.md`](../README.md).
+feature. Replace the placeholder values. The id is the creation date plus your
+branch slug — `T-YYYY-MM-DD-<branch-slug>`, no counter to allocate; the format
+and why it is not a number are in [`specs/tasks/README.md`](../README.md).
 
 ```md
-## T-YYYY-MM-DD-NNN — {short title, verb-led}
+## T-YYYY-MM-DD-{branch-slug} — {short title, verb-led}
 
 - Created: YYYY-MM-DD
 - Owner: claude | @handle

@@ -103,7 +103,7 @@ Append before you report the work as finished.
 
 ## Task stack — read every session
 
-1. Before coding: push entry to `specs/tasks/active.md` (template in `specs/tasks/README.md`).
+1. Before coding: push entry to `specs/tasks/active.md` (template in `specs/tasks/README.md`; id is `T-YYYY-MM-DD-<branch-slug>`, never a counter).
 2. Check boxes as you go; flip to `blocked` with reason if stuck.
 3. On done: move whole entry to top of `specs/tasks/done.md` with PR link.
 4. Never delete from `done.md` — cancelled tasks go there with reason.
@@ -286,7 +286,9 @@ Either way the lane discipline is the same:
   `docker/compose.yml`, a shared module) belongs to exactly one of them; the
   others wait for that PR to land.
 - `specs/tasks/active.md` is the exception — every lane appends its own entry
-  at the top and the union is resolved at merge.
+  at the top and the union is resolved at merge. Id the entry
+  `T-YYYY-MM-DD-<your branch slug>`; there is no counter to allocate, precisely
+  so that two lanes cannot read the same state and pick the same id.
 
 ## Fix root causes, not symptoms
 

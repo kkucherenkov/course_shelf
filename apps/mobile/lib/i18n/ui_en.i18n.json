@@ -45,6 +45,6 @@
     "done": "Done",
     "locked": "Locked",
     "notStarted": "—",
-    "progress": "$completed of $total"
+    "progress": "{completed} of {total}"
   }
 }

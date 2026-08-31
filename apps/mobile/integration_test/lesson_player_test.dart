@@ -58,6 +58,16 @@ void main() {
   }
 
   Future<void> pumpPlayer(WidgetTester tester) async {
+    // `LessonPlayerView` renders a landscape layout whenever the surface is
+    // wider than it is tall, and the offline indicator only exists in the
+    // portrait one. Left to the harness's default this asserted against
+    // whatever aspect ratio the runner happened to have — 800x600 (landscape)
+    // in the flutter tester, portrait on a phone. Pinning it makes the test
+    // say which layout it is about.
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
     bloc.add(const PlayerStarted('lesson-1'));
     await tester.pumpWidget(
       TranslationProvider(
@@ -113,7 +123,10 @@ void main() {
     );
     await pumpPlayer(tester);
 
-    expect(find.text('Watching offline'), findsOneWidget);
+    // Through `t`, not the English literal: a device left in `ru` renders the
+    // Russian copy and a hard-coded string would fail for the one reason that
+    // is not a bug.
+    expect(find.text(t.player.watchingOffline), findsOneWidget);
   });
 
   testWidgets('reaching the end of the lesson flushes the final position', (

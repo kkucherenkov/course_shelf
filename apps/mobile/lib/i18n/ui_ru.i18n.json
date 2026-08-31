@@ -45,6 +45,6 @@
     "done": "Готово",
     "locked": "Заблокировано",
     "notStarted": "—",
-    "progress": "$completed из $total"
+    "progress": "{completed} из {total}"
   }
 }

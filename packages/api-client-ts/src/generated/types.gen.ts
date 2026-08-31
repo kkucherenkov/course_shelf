@@ -77,7 +77,7 @@ export type ExternalIdRef = {
      */
     externalId: string;
     /**
-     * Optional canonical URL of the entity on the source platform. Must be an absolute `http` or `https` URL.
+     * Optional canonical URL of the entity on the source platform. Must be an absolute `http` or `https` URL, ASCII-only — percent-encode any non-ASCII characters.
      */
     url?: string;
 };
@@ -840,7 +840,7 @@ export type CreateBookmarkRequest = {
      */
     positionSeconds: number;
     /**
-     * Optional free-form label. Trimmed server-side.
+     * Optional free-form label. Trimmed server-side, so it must contain a non-whitespace character.
      */
     label?: string;
     /**
@@ -1955,7 +1955,7 @@ export type UpdateBookmarkRequest = {
      */
     positionSeconds?: number;
     /**
-     * Pass an explicit `null` to clear the label; omit to leave it untouched.
+     * Pass an explicit `null` to clear the label; omit to leave it untouched. A non-null label must contain a non-whitespace character — the server trims before storing.
      */
     label?: string | null;
 };
@@ -3030,6 +3030,11 @@ export type ApplyIdentifyResultErrors = {
      * Task is not in the proposed state
      */
     409: Problem;
+    /**
+     * The request matched the schema but violated a domain invariant that JSON Schema cannot express — a display name that reduces to an empty slug, an external-id reference whose parts contradict each other, and so on. `code` names the specific rule. Documented since #321, when the authenticated contract run reported 422 as an undocumented status on four operations.
+     *
+     */
+    422: Problem;
     /**
      * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
      *

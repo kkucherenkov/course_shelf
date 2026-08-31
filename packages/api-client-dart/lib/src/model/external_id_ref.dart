@@ -13,7 +13,7 @@ part 'external_id_ref.g.dart';
 /// Properties:
 /// * [source_] - Namespace identifying the external system (e.g. `udemy`, `youtube`). Must contain a non-whitespace character. Scrapers are responsible for namespacing their ids (e.g. `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`).
 /// * [externalId] - Identifier within the source system. Must contain a non-whitespace character.
-/// * [url] - Optional canonical URL of the entity on the source platform. Must be an absolute `http` or `https` URL.
+/// * [url] - Optional canonical URL of the entity on the source platform. Must be an absolute `http` or `https` URL, ASCII-only — percent-encode any non-ASCII characters.
 @BuiltValue()
 abstract class ExternalIdRef implements Built<ExternalIdRef, ExternalIdRefBuilder> {
   /// Namespace identifying the external system (e.g. `udemy`, `youtube`). Must contain a non-whitespace character. Scrapers are responsible for namespacing their ids (e.g. `youtube:playlist:PLxxx` vs `youtube:channel:UCyyy`).
@@ -24,7 +24,7 @@ abstract class ExternalIdRef implements Built<ExternalIdRef, ExternalIdRefBuilde
   @BuiltValueField(wireName: r'externalId')
   String get externalId;
 
-  /// Optional canonical URL of the entity on the source platform. Must be an absolute `http` or `https` URL.
+  /// Optional canonical URL of the entity on the source platform. Must be an absolute `http` or `https` URL, ASCII-only — percent-encode any non-ASCII characters.
   @BuiltValueField(wireName: r'url')
   String? get url;
 

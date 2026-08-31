@@ -12,14 +12,14 @@ part 'update_bookmark_request.g.dart';
 ///
 /// Properties:
 /// * [positionSeconds] - New playback position in seconds.
-/// * [label] - Pass an explicit `null` to clear the label; omit to leave it untouched.
+/// * [label] - Pass an explicit `null` to clear the label; omit to leave it untouched. A non-null label must contain a non-whitespace character — the server trims before storing.
 @BuiltValue()
 abstract class UpdateBookmarkRequest implements Built<UpdateBookmarkRequest, UpdateBookmarkRequestBuilder> {
   /// New playback position in seconds.
   @BuiltValueField(wireName: r'positionSeconds')
   int? get positionSeconds;
 
-  /// Pass an explicit `null` to clear the label; omit to leave it untouched.
+  /// Pass an explicit `null` to clear the label; omit to leave it untouched. A non-null label must contain a non-whitespace character — the server trims before storing.
   @BuiltValueField(wireName: r'label')
   String? get label;
 

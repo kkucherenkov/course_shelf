@@ -22,6 +22,36 @@ concurrency:
 # files that hardcoded the same numbers.
 
 jobs:
+  # ── Path filter (mobile vs. everything else) ───────────────────────────────
+  # `flutter-integration` (not a required check) skips outright on a
+  # non-mobile PR via a job-level `if:`. `flutter` IS a required status check
+  # on main — a job that branch protection sees skipped counts as blocking,
+  # not passing — so it always runs; its expensive steps carry the `if:`
+  # instead (see that job). `packages/specs` and `pnpm-lock.yaml` count as
+  # mobile-affecting because the Dart client is generated from the spec: a
+  # contract change has to exercise the mobile checks even though it touches
+  # no `.dart` file.
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      mobile: ${{ steps.filter.outputs.mobile }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            mobile:
+              - 'apps/mobile/**'
+              - 'packages/ui_flutter/**'
+              - 'packages/api-client-dart/**'
+              - 'packages/specs/**'
+              - 'pnpm-lock.yaml'
+
   # ── Checks (consolidated lint · typecheck · test · specs · ui audit) ──────
   # One job sharing one pnpm install + one design:build + one prisma generate.
   checks:
@@ -174,13 +204,21 @@ jobs:
   # `pnpm design:build` first.
   flutter:
     name: Flutter (analyze · test · goldens)
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v6
 
+      # This job is a required status check, so it must always run and
+      # report success — a job GitHub sees `skipped` blocks a merge exactly
+      # like a failure would. What can be skipped instead is the expense: on
+      # a non-mobile PR this and every step below runs in seconds rather than
+      # the ~4m18s the Flutter toolchain + analyze + test + goldens took on a
+      # backend-only PR (#451).
       - uses: ./.github/actions/setup-cs
+        if: needs.changes.outputs.mobile == 'true'
         with:
           node: "false"
           flutter: "true"
@@ -188,10 +226,12 @@ jobs:
       # ui_flutter first: it is the dependency, and its goldens are where a
       # token/theme regression surfaces.
       - name: ui_flutter — analyze
+        if: needs.changes.outputs.mobile == 'true'
         working-directory: packages/ui_flutter
         run: flutter pub get && flutter analyze
 
       - name: ui_flutter — test (incl. goldens)
+        if: needs.changes.outputs.mobile == 'true'
         working-directory: packages/ui_flutter
         run: flutter test
 
@@ -205,6 +245,7 @@ jobs:
       # build_runner never writes strings.g.dart — but it errors if the file is
       # already there. build_runner first, then slang.
       - name: mobile — codegen (drift, then slang i18n)
+        if: needs.changes.outputs.mobile == 'true'
         working-directory: apps/mobile
         run: |
           flutter pub get
@@ -212,10 +253,12 @@ jobs:
           dart run slang
 
       - name: mobile — analyze
+        if: needs.changes.outputs.mobile == 'true'
         working-directory: apps/mobile
         run: flutter analyze
 
       - name: mobile — test
+        if: needs.changes.outputs.mobile == 'true'
         working-directory: apps/mobile
         run: flutter test
 
@@ -251,6 +294,10 @@ jobs:
   # minutes, and the analyze/test/golden signal must not wait behind it.
   flutter-integration:
     name: Flutter (integration_test · Android emulator)
+    needs: changes
+    # Not a required status check, so an outright job skip on a non-mobile
+    # PR is harmless — unlike `flutter` above, which cannot use this shape.
+    if: needs.changes.outputs.mobile == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
 

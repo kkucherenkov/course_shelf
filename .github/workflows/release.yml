@@ -8,17 +8,24 @@ name: Release (ghcr)
 #   - a GitHub Release with the deploy-ready artefact bundle (compose rendered
 #     with REGISTRY / REGISTRY_NAMESPACE / RELEASE_TAG pinned)
 #
+# A `workflow_dispatch` run is a dry run: it renders and validates the release
+# compose against HEAD and stops there — no login, no image build, no
+# release. It exists because the tag-only trigger meant this file was
+# untestable without cutting a real release, which is exactly how a stale
+# placeholder list survived for weeks (see the render+validate step below).
+#
 # No extra secrets are needed: GITHUB_TOKEN with `packages: write` covers both
 # the ghcr push and the Release API.
 #
-# ⚠ The "Stage release bundle" step sed-rewrites the `${VAR:-default}` literals
-# in docker/compose.release.yml verbatim. If a default changes there, the
+# ⚠ The render step sed-rewrites the `${VAR:-default}` literals in
+# docker/compose.release.yml verbatim. If a default changes there, the
 # patterns below must change in the same commit or the sed silently no-ops.
 
 on:
   push:
     tags:
       - "v*.*.*-release"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -44,13 +51,20 @@ jobs:
         id: version
         run: |
           set -euo pipefail
-          TAG="${GITHUB_REF#refs/tags/}"
-          if ! echo "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+-release$'; then
-            echo "tag '$TAG' does not match vMAJOR.MINOR.PATCH-release" >&2
-            exit 1
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Dry run against HEAD — render + validate only, nothing is
+            # tagged or published, so the version is a placeholder.
+            TAG="dispatch"
+            SEMVER="0.0.0-dispatch"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+            if ! echo "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+-release$'; then
+              echo "tag '$TAG' does not match vMAJOR.MINOR.PATCH-release" >&2
+              exit 1
+            fi
+            SEMVER="${TAG#v}"
+            SEMVER="${SEMVER%-release}"
           fi
-          SEMVER="${TAG#v}"
-          SEMVER="${SEMVER%-release}"
           MAJOR="${SEMVER%%.*}"
           MINOR="${SEMVER#*.}"; MINOR="${MINOR%%.*}"
           PATCH="${SEMVER##*.}"
@@ -73,8 +87,69 @@ jobs:
         # needs the generated files in the build context via `COPY . .`.
         run: pnpm design:build
 
+      # ─── Render + validate release compose ────────────────────────────────
+      # Runs before a single image layer is built, and on every trigger
+      # including workflow_dispatch. It used to run only inside the bundle
+      # step *after* "Build and push release images" — so a broken compose
+      # file surfaced only once both images were already built and pushed to
+      # ghcr. The 1.1.0 release did exactly that: it failed here with
+      # `DERIVED_PATH` missing, leaving a `1.1.0` tag in the registry with no
+      # bundle and no GitHub release beside it.
+      - name: Render and validate release compose
+        env:
+          SEMVER: ${{ steps.version.outputs.semver }}
+        run: |
+          set -euo pipefail
+          STAGE="courseshelf-release-v${SEMVER}"
+          NS="$REGISTRY_NAMESPACE"
+          mkdir -p "$STAGE"
+
+          # Render compose with RELEASE_TAG / REGISTRY / REGISTRY_NAMESPACE
+          # pinned to the public ghcr coordinates.
+          sed \
+            -e "s|\${RELEASE_TAG:-latest}|${SEMVER}|g" \
+            -e "s|\${REGISTRY:-ghcr.io}|${REGISTRY}|g" \
+            -e "s|\${REGISTRY_NAMESPACE:-kkucherenkov}|${NS}|g" \
+            docker/compose.release.yml > "$STAGE/compose.yml"
+
+          # Validate the rendered compose (dummy values — syntax + file
+          # existence only).
+          #
+          # The placeholder set is DERIVED from the compose file rather than
+          # listed by hand. A hand-written list silently goes stale the moment
+          # someone adds a `${VAR:?...}`, and it did: `DERIVED_PATH` arrived
+          # with transcription, nobody updated the list here, and the first
+          # release after that change failed at this line — after the images
+          # had already been built and pushed.
+          #
+          # Every `${NAME:?...}` in the file is a variable the operator must
+          # supply, so every one of them gets a placeholder. Paths get an
+          # existing directory because `docker compose config` resolves bind
+          # mount sources; anything else can be a literal.
+          ( cd "$STAGE"
+            ENVS=()
+            while IFS= read -r name; do
+              [ -n "$name" ] || continue
+              case "$name" in
+                *_PATH|*_DIR)    ENVS+=("$name=/tmp") ;;
+                PUBLIC_BASE_URL) ENVS+=("$name=http://placeholder.local") ;;
+                *)               ENVS+=("$name=placeholder") ;;
+              esac
+            done < <(grep -oE '\$\{[A-Z_][A-Z0-9_]*:\?' compose.yml \
+                      | sed -E 's/^\$\{//; s/:\?$//' | sort -u)
+
+            if [ "${#ENVS[@]}" -eq 0 ]; then
+              echo "::error::No \${VAR:?} placeholders found in compose.yml — the" \
+                   "detection regex no longer matches the file it validates."
+              exit 1
+            fi
+
+            printf 'Placeholder for required variable: %s\n' "${ENVS[@]}"
+            env "${ENVS[@]}" docker compose -f compose.yml config --quiet )
+
       # ─── Registry login ──────────────────────────────────────────────────
       - name: Log in to ghcr.io
+        if: github.event_name != 'workflow_dispatch'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login "$REGISTRY" \
             --username "${{ github.actor }}" \
@@ -82,6 +157,7 @@ jobs:
 
       # ─── Build + push images ─────────────────────────────────────────────
       - name: Build and push release images
+        if: github.event_name != 'workflow_dispatch'
         env:
           SEMVER: ${{ steps.version.outputs.semver }}
           MAJOR: ${{ steps.version.outputs.major }}
@@ -123,6 +199,7 @@ jobs:
 
       # ─── Changelog (git-cliff) ───────────────────────────────────────────
       - name: Install git-cliff
+        if: github.event_name != 'workflow_dispatch'
         run: |
           set -euo pipefail
           VERSION="2.6.1"
@@ -134,6 +211,7 @@ jobs:
           git-cliff --version
 
       - name: Generate release notes
+        if: github.event_name != 'workflow_dispatch'
         run: |
           set -euo pipefail
           git-cliff \
@@ -143,23 +221,18 @@ jobs:
             > release-notes.md
           cat release-notes.md
 
-      # ─── Stage release bundle (render + validate + assemble) ────────────
-      - name: Stage release bundle
+      # ─── Assemble release bundle ─────────────────────────────────────────
+      # The compose file was already rendered and validated above, ahead of
+      # the image build. This step only adds what depends on that build's
+      # neighbours — the release notes above — or on nothing at all (the
+      # static docs), then tars the result.
+      - name: Assemble release bundle
+        if: github.event_name != 'workflow_dispatch'
         env:
           SEMVER: ${{ steps.version.outputs.semver }}
         run: |
           set -euo pipefail
           STAGE="courseshelf-release-v${SEMVER}"
-          NS="$REGISTRY_NAMESPACE"
-          mkdir -p "$STAGE"
-
-          # Render compose with RELEASE_TAG / REGISTRY / REGISTRY_NAMESPACE
-          # pinned to the public ghcr coordinates.
-          sed \
-            -e "s|\${RELEASE_TAG:-latest}|${SEMVER}|g" \
-            -e "s|\${REGISTRY:-ghcr.io}|${REGISTRY}|g" \
-            -e "s|\${REGISTRY_NAMESPACE:-kkucherenkov}|${NS}|g" \
-            docker/compose.release.yml > "$STAGE/compose.yml"
 
           cp docker/nginx/prod.conf "$STAGE/nginx-prod.conf"
           cp .env.release.example "$STAGE/.env.example"
@@ -175,41 +248,6 @@ jobs:
           See CHANGELOG.md for what changed in this release.
           EOF
 
-          # Validate the rendered compose (dummy values — syntax + file
-          # existence only).
-          #
-          # The placeholder set is DERIVED from the compose file rather than
-          # listed by hand. A hand-written list silently goes stale the moment
-          # someone adds a `${VAR:?...}`, and it did: `DERIVED_PATH` arrived
-          # with transcription, nobody updated the list here, and the first
-          # release after that change failed at this line — after the images
-          # had already been built and pushed.
-          #
-          # Every `${NAME:?...}` in the file is a variable the operator must
-          # supply, so every one of them gets a placeholder. Paths get an
-          # existing directory because `docker compose config` resolves bind
-          # mount sources; anything else can be a literal.
-          ( cd "$STAGE"
-            ENVS=()
-            while IFS= read -r name; do
-              [ -n "$name" ] || continue
-              case "$name" in
-                *_PATH|*_DIR)    ENVS+=("$name=/tmp") ;;
-                PUBLIC_BASE_URL) ENVS+=("$name=http://placeholder.local") ;;
-                *)               ENVS+=("$name=placeholder") ;;
-              esac
-            done < <(grep -oE '\$\{[A-Z_][A-Z0-9_]*:\?' compose.yml \
-                      | sed -E 's/^\$\{//; s/:\?$//' | sort -u)
-
-            if [ "${#ENVS[@]}" -eq 0 ]; then
-              echo "::error::No \${VAR:?} placeholders found in compose.yml — the" \
-                   "detection regex no longer matches the file it validates."
-              exit 1
-            fi
-
-            printf 'Placeholder for required variable: %s\n' "${ENVS[@]}"
-            env "${ENVS[@]}" docker compose -f compose.yml config --quiet )
-
           cp "$STAGE/compose.yml" "compose-release-v${SEMVER}.yml"
 
           tar czf "${STAGE}.tar.gz" "$STAGE"
@@ -217,6 +255,7 @@ jobs:
 
       # ─── GitHub release ──────────────────────────────────────────────────
       - name: Create GitHub release with assets
+        if: github.event_name != 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.version.outputs.tag }}

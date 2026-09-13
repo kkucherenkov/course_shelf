@@ -29,6 +29,17 @@ export interface SearchLessonHitRow {
   position: number;
 }
 
+export interface SearchTranscriptHitRow {
+  lessonId: string;
+  lessonTitle: string;
+  courseId: string;
+  courseTitle: string;
+  sectionTitle: string;
+  language: string;
+  startMs: number;
+  text: string;
+}
+
 export interface SearchPort {
   /**
    * Return up to `limit` courses whose title ILIKE %q% OR whose any section
@@ -54,4 +65,17 @@ export interface SearchPort {
     limit: number,
     libraryIds: string[] | null,
   ): Promise<SearchLessonHitRow[]>;
+
+  /**
+   * Return up to `limit` transcript cues whose text ILIKE %q%, backed by the
+   * pg_trgm GIN index on transcript_cue.text. Carries the parent lesson /
+   * section / course context plus the cue's language and startMs so a client
+   * can seek straight to the moment. When libraryIds is null, no library
+   * filter is applied (admin path).
+   */
+  findTranscriptHits(
+    q: string,
+    limit: number,
+    libraryIds: string[] | null,
+  ): Promise<SearchTranscriptHitRow[]>;
 }

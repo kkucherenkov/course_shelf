@@ -110,6 +110,7 @@ import 'package:app_api_client/src/model/scraper_list_dto.dart';
 import 'package:app_api_client/src/model/search_course_hit.dart';
 import 'package:app_api_client/src/model/search_lesson_hit.dart';
 import 'package:app_api_client/src/model/search_result_dto.dart';
+import 'package:app_api_client/src/model/search_transcript_hit_dto.dart';
 import 'package:app_api_client/src/model/section_dto.dart';
 import 'package:app_api_client/src/model/section_outline.dart';
 import 'package:app_api_client/src/model/sso_provider_config.dart';
@@ -237,6 +238,7 @@ part 'serializers.g.dart';
   SearchCourseHit,
   SearchLessonHit,
   SearchResultDto,
+  SearchTranscriptHitDto,
   SectionDto,
   SectionOutline,
   SsoProviderConfig,

@@ -120,6 +120,7 @@ export 'package:app_api_client/src/model/scraper_list_dto.dart';
 export 'package:app_api_client/src/model/search_course_hit.dart';
 export 'package:app_api_client/src/model/search_lesson_hit.dart';
 export 'package:app_api_client/src/model/search_result_dto.dart';
+export 'package:app_api_client/src/model/search_transcript_hit_dto.dart';
 export 'package:app_api_client/src/model/section_dto.dart';
 export 'package:app_api_client/src/model/section_outline.dart';
 export 'package:app_api_client/src/model/sso_provider_config.dart';

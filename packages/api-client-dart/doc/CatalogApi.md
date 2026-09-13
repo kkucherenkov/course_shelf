@@ -27,7 +27,7 @@ Method | HTTP request | Description
 [**registerLibrary**](CatalogApi.md#registerlibrary) | **POST** /api/v1/libraries | Register a new library (or share an existing path)
 [**removeLibrary**](CatalogApi.md#removelibrary) | **DELETE** /api/v1/libraries/{id} | Hard-delete a library and every dependent row
 [**runLibraryScan**](CatalogApi.md#runlibraryscan) | **POST** /api/v1/libraries/{id}/scans | Trigger a scan of a library
-[**searchCatalogue**](CatalogApi.md#searchcatalogue) | **GET** /api/v1/search | Search the catalogue (courses + lessons)
+[**searchCatalogue**](CatalogApi.md#searchcatalogue) | **GET** /api/v1/search | Search the catalogue (courses + lessons + transcripts)
 [**startTranscription**](CatalogApi.md#starttranscription) | **POST** /api/v1/libraries/{id}/transcriptions | Start a transcription run for a library
 [**updateCourse**](CatalogApi.md#updatecourse) | **PATCH** /api/v1/courses/{id} | Update course metadata
 [**updateLibrary**](CatalogApi.md#updatelibrary) | **PATCH** /api/v1/libraries/{id} | Rename a library
@@ -811,9 +811,9 @@ Name | Type | Description  | Notes
 # **searchCatalogue**
 > SearchResultDto searchCatalogue(q, limit)
 
-Search the catalogue (courses + lessons)
+Search the catalogue (courses + lessons + transcripts)
 
-Case-insensitive substring search across course titles, section titles (matched into their courses), and lesson titles. Returns two result lists: courses and lessons. Each list is capped at `limit` (default 20, max 100). Results are sorted by best match (exact-prefix > word-prefix > substring) within each list.  Authorisation mirrors the listing endpoints — non-admin actors only see courses / lessons they have a READ grant on (via the course's library); admins see everything.  Empty `q` returns empty lists (no expensive full-table scan). Trimmed length must be ≥ 2 to avoid pathologically broad substring matches; shorter queries return empty lists too. 
+Case-insensitive substring search across course titles, section titles (matched into their courses), lesson titles, and transcript cue text. Returns three result lists: courses, lessons, and transcripts. Each list is capped at `limit` (default 20, max 100). Results are sorted by best match (exact-prefix > word-prefix > substring) within each list.  Transcript hits are matched via a trigram index over cue text (substring matching, not stemmed full-text search) and carry the cue's start time so a client can seek straight to it.  Authorisation mirrors the listing endpoints — non-admin actors only see courses / lessons they have a READ grant on (via the course's library); admins see everything.  Empty `q` returns empty lists (no expensive full-table scan). Trimmed length must be ≥ 2 to avoid pathologically broad substring matches; shorter queries return empty lists too. 
 
 ### Example
 ```dart

@@ -113,6 +113,7 @@ Serializers _$serializers =
           ..add(SearchCourseHit.serializer)
           ..add(SearchLessonHit.serializer)
           ..add(SearchResultDto.serializer)
+          ..add(SearchTranscriptHitDto.serializer)
           ..add(SectionDto.serializer)
           ..add(SectionOutline.serializer)
           ..add(SsoProviderConfig.serializer)
@@ -293,6 +294,12 @@ Serializers _$serializers =
           ..addBuilderFactory(
             const FullType(BuiltList, const [const FullType(SearchLessonHit)]),
             () => ListBuilder<SearchLessonHit>(),
+          )
+          ..addBuilderFactory(
+            const FullType(BuiltList, const [
+              const FullType(SearchTranscriptHitDto),
+            ]),
+            () => ListBuilder<SearchTranscriptHitDto>(),
           )
           ..addBuilderFactory(
             const FullType(BuiltList, const [const FullType(SectionDto)]),

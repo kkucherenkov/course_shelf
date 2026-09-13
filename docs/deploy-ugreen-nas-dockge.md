@@ -34,6 +34,17 @@ path and repeats what it needs to stand alone.
 
 You need:
 
+- **An x86_64 NAS.** Check before anything else:
+
+  ```sh
+  uname -m     # must print x86_64
+  ```
+
+  The published images are `linux/amd64` only. On an ARM host every container
+  dies at start with `exec format error`, which says nothing about why. The
+  UGREEN DXP line is Intel, so this normally passes — but it costs one command
+  to be sure, and the failure it prevents is opaque.
+
 - **A UGREEN NAS with Docker and Dockge running.** This guide assumes Dockge
   manages your stacks and that you can reach its web UI.
 - **SSH access to the NAS**, or the UGOS File Station. Dockge's editor handles
@@ -398,6 +409,13 @@ so upgrading CourseShelf never re-downloads gigabytes you already have.
    (**Pull** is not needed — no image changed, just the container's env).
    With it empty, `GET /api/v1/health` still reports `ok` and the transcribe
    endpoint refuses the request rather than starting a run that can only fail.
+
+   The path must name a file that is actually there: the backend stats it at
+   startup, so a half-finished download or a name that does not match what you
+   fetched reads as "transcription not configured" — the same refusal as an
+   empty value, not a run that dies on every lesson. If the endpoint refuses
+   after you set this, check the filename inside `$WHISPER_MODEL_DIR` before
+   anything else.
 3. Trigger a run from **Admin → Libraries → (library) → Transcribe**.
 
 **Be honest with yourself about NAS throughput.** This is CPU inference on
@@ -434,9 +452,9 @@ default.
 | `AUTH_EMAIL_VERIFICATION` | no | `false` | Adds a code step to sign-up. Needs SMTP, which this release does not configure — leave `false`. |
 | `CENTRIFUGO_TOKEN_TTL_SECONDS` | no | `300` | Realtime token lifetime. Clients re-issue automatically. |
 | `CENTRIFUGO_LOG_LEVEL` | no | `info` | Set `debug` when triaging realtime. |
-| `DERIVED_PATH` | **yes** | — | Host directory for everything CourseShelf generates from your media: whisper transcripts today, scan thumbnails too. Mounted **read-write** at `/data/derived` — deliberately not baked into the image, since it has to survive an image upgrade and outlive any one container. |
+| `DERIVED_PATH` | **yes** | — | Host directory for what CourseShelf generates from your media — whisper transcripts, scan thumbnails — **and** for `scrapers/`, where you put hand-written scraper definitions (see [the user guide](./user-guide.md)). Mounted **read-write** at `/data/derived`, deliberately not baked into the image, since it has to survive an image upgrade and outlive any one container. |
 | `WHISPER_MODEL_DIR` | no | `./models` | Host directory holding `.bin` ggml models, mounted read-only at `/models`. Created empty by Docker if it does not exist yet — harmless until you drop a model in. |
-| `WHISPER_MODEL_PATH` | no | *(empty)* | In-container path to the model to use, e.g. `/models/ggml-base.bin`. Empty means transcription is off: the run endpoint refuses rather than starting something that can only fail. See [§7 — Transcription](#transcription-optional) below. |
+| `WHISPER_MODEL_PATH` | no | *(empty)* | In-container path to the model, e.g. `/models/ggml-base.bin`. Transcription is off when this is empty **or when it names a file that is not there** — the backend checks the file exists, so a mistyped name or a download that never finished reads as "not configured" instead of starting a run that fails on every lesson. The run endpoint refuses either way. See [§7 — Transcription](#transcription-optional) below. |
 | `WHISPER_THREADS` | no | `4` | CPU threads whisper.cpp uses. Match it to what the NAS actually has spare — see the throughput note below. |
 | `WHISPER_LANGUAGE` | no | `auto` | `-l` passed to whisper.cpp. `auto` detects per lesson; pin a code (e.g. `en`) if you know every course is one language — detection has a real cost on a slow CPU. |
 
@@ -456,7 +474,7 @@ starts and does not work.
 | Your courses | `$COURSES_PATH` | `backend:/data/courses` | **read-only** | The library the scanner indexes. Never written to. |
 | Proxy config | `./nginx-prod.conf` | `proxy:/etc/nginx/conf.d/default.conf` | read-only | Folds the SPA, the API and the realtime socket onto one origin. Must exist as a **file** in the stack folder. |
 | Database | Docker volume `pgdata` | `postgres:/var/lib/postgresql` | read-write | **All your metadata, users, progress, notes and bookmarks.** The one thing worth backing up. |
-| Derived artefacts | `$DERIVED_PATH` | `backend:/data/derived` | **read-write** | Whisper transcripts and, later, scan thumbnails — everything CourseShelf generates from your media. Separate from `$COURSES_PATH` because that mount is read-only. Disposable: a transcription run regenerates it. |
+| Derived artefacts | `$DERIVED_PATH` | `backend:/data/derived` | **read-write** | Whisper transcripts and, later, scan thumbnails. Separate from `$COURSES_PATH` because that mount is read-only. **Not disposable** — `scrapers/` inside it holds hand-written scraper definitions that nothing regenerates. The transcripts are reproducible by re-running transcription; the definitions are not. Back up `$DERIVED_PATH/scrapers` with the database. |
 | Whisper models | `$WHISPER_MODEL_DIR` | `backend:/models` | read-only | ggml model files. Inert until `WHISPER_MODEL_PATH` names one inside it. |
 
 The one named volume is created by Docker as
@@ -494,6 +512,15 @@ the containers whose image changed are recreated; your volumes are untouched.
 
 If a release changes `compose.yml` or `nginx-prod.conf` — the changelog says so
 — download the new bundle and copy those two files over before updating.
+
+**If you moved the database off the named volume, re-apply that edit every time
+you copy in a new `compose.yml`.** The shipped file stores Postgres in a Docker
+volume called `pgdata`; replacing it with a bind mount is a local change the
+bundle knows nothing about, so a fresh `compose.yml` silently restores the named
+volume. Nothing is lost — your data stays on disk where you put it — but the
+container comes up against an empty volume, and an instance with no users and no
+courses looks exactly like an instance that lost everything. Check the
+`postgres` service's `volumes:` line before pressing Update.
 
 **Rolling back** is setting `RELEASE_TAG` to the previous version and pressing
 Update again. That works for the application; it does **not** undo a database

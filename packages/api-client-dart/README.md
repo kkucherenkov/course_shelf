@@ -119,6 +119,7 @@ Class | Method | HTTP request | Description
 [*CatalogApi*](doc/CatalogApi.md) | [**listLibraryTranscriptions**](doc/CatalogApi.md#listlibrarytranscriptions) | **GET** /api/v1/libraries/{id}/transcriptions | List transcription runs for a library
 [*CatalogApi*](doc/CatalogApi.md) | [**registerLibrary**](doc/CatalogApi.md#registerlibrary) | **POST** /api/v1/libraries | Register a new library (or share an existing path)
 [*CatalogApi*](doc/CatalogApi.md) | [**removeLibrary**](doc/CatalogApi.md#removelibrary) | **DELETE** /api/v1/libraries/{id} | Hard-delete a library and every dependent row
+[*CatalogApi*](doc/CatalogApi.md) | [**runCourseRescan**](doc/CatalogApi.md#runcourserescan) | **POST** /api/v1/courses/{id}/rescan | Rescan a single course
 [*CatalogApi*](doc/CatalogApi.md) | [**runLibraryScan**](doc/CatalogApi.md#runlibraryscan) | **POST** /api/v1/libraries/{id}/scans | Trigger a scan of a library
 [*CatalogApi*](doc/CatalogApi.md) | [**searchCatalogue**](doc/CatalogApi.md#searchcatalogue) | **GET** /api/v1/search | Search the catalogue (courses + lessons + transcripts)
 [*CatalogApi*](doc/CatalogApi.md) | [**startTranscription**](doc/CatalogApi.md#starttranscription) | **POST** /api/v1/libraries/{id}/transcriptions | Start a transcription run for a library

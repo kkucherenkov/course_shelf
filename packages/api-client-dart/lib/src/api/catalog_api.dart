@@ -1440,6 +1440,87 @@ class CatalogApi {
     return _response;
   }
 
+  /// Rescan a single course
+  /// Re-walks only this course&#39;s on-disk folder instead of the whole library — the walk itself stays whole (it is a cheap directory listing), but the expensive per-video work (ffprobe, thumbnails, sidecar ingest) and orphan cleanup are both scoped to this course. Orphan cleanup never considers another course&#39;s lessons or transcripts during a scoped rescan.  Returns 202 immediately with &#x60;status: running&#x60;, exactly like &#x60;POST /libraries/{id}/scans&#x60;; clients poll &#x60;GET /libraries/{id}/scans/latest&#x60;. The response and its realtime &#x60;scans:user:{userId}&#x60; events carry &#x60;scopeCourseId&#x60; / &#x60;scopeCourseName&#x60; so the UI can say \&quot;rescanning &lt;course&gt;\&quot; rather than implying a full library scan. 
+  ///
+  /// Parameters:
+  /// * [id] - Server-generated cuid identifying the course to rescan.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [ScanDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<ScanDto>> runCourseRescan({ 
+    required String id,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/courses/{id}/rescan'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    ScanDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(ScanDto),
+      ) as ScanDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<ScanDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
   /// Trigger a scan of a library
   /// Walks the library tree, recognises Course / Section / Lesson layout, and records discoveries on a Scan aggregate. Returns 202 immediately with &#x60;status: running&#x60;; clients poll &#x60;GET /libraries/{id}/scans/latest&#x60;. A second scan with no filesystem changes is observably a no-op (&#x60;filesAdded&#x60; and &#x60;filesUpdated&#x60; are zero). 
   ///

@@ -35,6 +35,8 @@ import { Session } from '../../common/auth/decorators';
 import { UpdateCourseMetadataCommand } from './application/commands/update-course-metadata.command';
 import { MarkCourseCompleteCommand } from './application/commands/mark-course-complete.command';
 import { ResetCourseProgressCommand } from './application/commands/reset-course-progress.command';
+import { RunScanCommand } from './application/commands/run-scan.command';
+import { toScanDto } from './scans.dto';
 import {
   ListCoursesQuery,
   type CourseListDurationBucket,
@@ -46,11 +48,13 @@ import { GetCourseOutlineQuery } from './application/queries/get-course-outline.
 import { GetCourseDownloadEstimateQuery } from './application/queries/get-course-download-estimate.query';
 
 import type { SessionContext } from '../../common/auth/decorators';
+import type { Scan } from './domain/scan/scan';
 import type {
   CourseDto,
   CourseDownloadEstimateDto,
   CourseListDto,
   CourseOutlineDto,
+  ScanDto,
   UpdateCourseRequest,
 } from '@app/api-client-ts';
 
@@ -176,6 +180,24 @@ export class CoursesController {
     return this.commandBus.execute<ResetCourseProgressCommand, CourseOutlineDto>(
       new ResetCourseProgressCommand(id, actor),
     );
+  }
+
+  /**
+   * POST /api/v1/courses/:id/rescan — admin only (E32-F01-S02)
+   * Scopes the scan to this course's on-disk folder instead of the whole
+   * library. Accepts and returns exactly like POST /libraries/:id/scans.
+   */
+  @UseGuards(AdminGuard)
+  @Post(':id/rescan')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async rescanCourse(
+    @Param('id') id: string,
+    @Session() session: SessionContext,
+  ): Promise<ScanDto> {
+    const scan = await this.commandBus.execute<RunScanCommand, Scan>(
+      new RunScanCommand(undefined, session.user.id, { courseId: id }),
+    );
+    return toScanDto(scan);
   }
 
   /** PATCH /api/v1/courses/:id — admin only */

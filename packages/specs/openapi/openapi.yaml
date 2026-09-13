@@ -2983,6 +2983,111 @@ paths:
                 $ref: "#/components/schemas/Problem"
         "429":
           $ref: "#/components/responses/TooManyRequests"
+  /api/v1/courses/{id}/rescan:
+    post:
+      operationId: runCourseRescan
+      summary: Rescan a single course
+      description: |
+        Re-walks only this course's on-disk folder instead of the whole
+        library — the walk itself stays whole (it is a cheap directory
+        listing), but the expensive per-video work (ffprobe, thumbnails,
+        sidecar ingest) and orphan cleanup are both scoped to this course.
+        Orphan cleanup never considers another course's lessons or
+        transcripts during a scoped rescan.
+
+        Returns 202 immediately with `status: running`, exactly like
+        `POST /libraries/{id}/scans`; clients poll
+        `GET /libraries/{id}/scans/latest`. The response and its realtime
+        `scans:user:{userId}` events carry `scopeCourseId` /
+        `scopeCourseName` so the UI can say "rescanning <course>" rather
+        than implying a full library scan.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the course to rescan.
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "202":
+          description: Rescan accepted and running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanDto"
+              examples:
+                accepted:
+                  value:
+                    id: clxvscn0000000000000000002
+                    libraryId: clxvp1234567890abcdefghij
+                    status: running
+                    startedAt: "2026-09-13T10:30:00Z"
+                    filesScanned: 0
+                    filesAdded: 0
+                    filesUpdated: 0
+                    coursesDiscovered: 0
+                    errors: []
+                    scopeCourseId: clxvcrs0000000000000000001
+                    scopeCourseName: Pragmatic Clean Architecture
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only admins may trigger a course rescan.
+        "404":
+          description: Course not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No course with that id exists.
+        "409":
+          description: A scan is already running for this course's library
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                conflict:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: A scan is already running for library clxvp1234567890abcdefghij.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/catalog/instructors:
     get:
       operationId: listInstructors
@@ -9247,6 +9352,18 @@ components:
           items:
             $ref: "#/components/schemas/ScanError"
           description: Non-fatal per-file errors encountered during the scan.
+        scopeCourseId:
+          type: string
+          description: >-
+            cuid of the course this scan was scoped to. Absent for a
+            library-wide scan (`POST /libraries/{id}/scans`) — present only
+            for `POST /courses/{id}/rescan`.
+        scopeCourseName:
+          type: string
+          description: >-
+            Title of the scoped course, so the UI can render "rescanning
+            <course>" without a second round-trip. Absent for a library-wide
+            scan.
       example:
         id: clxvscn0000000000000000001
         libraryId: clxvp1234567890abcdefghij

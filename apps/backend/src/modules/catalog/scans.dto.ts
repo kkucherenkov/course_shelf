@@ -25,5 +25,11 @@ export function toScanDto(scan: Scan): ScanDto {
       message: e.message,
       ...(e.code === undefined ? {} : { code: e.code }),
     })),
+    // scopeCourseId and scopeCourseName are always set together by
+    // Scan.start()'s `scope` option — the fallback reflects that pairing,
+    // which the two independently-optional fields can't express.
+    ...(scan.scopeCourseId === undefined
+      ? {}
+      : { scopeCourseId: scan.scopeCourseId, scopeCourseName: scan.scopeCourseName ?? '' }),
   };
 }

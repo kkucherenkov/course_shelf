@@ -343,6 +343,12 @@ components:
         at:
           type: string
           format: date-time
+        scopeCourseId:
+          type: string
+          description: cuid of the course this scan was scoped to. Absent for a library-wide scan.
+        scopeCourseName:
+          type: string
+          description: Title of the scoped course. Absent for a library-wide scan.
 
     ScanLifecycleProgress:
       type: object
@@ -381,6 +387,12 @@ components:
         errorsCount:
           type: integer
           minimum: 0
+        scopeCourseId:
+          type: string
+          description: cuid of the course this scan was scoped to. Absent for a library-wide scan.
+        scopeCourseName:
+          type: string
+          description: Title of the scoped course. Absent for a library-wide scan.
 
     ScanLifecycleFinished:
       type: object
@@ -422,6 +434,12 @@ components:
         errorsCount:
           type: integer
           minimum: 0
+        scopeCourseId:
+          type: string
+          description: cuid of the course this scan was scoped to. Absent for a library-wide scan.
+        scopeCourseName:
+          type: string
+          description: Title of the scoped course. Absent for a library-wide scan.
 
     NoteUpdated:
       type: object

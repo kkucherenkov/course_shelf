@@ -57,6 +57,7 @@ vi.mock('node:fs/promises', () => ({
 }));
 
 import { Course } from '../../domain/course/course';
+import { CourseNotFoundError } from '../../domain/course/course.errors';
 import { Instructor } from '../../domain/instructor/instructor';
 import { InstructorSlugAlreadyTakenError } from '../../domain/instructor/instructor.errors';
 import { Lesson } from '../../domain/lesson/lesson';
@@ -2396,4 +2397,292 @@ describe('RunScanHandler', () => {
       expect(lesson.sizeBytes).toBe(OVERSIZED_BYTES);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // E32-F01-S02: scoped rescan — POST /courses/{id}/rescan
+  //
+  // Fixture: two already-imported courses sharing one library. "Target
+  // Course" gets a fresh, not-yet-ingested sidecar .srt dropped next to its
+  // existing lesson — proves the scoped walk actually reprocessed its
+  // folder. "Other Course" has its own existing lesson + Transcript row and
+  // is included in the SAME fs fixture (the walk itself stays whole) but
+  // must come out completely untouched — the trap the card is about.
+  // -------------------------------------------------------------------------
+  describe('E32-F01-S02: scoped rescan', () => {
+    const targetFolder = 'Target Course';
+    const targetVideoPath = `/lib/${targetFolder}/01 - Intro.mp4`;
+    const targetSrtPath = `/lib/${targetFolder}/01 - Intro.en.srt`;
+
+    const otherFolder = 'Other Course';
+    const otherVideoPath = `/lib/${otherFolder}/01 - Intro.mp4`;
+
+    function seedTwoCourses(
+      courseRepo: ReturnType<typeof makeCourseRepo>,
+      lessonRepo: ReturnType<typeof makeLessonRepo>,
+    ): {
+      targetCourseId: string;
+      targetLessonId: string;
+      otherCourseId: string;
+      otherLessonId: string;
+    } {
+      const targetCourse = Course.create({
+        id: 'course-target',
+        libraryId: 'lib-1',
+        slug: toSlugForTest(targetFolder),
+        title: targetFolder,
+      });
+      courseRepo.store.set(targetCourse.id, targetCourse);
+      const targetLesson = Lesson.create({
+        id: 'lesson-target',
+        courseId: targetCourse.id,
+        sectionId: 'section-target',
+        position: 1,
+        title: 'Intro',
+        videoPath: targetVideoPath,
+        mtime: BASE_TIME,
+        sizeBytes: 500,
+      });
+      lessonRepo.store.set(targetLesson.id, targetLesson);
+
+      const otherCourse = Course.create({
+        id: 'course-other',
+        libraryId: 'lib-1',
+        slug: toSlugForTest(otherFolder),
+        title: otherFolder,
+      });
+      courseRepo.store.set(otherCourse.id, otherCourse);
+      const otherLesson = Lesson.create({
+        id: 'lesson-other',
+        courseId: otherCourse.id,
+        sectionId: 'section-other',
+        position: 1,
+        title: 'Intro',
+        videoPath: otherVideoPath,
+        mtime: BASE_TIME,
+        sizeBytes: 500,
+      });
+      lessonRepo.store.set(otherLesson.id, otherLesson);
+
+      return {
+        targetCourseId: targetCourse.id,
+        targetLessonId: targetLesson.id,
+        otherCourseId: otherCourse.id,
+        otherLessonId: otherLesson.id,
+      };
+    }
+
+    function seedFixture() {
+      const courseRepo2 = makeCourseRepo();
+      const lessonRepo2 = makeLessonRepo();
+      const ids = seedTwoCourses(courseRepo2, lessonRepo2);
+      const transcriptRepo = makeTranscriptRepo();
+      transcriptRepo.store.set(`${ids.otherLessonId}:en`, {
+        origin: 'generated',
+        sourceMtime: BASE_TIME,
+        sourceSize: 500,
+      });
+
+      const files: FileRecord[] = [
+        { path: targetVideoPath, mtime: BASE_TIME, size: 500 },
+        // Fresh sidecar, not yet ingested — proves the scoped walk reprocessed it.
+        {
+          path: targetSrtPath,
+          mtime: BASE_TIME,
+          size: 30,
+          content: '1\n00:00:00,000 --> 00:00:01,000\nHello\n',
+        },
+        // Present in the SAME walk (the walk stays whole) but must not be touched.
+        { path: otherVideoPath, mtime: BASE_TIME, size: 500 },
+      ];
+
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        transcriptRepo,
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      return { h, scanRepo2, courseRepo2, lessonRepo2, transcriptRepo, ids };
+    }
+
+    it('imports the named course: the scoped walk reprocesses its own folder', async () => {
+      vi.useRealTimers();
+      const { h, scanRepo2, transcriptRepo, ids } = seedFixture();
+
+      const scan = await h.execute(
+        new RunScanCommand(undefined, ACTOR_USER_ID, { courseId: ids.targetCourseId }),
+      );
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      expect(saved.status).toBe('succeeded');
+      expect(saved.errors.filter((e) => e.code === 'subtitle-sidecar-invalid')).toHaveLength(0);
+
+      // The fresh sidecar next to the target's existing lesson got ingested.
+      expect(transcriptRepo.replaceSidecar).toHaveBeenCalledWith(
+        expect.objectContaining({ lessonId: ids.targetLessonId, language: 'en' }),
+      );
+    });
+
+    it('leaves other courses lessons and transcripts untouched (the test that matters)', async () => {
+      vi.useRealTimers();
+      const { h, lessonRepo2, transcriptRepo, ids } = seedFixture();
+
+      await h.execute(
+        new RunScanCommand(undefined, ACTOR_USER_ID, { courseId: ids.targetCourseId }),
+      );
+      await drainMicrotasks();
+
+      // Other course's lesson row: untouched.
+      expect(lessonRepo2.store.has(ids.otherLessonId)).toBe(true);
+      // Other course's Transcript row: NOT cleaned up as an orphan, even
+      // though its videoPath never appeared in this scan's seenVideoPaths —
+      // it must never have been a cleanup CANDIDATE in the first place.
+      expect(transcriptRepo.deleteForLesson).not.toHaveBeenCalledWith(ids.otherLessonId);
+      expect(transcriptRepo.store.has(`${ids.otherLessonId}:en`)).toBe(true);
+    });
+
+    it('names the scope on the scan record and every lifecycle event', async () => {
+      vi.useRealTimers();
+
+      const scopedCentrifugo = makeCentrifugoService();
+      const courseRepo2 = makeCourseRepo();
+      const targetCourse = Course.create({
+        id: 'course-target',
+        libraryId: 'lib-1',
+        slug: toSlugForTest(targetFolder),
+        title: targetFolder,
+      });
+      courseRepo2.store.set(targetCourse.id, targetCourse);
+      const lessonRepo2 = makeLessonRepo();
+      lessonRepo2.store.set(
+        'lesson-target',
+        Lesson.create({
+          id: 'lesson-target',
+          courseId: targetCourse.id,
+          sectionId: 'section-target',
+          position: 1,
+          title: 'Intro',
+          videoPath: targetVideoPath,
+          mtime: BASE_TIME,
+          sizeBytes: 500,
+        }),
+      );
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter([{ path: targetVideoPath, mtime: BASE_TIME, size: 500 }]),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        scopedCentrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(
+        new RunScanCommand(undefined, ACTOR_USER_ID, { courseId: targetCourse.id }),
+      );
+      expect(scan.scopeCourseId).toBe(targetCourse.id);
+      expect(scan.scopeCourseName).toBe(targetFolder);
+
+      expect(scopedCentrifugo.publish).toHaveBeenCalledWith(
+        `scans:user:${ACTOR_USER_ID}`,
+        expect.objectContaining({
+          kind: 'started',
+          scopeCourseId: targetCourse.id,
+          scopeCourseName: targetFolder,
+        }),
+      );
+
+      await drainMicrotasks();
+
+      const finishedCalls = vi
+        .mocked(scopedCentrifugo.publish)
+        .mock.calls.filter(([, data]) => (data as { kind: string }).kind === 'finished');
+      expect(finishedCalls).toHaveLength(1);
+      expect(finishedCalls[0]?.[1]).toEqual(
+        expect.objectContaining({
+          scopeCourseId: targetCourse.id,
+          scopeCourseName: targetFolder,
+        }),
+      );
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      expect(saved.scopeCourseId).toBe(targetCourse.id);
+      expect(saved.scopeCourseName).toBe(targetFolder);
+    });
+
+    it('throws CourseNotFoundError for an unknown courseId', async () => {
+      await expect(
+        handler.execute(new RunScanCommand(undefined, ACTOR_USER_ID, { courseId: 'nonexistent' })),
+      ).rejects.toBeInstanceOf(CourseNotFoundError);
+    });
+
+    it('a scoped course with no existing lessons cannot be resolved: records an error, touches nothing', async () => {
+      vi.useRealTimers();
+
+      const courseRepo2 = makeCourseRepo();
+      const lessonRepo2 = makeLessonRepo();
+      const orphanCourse = Course.create({
+        id: 'course-no-lessons',
+        libraryId: 'lib-1',
+        slug: 'no-lessons',
+        title: 'No Lessons Course',
+      });
+      courseRepo2.store.set(orphanCourse.id, orphanCourse);
+      // A second, unrelated course WITH lessons — must stay untouched.
+      const ids = seedTwoCourses(courseRepo2, lessonRepo2);
+      const transcriptRepo = makeTranscriptRepo();
+      transcriptRepo.store.set(`${ids.otherLessonId}:en`, {
+        origin: 'generated',
+        sourceMtime: BASE_TIME,
+        sourceSize: 500,
+      });
+
+      const files: FileRecord[] = [{ path: otherVideoPath, mtime: BASE_TIME, size: 500 }];
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        transcriptRepo,
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(
+        new RunScanCommand(undefined, ACTOR_USER_ID, { courseId: orphanCourse.id }),
+      );
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      const err = saved.errors.find((e) => e.code === 'course-scope-unresolvable');
+      expect(err).toBeDefined();
+
+      // The unrelated "Other Course" is untouched.
+      expect(transcriptRepo.deleteForLesson).not.toHaveBeenCalled();
+      expect(transcriptRepo.store.has(`${ids.otherLessonId}:en`)).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Library-wide scan is unchanged — the existing 41+ tests above already
+  // construct RunScanCommand(libraryId, actorUserId) with no scope and pass
+  // unmodified, which is the regression proof for "library-wide scan still
+  // behaves exactly as before" (E32-F01-S02 acceptance).
+  // -------------------------------------------------------------------------
 });

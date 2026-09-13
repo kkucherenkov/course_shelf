@@ -75,6 +75,12 @@
     return card.finished.status === 'failed' ? 'failed' : 'success';
   }
 
+  // E32-F01-S02: a scoped rescan names the course, not the library, so the
+  // notifier reads "rescanning <course>" rather than implying a full scan.
+  function displayName(card: ActiveScan): string {
+    return card.scopeCourseName ?? card.libraryName;
+  }
+
   // ── Toast on finish ───────────────────────────────────────────────────────
 
   // Track which scanIds we've already toasted to avoid duplicates.
@@ -90,7 +96,7 @@
 
         if (card.finished.status === 'failed') {
           toast.add({
-            title: t('notifiers.scan.toastFailedTitle', { name: card.libraryName }),
+            title: t('notifiers.scan.toastFailedTitle', { name: displayName(card) }),
             description: t('notifiers.scan.toastFailedSummary', {
               errors: card.errorsCount,
             }),
@@ -98,7 +104,7 @@
           });
         } else {
           toast.add({
-            title: t('notifiers.scan.toastDoneTitle', { name: card.libraryName }),
+            title: t('notifiers.scan.toastDoneTitle', { name: displayName(card) }),
             description: t('notifiers.scan.toastDoneSummary', {
               courses: card.coursesDiscovered,
               // TODO(E13): backend doesn't expose total lesson count in scan events yet
@@ -134,7 +140,7 @@
 
         <AppScanProgress
           :status="toScanStatus(card)"
-          :course-name="card.libraryName"
+          :course-name="displayName(card)"
           :percent="0"
           :elapsed-time="formatElapsed(card.startedAt)"
           :scanned="card.filesScanned"

@@ -114,6 +114,10 @@ model Scan {
   coursesDiscovered Int        @default(0)
   errors            ScanErrorRecord[]
   discoveredFiles   DiscoveredFile[]
+  // Set when this scan was scoped to one course (E32-F01-S02) via
+  // POST /courses/{id}/rescan rather than the library-wide default.
+  scopeCourseId     String?
+  scopeCourseName   String?
 
   @@index([libraryId, status])
   @@index([libraryId, startedAt])

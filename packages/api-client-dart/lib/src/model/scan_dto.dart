@@ -24,6 +24,8 @@ part 'scan_dto.g.dart';
 /// * [filesUpdated] - Files whose metadata changed since the last scan.
 /// * [coursesDiscovered] - Course roots detected during this scan.
 /// * [errors] - Non-fatal per-file errors encountered during the scan.
+/// * [scopeCourseId] - cuid of the course this scan was scoped to. Absent for a library-wide scan (`POST /libraries/{id}/scans`) — present only for `POST /courses/{id}/rescan`.
+/// * [scopeCourseName] - Title of the scoped course, so the UI can render \"rescanning <course>\" without a second round-trip. Absent for a library-wide scan.
 @BuiltValue()
 abstract class ScanDto implements Built<ScanDto, ScanDtoBuilder> {
   /// Server-generated cuid identifying this scan.
@@ -65,6 +67,14 @@ abstract class ScanDto implements Built<ScanDto, ScanDtoBuilder> {
   /// Non-fatal per-file errors encountered during the scan.
   @BuiltValueField(wireName: r'errors')
   BuiltList<ScanError> get errors;
+
+  /// cuid of the course this scan was scoped to. Absent for a library-wide scan (`POST /libraries/{id}/scans`) — present only for `POST /courses/{id}/rescan`.
+  @BuiltValueField(wireName: r'scopeCourseId')
+  String? get scopeCourseId;
+
+  /// Title of the scoped course, so the UI can render \"rescanning <course>\" without a second round-trip. Absent for a library-wide scan.
+  @BuiltValueField(wireName: r'scopeCourseName')
+  String? get scopeCourseName;
 
   ScanDto._();
 
@@ -141,6 +151,20 @@ class _$ScanDtoSerializer implements PrimitiveSerializer<ScanDto> {
       object.errors,
       specifiedType: const FullType(BuiltList, [FullType(ScanError)]),
     );
+    if (object.scopeCourseId != null) {
+      yield r'scopeCourseId';
+      yield serializers.serialize(
+        object.scopeCourseId,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.scopeCourseName != null) {
+      yield r'scopeCourseName';
+      yield serializers.serialize(
+        object.scopeCourseName,
+        specifiedType: const FullType(String),
+      );
+    }
   }
 
   @override
@@ -233,6 +257,20 @@ class _$ScanDtoSerializer implements PrimitiveSerializer<ScanDto> {
             specifiedType: const FullType(BuiltList, [FullType(ScanError)]),
           ) as BuiltList<ScanError>;
           result.errors.replace(valueDes);
+          break;
+        case r'scopeCourseId':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.scopeCourseId = valueDes;
+          break;
+        case r'scopeCourseName':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.scopeCourseName = valueDes;
           break;
         default:
           unhandled.add(key);

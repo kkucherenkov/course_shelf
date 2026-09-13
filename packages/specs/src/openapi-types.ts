@@ -769,6 +769,38 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/courses/{id}/rescan': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Rescan a single course
+     * @description Re-walks only this course's on-disk folder instead of the whole
+     *     library — the walk itself stays whole (it is a cheap directory
+     *     listing), but the expensive per-video work (ffprobe, thumbnails,
+     *     sidecar ingest) and orphan cleanup are both scoped to this course.
+     *     Orphan cleanup never considers another course's lessons or
+     *     transcripts during a scoped rescan.
+     *
+     *     Returns 202 immediately with `status: running`, exactly like
+     *     `POST /libraries/{id}/scans`; clients poll
+     *     `GET /libraries/{id}/scans/latest`. The response and its realtime
+     *     `scans:user:{userId}` events carry `scopeCourseId` /
+     *     `scopeCourseName` so the UI can say "rescanning <course>" rather
+     *     than implying a full library scan.
+     */
+    post: operations['runCourseRescan'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/catalog/instructors': {
     parameters: {
       query?: never;
@@ -3645,6 +3677,10 @@ export interface components {
       coursesDiscovered: number;
       /** @description Non-fatal per-file errors encountered during the scan. */
       errors: components['schemas']['ScanError'][];
+      /** @description cuid of the course this scan was scoped to. Absent for a library-wide scan (`POST /libraries/{id}/scans`) — present only for `POST /courses/{id}/rescan`. */
+      scopeCourseId?: string;
+      /** @description Title of the scoped course, so the UI can render "rescanning <course>" without a second round-trip. Absent for a library-wide scan. */
+      scopeCourseName?: string;
     };
     /**
      * @description A non-fatal error encountered while processing a single file during a scan.
@@ -5766,6 +5802,67 @@ export interface operations {
       };
       /** @description Course not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+    };
+  };
+  runCourseRescan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the course to rescan. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Rescan accepted and running */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScanDto'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Course not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description A scan is already running for this course's library */
+      409: {
         headers: {
           [name: string]: unknown;
         };

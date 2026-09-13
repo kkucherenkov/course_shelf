@@ -106,6 +106,14 @@ export type ScanLifecycleEvent =
       libraryId: string;
       libraryName: string;
       at: string;
+      /**
+       * cuid of the course this scan was scoped to. Absent for a library-wide scan.
+       */
+      scopeCourseId?: string;
+      /**
+       * Title of the scoped course. Absent for a library-wide scan.
+       */
+      scopeCourseName?: string;
     }
   | {
       kind: 'progress';
@@ -117,6 +125,14 @@ export type ScanLifecycleEvent =
       filesAdded: number;
       coursesDiscovered: number;
       errorsCount: number;
+      /**
+       * cuid of the course this scan was scoped to. Absent for a library-wide scan.
+       */
+      scopeCourseId?: string;
+      /**
+       * Title of the scoped course. Absent for a library-wide scan.
+       */
+      scopeCourseName?: string;
     }
   | {
       kind: 'finished';
@@ -132,6 +148,14 @@ export type ScanLifecycleEvent =
       filesAdded: number;
       coursesDiscovered: number;
       errorsCount: number;
+      /**
+       * cuid of the course this scan was scoped to. Absent for a library-wide scan.
+       */
+      scopeCourseId?: string;
+      /**
+       * Title of the scoped course. Absent for a library-wide scan.
+       */
+      scopeCourseName?: string;
     };
 
 /**

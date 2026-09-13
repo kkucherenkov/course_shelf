@@ -26,6 +26,7 @@ Method | HTTP request | Description
 [**listLibraryTranscriptions**](CatalogApi.md#listlibrarytranscriptions) | **GET** /api/v1/libraries/{id}/transcriptions | List transcription runs for a library
 [**registerLibrary**](CatalogApi.md#registerlibrary) | **POST** /api/v1/libraries | Register a new library (or share an existing path)
 [**removeLibrary**](CatalogApi.md#removelibrary) | **DELETE** /api/v1/libraries/{id} | Hard-delete a library and every dependent row
+[**runCourseRescan**](CatalogApi.md#runcourserescan) | **POST** /api/v1/courses/{id}/rescan | Rescan a single course
 [**runLibraryScan**](CatalogApi.md#runlibraryscan) | **POST** /api/v1/libraries/{id}/scans | Trigger a scan of a library
 [**searchCatalogue**](CatalogApi.md#searchcatalogue) | **GET** /api/v1/search | Search the catalogue (courses + lessons + transcripts)
 [**startTranscription**](CatalogApi.md#starttranscription) | **POST** /api/v1/libraries/{id}/transcriptions | Start a transcription run for a library
@@ -762,6 +763,49 @@ void (empty response body)
 
  - **Content-Type**: Not defined
  - **Accept**: application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **runCourseRescan**
+> ScanDto runCourseRescan(id)
+
+Rescan a single course
+
+Re-walks only this course's on-disk folder instead of the whole library — the walk itself stays whole (it is a cheap directory listing), but the expensive per-video work (ffprobe, thumbnails, sidecar ingest) and orphan cleanup are both scoped to this course. Orphan cleanup never considers another course's lessons or transcripts during a scoped rescan.  Returns 202 immediately with `status: running`, exactly like `POST /libraries/{id}/scans`; clients poll `GET /libraries/{id}/scans/latest`. The response and its realtime `scans:user:{userId}` events carry `scopeCourseId` / `scopeCourseName` so the UI can say \"rescanning <course>\" rather than implying a full library scan. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String id = id_example; // String | Server-generated cuid identifying the course to rescan.
+
+try {
+    final response = api.runCourseRescan(id);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->runCourseRescan: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the course to rescan. | 
+
+### Return type
+
+[**ScanDto**](ScanDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

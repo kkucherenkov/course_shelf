@@ -27,6 +27,10 @@ class _$ScanDto extends ScanDto {
   final int coursesDiscovered;
   @override
   final BuiltList<ScanError> errors;
+  @override
+  final String? scopeCourseId;
+  @override
+  final String? scopeCourseName;
 
   factory _$ScanDto([void Function(ScanDtoBuilder)? updates]) =>
       (ScanDtoBuilder()..update(updates))._build();
@@ -42,6 +46,8 @@ class _$ScanDto extends ScanDto {
     required this.filesUpdated,
     required this.coursesDiscovered,
     required this.errors,
+    this.scopeCourseId,
+    this.scopeCourseName,
   }) : super._();
   @override
   ScanDto rebuild(void Function(ScanDtoBuilder) updates) =>
@@ -63,7 +69,9 @@ class _$ScanDto extends ScanDto {
         filesAdded == other.filesAdded &&
         filesUpdated == other.filesUpdated &&
         coursesDiscovered == other.coursesDiscovered &&
-        errors == other.errors;
+        errors == other.errors &&
+        scopeCourseId == other.scopeCourseId &&
+        scopeCourseName == other.scopeCourseName;
   }
 
   @override
@@ -79,6 +87,8 @@ class _$ScanDto extends ScanDto {
     _$hash = $jc(_$hash, filesUpdated.hashCode);
     _$hash = $jc(_$hash, coursesDiscovered.hashCode);
     _$hash = $jc(_$hash, errors.hashCode);
+    _$hash = $jc(_$hash, scopeCourseId.hashCode);
+    _$hash = $jc(_$hash, scopeCourseName.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -95,7 +105,9 @@ class _$ScanDto extends ScanDto {
           ..add('filesAdded', filesAdded)
           ..add('filesUpdated', filesUpdated)
           ..add('coursesDiscovered', coursesDiscovered)
-          ..add('errors', errors))
+          ..add('errors', errors)
+          ..add('scopeCourseId', scopeCourseId)
+          ..add('scopeCourseName', scopeCourseName))
         .toString();
   }
 }
@@ -145,6 +157,16 @@ class ScanDtoBuilder implements Builder<ScanDto, ScanDtoBuilder> {
       _$this._errors ??= ListBuilder<ScanError>();
   set errors(ListBuilder<ScanError>? errors) => _$this._errors = errors;
 
+  String? _scopeCourseId;
+  String? get scopeCourseId => _$this._scopeCourseId;
+  set scopeCourseId(String? scopeCourseId) =>
+      _$this._scopeCourseId = scopeCourseId;
+
+  String? _scopeCourseName;
+  String? get scopeCourseName => _$this._scopeCourseName;
+  set scopeCourseName(String? scopeCourseName) =>
+      _$this._scopeCourseName = scopeCourseName;
+
   ScanDtoBuilder() {
     ScanDto._defaults(this);
   }
@@ -162,6 +184,8 @@ class ScanDtoBuilder implements Builder<ScanDto, ScanDtoBuilder> {
       _filesUpdated = $v.filesUpdated;
       _coursesDiscovered = $v.coursesDiscovered;
       _errors = $v.errors.toBuilder();
+      _scopeCourseId = $v.scopeCourseId;
+      _scopeCourseName = $v.scopeCourseName;
       _$v = null;
     }
     return this;
@@ -224,6 +248,8 @@ class ScanDtoBuilder implements Builder<ScanDto, ScanDtoBuilder> {
               'coursesDiscovered',
             ),
             errors: errors.build(),
+            scopeCourseId: scopeCourseId,
+            scopeCourseName: scopeCourseName,
           );
     } catch (_) {
       late String _$failedField;

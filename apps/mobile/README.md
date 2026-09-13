@@ -48,6 +48,29 @@ The Widgetbook catalog (`widgetbook/main.dart`) does **not** touch Firebase, so
 it launches on any surface (`-d chrome`, `-d linux`, an emulator) without the
 Firebase config above — the fastest path for a visual pass.
 
+## Pointing a build at a self-hosted instance
+
+There is no runtime server setting. `AppConfig.fromEnv` reads the two base URLs
+through `String.fromEnvironment`, so the host is fixed at compile time:
+
+```sh
+flutter build apk --debug \
+  --dart-define=API_BASE_URL=http://192.168.1.10:8085/api/v1 \
+  --dart-define=AUTH_BASE_URL=http://192.168.1.10:8085
+
+flutter build apk --profile … # same flags, release-like performance
+```
+
+Plain HTTP works in **debug and profile builds only**:
+`android/app/src/{debug,profile}/res/xml/network_security_config.xml` permit
+cleartext for the whole variant, overriding the strict `src/main` config by
+resource merging. A release APK still refuses cleartext to every host except
+127.0.0.1, so a release build aimed at a plain-HTTP instance fails at the first
+request — put TLS in front of the instance instead.
+
+Those XML files deliberately do **not** quote the commands above: XML forbids a
+double hyphen inside a comment, and every Flutter flag starts with one.
+
 ## Network video (video_player)
 
 - Android: `INTERNET` permission is declared in the main manifest (release

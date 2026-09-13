@@ -176,12 +176,24 @@ describe('secure headers', () => {
     expect(csp).toContain("object-src 'none'");
     // No code-evaluation path exists in the API surface — keep it that way.
     expect(csp).not.toContain("'unsafe-eval'");
+    // tuxedo 117: Helmet merges `directives` over its own defaults unless
+    // `useDefaults: false` is passed, so this directive came back even though
+    // it never appears in the list in `bootstrap.ts` — it forces every
+    // subresource fetch to https:// and breaks plain-HTTP deployments.
+    expect(csp).not.toContain('upgrade-insecure-requests');
 
     expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
     expect(res.headers['cross-origin-resource-policy']).toBe('same-origin');
     // Helmet removes the Express fingerprint.
     expect(res.headers['x-powered-by']).toBeUndefined();
+    // tuxedo 117: this app never terminates TLS, so it cannot know whether the
+    // deployment is behind one. Helmet enables HSTS by default; left on, the
+    // API answered `Strict-Transport-Security` over plain HTTP, the browser
+    // recorded it for a year, and every subsequent request got rewritten to
+    // https://, where nothing listens. TLS termination — and HSTS — belong to
+    // the reverse proxy.
+    expect(res.headers['strict-transport-security']).toBeUndefined();
   });
 
   it('development responses deliberately ship no CSP', async () => {
@@ -192,5 +204,6 @@ describe('secure headers', () => {
     expect(res.headers['content-security-policy']).toBeUndefined();
     // The rest of the Helmet set stays on regardless of environment.
     expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(res.headers['strict-transport-security']).toBeUndefined();
   });
 });

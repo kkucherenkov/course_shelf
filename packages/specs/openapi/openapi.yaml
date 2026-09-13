@@ -6325,8 +6325,21 @@ components:
           minLength: 1
           # ExternalIdRef.from() trims before testing for emptiness, so " "
           # satisfied minLength and was then rejected 422 — schema-valid data
-          # the API refuses (#321). `\S` is that trim rule, stated here.
-          pattern: "\\S"
+          # the API refuses (#321). The pattern is that trim rule, stated here.
+          #
+          # It spells the whitespace set out instead of using `\S`, and every
+          # other field below repeats it for the same reason. JSON Schema
+          # defines `pattern` as ECMA-262, whose `\s` is NOT the Unicode
+          # `White_Space` property: ECMA counts U+FEFF as whitespace and U+0085
+          # as not, Unicode says the opposite, and they agree on everything
+          # else. So `\S` meant one thing to ajv here on the server and the
+          # mirror-image thing to any Python-side reader of this document —
+          # Schemathesis generated a lone U+FEFF as valid data the API then
+          # rejected, and a lone U+0085 as invalid data the API then accepted,
+          # failing the contract run at random. The class below is ECMA
+          # WhiteSpace + LineTerminator written out, so both engines read it
+          # identically and it still says exactly what `String.trim()` strips.
+          pattern: "[^\\t\\n\\u000b\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]"
           description: >-
             Namespace identifying the external system (e.g. `udemy`,
             `youtube`). Must contain a non-whitespace character. Scrapers are
@@ -6335,7 +6348,7 @@ components:
         externalId:
           type: string
           minLength: 1
-          pattern: "\\S"
+          pattern: "[^\\t\\n\\u000b\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]"
           description: Identifier within the source system. Must contain a non-whitespace character.
         url:
           type: string
@@ -7673,9 +7686,10 @@ components:
           minLength: 1
           maxLength: 200
           # The aggregate trims before testing for emptiness, so " " satisfied
-          # minLength and was then rejected 422. `\S` is that trim rule, stated
-          # here — same fix as ExternalIdRef.source (#321).
-          pattern: "\\S"
+          # minLength and was then rejected 422. The pattern is that trim rule,
+          # stated here — same fix as ExternalIdRef.source (#321), and see there
+          # for why the whitespace set is written out rather than spelled `\S`.
+          pattern: "[^\\t\\n\\u000b\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]"
           description: >-
             Optional free-form label. Trimmed server-side, so it must contain a
             non-whitespace character.
@@ -8588,7 +8602,7 @@ components:
           # name. The create payload carries the same rule for the opposite
           # reason: there the aggregate rejects it, with a 422 the operation does
           # not document.
-          pattern: "\\S"
+          pattern: "[^\\t\\n\\u000b\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]"
           maxLength: 200
 
     SearchResultDto:
@@ -9122,7 +9136,7 @@ components:
           # documents. Stating the trim rule keeps the rejection a 400 at the
           # boundary. On the update payload it also closes the inverse gap: that
           # path writes the column directly, so `"   "` was stored as a name.
-          pattern: "\\S"
+          pattern: "[^\\t\\n\\u000b\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]"
           maxLength: 200
           description: Human-readable label. Must contain a non-whitespace character.
         rootPath:
@@ -9587,7 +9601,7 @@ components:
           # `minLength` and `pattern` constrain strings only, so `null` still
           # clears the label. Mirrors CreateBookmarkRequest.label, which had
           # both and this one did not.
-          pattern: "\\S"
+          pattern: "[^\\t\\n\\u000b\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]"
           maxLength: 200
           description: >-
             Pass an explicit `null` to clear the label; omit to leave it
@@ -9630,7 +9644,7 @@ components:
           # The Title value object trims before checking for emptiness, so a
           # whitespace-only title satisfied minLength and came back 422. Same
           # trim rule as the note body and the bookmark label.
-          pattern: "\\S"
+          pattern: "[^\\t\\n\\u000b\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]"
           maxLength: 200
         description:
           type: string
@@ -9750,9 +9764,11 @@ components:
           minLength: 1
           # The aggregate trims before testing for emptiness, so a lone `\v`
           # satisfied minLength and came back 422 — while the description below
-          # promised a 400. `\S` is that trim rule, and it makes the promise
-          # true. Same fix as ExternalIdRef.source (#321) and the bookmark label.
-          pattern: "\\S"
+          # promised a 400. The pattern is that trim rule, and it makes the
+          # promise true. Same fix as ExternalIdRef.source (#321) and the
+          # bookmark label; see the former for why the whitespace set is written
+          # out rather than spelled `\S`.
+          pattern: "[^\\t\\n\\u000b\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]"
           maxLength: 16384
           description: >-
             Plain Markdown. Trimmed server-side; a body with no non-whitespace

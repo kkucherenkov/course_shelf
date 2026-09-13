@@ -1426,6 +1426,16 @@ paths:
                   source: youtube
                   kind: name
                   query: "rust programming"
+              byPastedFragment:
+                summary: >-
+                  Udemy course pages cannot be fetched (bot challenge, no
+                  Affiliate API access) — paste the HTML instead. `url` is
+                  optional but lets the udemy scraper still mint an external id.
+                value:
+                  source: udemy
+                  kind: fragment
+                  url: "https://www.udemy.com/course/docker-mastery/"
+                  fragment: "<html>…pasted course page…</html>"
       responses:
         "200":
           description: Scrape candidates (possibly empty)
@@ -1527,6 +1537,18 @@ paths:
                     title: Bad Gateway
                     status: 502
                     detail: "Failed to fetch 'https://www.youtube.com/playlist?list=PL123' from the upstream source."
+                botChallenge:
+                  summary: Upstream served a bot/JS challenge instead of the page (e.g. Udemy)
+                  value:
+                    type: about:blank
+                    title: Scrape blocked by bot challenge
+                    status: 502
+                    code: scrape-bot-challenge
+                    detail: >-
+                      The host for "https://www.udemy.com/course/docker-mastery/" returned a
+                      bot/JS challenge instead of the page. Automated fetching isn't possible
+                      here — paste the page's HTML with kind=fragment instead, if the scraper
+                      supports it.
 
   /api/v1/admin/courses/{id}/identify:
     post:
@@ -6499,7 +6521,11 @@ components:
         url:
           type: string
           format: uri
-          description: Required when kind=url.
+          description: >-
+            Required when kind=url. Optional when kind=fragment — the page
+            the pasted HTML was copied from, so a scraper that can derive an
+            external id from a URL (e.g. `udemy`) still gets one from a
+            fragment it never fetched itself.
           example: "https://www.youtube.com/playlist?list=PL123"
         query:
           type: string

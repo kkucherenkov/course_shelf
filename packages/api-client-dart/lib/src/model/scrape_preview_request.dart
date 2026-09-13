@@ -14,7 +14,7 @@ part 'scrape_preview_request.g.dart';
 /// Properties:
 /// * [source_] - Explicit scraper id (e.g. `youtube`, `udemy`, `json-ld`). Omit to auto-detect (kind=url) or default to json-ld (kind=fragment). Required for kind=name.
 /// * [kind] 
-/// * [url] - Required when kind=url.
+/// * [url] - Required when kind=url. Optional when kind=fragment — the page the pasted HTML was copied from, so a scraper that can derive an external id from a URL (e.g. `udemy`) still gets one from a fragment it never fetched itself.
 /// * [query] - Required when kind=name.
 /// * [fragment] - Required when kind=fragment (raw HTML or JSON-LD string).
 @BuiltValue()
@@ -27,7 +27,7 @@ abstract class ScrapePreviewRequest implements Built<ScrapePreviewRequest, Scrap
   ScraperKind get kind;
   // enum kindEnum {  url,  name,  fragment,  };
 
-  /// Required when kind=url.
+  /// Required when kind=url. Optional when kind=fragment — the page the pasted HTML was copied from, so a scraper that can derive an external id from a URL (e.g. `udemy`) still gets one from a fragment it never fetched itself.
   @BuiltValueField(wireName: r'url')
   String? get url;
 

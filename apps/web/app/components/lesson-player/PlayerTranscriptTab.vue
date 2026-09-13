@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import type { TranscriptCue } from '~/composables/useTranscriptCues';
+  import { formatCueTime } from '~/utils/format-time';
 
   const props = defineProps<{
     cues: TranscriptCue[];
@@ -27,17 +28,6 @@
       .map((cue, index) => ({ cue, index }))
       .filter(({ cue }) => cue.text.toLowerCase().includes(needle));
   });
-
-  function formatTime(seconds: number): string {
-    const total = Math.floor(seconds);
-    const h = Math.floor(total / 3600);
-    const m = Math.floor((total % 3600) / 60);
-    const s = total % 60;
-    if (h > 0) {
-      return `${String(h)}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-    }
-    return `${String(m)}:${String(s).padStart(2, '0')}`;
-  }
 </script>
 
 <template>
@@ -65,7 +55,7 @@
             :aria-current="item.index === props.activeIndex ? 'true' : undefined"
             @click="emit('seek', item.cue.start)"
           >
-            <span class="player-transcript-tab__time">{{ formatTime(item.cue.start) }}</span>
+            <span class="player-transcript-tab__time">{{ formatCueTime(item.cue.start) }}</span>
             <span class="player-transcript-tab__text">{{ item.cue.text }}</span>
           </button>
         </li>

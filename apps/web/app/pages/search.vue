@@ -1,10 +1,15 @@
 <script setup lang="ts">
   import { computed } from 'vue';
   import { AppButton, AppEmptyState, AppSkeleton } from '@app/ui';
-  import type { SearchCourseHit, SearchLessonHit } from '@app/api-client-ts';
+  import type {
+    SearchCourseHit,
+    SearchLessonHit,
+    SearchTranscriptHitDto,
+  } from '@app/api-client-ts';
 
   import { useSearch } from '~/composables/useSearch';
   import { highlight } from '~/utils/highlight';
+  import SearchTranscriptGroup from '~/components/search/SearchTranscriptGroup.vue';
 
   definePageMeta({ layout: 'default' });
 
@@ -30,10 +35,19 @@
 
   const courses = computed<SearchCourseHit[]>(() => data.value?.courses ?? []);
   const lessons = computed<SearchLessonHit[]>(() => data.value?.lessons ?? []);
-  const totalCount = computed(() => courses.value.length + lessons.value.length);
+  // `transcripts` is optional on SearchResultDto (additive field) — default to
+  // `[]` rather than letting `undefined` reach the template.
+  const transcripts = computed<SearchTranscriptHitDto[]>(() => data.value?.transcripts ?? []);
+  const totalCount = computed(
+    () => courses.value.length + lessons.value.length + transcripts.value.length,
+  );
 
   const isEmpty = computed(
-    () => status.value === 'success' && courses.value.length === 0 && lessons.value.length === 0,
+    () =>
+      status.value === 'success' &&
+      courses.value.length === 0 &&
+      lessons.value.length === 0 &&
+      transcripts.value.length === 0,
   );
 </script>
 
@@ -198,6 +212,13 @@
           </li>
         </ul>
       </section>
+
+      <!-- Transcripts group -->
+      <SearchTranscriptGroup
+        :hits="transcripts"
+        :query="q"
+        :title="t('pages.search.groupTranscripts')"
+      />
     </template>
   </div>
 </template>

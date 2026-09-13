@@ -59,6 +59,11 @@ export class CatalogScrapeAdminController {
   private toScrapeRequest(body: ScrapePreviewRequest): ScrapeRequest {
     if (body.kind === 'url') return { kind: 'url', url: body.url ?? '' };
     if (body.kind === 'name') return { kind: 'name', query: body.query ?? '' };
-    return { kind: 'fragment', raw: body.fragment ?? '' };
+    // fragment: `url` is optional — the page the pasted HTML came from, if any.
+    return {
+      kind: 'fragment',
+      raw: body.fragment ?? '',
+      ...(body.url ? { sourceUrl: body.url } : {}),
+    };
   }
 }

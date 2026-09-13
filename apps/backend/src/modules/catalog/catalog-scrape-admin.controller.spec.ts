@@ -35,4 +35,30 @@ describe('CatalogScrapeAdminController', () => {
     expect(bus.execute).toHaveBeenCalledWith(expect.any(ScrapeCourseCommand));
     expect(res).toEqual({ candidates: [{ source: 'json-ld', fragment: { title: 'X' } }] });
   });
+
+  // tuxedo 90: a pasted fragment's optional `url` becomes the request's sourceUrl.
+  it('maps a fragment request url to sourceUrl on the ScrapeRequest', async () => {
+    const bus = commandBus([]);
+    const controller = new CatalogScrapeAdminController(bus, registry);
+    await controller.scrapeCoursePreview('c1', {
+      kind: 'fragment',
+      fragment: '<html>…</html>',
+      source: 'udemy',
+      url: 'https://www.udemy.com/course/docker-mastery/',
+    });
+    const command = vi.mocked(bus.execute).mock.calls[0]![0] as ScrapeCourseCommand;
+    expect(command.request).toEqual({
+      kind: 'fragment',
+      raw: '<html>…</html>',
+      sourceUrl: 'https://www.udemy.com/course/docker-mastery/',
+    });
+  });
+
+  it('omits sourceUrl on a fragment request with no url', async () => {
+    const bus = commandBus([]);
+    const controller = new CatalogScrapeAdminController(bus, registry);
+    await controller.scrapeCoursePreview('c1', { kind: 'fragment', fragment: '<html>…</html>' });
+    const command = vi.mocked(bus.execute).mock.calls[0]![0] as ScrapeCourseCommand;
+    expect(command.request).toEqual({ kind: 'fragment', raw: '<html>…</html>' });
+  });
 });

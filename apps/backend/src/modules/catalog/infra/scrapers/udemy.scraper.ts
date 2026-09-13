@@ -5,6 +5,13 @@
  * udemy: external id derived from the course slug in the URL. Deliberately
  * defensive — the page layout is brittle and may change without notice, so any
  * miss yields an empty result rather than an error. name-search is best-effort.
+ *
+ * url-kind fetching is best-effort only in theory: in practice Udemy's course
+ * pages sit behind a Cloudflare bot challenge (HttpFetcher throws
+ * ScrapeBotChallengeError for it) and the Affiliate API stopped issuing keys
+ * on 2025-01-01, so fragment-kind — paste the page's HTML — is the supported
+ * path. Its optional `sourceUrl` lets that path mint the same external id a
+ * fetch would have.
  */
 import type { HtmlMetadataExtractor } from './html-metadata.extractor';
 import type { HttpFetcher } from './http-fetcher';
@@ -39,10 +46,7 @@ export class UdemyScraper implements Scraper {
 
   async scrape(request: ScrapeRequest): Promise<ScrapeCandidate[]> {
     if (request.kind === 'url') return this.scrapeUrl(request.url);
-    if (request.kind === 'fragment') {
-      const fragment = this.extractor.extract(request.raw);
-      return Object.keys(fragment).length === 0 ? [] : [{ fragment, source: this.id }];
-    }
+    if (request.kind === 'fragment') return this.scrapeFragment(request.raw, request.sourceUrl);
     // name-kind: best-effort. Udemy has no stable public search; return empty
     // until/if an official API is wired. Documented as expected behaviour.
     return [];
@@ -53,17 +57,31 @@ export class UdemyScraper implements Scraper {
     if (status < 200 || status >= 300) return [];
     const base = this.extractor.extract(body);
     if (Object.keys(base).length === 0) return [];
+    return [{ fragment: this.withExternalId(base, url), source: this.id, sourceUrl: url }];
+  }
+
+  // The paste-the-HTML path — the only one that works, since Udemy's course
+  // pages sit behind a bot challenge and its Affiliate API stopped issuing
+  // keys on 2025-01-01. `sourceUrl` is optional: pasted HTML has no URL of its
+  // own, but when the operator supplies the page it came from, we can still
+  // mint the `udemy:` external id — the one thing a pasted fragment used to lose.
+  private scrapeFragment(raw: string, sourceUrl?: string): ScrapeCandidate[] {
+    const base = this.extractor.extract(raw);
+    if (Object.keys(base).length === 0) return [];
+    const fragment = sourceUrl ? this.withExternalId(base, sourceUrl) : base;
+    return [{ fragment, source: this.id, ...(sourceUrl ? { sourceUrl } : {}) }];
+  }
+
+  private withExternalId(base: ScrapedCourseFragment, url: string): ScrapedCourseFragment {
     const slug = this.courseSlug(url);
-    const fragment: ScrapedCourseFragment = slug
-      ? {
-          ...base,
-          externalIds: [
-            ...(base.externalIds ?? []),
-            { source: 'udemy', externalId: `udemy:course:${slug}`, url },
-          ],
-        }
-      : base;
-    return [{ fragment, source: this.id, sourceUrl: url }];
+    if (!slug) return base;
+    return {
+      ...base,
+      externalIds: [
+        ...(base.externalIds ?? []),
+        { source: 'udemy', externalId: `udemy:course:${slug}`, url },
+      ],
+    };
   }
 
   private courseSlug(url: string): string | undefined {

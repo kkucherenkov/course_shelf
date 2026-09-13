@@ -469,12 +469,18 @@
 <style scoped lang="scss">
   $sidebar-w-xl: 360px;
   $sidebar-w-lg: 280px;
-  // Topbar height matches the default layout header — named var, exempt from raw-px rule.
-  $topbar-h: 56px;
   $sidebar-mobile-min-h: 300px;
 
   .page-lesson-player {
-    height: calc(100vh - #{$topbar-h});
+    // `AppNavigationShell.__main-body` already stretches to fill the viewport
+    // minus its own topbar and padding (grid row with `align-content: stretch`
+    // inside a `min-height: 100vh` shell) — filling that already-sized parent
+    // with a percentage height, instead of re-deriving the viewport math here,
+    // is what keeps this in sync with the shell's actual chrome instead of
+    // silently drifting by whatever the shell's padding/topbar happen to be
+    // (see tuxedo 114: this used to double-count that padding and overflow
+    // the viewport by 32px on every screen size).
+    height: 100%;
     display: flex;
     flex-direction: column;
 

@@ -250,7 +250,11 @@
 <template>
   <AuthLayout variant="sign-up">
     <!-- Self-registration disabled state -->
-    <div v-if="!config.selfRegistration" class="page-sign-up" data-testid="page-sign-up-disabled">
+    <div
+      v-if="!config.selfRegistration && !isFirstAdmin"
+      class="page-sign-up"
+      data-testid="page-sign-up-disabled"
+    >
       <AppNoPermission
         :title="t('pages.signUp.disabledTitle')"
         :body="t('pages.signUp.disabledBody')"

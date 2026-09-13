@@ -8,7 +8,6 @@ export default {
       navSignIn: 'Войти',
       navSignOut: 'Выйти',
       searchPlaceholder: 'Поиск курсов и уроков…',
-      profileComingSoon: 'Страница профиля скоро будет доступна.',
     },
   },
   pages: {

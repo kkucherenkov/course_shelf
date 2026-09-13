@@ -3238,13 +3238,13 @@ export interface components {
     UpdateLibraryRequest: {
       name?: string;
     };
-    /** @description Three result lists for a single search query — course hits, lesson hits, and transcript-cue hits. The shape is intentionally not unified because each kind needs different context fields (lesson hits carry their parent course/section, transcript hits additionally carry the cue's start time, so the SPA can show breadcrumb-style context and seek straight to the moment). */
+    /** @description Three result lists for a single search query — course hits, lesson hits, and transcript-cue hits. `transcripts` is optional rather than required despite the server always populating it: additive means a client built against the two-array shape, including its own test fixtures, keeps typechecking against this schema unmodified. The shape is intentionally not unified because each kind needs different context fields (lesson hits carry their parent course/section, transcript hits additionally carry the cue's start time, so the SPA can show breadcrumb-style context and seek straight to the moment). */
     SearchResultDto: {
       /** @description The trimmed query string the server matched against. */
       query: string;
       courses: components['schemas']['SearchCourseHit'][];
       lessons: components['schemas']['SearchLessonHit'][];
-      transcripts: components['schemas']['SearchTranscriptHitDto'][];
+      transcripts?: components['schemas']['SearchTranscriptHitDto'][];
     };
     SearchCourseHit: {
       id: string;

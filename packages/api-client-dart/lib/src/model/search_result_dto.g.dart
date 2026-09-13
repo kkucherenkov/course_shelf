@@ -14,7 +14,7 @@ class _$SearchResultDto extends SearchResultDto {
   @override
   final BuiltList<SearchLessonHit> lessons;
   @override
-  final BuiltList<SearchTranscriptHitDto> transcripts;
+  final BuiltList<SearchTranscriptHitDto>? transcripts;
 
   factory _$SearchResultDto([void Function(SearchResultDtoBuilder)? updates]) =>
       (SearchResultDtoBuilder()..update(updates))._build();
@@ -23,7 +23,7 @@ class _$SearchResultDto extends SearchResultDto {
     required this.query,
     required this.courses,
     required this.lessons,
-    required this.transcripts,
+    this.transcripts,
   }) : super._();
   @override
   SearchResultDto rebuild(void Function(SearchResultDtoBuilder) updates) =>
@@ -100,7 +100,7 @@ class SearchResultDtoBuilder
       _query = $v.query;
       _courses = $v.courses.toBuilder();
       _lessons = $v.lessons.toBuilder();
-      _transcripts = $v.transcripts.toBuilder();
+      _transcripts = $v.transcripts?.toBuilder();
       _$v = null;
     }
     return this;
@@ -132,7 +132,7 @@ class SearchResultDtoBuilder
             ),
             courses: courses.build(),
             lessons: lessons.build(),
-            transcripts: transcripts.build(),
+            transcripts: _transcripts?.build(),
           );
     } catch (_) {
       late String _$failedField;
@@ -142,7 +142,7 @@ class SearchResultDtoBuilder
         _$failedField = 'lessons';
         lessons.build();
         _$failedField = 'transcripts';
-        transcripts.build();
+        _transcripts?.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
           r'SearchResultDto',

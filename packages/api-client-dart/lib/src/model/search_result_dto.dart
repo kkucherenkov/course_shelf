@@ -12,7 +12,7 @@ import 'package:built_value/serializer.dart';
 
 part 'search_result_dto.g.dart';
 
-/// Three result lists for a single search query — course hits, lesson hits, and transcript-cue hits. The shape is intentionally not unified because each kind needs different context fields (lesson hits carry their parent course/section, transcript hits additionally carry the cue's start time, so the SPA can show breadcrumb-style context and seek straight to the moment).
+/// Three result lists for a single search query — course hits, lesson hits, and transcript-cue hits. `transcripts` is optional rather than required despite the server always populating it: additive means a client built against the two-array shape, including its own test fixtures, keeps typechecking against this schema unmodified. The shape is intentionally not unified because each kind needs different context fields (lesson hits carry their parent course/section, transcript hits additionally carry the cue's start time, so the SPA can show breadcrumb-style context and seek straight to the moment).
 ///
 /// Properties:
 /// * [query] - The trimmed query string the server matched against.
@@ -32,7 +32,7 @@ abstract class SearchResultDto implements Built<SearchResultDto, SearchResultDto
   BuiltList<SearchLessonHit> get lessons;
 
   @BuiltValueField(wireName: r'transcripts')
-  BuiltList<SearchTranscriptHitDto> get transcripts;
+  BuiltList<SearchTranscriptHitDto>? get transcripts;
 
   SearchResultDto._();
 
@@ -72,11 +72,13 @@ class _$SearchResultDtoSerializer implements PrimitiveSerializer<SearchResultDto
       object.lessons,
       specifiedType: const FullType(BuiltList, [FullType(SearchLessonHit)]),
     );
-    yield r'transcripts';
-    yield serializers.serialize(
-      object.transcripts,
-      specifiedType: const FullType(BuiltList, [FullType(SearchTranscriptHitDto)]),
-    );
+    if (object.transcripts != null) {
+      yield r'transcripts';
+      yield serializers.serialize(
+        object.transcripts,
+        specifiedType: const FullType(BuiltList, [FullType(SearchTranscriptHitDto)]),
+      );
+    }
   }
 
   @override

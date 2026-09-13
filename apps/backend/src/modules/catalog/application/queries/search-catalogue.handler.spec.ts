@@ -211,7 +211,7 @@ describe('SearchCatalogueHandler', () => {
       );
 
       expect(result.transcripts).toHaveLength(1);
-      expect(result.transcripts[0]).toEqual({
+      expect(result.transcripts?.[0]).toEqual({
         lessonId: 'lesson-1',
         lessonTitle: 'Architectural drivers',
         courseId: 'course-1',
@@ -357,9 +357,9 @@ describe('SearchCatalogueHandler', () => {
 
       const result = await handler.execute(new SearchCatalogueQuery('arch', 20, adminActor));
 
-      expect(result.transcripts[0]?.lessonId).toBe('t2'); // prefix
-      expect(result.transcripts[1]?.lessonId).toBe('t3'); // word-start
-      expect(result.transcripts[2]?.lessonId).toBe('t1'); // substring
+      expect(result.transcripts?.[0]?.lessonId).toBe('t2'); // prefix
+      expect(result.transcripts?.[1]?.lessonId).toBe('t3'); // word-start
+      expect(result.transcripts?.[2]?.lessonId).toBe('t1'); // substring
     });
   });
 });

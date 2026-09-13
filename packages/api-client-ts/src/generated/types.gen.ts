@@ -1363,7 +1363,7 @@ export type UpdateLibraryRequest = {
 };
 
 /**
- * Three result lists for a single search query — course hits, lesson hits, and transcript-cue hits. The shape is intentionally not unified because each kind needs different context fields (lesson hits carry their parent course/section, transcript hits additionally carry the cue's start time, so the SPA can show breadcrumb-style context and seek straight to the moment).
+ * Three result lists for a single search query — course hits, lesson hits, and transcript-cue hits. `transcripts` is optional rather than required despite the server always populating it: additive means a client built against the two-array shape, including its own test fixtures, keeps typechecking against this schema unmodified. The shape is intentionally not unified because each kind needs different context fields (lesson hits carry their parent course/section, transcript hits additionally carry the cue's start time, so the SPA can show breadcrumb-style context and seek straight to the moment).
  */
 export type SearchResultDto = {
     /**
@@ -1372,7 +1372,7 @@ export type SearchResultDto = {
     query: string;
     courses: Array<SearchCourseHit>;
     lessons: Array<SearchLessonHit>;
-    transcripts: Array<SearchTranscriptHitDto>;
+    transcripts?: Array<SearchTranscriptHitDto>;
 };
 
 export type SearchCourseHit = {

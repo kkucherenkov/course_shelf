@@ -1758,6 +1758,14 @@ export type ScanDto = {
      * Non-fatal per-file errors encountered during the scan.
      */
     errors: Array<ScanError>;
+    /**
+     * cuid of the course this scan was scoped to. Absent for a library-wide scan (`POST /libraries/{id}/scans`) — present only for `POST /courses/{id}/rescan`.
+     */
+    scopeCourseId?: string;
+    /**
+     * Title of the scoped course, so the UI can render "rescanning <course>" without a second round-trip. Absent for a library-wide scan.
+     */
+    scopeCourseName?: string;
 };
 
 /**
@@ -3710,6 +3718,60 @@ export type ResetCourseProgressResponses = {
 };
 
 export type ResetCourseProgressResponse = ResetCourseProgressResponses[keyof ResetCourseProgressResponses];
+
+export type RunCourseRescanData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the course to rescan.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/courses/{id}/rescan';
+};
+
+export type RunCourseRescanErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Course not found
+     */
+    404: Problem;
+    /**
+     * A scan is already running for this course's library
+     */
+    409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type RunCourseRescanError = RunCourseRescanErrors[keyof RunCourseRescanErrors];
+
+export type RunCourseRescanResponses = {
+    /**
+     * Rescan accepted and running
+     */
+    202: ScanDto;
+};
+
+export type RunCourseRescanResponse = RunCourseRescanResponses[keyof RunCourseRescanResponses];
 
 export type ListInstructorsData = {
     body?: never;

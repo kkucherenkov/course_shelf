@@ -18,6 +18,8 @@ Name | Type | Description | Notes
 **filesUpdated** | **int** | Files whose metadata changed since the last scan. | 
 **coursesDiscovered** | **int** | Course roots detected during this scan. | 
 **errors** | [**BuiltList&lt;ScanError&gt;**](ScanError.md) | Non-fatal per-file errors encountered during the scan. | 
+**scopeCourseId** | **String** | cuid of the course this scan was scoped to. Absent for a library-wide scan (`POST /libraries/{id}/scans`) — present only for `POST /courses/{id}/rescan`. | [optional] 
+**scopeCourseName** | **String** | Title of the scoped course, so the UI can render \"rescanning <course>\" without a second round-trip. Absent for a library-wide scan. | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

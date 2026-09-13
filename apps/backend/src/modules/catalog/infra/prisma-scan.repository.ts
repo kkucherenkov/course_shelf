@@ -50,6 +50,8 @@ export class PrismaScanRepository implements ScanRepository {
             filesAdded: scan.filesAdded,
             filesUpdated: scan.filesUpdated,
             coursesDiscovered: scan.coursesDiscovered,
+            scopeCourseId: scan.scopeCourseId ?? null,
+            scopeCourseName: scan.scopeCourseName ?? null,
           },
           update: {
             status: scan.status,
@@ -116,6 +118,8 @@ export class PrismaScanRepository implements ScanRepository {
         discoveredFiles: {
           select: { path: true, mtime: true, size: true },
         },
+        scopeCourseId: true,
+        scopeCourseName: true,
       },
     });
 
@@ -143,6 +147,8 @@ export class PrismaScanRepository implements ScanRepository {
         discoveredFiles: {
           select: { path: true, mtime: true, size: true },
         },
+        scopeCourseId: true,
+        scopeCourseName: true,
       },
     });
 
@@ -169,6 +175,8 @@ export class PrismaScanRepository implements ScanRepository {
         discoveredFiles: {
           select: { path: true, mtime: true, size: true },
         },
+        scopeCourseId: true,
+        scopeCourseName: true,
       },
     });
 
@@ -194,6 +202,8 @@ export class PrismaScanRepository implements ScanRepository {
     // past Int's ~2GB cap). Converted to `number` below — safe up to
     // Number.MAX_SAFE_INTEGER (~9 PB), far past any real video file.
     discoveredFiles: { path: string; mtime: Date; size: bigint }[];
+    scopeCourseId: string | null;
+    scopeCourseName: string | null;
   }): Scan {
     return Scan.reconstitute({
       id: row.id as ScanId,
@@ -215,6 +225,8 @@ export class PrismaScanRepository implements ScanRepository {
         mtime: f.mtime,
         size: Number(f.size),
       })),
+      scopeCourseId: row.scopeCourseId ?? undefined,
+      scopeCourseName: row.scopeCourseName ?? undefined,
     });
   }
 }

@@ -22,11 +22,25 @@ export interface ActiveScan {
   coursesDiscovered: number;
   errorsCount: number;
   finished?: { status: 'succeeded' | 'failed' | 'partial'; at: string };
+  /** Set when this scan was scoped to one course (E32-F01-S02). */
+  scopeCourseId?: string;
+  scopeCourseName?: string;
+}
+
+interface ScanScopeFields {
+  scopeCourseId?: string;
+  scopeCourseName?: string;
 }
 
 export type ScanLifecycleEvent =
-  | { kind: 'started'; scanId: string; libraryId: string; libraryName: string; at: string }
-  | {
+  | ({
+      kind: 'started';
+      scanId: string;
+      libraryId: string;
+      libraryName: string;
+      at: string;
+    } & ScanScopeFields)
+  | ({
       kind: 'progress';
       scanId: string;
       libraryId: string;
@@ -36,8 +50,8 @@ export type ScanLifecycleEvent =
       filesAdded: number;
       coursesDiscovered: number;
       errorsCount: number;
-    }
-  | {
+    } & ScanScopeFields)
+  | ({
       kind: 'finished';
       scanId: string;
       libraryId: string;
@@ -48,7 +62,7 @@ export type ScanLifecycleEvent =
       filesAdded: number;
       coursesDiscovered: number;
       errorsCount: number;
-    };
+    } & ScanScopeFields);
 
 const MAX_RECENTLY_FINISHED = 3;
 const ACTIVE_REMOVAL_DELAY_MS = 6000;
@@ -83,6 +97,8 @@ export const useScanLifecycleStore = defineStore('scanLifecycle', () => {
         filesAdded: 0,
         coursesDiscovered: 0,
         errorsCount: 0,
+        scopeCourseId: event.scopeCourseId,
+        scopeCourseName: event.scopeCourseName,
       });
       return;
     }
@@ -98,6 +114,8 @@ export const useScanLifecycleStore = defineStore('scanLifecycle', () => {
         filesAdded: 0,
         coursesDiscovered: 0,
         errorsCount: 0,
+        scopeCourseId: event.scopeCourseId,
+        scopeCourseName: event.scopeCourseName,
       };
       activeScanMap.value = new Map(activeScanMap.value).set(event.scanId, {
         ...base,
@@ -117,6 +135,8 @@ export const useScanLifecycleStore = defineStore('scanLifecycle', () => {
         libraryId: event.libraryId,
         libraryName: event.libraryName,
         startedAt: event.at,
+        scopeCourseId: event.scopeCourseId,
+        scopeCourseName: event.scopeCourseName,
       }),
       filesScanned: event.filesScanned,
       filesAdded: event.filesAdded,

@@ -34,7 +34,10 @@ import path from 'node:path';
 import { AppConfig } from '../../../../common/config/app-config';
 import { CentrifugoService } from '../../../../common/centrifugo/centrifugo.service';
 import { Course } from '../../domain/course/course';
-import { CourseSlugAlreadyTakenError } from '../../domain/course/course.errors';
+import {
+  CourseNotFoundError,
+  CourseSlugAlreadyTakenError,
+} from '../../domain/course/course.errors';
 import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
 import { Lesson } from '../../domain/lesson/lesson';
 import { MaterialKindUnsupportedError } from '../../domain/lesson/lesson.errors';
@@ -123,16 +126,32 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
   ) {}
 
   async execute(command: RunScanCommand): Promise<Scan> {
+    // 0. Scoped rescan (E32-F01-S02): resolve the course and its library
+    // first — POST /courses/{id}/rescan only ever has a courseId, never a
+    // libraryId. The library-wide path (command.scope undefined) is
+    // unchanged: command.libraryId is used as-is.
+    let scopeCourse: Course | undefined;
+    let libraryId = command.libraryId;
+    if (command.scope) {
+      const course = await this.courseRepo.findById(command.scope.courseId);
+      if (!course) throw new CourseNotFoundError(command.scope.courseId);
+      scopeCourse = course;
+      libraryId = course.libraryId;
+    }
+    // Unreachable via the two real call sites (ScansController always passes
+    // libraryId; CoursesController always passes scope) — defensive only.
+    if (!libraryId) throw new LibraryNotFoundError('');
+
     // 1. Verify library exists.
-    const library = await this.libraryRepo.findById(command.libraryId);
-    if (!library) throw new LibraryNotFoundError(command.libraryId);
+    const library = await this.libraryRepo.findById(libraryId);
+    if (!library) throw new LibraryNotFoundError(libraryId);
 
     // 2. Enforce at-most-one-running-scan invariant.
-    const running = await this.scanRepo.findRunningByLibrary(command.libraryId);
-    if (running) throw new ScanAlreadyRunningError(command.libraryId);
+    const running = await this.scanRepo.findRunningByLibrary(libraryId);
+    if (running) throw new ScanAlreadyRunningError(libraryId);
 
     // 3. Load previous scan's discovered files for incremental comparison.
-    const previous = await this.scanRepo.findLatestByLibrary(command.libraryId);
+    const previous = await this.scanRepo.findLatestByLibrary(libraryId);
     const prevFileMap = new Map<string, { mtime: Date; size: number }>();
     if (previous) {
       for (const f of previous.discoveredFiles) {
@@ -141,7 +160,13 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
     }
 
     // 4. Create and persist a running scan (202 response returns this).
-    const scan = Scan.start({ id: nanoid(), libraryId: command.libraryId });
+    const scan = Scan.start({
+      id: nanoid(),
+      libraryId,
+      ...(scopeCourse
+        ? { scope: { courseId: scopeCourse.id, courseName: scopeCourse.title } }
+        : {}),
+    });
     await this.scanRepo.save(scan);
 
     // Publish 'started' event — fire-and-forget; Centrifugo being down must
@@ -152,6 +177,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       libraryId: library.id,
       libraryName: library.name,
       at: new Date().toISOString(),
+      ...(scopeCourse ? { scopeCourseId: scopeCourse.id, scopeCourseName: scopeCourse.title } : {}),
     });
 
     // 5. Fire-and-forget the actual walk.
@@ -165,6 +191,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           library.rootPath,
           prevFileMap,
           command.actorUserId,
+          scopeCourse,
         ),
       )
       .catch(() => {
@@ -186,6 +213,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
     rootPath: string,
     prevFileMap: Map<string, { mtime: Date; size: number }>,
     actorUserId: string,
+    scopeCourse?: Course,
   ): Promise<void> {
     const channel = `scans:user:${actorUserId}`;
     let lastProgressPublishedAt = 0;
@@ -201,11 +229,42 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
         filesAdded: scan.filesAdded,
         coursesDiscovered: scan.coursesDiscovered,
         errorsCount: scan.errors.length,
+        ...(scan.scopeCourseId
+          ? { scopeCourseId: scan.scopeCourseId, scopeCourseName: scan.scopeCourseName }
+          : {}),
       });
       lastProgressPublishedAt = Date.now();
     };
 
     try {
+      // -----------------------------------------------------------------------
+      // Scoped rescan (E32-F01-S02): resolve which on-disk folder belongs to
+      // scopeCourse from one of its already-persisted lessons' videoPath —
+      // Course does not itself store a folder path. Undefined when this is a
+      // library-wide scan (the default, unchanged) or when the scoped course
+      // somehow has no lessons to derive a folder from (recorded as a
+      // ScanError rather than silently falling back to the whole library).
+      // The walk below stays whole (a directory listing is cheap — see the
+      // card's "Why"); only the FILTER on which folder gets grouped, and
+      // later which folder gets the expensive per-lesson processing, is
+      // scoped.
+      // -----------------------------------------------------------------------
+      let targetFolderName: string | undefined;
+      const scopedLessons = scopeCourse ? await this.lessonRepo.findByCourse(scopeCourse.id) : [];
+      if (scopeCourse) {
+        const anyLesson = scopedLessons[0];
+        if (anyLesson) {
+          const rel = path.relative(rootPath, anyLesson.videoPath);
+          targetFolderName = rel.split(/[/\\]/)[0];
+        } else {
+          scan.recordError({
+            path: rootPath,
+            message: `Course "${scopeCourse.id}" has no lessons to derive its on-disk folder from — cannot scope the rescan.`,
+            code: 'course-scope-unresolvable',
+          });
+        }
+      }
+
       // Collect all entries grouped by top-level course folder.
       // key = absolute path of the immediate child directory of rootPath
       const courseEntries = new Map<string, { path: string; mtime: Date; size: number }[]>();
@@ -222,6 +281,10 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
 
         // segments[0] is always defined when length >= 2.
         const topFolder = segments[0] ?? '';
+
+        // Scoped rescan: skip every folder except the target course's.
+        if (scopeCourse && topFolder !== targetFolderName) continue;
+
         if (!courseEntries.has(topFolder)) {
           courseEntries.set(topFolder, []);
         }
@@ -249,10 +312,30 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       //   - a video that WAS in this map but is not in `seenVideoPaths` once
       //     the walk finishes has vanished from disk — its lesson's Transcript
       //     rows get cleaned up below.
+      //
+      // Scoped rescan (E32-F01-S02): this is the map orphan cleanup reads at
+      // the end of the walk, so scoping it here is what keeps cleanup
+      // scope-aware for free — index only the target course's own lessons
+      // (one query) instead of every course in the library (N+1 queries over
+      // courses this scan never even looks at). Trap avoided: a scoped scan
+      // only ever sees ITS OWN folder in `seenVideoPaths`, so indexing every
+      // OTHER course's lessons here would make them all look deleted from
+      // disk once the walk reaches the cleanup loop below.
       const existingLessonByVideoPath = new Map<string, Lesson>();
-      for (const course of existingCourses) {
-        for (const lesson of await this.lessonRepo.findByCourse(course.id)) {
-          existingLessonByVideoPath.set(lesson.videoPath, lesson);
+      if (scopeCourse) {
+        if (targetFolderName !== undefined) {
+          for (const lesson of scopedLessons) {
+            existingLessonByVideoPath.set(lesson.videoPath, lesson);
+          }
+        }
+        // targetFolderName undefined → scope was unresolvable (ScanError
+        // already recorded above) → index nothing, so cleanup touches
+        // nothing rather than treating every lesson as newly orphaned.
+      } else {
+        for (const course of existingCourses) {
+          for (const lesson of await this.lessonRepo.findByCourse(course.id)) {
+            existingLessonByVideoPath.set(lesson.videoPath, lesson);
+          }
         }
       }
       const seenVideoPaths = new Set<string>();
@@ -895,6 +978,9 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
         filesAdded: scan.filesAdded,
         coursesDiscovered: scan.coursesDiscovered,
         errorsCount: scan.errors.length,
+        ...(scan.scopeCourseId
+          ? { scopeCourseId: scan.scopeCourseId, scopeCourseName: scan.scopeCourseName }
+          : {}),
       });
 
       // Always persist the terminal state. Best-effort: if this itself

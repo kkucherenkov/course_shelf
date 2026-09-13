@@ -209,13 +209,29 @@ parameters = { "path.lessonId" = "seed-lesson-welcome", "path.materialId" = "see
 # `GET /notes/{lessonId}`, where a 404 means "no row for this principal yet",
 # not "the API lost what it just created". Same shape as the `/libraries/{id}`
 # family below.
+#
+# `negative_data_rejection` is also off on both, for the same structural
+# reason `POST /realtime/token` disables it at the top of this file: the
+# `body.lessonId` override above replaces whatever value the check generated
+# — including a deliberately empty or missing `lessonId` meant to verify the
+# API rejects it — with the pinned seed value before the request goes out.
+# One CI run reported "API accepted schema-violating request" on `PUT /notes`
+# ("Invalid component: in body - violates `required` (was "")"), but the
+# request it actually printed as a repro carried `lessonId:
+# "seed-lesson-welcome"`: fully valid. Schemathesis was still describing the
+# mutation it had generated for `lessonId` before this file's override
+# overwrote it — the check never got to exercise what it thought it was
+# testing. `not_a_server_error` and every other check stay armed on both
+# operations; only this one check, over this one field, is a false alarm.
 [[operations]]
 include-name = "PUT /api/v1/notes"
 parameters = { "body.lessonId" = "seed-lesson-welcome" }
+checks.negative_data_rejection.enabled = false
 
 [[operations]]
 include-name = "POST /api/v1/progress"
 parameters = { "body.lessonId" = "seed-lesson-welcome" }
+checks.negative_data_rejection.enabled = false
 
 [[operations]]
 include-name = "GET /api/v1/notes/{lessonId}"

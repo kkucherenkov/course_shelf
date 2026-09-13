@@ -2584,6 +2584,15 @@ add(
     goal="See which scrapers loaded, which were rejected, and why — without reading container logs.",
 )
 add(
+    id="E30-F02-S01",
+    epic="E30", epic_title="Scraper plugins",
+    feature="F02", feature_title="Platform adapters",
+    title="Coursera scraper over the open catalog API",
+    duration=1, stage="A",
+    deps=["E30-F01-S01"],
+    goal="Fill a Coursera course's metadata from the platform's own catalogue instead of its HTML.",
+)
+add(
     id="E30-F03-S01",
     epic="E30", epic_title="Scraper plugins",
     feature="F03", feature_title="Manual metadata editing",

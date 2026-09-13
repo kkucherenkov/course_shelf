@@ -156,6 +156,16 @@ export class PrismaSearchAdapter implements SearchPort {
   // stemming, no ts_rank — see design §6.2. Upgrade path if that turns out to
   // matter: a second (tsvector) index and a swapped WHERE behind this same
   // method, callers unaffected.
+  // ponytail: for a non-null libraryIds this fetches every lesson id in the
+  // accessible libraries, unbounded, then passes the whole array into the
+  // cue query's IN clause — fine for a self-hosted library, a large query on
+  // a library with thousands of lessons. Filtering access before fetching
+  // candidates is the right call regardless of size (the alternative, a
+  // cue-pool-first filter, trades this for false negatives — a narrowly
+  // scoped user seeing zero hits while matching cues sit deeper in the
+  // pool), so the fix isn't to invert this, it's to stop needing the
+  // resolve step: give Transcript a real relation to Lesson, or denormalise
+  // libraryId onto transcript_cue, either of which turns this into one join.
   async findTranscriptHits(
     q: string,
     limit: number,

@@ -64,7 +64,7 @@ services:
       # .env: namespaces are part of the application contract (backend
       # publishes to these names), so they live with the compose file, not
       # with operator-facing secrets.
-      CENTRIFUGO_CHANNEL_NAMESPACES: '[{"name":"system","presence":true,"history_size":10,"history_ttl":"60s"},{"name":"library","presence":false,"history_size":0},{"name":"notes","presence":false,"history_size":0},{"name":"progress","presence":false,"history_size":0},{"name":"notifications","presence":false,"history_size":0}]'
+      CENTRIFUGO_CHANNEL_NAMESPACES: '[{"name":"system","presence":true,"history_size":10,"history_ttl":"60s"},{"name":"library","presence":false,"history_size":0},{"name":"notes","presence":false,"history_size":0},{"name":"progress","presence":false,"history_size":0},{"name":"notifications","presence":false,"history_size":0},{"name":"scans","presence":false,"history_size":0},{"name":"maintenance","presence":false,"history_size":0}]'
     ulimits:
       nofile: { soft: 65536, hard: 65536 }
     healthcheck:

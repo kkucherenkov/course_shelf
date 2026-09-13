@@ -16,11 +16,42 @@
   },
   "channel": {
     "namespaces": [
-      { "name": "system", "presence": true, "history_size": 10, "history_ttl": "60s" },
-      { "name": "library", "presence": false, "history_size": 0 },
-      { "name": "notes", "presence": false, "history_size": 0 },
-      { "name": "progress", "presence": false, "history_size": 0 },
-      { "name": "notifications", "presence": false, "history_size": 0 }
+      {
+        "name": "system",
+        "presence": true,
+        "history_size": 10,
+        "history_ttl": "60s"
+      },
+      {
+        "name": "library",
+        "presence": false,
+        "history_size": 0
+      },
+      {
+        "name": "notes",
+        "presence": false,
+        "history_size": 0
+      },
+      {
+        "name": "progress",
+        "presence": false,
+        "history_size": 0
+      },
+      {
+        "name": "notifications",
+        "presence": false,
+        "history_size": 0
+      },
+      {
+        "name": "scans",
+        "presence": false,
+        "history_size": 0
+      },
+      {
+        "name": "maintenance",
+        "presence": false,
+        "history_size": 0
+      }
     ]
   },
   "log": {

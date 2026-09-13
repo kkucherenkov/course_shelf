@@ -40,6 +40,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
         (stays where it needs the release notes)
   - [x] `release.yml` — `workflow_dispatch` trigger, dry run, publishes nothing
   - [x] PR + bookkeeping
+
 ## T-2026-09-13-mobile-decrypt-flake — deterministic corrupt-block decrypt test
 
 - Created: 2026-09-13

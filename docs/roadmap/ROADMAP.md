@@ -203,9 +203,9 @@ gantt
 
     section E27 Transcript storage and search
     Parse existing subtitle sidecars into cues                   :done, e27f01s01, after e25f02s01 e25f03s02, 2d
-    Trigram index over cue text                                  :active, e27f01s02, after e27f01s01, 1d
-    Transcript hits in the search API                            :active, e27f02s01, after e27f01s02, 2d
-    Transcript results on the web search page                    :active, e27f02s02, after e27f02s01 e26f01s04, 1d
+    Trigram index over cue text                                  :done, e27f01s02, after e27f01s01, 1d
+    Transcript hits in the search API                            :done, e27f02s01, after e27f01s02, 2d
+    Transcript results on the web search page                    :done, e27f02s02, after e27f02s01 e26f01s04, 1d
 
     section E28 Notes export
     Export a lesson or course digest as Markdown                 :crit, active, e28f01s01, after e27f01s01 e09f02s02, 2d

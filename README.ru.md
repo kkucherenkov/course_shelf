@@ -173,14 +173,19 @@ docker compose -f docker/compose.yml logs -f backend --tail=50    # ждём "Ba
 ### 2b — Транскрипция (опционально)
 
 Образ бэкенда несёт зафиксированный по версии `whisper-cli`, но транскрипция
-выключена, пока не указана ggml-модель — модель намеренно не вшита в образ:
+выключена, пока файл по пути `WHISPER_MODEL_PATH` реально не существует на
+диске — модель намеренно не вшита в образ:
 
 ```sh
-mkdir -p models
-curl -L -o models/ggml-base.bin \
-  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
-WHISPER_MODEL_PATH=/models/ggml-base.bin docker compose -f docker/compose.yml up -d backend
+pnpm whisper:model                # скачивает ggml-base.bin в ./models
+docker compose -f docker/compose.yml up -d backend
 ```
+
+`docker/compose.yml` уже указывает `WHISPER_MODEL_PATH` на
+`/models/ggml-base.bin` по умолчанию, так что после появления файла следующий
+`up` включает транскрипцию без других правок. Другой размер модели —
+`pnpm whisper:model tiny|small|medium|large-v3`; скрипт идемпотентен: если
+файл уже на месте, выходит без обращения к сети.
 
 `WHISPER_THREADS` (4), `WHISPER_LANGUAGE` (`auto`) и `WHISPER_TIMEOUT_MS`
 (шесть часов) настраивают прогон — см. [`docker/README.md`](docker/README.md) и

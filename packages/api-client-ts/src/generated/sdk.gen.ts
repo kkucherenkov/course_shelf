@@ -1210,13 +1210,18 @@ export const signOutOtherSessions = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
- * Search the catalogue (courses + lessons)
+ * Search the catalogue (courses + lessons + transcripts)
  *
  * Case-insensitive substring search across course titles, section
- * titles (matched into their courses), and lesson titles. Returns
- * two result lists: courses and lessons. Each list is capped at
- * `limit` (default 20, max 100). Results are sorted by best match
- * (exact-prefix > word-prefix > substring) within each list.
+ * titles (matched into their courses), lesson titles, and transcript
+ * cue text. Returns three result lists: courses, lessons, and
+ * transcripts. Each list is capped at `limit` (default 20, max 100).
+ * Results are sorted by best match (exact-prefix > word-prefix >
+ * substring) within each list.
+ *
+ * Transcript hits are matched via a trigram index over cue text
+ * (substring matching, not stemmed full-text search) and carry the
+ * cue's start time so a client can seek straight to it.
  *
  * Authorisation mirrors the listing endpoints — non-admin actors
  * only see courses / lessons they have a READ grant on (via the

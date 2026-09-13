@@ -13,6 +13,8 @@ class _$SearchResultDto extends SearchResultDto {
   final BuiltList<SearchCourseHit> courses;
   @override
   final BuiltList<SearchLessonHit> lessons;
+  @override
+  final BuiltList<SearchTranscriptHitDto>? transcripts;
 
   factory _$SearchResultDto([void Function(SearchResultDtoBuilder)? updates]) =>
       (SearchResultDtoBuilder()..update(updates))._build();
@@ -21,6 +23,7 @@ class _$SearchResultDto extends SearchResultDto {
     required this.query,
     required this.courses,
     required this.lessons,
+    this.transcripts,
   }) : super._();
   @override
   SearchResultDto rebuild(void Function(SearchResultDtoBuilder) updates) =>
@@ -35,7 +38,8 @@ class _$SearchResultDto extends SearchResultDto {
     return other is SearchResultDto &&
         query == other.query &&
         courses == other.courses &&
-        lessons == other.lessons;
+        lessons == other.lessons &&
+        transcripts == other.transcripts;
   }
 
   @override
@@ -44,6 +48,7 @@ class _$SearchResultDto extends SearchResultDto {
     _$hash = $jc(_$hash, query.hashCode);
     _$hash = $jc(_$hash, courses.hashCode);
     _$hash = $jc(_$hash, lessons.hashCode);
+    _$hash = $jc(_$hash, transcripts.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -53,7 +58,8 @@ class _$SearchResultDto extends SearchResultDto {
     return (newBuiltValueToStringHelper(r'SearchResultDto')
           ..add('query', query)
           ..add('courses', courses)
-          ..add('lessons', lessons))
+          ..add('lessons', lessons)
+          ..add('transcripts', transcripts))
         .toString();
   }
 }
@@ -78,6 +84,12 @@ class SearchResultDtoBuilder
   set lessons(ListBuilder<SearchLessonHit>? lessons) =>
       _$this._lessons = lessons;
 
+  ListBuilder<SearchTranscriptHitDto>? _transcripts;
+  ListBuilder<SearchTranscriptHitDto> get transcripts =>
+      _$this._transcripts ??= ListBuilder<SearchTranscriptHitDto>();
+  set transcripts(ListBuilder<SearchTranscriptHitDto>? transcripts) =>
+      _$this._transcripts = transcripts;
+
   SearchResultDtoBuilder() {
     SearchResultDto._defaults(this);
   }
@@ -88,6 +100,7 @@ class SearchResultDtoBuilder
       _query = $v.query;
       _courses = $v.courses.toBuilder();
       _lessons = $v.lessons.toBuilder();
+      _transcripts = $v.transcripts?.toBuilder();
       _$v = null;
     }
     return this;
@@ -119,6 +132,7 @@ class SearchResultDtoBuilder
             ),
             courses: courses.build(),
             lessons: lessons.build(),
+            transcripts: _transcripts?.build(),
           );
     } catch (_) {
       late String _$failedField;
@@ -127,6 +141,8 @@ class SearchResultDtoBuilder
         courses.build();
         _$failedField = 'lessons';
         lessons.build();
+        _$failedField = 'transcripts';
+        _transcripts?.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
           r'SearchResultDto',

@@ -2,6 +2,86 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-09-13-whisper-model-and-mock — whisper model in dev, mock adapter in CI
+
+- Created: 2026-09-13
+- Owner: claude
+- Spec: —
+- Goal: `docker compose up` can transcribe without a hand-rolled curl, and
+  `POST /libraries/{id}/transcriptions` stops being a permanent 503 in CI
+  without shipping a 75 MB ggml file into the CI stack.
+- Acceptance:
+  - `pnpm whisper:model [size]` downloads `ggml-<size>.bin` into
+    `$WHISPER_MODEL_DIR`, idempotently.
+  - `AppConfig.transcription.configured` requires the model file to exist on
+    disk, not just a non-empty path; mock mode is configured with no path.
+  - CI's transcription endpoint answers 202 via `MockWhisperAdapter`, not 503.
+- Spec diff: none (no OpenAPI shape change — same 202/503 responses, just a
+  different condition for which one fires).
+- Codegen impact: no
+- Design impact: none
+- Tests: unit (`app-config.transcription.spec.ts`,
+  `mock-whisper.adapter.spec.ts`), existing backend suite green (175
+  files / 1822 tests).
+- Completed: 2026-09-13
+- Result: https://github.com/kkucherenkov/course_shelf/pull/444
+
+## T-2026-09-13-e27-transcript-search-web — transcript results on the web search page
+
+- Created: 2026-09-13
+- Owner: claude
+- Completed: 2026-09-13
+- Result: https://github.com/kkucherenkov/course_shelf/pull/446 (closes #230)
+- Spec: [docs/superpowers/specs/2026-08-29-transcript-first-design.md §6.4](../../docs/superpowers/specs/2026-08-29-transcript-first-design.md), [E27-F02-S02](../../docs/roadmap/tasks/E27-F02-S02.md)
+- Goal: click a spoken line in search results and land on that second of that lesson.
+- Acceptance:
+  - Transcript group on the search page, visually distinct from the course/lesson groups
+  - Each entry links to `/courses/{courseId}/lessons/{lessonId}?t=<startMs / 1000>`
+  - Matched substring highlighted in the cue text
+  - Strings via `t()` in `en` and `ru`; `pnpm check:i18n` green
+- Spec diff: none (consumed PR #445's already-regenerated `@app/api-client-ts`)
+- Codegen impact: no
+- Design impact: no
+- Tests: `SearchTranscriptGroup.spec.ts` (colocated — grouping, link+timestamp, highlighting, empty-hits case); `search.spec.ts` (page — `transcripts === undefined`, transcript-only match doesn't hit the empty state)
+- Sub-steps:
+  - [x] `SearchTranscriptGroup.vue` (apps/web, composes `AppRow`/`IconCS` from `@app/ui` — domain composition, not a generic primitive) + colocated spec
+  - [x] `search.vue` wiring: `transcripts` defaulted to `[]`, `isEmpty`/`totalCount` fixed to count transcript hits
+  - [x] `formatCueTime` extracted from `PlayerTranscriptTab.vue` into `utils/format-time.ts`, reused instead of duplicated
+  - [x] en/ru locale keys (`pages.search.groupTranscripts`)
+  - [x] Gates: lint, stylelint, format, test (305 passing), typecheck, check:i18n — all green
+  - [x] `docs/roadmap/tools/generate.py --roadmap-only` re-run (`--check` green) — the previous lane's bookkeeping step this task brief flagged as easy to forget
+  - [x] bookkeeping: card → done, TODO.md counter 27/36 → 28/36, done.md, dnote changelog
+  - [x] PR #446, `Closes #230`
+
+## T-2026-09-13-e27-transcript-search — trigram index + transcript hits in the search API
+
+- Created: 2026-09-13
+- Owner: claude
+- Completed: 2026-09-13
+- Result: https://github.com/kkucherenkov/course_shelf/pull/445
+- Spec: [docs/superpowers/specs/2026-08-29-transcript-first-design.md §6](../../docs/superpowers/specs/2026-08-29-transcript-first-design.md), [E27-F01-S02](../../docs/roadmap/tasks/E27-F01-S02.md), [E27-F02-S01](../../docs/roadmap/tasks/E27-F02-S01.md)
+- Goal: `GET /api/v1/search` answers "where was this said, and what minute?" via a trigram-indexed cue search, respecting the same per-library grants as course/lesson hits.
+- Acceptance:
+  - Migration creates `pg_trgm` + a GIN index on `transcript_cue.text`
+  - `SearchResultDto.transcripts[]` returned alongside courses/lessons, additive
+  - `libraryIds: []` short-circuits without a DB call; a grant on library A never returns a cue from library B
+- Spec diff: openapi.yaml — `SearchTranscriptHitDto` + `transcripts[]` on `SearchResultDto`
+- Codegen impact: yes — own commit
+- Design impact: none
+- Tests: adapter spec (access control), handler spec (ranking + limit), controller spec passthrough
+- Sub-steps:
+  - [x] openapi.yaml + codegen (own commit)
+  - [x] schema.prisma: pg_trgm extension + GIN index + migration
+  - [x] SearchPort.findTranscriptHits + PrismaSearchAdapter
+  - [x] search-catalogue.handler wiring + ranking
+  - [x] search.controller passthrough
+  - [x] specs (adapter, handler, controller)
+  - [x] bookkeeping: cards → done, TODO.md counter, dnote changelog
+  - [x] PR
+  - [x] post-review fixes on CI: unbounded-IN ponytail comment on findTranscriptHits; SearchResultDto.transcripts made optional (required broke apps/web's pre-existing fixtures — additive means optional, not just additive-shaped); ROADMAP.md gantt regenerated (bookkeeping commit forgot the generator); repo-wide `pnpm.overrides` bump past 8 newly-disclosed CRITICAL/HIGH OSV advisories unrelated to this branch's own diff (next, sharp, multer, mysql2, browserslist, svgo, @faker-js/faker, the @tiptap/\* family) — all 9 CI checks green
+- Status: done
+- Blockers: —
+
 ## T-2026-08-31-e2e-seed-data — give the e2e stack seed data the contract test can reach
 
 - Created: 2026-08-31

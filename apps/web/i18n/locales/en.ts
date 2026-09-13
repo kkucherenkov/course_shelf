@@ -238,6 +238,7 @@ export default {
       headerCountZero: 'No results for "{q}"',
       groupCourses: 'Courses',
       groupLessons: 'Lessons',
+      groupTranscripts: 'Transcripts',
       emptyTypeSomething: 'Type something in the search bar above',
       emptyShortQuery: 'Keep typing — at least 2 characters',
       emptyNoMatches: 'No matches for "{q}"',

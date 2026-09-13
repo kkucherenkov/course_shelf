@@ -12,6 +12,12 @@
  *   - findLessonHits: maps rows correctly including course + section titles
  *   - findLessonHits: passes libraryId filter through section→course relation
  *   - findLessonHits: no libraryId filter when libraryIds is null (admin)
+ *   - findTranscriptHits: libraryIds: [] short-circuits without touching the DB
+ *   - findTranscriptHits: a grant on library A never returns a cue from library B
+ *   - findTranscriptHits: no lesson-resolving query when libraryIds is null (admin)
+ *   - findTranscriptHits: maps cue + lesson/section/course context correctly
+ *   - findTranscriptHits: returns empty array when no cues match
+ *   - findTranscriptHits: skips a cue whose lesson no longer exists
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -28,9 +34,14 @@ interface MockCourse {
   findMany: ReturnType<typeof vi.fn>;
 }
 
+interface MockTranscriptCue {
+  findMany: ReturnType<typeof vi.fn>;
+}
+
 interface MockPrisma {
   course: MockCourse;
   lesson: MockLesson;
+  transcriptCue: MockTranscriptCue;
 }
 
 function makePrisma(): MockPrisma {
@@ -40,6 +51,9 @@ function makePrisma(): MockPrisma {
     },
     lesson: {
       groupBy: vi.fn().mockResolvedValue([]),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+    transcriptCue: {
       findMany: vi.fn().mockResolvedValue([]),
     },
   };
@@ -70,6 +84,41 @@ function makeLessonRow(
     id: 'lesson-1',
     courseId: 'course-1',
     position: 1,
+    title: 'Architectural drivers',
+    section: {
+      title: 'Domain Layer',
+      course: { title: 'Architecture Fundamentals' },
+    },
+    ...overrides,
+  };
+}
+
+function makeCueRow(
+  overrides: Partial<{
+    startMs: number;
+    text: string;
+    transcript: { lessonId: string; language: string };
+  }> = {},
+) {
+  return {
+    startMs: 42_000,
+    text: "and that's where the architecture decision matters most",
+    transcript: { lessonId: 'lesson-1', language: 'en' },
+    ...overrides,
+  };
+}
+
+function makeLessonContextRow(
+  overrides: Partial<{
+    id: string;
+    courseId: string;
+    title: string;
+    section: { title: string; course: { title: string } };
+  }> = {},
+) {
+  return {
+    id: 'lesson-1',
+    courseId: 'course-1',
     title: 'Architectural drivers',
     section: {
       title: 'Domain Layer',
@@ -222,6 +271,103 @@ describe('PrismaSearchAdapter', () => {
       await adapter.findLessonHits('driver', 10, null);
 
       const call = vi.mocked(prisma.lesson.findMany).mock.calls[0]?.[0] as { take: number };
+      expect(call?.take).toBe(20);
+    });
+  });
+
+  // ── findTranscriptHits ─────────────────────────────────────────────────────
+
+  describe('findTranscriptHits', () => {
+    it('returns [] without touching the DB when libraryIds is []', async () => {
+      const result = await adapter.findTranscriptHits('arch', 20, []);
+
+      expect(result).toEqual([]);
+      expect(prisma.lesson.findMany).not.toHaveBeenCalled();
+      expect(prisma.transcriptCue.findMany).not.toHaveBeenCalled();
+    });
+
+    it('never returns a cue from a library the caller has no grant on', async () => {
+      // First lesson.findMany call resolves accessible lesson ids for the
+      // granted library only.
+      vi.mocked(prisma.lesson.findMany).mockResolvedValueOnce([{ id: 'lesson-1' }]);
+      vi.mocked(prisma.transcriptCue.findMany).mockResolvedValue([makeCueRow()]);
+      vi.mocked(prisma.lesson.findMany).mockResolvedValueOnce([makeLessonContextRow()]);
+
+      const result = await adapter.findTranscriptHits('arch', 20, ['lib-a']);
+
+      // The cue query must be scoped to the resolved lesson ids — a cue whose
+      // lesson lives in library B was never even a DB candidate.
+      const cueCall = vi.mocked(prisma.transcriptCue.findMany).mock.calls[0]?.[0] as {
+        where: { transcript?: { lessonId?: { in: string[] } } };
+      };
+      expect(cueCall?.where?.transcript?.lessonId?.in).toEqual(['lesson-1']);
+      expect(result).toHaveLength(1);
+      expect(result[0]?.lessonId).toBe('lesson-1');
+    });
+
+    it('returns [] without a cue query when the grant resolves to zero lessons', async () => {
+      vi.mocked(prisma.lesson.findMany).mockResolvedValueOnce([]);
+
+      const result = await adapter.findTranscriptHits('arch', 20, ['lib-a']);
+
+      expect(result).toEqual([]);
+      expect(prisma.transcriptCue.findMany).not.toHaveBeenCalled();
+    });
+
+    it('omits the lesson-resolving query for admin (libraryIds = null)', async () => {
+      await adapter.findTranscriptHits('arch', 20, null);
+
+      expect(prisma.lesson.findMany).not.toHaveBeenCalled();
+      const cueCall = vi.mocked(prisma.transcriptCue.findMany).mock.calls[0]?.[0] as {
+        where: { transcript?: unknown };
+      };
+      expect(cueCall?.where?.transcript).toBeUndefined();
+    });
+
+    it('returns empty array when no cues match', async () => {
+      vi.mocked(prisma.transcriptCue.findMany).mockResolvedValue([]);
+
+      const result = await adapter.findTranscriptHits('arch', 20, null);
+
+      expect(result).toEqual([]);
+      expect(prisma.lesson.findMany).not.toHaveBeenCalled();
+    });
+
+    it('maps cue + lesson/section/course context to SearchTranscriptHitRow', async () => {
+      vi.mocked(prisma.transcriptCue.findMany).mockResolvedValue([makeCueRow()]);
+      vi.mocked(prisma.lesson.findMany).mockResolvedValue([makeLessonContextRow()]);
+
+      const result = await adapter.findTranscriptHits('arch', 20, null);
+
+      expect(result).toEqual([
+        {
+          lessonId: 'lesson-1',
+          lessonTitle: 'Architectural drivers',
+          courseId: 'course-1',
+          courseTitle: 'Architecture Fundamentals',
+          sectionTitle: 'Domain Layer',
+          language: 'en',
+          startMs: 42_000,
+          text: "and that's where the architecture decision matters most",
+        },
+      ]);
+    });
+
+    it('skips a cue whose lesson no longer exists', async () => {
+      vi.mocked(prisma.transcriptCue.findMany).mockResolvedValue([makeCueRow()]);
+      vi.mocked(prisma.lesson.findMany).mockResolvedValue([]); // lesson deleted
+
+      const result = await adapter.findTranscriptHits('arch', 20, null);
+
+      expect(result).toEqual([]);
+    });
+
+    it('takes limit * 2 cues from the DB', async () => {
+      await adapter.findTranscriptHits('arch', 10, null);
+
+      const call = vi.mocked(prisma.transcriptCue.findMany).mock.calls[0]?.[0] as {
+        take: number;
+      };
       expect(call?.take).toBe(20);
     });
   });

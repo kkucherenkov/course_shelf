@@ -58,6 +58,7 @@ function makeAppConfig(overrides: Partial<TranscriptionConfig> = {}): AppConfig 
     timeoutMs: 21_600_000,
     threads: 4,
     language: 'auto',
+    mode: 'real',
     configured: true,
     ...overrides,
   };

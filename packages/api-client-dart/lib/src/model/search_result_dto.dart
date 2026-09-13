@@ -4,6 +4,7 @@
 
 // ignore_for_file: unused_element
 import 'package:app_api_client/src/model/search_lesson_hit.dart';
+import 'package:app_api_client/src/model/search_transcript_hit_dto.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:app_api_client/src/model/search_course_hit.dart';
 import 'package:built_value/built_value.dart';
@@ -11,12 +12,13 @@ import 'package:built_value/serializer.dart';
 
 part 'search_result_dto.g.dart';
 
-/// Two result lists for a single search query — one of course hits and one of lesson hits. The shape is intentionally not unified because each kind needs different context fields (lesson hits carry their parent course/section so the SPA can show breadcrumb- style context).
+/// Three result lists for a single search query — course hits, lesson hits, and transcript-cue hits. `transcripts` is optional rather than required despite the server always populating it: additive means a client built against the two-array shape, including its own test fixtures, keeps typechecking against this schema unmodified. The shape is intentionally not unified because each kind needs different context fields (lesson hits carry their parent course/section, transcript hits additionally carry the cue's start time, so the SPA can show breadcrumb-style context and seek straight to the moment).
 ///
 /// Properties:
 /// * [query] - The trimmed query string the server matched against.
 /// * [courses] 
 /// * [lessons] 
+/// * [transcripts] 
 @BuiltValue()
 abstract class SearchResultDto implements Built<SearchResultDto, SearchResultDtoBuilder> {
   /// The trimmed query string the server matched against.
@@ -28,6 +30,9 @@ abstract class SearchResultDto implements Built<SearchResultDto, SearchResultDto
 
   @BuiltValueField(wireName: r'lessons')
   BuiltList<SearchLessonHit> get lessons;
+
+  @BuiltValueField(wireName: r'transcripts')
+  BuiltList<SearchTranscriptHitDto>? get transcripts;
 
   SearchResultDto._();
 
@@ -67,6 +72,13 @@ class _$SearchResultDtoSerializer implements PrimitiveSerializer<SearchResultDto
       object.lessons,
       specifiedType: const FullType(BuiltList, [FullType(SearchLessonHit)]),
     );
+    if (object.transcripts != null) {
+      yield r'transcripts';
+      yield serializers.serialize(
+        object.transcripts,
+        specifiedType: const FullType(BuiltList, [FullType(SearchTranscriptHitDto)]),
+      );
+    }
   }
 
   @override
@@ -110,6 +122,13 @@ class _$SearchResultDtoSerializer implements PrimitiveSerializer<SearchResultDto
             specifiedType: const FullType(BuiltList, [FullType(SearchLessonHit)]),
           ) as BuiltList<SearchLessonHit>;
           result.lessons.replace(valueDes);
+          break;
+        case r'transcripts':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(BuiltList, [FullType(SearchTranscriptHitDto)]),
+          ) as BuiltList<SearchTranscriptHitDto>;
+          result.transcripts.replace(valueDes);
           break;
         default:
           unhandled.add(key);

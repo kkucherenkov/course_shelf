@@ -491,6 +491,16 @@ expression, a colliding id — is logged and skipped; it never prevents the
 backend from starting. Changes to a definition file take effect on the next
 backend restart, not immediately — there is no file watcher.
 
+**Troubleshooting: a definition does not take effect.** There is no admin
+screen listing loaded/rejected definitions yet, so the backend container logs
+are the only signal — look for a line shaped
+`Skipped "<file>": <reason>`. The reason names one of:
+
+- unparseable JSON
+- an unknown rule target field
+- a bad `urlPattern` regular expression
+- an id colliding with a built-in scraper
+
 ### Transcription
 
 `Admin → Libraries → (library) → Transcribe` generates a subtitle track for

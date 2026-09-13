@@ -187,6 +187,9 @@ export default {
       materialDownloadAria: 'Скачать материал',
       materialsEmpty: 'У этого курса нет материалов.',
       editCta: 'Редактировать метаданные',
+      rescanCta: 'Пересканировать',
+      toastRescanStarted: 'Пересканирование запущено.',
+      toastRescanError: 'Не удалось запустить пересканирование. Попробуйте ещё раз.',
     },
     courseEdit: {
       title: 'Редактирование метаданных курса',

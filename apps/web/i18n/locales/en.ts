@@ -186,6 +186,9 @@ export default {
       materialDownloadAria: 'Download material',
       materialsEmpty: 'No materials for this course.',
       editCta: 'Edit metadata',
+      rescanCta: 'Rescan',
+      toastRescanStarted: 'Rescan started.',
+      toastRescanError: 'Could not start the rescan. Please try again.',
     },
     courseEdit: {
       title: 'Edit course metadata',

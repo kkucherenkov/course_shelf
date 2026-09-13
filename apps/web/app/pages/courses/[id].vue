@@ -1,6 +1,7 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
   import { AppButton, AppNoPermission, AppSkeleton } from '@app/ui';
+  import { runCourseRescan, client } from '@app/api-client-ts';
   import type { CourseMaterialItem, LessonOutlineItem } from '@app/api-client-ts';
 
   import { accentFromId } from '~/utils/course-accent';
@@ -34,6 +35,28 @@
   // is the `admin` middleware on `pages/courses/[id]/edit.vue` itself.
   const auth = useAuthStore();
   const isAdmin = computed(() => auth.user?.role?.toLowerCase() === 'admin');
+
+  // Admin-only rescan (E32-F01-S02) — fires the request and lets the global
+  // ScanLifecycleNotifier (mounted in the default layout) show progress via
+  // the same scans:user:{userId} realtime channel a library scan uses.
+  const isRescanning = ref(false);
+
+  async function onRescan(): Promise<void> {
+    isRescanning.value = true;
+    try {
+      const { error } = await runCourseRescan({
+        client,
+        throwOnError: false,
+        path: { id: courseId },
+      });
+      if (error) throw new Error('rescan request failed');
+      toast.add({ title: t('pages.courseDetail.toastRescanStarted'), color: 'success' });
+    } catch {
+      toast.add({ title: t('pages.courseDetail.toastRescanError'), color: 'error' });
+    } finally {
+      isRescanning.value = false;
+    }
+  }
 
   // ── Derived course state ─────────────────────────────────────────────────────
 
@@ -244,15 +267,25 @@
       />
 
       <!-- Admin-only entry point to the metadata editor -->
-      <AppButton
-        v-if="isAdmin"
-        variant="ghost"
-        size="sm"
-        icon-leading="edit"
-        :label="t('pages.courseDetail.editCta')"
-        :to="`/courses/${courseId}/edit`"
-        class="page-course-detail__edit-cta"
-      />
+      <div v-if="isAdmin" class="page-course-detail__admin-actions">
+        <AppButton
+          variant="ghost"
+          size="sm"
+          icon-leading="edit"
+          :label="t('pages.courseDetail.editCta')"
+          :to="`/courses/${courseId}/edit`"
+          class="page-course-detail__edit-cta"
+        />
+        <AppButton
+          variant="ghost"
+          size="sm"
+          icon-leading="refresh"
+          :label="t('pages.courseDetail.rescanCta')"
+          :loading="isRescanning"
+          class="page-course-detail__rescan-cta"
+          @click="onRescan"
+        />
+      </div>
 
       <!-- Two-column layout: sections + rail -->
       <div class="page-course-detail__layout">
@@ -331,6 +364,11 @@
 
     &__actions {
       // Stays below hero, above section list
+    }
+
+    &__admin-actions {
+      display: flex;
+      gap: var(--space-2);
     }
 
     &__layout {

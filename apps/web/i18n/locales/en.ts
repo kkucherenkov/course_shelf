@@ -110,7 +110,9 @@ export default {
       signInLink: 'Sign in',
       errorGeneric: 'Something went wrong. Please try again.',
       errorEmailTaken: 'An account with this email already exists.',
-      errorLibraryPath: 'Could not register the library. Check the path and try again.',
+      errorLibraryNotAbsolute:
+        'Enter an absolute path — it has to start with / (for example /data/courses), or with a drive letter on Windows.',
+      errorLibraryFailed: 'Could not register the library. The server gave no reason — try again.',
       errorCodeInvalid: "That code doesn't match. Check it and try again.",
       errorCodeExpired: 'That code has expired. Request a new one.',
       errorCodeAttempts: 'Too many attempts. Request a new code.',
@@ -484,8 +486,10 @@ export default {
         addSheetSubmit: 'Register',
         addSheetCancel: 'Cancel',
         addSheetErrorRequired: 'Both fields are required.',
+        addSheetErrorPathNotAbsolute:
+          'Enter an absolute path — it has to start with / (for example /data/courses), or with a drive letter on Windows.',
         addSheetErrorRegister:
-          'Could not register the library. Check that the path exists on the server.',
+          'Could not register the library. The server gave no reason — try again.',
       },
       users: {
         title: 'Users',
@@ -670,7 +674,9 @@ export default {
       emptyBody: 'Add a library to start indexing courses.',
       loadError: 'Could not load libraries.',
       errorRequired: 'Both fields are required.',
-      errorRegister: 'Could not register the library. Check that the path exists on the server.',
+      errorPathNotAbsolute:
+        'Enter an absolute path — it has to start with / (for example /data/courses), or with a drive letter on Windows.',
+      errorRegister: 'Could not register the library. The server gave no reason — try again.',
       noScansYet: 'Never scanned.',
       scanInFlight: 'Scanning… {files} files seen so far.',
       scanSummary: '{added} added · {updated} updated · {courses} courses discovered',

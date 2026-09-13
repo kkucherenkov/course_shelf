@@ -18,6 +18,7 @@
   import { useInstanceConfig } from '~/composables/useInstanceConfig';
   import { useFirstRun } from '~/composables/useFirstRun';
   import { useOtpInput } from '~/composables/useOtpInput';
+  import { isAbsoluteRootPath, normalizeRootPath, problemDetail } from '~/utils/library-register';
   import { AUTH_ERROR_CODES } from '~/constants/authErrorCodes';
   import type { StepDef } from '~/components/auth/AuthStepper.vue';
 
@@ -203,7 +204,16 @@
 
   async function onLibrarySubmit(): Promise<void> {
     step3Error.value = '';
-    const rootPath = libraryPath.value.trim();
+    // Show the string that will actually be sent — see `pages/libraries.vue`.
+    const rootPath = normalizeRootPath(libraryPath.value);
+    libraryPath.value = rootPath;
+
+    // This is the first screen a new operator ever sees, so the one rule the
+    // server enforces is stated here rather than after a round trip.
+    if (!isAbsoluteRootPath(rootPath)) {
+      step3Error.value = t('pages.signUp.errorLibraryNotAbsolute');
+      return;
+    }
 
     try {
       const res = await registerLibrary({
@@ -215,12 +225,13 @@
       if (res.error) {
         // The endpoint is idempotent on rootPath now (auto-grants the
         // user on existing libraries) so 409 isn't a code path anymore.
-        // Anything else here is a real failure — bad path, network, etc.
-        step3Error.value = t('pages.signUp.errorLibraryPath');
+        // Anything else here is a real failure the server described — quote it.
+        step3Error.value = problemDetail(res.error) ?? t('pages.signUp.errorLibraryFailed');
         return;
       }
     } catch {
-      step3Error.value = t('pages.signUp.errorLibraryPath');
+      // No problem document to quote: the request never got an answer.
+      step3Error.value = t('pages.signUp.errorLibraryFailed');
       return;
     }
 

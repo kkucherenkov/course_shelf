@@ -156,6 +156,7 @@
       :submit-label="t('pages.admin.libraries.addSheetSubmit')"
       :cancel-label="t('pages.admin.libraries.addSheetCancel')"
       :error-required="t('pages.admin.libraries.addSheetErrorRequired')"
+      :error-path-not-absolute="t('pages.admin.libraries.addSheetErrorPathNotAbsolute')"
       :error-register="t('pages.admin.libraries.addSheetErrorRegister')"
       @registered="onRegistered"
       @cancel="onSheetCancel"

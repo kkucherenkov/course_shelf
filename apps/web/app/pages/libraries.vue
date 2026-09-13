@@ -4,12 +4,13 @@
   import type { LibraryDto } from '@app/api-client-ts';
 
   import { useLibraries } from '~/composables/useLibraries';
+  import { isAbsoluteRootPath, normalizeRootPath } from '~/utils/library-register';
   import LibraryRow from '~/components/libraries/LibraryRow.vue';
 
   definePageMeta({ layout: 'default' });
 
   const { t } = useI18n();
-  const { data, status, error, register } = useLibraries();
+  const { data, status, error, register, registerErrorDetail } = useLibraries();
 
   // ── Add-form state ─────────────────────────────────────────────────────────
   const showForm = ref(false);
@@ -31,19 +32,33 @@
   }
 
   async function onSubmit(): Promise<void> {
-    if (!newName.value.trim() || !newPath.value.trim()) {
+    const name = newName.value.trim();
+    // Write the normalised path back into the field: the user has to see the
+    // string that is actually sent, or an invisible character stripped from a
+    // pasted path becomes a second mystery on top of the first.
+    const rootPath = normalizeRootPath(newPath.value);
+    newPath.value = rootPath;
+
+    if (!name || !rootPath) {
       formError.value = t('pages.libraries.errorRequired');
       return;
     }
+    if (!isAbsoluteRootPath(rootPath)) {
+      formError.value = t('pages.libraries.errorPathNotAbsolute');
+      return;
+    }
+
     submitting.value = true;
     formError.value = '';
     try {
-      await register({ name: newName.value.trim(), rootPath: newPath.value.trim() });
+      await register({ name, rootPath });
       showForm.value = false;
       newName.value = '';
       newPath.value = '';
     } catch {
-      formError.value = t('pages.libraries.errorRegister');
+      // The server's own words when it sent any; `errorRegister` only covers
+      // the case where it never answered at all.
+      formError.value = registerErrorDetail.value ?? t('pages.libraries.errorRegister');
     } finally {
       submitting.value = false;
     }

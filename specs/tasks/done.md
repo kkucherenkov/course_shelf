@@ -27,6 +27,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - [x] specs (adapter, handler, controller)
   - [x] bookkeeping: cards → done, TODO.md counter, dnote changelog
   - [x] PR
+  - [x] post-review fixes on CI: unbounded-IN ponytail comment on findTranscriptHits; SearchResultDto.transcripts made optional (required broke apps/web's pre-existing fixtures — additive means optional, not just additive-shaped); ROADMAP.md gantt regenerated (bookkeeping commit forgot the generator); repo-wide `pnpm.overrides` bump past 8 newly-disclosed CRITICAL/HIGH OSV advisories unrelated to this branch's own diff (next, sharp, multer, mysql2, browserslist, svgo, @faker-js/faker, the @tiptap/\* family) — all 9 CI checks green
 - Status: done
 - Blockers: —
 

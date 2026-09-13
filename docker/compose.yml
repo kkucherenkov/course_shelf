@@ -95,11 +95,13 @@ services:
       # Generated artefacts (whisper transcripts, later scan thumbnails) go to
       # a writable root of their own — /data/courses is read-only in prod.
       DERIVED_PATH: /data/derived
-      # Transcription stays off until a ggml model is named: with no model path
-      # AppConfig reports `configured: false` and the run endpoint refuses
-      # rather than starting something that can only fail. Drop a model into
-      # $WHISPER_MODEL_DIR and set this to its /models/... path to switch on.
-      WHISPER_MODEL_PATH: "${WHISPER_MODEL_PATH:-}"
+      # Transcription stays off until the model file this points at actually
+      # exists on disk — `AppConfig.transcription.configured` now stats it,
+      # not just the env var. Run `pnpm whisper:model` to download
+      # ggml-base.bin into $WHISPER_MODEL_DIR before the first `up`, or the
+      # backend starts with `configured: false` and the run endpoint refuses
+      # rather than starting something that can only fail.
+      WHISPER_MODEL_PATH: "${WHISPER_MODEL_PATH:-/models/ggml-base.bin}"
       WHISPER_THREADS: "${WHISPER_THREADS:-4}"
       WHISPER_LANGUAGE: "${WHISPER_LANGUAGE:-auto}"
     working_dir: /workspace

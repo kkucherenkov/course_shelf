@@ -56,16 +56,25 @@ Both backend images ship a **pinned whisper.cpp** build (`whisper-cli` on
 `PATH`, `WHISPER_CPP_VERSION` build arg, currently `v1.9.3`). The model is not
 in the image: `ggml-medium` is ~1.5 GB and has no business in a registry push.
 
-Transcription stays **off** until you name a model — with `WHISPER_MODEL_PATH`
-empty, `AppConfig.transcription.configured` is `false` and the run endpoint
-refuses instead of starting a run that can only fail:
+Transcription stays **off** until the file named by `WHISPER_MODEL_PATH`
+actually exists on disk — `AppConfig.transcription.configured` now stats it,
+so a path alone is not enough. Empty or missing, it is `false` and the run
+endpoint refuses instead of starting a run that can only fail:
 
 ```sh
-mkdir -p models
-curl -L -o models/ggml-base.bin \
-  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
-WHISPER_MODEL_PATH=/models/ggml-base.bin docker compose -f docker/compose.yml up -d backend
+pnpm whisper:model                # fetches ggml-base.bin into ./models
+docker compose -f docker/compose.yml up -d backend
 ```
+
+`compose.yml` already points `WHISPER_MODEL_PATH` at `/models/ggml-base.bin`
+by default, so the file landing is what switches transcription on. Pass a
+size — `pnpm whisper:model tiny|small|medium|large-v3` — for a different
+model; the script is idempotent, exiting without touching the network if the
+file is already there.
+
+`WHISPER_MODE=mock` swaps `LocalWhisperAdapter` for a fixture that writes a
+deterministic SRT with no child process and no model file — used by
+`compose.ci.yml`, never here.
 
 `WHISPER_THREADS` (default `4`) and `WHISPER_LANGUAGE` (default `auto`) are
 passed through too; `WHISPER_TIMEOUT_MS` (default six hours) is read straight

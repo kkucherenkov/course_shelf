@@ -118,6 +118,16 @@ services:
       # this suite should never have made. A contract test must not depend on
       # the internet being reachable, or on what a third party serves.
       SCRAPERS_MODE: mock
+      # Same reasoning, different port: `POST /libraries/{id}/transcriptions`
+      # answered 503 transcription-not-configured on every CI request, which
+      # is documented and correct but permanent — a ggml model belongs on this
+      # stack even less than a real scraper does. It is ~75 MB for a binary
+      # nothing would execute: the seed's one lesson has no media on disk (see
+      # `seed-catalog.ts`), so a real whisper.cpp would die in ffmpeg audio
+      # extraction before whisper-cli is ever invoked. MockWhisperAdapter
+      # writes a fixed SRT straight through, so the contract run exercises the
+      # full 202 + walk + transcript-row path instead of a permanent 503.
+      WHISPER_MODE: mock
     # CMD inherits from the prod Dockerfile:
     #   prisma migrate deploy && node dist/main.js
 

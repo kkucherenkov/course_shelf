@@ -6041,13 +6041,18 @@ paths:
   /api/v1/search:
     get:
       operationId: searchCatalogue
-      summary: Search the catalogue (courses + lessons)
+      summary: Search the catalogue (courses + lessons + transcripts)
       description: |
         Case-insensitive substring search across course titles, section
-        titles (matched into their courses), and lesson titles. Returns
-        two result lists: courses and lessons. Each list is capped at
-        `limit` (default 20, max 100). Results are sorted by best match
-        (exact-prefix > word-prefix > substring) within each list.
+        titles (matched into their courses), lesson titles, and transcript
+        cue text. Returns three result lists: courses, lessons, and
+        transcripts. Each list is capped at `limit` (default 20, max 100).
+        Results are sorted by best match (exact-prefix > word-prefix >
+        substring) within each list.
+
+        Transcript hits are matched via a trigram index over cue text
+        (substring matching, not stemmed full-text search) and carry the
+        cue's start time so a client can seek straight to it.
 
         Authorisation mirrors the listing endpoints — non-admin actors
         only see courses / lessons they have a READ grant on (via the
@@ -6106,11 +6111,21 @@ paths:
                         sectionTitle: Domain Layer
                         title: Architectural drivers
                         position: 3
+                    transcripts:
+                      - lessonId: clxvles0000000000000000001
+                        lessonTitle: Architectural drivers
+                        courseId: clxvcrs0000000000000000001
+                        courseTitle: Pragmatic Clean Architecture
+                        sectionTitle: Domain Layer
+                        language: en
+                        startMs: 42000
+                        text: and that's where the architecture decision matters most
                 empty:
                   value:
                     query: zzz
                     courses: []
                     lessons: []
+                    transcripts: []
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -8578,14 +8593,15 @@ components:
 
     SearchResultDto:
       type: object
-      required: [query, courses, lessons]
+      required: [query, courses, lessons, transcripts]
       additionalProperties: false
       description: >-
-        Two result lists for a single search query — one of course hits
-        and one of lesson hits. The shape is intentionally not unified
-        because each kind needs different context fields (lesson hits
-        carry their parent course/section so the SPA can show breadcrumb-
-        style context).
+        Three result lists for a single search query — course hits, lesson
+        hits, and transcript-cue hits. The shape is intentionally not unified
+        because each kind needs different context fields (lesson hits carry
+        their parent course/section, transcript hits additionally carry the
+        cue's start time, so the SPA can show breadcrumb-style context and
+        seek straight to the moment).
       properties:
         query:
           type: string
@@ -8598,6 +8614,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SearchLessonHit"
+        transcripts:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchTranscriptHitDto"
 
     SearchCourseHit:
       type: object
@@ -8636,6 +8656,36 @@ components:
         position:
           type: integer
           minimum: 1
+
+    SearchTranscriptHitDto:
+      type: object
+      required:
+        [lessonId, lessonTitle, courseId, courseTitle, sectionTitle, language, startMs, text]
+      additionalProperties: false
+      properties:
+        lessonId:
+          type: string
+        lessonTitle:
+          type: string
+          description: Title of the lesson the cue belongs to.
+        courseId:
+          type: string
+        courseTitle:
+          type: string
+          description: Title of the parent course — included so the SPA can show breadcrumb context.
+        sectionTitle:
+          type: string
+          description: Title of the parent section.
+        language:
+          type: string
+          description: BCP-47-ish language tag of the transcript the cue belongs to.
+        startMs:
+          type: integer
+          minimum: 0
+          description: Cue start time in milliseconds, for seeking straight to the moment.
+        text:
+          type: string
+          description: The cue text that matched the query.
 
     LibraryListDto:
       type: object

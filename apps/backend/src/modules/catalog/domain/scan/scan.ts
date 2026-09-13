@@ -145,6 +145,12 @@ export interface ScanProps {
   readonly coursesDiscovered: number;
   readonly errors: ScanErrorEntry[];
   readonly discoveredFiles: DiscoveredFileEntry[];
+  /**
+   * Set when this scan was scoped to one course (E32-F01-S02) rather than
+   * the whole library. Absent for the library-wide default.
+   */
+  readonly scopeCourseId: string | undefined;
+  readonly scopeCourseName: string | undefined;
 }
 
 const TERMINAL_STATUSES: ReadonlySet<ScanStatusValue> = new Set([
@@ -166,6 +172,8 @@ export class Scan {
   private readonly _errors: ScanErrorEntry[];
   private readonly _discoveredFiles: DiscoveredFileEntry[];
   private readonly _courses: ScannedCourse[];
+  readonly scopeCourseId: string | undefined;
+  readonly scopeCourseName: string | undefined;
 
   private constructor(props: ScanProps) {
     this.id = props.id;
@@ -180,6 +188,8 @@ export class Scan {
     this._errors = [...props.errors];
     this._discoveredFiles = [...props.discoveredFiles];
     this._courses = [];
+    this.scopeCourseId = props.scopeCourseId;
+    this.scopeCourseName = props.scopeCourseName;
   }
 
   // ---------------------------------------------------------------------------
@@ -230,7 +240,12 @@ export class Scan {
    * Static factory called at the start of a new scan.
    * Initialises with status=running and zero counters.
    */
-  static start(props: { id: string; libraryId: string; now?: Date }): Scan {
+  static start(props: {
+    id: string;
+    libraryId: string;
+    now?: Date;
+    scope?: { courseId: string; courseName: string };
+  }): Scan {
     const now = props.now ?? new Date();
     return new Scan({
       id: brand<string, 'Scan'>(props.id),
@@ -244,6 +259,8 @@ export class Scan {
       coursesDiscovered: 0,
       errors: [],
       discoveredFiles: [],
+      scopeCourseId: props.scope?.courseId,
+      scopeCourseName: props.scope?.courseName,
     });
   }
 

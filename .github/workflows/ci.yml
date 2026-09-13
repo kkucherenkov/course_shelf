@@ -211,6 +211,34 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # Android resource XML is parsed only by `:app:parseDebugLocalResources`,
+      # deep inside the emulator job — so a malformed file costs a full build to
+      # discover (#466 died there after 27 minutes). XML forbids `--` anywhere
+      # inside a comment and every Flutter flag opens with one, which makes a
+      # pasted build command the easy way to break a resource file. Needs no
+      # toolchain, so it runs before setup and fails in seconds.
+      - name: mobile — Android resource XML is well-formed
+        if: needs.changes.outputs.mobile == 'true'
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys, xml.dom.minidom
+
+          bad = []
+          files = sorted(pathlib.Path("apps/mobile/android").rglob("*.xml"))
+          for f in files:
+              try:
+                  xml.dom.minidom.parse(str(f))
+              except Exception as exc:
+                  bad.append(f"{f}: {exc}")
+
+          print(f"parsed {len(files)} XML resource files")
+          if bad:
+              print("::error::malformed Android resource XML")
+              for line in bad:
+                  print(f"  {line}")
+              sys.exit(1)
+          PY
+
       # This job is a required status check, so it must always run and
       # report success — a job GitHub sees `skipped` blocks a merge exactly
       # like a failure would. What can be skipped instead is the expense: on

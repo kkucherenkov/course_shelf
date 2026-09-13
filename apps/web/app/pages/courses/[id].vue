@@ -6,6 +6,7 @@
   import { accentFromId } from '~/utils/course-accent';
   import { useCourseOutline } from '~/composables/useCourseOutline';
   import { useMaterialDownload } from '~/composables/useMaterialDownload';
+  import { useAuthStore } from '~/stores/auth';
 
   import CourseHero from '~/components/course-detail/CourseHero.vue';
   import CourseActions from '~/components/course-detail/CourseActions.vue';
@@ -28,6 +29,11 @@
     useCourseOutline(courseId);
 
   const accent = computed(() => accentFromId(courseId));
+
+  // Admin-only entry point to the metadata editor — cosmetic; the real guard
+  // is the `admin` middleware on `pages/courses/[id]/edit.vue` itself.
+  const auth = useAuthStore();
+  const isAdmin = computed(() => auth.user?.role?.toLowerCase() === 'admin');
 
   // ── Derived course state ─────────────────────────────────────────────────────
 
@@ -235,6 +241,17 @@
         class="page-course-detail__actions"
         @mark-complete="onMarkComplete"
         @reset-progress="onResetProgress"
+      />
+
+      <!-- Admin-only entry point to the metadata editor -->
+      <AppButton
+        v-if="isAdmin"
+        variant="ghost"
+        size="sm"
+        icon-leading="edit"
+        :label="t('pages.courseDetail.editCta')"
+        :to="`/courses/${courseId}/edit`"
+        class="page-course-detail__edit-cta"
       />
 
       <!-- Two-column layout: sections + rail -->

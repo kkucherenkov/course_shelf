@@ -2583,6 +2583,14 @@ add(
     deps=["E30-F01-S01"],
     goal="See which scrapers loaded, which were rejected, and why — without reading container logs.",
 )
+add(
+    id="E30-F03-S01",
+    epic="E30", epic_title="Scraper plugins",
+    feature="F03", feature_title="Manual metadata editing",
+    title="Course metadata editor (web)",
+    duration=2, stage="A",
+    goal="Let an admin correct a course's metadata by hand, and optionally pre-fill the form from a source, instead of being limited to whatever a scraper could reach.",
+)
 
 # ============================================================ E31 ============
 add(

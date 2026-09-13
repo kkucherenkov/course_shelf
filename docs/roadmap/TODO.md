@@ -11,7 +11,7 @@ denominator below.
 Progress (update by hand):
 
 - **v1** — `119 / 119` complete. 121 cards, 2 cancelled.
-- **v2** — `29 / 36` complete. 36 cards across E25–E31.
+- **v2** — `30 / 38` complete. 38 cards across E25–E31.
 
 v1 is the shipped product; v2 is the transcript-first direction and the
 honest-v1.1 cleanup. The two denominators are kept apart on purpose — merging
@@ -256,6 +256,8 @@ them would quietly reopen a milestone that is finished.
 
 - [x] [E30-F01-S01](./tasks/E30-F01-S01.md) `B` — Declarative scraper definitions · ⇐ E06-F02-S01
 - [ ] [E30-F01-S02](./tasks/E30-F01-S02.md) `A` — Scraper inventory in the admin UI · ⇐ E30-F01-S01
+- [ ] [E30-F02-S01](./tasks/E30-F02-S01.md) `A` — Coursera scraper over the open catalog API · ⇐ E30-F01-S01
+- [x] [E30-F03-S01](./tasks/E30-F03-S01.md) `A` — Course metadata editor (web)
 
 ## E31 — Honest v1.1
 

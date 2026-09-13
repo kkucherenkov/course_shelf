@@ -220,6 +220,7 @@ gantt
     section E30 Scraper plugins
     Declarative scraper definitions                              :crit, done, e30f01s01, after e06f02s01, 3d
     Scraper inventory in the admin UI                            :active, e30f01s02, after e30f01s01, 1d
+    Course metadata editor (web)                                 :done, e30f03s01, 2026-04-25, 2d
 
     section E31 Honest v1.1
     Finish the browse filters                                    :done, e31f01s01, after e14f01s02, 2d

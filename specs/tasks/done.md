@@ -50,7 +50,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
         blocking first-run bootstrap when AUTH_SELF_REGISTRATION=false
   - [x] tuxedo 114 — lesson player 32px viewport overflow (double-counted
         shell topbar + `__main-body` padding); fixed page-side (`height:
-    100%`, no shell change — only page doing the `100vh - topbar` trick);
+100%`, no shell change — only page doing the `100vh - topbar` trick);
         added e2e regression since component specs can't see this class of bug
   - [x] tuxedo 113 — Profile menu item dead stub → point at
         `/settings#section-profile`, drop `profileComingSoon` locale keys

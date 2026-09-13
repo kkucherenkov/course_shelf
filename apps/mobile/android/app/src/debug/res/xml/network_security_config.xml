@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DEBUG BUILDS ONLY. Overrides `src/main/res/xml/network_security_config.xml`
+  by resource merging; the release build keeps that strict one, where cleartext
+  is denied to every host except 127.0.0.1 (offline playback).
+
+  Why this exists: the app has no runtime server setting. `AppConfig.fromEnv`
+  reads `API_BASE_URL` / `AUTH_BASE_URL` through `String.fromEnvironment`, so a
+  build is aimed at an instance at compile time. A self-hosted instance reached
+  by bare IP over plain HTTP is the normal shape before anyone puts a
+  certificate in front of it, and `domain-config` matches hosts rather than
+  CIDR ranges, so the strict config cannot express "any address on my LAN"
+  unless a developer hard-codes a personal IP into the repository.
+
+  Allowing cleartext for the whole debug variant instead keeps that IP out of
+  the repository and keeps the shipped build honest. Nothing here reaches a
+  release APK. The build command lives in `apps/mobile/README.md`; it cannot
+  be shown here, because XML forbids a double hyphen inside a comment and every
+  Flutter flag starts with one.
+
+  If a release build ever has to reach a plain-HTTP instance, the answer is TLS
+  in front of that instance, not an exception here.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

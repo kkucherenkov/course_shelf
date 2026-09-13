@@ -398,6 +398,26 @@ YouTube, Coursera (its own public catalogue API — no configuration needed),
 JSON-LD (the schema.org markup most course sites publish) and generic HTML
 metadata.
 
+**Udemy is the exception — its course pages cannot be fetched.**
+`www.udemy.com/course/…` sits behind a Cloudflare bot/JS challenge that no
+plain HTTP client passes; a scrape-preview `url` request against it fails with
+a "Scrape blocked by bot challenge" error, by design — this project does not
+attempt to defeat that challenge. Udemy's Affiliate API, the sanctioned way
+around it, stopped issuing keys to new callers on **2025-01-01** (existing
+partners keep theirs; there is no other path to request one).
+
+The supported route is pasting the page:
+
+1. Open the course page in your own logged-in browser.
+2. View source (or DevTools → Elements → right-click `<html>` → "Copy
+   outerHTML").
+3. In Scrape preview, choose `source: udemy`, `kind: fragment`, and paste the
+   HTML into the `fragment` field.
+4. Optionally also fill `url` with the page's address — the Udemy scraper uses
+   it only to mint the course's external id, so metadata already comes through
+   without it, but future re-scrapes and instructor/course matching need that
+   id to recognise the course again.
+
 **Identify** proposes a full metadata match for a course as an *identify task*
 in `proposed` state. You then **apply** it — merged into the course under a
 defined merge policy — or **discard** it. A task can only be applied or

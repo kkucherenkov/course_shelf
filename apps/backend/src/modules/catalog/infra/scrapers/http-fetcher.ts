@@ -5,11 +5,18 @@
  * a bounded redirect chain, and an SSRF guard that resolves the hostname and
  * rejects loopback / private / link-local / cloud-metadata addresses on every
  * hop. Self-hosted single-admin threat model — the guard is defence-in-depth.
+ *
+ * Also detects the generic "Cloudflare (or similar) JS/bot challenge" shape —
+ * a 403 whose body is an interstitial, not the page — and throws a
+ * distinguishable error instead of the usual silent scraper-side []. This
+ * lives here, not per-scraper: the shape is host-agnostic (any site behind
+ * such a challenge produces the same markers), so every scraper that fetches
+ * through this class benefits without its own detection code.
  */
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
 
-import { ScrapeFetchError } from '../../domain/scraper/scraper.errors';
+import { ScrapeBotChallengeError, ScrapeFetchError } from '../../domain/scraper/scraper.errors';
 
 export interface HttpFetcherConfig {
   readonly httpTimeoutMs: number;
@@ -26,6 +33,20 @@ export interface FetchResult {
 }
 
 const MAX_REDIRECTS = 5;
+
+// Markers of a JS/bot interstitial rather than real content. Cloudflare's
+// generic challenge page carries all three; other providers vary, so any one
+// hit is enough — the 403 gate keeps this from firing on an ordinary 403.
+const BOT_CHALLENGE_MARKERS = [
+  /just a moment/i,
+  /cf-browser-verification/i,
+  /cdn-cgi\/challenge-platform/i,
+] as const;
+
+/** True when a 403 response body looks like a bot/JS challenge, not real content. */
+export function isBotChallengeResponse(status: number, body: string): boolean {
+  return status === 403 && BOT_CHALLENGE_MARKERS.some((marker) => marker.test(body));
+}
 
 function ipIsBlocked(ip: string, allowLoopback: boolean): boolean {
   const v = isIP(ip);
@@ -127,9 +148,14 @@ export class HttpFetcher {
         return { status: res.status, headers: res.headers, body: '' };
       }
       const body = await this.readCapped(res, rawUrl);
+      if (isBotChallengeResponse(res.status, body)) {
+        throw new ScrapeBotChallengeError(rawUrl);
+      }
       return { status: res.status, headers: res.headers, body };
     } catch (error) {
-      if (error instanceof ScrapeFetchError) throw error;
+      if (error instanceof ScrapeFetchError || error instanceof ScrapeBotChallengeError) {
+        throw error;
+      }
       throw new ScrapeFetchError(rawUrl, error);
     } finally {
       clearTimeout(timer);

@@ -6,6 +6,7 @@
  *   - ScraperKindUnsupportedError → 422 (scraper does not support the kind)
  *   - ScraperNotConfiguredError   → 422 (e.g. YouTube without an API key)
  *   - ScrapeFetchError            → 502 (upstream network/timeout/HTTP failure)
+ *   - ScrapeBotChallengeError     → 502 (upstream served a bot/JS challenge, not content)
  *   - ScrapeParseError            → 502 (upstream returned unparseable content)
  *   - ScrapeFragmentInvalidError  → 422 (caller-supplied fragment is malformed)
  */
@@ -52,6 +53,18 @@ export class ScrapeFetchError extends DomainError {
       cause,
     });
     this.name = 'ScrapeFetchError';
+  }
+}
+
+export class ScrapeBotChallengeError extends DomainError {
+  constructor(url: string) {
+    super({
+      code: 'scrape-bot-challenge',
+      status: 502,
+      title: 'Scrape blocked by bot challenge',
+      detail: `The host for "${url}" returned a bot/JS challenge instead of the page. Automated fetching isn't possible here — paste the page's HTML with kind=fragment instead, if the scraper supports it.`,
+    });
+    this.name = 'ScrapeBotChallengeError';
   }
 }
 

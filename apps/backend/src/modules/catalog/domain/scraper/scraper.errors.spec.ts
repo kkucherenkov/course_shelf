@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  ScrapeBotChallengeError,
   ScrapeFetchError,
   ScrapeFragmentInvalidError,
   ScrapeParseError,
@@ -22,6 +23,10 @@ describe('scraper errors', () => {
     expect(new ScraperNotConfiguredError('youtube').code).toBe('scraper-not-configured');
 
     expect(new ScrapeFetchError('https://x.test').status).toBe(502);
+    expect(new ScrapeBotChallengeError('https://www.udemy.com/course/x/').status).toBe(502);
+    expect(new ScrapeBotChallengeError('https://www.udemy.com/course/x/').code).toBe(
+      'scrape-bot-challenge',
+    );
     expect(new ScrapeParseError('udemy', 'no JSON-LD').status).toBe(502);
     expect(new ScrapeFragmentInvalidError('bad json').status).toBe(422);
   });

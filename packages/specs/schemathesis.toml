@@ -55,13 +55,14 @@ checks.negative_data_rejection.enabled = false
 # normal 202 + walk path instead. `not_a_server_error` is armed on this
 # operation like every other one.
 #
-# Seeded library id, and the same `ensure_resource_availability` exemption the
-# rest of the `/libraries/{id}` family carries — see that section below for the
-# reasoning.
+# Seeded library id, and the same `ensure_resource_availability` /
+# `negative_data_rejection` exemptions the rest of the `/libraries/{id}`
+# family carries — see that section below for the reasoning on both.
 [[operations]]
 include-name = "POST /api/v1/libraries/{id}/transcriptions"
 parameters = { "path.id" = "seed-library-main" }
 checks.ensure_resource_availability.enabled = false
+checks.negative_data_rejection.enabled = false
 
 # ---------------------------------------------------------------------------
 # Seeded path parameters
@@ -269,16 +270,40 @@ checks.ensure_resource_availability.enabled = false
 #
 # Known cost: a genuine "created library is not readable" bug would now be
 # caught only by the read operations' own checks, not by this one.
+#
+# `negative_data_rejection` is off for the same root cause, on a different
+# check: every operation here has `path.id` (or `path.id` = the scratch
+# library on DELETE) as its only required parameter, and the override always
+# wins — so when the negative generator's chosen mutation for a given case is
+# to make that id invalid, the override quietly replaces it with a valid one
+# before the request goes out, and what actually reaches the API is a fully
+# valid, fully authenticated request that correctly answers 202/200. The check
+# still reports "API accepted schema-violating request", describing the case
+# it generated, not the one that was sent — same mechanism `PUT /notes` and
+# `POST /progress` already document below for a `body.lessonId` override.
+# `POST /api/v1/libraries/{id}/transcriptions` above carries the same
+# exemption for the same reason; it lives in its own block because of its
+# WHISPER_MODE story, not because the mechanism differs.
+#
+# First observed on `POST .../transcriptions`, whose optional body gives the
+# generator a second thing to try beyond the path — the id-only operations
+# below (`scans`, `scans/latest`, etc.) are exposed to the identical mechanism
+# even though no CI run has hit it on them yet. Fixed across the family for
+# the same coin-flip reason as `ensure_resource_availability` above, not
+# preemptively: the override is what breaks the check, and every operation
+# here carries that override.
 
 [[operations]]
 include-name = "GET /api/v1/libraries/{id}"
 parameters = { "path.id" = "seed-library-main" }
 checks.ensure_resource_availability.enabled = false
+checks.negative_data_rejection.enabled = false
 
 [[operations]]
 include-name = "PATCH /api/v1/libraries/{id}"
 parameters = { "path.id" = "seed-library-main" }
 checks.ensure_resource_availability.enabled = false
+checks.negative_data_rejection.enabled = false
 
 # Pinned at something disposable, deliberately. This operation really deletes
 # what it is pointed at and cascades — the repository's own comment lists the
@@ -294,6 +319,7 @@ checks.ensure_resource_availability.enabled = false
 include-name = "DELETE /api/v1/libraries/{id}"
 parameters = { "path.id" = "seed-library-scratch" }
 checks.ensure_resource_availability.enabled = false
+checks.negative_data_rejection.enabled = false
 
 # `/data/courses` exists and is empty in the backend image, so a scan is a real
 # 202 over an empty tree — and it gives `scans/latest` a row to return. Safe to
@@ -304,21 +330,25 @@ checks.ensure_resource_availability.enabled = false
 include-name = "POST /api/v1/libraries/{id}/scans"
 parameters = { "path.id" = "seed-library-main" }
 checks.ensure_resource_availability.enabled = false
+checks.negative_data_rejection.enabled = false
 
 [[operations]]
 include-name = "GET /api/v1/libraries/{id}/scans/latest"
 parameters = { "path.id" = "seed-library-main" }
 checks.ensure_resource_availability.enabled = false
+checks.negative_data_rejection.enabled = false
 
 [[operations]]
 include-name = "GET /api/v1/libraries/{id}/transcriptions"
 parameters = { "path.id" = "seed-library-main" }
 checks.ensure_resource_availability.enabled = false
+checks.negative_data_rejection.enabled = false
 
 [[operations]]
 include-name = "GET /api/v1/libraries/{id}/transcriptions/latest"
 parameters = { "path.id" = "seed-library-main" }
 checks.ensure_resource_availability.enabled = false
+checks.negative_data_rejection.enabled = false
 
 [[operations]]
 include-name = "GET /api/v1/catalog/instructors/{slug}"

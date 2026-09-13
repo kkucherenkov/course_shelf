@@ -1863,7 +1863,7 @@ export interface components {
       kind: components['schemas']['ScraperKind'];
       /**
        * Format: uri
-       * @description Required when kind=url.
+       * @description Required when kind=url. Optional when kind=fragment — the page the pasted HTML was copied from, so a scraper that can derive an external id from a URL (e.g. `udemy`) still gets one from a fragment it never fetched itself.
        * @example https://www.youtube.com/playlist?list=PL123
        */
       url?: string;

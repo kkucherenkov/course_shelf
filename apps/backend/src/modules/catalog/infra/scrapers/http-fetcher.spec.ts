@@ -4,8 +4,8 @@ import { AddressInfo } from 'node:net';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { ScrapeFetchError } from '../../domain/scraper/scraper.errors';
-import { HttpFetcher, isBlockedHostname } from './http-fetcher';
+import { ScrapeBotChallengeError, ScrapeFetchError } from '../../domain/scraper/scraper.errors';
+import { HttpFetcher, isBlockedHostname, isBotChallengeResponse } from './http-fetcher';
 
 const cfg = {
   httpTimeoutMs: 1000,
@@ -42,12 +42,32 @@ describe('HttpFetcher', () => {
 
   beforeAll(async () => {
     server = createServer((req, res) => {
-      if (req.url === '/ok') {
-        res.writeHead(200, { 'content-type': 'text/html' }).end('<html>ok</html>');
-      } else if (req.url === '/huge') {
-        res.writeHead(200).end('x'.repeat(5000));
-      } else {
-        res.writeHead(404).end('nope');
+      switch (req.url) {
+        case '/ok': {
+          res.writeHead(200, { 'content-type': 'text/html' }).end('<html>ok</html>');
+
+          break;
+        }
+        case '/huge': {
+          res.writeHead(200).end('x'.repeat(5000));
+
+          break;
+        }
+        case '/challenge': {
+          res
+            .writeHead(403, { 'content-type': 'text/html' })
+            .end('<html><head><title>Just a moment...</title></head></html>');
+
+          break;
+        }
+        case '/forbidden': {
+          res.writeHead(403).end('<html>plain forbidden, no challenge</html>');
+
+          break;
+        }
+        default: {
+          res.writeHead(404).end('nope');
+        }
       }
     });
     await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
@@ -76,5 +96,31 @@ describe('HttpFetcher', () => {
   it('aborts when the response exceeds maxResponseBytes', async () => {
     const f = new HttpFetcher({ ...cfg, allowLoopbackForTests: true });
     await expect(f.fetchText(`${base}/huge`)).rejects.toBeInstanceOf(ScrapeFetchError);
+  });
+
+  // tuxedo 92: a Cloudflare (or similar) bot/JS challenge must surface as a
+  // distinct error, not a silent 403 the caller would otherwise ignore.
+  it('throws ScrapeBotChallengeError (not a generic ScrapeFetchError) on a challenge page', async () => {
+    const f = new HttpFetcher({ ...cfg, allowLoopbackForTests: true });
+    await expect(f.fetchText(`${base}/challenge`)).rejects.toBeInstanceOf(ScrapeBotChallengeError);
+  });
+
+  it('returns an ordinary 403 as a normal result, not a thrown error', async () => {
+    const f = new HttpFetcher({ ...cfg, allowLoopbackForTests: true });
+    const result = await f.fetchText(`${base}/forbidden`);
+    expect(result.status).toBe(403);
+  });
+});
+
+describe('isBotChallengeResponse', () => {
+  it('flags a 403 carrying Cloudflare challenge markers', () => {
+    expect(isBotChallengeResponse(403, '<title>Just a moment...</title>')).toBe(true);
+    expect(isBotChallengeResponse(403, 'cf-browser-verification')).toBe(true);
+    expect(isBotChallengeResponse(403, 'src="/cdn-cgi/challenge-platform/x.js"')).toBe(true);
+  });
+
+  it('does not flag an ordinary 403 or a 200 with matching text', () => {
+    expect(isBotChallengeResponse(403, '{"error":"forbidden"}')).toBe(false);
+    expect(isBotChallengeResponse(200, 'Just a moment...')).toBe(false);
   });
 });

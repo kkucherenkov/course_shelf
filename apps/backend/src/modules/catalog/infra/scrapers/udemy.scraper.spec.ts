@@ -70,4 +70,42 @@ describe('UdemyScraper', () => {
     const s = new UdemyScraper(fakeFetcher('<html>blocked</html>'), new HtmlMetadataExtractor());
     expect(await s.scrape({ kind: 'url', url: 'https://www.udemy.com/course/x/' })).toEqual([]);
   });
+
+  // tuxedo 90: a pasted fragment has no URL of its own, but with sourceUrl it
+  // still mints the udemy: externalId — the one thing the paste-only path used to lose.
+  it('mints an externalId from sourceUrl on a pasted fragment', async () => {
+    const s = new UdemyScraper(fakeFetcher(''), new HtmlMetadataExtractor());
+    const candidates = await s.scrape({
+      kind: 'fragment',
+      raw: courseHtml,
+      sourceUrl: 'https://www.udemy.com/course/docker-mastery/',
+    });
+    expect(candidates).toHaveLength(1);
+    expect(candidates.at(0)?.sourceUrl).toBe('https://www.udemy.com/course/docker-mastery/');
+    expect(candidates.at(0)?.fragment.externalIds).toEqual([
+      {
+        source: 'udemy',
+        externalId: 'udemy:course:docker-mastery',
+        url: 'https://www.udemy.com/course/docker-mastery/',
+      },
+    ]);
+  });
+
+  it('still works exactly as before when a pasted fragment has no sourceUrl', async () => {
+    const s = new UdemyScraper(fakeFetcher(''), new HtmlMetadataExtractor());
+    const candidates = await s.scrape({ kind: 'fragment', raw: courseHtml });
+    expect(candidates).toHaveLength(1);
+    expect(candidates.at(0)?.sourceUrl).toBeUndefined();
+    expect(candidates.at(0)?.fragment.externalIds).toBeUndefined();
+  });
+
+  it('returns [] for an empty pasted fragment regardless of sourceUrl', async () => {
+    const s = new UdemyScraper(fakeFetcher(''), new HtmlMetadataExtractor());
+    const candidates = await s.scrape({
+      kind: 'fragment',
+      raw: '<html>blocked</html>',
+      sourceUrl: 'https://www.udemy.com/course/docker-mastery/',
+    });
+    expect(candidates).toEqual([]);
+  });
 });

@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **source_** | **String** | Explicit scraper id (e.g. `youtube`, `udemy`, `json-ld`). Omit to auto-detect (kind=url) or default to json-ld (kind=fragment). Required for kind=name. | [optional] 
 **kind** | [**ScraperKind**](ScraperKind.md) |  | 
-**url** | **String** | Required when kind=url. | [optional] 
+**url** | **String** | Required when kind=url. Optional when kind=fragment — the page the pasted HTML was copied from, so a scraper that can derive an external id from a URL (e.g. `udemy`) still gets one from a fragment it never fetched itself. | [optional] 
 **query** | **String** | Required when kind=name. | [optional] 
 **fragment** | **String** | Required when kind=fragment (raw HTML or JSON-LD string). | [optional] 
 

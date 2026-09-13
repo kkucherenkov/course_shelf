@@ -12,7 +12,10 @@ export type ScraperKind = 'url' | 'name' | 'fragment';
 export type ScrapeRequest =
   | { readonly kind: 'url'; readonly url: string }
   | { readonly kind: 'name'; readonly query: string }
-  | { readonly kind: 'fragment'; readonly raw: string };
+  // sourceUrl is optional: a pasted fragment has no URL of its own, but when the
+  // operator supplies the page it was copied from, a scraper that knows how to
+  // mint an external id from a URL (e.g. UdemyScraper) can still do so.
+  | { readonly kind: 'fragment'; readonly raw: string; readonly sourceUrl?: string };
 
 export interface ScrapedExternalId {
   readonly source: string;

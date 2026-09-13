@@ -11,7 +11,7 @@ denominator below.
 Progress (update by hand):
 
 - **v1** — `119 / 119` complete. 121 cards, 2 cancelled.
-- **v2** — `30 / 38` complete. 38 cards across E25–E31.
+- **v2** — `30 / 40` complete. 40 cards across E25–E32.
 
 v1 is the shipped product; v2 is the transcript-first direction and the
 honest-v1.1 cleanup. The two denominators are kept apart on purpose — merging
@@ -268,3 +268,8 @@ them would quietly reopen a milestone that is finished.
 - [x] [E31-F02-S02](./tasks/E31-F02-S02.md) `A` — Remove the non-functional Settings controls · ⇐ E14-F02-S02
 - [x] [E31-F02-S03](./tasks/E31-F02-S03.md) `A` — Settle the locale parity claim · ⇐ E15-F01-S02
 - [x] [E31-F02-S04](./tasks/E31-F02-S04.md) `A` — Verify or remove the mobile storage bar · ⇐ E19-F01-S03
+
+## E32 — Import correctness
+
+- [ ] [E32-F01-S01](./tasks/E32-F01-S01.md) `A` — Lesson position must be unique within its section
+- [ ] [E32-F01-S02](./tasks/E32-F01-S02.md) `A` — Rescan a single course · ⇐ E32-F01-S01

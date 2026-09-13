@@ -25,7 +25,7 @@
  *
  * No NestJS HTTP exceptions here — boundaries/element-types enforces this at lint time.
  */
-import { Inject } from '@nestjs/common';
+import { Inject, Logger } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { nanoid } from 'nanoid';
 import { mkdir } from 'node:fs/promises';
@@ -47,6 +47,7 @@ import { parseCourseJson, normaliseCourseJson } from '../../domain/scan/course-j
 import { FFMPEG_ADAPTER } from '../../domain/scan/ffmpeg-adapter';
 import { FS_ADAPTER } from '../../domain/scan/fs-adapter';
 import { parseFolderName, parseLessonFileName } from '../../domain/scan/folder-name.parser';
+import { assignLessonPositions } from '../../domain/scan/lesson-position';
 import { stemMatch } from '../../domain/scan/stem-match';
 import { Scan } from '../../domain/scan/scan';
 import { ScanAlreadyRunningError } from '../../domain/scan/scan.errors';
@@ -67,6 +68,7 @@ import type { FsAdapter } from '../../domain/scan/fs-adapter';
 import type { ScanRepository } from '../../domain/scan/scan.repository';
 import type { TranscriptRepository } from '../../domain/transcription/transcript.repository';
 import type { NormalisedCourseJsonV2 } from '../../domain/scan/course-json.schema';
+import type { ParsedLessonFileName } from '../../domain/scan/folder-name.parser';
 import type {
   DiscoveredFileEntry,
   ScannedLessonEntry,
@@ -105,6 +107,8 @@ function toSlug(title: string): string {
 
 @CommandHandler(RunScanCommand)
 export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
+  private readonly logger = new Logger(RunScanHandler.name);
+
   constructor(
     @Inject(LIBRARY_REPOSITORY) private readonly libraryRepo: LibraryRepository,
     @Inject(SCAN_REPOSITORY) private readonly scanRepo: ScanRepository,
@@ -624,36 +628,39 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               course.sections.map((s) => [s.title, s.id]),
             );
 
-            // Persist each discovered lesson.
+            // -------------------------------------------------------------------
+            // Resolve each lesson's section first (pass 1), then assign
+            // positions per section as a batch (E32-F01-S01) — never per-file.
+            // Per-file `parsed.ordinal ?? 1` is exactly the bug that silently
+            // dropped 23% of a real library: two files sharing a section with
+            // no parseable ordinal (or a legitimately-repeating one, e.g. a
+            // composite "N.M" filename reusing "M" every chapter) landed on
+            // the same position, and the second write lost the
+            // (sectionId, position) unique-constraint race. See
+            // assignLessonPositions() for the position rule.
+            // -------------------------------------------------------------------
+            const resolved: {
+              entry: ScannedLessonEntry;
+              sectionId: string;
+              lessonTitle: string;
+              parsed: ParsedLessonFileName;
+            }[] = [];
+
             for (const entry of discoveredLessons) {
               const videoBasename = path.basename(entry.videoPath);
               const relFromCourse = path.relative(courseFolder, entry.videoPath);
               const relSegments = relFromCourse.split(/[/\\]/);
+              const parsed = parseLessonFileName(videoBasename);
 
               // Determine which section this lesson belongs to.
-              let sectionId: string;
-              let lessonPosition: number;
-              let lessonTitle: string;
-
-              if (relSegments.length > 1) {
-                // Lesson is inside a sub-folder (section folder).
-                const sectionFolder = relSegments[0] ?? '';
-                const { label: sectionLabel } = parseFolderName(sectionFolder);
-                sectionId = sectionIdByTitle.get(sectionLabel) ?? '';
-
-                const parsed = parseLessonFileName(videoBasename);
-                lessonPosition = parsed.ordinal ?? 1;
-                lessonTitle = parsed.label;
-              } else {
-                // Flat layout — all videos directly in the course folder.
-                // A synthetic "Lessons" section was added above; it is
-                // always sections[0] in this branch.
-                sectionId = course.sections[0]?.id ?? '';
-
-                const parsed = parseLessonFileName(videoBasename);
-                lessonPosition = parsed.ordinal ?? 1;
-                lessonTitle = parsed.label;
-              }
+              const sectionId =
+                relSegments.length > 1
+                  ? // Lesson is inside a sub-folder (section folder).
+                    (sectionIdByTitle.get(parseFolderName(relSegments[0] ?? '').label) ?? '')
+                  : // Flat layout — all videos directly in the course folder.
+                    // A synthetic "Lessons" section was added above; it is
+                    // always sections[0] in this branch.
+                    (course.sections[0]?.id ?? '');
 
               if (!sectionId) {
                 // Could not resolve a section — record non-fatal error and skip.
@@ -664,6 +671,33 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
                 });
                 continue;
               }
+
+              resolved.push({ entry, sectionId, lessonTitle: parsed.label, parsed });
+            }
+
+            const positionByVideoPath = new Map<string, number>();
+            const bySection = new Map<string, typeof resolved>();
+            for (const r of resolved) {
+              const bucket = bySection.get(r.sectionId) ?? [];
+              bucket.push(r);
+              bySection.set(r.sectionId, bucket);
+            }
+            for (const bucket of bySection.values()) {
+              const positions = assignLessonPositions(
+                bucket.map((r) => ({ videoPath: r.entry.videoPath, parsed: r.parsed })),
+              );
+              for (const [videoPath, position] of positions) {
+                positionByVideoPath.set(videoPath, position);
+              }
+            }
+
+            // Persist each discovered lesson (pass 2).
+            for (const { entry, sectionId, lessonTitle } of resolved) {
+              // positionByVideoPath is guaranteed to have every resolved
+              // entry's videoPath — assignLessonPositions() is total over
+              // its input, one entry per resolved lesson in this section.
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- guaranteed above
+              const lessonPosition = positionByVideoPath.get(entry.videoPath)!;
 
               try {
                 const lesson = Lesson.create({
@@ -823,9 +857,23 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       }
 
       scan.complete();
-    } catch {
-      // Unexpected failure — transition to failed so the aggregate is not stuck running.
+    } catch (error) {
+      // Unexpected failure — record why (tuxedo 118: this used to be a bare
+      // `catch {}` that discarded the error entirely, so a crash left the
+      // scan stuck at status=running with no reason anywhere) and transition
+      // to failed so the aggregate is not stuck running.
+      this.logger.error(
+        `Scan ${scan.id} for library ${libraryId} crashed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        error instanceof Error ? error.stack : undefined,
+      );
       try {
+        scan.recordError({
+          path: rootPath,
+          message: error instanceof Error ? error.message : String(error),
+          code: 'scan-walk-failed',
+        });
         scan.fail();
       } catch {
         // scan is already terminal (should not happen, but be safe).
@@ -849,9 +897,17 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
         errorsCount: scan.errors.length,
       });
 
-      // Always persist the terminal state.
-      await this.scanRepo.save(scan).catch(() => {
-        // Best-effort — nothing else we can do if the DB write fails here.
+      // Always persist the terminal state. Best-effort: if this itself
+      // throws there is no further fallback write, but tuxedo 118 established
+      // that dropping the failure silently here is how a scan gets stuck at
+      // status=running forever with zero trace — so it is logged, not swallowed.
+      await this.scanRepo.save(scan).catch((error: unknown) => {
+        this.logger.error(
+          `Failed to persist terminal state for scan ${scan.id} (library ${libraryId}): ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+          error instanceof Error ? error.stack : undefined,
+        );
       });
     }
   }

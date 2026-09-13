@@ -33,7 +33,10 @@ interface LessonRow {
   title: string;
   videoPath: string;
   mtime: Date;
-  sizeBytes: number;
+  // Prisma returns `bigint` for a BigInt column (tuxedo 118: sizeBytes
+  // widened past Int's ~2GB cap). Converted to `number` in rowToAggregate —
+  // safe up to Number.MAX_SAFE_INTEGER (~9 PB), far past any real video file.
+  sizeBytes: bigint;
   duration: number | null;
   createdAt: Date;
   updatedAt: Date;
@@ -215,7 +218,7 @@ export class PrismaLessonRepository implements LessonRepository {
       title: row.title,
       videoPath: row.videoPath,
       mtime: row.mtime,
-      sizeBytes: row.sizeBytes,
+      sizeBytes: Number(row.sizeBytes),
       duration: row.duration ?? undefined,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,

@@ -16,7 +16,13 @@
  *      (For lesson files only — the dotted pair is read as
  *      `(sectionOrdinal, ordinal)`. When no title follows, the label falls
  *      back to the original basename so the file remains identifiable.)
- *   4. Bare title:            anything that did not match above.
+ *   4. Trailing digits:       `lesson23` / `Занятие5` (lesson files only)
+ *      (No separator between the word and the digits, so there is nothing to
+ *      split into a label — the label stays the full basename, same as tier
+ *      5. Recovers a stable numeric order for this convention instead of
+ *      falling back to alphabetical (`lesson1, lesson10, lesson11, …,
+ *      lesson2`) — see E32-F01-S01 / lesson-loss-report.md.)
+ *   5. Bare title:            anything that did not match above.
  *
  * When a numeric prefix matches but no descriptive label follows (e.g. a folder
  * literally named `07` or a file like `07.mp4`), the label falls back to the
@@ -87,6 +93,14 @@ const WORD_PREFIXED_RE = /^(\p{L}+(?:\s+\p{L}+)*)\s+(\d+)(?:[\s\-._]+(.+))?$/u;
  */
 const COMPOSITE_LESSON_RE = /^(\d+)\.(\d+)(?:\s+(.+))?$/;
 
+/**
+ * Tier 4 — trailing digits, no separator (`lesson23`, `Занятие5`). Lesson
+ * files only. Requires at least one non-digit character before the digits so
+ * a purely-numeric basename (already handled by Tier 1/PREFIX_RE) is never
+ * double-matched here.
+ */
+const TRAILING_DIGITS_RE = /^(.*\D)(\d+)$/;
+
 function applyPrefix(
   match: RegExpExecArray,
   fallbackLabel: string,
@@ -156,7 +170,17 @@ export function parseLessonFileName(name: string): ParsedLessonFileName {
     return { ...applyPrefix(prefixed, fallback), extension, unsupportedExtension: true };
   }
 
-  // Tier 4 — bare title.
+  // Tier 4 — trailing digits, no separator. Label stays the full basename —
+  // there is no separator to split a title out of, unlike Tier 1.
+  const trailing = TRAILING_DIGITS_RE.exec(fileBasename);
+  if (trailing) {
+    const ordinal = Number.parseInt(trailing[2] ?? '', 10);
+    const label = fileBasename.trim();
+    if (supported) return { ordinal, label, extension };
+    return { ordinal, label, extension, unsupportedExtension: true };
+  }
+
+  // Tier 5 — bare title.
   if (supported) return { label: fileBasename.trim(), extension };
   return { label: fileBasename.trim(), extension, unsupportedExtension: true };
 }

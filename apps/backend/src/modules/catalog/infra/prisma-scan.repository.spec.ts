@@ -229,4 +229,41 @@ describe('PrismaScanRepository', () => {
     const scan = makeAggregate();
     await expect(repo.save(scan)).rejects.toBeInstanceOf(Prisma.PrismaClientKnownRequestError);
   });
+
+  // -------------------------------------------------------------------------
+  // tuxedo 118: discovered_file.size is BigInt — a real video file exceeds
+  // Int's ~2GB cap (measured: 3129930702 bytes) and used to throw "value out
+  // of range" from prisma.discoveredFile.createMany(), rolling back the whole
+  // save transaction (including scanErrorRecord rows) and leaving the scan
+  // stuck at status=running.
+  // -------------------------------------------------------------------------
+  describe('tuxedo 118: DiscoveredFile.size beyond Int32 range', () => {
+    const OVERSIZED_BYTES = 3_129_930_702; // ~2.9 GiB, exceeds 2147483647
+
+    it('passes an oversized file size through to createMany without throwing', async () => {
+      const scan = makeAggregate();
+      scan.recordFileAdded({ path: '/lib/Course/huge.mp4', mtime: NOW, size: OVERSIZED_BYTES });
+
+      await expect(repo.save(scan)).resolves.toBeUndefined();
+
+      const call = vi.mocked(prisma._txMock.discoveredFile.createMany).mock.calls[0]?.[0];
+      expect(call?.data[0].size).toBe(OVERSIZED_BYTES);
+    });
+
+    it('round-trips an oversized size back as a JS number (Prisma returns bigint for a BigInt column)', async () => {
+      const row = makeScanRow({ id: 'scan-huge' });
+      const rowWithHugeFile = {
+        ...row,
+        discoveredFiles: [
+          { path: '/lib/Course/huge.mp4', mtime: NOW, size: BigInt(OVERSIZED_BYTES) },
+        ],
+      };
+      vi.mocked(prisma.scan.findUnique).mockResolvedValue(rowWithHugeFile);
+
+      const result = await repo.findById('scan-huge');
+
+      expect(result?.discoveredFiles[0]?.size).toBe(OVERSIZED_BYTES);
+      expect(typeof result?.discoveredFiles[0]?.size).toBe('number');
+    });
+  });
 });

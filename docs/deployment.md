@@ -55,6 +55,12 @@ Release images live on **GitHub Container Registry**
 pull over HTTPS with no `docker login` and no daemon configuration on the
 deploy host.
 
+They are built for **`linux/amd64` only**. Run `uname -m` on the deploy host
+first: anything other than `x86_64` will pull the images fine and then fail at
+container start with `exec format error`, which does not say why. Building from
+source ([Path 2](#path-2--build-from-source)) is the option on other
+architectures.
+
 ### Manual (docker compose)
 
 Open `https://github.com/kkucherenkov/course_shelf/releases`, pick the

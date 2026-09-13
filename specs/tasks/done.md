@@ -26,6 +26,33 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Completed: 2026-09-13
 - Result: https://github.com/kkucherenkov/course_shelf/pull/444
 
+## T-2026-09-13-e27-transcript-search-web — transcript results on the web search page
+
+- Created: 2026-09-13
+- Owner: claude
+- Completed: 2026-09-13
+- Result: https://github.com/kkucherenkov/course_shelf/pull/446 (closes #230)
+- Spec: [docs/superpowers/specs/2026-08-29-transcript-first-design.md §6.4](../../docs/superpowers/specs/2026-08-29-transcript-first-design.md), [E27-F02-S02](../../docs/roadmap/tasks/E27-F02-S02.md)
+- Goal: click a spoken line in search results and land on that second of that lesson.
+- Acceptance:
+  - Transcript group on the search page, visually distinct from the course/lesson groups
+  - Each entry links to `/courses/{courseId}/lessons/{lessonId}?t=<startMs / 1000>`
+  - Matched substring highlighted in the cue text
+  - Strings via `t()` in `en` and `ru`; `pnpm check:i18n` green
+- Spec diff: none (consumed PR #445's already-regenerated `@app/api-client-ts`)
+- Codegen impact: no
+- Design impact: no
+- Tests: `SearchTranscriptGroup.spec.ts` (colocated — grouping, link+timestamp, highlighting, empty-hits case); `search.spec.ts` (page — `transcripts === undefined`, transcript-only match doesn't hit the empty state)
+- Sub-steps:
+  - [x] `SearchTranscriptGroup.vue` (apps/web, composes `AppRow`/`IconCS` from `@app/ui` — domain composition, not a generic primitive) + colocated spec
+  - [x] `search.vue` wiring: `transcripts` defaulted to `[]`, `isEmpty`/`totalCount` fixed to count transcript hits
+  - [x] `formatCueTime` extracted from `PlayerTranscriptTab.vue` into `utils/format-time.ts`, reused instead of duplicated
+  - [x] en/ru locale keys (`pages.search.groupTranscripts`)
+  - [x] Gates: lint, stylelint, format, test (305 passing), typecheck, check:i18n — all green
+  - [x] `docs/roadmap/tools/generate.py --roadmap-only` re-run (`--check` green) — the previous lane's bookkeeping step this task brief flagged as easy to forget
+  - [x] bookkeeping: card → done, TODO.md counter 27/36 → 28/36, done.md, dnote changelog
+  - [x] PR #446, `Closes #230`
+
 ## T-2026-09-13-e27-transcript-search — trigram index + transcript hits in the search API
 
 - Created: 2026-09-13

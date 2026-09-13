@@ -1521,8 +1521,8 @@ class CatalogApi {
     );
   }
 
-  /// Search the catalogue (courses + lessons)
-  /// Case-insensitive substring search across course titles, section titles (matched into their courses), and lesson titles. Returns two result lists: courses and lessons. Each list is capped at &#x60;limit&#x60; (default 20, max 100). Results are sorted by best match (exact-prefix &gt; word-prefix &gt; substring) within each list.  Authorisation mirrors the listing endpoints — non-admin actors only see courses / lessons they have a READ grant on (via the course&#39;s library); admins see everything.  Empty &#x60;q&#x60; returns empty lists (no expensive full-table scan). Trimmed length must be ≥ 2 to avoid pathologically broad substring matches; shorter queries return empty lists too. 
+  /// Search the catalogue (courses + lessons + transcripts)
+  /// Case-insensitive substring search across course titles, section titles (matched into their courses), lesson titles, and transcript cue text. Returns three result lists: courses, lessons, and transcripts. Each list is capped at &#x60;limit&#x60; (default 20, max 100). Results are sorted by best match (exact-prefix &gt; word-prefix &gt; substring) within each list.  Transcript hits are matched via a trigram index over cue text (substring matching, not stemmed full-text search) and carry the cue&#39;s start time so a client can seek straight to it.  Authorisation mirrors the listing endpoints — non-admin actors only see courses / lessons they have a READ grant on (via the course&#39;s library); admins see everything.  Empty &#x60;q&#x60; returns empty lists (no expensive full-table scan). Trimmed length must be ≥ 2 to avoid pathologically broad substring matches; shorter queries return empty lists too. 
   ///
   /// Parameters:
   /// * [q] - Substring to match. Trimmed; case-insensitive.

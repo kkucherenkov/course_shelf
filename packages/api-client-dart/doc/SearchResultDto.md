@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **query** | **String** | The trimmed query string the server matched against. | 
 **courses** | [**BuiltList&lt;SearchCourseHit&gt;**](SearchCourseHit.md) |  | 
 **lessons** | [**BuiltList&lt;SearchLessonHit&gt;**](SearchLessonHit.md) |  | 
+**transcripts** | [**BuiltList&lt;SearchTranscriptHitDto&gt;**](SearchTranscriptHitDto.md) |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

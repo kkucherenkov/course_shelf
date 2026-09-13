@@ -1598,12 +1598,17 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Search the catalogue (courses + lessons)
+     * Search the catalogue (courses + lessons + transcripts)
      * @description Case-insensitive substring search across course titles, section
-     *     titles (matched into their courses), and lesson titles. Returns
-     *     two result lists: courses and lessons. Each list is capped at
-     *     `limit` (default 20, max 100). Results are sorted by best match
-     *     (exact-prefix > word-prefix > substring) within each list.
+     *     titles (matched into their courses), lesson titles, and transcript
+     *     cue text. Returns three result lists: courses, lessons, and
+     *     transcripts. Each list is capped at `limit` (default 20, max 100).
+     *     Results are sorted by best match (exact-prefix > word-prefix >
+     *     substring) within each list.
+     *
+     *     Transcript hits are matched via a trigram index over cue text
+     *     (substring matching, not stemmed full-text search) and carry the
+     *     cue's start time so a client can seek straight to it.
      *
      *     Authorisation mirrors the listing endpoints — non-admin actors
      *     only see courses / lessons they have a READ grant on (via the
@@ -3233,12 +3238,13 @@ export interface components {
     UpdateLibraryRequest: {
       name?: string;
     };
-    /** @description Two result lists for a single search query — one of course hits and one of lesson hits. The shape is intentionally not unified because each kind needs different context fields (lesson hits carry their parent course/section so the SPA can show breadcrumb- style context). */
+    /** @description Three result lists for a single search query — course hits, lesson hits, and transcript-cue hits. The shape is intentionally not unified because each kind needs different context fields (lesson hits carry their parent course/section, transcript hits additionally carry the cue's start time, so the SPA can show breadcrumb-style context and seek straight to the moment). */
     SearchResultDto: {
       /** @description The trimmed query string the server matched against. */
       query: string;
       courses: components['schemas']['SearchCourseHit'][];
       lessons: components['schemas']['SearchLessonHit'][];
+      transcripts: components['schemas']['SearchTranscriptHitDto'][];
     };
     SearchCourseHit: {
       id: string;
@@ -3256,6 +3262,22 @@ export interface components {
       sectionTitle: string;
       title: string;
       position: number;
+    };
+    SearchTranscriptHitDto: {
+      lessonId: string;
+      /** @description Title of the lesson the cue belongs to. */
+      lessonTitle: string;
+      courseId: string;
+      /** @description Title of the parent course — included so the SPA can show breadcrumb context. */
+      courseTitle: string;
+      /** @description Title of the parent section. */
+      sectionTitle: string;
+      /** @description BCP-47-ish language tag of the transcript the cue belongs to. */
+      language: string;
+      /** @description Cue start time in milliseconds, for seeking straight to the moment. */
+      startMs: number;
+      /** @description The cue text that matched the query. */
+      text: string;
     };
     /**
      * @example {

@@ -6,7 +6,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 
 - Created: 2026-09-13
 - Completed: 2026-09-13
-- Result: <PR link>
+- Result: https://github.com/kkucherenkov/course_shelf/pull/452
 - Owner: claude
 - Spec: none (no wire change) — [E30-F03-S01](../../docs/roadmap/tasks/E30-F03-S01.md)
 - Goal: let an admin correct a course's metadata by hand, and optionally pre-fill the form from a source, instead of being limited to whatever a scraper could reach.

@@ -393,7 +393,8 @@ their progress and notes are preserved, not deleted.
 Two tools for filling in metadata you did not write by hand.
 
 **Scrape preview** fetches metadata for a course from a URL and shows you what
-it found *before* anything is written. Built-in extractors cover Udemy, YouTube,
+it found *before* anything is written. Built-in extractors cover Udemy,
+YouTube, Coursera (its own public catalogue API — no configuration needed),
 JSON-LD (the schema.org markup most course sites publish) and generic HTML
 metadata.
 
@@ -410,8 +411,8 @@ There is also a **maintenance backfill** that recomputes derived metadata
 
 ### Authoring a scraper definition
 
-The built-in scrapers (Udemy, YouTube, generic JSON-LD) cover the common
-cases. For a site none of them recognise, drop a JSON file under
+The built-in scrapers (Udemy, YouTube, Coursera, generic JSON-LD) cover the
+common cases. For a site none of them recognise, drop a JSON file under
 `DERIVED_PATH/scrapers/` — no rebuild, no code. The backend reads every
 `*.json` file there once at startup and registers each as a scraper, checked
 after the built-ins and before the generic JSON-LD fallback.
@@ -462,7 +463,7 @@ definition does not mention — `posterUrl`, in this case — still come through
 from the generic extractor untouched.
 
 - **`id`** must be unique — a definition whose id matches a built-in scraper
-  (`udemy`, `youtube`, `json-ld`) or another definition is rejected, never
+  (`udemy`, `youtube`, `coursera`, `json-ld`) or another definition is rejected, never
   silently overridden.
 - **`kinds`** is the subset of `url` / `name` / `fragment` this definition
   supports. Most definitions only need `["url"]`.

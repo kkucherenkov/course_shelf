@@ -1,8 +1,9 @@
 /**
  * WHY this file exists:
  * Builds the real (non-mock) scraper registry: built-ins (YouTube when keyed,
- * Udemy when enabled), then every declarative definition loaded from
- * `$DERIVED_PATH/scrapers`, then the generic json-ld fallback last — pulled
+ * Udemy when enabled, Coursera unconditionally — its catalogue API needs no
+ * key), then every declarative definition loaded from `$DERIVED_PATH/scrapers`,
+ * then the generic json-ld fallback last — pulled
  * out of catalog.module.ts's SCRAPER_REGISTRY factory so the ordering
  * contract (declarative scrapers before json-ld, an id colliding with a
  * built-in rejected) has a unit test that does not require booting Nest.
@@ -20,6 +21,7 @@
 import { Logger } from '@nestjs/common';
 import path from 'node:path';
 
+import { CourseraScraper } from './coursera.scraper';
 import { DeclarativeScraper } from './declarative.scraper';
 import { HtmlMetadataExtractor } from './html-metadata.extractor';
 import { HttpFetcher } from './http-fetcher';
@@ -49,6 +51,7 @@ export function buildScraperRegistry(
   if (scrapers.udemy.enabled) {
     list.push(new UdemyScraper(fetcher, extractor));
   }
+  list.push(new CourseraScraper(fetcher)); // no key, no config — always on
 
   // Reserved even though json-ld is pushed last, below — an id colliding
   // with the generic fallback is exactly as undebuggable as one colliding

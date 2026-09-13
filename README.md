@@ -166,8 +166,9 @@ Containers mount the repository as a volume, so subsequent edits reach the runni
 
 The backend also binds two directories for generated content: `DERIVED_PATH`
 (default `<repo>/derived`, writable — whisper transcripts and, later, scan
-thumbnails) and `WHISPER_MODEL_DIR` (default `<repo>/models`, read-only). Both
-are gitignored and created on first `up`.
+thumbnails, plus hand-authored scraper definitions under `derived/scrapers/`)
+and `WHISPER_MODEL_DIR` (default `<repo>/models`, read-only). Both are
+gitignored and created on first `up`.
 
 ### 2b — Transcription (optional)
 

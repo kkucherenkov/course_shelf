@@ -140,7 +140,7 @@ default for secrets. Generate them with `openssl rand -hex 32` unless noted.
 | `PUBLIC_BASE_URL`              | The single origin browsers hit (proxy URL).             |
 | `PROXY_PORT`                   | Host port for the nginx proxy (default `8080`).         |
 | `COURSES_PATH`                 | Host directory holding your course folders, mounted RO. |
-| `DERIVED_PATH`                 | Host directory for generated artefacts (whisper transcripts, scan thumbnails), mounted RW. |
+| `DERIVED_PATH`                 | Host directory for generated artefacts (whisper transcripts, scan thumbnails) plus hand-authored scraper definitions, mounted RW. |
 | `POSTGRES_PASSWORD`            | Postgres superuser password.                            |
 | `BETTER_AUTH_SECRET`           | Session signing key.                                    |
 | `CENTRIFUGO_API_KEY`           | Backend → Centrifugo publishing key.                    |
@@ -187,12 +187,15 @@ image rebuild needed.
 ## Derived artefacts and transcription
 
 `DERIVED_PATH` is a second, separate host directory — mounted **read-write**
-at `/data/derived` — for everything CourseShelf generates from your media:
-whisper transcripts today, scan thumbnails later. It is not part of
-`COURSES_PATH` on purpose: that mount is read-only, and generated artefacts
-have to survive both a container restart and an image upgrade, so they live
-on their own bind mount rather than inside the image or in an anonymous
-volume that `docker compose down -v` would happily delete.
+at `/data/derived` — for everything CourseShelf generates from your media
+(whisper transcripts today, scan thumbnails later) plus one thing you author
+yourself: declarative scraper definitions under `DERIVED_PATH/scrapers/*.json`
+(see [Authoring a scraper definition](./user-guide.md#authoring-a-scraper-definition)).
+It is not part of `COURSES_PATH` on purpose: that mount is read-only, and both
+generated artefacts and hand-authored definitions have to survive a container
+restart and an image upgrade, so they live on their own bind mount rather than
+inside the image or in an anonymous volume that `docker compose down -v`
+would happily delete.
 
 Transcription itself stays off until you point `WHISPER_MODEL_PATH` at a
 ggml model — the model is deliberately **not** baked into either backend

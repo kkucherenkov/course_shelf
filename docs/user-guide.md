@@ -37,6 +37,7 @@ their own view of the catalog.
   - [Users](#users)
   - [Permissions](#permissions)
   - [Metadata: scrape and identify](#metadata-scrape-and-identify)
+  - [Authoring a scraper definition](#authoring-a-scraper-definition)
   - [Transcription](#transcription)
   - [Backups](#backups)
 - [Known limits in this release](#known-limits-in-this-release)
@@ -406,6 +407,56 @@ entities, so renaming an instructor updates every course that references them.
 
 There is also a **maintenance backfill** that recomputes derived metadata
 (durations, thumbnails) across the catalog, reporting progress in realtime.
+
+### Authoring a scraper definition
+
+The built-in scrapers (Udemy, YouTube, generic JSON-LD) cover the common
+cases. For a site none of them recognise, drop a JSON file under
+`DERIVED_PATH/scrapers/` — no rebuild, no code. The backend reads every
+`*.json` file there once at startup and registers each as a scraper, checked
+after the built-ins and before the generic JSON-LD fallback.
+
+A definition names a URL pattern and a set of rules, each mapped onto one
+course field:
+
+```json
+{
+  "id": "my-site",
+  "kinds": ["url"],
+  "match": { "urlPattern": "^https://my\\.site/course/" },
+  "rules": {
+    "title": { "selector": "h1.course-title", "from": "text" },
+    "description": { "selector": "meta[name=description]", "from": "attr:content" },
+    "tags": { "selector": ".tag", "from": "text", "many": true },
+    "releaseDate": {
+      "json": "props.pageProps.course.publishedAt",
+      "jsonFrom": "script#__NEXT_DATA__"
+    }
+  }
+}
+```
+
+- **`id`** must be unique — a definition whose id matches a built-in scraper
+  (`udemy`, `youtube`, `json-ld`) or another definition is rejected, never
+  silently overridden.
+- **`kinds`** is the subset of `url` / `name` / `fragment` this definition
+  supports. Most definitions only need `["url"]`.
+- **`match.urlPattern`** is a regular expression, checked against the course
+  URL to decide whether this definition applies.
+- **`rules`** map a field name (`title`, `description`, `instructorNames`,
+  `studioName`, `tags`, `level`, `language`, `releaseDate`, `posterUrl`,
+  `externalIds`, `ratingAverage`, `ratingCount`) onto either a CSS rule
+  (`selector` + `from: "text"` or `"attr:<name>"`, plus `many: true` to
+  collect every match instead of just the first) or a JSON rule (`json`, a
+  dotted path like `a.b.0.c`, walked over the parsed contents of the script
+  tag named by `jsonFrom` — every `<script type="application/ld+json">` when
+  omitted). Whichever rule wins fills in the field; where a rule and the
+  generic extractor both produce a value, the rule wins.
+
+A malformed definition — invalid JSON, an unknown rule field, a bad regular
+expression, a colliding id — is logged and skipped; it never prevents the
+backend from starting. Changes to a definition file take effect on the next
+backend restart, not immediately — there is no file watcher.
 
 ### Transcription
 

@@ -1,6 +1,7 @@
 # Active tasks
 
 _No active tasks._
+
 ## T-2026-09-13-e32-course-rescan — rescan a single course
 
 - Created: 2026-09-13

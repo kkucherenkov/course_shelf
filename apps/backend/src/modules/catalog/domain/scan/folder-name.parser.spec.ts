@@ -257,4 +257,40 @@ describe('parseLessonFileName', () => {
     expect(result.label).toBe('07');
     expect(result.extension).toBe('.mp4');
   });
+
+  // -------------------------------------------------------------------------
+  // Tier 4 — trailing digits, no separator (E32-F01-S01).
+  // -------------------------------------------------------------------------
+
+  it('parses "lesson23.mp4" — trailing digits with no separator recover the ordinal', () => {
+    const result = parseLessonFileName('lesson23.mp4');
+    expect(result.ordinal).toBe(23);
+    expect(result.label).toBe('lesson23');
+    expect(result.extension).toBe('.mp4');
+    expect(result.unsupportedExtension).toBeUndefined();
+  });
+
+  it('parses "lesson1.mp4" through "lesson9.mp4" with distinct single-digit ordinals', () => {
+    for (let n = 1; n <= 9; n++) {
+      const result = parseLessonFileName(`lesson${String(n)}.mp4`);
+      expect(result.ordinal).toBe(n);
+    }
+  });
+
+  it('parses Cyrillic "Занятие5.mp4"', () => {
+    const result = parseLessonFileName('Занятие5.mp4');
+    expect(result.ordinal).toBe(5);
+    expect(result.label).toBe('Занятие5');
+  });
+
+  it('still returns undefined ordinal for a bare title with no trailing digits', () => {
+    const result = parseLessonFileName('Bonus Episode.mp4');
+    expect(result.ordinal).toBeUndefined();
+  });
+
+  it('trailing-digits tier is unsupported-extension-aware', () => {
+    const result = parseLessonFileName('lesson23.pdf');
+    expect(result.ordinal).toBe(23);
+    expect(result.unsupportedExtension).toBe(true);
+  });
 });

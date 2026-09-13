@@ -60,6 +60,7 @@ import { Course } from '../../domain/course/course';
 import { Instructor } from '../../domain/instructor/instructor';
 import { InstructorSlugAlreadyTakenError } from '../../domain/instructor/instructor.errors';
 import { Lesson } from '../../domain/lesson/lesson';
+import { LessonPositionConflictError } from '../../domain/lesson/lesson.errors';
 import { Library } from '../../domain/library/library';
 import { LibraryNotFoundError } from '../../domain/library/library.errors';
 import { Studio } from '../../domain/studio/studio';
@@ -2086,6 +2087,313 @@ describe('RunScanHandler', () => {
       expect(instructorRepo.store.size).toBe(instructorCountAfterFirst);
       expect(studioRepo.store.size).toBe(studioCountAfterFirst);
       expect(tagRepo.store.size).toBe(tagCountAfterFirst);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // E32-F01-S01: lesson position uniqueness (lesson-loss-report.md)
+  //
+  // Each measured shape asserts the persisted lesson COUNT equals the file
+  // count — the assertion whose absence let 23% of a real library disappear
+  // without a single red signal (no ScanError, scan reported success).
+  // -------------------------------------------------------------------------
+  describe('E32-F01-S01: lesson position uniqueness', () => {
+    it('flat, digits-as-suffix ("lesson1" … "lesson23"): all 23 files import, distinct positions', async () => {
+      vi.useRealTimers();
+
+      const files: FileRecord[] = Array.from({ length: 23 }, (_, i) => ({
+        path: `/lib/DDD Course/lesson${String(i + 1)}.mp4`,
+        mtime: BASE_TIME,
+        size: 100,
+      }));
+
+      const lessonRepo2 = makeLessonRepo();
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        makeCourseRepo(),
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      expect(saved.status).toBe('succeeded');
+      expect(saved.errors).toHaveLength(0);
+      expect(lessonRepo2.store.size).toBe(23);
+
+      const positions = [...lessonRepo2.store.values()]
+        .map((l) => l.position)
+        .toSorted((a, b) => a - b);
+      expect(positions).toEqual(Array.from({ length: 23 }, (_, i) => i + 1));
+      // Trailing-digit ordinal parsing (E32-F01-S01) keeps the numeric order:
+      // lesson1 → position 1, …, lesson23 → position 23.
+      const byVideoPath = new Map([...lessonRepo2.store.values()].map((l) => [l.videoPath, l]));
+      expect(byVideoPath.get('/lib/DDD Course/lesson1.mp4')!.position).toBe(1);
+      expect(byVideoPath.get('/lib/DDD Course/lesson23.mp4')!.position).toBe(23);
+    });
+
+    it('flat, composite "N.M" prefixes (Golang shape): all 128 files import, chapter+lesson order preserved', async () => {
+      vi.useRealTimers();
+
+      const files: FileRecord[] = [];
+      for (let chapter = 1; chapter <= 16; chapter++) {
+        for (let lesson = 1; lesson <= 8; lesson++) {
+          files.push({
+            path: `/lib/Golang Course/${String(chapter)}.${String(lesson)}.mp4`,
+            mtime: BASE_TIME,
+            size: 100,
+          });
+        }
+      }
+
+      const lessonRepo2 = makeLessonRepo();
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        makeCourseRepo(),
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      expect(saved.status).toBe('succeeded');
+      expect(saved.errors).toHaveLength(0);
+      expect(lessonRepo2.store.size).toBe(128);
+
+      const positions = new Set([...lessonRepo2.store.values()].map((l) => l.position));
+      expect(positions.size).toBe(128);
+
+      const byVideoPath = new Map([...lessonRepo2.store.values()].map((l) => [l.videoPath, l]));
+      // Chapter-then-lesson order: 1.1 first, 16.8 last — never colliding on
+      // the repeated lesson number ("M") alone.
+      expect(byVideoPath.get('/lib/Golang Course/1.1.mp4')!.position).toBe(1);
+      expect(byVideoPath.get('/lib/Golang Course/16.8.mp4')!.position).toBe(128);
+    });
+
+    it('already-correct nested course (49 lessons, no collisions) still imports exactly 49 — no regression', async () => {
+      vi.useRealTimers();
+
+      // Lesson basenames are unique across the whole course, not just within
+      // their own section — stemMatch() keys off the basename alone (it does
+      // not consider the containing folder), so two sections both containing
+      // a file named identically (e.g. "1 - Lesson 1.mp4") would collapse
+      // into a single stem group and lose one of them. Real exports name
+      // lessons uniquely course-wide, so the fixture does too.
+      const files: FileRecord[] = [];
+      for (let section = 1; section <= 7; section++) {
+        for (let lesson = 1; lesson <= 7; lesson++) {
+          files.push({
+            path: `/lib/Git Course/0${String(section)} - Section ${String(section)}/${String(lesson)} - S${String(section)}L${String(lesson)}.mp4`,
+            mtime: BASE_TIME,
+            size: 100,
+          });
+        }
+      }
+
+      const lessonRepo2 = makeLessonRepo();
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        makeCourseRepo(),
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      expect(saved.status).toBe('succeeded');
+      expect(saved.errors).toHaveLength(0);
+      expect(lessonRepo2.store.size).toBe(49);
+    });
+
+    it('nested layout: ordinals repeating within a single section still import both lessons', async () => {
+      vi.useRealTimers();
+
+      // Two distinct lessons in the same section both carry leading ordinal
+      // "1" — the exact shape lesson-loss-report.md calls out for Unity/JS
+      // ("ordinals repeat inside sections too").
+      const files: FileRecord[] = [
+        { path: '/lib/Repeat Course/01 - Basics/1. Overview.mp4', mtime: BASE_TIME, size: 100 },
+        { path: '/lib/Repeat Course/01 - Basics/1. Bonus.mp4', mtime: BASE_TIME, size: 100 },
+      ];
+
+      const lessonRepo2 = makeLessonRepo();
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        makeCourseRepo(),
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      expect(saved.status).toBe('succeeded');
+      expect(saved.errors).toHaveLength(0);
+      expect(lessonRepo2.store.size).toBe(2);
+      const positions = [...lessonRepo2.store.values()].map((l) => l.position).toSorted();
+      expect(positions).toEqual([1, 2]);
+    });
+
+    it('mixed folder: ordinal-parseable, trailing-digit, and bare-title files coexist in one section', async () => {
+      vi.useRealTimers();
+
+      const files: FileRecord[] = [
+        { path: '/lib/Mixed Course/01 - Intro.mp4', mtime: BASE_TIME, size: 100 },
+        { path: '/lib/Mixed Course/lesson2.mp4', mtime: BASE_TIME, size: 100 },
+        { path: '/lib/Mixed Course/Bonus.mp4', mtime: BASE_TIME, size: 100 },
+      ];
+
+      const lessonRepo2 = makeLessonRepo();
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        makeCourseRepo(),
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      expect(saved.status).toBe('succeeded');
+      expect(saved.errors).toHaveLength(0);
+      expect(lessonRepo2.store.size).toBe(3);
+
+      const byVideoPath = new Map([...lessonRepo2.store.values()].map((l) => [l.videoPath, l]));
+      expect(byVideoPath.get('/lib/Mixed Course/01 - Intro.mp4')!.position).toBe(1);
+      expect(byVideoPath.get('/lib/Mixed Course/lesson2.mp4')!.position).toBe(2);
+      expect(byVideoPath.get('/lib/Mixed Course/Bonus.mp4')!.position).toBe(3);
+    });
+
+    it('a genuine persist-time position conflict is recorded as a ScanError, never a silent overwrite', async () => {
+      vi.useRealTimers();
+
+      // assignLessonPositions() makes an application-level collision
+      // structurally impossible (N entries always rank into N distinct
+      // positions) — this exercises the remaining defensive backstop: an
+      // unexpected DB-level (sectionId, position) conflict (e.g. a stale row)
+      // still surfaces as a ScanError and the walk continues, rather than
+      // throwing out of the scan or silently dropping the failure.
+      const files: FileRecord[] = [
+        { path: '/lib/Backstop Course/01 - First.mp4', mtime: BASE_TIME, size: 100 },
+        { path: '/lib/Backstop Course/02 - Second.mp4', mtime: BASE_TIME, size: 100 },
+      ];
+
+      const lessonRepo2 = makeLessonRepo();
+      lessonRepo2.save = vi.fn(async (l: Lesson) => {
+        if (l.videoPath === '/lib/Backstop Course/02 - Second.mp4') {
+          throw new LessonPositionConflictError('simulated stale-row conflict');
+        }
+        lessonRepo2.store.set(l.id, l);
+      });
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        makeCourseRepo(),
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      // Scan reaches a terminal state and reports the failure — never silent.
+      expect(saved.status).toBe('succeeded');
+      const err = saved.errors.find((e) => e.code === 'lesson-persist-failed');
+      expect(err).toBeDefined();
+      // The other lesson in the same course still gets persisted — one
+      // failure does not sink the walk.
+      expect(lessonRepo2.store.size).toBe(1);
+      expect([...lessonRepo2.store.values()][0]!.videoPath).toBe(
+        '/lib/Backstop Course/01 - First.mp4',
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // tuxedo 118: DiscoveredFile.size / Lesson.sizeBytes overflow Int32.
+  // -------------------------------------------------------------------------
+  describe('tuxedo 118: oversized video file size', () => {
+    it('a file past Int32 range (~2.9 GiB) scans successfully and keeps its exact size', async () => {
+      vi.useRealTimers();
+
+      const OVERSIZED_BYTES = 3_129_930_702; // exceeds 2147483647 (Int32 max)
+      const files: FileRecord[] = [
+        { path: '/lib/Huge Course/01 - Intro.mp4', mtime: BASE_TIME, size: OVERSIZED_BYTES },
+      ];
+
+      const lessonRepo2 = makeLessonRepo();
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        makeCourseRepo(),
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      expect(saved.status).toBe('succeeded');
+      expect(saved.errors).toHaveLength(0);
+      const lesson = [...lessonRepo2.store.values()][0]!;
+      expect(lesson.sizeBytes).toBe(OVERSIZED_BYTES);
     });
   });
 });

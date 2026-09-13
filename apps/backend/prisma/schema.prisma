@@ -137,7 +137,12 @@ model DiscoveredFile {
   scan   Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
   path   String
   mtime  DateTime
-  size   Int
+  // BigInt (tuxedo 118): Int (int4) caps at 2147483647 bytes (~2GB). A real
+  // library has video files well past that (measured: a 3129930702-byte
+  // file), and Int overflow on this column made scanRepo.save() throw at the
+  // end of the walk — silently, because the caller swallows that failure —
+  // leaving the scan stuck at status=running forever with no recorded cause.
+  size   BigInt
 
   @@unique([scanId, path])
   @@map("discovered_file")
@@ -323,7 +328,9 @@ model Lesson {
   title       String
   videoPath   String
   mtime       DateTime
-  sizeBytes   Int
+  // BigInt (tuxedo 118) — same reasoning as DiscoveredFile.size: a real video
+  // file exceeds the 2147483647-byte (~2GB) cap of Int.
+  sizeBytes   BigInt
   duration    Int?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt

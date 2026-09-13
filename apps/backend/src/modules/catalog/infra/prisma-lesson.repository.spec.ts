@@ -299,6 +299,43 @@ describe('PrismaLessonRepository', () => {
   });
 
   // -------------------------------------------------------------------------
+  // tuxedo 118: sizeBytes is BigInt — a real video file exceeds Int's ~2GB
+  // cap (measured: 3129930702 bytes).
+  // -------------------------------------------------------------------------
+  describe('tuxedo 118: sizeBytes beyond Int32 range', () => {
+    const OVERSIZED_BYTES = 3_129_930_702; // ~2.9 GiB, exceeds 2147483647
+
+    it('passes an oversized sizeBytes through to upsert without throwing', async () => {
+      const lesson = Lesson.create({
+        id: 'lesson-huge',
+        courseId: 'course-1',
+        sectionId: 'section-1',
+        position: 1,
+        title: 'Huge',
+        videoPath: '/lib/course/huge.mp4',
+        mtime: NOW,
+        sizeBytes: OVERSIZED_BYTES,
+        now: NOW,
+      });
+
+      await expect(repo.save(lesson)).resolves.toBeUndefined();
+
+      const call = vi.mocked(prisma.lesson.upsert).mock.calls[0]?.[0];
+      expect(call?.create.sizeBytes).toBe(OVERSIZED_BYTES);
+    });
+
+    it('round-trips an oversized sizeBytes back as a JS number (Prisma returns bigint for a BigInt column)', async () => {
+      const row = makeLessonRow({ sizeBytes: BigInt(OVERSIZED_BYTES) as unknown as number });
+      vi.mocked(prisma.lesson.findUnique).mockResolvedValue(row);
+
+      const result = await repo.findById('lesson-1');
+
+      expect(result?.sizeBytes).toBe(OVERSIZED_BYTES);
+      expect(typeof result?.sizeBytes).toBe('number');
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // getLessonStatsByCourseIds
   // -------------------------------------------------------------------------
   describe('getLessonStatsByCourseIds', () => {

@@ -190,7 +190,10 @@ export class PrismaScanRepository implements ScanRepository {
     filesUpdated: number;
     coursesDiscovered: number;
     errors: { path: string; message: string; code: string | null }[];
-    discoveredFiles: { path: string; mtime: Date; size: number }[];
+    // Prisma returns `bigint` for a BigInt column (tuxedo 118: size widened
+    // past Int's ~2GB cap). Converted to `number` below — safe up to
+    // Number.MAX_SAFE_INTEGER (~9 PB), far past any real video file.
+    discoveredFiles: { path: string; mtime: Date; size: bigint }[];
   }): Scan {
     return Scan.reconstitute({
       id: row.id as ScanId,
@@ -210,7 +213,7 @@ export class PrismaScanRepository implements ScanRepository {
       discoveredFiles: row.discoveredFiles.map((f) => ({
         path: f.path,
         mtime: f.mtime,
-        size: f.size,
+        size: Number(f.size),
       })),
     });
   }

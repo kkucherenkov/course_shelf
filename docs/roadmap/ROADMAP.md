@@ -218,7 +218,7 @@ gantt
     Learning paths                                               :crit, active, e29f03s01, after e06f03s01, 2d
 
     section E30 Scraper plugins
-    Declarative scraper definitions                              :crit, active, e30f01s01, after e06f02s01, 3d
+    Declarative scraper definitions                              :crit, done, e30f01s01, after e06f02s01, 3d
     Scraper inventory in the admin UI                            :active, e30f01s02, after e30f01s01, 1d
 
     section E31 Honest v1.1

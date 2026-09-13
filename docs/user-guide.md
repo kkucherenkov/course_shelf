@@ -37,6 +37,7 @@ their own view of the catalog.
   - [Users](#users)
   - [Permissions](#permissions)
   - [Metadata: scrape and identify](#metadata-scrape-and-identify)
+  - [Authoring a scraper definition](#authoring-a-scraper-definition)
   - [Transcription](#transcription)
   - [Backups](#backups)
 - [Known limits in this release](#known-limits-in-this-release)
@@ -406,6 +407,88 @@ entities, so renaming an instructor updates every course that references them.
 
 There is also a **maintenance backfill** that recomputes derived metadata
 (durations, thumbnails) across the catalog, reporting progress in realtime.
+
+### Authoring a scraper definition
+
+The built-in scrapers (Udemy, YouTube, generic JSON-LD) cover the common
+cases. For a site none of them recognise, drop a JSON file under
+`DERIVED_PATH/scrapers/` — no rebuild, no code. The backend reads every
+`*.json` file there once at startup and registers each as a scraper, checked
+after the built-ins and before the generic JSON-LD fallback.
+
+A definition names a URL pattern and a set of rules, each mapped onto one
+course field. Take a real problem: `stepik.org` course pages carry no
+schema.org `Course` markup — their one JSON-LD block describes a `Product`,
+which the generic extractor ignores — so it falls back to OpenGraph, and
+Stepik's `og:title` is SEO copy, not a course title:
+
+> Алгоритмы: теория и практика. Методы: Бесплатно | курс на Stepik
+
+The clean title *is* on the page, just not where the generic extractor looks:
+Stepik's Ember frontend embeds the real course record as JSON in
+`<script id="shoebox-main-store" type="fastboot/shoebox">`, and the record
+sits at `records.course.courses.0` — a dotted path through an object and a
+zero-indexed array, which is exactly what a JSON rule walks. This definition
+fixes the title and picks up the language the generic extractor never finds
+at all:
+
+```json
+{
+  "id": "stepik",
+  "kinds": ["url"],
+  "match": { "urlPattern": "^https://stepik\\.org/course/\\d+" },
+  "rules": {
+    "title": {
+      "json": "records.course.courses.0.title",
+      "jsonFrom": "script#shoebox-main-store"
+    },
+    "description": {
+      "json": "records.course.courses.0.summary",
+      "jsonFrom": "script#shoebox-main-store"
+    },
+    "language": {
+      "json": "records.course.courses.0.language",
+      "jsonFrom": "script#shoebox-main-store"
+    }
+  }
+}
+```
+
+`jsonFrom` is a plain CSS selector, not tied to `type="application/ld+json"`
+— it matches this script by `id` regardless of its `type="fastboot/shoebox"`
+attribute. Rules win over the generic extractor (D3 in the design doc), so
+`title` and `language` here replace whatever OpenGraph produced; fields the
+definition does not mention — `posterUrl`, in this case — still come through
+from the generic extractor untouched.
+
+- **`id`** must be unique — a definition whose id matches a built-in scraper
+  (`udemy`, `youtube`, `json-ld`) or another definition is rejected, never
+  silently overridden.
+- **`kinds`** is the subset of `url` / `name` / `fragment` this definition
+  supports. Most definitions only need `["url"]`.
+- **`match.urlPattern`** is a regular expression, checked against the course
+  URL to decide whether this definition applies.
+- **`rules`** map a field name (`title`, `description`, `instructorNames`,
+  `studioName`, `tags`, `level`, `language`, `releaseDate`, `posterUrl`,
+  `externalIds`, `ratingAverage`, `ratingCount`) onto either a CSS rule
+  (`selector` + `from: "text"` or `"attr:<name>"`, plus `many: true` to
+  collect every match instead of just the first) or a JSON rule (`json`, a
+  dotted path like `a.b.0.c`, walked over the parsed contents of the script
+  tag named by `jsonFrom` — every `<script type="application/ld+json">` when
+  omitted). Whichever rule wins fills in the field; where a rule and the
+  generic extractor both produce a value, the rule wins.
+
+A CSS rule would have worked for `title` too — Stepik's page also has a clean
+`<h1 class="course-promo__header">` with the same text — so
+`{ "selector": "h1.course-promo__header", "from": "text" }` is an equally
+valid rule for it. The JSON rule above is worth the extra step because the
+same embedded record also carries `language`, which has no tag on the page
+for a CSS selector to target at all.
+
+A malformed definition — invalid JSON, an unknown rule field, a bad regular
+expression, a colliding id — is logged and skipped; it never prevents the
+backend from starting. Changes to a definition file take effect on the next
+backend restart, not immediately — there is no file watcher.
 
 ### Transcription
 

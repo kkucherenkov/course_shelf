@@ -812,7 +812,7 @@ Where to plug in, and where not to.
 
 | Want to | Do this |
 | --- | --- |
-| Support a new metadata source | Add a scraper under `catalog/infra/scrapers/`, register it in `scraper.registry.ts`. The Udemy / YouTube / JSON-LD / HTML scrapers are the templates. |
+| Support a new metadata source | No code for a site that CSS selectors or embedded JSON can read: drop a definition in `DERIVED_PATH/scrapers/*.json` (`ScraperDefinitionLoader` loads it at startup, `DeclarativeScraper` runs it). Code only when the source needs real logic (an API call, auth) — add a scraper under `catalog/infra/scrapers/`, wire it into `build-scraper-registry.ts`. The Udemy / YouTube / JSON-LD scrapers are the templates. |
 | Support a new video container | Extend `SUPPORTED_EXTENSIONS` in `folder-name.parser.ts`; confirm ffprobe reads it. |
 | Support a new folder-naming convention | Add a tier to `folder-name.parser.ts` — it is a four-tier priority ladder with heavy spec coverage. |
 | Send real email / push | Implement `EmailPort` / `PushPort` in `integrations/`. Mock adapters ship today; the ports are already the seam. |

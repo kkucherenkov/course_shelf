@@ -499,7 +499,12 @@ model Bookmark {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@unique([userId, lessonId, idempotencyKey], name: "uq_bookmark_idempotency")
+  // `name` is the Prisma Client field (`where: { uq_bookmark_idempotency: … }`);
+  // `map` is the constraint name in Postgres. Without the `map` Prisma assumes
+  // its own default, `bookmark_userId_lessonId_idempotencyKey_key`, and every
+  // `migrate dev` proposes a RenameIndex against the name the migration
+  // actually created.
+  @@unique([userId, lessonId, idempotencyKey], name: "uq_bookmark_idempotency", map: "bookmark_uq_bookmark_idempotency")
   @@index([userId, lessonId])
   @@index([userId, id])
   @@map("bookmark")

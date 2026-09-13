@@ -18,6 +18,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   are now structurally impossible. `DiscoveredFile.size` / `Lesson.sizeBytes`
   widened to `BigInt`. Crash path records the cause as a `ScanError` instead
   of leaving the scan stuck `running` with no trace.
+
 ## T-2026-09-13-fix-prod-headers — Helmet HSTS/CSP leak on HTTP + dead realtime WS scheme in prod
 
 - Created: 2026-09-13

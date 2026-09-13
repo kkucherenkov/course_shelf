@@ -26,10 +26,11 @@
  *   - PrismaTranscriptRepository bound behind TRANSCRIPT_REPOSITORY
  *   - NodeFsAdapter bound behind the FS_ADAPTER port token
  *   - LocalFfmpegAdapter bound behind the FFMPEG_ADAPTER port token
- *   - LocalWhisperAdapter bound behind the WHISPER_ADAPTER port token
  *   - AdminGuard (provided here for ScansController/CoursesController)
  *   - SCRAPER_REGISTRY factory: mock or real (YouTube/Udemy/JsonLd) depending
  *     on AppConfig.scrapers.mode / youtube.configured / udemy.enabled
+ *   - WHISPER_ADAPTER factory: MockWhisperAdapter or LocalWhisperAdapter
+ *     depending on AppConfig.transcription.mode
  *
  * Learning-side ports (LESSON_PROGRESS_REPOSITORY) are imported via
  * LearningProgressModule — a thin common module that exposes the Prisma adapter
@@ -56,6 +57,7 @@ import { YouTubeScraper } from './infra/scrapers/youtube.scraper';
 import { createMockScrapers } from './infra/scrapers/mock.scrapers';
 
 import type { Scraper } from './domain/scraper/scraper.port';
+import type { WhisperAdapter } from './domain/transcription/whisper.port';
 import { CommonAccessModule } from '../../common/access/access.module';
 import { LearningProgressModule } from '../../common/learning-progress/learning-progress.module';
 import { RegisterLibraryHandler } from './application/commands/register-library.handler';
@@ -145,6 +147,7 @@ import { PrismaIdentifyTaskRepository } from './infra/prisma-identify-task.repos
 import { PrismaSearchAdapter } from './infra/prisma-search.adapter';
 import { LocalFfmpegAdapter } from './infra/local-ffmpeg.adapter';
 import { LocalWhisperAdapter } from './infra/local-whisper.adapter';
+import { MockWhisperAdapter } from './infra/mock-whisper.adapter';
 import { NodeFsAdapter } from './infra/node-fs-adapter';
 import { IDENTIFY_TASK_REPOSITORY } from './domain/identify/identify-task.repository';
 
@@ -250,7 +253,14 @@ import { IDENTIFY_TASK_REPOSITORY } from './domain/identify/identify-task.reposi
     { provide: TAG_REPOSITORY, useClass: PrismaTagRepository },
     { provide: FS_ADAPTER, useClass: NodeFsAdapter },
     { provide: FFMPEG_ADAPTER, useClass: LocalFfmpegAdapter },
-    { provide: WHISPER_ADAPTER, useClass: LocalWhisperAdapter },
+    {
+      provide: WHISPER_ADAPTER,
+      useFactory: (config: AppConfig): WhisperAdapter =>
+        config.transcription.mode === 'mock'
+          ? new MockWhisperAdapter()
+          : new LocalWhisperAdapter(config),
+      inject: [AppConfig],
+    },
     { provide: SEARCH_PORT, useClass: PrismaSearchAdapter },
   ],
   exports: [

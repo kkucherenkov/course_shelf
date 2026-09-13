@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -138,7 +139,14 @@ export interface TranscriptionConfig {
   readonly threads: number;
   /** `-l` passed to whisper.cpp. 'auto' lets whisper detect the language. */
   readonly language: string;
-  /** False when no model path is set — the run endpoint fails fast on this. */
+  /** 'mock' swaps the real whisper.cpp shell-out for a fixture adapter (used in CI, where a ~75 MB model buys nothing — see MockWhisperAdapter). Default 'real'. */
+  readonly mode: ProviderMode;
+  /**
+   * False unless `mode` is 'mock', or `modelPath` is set AND the file exists
+   * on disk. A path alone used to be enough, which meant a default model path
+   * in compose could report `configured: true` for a model nobody downloaded
+   * yet — the run endpoint would start and then fail on every lesson.
+   */
   readonly configured: boolean;
 }
 
@@ -174,7 +182,19 @@ export interface AuthInstanceConfig {
 
 @Injectable()
 export class AppConfig {
-  constructor(private readonly config: ConfigService) {}
+  /**
+   * A field, not a getter like every other block below — deliberately. It is
+   * read once per transcription run in `run-transcription.handler.ts` and once
+   * per lesson in the walk that follows, and `configured` now `stat`s the
+   * model file. AppConfig is a singleton for the app's lifetime and env vars
+   * don't change underneath it, so computing this once at construction turns
+   * "a syscall per request" into "a syscall at boot".
+   */
+  readonly transcription: TranscriptionConfig;
+
+  constructor(private readonly config: ConfigService) {
+    this.transcription = this.buildTranscription();
+  }
 
   get runtime(): AppRuntimeConfig {
     const sentryDsn = this.config.get<string>('SENTRY_DSN') ?? '';
@@ -289,14 +309,16 @@ export class AppConfig {
   }
 
   /**
-   * whisper.cpp settings. `configured` stays false until a model file is
-   * named — the binary alone cannot transcribe anything, and starting a run
-   * that can only fail is worse than refusing it.
-   * Env: WHISPER_PATH, WHISPER_MODEL_PATH, WHISPER_TIMEOUT_MS,
+   * whisper.cpp settings. `configured` stays false until either mock mode is
+   * on or a model file is named AND present on disk — the binary alone cannot
+   * transcribe anything, and starting a run that can only fail is worse than
+   * refusing it.
+   * Env: WHISPER_MODE, WHISPER_PATH, WHISPER_MODEL_PATH, WHISPER_TIMEOUT_MS,
    *      WHISPER_THREADS, WHISPER_LANGUAGE.
    */
-  get transcription(): TranscriptionConfig {
+  private buildTranscription(): TranscriptionConfig {
     const modelPath = this.stringOrDefault('WHISPER_MODEL_PATH', '');
+    const mode = this.stringOrDefault('WHISPER_MODE', 'real') as ProviderMode;
     return {
       whisperPath: this.stringOrDefault('WHISPER_PATH', 'whisper-cli'),
       modelPath,
@@ -305,7 +327,8 @@ export class AppConfig {
       timeoutMs: this.numberOrDefault('WHISPER_TIMEOUT_MS', 21_600_000),
       threads: this.numberOrDefault('WHISPER_THREADS', 4),
       language: this.stringOrDefault('WHISPER_LANGUAGE', 'auto'),
-      configured: modelPath !== '',
+      mode,
+      configured: mode === 'mock' || (modelPath !== '' && existsSync(modelPath)),
     };
   }
 

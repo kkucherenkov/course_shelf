@@ -46,32 +46,20 @@ include-name = "POST /api/v1/realtime/token"
 checks.ignored_auth.enabled = false
 checks.negative_data_rejection.enabled = false
 
-# POST /api/v1/libraries/{id}/transcriptions answers 503
-# `transcription-not-configured` when WHISPER_MODEL_PATH is unset. That status
-# is documented on the operation and the API conforms to its own spec here —
-# this is not a crash and not drift.
+# POST /api/v1/libraries/{id}/transcriptions used to answer 503
+# `transcription-not-configured` on every CI request — the stack shipped no
+# whisper model (a ggml file is ~75 MB and the seed's one lesson has no media
+# on disk anyway, so nothing would ever transcribe it). `docker/compose.ci.yml`
+# now sets WHISPER_MODE=mock, which swaps in MockWhisperAdapter: it writes a
+# fixed SRT with no child process and no model file, so the endpoint takes the
+# normal 202 + walk path instead. `not_a_server_error` is armed on this
+# operation like every other one.
 #
-# The CI stack ships no whisper model (a ggml file is ~75 MB and nothing in a
-# contract run would transcribe anything), so the endpoint takes that branch on
-# every request. `not_a_server_error` flags any 5xx and cannot tell a documented
-# 503 from a real one, so it is off for this operation only; every other check
-# stays armed on it.
-#
-# Known cost, taken deliberately: a genuine 500 on this path would now go
-# unreported here.
-#
-# Open question, tracked as `tuxedo` 28: whether 503 is the right status at all.
-# It means *temporarily* unable and invites retry, but "no model configured" is
-# permanent until an operator edits env, so a client honouring `Retry-After`
-# retries forever. If that is reclassified to a 4xx, delete this block.
-[[operations]]
-include-name = "POST /api/v1/libraries/{id}/transcriptions"
-checks.not_a_server_error.enabled = false
 # Seeded library id, and the same `ensure_resource_availability` exemption the
 # rest of the `/libraries/{id}` family carries — see that section below for the
-# reasoning. Both live in this block rather than one of their own because two
-# `[[operations]]` blocks matching the same operation have no defined merge
-# order.
+# reasoning.
+[[operations]]
+include-name = "POST /api/v1/libraries/{id}/transcriptions"
 parameters = { "path.id" = "seed-library-main" }
 checks.ensure_resource_availability.enabled = false
 

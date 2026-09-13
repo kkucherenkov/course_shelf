@@ -204,10 +204,12 @@ Fetch a model into the host directory bound at `WHISPER_MODEL_DIR` (default
 `../models`, read-only in the container):
 
 ```sh
-mkdir -p ../models
-curl -L -o ../models/ggml-base.bin \
-  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+WHISPER_MODEL_DIR=../models pnpm whisper:model        # fetches ggml-base.bin
 ```
+
+Pass a size (`pnpm whisper:model medium`) for one of the alternatives below.
+The script is idempotent — it exits without touching the network if the file
+is already there, so it is safe to run on every deploy.
 
 Real sizes, so you can budget disk and bandwidth before choosing:
 
@@ -219,9 +221,12 @@ Real sizes, so you can budget disk and bandwidth before choosing:
 | `ggml-large-v3.bin` | ~3.1 GB | Best accuracy; multi-hour runs are the norm even off a NAS. |
 
 Set `WHISPER_MODEL_PATH=/models/ggml-base.bin` (or whichever you downloaded)
-and redeploy — no rebuild, the env var alone flips `AppConfig.transcription
-.configured` to `true`. Left empty, `POST /libraries/{id}/transcriptions`
-refuses the request instead of starting a run that can only fail.
+and redeploy — no rebuild needed. `AppConfig.transcription.configured` is
+`true` once that path points at a file that actually exists in
+`$WHISPER_MODEL_DIR`; the env var alone is not enough, so a path set before
+the download finishes still refuses. Left empty (or dangling), `POST
+/libraries/{id}/transcriptions` refuses the request instead of starting a run
+that can only fail.
 
 `WHISPER_THREADS` (default 4) is the only dial that matters in practice: the
 run is sequential by design (one lesson at a time), so this is CPU cores per

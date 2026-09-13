@@ -172,15 +172,20 @@ are gitignored and created on first `up`.
 ### 2b — Transcription (optional)
 
 The backend image ships a pinned `whisper-cli`, but transcription stays off
-until you supply a ggml model — the model is deliberately not baked into the
-image:
+until a model file actually exists at `WHISPER_MODEL_PATH` — the model is
+deliberately not baked into the image:
 
 ```sh
-mkdir -p models
-curl -L -o models/ggml-base.bin \
-  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
-WHISPER_MODEL_PATH=/models/ggml-base.bin docker compose -f docker/compose.yml up -d backend
+pnpm whisper:model                # fetches ggml-base.bin into ./models
+docker compose -f docker/compose.yml up -d backend
 ```
+
+`docker/compose.yml` already points `WHISPER_MODEL_PATH` at
+`/models/ggml-base.bin` by default, so once the file lands the next `up`
+switches transcription on with no other change. Pass a size —
+`pnpm whisper:model tiny|small|medium|large-v3` — to fetch a different model;
+the script is idempotent, exiting without touching the network if the file is
+already there.
 
 `WHISPER_THREADS` (4), `WHISPER_LANGUAGE` (`auto`) and `WHISPER_TIMEOUT_MS`
 (six hours) tune the run — see [`docker/README.md`](docker/README.md) and

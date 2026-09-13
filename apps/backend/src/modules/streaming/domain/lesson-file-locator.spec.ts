@@ -104,6 +104,8 @@ function makeLessonRepo(overrides?: Partial<LessonRepository>): LessonRepository
     }),
     findByCourse: vi.fn(),
     findBySection: vi.fn(),
+    parkPositionsForResync: vi.fn(),
+    removeMany: vi.fn(),
     getLessonStatsByCourseIds: vi.fn(),
     ...overrides,
   };

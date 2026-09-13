@@ -24,6 +24,7 @@ their own view of the catalog.
   - [How CourseShelf reads a folder](#how-courseshelf-reads-a-folder)
   - [Taking control with `course.json`](#taking-control-with-coursejson)
   - [Running a scan](#running-a-scan)
+  - [Rescanning one course](#rescanning-one-course)
 - [Everyday use](#everyday-use)
   - [Home](#home)
   - [Browse and search](#browse-and-search)
@@ -217,6 +218,32 @@ skipped. Re-scanning a large, unchanged library is fast.
 When it finishes you get counts (`scanned` / `added` / `updated` /
 `coursesDiscovered`) and the list of per-file errors, if any. Scans can also be
 cancelled mid-run.
+
+A library scan **never re-imports a course it already knows**. That is
+deliberate: it is what stops a scan from overwriting a title you edited or a
+poster you replaced. It also means a library scan cannot repair a course that
+imported badly — for that, rescan the course itself.
+
+### Rescanning one course
+
+The **Rescan** button on a course page (admin only) re-reads that one folder,
+and unlike a library scan it *re-imports* what it finds:
+
+- lessons the first import missed are added;
+- lessons are renumbered to match the files on disk;
+- a lesson whose video file is gone is removed, together with its transcript,
+  your progress on it, and its bookmarks and notes;
+- lessons that are still there keep their identity, so your progress and
+  bookmarks survive the rescan.
+
+**Your edits to the course itself are kept** — title, description, poster,
+level, language, rating, instructors, studio and tags are never taken back from
+the folder or from `course.json`. Only the sections and lessons underneath are
+rebuilt.
+
+If the folder itself is missing (renamed on disk, or a drive that did not
+mount), the rescan reports the error and changes nothing, rather than treating
+every lesson as deleted.
 
 ---
 
@@ -575,9 +602,15 @@ is covered. When the next one appears it goes here, before anyone trips over it.
 errors on that folder. The usual causes are a video extension outside the
 supported five, or a `course.json` that failed to parse.
 
+**A course is there but some of its lessons are missing.** Fix whatever the
+scan reported, then use **Rescan** on the course page. Running the library scan
+again will not help — it skips courses it has already imported (see
+[Rescanning one course](#rescanning-one-course)).
+
 **Lessons appear in the wrong order.** Folder-name inference did not find the
 ordinals you expected. Either rename to a recognised pattern (`01 - Title`) or
-declare the order explicitly in `course.json`.
+declare the order explicitly in `course.json`, then **Rescan** the course —
+renumbering only happens on a course rescan.
 
 **A lesson has no duration or thumbnail.** ffmpeg/ffprobe is not available to
 the server. Install it, then re-scan.

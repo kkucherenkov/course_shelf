@@ -500,6 +500,15 @@ once**), `Bookmark`, `Note` (unique per user+lesson), and
 `CourseProgressReadModel` — the denormalised projection maintained by event
 handlers.
 
+These three also reference `lessonId` as a plain column with no foreign key,
+for the same reason `Transcript` does — which makes **deleting a lesson an
+explicit, ordered operation, never a cascade**. The two places that delete one
+own that order: `PrismaLibraryRepository.removeWithCascade` (dropping a whole
+library) and `PrismaLessonRepository.removeMany` (a course rescan removing a
+lesson whose video is gone). The reverse matters just as much: re-importing a
+lesson must *reuse its id*, because a new id orphans its progress, bookmarks,
+notes and transcripts with nothing left in the schema to collect them.
+
 **Access** — `AccessGrant`, unique on `(userId, targetKind, libraryId, courseId)`.
 
 Two properties worth noticing:

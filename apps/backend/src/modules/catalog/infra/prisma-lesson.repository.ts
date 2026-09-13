@@ -75,6 +75,14 @@ const LESSON_WITH_CHILDREN_SELECT = {
   },
 } as const;
 
+/**
+ * How far `parkPositionsForResync` shifts a course's lesson positions out of
+ * the way. Any constant larger than the biggest real position works — the
+ * point is only that the parked range cannot overlap the 1..n the resync is
+ * about to write.
+ */
+const RESYNC_PARK_OFFSET = 1_000_000;
+
 @Injectable()
 export class PrismaLessonRepository implements LessonRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -145,6 +153,29 @@ export class PrismaLessonRepository implements LessonRepository {
       }
       throw error;
     }
+  }
+
+  async parkPositionsForResync(courseId: string): Promise<void> {
+    await this.prisma.lesson.updateMany({
+      where: { courseId },
+      data: { position: { decrement: RESYNC_PARK_OFFSET } },
+    });
+  }
+
+  async removeMany(lessonIds: readonly string[]): Promise<void> {
+    if (lessonIds.length === 0) return;
+    const ids = [...lessonIds];
+
+    // Child-first, same shape as PrismaLibraryRepository.removeWithCascade:
+    // the three learning tables carry a bare `lessonId` column with no foreign
+    // key, so nothing deletes them for us. Materials and subtitles DO cascade
+    // from the lesson row. Transcripts are the caller's job — see the port.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.lessonProgress.deleteMany({ where: { lessonId: { in: ids } } });
+      await tx.bookmark.deleteMany({ where: { lessonId: { in: ids } } });
+      await tx.note.deleteMany({ where: { lessonId: { in: ids } } });
+      await tx.lesson.deleteMany({ where: { id: { in: ids } } });
+    });
   }
 
   async findById(id: string): Promise<Lesson | null> {

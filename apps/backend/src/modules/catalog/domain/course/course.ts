@@ -421,6 +421,39 @@ export class Course {
   }
 
   /**
+   * Replace the entire section list with `sections`, in the order given, at
+   * positions 1..n.
+   *
+   * Exists for the force-resync path of a scoped rescan (E32-F01-S03), which
+   * re-derives a course's sections from the folders currently on disk. Callers
+   * MUST pass the id of the existing section whenever its title survived:
+   * `Lesson.section` is `onDelete: Cascade`, so a section that disappears from
+   * this list takes every lesson in it with it — that is how #317 emptied
+   * courses. Reusing the id turns the write into a position/title update.
+   *
+   * Rejects a duplicate id for the same reason `addSection` does: two entries
+   * claiming one section row is a reconciliation bug, not a layout.
+   */
+  replaceSections(sections: readonly { id: string; title: string }[]): void {
+    const next: SectionData[] = [];
+    for (const [index, section] of sections.entries()) {
+      if (next.some((s) => s.id === section.id)) {
+        throw new SectionPositionConflictError(
+          `Section with id "${section.id}" is listed twice in the replacement set.`,
+        );
+      }
+      next.push({
+        id: section.id,
+        position: Position.from(index + 1).value,
+        title: Title.from(section.title).value,
+      });
+    }
+
+    this._sections = next;
+    this._touch();
+  }
+
+  /**
    * Reorder a section to a new 1-based position, repacking all other sections
    * to maintain contiguous 1-based ordering.
    *

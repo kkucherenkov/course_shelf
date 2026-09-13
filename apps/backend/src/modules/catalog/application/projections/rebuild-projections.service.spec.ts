@@ -38,6 +38,8 @@ function makeLessonRepo(count = 3): LessonRepository {
         Array.from({ length: count }, (_, i) => ({ id: `lesson-${String(i + 1)}` })),
       ),
     findBySection: vi.fn(),
+    parkPositionsForResync: vi.fn(),
+    removeMany: vi.fn(),
     getLessonStatsByCourseIds: vi.fn(),
   };
 }

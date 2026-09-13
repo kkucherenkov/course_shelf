@@ -63,6 +63,13 @@ interface LessonDelegate {
   findUnique: ReturnType<typeof vi.fn>;
   findMany: ReturnType<typeof vi.fn>;
   groupBy: ReturnType<typeof vi.fn>;
+  updateMany: ReturnType<typeof vi.fn>;
+  deleteMany: ReturnType<typeof vi.fn>;
+}
+
+/** The three tables that reference `lessonId` with no foreign key behind it. */
+interface LearningDelegate {
+  deleteMany: ReturnType<typeof vi.fn>;
 }
 
 interface MaterialDelegate {
@@ -79,6 +86,9 @@ interface MockPrisma {
   lesson: LessonDelegate;
   material: MaterialDelegate;
   subtitle: SubtitleDelegate;
+  lessonProgress: LearningDelegate;
+  bookmark: LearningDelegate;
+  note: LearningDelegate;
   $transaction: ReturnType<typeof vi.fn>;
 }
 
@@ -89,6 +99,8 @@ function makePrisma(): MockPrisma {
       findUnique: vi.fn().mockResolvedValue(null),
       findMany: vi.fn().mockResolvedValue([]),
       groupBy: vi.fn().mockResolvedValue([]),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     material: {
       deleteMany: vi.fn().mockResolvedValue(undefined),
@@ -98,6 +110,9 @@ function makePrisma(): MockPrisma {
       deleteMany: vi.fn().mockResolvedValue(undefined),
       createMany: vi.fn().mockResolvedValue(undefined),
     },
+    lessonProgress: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    bookmark: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    note: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
     $transaction: vi.fn(),
   };
 
@@ -365,6 +380,70 @@ describe('PrismaLessonRepository', () => {
 
       const call = vi.mocked(prisma.lesson.groupBy).mock.calls[0]?.[0];
       expect(call?.where?.courseId).toEqual({ in: ['course-1', 'course-2'] });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // parkPositionsForResync (E32-F01-S03)
+  // -------------------------------------------------------------------------
+  describe('parkPositionsForResync', () => {
+    it('shifts every position of the course in one statement', async () => {
+      await repo.parkPositionsForResync('course-1');
+
+      expect(prisma.lesson.updateMany).toHaveBeenCalledOnce();
+      const call = vi.mocked(prisma.lesson.updateMany).mock.calls[0]?.[0];
+      expect(call?.where).toEqual({ courseId: 'course-1' });
+      // A uniform shift, not a per-row rewrite: adding the same constant to
+      // every row keeps them distinct, so parking can never collide with
+      // itself on (sectionId, position).
+      expect(call?.data?.position?.decrement).toBeGreaterThan(0);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // removeMany (E32-F01-S03)
+  // -------------------------------------------------------------------------
+  describe('removeMany', () => {
+    it('deletes the rows that reference lessonId without a foreign key, then the lessons', async () => {
+      const order: string[] = [];
+      vi.mocked(prisma.lessonProgress.deleteMany).mockImplementation(async () => {
+        order.push('lessonProgress');
+        return { count: 0 };
+      });
+      vi.mocked(prisma.bookmark.deleteMany).mockImplementation(async () => {
+        order.push('bookmark');
+        return { count: 0 };
+      });
+      vi.mocked(prisma.note.deleteMany).mockImplementation(async () => {
+        order.push('note');
+        return { count: 0 };
+      });
+      vi.mocked(prisma.lesson.deleteMany).mockImplementation(async () => {
+        order.push('lesson');
+        return { count: 0 };
+      });
+
+      await repo.removeMany(['lesson-1', 'lesson-2']);
+
+      // Child-first: the lesson row goes last.
+      expect(order).toEqual(['lessonProgress', 'bookmark', 'note', 'lesson']);
+      const where = { lessonId: { in: ['lesson-1', 'lesson-2'] } };
+      expect(prisma.lessonProgress.deleteMany).toHaveBeenCalledWith({ where });
+      expect(prisma.bookmark.deleteMany).toHaveBeenCalledWith({ where });
+      expect(prisma.note.deleteMany).toHaveBeenCalledWith({ where });
+      expect(prisma.lesson.deleteMany).toHaveBeenCalledWith({
+        where: { id: { in: ['lesson-1', 'lesson-2'] } },
+      });
+      // One transaction — a half-deleted lesson would leave progress rows
+      // pointing at a row that no longer exists, with no FK to catch it.
+      expect(prisma.$transaction).toHaveBeenCalledOnce();
+    });
+
+    it('is a no-op for an empty id list', async () => {
+      await repo.removeMany([]);
+
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.lesson.deleteMany).not.toHaveBeenCalled();
     });
   });
 });

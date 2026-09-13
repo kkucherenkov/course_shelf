@@ -506,3 +506,58 @@ describe('Course.setExternalIds', () => {
     expect(c.externalIds).toHaveLength(0);
   });
 });
+
+describe('Course.replaceSections', () => {
+  it('re-derives the list at positions 1..n, keeping the ids it was given', () => {
+    const course = makeCourse();
+    course.addSection({ id: 'sec-a', title: 'Basics', position: 1 });
+    course.addSection({ id: 'sec-b', title: 'Gone', position: 2 });
+
+    // "Basics" survived and keeps its row; "Gone" is dropped and "Advanced"
+    // is new — the shape a force-resync derives from the folders on disk.
+    course.replaceSections([
+      { id: 'sec-a', title: 'Basics' },
+      { id: 'sec-c', title: 'Advanced' },
+    ]);
+
+    expect(course.sections).toEqual([
+      { id: 'sec-a', position: 1, title: 'Basics' },
+      { id: 'sec-c', position: 2, title: 'Advanced' },
+    ]);
+  });
+
+  it('reorders in place — the same id may move to another position', () => {
+    const course = makeCourse();
+    course.addSection({ id: 'sec-a', title: 'Basics', position: 1 });
+    course.addSection({ id: 'sec-b', title: 'Advanced', position: 2 });
+
+    course.replaceSections([
+      { id: 'sec-b', title: 'Advanced' },
+      { id: 'sec-a', title: 'Basics' },
+    ]);
+
+    expect(course.sections.map((s) => [s.id, s.position])).toEqual([
+      ['sec-b', 1],
+      ['sec-a', 2],
+    ]);
+  });
+
+  it('rejects the same id twice', () => {
+    const course = makeCourse();
+
+    expect(() =>
+      course.replaceSections([
+        { id: 'sec-a', title: 'Basics' },
+        { id: 'sec-a', title: 'Advanced' },
+      ]),
+    ).toThrow(SectionPositionConflictError);
+  });
+
+  it('validates titles through the Title value object', () => {
+    const course = makeCourse();
+
+    expect(() => course.replaceSections([{ id: 'sec-a', title: '   ' }])).toThrow(
+      CourseTitleInvalidError,
+    );
+  });
+});

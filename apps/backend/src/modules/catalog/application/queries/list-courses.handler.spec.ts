@@ -59,6 +59,8 @@ function makeLessonRepo(durations: Record<string, number> = {}): LessonRepositor
     findById: vi.fn(),
     findByCourse: vi.fn(),
     findBySection: vi.fn(),
+    parkPositionsForResync: vi.fn(),
+    removeMany: vi.fn(),
     getLessonStatsByCourseIds: vi.fn().mockImplementation((courseIds: string[]) => {
       const map = new Map<string, { lessonCount: number; totalDurationSeconds: number }>();
       for (const id of courseIds) {

@@ -725,10 +725,12 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               // whose title survived — Lesson.section is onDelete: Cascade, so
               // a section that changes id drops its lessons on the way (#317).
               course = scopeCourse;
-              const sectionIdByTitle = new Map(course.sections.map((s) => [s.title, s.id]));
+              const persistedSectionIdByTitle = new Map(
+                course.sections.map((s) => [s.title, s.id]),
+              );
               course.replaceSections(
                 sectionTitleList.map((title) => ({
-                  id: sectionIdByTitle.get(title.trim()) ?? nanoid(),
+                  id: persistedSectionIdByTitle.get(title.trim()) ?? nanoid(),
                   title,
                 })),
               );

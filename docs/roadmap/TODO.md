@@ -11,7 +11,7 @@ denominator below.
 Progress (update by hand):
 
 - **v1** — `119 / 119` complete. 121 cards, 2 cancelled.
-- **v2** — `33 / 41` complete. 41 cards across E25–E32.
+- **v2** — `34 / 42` complete. 42 cards across E25–E32.
 
 v1 is the shipped product; v2 is the transcript-first direction and the
 honest-v1.1 cleanup. The two denominators are kept apart on purpose — merging
@@ -274,3 +274,4 @@ them would quietly reopen a milestone that is finished.
 - [x] [E32-F01-S01](./tasks/E32-F01-S01.md) `A` — Lesson position must be unique within its section
 - [x] [E32-F01-S02](./tasks/E32-F01-S02.md) `A` — Rescan a single course · ⇐ E32-F01-S01
 - [x] [E32-F01-S03](./tasks/E32-F01-S03.md) `A` — A course rescan re-imports the course · ⇐ E32-F01-S02
+- [x] [E32-F01-S04](./tasks/E32-F01-S04.md) `A` — Two videos may share a filename in different section folders · ⇐ E32-F01-S03

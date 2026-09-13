@@ -385,17 +385,29 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
         }
 
         // -----------------------------------------------------------------------
-        // Step 1: Group non-course.json files by canonical stem.
+        // Step 1: Group non-course.json files by (directory, canonical stem).
         //
-        // WHY: A course folder may contain `1.1 Vim.mp4` alongside sidecar
-        // files like `1.1. Vim.pdf` (dot-variant) or `1.1 Vim.en.srt`.
+        // WHY grouping: a course folder may contain `1.1 Vim.mp4` alongside
+        // sidecar files like `1.1. Vim.pdf` (dot-variant) or `1.1 Vim.en.srt`.
         // Without grouping, the PDF and SRT would fall through as
         // unsupported-extension ScanErrors. stemMatch normalises both prefix
         // variants to the same canonical stem so sidecar files can be
         // associated with their video (the "Neovim mass ScanError" fix).
+        //
+        // WHY the directory is part of the key: `stemMatch` reads the basename
+        // only — by contract — and this map spans the WHOLE course, sections
+        // included. Keyed by the stem alone, two videos in different section
+        // folders that happen to share a filename collapse into one group and
+        // `group.video` silently overwrites the earlier one: no error, no
+        // warning, the lesson simply never exists. Measured on the maintainer's
+        // library: a course of 31 videos all named `video.mp4`, one per section
+        // folder, imported exactly ONE lesson — 296 videos across 18 courses
+        // lost this way, ~5 % of a 5984-video library. A sidecar is by
+        // definition a sibling of its video, so scoping the key to the
+        // directory cannot break the pairing the shared key exists for.
         // -----------------------------------------------------------------------
 
-        // key = canonical stem; value = collections of files by kind.
+        // key = `${directory}\0${canonicalStem}`; value = files by kind.
         const stemGroups = new Map<
           string,
           {
@@ -418,9 +430,13 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           if (fileBasename === 'course.json') continue;
 
           const { canonicalStem, kind } = stemMatch(file.path);
+          // NUL cannot occur in a path component on any filesystem we read, so
+          // it is the one separator that cannot be forged by a directory or a
+          // stem containing it.
+          const groupKey = `${path.dirname(file.path)}\u0000${canonicalStem}`;
 
-          if (!stemGroups.has(canonicalStem)) {
-            stemGroups.set(canonicalStem, {
+          if (!stemGroups.has(groupKey)) {
+            stemGroups.set(groupKey, {
               video: undefined,
               materials: [],
               subtitles: [],
@@ -429,7 +445,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           }
           // Non-null guaranteed: we just set the entry with stemGroups.set() above.
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- guaranteed above
-          const group = stemGroups.get(canonicalStem)!;
+          const group = stemGroups.get(groupKey)!;
 
           switch (kind) {
             case 'video': {

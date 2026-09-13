@@ -3033,6 +3033,161 @@ describe('RunScanHandler', () => {
   });
 
   // -------------------------------------------------------------------------
+  // Sibling section folders holding identically-named videos.
+  //
+  // `stemGroups` is built once per COURSE and `stemMatch` reads the basename
+  // only, so keying it by the stem alone collapsed every `video.mp4` in the
+  // course into one group — `group.video` overwrote the previous one with no
+  // error and no warning, and only the last folder walked produced a lesson.
+  // Measured on the maintainer's library: a 31-video course imported one
+  // lesson; 296 videos across 18 courses lost the same way.
+  // -------------------------------------------------------------------------
+  describe('identically-named videos in sibling section folders', () => {
+    const folder = 'Chess Course';
+    const sectionCount = 4;
+    // Distinct section folder titles, identical video filenames — the exact
+    // shape of the course that imported one lesson out of thirty-one.
+    const videoPaths = Array.from(
+      { length: sectionCount },
+      (_, i) =>
+        `/lib/${folder}/${String(i + 1).padStart(2, '0')} - Part ${String(i + 1)}/video.mp4`,
+    );
+
+    it('imports one lesson per folder, not one lesson for the whole course', async () => {
+      vi.useRealTimers();
+      const courseRepo2 = makeCourseRepo();
+      const lessonRepo2 = makeLessonRepo();
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter(videoPaths.map((p) => ({ path: p, mtime: BASE_TIME, size: 100 }))),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      expect(scanRepo2.store.get(scan.id)!.errors).toHaveLength(0);
+      expect([...lessonRepo2.store.values()].map((l) => l.videoPath).toSorted()).toEqual(
+        videoPaths.toSorted(),
+      );
+      // One section each, one lesson in each — never two lessons fighting over
+      // a single (sectionId, position).
+      const course = [...courseRepo2.store.values()][0]!;
+      expect(course.sections).toHaveLength(sectionCount);
+      for (const section of course.sections) {
+        expect(
+          [...lessonRepo2.store.values()].filter((l) => l.sectionId === section.id),
+        ).toHaveLength(1);
+      }
+    });
+
+    it('still pairs a sidecar with the video it sits next to, not with a namesake elsewhere', async () => {
+      vi.useRealTimers();
+      const courseRepo2 = makeCourseRepo();
+      const files: FileRecord[] = videoPaths.flatMap((p) => [
+        { path: p, mtime: BASE_TIME, size: 100 },
+        { path: p.replace('.mp4', '.en.srt'), mtime: BASE_TIME, size: 30, content: MINIMAL_SRT },
+        { path: p.replace('video.mp4', 'video.pdf'), mtime: BASE_TIME, size: 20 },
+      ]);
+      const lessonRepo2 = makeLessonRepo();
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const scan = [...scanRepo2.store.values()][0]!;
+      expect(scan.errors.filter((e) => e.code === 'unsupported-extension')).toHaveLength(0);
+
+      // Every lesson carries exactly its own folder's sidecars.
+      for (const lesson of lessonRepo2.store.values()) {
+        const dir = lesson.videoPath.slice(0, lesson.videoPath.lastIndexOf('/'));
+        expect(lesson.subtitles.map((s) => s.path)).toEqual([`${dir}/video.en.srt`]);
+        expect(lesson.materials.map((m) => m.path)).toEqual([`${dir}/video.pdf`]);
+      }
+    });
+
+    it('a rescan back-fills the namesake lessons a previous import collapsed', async () => {
+      vi.useRealTimers();
+      // The DB as the old grouping left it: one section per folder, but a
+      // single lesson — the last folder walked.
+      const courseRepo2 = makeCourseRepo();
+      const lessonRepo2 = makeLessonRepo();
+      const course = Course.create({
+        id: 'course-chess',
+        libraryId: 'lib-1',
+        slug: toSlugForTest(folder),
+        title: folder,
+      });
+      for (const [i] of videoPaths.entries()) {
+        course.addSection({
+          id: `sec-${String(i + 1)}`,
+          title: `Part ${String(i + 1)}`,
+          position: i + 1,
+        });
+      }
+      courseRepo2.store.set(course.id, course);
+      const survivor = videoPaths.at(-1)!;
+      lessonRepo2.store.set(
+        'lesson-survivor',
+        Lesson.create({
+          id: 'lesson-survivor',
+          courseId: course.id,
+          sectionId: `sec-${String(sectionCount)}`,
+          position: 1,
+          title: 'video',
+          videoPath: survivor,
+          mtime: BASE_TIME,
+          sizeBytes: 100,
+        }),
+      );
+
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter(videoPaths.map((p) => ({ path: p, mtime: BASE_TIME, size: 100 }))),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      await h.execute(new RunScanCommand(undefined, ACTOR_USER_ID, { courseId: course.id }));
+      await drainMicrotasks();
+
+      expect([...lessonRepo2.store.values()].map((l) => l.videoPath).toSorted()).toEqual(
+        videoPaths.toSorted(),
+      );
+      // The one lesson that did survive keeps its id — its progress and
+      // bookmarks are the only ones in this course that ever existed.
+      expect(lessonRepo2.store.get('lesson-survivor')?.videoPath).toBe(survivor);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Library-wide scan is unchanged — the existing 41+ tests above already
   // construct RunScanCommand(libraryId, actorUserId) with no scope and pass
   // unmodified, which is the regression proof for "library-wide scan still

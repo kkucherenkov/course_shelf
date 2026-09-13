@@ -62,7 +62,12 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Status: done
 - Blockers: —
 - Completed: 2026-09-14
-- Result: [PR #468](https://github.com/kkucherenkov/course_shelf/pull/468) · closes #467
+- Result: [PR #468](https://github.com/kkucherenkov/course_shelf/pull/468) · closes #467, #470
+- Also in this PR: [E32-F01-S04](../../docs/roadmap/tasks/E32-F01-S04.md) — `stemGroups` was
+  keyed by canonical stem alone while `stemMatch` reads the basename only, so two videos
+  sharing a filename in different section folders overwrote each other silently (296 videos
+  across 18 courses, measured live). Folded in rather than split out: same file, and a resync
+  is what puts the collapsed lessons back.
 
 ## T-2026-09-14-mobile-debug-cleartext — plain HTTP for debug and profile builds
 

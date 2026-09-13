@@ -239,6 +239,7 @@ export default {
       headerCountZero: 'Ничего не найдено по запросу «{q}»',
       groupCourses: 'Курсы',
       groupLessons: 'Уроки',
+      groupTranscripts: 'Расшифровки',
       emptyTypeSomething: 'Введите запрос в строку поиска выше',
       emptyShortQuery: 'Продолжайте ввод — нужно не менее 2 символов',
       emptyNoMatches: 'Ничего не найдено по запросу «{q}»',

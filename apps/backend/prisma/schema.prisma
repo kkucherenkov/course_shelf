@@ -3,11 +3,13 @@
 // Add domain models below the auth section.
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  extensions = [pg_trgm]
 }
 
 // ----- Better Auth -----
@@ -398,6 +400,10 @@ model TranscriptCue {
   transcript   Transcript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
 
   @@index([transcriptId, startMs])
+  // pg_trgm GIN index backing SearchPort.findTranscriptHits' `contains`
+  // (case-insensitive substring) search — see §6.2 of the transcript-first
+  // design doc for why trigram over tsvector.
+  @@index([text(ops: raw("gin_trgm_ops"))], type: Gin)
   @@map("transcript_cue")
 }
 

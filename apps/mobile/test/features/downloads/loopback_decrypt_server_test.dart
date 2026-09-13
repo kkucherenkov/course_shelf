@@ -181,9 +181,21 @@ void main() {
     () async {
       // Corrupt one byte inside block 1's ciphertext, after the fixture (and
       // the server pointed at it) already exist.
+      //
+      // Flip every bit of the byte instead of forcing it to a fixed value
+      // (e.g. 0xFF): the container's nonce is freshly randomised on every
+      // `ChunkedGcmWriter.create()` call, so this ciphertext byte is
+      // effectively random per run. Writing a fixed 0xFF is a 1-in-256
+      // no-op whenever that byte already happened to be 0xFF, which leaves
+      // the block's authentication tag valid and the decrypt genuinely
+      // succeeding — the CI flake this test chased. XOR-ing guarantees the
+      // byte actually changes regardless of its original value.
+      final int corruptOffset = EncryptedFileFormat.storedOffsetOf(1) + 42;
       final RandomAccessFile handle = await file.open(mode: FileMode.append);
-      await handle.setPosition(EncryptedFileFormat.storedOffsetOf(1) + 42);
-      await handle.writeByte(0xFF);
+      await handle.setPosition(corruptOffset);
+      final int original = await handle.readByte();
+      await handle.setPosition(corruptOffset);
+      await handle.writeByte(original ^ 0xFF);
       await handle.close();
 
       // Range starts in block 0 (so headers + some bytes go out fine) and

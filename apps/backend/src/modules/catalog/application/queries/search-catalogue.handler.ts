@@ -1,9 +1,10 @@
 /**
  * WHY this file exists:
  * Query handler for GET /search. Performs case-insensitive substring search
- * across course titles, section titles (matched into their courses), and lesson
- * titles. Respects per-library READ grants — non-admin actors only see courses /
- * lessons inside libraries they have access to.
+ * across course titles, section titles (matched into their courses), lesson
+ * titles, and transcript cue text. Respects per-library READ grants —
+ * non-admin actors only see courses / lessons / transcript cues inside
+ * libraries they have access to.
  *
  * Short-circuit: q.trim().length < 2 returns empty lists immediately without
  * hitting the DB (avoids a pathologically broad full-table scan).
@@ -26,8 +27,18 @@ import { SEARCH_PORT } from '../../domain/search.port';
 import { SearchCatalogueQuery } from './search-catalogue.query';
 
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
-import type { SearchPort, SearchCourseHitRow, SearchLessonHitRow } from '../../domain/search.port';
-import type { SearchResultDto, SearchCourseHit, SearchLessonHit } from '@app/api-client-ts';
+import type {
+  SearchPort,
+  SearchCourseHitRow,
+  SearchLessonHitRow,
+  SearchTranscriptHitRow,
+} from '../../domain/search.port';
+import type {
+  SearchResultDto,
+  SearchCourseHit,
+  SearchLessonHit,
+  SearchTranscriptHitDto,
+} from '@app/api-client-ts';
 
 // ── ranking helpers ───────────────────────────────────────────────────────────
 
@@ -45,14 +56,18 @@ function rankTier(title: string, q: string): number {
   return 2;
 }
 
-function sortByRank<T extends { title: string }>(items: T[], q: string): T[] {
+function sortByRank<T>(items: T[], q: string, key: (item: T) => string): T[] {
   return items.toSorted((a, b) => {
-    const ta = rankTier(a.title, q);
-    const tb = rankTier(b.title, q);
+    const ka = key(a);
+    const kb = key(b);
+    const ta = rankTier(ka, q);
+    const tb = rankTier(kb, q);
     if (ta !== tb) return ta - tb;
-    return a.title.localeCompare(b.title);
+    return ka.localeCompare(kb);
   });
 }
+
+const byTitle = (item: { title: string }): string => item.title;
 
 // ── handler ───────────────────────────────────────────────────────────────────
 
@@ -71,7 +86,7 @@ export class SearchCatalogueHandler implements IQueryHandler<
 
     // Short-circuit for empty / too-short queries.
     if (trimmed.length < 2) {
-      return { query: trimmed, courses: [], lessons: [] };
+      return { query: trimmed, courses: [], lessons: [], transcripts: [] };
     }
 
     // Resolve accessible library ids once. null = admin (no filter).
@@ -79,18 +94,24 @@ export class SearchCatalogueHandler implements IQueryHandler<
 
     // Empty array means user has no grants — skip DB entirely.
     if (Array.isArray(libraryIds) && libraryIds.length === 0) {
-      return { query: trimmed, courses: [], lessons: [] };
+      return { query: trimmed, courses: [], lessons: [], transcripts: [] };
     }
 
     // Fetch hits from DB in parallel.
-    const [courseRows, lessonRows] = await Promise.all([
+    const [courseRows, lessonRows, transcriptRows] = await Promise.all([
       this.searchPort.findCourseHits(trimmed, query.limit, libraryIds),
       this.searchPort.findLessonHits(trimmed, query.limit, libraryIds),
+      this.searchPort.findTranscriptHits(trimmed, query.limit, libraryIds),
     ]);
 
     // Rank + slice.
-    const rankedCourses = sortByRank(courseRows, trimmed).slice(0, query.limit);
-    const rankedLessons = sortByRank(lessonRows, trimmed).slice(0, query.limit);
+    const rankedCourses = sortByRank(courseRows, trimmed, byTitle).slice(0, query.limit);
+    const rankedLessons = sortByRank(lessonRows, trimmed, byTitle).slice(0, query.limit);
+    const rankedTranscripts = sortByRank(
+      transcriptRows,
+      trimmed,
+      (r: SearchTranscriptHitRow) => r.text,
+    ).slice(0, query.limit);
 
     // Map to DTO shapes (already match — just re-assert the types).
     const courses: SearchCourseHit[] = rankedCourses.map(
@@ -114,6 +135,19 @@ export class SearchCatalogueHandler implements IQueryHandler<
       }),
     );
 
-    return { query: trimmed, courses, lessons };
+    const transcripts: SearchTranscriptHitDto[] = rankedTranscripts.map(
+      (r: SearchTranscriptHitRow): SearchTranscriptHitDto => ({
+        lessonId: r.lessonId,
+        lessonTitle: r.lessonTitle,
+        courseId: r.courseId,
+        courseTitle: r.courseTitle,
+        sectionTitle: r.sectionTitle,
+        language: r.language,
+        startMs: r.startMs,
+        text: r.text,
+      }),
+    );
+
+    return { query: trimmed, courses, lessons, transcripts };
   }
 }

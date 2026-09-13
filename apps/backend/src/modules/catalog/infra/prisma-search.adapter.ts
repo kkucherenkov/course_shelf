@@ -16,9 +16,23 @@
  *   relation (course title + section title) is included via `select` so we
  *   avoid any N+1 fan-out.
  *
+ * Transcript hits:
+ *   `TranscriptCue.text` is matched the same way (`contains`, insensitive),
+ *   backed by a pg_trgm GIN index (see the migration) rather than a btree —
+ *   substring search on free text needs a trigram index to stay off a full
+ *   table scan. `Transcript` deliberately carries no Prisma relation to
+ *   `Lesson` (see schema.prisma) — a scan rewrites a lesson's subtitles by
+ *   delete+recreate, and a cascade from either side would erase transcripts
+ *   the next time it runs — so the join back to lesson/section/course context
+ *   is a second bulk `findMany({ where: { id: { in: ... } } })`, not a nested
+ *   `select`. Library scoping goes through the same two-step shape: resolve
+ *   accessible lesson ids first, then constrain the cue query to them, so an
+ *   inaccessible library's cues are never fetched even as candidates.
+ *
  * Library filter:
  *   When libraryIds !== null a `libraryId: { in: libraryIds }` clause is added
- *   to both queries so only accessible courses/lessons are returned.
+ *   to the course/lesson queries (and its lesson-id-resolving equivalent for
+ *   transcripts) so only accessible courses/lessons are returned.
  *
  * Ranking:
  *   DB-level ORDER BY is intentionally omitted here beyond a simple title asc
@@ -31,7 +45,12 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../common/prisma/prisma.service';
 
-import type { SearchPort, SearchCourseHitRow, SearchLessonHitRow } from '../domain/search.port';
+import type {
+  SearchPort,
+  SearchCourseHitRow,
+  SearchLessonHitRow,
+  SearchTranscriptHitRow,
+} from '../domain/search.port';
 
 @Injectable()
 export class PrismaSearchAdapter implements SearchPort {
@@ -131,5 +150,84 @@ export class PrismaSearchAdapter implements SearchPort {
       title: r.title,
       position: r.position,
     }));
+  }
+
+  // ponytail: substring match via `contains` + the pg_trgm GIN index, no
+  // stemming, no ts_rank — see design §6.2. Upgrade path if that turns out to
+  // matter: a second (tsvector) index and a swapped WHERE behind this same
+  // method, callers unaffected.
+  async findTranscriptHits(
+    q: string,
+    limit: number,
+    libraryIds: string[] | null,
+  ): Promise<SearchTranscriptHitRow[]> {
+    let accessibleLessonIds: string[] | undefined;
+
+    if (libraryIds !== null) {
+      if (libraryIds.length === 0) return [];
+
+      const accessibleLessons = await this.prisma.lesson.findMany({
+        where: { section: { course: { libraryId: { in: libraryIds } } } },
+        select: { id: true },
+      });
+      if (accessibleLessons.length === 0) return [];
+      accessibleLessonIds = accessibleLessons.map((l) => l.id);
+    }
+
+    const cues = await this.prisma.transcriptCue.findMany({
+      where: {
+        text: { contains: q, mode: 'insensitive' as const },
+        ...(accessibleLessonIds ? { transcript: { lessonId: { in: accessibleLessonIds } } } : {}),
+      },
+      select: {
+        startMs: true,
+        text: true,
+        transcript: { select: { lessonId: true, language: true } },
+      },
+      take: limit * 2,
+      orderBy: { startMs: 'asc' },
+    });
+
+    if (cues.length === 0) return [];
+
+    // Bulk-fetch lesson + section + course context — same no-N+1 pattern as
+    // findCourseHits' lesson-count groupBy, required here because Transcript
+    // carries a plain lessonId column, not a Prisma relation (see the docblock
+    // above).
+    const lessonIds = [...new Set(cues.map((c) => c.transcript.lessonId))];
+    const lessons = await this.prisma.lesson.findMany({
+      where: { id: { in: lessonIds } },
+      select: {
+        id: true,
+        courseId: true,
+        title: true,
+        section: {
+          select: {
+            title: true,
+            course: { select: { title: true } },
+          },
+        },
+      },
+    });
+    const lessonById = new Map(lessons.map((l) => [l.id, l]));
+
+    const rows: SearchTranscriptHitRow[] = [];
+    for (const cue of cues) {
+      const lesson = lessonById.get(cue.transcript.lessonId);
+      // Orphaned cue (lesson deleted, cleanup hasn't run yet) — skip rather
+      // than surface a hit with no valid lesson to link to.
+      if (!lesson) continue;
+      rows.push({
+        lessonId: lesson.id,
+        lessonTitle: lesson.title,
+        courseId: lesson.courseId,
+        courseTitle: lesson.section.course.title,
+        sectionTitle: lesson.section.title,
+        language: cue.transcript.language,
+        startMs: cue.startMs,
+        text: cue.text,
+      });
+    }
+    return rows;
   }
 }

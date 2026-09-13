@@ -36,6 +36,7 @@ const emptyResult: SearchResultDto = {
   query: 'arch',
   courses: [],
   lessons: [],
+  transcripts: [],
 };
 
 // ── tests ──────────────────────────────────────────────────────────────────────
@@ -98,6 +99,7 @@ describe('SearchController', () => {
         },
       ],
       lessons: [],
+      transcripts: [],
     };
     queryBus = makeQueryBus(expected);
     controller = new SearchController(queryBus);

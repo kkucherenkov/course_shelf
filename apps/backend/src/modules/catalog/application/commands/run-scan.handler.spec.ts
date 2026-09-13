@@ -178,11 +178,48 @@ function makeCourseRepo(): CourseRepository & { store: Map<string, Course> } {
   };
 }
 
+/** Same lesson at a different position — `Lesson.position` is readonly. */
+function withPosition(lesson: Lesson, position: number): Lesson {
+  return Lesson.reconstitute({
+    id: lesson.id,
+    courseId: lesson.courseId,
+    sectionId: lesson.sectionId,
+    position,
+    title: lesson.title,
+    videoPath: lesson.videoPath,
+    mtime: lesson.mtime,
+    sizeBytes: lesson.sizeBytes,
+    duration: lesson.duration,
+    createdAt: lesson.createdAt,
+    updatedAt: lesson.updatedAt,
+    materials: [...lesson.materials],
+    subtitles: [...lesson.subtitles],
+  });
+}
+
+/** Mirrors PrismaLessonRepository's park offset — see that adapter. */
+const PARK_OFFSET = 1_000_000;
+
 function makeLessonRepo(): LessonRepository & { store: Map<string, Lesson> } {
   const store = new Map<string, Lesson>();
   return {
     store,
     save: vi.fn(async (l: Lesson) => {
+      // The DB holds @@unique([sectionId, position]) and the adapter turns the
+      // P2002 into LessonPositionConflictError. The fake enforces it too: a
+      // resync renumbers a whole section, and a fake that accepts two lessons
+      // on one position would let exactly the production failure through green.
+      const clash = [...store.values()].find(
+        (existing) =>
+          existing.id !== l.id &&
+          existing.sectionId === l.sectionId &&
+          existing.position === l.position,
+      );
+      if (clash) {
+        throw new LessonPositionConflictError(
+          `Lesson at position ${String(l.position)} already exists in section "${l.sectionId}".`,
+        );
+      }
       store.set(l.id, l);
     }),
     findById: vi.fn(async (id: string) => store.get(id) ?? null),
@@ -192,6 +229,15 @@ function makeLessonRepo(): LessonRepository & { store: Map<string, Lesson> } {
     findBySection: vi.fn(async (sectionId: string) =>
       [...store.values()].filter((l) => l.sectionId === sectionId),
     ),
+    parkPositionsForResync: vi.fn(async (courseId: string) => {
+      for (const [id, l] of store) {
+        if (l.courseId !== courseId) continue;
+        store.set(id, withPosition(l, l.position - PARK_OFFSET));
+      }
+    }),
+    removeMany: vi.fn(async (lessonIds: readonly string[]) => {
+      for (const id of lessonIds) store.delete(id);
+    }),
     getLessonStatsByCourseIds: vi.fn(
       async (courseIds: string[]) =>
         new Map(courseIds.map((id) => [id, { lessonCount: 0, totalDurationSeconds: 0 }])),
@@ -2676,6 +2722,313 @@ describe('RunScanHandler', () => {
       // The unrelated "Other Course" is untouched.
       expect(transcriptRepo.deleteForLesson).not.toHaveBeenCalled();
       expect(transcriptRepo.store.has(`${ids.otherLessonId}:en`)).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // E32-F01-S03: a scoped rescan force-resyncs the course it names.
+  //
+  // Fixture — one library, two already-imported courses:
+  //
+  //   /lib/Target Course/01 - Basics/01 - Intro.mp4     ← on disk, NOT in DB
+  //   /lib/Target Course/01 - Basics/02 - Values.mp4    ← on disk and in DB
+  //   /lib/Target Course/02 - Advanced/01 - Deep.mp4    ← on disk, NOT in DB
+  //   /lib/Other Course/01 - Intro.mp4                  ← on disk and in DB
+  //
+  // The target course in the DB is a partial, stale import — the shape the
+  // maintainer's library was actually in (1577 of 5984 lessons missing):
+  //   - "02 - Values" sits at position 1, because it was the only lesson the
+  //     first import wrote, so bringing "01 - Intro" back has to renumber it;
+  //   - "99 - Removed.mp4" has a lesson row but no file on disk;
+  //   - the course was renamed through the API, so neither its title nor its
+  //     slug matches the folder any more;
+  //   - only the "Basics" section exists; "Advanced" was never imported.
+  // -------------------------------------------------------------------------
+  describe('E32-F01-S03: force-resync on a scoped rescan', () => {
+    const targetFolder = 'Target Course';
+    const introPath = `/lib/${targetFolder}/01 - Basics/01 - Intro.mp4`;
+    const valuesPath = `/lib/${targetFolder}/01 - Basics/02 - Values.mp4`;
+    const deepPath = `/lib/${targetFolder}/02 - Advanced/01 - Deep.mp4`;
+    const removedPath = `/lib/${targetFolder}/01 - Basics/99 - Removed.mp4`;
+    const otherFolder = 'Other Course';
+    const otherVideoPath = `/lib/${otherFolder}/01 - Intro.mp4`;
+
+    // A rename through PATCH /courses/{id} changes the title and leaves the
+    // slug alone (`update-course-metadata.handler.ts` treats them as separate
+    // patch fields), so the slug the first import derived from the folder is
+    // still what the DB holds — which is exactly what makes the v1 skip fire
+    // on this course and why a rescan used to be unable to repair it.
+    const RENAMED_TITLE = 'Clean Architecture, my own name for it';
+
+    function seedFixture(slug: string = toSlugForTest(targetFolder)) {
+      const courseRepo2 = makeCourseRepo();
+      const lessonRepo2 = makeLessonRepo();
+      const transcriptRepo = makeTranscriptRepo();
+
+      const target = Course.create({
+        id: 'course-target',
+        libraryId: 'lib-1',
+        slug,
+        title: RENAMED_TITLE,
+      });
+      target.addSection({ id: 'sec-basics', title: 'Basics', position: 1 });
+      courseRepo2.store.set(target.id, target);
+
+      lessonRepo2.store.set(
+        'lesson-values',
+        Lesson.create({
+          id: 'lesson-values',
+          courseId: target.id,
+          sectionId: 'sec-basics',
+          position: 1,
+          title: 'Values',
+          videoPath: valuesPath,
+          mtime: BASE_TIME,
+          sizeBytes: 500,
+        }),
+      );
+      lessonRepo2.store.set(
+        'lesson-removed',
+        Lesson.create({
+          id: 'lesson-removed',
+          courseId: target.id,
+          sectionId: 'sec-basics',
+          position: 2,
+          title: 'Removed',
+          videoPath: removedPath,
+          mtime: BASE_TIME,
+          sizeBytes: 500,
+        }),
+      );
+      // The vanished lesson's generated transcript — must go with the row.
+      transcriptRepo.store.set('lesson-removed:en', {
+        origin: 'generated',
+        sourceMtime: BASE_TIME,
+        sourceSize: 500,
+      });
+
+      const other = Course.create({
+        id: 'course-other',
+        libraryId: 'lib-1',
+        slug: toSlugForTest(otherFolder),
+        title: otherFolder,
+      });
+      other.addSection({ id: 'sec-other', title: 'Lessons', position: 1 });
+      courseRepo2.store.set(other.id, other);
+      lessonRepo2.store.set(
+        'lesson-other',
+        Lesson.create({
+          id: 'lesson-other',
+          courseId: other.id,
+          sectionId: 'sec-other',
+          position: 1,
+          title: 'Intro',
+          videoPath: otherVideoPath,
+          mtime: BASE_TIME,
+          sizeBytes: 500,
+        }),
+      );
+
+      const files: FileRecord[] = [
+        { path: introPath, mtime: BASE_TIME, size: 100 },
+        { path: valuesPath, mtime: BASE_TIME, size: 500 },
+        { path: deepPath, mtime: BASE_TIME, size: 300 },
+        { path: otherVideoPath, mtime: BASE_TIME, size: 500 },
+      ];
+
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        transcriptRepo,
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      return { h, scanRepo2, courseRepo2, lessonRepo2, transcriptRepo, target };
+    }
+
+    async function rescanTarget() {
+      vi.useRealTimers();
+      const fixture = seedFixture();
+      const scan = await fixture.h.execute(
+        new RunScanCommand(undefined, ACTOR_USER_ID, { courseId: 'course-target' }),
+      );
+      await drainMicrotasks();
+      return { ...fixture, saved: fixture.scanRepo2.store.get(scan.id)! };
+    }
+
+    it('imports the lessons the first scan missed: lesson count matches file count', async () => {
+      const { lessonRepo2, saved } = await rescanTarget();
+
+      expect(saved.status).toBe('succeeded');
+      expect(saved.errors).toHaveLength(0);
+
+      const videoPaths = [...lessonRepo2.store.values()]
+        .filter((l) => l.courseId === 'course-target')
+        .map((l) => l.videoPath)
+        .toSorted();
+      expect(videoPaths).toEqual([introPath, valuesPath, deepPath].toSorted());
+    });
+
+    it('renumbers every section to 1..n — no gaps, no duplicates', async () => {
+      const { lessonRepo2, courseRepo2 } = await rescanTarget();
+
+      const course = courseRepo2.store.get('course-target')!;
+      expect(course.sections.map((s) => s.title)).toEqual(['Basics', 'Advanced']);
+      expect(course.sections.map((s) => s.position)).toEqual([1, 2]);
+
+      for (const section of course.sections) {
+        const positions = [...lessonRepo2.store.values()]
+          .filter((l) => l.sectionId === section.id)
+          .map((l) => l.position)
+          .toSorted((a, b) => a - b);
+        expect(positions).toEqual(Array.from({ length: positions.length }, (_, i) => i + 1));
+      }
+
+      // The stale lesson really did move: it was position 1 before the resync.
+      expect(lessonRepo2.store.get('lesson-values')!.position).toBe(2);
+    });
+
+    it('keeps the id of a lesson still on disk — progress, bookmarks and notes hang off it', async () => {
+      const { lessonRepo2 } = await rescanTarget();
+
+      const values = lessonRepo2.store.get('lesson-values');
+      expect(values).toBeDefined();
+      expect(values!.videoPath).toBe(valuesPath);
+      // ...and no second row was minted for the same file.
+      expect(
+        [...lessonRepo2.store.values()].filter((l) => l.videoPath === valuesPath),
+      ).toHaveLength(1);
+    });
+
+    it('reuses the existing section id instead of recreating it (Lesson.section cascades — #317)', async () => {
+      const { courseRepo2 } = await rescanTarget();
+
+      const basics = courseRepo2.store
+        .get('course-target')!
+        .sections.find((s) => s.title === 'Basics');
+      expect(basics?.id).toBe('sec-basics');
+    });
+
+    it('leaves the course metadata the user edited alone', async () => {
+      const { courseRepo2 } = await rescanTarget();
+
+      const course = courseRepo2.store.get('course-target')!;
+      // The folder is "Target Course"; the title is not, and stays not.
+      expect(course.title).toBe(RENAMED_TITLE);
+      expect(course.slug).toBe(toSlugForTest(targetFolder));
+    });
+
+    it('never mints a second course, even when the slug no longer matches the folder', async () => {
+      vi.useRealTimers();
+      // Slug edited through the API too, so the folder's own slug is not in the
+      // library any more — the branch where the v1 skip would NOT have fired
+      // and the walk would have imported the folder a second time as a new
+      // course, duplicating every lesson under it.
+      const { h, courseRepo2, lessonRepo2 } = seedFixture('renamed-by-hand');
+
+      await h.execute(new RunScanCommand(undefined, ACTOR_USER_ID, { courseId: 'course-target' }));
+      await drainMicrotasks();
+
+      expect([...courseRepo2.store.values()].map((c) => c.id).toSorted()).toEqual([
+        'course-other',
+        'course-target',
+      ]);
+      expect(courseRepo2.store.get('course-target')!.slug).toBe('renamed-by-hand');
+      expect(
+        [...lessonRepo2.store.values()].filter((l) => l.videoPath === valuesPath),
+      ).toHaveLength(1);
+    });
+
+    it('removes a lesson whose video is gone, with its transcript and learning rows', async () => {
+      const { lessonRepo2, transcriptRepo } = await rescanTarget();
+
+      expect(transcriptRepo.deleteForLesson).toHaveBeenCalledWith('lesson-removed');
+      expect(transcriptRepo.store.has('lesson-removed:en')).toBe(false);
+      // removeMany is what takes LessonProgress / Bookmark / Note with the row
+      // — they reference lessonId with no foreign key. The delete order itself
+      // is asserted in prisma-lesson.repository.spec.ts.
+      expect(lessonRepo2.removeMany).toHaveBeenCalledWith(['lesson-removed']);
+      expect(lessonRepo2.store.has('lesson-removed')).toBe(false);
+    });
+
+    it('does not delete anything when the course folder itself is gone from disk', async () => {
+      vi.useRealTimers();
+      const { courseRepo2, lessonRepo2, transcriptRepo } = seedFixture();
+      const scanRepo2 = makeScanRepo();
+      // Same seed, but the whole "Target Course" folder has disappeared —
+      // every one of its lessons looks vanished to the walk.
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter([{ path: otherVideoPath, mtime: BASE_TIME, size: 500 }]),
+        makePassthroughFfmpeg(),
+        transcriptRepo,
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      await h.execute(new RunScanCommand(undefined, ACTOR_USER_ID, { courseId: 'course-target' }));
+      await drainMicrotasks();
+
+      expect(lessonRepo2.removeMany).not.toHaveBeenCalled();
+      expect(lessonRepo2.store.has('lesson-values')).toBe(true);
+      expect(lessonRepo2.store.has('lesson-removed')).toBe(true);
+    });
+
+    it('leaves every other course in the library untouched', async () => {
+      const { lessonRepo2, courseRepo2, transcriptRepo } = await rescanTarget();
+
+      const other = lessonRepo2.store.get('lesson-other')!;
+      expect(other.position).toBe(1);
+      expect(other.sectionId).toBe('sec-other');
+      expect(courseRepo2.store.get('course-other')!.sections).toHaveLength(1);
+      expect(transcriptRepo.deleteForLesson).not.toHaveBeenCalledWith('lesson-other');
+      expect(lessonRepo2.parkPositionsForResync).toHaveBeenCalledTimes(1);
+      expect(lessonRepo2.parkPositionsForResync).toHaveBeenCalledWith('course-target');
+    });
+
+    it('a library-wide scan still skips a course it already imported', async () => {
+      vi.useRealTimers();
+      const { courseRepo2, lessonRepo2, transcriptRepo } = seedFixture();
+      const scanRepo2 = makeScanRepo();
+      // "Other Course" keeps the slug its folder produces, so the v1 skip
+      // applies to it — and its folder has a video the DB does not know about.
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter([
+          { path: otherVideoPath, mtime: BASE_TIME, size: 500 },
+          { path: `/lib/${otherFolder}/02 - Second.mp4`, mtime: BASE_TIME, size: 500 },
+        ]),
+        makePassthroughFfmpeg(),
+        transcriptRepo,
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      // The new file was NOT imported: a full scan must not overwrite a course
+      // that is already persisted (the metadata-clobbering rule v1 set).
+      expect(
+        [...lessonRepo2.store.values()].filter((l) => l.courseId === 'course-other'),
+      ).toHaveLength(1);
+      expect(lessonRepo2.parkPositionsForResync).not.toHaveBeenCalled();
+      expect(lessonRepo2.removeMany).not.toHaveBeenCalled();
     });
   });
 

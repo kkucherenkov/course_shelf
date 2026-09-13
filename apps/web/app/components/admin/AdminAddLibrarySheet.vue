@@ -3,6 +3,8 @@
   import { AppBanner, AppField, AppInput, AppButton } from '@app/ui';
   import { registerLibrary, client } from '@app/api-client-ts';
 
+  import { isAbsoluteRootPath, normalizeRootPath, problemDetail } from '~/utils/library-register';
+
   interface Props {
     /** Sheet title — provided as translated string by the consumer. */
     title: string;
@@ -14,6 +16,9 @@
     submitLabel: string;
     cancelLabel: string;
     errorRequired: string;
+    /** Shown when the path is not absolute — the one rule the server enforces. */
+    errorPathNotAbsolute: string;
+    /** Last resort: the server did not answer at all. */
     errorRegister: string;
   }
 
@@ -44,20 +49,28 @@
   }
 
   async function onSubmit(): Promise<void> {
-    if (!newName.value.trim() || !newPath.value.trim()) {
+    const name = newName.value.trim();
+    // Show the string that will actually be sent — see `pages/libraries.vue`.
+    const rootPath = normalizeRootPath(newPath.value);
+    newPath.value = rootPath;
+
+    if (!name || !rootPath) {
       formError.value = props.errorRequired;
       return;
     }
+    if (!isAbsoluteRootPath(rootPath)) {
+      formError.value = props.errorPathNotAbsolute;
+      return;
+    }
+
     submitting.value = true;
     formError.value = '';
     try {
-      const res = await registerLibrary({
-        client,
-        throwOnError: false,
-        body: { name: newName.value.trim(), rootPath: newPath.value.trim() },
-      });
+      const res = await registerLibrary({ client, throwOnError: false, body: { name, rootPath } });
       if (res.error && res.response.status !== 409) {
-        formError.value = props.errorRegister;
+        // Quote the server's problem document; the fallback is for a response
+        // that carried no explanation.
+        formError.value = problemDetail(res.error) ?? props.errorRegister;
         return;
       }
       reset();

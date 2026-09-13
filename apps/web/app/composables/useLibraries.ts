@@ -20,6 +20,8 @@ import type {
   RegisterLibraryRequest,
 } from '@app/api-client-ts';
 
+import { problemDetail } from '~/utils/library-register';
+
 export type LibrariesStatus = 'idle' | 'pending' | 'success' | 'error';
 
 export function useLibraries(): {
@@ -28,6 +30,13 @@ export function useLibraries(): {
   error: Ref<Error | null>;
   refresh: () => Promise<void>;
   register: (body: RegisterLibraryRequest) => Promise<LibraryDto>;
+  /**
+   * The server's own explanation for the last failed `register`, or null when
+   * it did not send a problem document (a network-level failure). Read it in
+   * the `catch` — a canned sentence there would replace a precise answer
+   * ("rootPath must match ...") with a guess. Same shape as `useAdminBackup`.
+   */
+  registerErrorDetail: Ref<string | null>;
 } {
   const { data, status, error, refresh } = useAsyncData<LibraryListDto>(
     'libraries:list',
@@ -41,7 +50,10 @@ export function useLibraries(): {
     { server: false, default: () => ({ items: [] }) },
   );
 
+  const registerErrorDetail = ref<string | null>(null);
+
   async function register(body: RegisterLibraryRequest): Promise<LibraryDto> {
+    registerErrorDetail.value = null;
     const res = await registerLibrary({ client, throwOnError: false, body });
     if (res.error) {
       // 409 Conflict means a library at the same rootPath already exists.
@@ -52,7 +64,11 @@ export function useLibraries(): {
         const existing = data.value.items.find((l) => l.rootPath === body.rootPath);
         if (existing) return existing;
       }
-      throw new Error('Failed to register library');
+      // Everything else is a real failure the server described: a 400 names the
+      // offending field and rule ("request/body/rootPath must match pattern
+      // ..."), a 403 names the missing permission. Keep it for the caller.
+      registerErrorDetail.value = problemDetail(res.error);
+      throw new Error(registerErrorDetail.value ?? 'Failed to register library');
     }
     const created = res.data;
     await refresh();
@@ -67,6 +83,7 @@ export function useLibraries(): {
       await refresh();
     },
     register,
+    registerErrorDetail,
   };
 }
 

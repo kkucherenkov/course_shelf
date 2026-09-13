@@ -46,18 +46,42 @@ export function configureApp(
   //  - frame-ancestors 'none'     clickjacking guard
   //  - object-src 'none'          legacy plugins forbidden
   //
+  // `useDefaults: false` — Helmet otherwise *merges* `directives` over its own
+  // defaults, so an intentionally-omitted directive still ships. That silently
+  // reintroduced `upgrade-insecure-requests` (see below) even though it never
+  // appeared in this list — tuxedo 117. With defaults off, the directives
+  // below are the entire policy.
+  //
+  // `upgrade-insecure-requests` deliberately omitted — forces every
+  // subresource fetch to https://, which breaks plain-HTTP deployments (CI
+  // e2e stack, a reverse proxy that isn't terminating TLS yet). TLS
+  // termination is the reverse proxy's job; the directive is redundant where
+  // it has TLS and harmful where it does not.
+  //
+  // `strictTransportSecurity: false` — Helmet enables HSTS by default. This
+  // app never terminates TLS itself, so it cannot know whether the current
+  // deployment is behind one; emitting `Strict-Transport-Security` over plain
+  // HTTP makes the browser refuse `http://` to that host for a year (tuxedo
+  // 117 — it locked the maintainer out of his own NAS). HSTS belongs to
+  // whatever terminates TLS (Caddy / Nginx Proxy Manager / the bundled
+  // `nginx-prod.conf`), which actually knows.
+  //
   // CSP stays disabled in dev so hot-reload, Vite eval'd modules, and
   // Storybook iframes work without per-tool exemptions.
   //
-  // CodeQL flags that branch as `js/insecure-helmet-configuration`. The same
-  // alert was already dismissed "won't fix" against `main.ts:78`; moving the
-  // block here in #266 re-raised it at a new path with byte-identical code, so
-  // it carries the same dismissal. Not excluded from the query — the rule is
+  // CodeQL flags the dev branch below as `js/insecure-helmet-configuration`
+  // (it disables `contentSecurityPolicy` outright) and it is dismissed "won't
+  // fix" — the alert is about that line, not the production directive list
+  // above, so tightening this block doesn't change its accuracy. The same
+  // alert was already dismissed against `main.ts:78`; moving the block here
+  // in #266 re-raised it at a new path with byte-identical code, so it
+  // carries the same dismissal. Not excluded from the query — the rule is
   // right about every other call site.
   app.use(
     nodeEnv === 'production'
       ? helmet({
           contentSecurityPolicy: {
+            useDefaults: false,
             directives: {
               defaultSrc: ["'self'"],
               scriptSrc: ["'self'"],
@@ -70,20 +94,14 @@ export function configureApp(
               frameAncestors: ["'none'"],
               formAction: ["'self'"],
               baseUri: ["'self'"],
-              // `upgrade-insecure-requests` deliberately omitted —
-              // forces every subresource fetch to https://, which
-              // breaks plain-HTTP deployments (CI e2e stack, local
-              // dev). TLS termination at the reverse proxy (Caddy /
-              // Nginx Proxy Manager) handles the http→https hop in
-              // production; the directive is redundant there and
-              // harmful below.
             },
           },
           crossOriginEmbedderPolicy: false,
           crossOriginResourcePolicy: { policy: 'same-origin' },
           referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+          strictTransportSecurity: false,
         })
-      : helmet({ contentSecurityPolicy: false }),
+      : helmet({ contentSecurityPolicy: false, strictTransportSecurity: false }),
   );
 
   app.setGlobalPrefix('api', {

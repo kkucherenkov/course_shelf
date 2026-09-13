@@ -136,7 +136,13 @@ services:
       APP_AUTH_BASE_URL: "${PUBLIC_BASE_URL}"
       APP_CENTRIFUGO_URL: "${PUBLIC_BASE_URL}/centrifugo/connection/websocket"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/_app-config.js"]
+      # tuxedo 115: fetching the file 200s even with a broken URL baked in
+      # (http:// pasted through from PUBLIC_BASE_URL, which a WebSocket
+      # client can't connect to) — assert the entrypoint's scheme rewrite
+      # actually landed.
+      test:
+        - CMD-SHELL
+        - 'wget -qO- http://127.0.0.1:8080/_app-config.js | grep -q ''centrifugoUrl: "ws'''
       interval: 10s
       timeout: 3s
       retries: 12

@@ -17,6 +17,14 @@
 #                         upstream entry is a prerequisite (not wired by default —
 #                         see docs/deployment.md#centrifugo-proxy).
 #
+#                         compose.prod.yml / compose.release.yml derive this from
+#                         PUBLIC_BASE_URL (http(s)://host/centrifugo/connection/websocket)
+#                         because compose has no string substitution to fix the
+#                         scheme itself — tuxedo 115. We rewrite http(s):// to
+#                         ws(s):// below, the one place this value turns into
+#                         browser-facing JS, so every caller gets a working
+#                         WebSocket URL regardless of how it was assembled.
+#
 # The first two are required. We don't fall back silently because shipping
 # the SPA with the build-time placeholder would break every API call.
 
@@ -30,7 +38,10 @@ set -eu
 # defaults to ws://localhost:8000/connection/websocket).
 CENTRIFUGO_LINE=""
 if [ -n "${APP_CENTRIFUGO_URL:-}" ]; then
-  CENTRIFUGO_LINE="  centrifugoUrl: \"${APP_CENTRIFUGO_URL}\","
+  # http(s):// -> ws(s):// — a WebSocket client cannot connect to an http(s)
+  # URL. Idempotent for values that already carry ws(s)://.
+  CENTRIFUGO_WS_URL=$(printf '%s' "${APP_CENTRIFUGO_URL}" | sed -e 's|^http://|ws://|' -e 's|^https://|wss://|')
+  CENTRIFUGO_LINE="  centrifugoUrl: \"${CENTRIFUGO_WS_URL}\","
 fi
 
 cat > /usr/share/nginx/html/_app-config.js <<EOF

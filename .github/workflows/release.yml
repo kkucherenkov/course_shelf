@@ -175,16 +175,40 @@ jobs:
           See CHANGELOG.md for what changed in this release.
           EOF
 
-          # Validate the rendered compose (dummy secrets — syntax + file
+          # Validate the rendered compose (dummy values — syntax + file
           # existence only).
-          ( cd "$STAGE" && \
-            PUBLIC_BASE_URL=http://placeholder.local \
-            POSTGRES_PASSWORD=placeholder \
-            BETTER_AUTH_SECRET=placeholder \
-            CENTRIFUGO_API_KEY=placeholder \
-            CENTRIFUGO_TOKEN_HMAC_SECRET=placeholder \
-            COURSES_PATH=/tmp \
-              docker compose -f compose.yml config --quiet )
+          #
+          # The placeholder set is DERIVED from the compose file rather than
+          # listed by hand. A hand-written list silently goes stale the moment
+          # someone adds a `${VAR:?...}`, and it did: `DERIVED_PATH` arrived
+          # with transcription, nobody updated the list here, and the first
+          # release after that change failed at this line — after the images
+          # had already been built and pushed.
+          #
+          # Every `${NAME:?...}` in the file is a variable the operator must
+          # supply, so every one of them gets a placeholder. Paths get an
+          # existing directory because `docker compose config` resolves bind
+          # mount sources; anything else can be a literal.
+          ( cd "$STAGE"
+            ENVS=()
+            while IFS= read -r name; do
+              [ -n "$name" ] || continue
+              case "$name" in
+                *_PATH|*_DIR)    ENVS+=("$name=/tmp") ;;
+                PUBLIC_BASE_URL) ENVS+=("$name=http://placeholder.local") ;;
+                *)               ENVS+=("$name=placeholder") ;;
+              esac
+            done < <(grep -oE '\$\{[A-Z_][A-Z0-9_]*:\?' compose.yml \
+                      | sed -E 's/^\$\{//; s/:\?$//' | sort -u)
+
+            if [ "${#ENVS[@]}" -eq 0 ]; then
+              echo "::error::No \${VAR:?} placeholders found in compose.yml — the" \
+                   "detection regex no longer matches the file it validates."
+              exit 1
+            fi
+
+            printf 'Placeholder for required variable: %s\n' "${ENVS[@]}"
+            env "${ENVS[@]}" docker compose -f compose.yml config --quiet )
 
           cp "$STAGE/compose.yml" "compose-release-v${SEMVER}.yml"
 

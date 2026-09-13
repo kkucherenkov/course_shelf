@@ -2995,6 +2995,22 @@ paths:
         Orphan cleanup never considers another course's lessons or
         transcripts during a scoped rescan.
 
+        Naming one course is also the force signal: unlike a library-wide
+        scan, which skips any course it has already imported, a rescan
+        re-derives that course's sections, lesson order and lesson rows from
+        what is on disk right now. Concretely it adds lessons the first
+        import missed, renumbers every lesson to `1..n` within its section,
+        and removes lessons whose video file is gone — together with their
+        transcripts, cues, progress, bookmarks and notes. Lessons that are
+        still on disk keep their id, so progress and bookmarks survive.
+
+        The course's own metadata is never re-derived: title, description,
+        poster, level, language, rating, instructors, studios and tags stay
+        exactly as they are, including edits made through the API. Only the
+        structure below the course is rebuilt. A lesson is removed only when
+        the folder itself was re-read successfully — if the folder has
+        vanished from disk the rescan reports an error and changes nothing.
+
         Returns 202 immediately with `status: running`, exactly like
         `POST /libraries/{id}/scans`; clients poll
         `GET /libraries/{id}/scans/latest`. The response and its realtime

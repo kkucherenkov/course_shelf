@@ -40,6 +40,8 @@ function makeLessonRepo(): LessonRepository {
     findById: vi.fn(),
     findByCourse: vi.fn(),
     findBySection: vi.fn(),
+    parkPositionsForResync: vi.fn(),
+    removeMany: vi.fn(),
     getLessonStatsByCourseIds: vi.fn(),
   };
 }

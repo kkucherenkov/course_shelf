@@ -20,6 +20,20 @@
  *   - On any unexpected exception inside the walk, calls scan.fail() and
  *     persists the terminal state.
  *
+ * Two idempotency modes, and scope is what picks between them:
+ *   - Library-wide scan (no scope): a course whose slug is already in the DB is
+ *     SKIPPED. Re-importing it would clobber metadata the user edited through
+ *     the API, and across a whole library the user's edit wins.
+ *   - Scoped rescan (POST /courses/{id}/rescan): FORCE-RESYNC. Pressing
+ *     "Rescan" on one course page means "re-import this course from disk", so
+ *     scope IS the force signal — there is no second flag. Sections, lesson
+ *     order and lesson rows come back from disk; the course row itself (title,
+ *     slug, poster, level, language, rating, instructor/studio/tag links) is
+ *     never re-derived, which is the property the skip existed to protect.
+ *     Lessons are reconciled by videoPath and keep their id, because
+ *     LessonProgress / Bookmark / Note / Transcript all reference lessonId
+ *     with no foreign key behind them — a new id orphans all four silently.
+ *
  * NOTE: v2 will move the async walk to a background worker queue (BullMQ).
  * For v1 the fire-and-forget in-process approach is intentional.
  *
@@ -340,6 +354,10 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       }
       const seenVideoPaths = new Set<string>();
 
+      // Set once a force-resync has actually re-imported the scoped course's
+      // folder. Gates the lesson deletion in the cleanup below — see there.
+      let resyncedCourseId: string | undefined;
+
       // Process each course folder.
       for (const [folderName, files] of courseEntries) {
         const courseFolder = `${rootPath}/${folderName}`;
@@ -367,17 +385,29 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
         }
 
         // -----------------------------------------------------------------------
-        // Step 1: Group non-course.json files by canonical stem.
+        // Step 1: Group non-course.json files by (directory, canonical stem).
         //
-        // WHY: A course folder may contain `1.1 Vim.mp4` alongside sidecar
-        // files like `1.1. Vim.pdf` (dot-variant) or `1.1 Vim.en.srt`.
+        // WHY grouping: a course folder may contain `1.1 Vim.mp4` alongside
+        // sidecar files like `1.1. Vim.pdf` (dot-variant) or `1.1 Vim.en.srt`.
         // Without grouping, the PDF and SRT would fall through as
         // unsupported-extension ScanErrors. stemMatch normalises both prefix
         // variants to the same canonical stem so sidecar files can be
         // associated with their video (the "Neovim mass ScanError" fix).
+        //
+        // WHY the directory is part of the key: `stemMatch` reads the basename
+        // only — by contract — and this map spans the WHOLE course, sections
+        // included. Keyed by the stem alone, two videos in different section
+        // folders that happen to share a filename collapse into one group and
+        // `group.video` silently overwrites the earlier one: no error, no
+        // warning, the lesson simply never exists. Measured on the maintainer's
+        // library: a course of 31 videos all named `video.mp4`, one per section
+        // folder, imported exactly ONE lesson — 296 videos across 18 courses
+        // lost this way, ~5 % of a 5984-video library. A sidecar is by
+        // definition a sibling of its video, so scoping the key to the
+        // directory cannot break the pairing the shared key exists for.
         // -----------------------------------------------------------------------
 
-        // key = canonical stem; value = collections of files by kind.
+        // key = `${directory}\0${canonicalStem}`; value = files by kind.
         const stemGroups = new Map<
           string,
           {
@@ -400,9 +430,13 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           if (fileBasename === 'course.json') continue;
 
           const { canonicalStem, kind } = stemMatch(file.path);
+          // NUL cannot occur in a path component on any filesystem we read, so
+          // it is the one separator that cannot be forged by a directory or a
+          // stem containing it.
+          const groupKey = `${path.dirname(file.path)}\u0000${canonicalStem}`;
 
-          if (!stemGroups.has(canonicalStem)) {
-            stemGroups.set(canonicalStem, {
+          if (!stemGroups.has(groupKey)) {
+            stemGroups.set(groupKey, {
               video: undefined,
               materials: [],
               subtitles: [],
@@ -411,7 +445,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           }
           // Non-null guaranteed: we just set the entry with stemGroups.set() above.
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- guaranteed above
-          const group = stemGroups.get(canonicalStem)!;
+          const group = stemGroups.get(groupKey)!;
 
           switch (kind) {
             case 'video': {
@@ -669,14 +703,22 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           // -------------------------------------------------------------------
           // Persist Course + Section + Lesson rows.
           //
-          // Idempotency strategy: SKIP on duplicate slug (v1).
-          // WHY skip rather than update: re-importing would clobber user-renamed
-          // metadata (e.g. a user renamed the course title via the API). The
-          // user's edit wins. A future story can add a --force-resync flag.
+          // Library-wide scan: SKIP on duplicate slug (v1). Re-importing would
+          // clobber user-renamed metadata (e.g. a user renamed the course title
+          // via the API) — the user's edit wins.
+          //
+          // Scoped rescan: FORCE-RESYNC this one course instead (E32-F01-S03).
+          // The skip is why a rescan could not repair anything: it fires 140
+          // lines before the only lessonRepo.save, so a course already in the
+          // DB never got a lesson written, however many the walk found. Scope
+          // is the force signal — the walk above only grouped the scoped
+          // course's own folder (every other topFolder was skipped), so this
+          // branch can only be that course's folder, and `scopeCourse` is the
+          // aggregate the request named.
           // -------------------------------------------------------------------
           const slug = toSlug(courseTitle);
 
-          if (existingSlugSet.has(slug)) {
+          if (scopeCourse === undefined && existingSlugSet.has(slug)) {
             // Course already persisted from a previous scan — do not overwrite.
             continue;
           }
@@ -690,14 +732,34 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               sortedSectionEntries.length > 0
                 ? sortedSectionEntries.map(([title]) => title)
                 : ['Lessons'];
-            const course = Course.create({
-              id: nanoid(),
-              libraryId,
-              slug,
-              title: courseTitle,
-            });
-            for (const [i, sectionTitle] of sectionTitleList.entries()) {
-              course.addSection({ id: nanoid(), title: sectionTitle, position: i + 1 });
+
+            let course: Course;
+            if (scopeCourse) {
+              // Force-resync: keep the course row exactly as it is (its title
+              // may be a user rename that no longer matches the folder) and
+              // re-derive only its sections. Reuse the id of every section
+              // whose title survived — Lesson.section is onDelete: Cascade, so
+              // a section that changes id drops its lessons on the way (#317).
+              course = scopeCourse;
+              const persistedSectionIdByTitle = new Map(
+                course.sections.map((s) => [s.title, s.id]),
+              );
+              course.replaceSections(
+                sectionTitleList.map((title) => ({
+                  id: persistedSectionIdByTitle.get(title.trim()) ?? nanoid(),
+                  title,
+                })),
+              );
+            } else {
+              course = Course.create({
+                id: nanoid(),
+                libraryId,
+                slug,
+                title: courseTitle,
+              });
+              for (const [i, sectionTitle] of sectionTitleList.entries()) {
+                course.addSection({ id: nanoid(), title: sectionTitle, position: i + 1 });
+              }
             }
             await this.courseRepo.save(course);
 
@@ -774,6 +836,16 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               }
             }
 
+            // Force-resync: empty this course's positive position range before
+            // writing the new order back. Lessons are saved one at a time, and
+            // a resync that inserts a lesson the first import missed shifts
+            // every later lesson in its section — without parking, the first
+            // shifted lesson lands on a position the row after it still holds
+            // and loses the (sectionId, position) unique constraint.
+            if (scopeCourse) {
+              await this.lessonRepo.parkPositionsForResync(course.id);
+            }
+
             // Persist each discovered lesson (pass 2).
             for (const { entry, sectionId, lessonTitle } of resolved) {
               // positionByVideoPath is guaranteed to have every resolved
@@ -782,9 +854,20 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- guaranteed above
               const lessonPosition = positionByVideoPath.get(entry.videoPath)!;
 
+              // Force-resync: reconcile by videoPath and keep the existing
+              // lesson's id. Progress, bookmarks, notes and transcripts all
+              // point at lessonId with no foreign key, so minting a new id
+              // orphans every one of them with nothing left to collect them.
+              // Only the scoped path reuses ids: on a library-wide scan the map
+              // spans other courses, and adopting their lesson ids would move
+              // rows between courses.
+              const reusableLessonId = scopeCourse
+                ? existingLessonByVideoPath.get(entry.videoPath)?.id
+                : undefined;
+
               try {
                 const lesson = Lesson.create({
-                  id: nanoid(),
+                  id: reusableLessonId ?? nanoid(),
                   courseId: course.id,
                   sectionId,
                   position: lessonPosition,
@@ -827,14 +910,18 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
                 // Sidecar ingest (E27-F01-S01) for the lesson just created. A
                 // pre-existing lesson's sidecars are handled earlier in the walk,
                 // where its id was already known — see `existingLessonByVideoPath`.
-                const sidecarErrors = await ingestSidecarTranscripts({
-                  fs: this.fs,
-                  transcripts: this.transcripts,
-                  lessonId: lesson.id,
-                  rootPath,
-                  subtitles: entry.subtitles,
-                });
-                for (const sidecarError of sidecarErrors) scan.recordError(sidecarError);
+                // That covers every resynced lesson whose id was reused, so this
+                // only runs for lessons that did not exist before.
+                if (reusableLessonId === undefined) {
+                  const sidecarErrors = await ingestSidecarTranscripts({
+                    fs: this.fs,
+                    transcripts: this.transcripts,
+                    lessonId: lesson.id,
+                    rootPath,
+                    subtitles: entry.subtitles,
+                  });
+                  for (const sidecarError of sidecarErrors) scan.recordError(sidecarError);
+                }
               } catch (error) {
                 scan.recordError({
                   path: path.relative(rootPath, entry.videoPath),
@@ -844,6 +931,10 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               }
             }
 
+            // This course's folder was found on disk and re-imported. Only now
+            // may the cleanup below delete a lesson: see the guard there.
+            if (scopeCourse) resyncedCourseId = course.id;
+
             // -------------------------------------------------------------------
             // Metadata linking (Slice 7): upsert Instructor/Studio/Tag rows and
             // set their refs on the course, then do a second save so the join
@@ -852,8 +943,14 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
             // Runs only when a course.json was successfully parsed; errors are
             // non-fatal (logged as 'metadata-link-failed') so a bad link never
             // aborts the scan or discards the already-persisted course+lessons.
+            //
+            // Never on a force-resync: course.json is the FIRST import's source
+            // of metadata, and after that the course row belongs to whoever
+            // edited it through the API. Re-linking would silently revert a
+            // renamed title, a replaced poster or a curated tag list — the very
+            // thing the skip this path bypasses was protecting.
             // -------------------------------------------------------------------
-            if (normalisedCourseJson !== undefined) {
+            if (normalisedCourseJson !== undefined && scopeCourse === undefined) {
               try {
                 const instructorRefs = await this.linker.upsertInstructorsByName(
                   normalisedCourseJson.instructorNames ?? [],
@@ -922,19 +1019,49 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       // Orphan cleanup (E25-F04-S01): a lesson this library used to have but
       // whose video the walk did not encounter this time has vanished from
       // disk. Its Transcript rows (both origins) are deleted and each row's
-      // generated file is unlinked best-effort — the Lesson row itself is left
-      // alone, matching the v1 "skip on duplicate slug" idempotency the rest of
-      // this walk already lives with.
+      // generated file is unlinked best-effort.
+      //
+      // On a library-wide scan the Lesson row itself is left alone, matching
+      // the "skip on duplicate slug" idempotency the rest of that walk lives
+      // with. On a force-resync the row goes too (below) — a resync exists to
+      // make the course match the disk, and a lesson pointing at a file that
+      // is gone is exactly the drift it is there to remove.
       // -----------------------------------------------------------------------
+      const vanishedLessonIds: string[] = [];
       for (const [videoPath, lesson] of existingLessonByVideoPath) {
         if (seenVideoPaths.has(videoPath)) continue;
         try {
           await this.transcripts.deleteForLesson(lesson.id);
+          vanishedLessonIds.push(lesson.id);
         } catch (error) {
+          // Keep the lesson row: its transcript cues are still in the pg_trgm
+          // index E27 search reads, and deleting the row now would leave search
+          // returning hits that point at a lesson nothing can resolve.
           scan.recordError({
             path: path.relative(rootPath, videoPath),
             message: error instanceof Error ? error.message : String(error),
             code: 'transcript-cleanup-failed',
+          });
+        }
+      }
+
+      // Force-resync only: drop the vanished lesson rows and, with them, every
+      // row that references lessonId without a foreign key behind it.
+      //
+      // The guard is the point. `resyncedCourseId` is set only once this walk
+      // actually re-imported the scoped course's folder. If that folder is gone
+      // — renamed on disk, or a volume that failed to mount — the walk finds no
+      // files at all, EVERY lesson looks vanished, and an unguarded delete
+      // would take the whole course's progress, bookmarks and notes with it.
+      // In that case the scan still reports what it saw and changes nothing.
+      if (resyncedCourseId !== undefined && vanishedLessonIds.length > 0) {
+        try {
+          await this.lessonRepo.removeMany(vanishedLessonIds);
+        } catch (error) {
+          scan.recordError({
+            path: rootPath,
+            message: error instanceof Error ? error.message : String(error),
+            code: 'lesson-cleanup-failed',
           });
         }
       }

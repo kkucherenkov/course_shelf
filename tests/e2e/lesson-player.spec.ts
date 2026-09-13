@@ -271,6 +271,42 @@ test.describe('lesson player — auto-advance banner', () => {
   });
 });
 
+// ── Tests: viewport overflow (tuxedo 114) ────────────────────────────────────
+//
+// The page used to derive its own `height: calc(100vh - 56px)`, double-counting
+// AppNavigationShell's own topbar/padding chrome and overflowing the viewport
+// by 32px on every screen size — the whole document would scroll and the
+// topbar would scroll away with it. Component specs render the page without
+// the shell, so this is a real-browser-only regression; this is the check
+// mentioned in the fix that would catch it.
+test.describe('lesson player — no viewport overflow', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('the player fills the shell without pushing the document taller than the viewport', async ({
+    page,
+  }) => {
+    await mockLesson(page, makeLesson(0));
+    await mockOutline(page);
+    await mockStreamUrl(page);
+    await mockBookmarks(page);
+    await mockProgress(page);
+    await gotoLessonPlayer(page);
+
+    await expect(page.locator('.app-player-chrome')).toBeVisible({ timeout: 15_000 });
+
+    const { docHeight, viewportHeight, topbarVisible } = await page.evaluate(() => ({
+      docHeight: document.documentElement.scrollHeight,
+      viewportHeight: window.innerHeight,
+      topbarVisible:
+        (document.querySelector('.app-navigation-shell__topbar')?.getBoundingClientRect().top ??
+          -1) >= 0,
+    }));
+
+    expect(docHeight).toBeLessThanOrEqual(viewportHeight);
+    expect(topbarVisible).toBe(true);
+  });
+});
+
 // ── Tests: layout ─────────────────────────────────────────────────────────────
 
 test.describe('lesson player — layout 1440', () => {

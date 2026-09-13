@@ -45,7 +45,6 @@
   const route = useRoute();
   const authStore = useAuthStore();
   const colorMode = useColorMode();
-  const toast = useToast();
 
   // Subscribe to Centrifugo scan lifecycle events for the authenticated user.
   useScanLifecycle();
@@ -169,7 +168,7 @@
   }
 
   function onProfile(): void {
-    toast.add({ title: t('layouts.default.profileComingSoon'), color: 'info' });
+    void navigateTo('/settings#section-profile');
   }
 
   function onSettings(): void {

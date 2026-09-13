@@ -8,7 +8,6 @@ export default {
       navSignIn: 'Sign in',
       navSignOut: 'Sign out',
       searchPlaceholder: 'Search courses, lessons…',
-      profileComingSoon: 'Profile page coming soon.',
     },
   },
   pages: {

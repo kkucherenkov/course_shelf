@@ -73,6 +73,11 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
         catalog-scrape-admin.controller
   - [x] `docs/user-guide.md` — Udemy is unfetchable, affiliate API closed
         2025-01-01, paste-HTML steps
+  - [x] `schemathesis.toml` — exempted `negative_data_rejection` across the
+        `/libraries/{id}` family: every operation there pins a required
+        `path.id`, and the override defeats the negative generator's id
+        mutation, so a fully valid request lands and gets misreported as
+        "accepted a schema-violating request". No product code involved.
   - [x] `ratingCount` bounded to `maximum: 2147483647` (int4) at all three
         declaration sites; audited every other int4-backed integer field in
         the file — all response-only, not the same risk class

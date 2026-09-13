@@ -17,6 +17,7 @@ _No active tasks._
   - [ ] Tests, including "other courses untouched"
 - Status: in-progress
 - Blockers: — (card 1 landed as [PR #463](https://github.com/kkucherenkov/course_shelf/pull/463), branching off it now)
+
 ## T-2026-09-13-fix-web-ui — four live-use web defects (tuxedo 111-114)
 
 - Created: 2026-09-13
@@ -36,4 +37,4 @@ _No active tasks._
         residual gap (cozy ≡ comfortable); no code change
 - Status: in-progress
 - Blockers: —
-_No active tasks._
+  _No active tasks._

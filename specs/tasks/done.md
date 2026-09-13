@@ -36,6 +36,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   are now structurally impossible. `DiscoveredFile.size` / `Lesson.sizeBytes`
   widened to `BigInt`. Crash path records the cause as a `ScanError` instead
   of leaving the scan stuck `running` with no trace.
+
 ## T-2026-09-13-fix-web-ui — four live-use web defects (tuxedo 111-114)
 
 - Created: 2026-09-13

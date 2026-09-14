@@ -27,6 +27,18 @@
 #
 # Pinned to a tag rather than a branch — an unpinned clone would make the image
 # non-reproducible and could change transcription output between releases.
+#
+# The tag alone is NOT enough. ggml defaults `GGML_NATIVE` to ON, which compiles
+# with `-march=native`, so the binary ends up tuned to whatever runner built it.
+# Release 1.3.0 shipped one that died with "Illegal instruction (core dumped)"
+# at model load on the maintainer's NAS — a Pentium Gold 8505 with avx, avx2,
+# avx_vnni, f16c and fma but no avx512 — while 1.2.0, built from this same tag,
+# ran there fine. One tag, two releases, two different binaries.
+#
+# Hence `GGML_NATIVE=OFF` plus an explicit baseline below. AVX2 is Haswell
+# (2013) and later, which every plausible target for a self-hosted media server
+# has; falling back to a plain x86-64 baseline would cost real time on a job
+# already measured at roughly 19.5 minutes per lesson on that hardware.
 FROM node:24-alpine AS whisper
 
 ARG WHISPER_CPP_VERSION=v1.9.3
@@ -39,6 +51,11 @@ RUN apk add --no-cache build-base cmake git \
         -DBUILD_SHARED_LIBS=OFF \
         -DWHISPER_BUILD_TESTS=OFF \
         -DWHISPER_BUILD_SERVER=OFF \
+        -DGGML_NATIVE=OFF \
+        -DGGML_AVX=ON \
+        -DGGML_AVX2=ON \
+        -DGGML_FMA=ON \
+        -DGGML_F16C=ON \
     && cmake --build /usr/src/whisper.cpp/build --config Release \
         -j "$(nproc)" --target whisper-cli
 

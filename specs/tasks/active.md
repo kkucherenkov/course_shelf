@@ -46,9 +46,12 @@
   - [x] `pnpm spec:validate`, `pnpm --filter @app/specs lint`, `typecheck`
   - [x] re-ran the real `pnpm spec:contract-test` against the live stack with
         the fix applied — green, same shape as every other CI pass
-  - [ ] PR with `Closes #528`
+  - [x] PR with `Closes #528` —
+        [#543](https://github.com/kkucherenkov/course_shelf/pull/543)
 - Status: in-progress
-- Blockers: —
+- Blockers: — (CI green except `Storybook visual regression`, which is
+  already failing on `main` HEAD `72183adc`/#533 — unrelated to this change,
+  not in this lane's `packages/specs` remit)
 
 ## T-2026-09-14-transcription-recovery — stale `running` recovery + real detected language
 

@@ -159,20 +159,37 @@ describe('express-openapi-validator', () => {
       expect(res.status).toBe(404);
     });
 
+    // Length is still a wire constraint — `minLength` and `maxLength` stay on
+    // the schema — so the validator still answers this one itself.
+    it('still rejects a slug longer than 100 characters', async () => {
+      ctx = await createE2eApp();
+
+      const res = await request(ctx.server).get(bySlug('а'.repeat(101)));
+
+      expect(res.status).toBe(400);
+      expect(res.headers['content-type']).toContain('application/problem+json');
+    });
+
+    // Shape is NOT a wire constraint any more. The `pattern` came off the two
+    // slug schemas because it can only be written as a Unicode property
+    // expression, which the contract-test generator cannot build values for —
+    // it made that gate pass or fail on the seed. These shapes are still
+    // invalid; they are now rejected by the `EntitySlug` value object with a
+    // 422, which `entity-slug.spec.ts` covers case by case. Here they simply
+    // reach the router, and this harness mounts no catalog controller, so the
+    // reply is the 404 that operation declares.
     it.each([
       ['uppercase', 'Андрей-Нягой'],
       ['a leading hyphen', '-андрей'],
       ['a trailing hyphen', 'андрей-'],
       ['a space', 'андрей нягой'],
       ['an underscore', 'андрей_нягой'],
-      ['101 characters', 'а'.repeat(101)],
-    ])('still rejects a slug with %s', async (_label, slug) => {
+    ])('no longer rejects a slug with %s at the wire', async (_label, slug) => {
       ctx = await createE2eApp();
 
       const res = await request(ctx.server).get(bySlug(slug));
 
-      expect(res.status).toBe(400);
-      expect(res.headers['content-type']).toContain('application/problem+json');
+      expect(res.status).toBe(404);
     });
 
     // `UpsertInstructorRequest.displayName` carries its own `[\p{L}\p{N}]`

@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 import { Logger } from '@nestjs/common';
@@ -7,28 +7,46 @@ import * as OpenApiValidator from 'express-openapi-validator';
 
 import type { INestApplication } from '@nestjs/common';
 
-function resolveSpecPath(): string | null {
-  const candidates = [
+/**
+ * Picks the freshest spec by mtime instead of the first candidate that
+ * exists. `apps/backend/dist/specs/openapi.json` is a build artefact — a
+ * `nest build` copies it there from `packages/specs/dist/openapi.json`, but
+ * `vitest run` never runs that copy, so it goes stale the moment the source
+ * bundle is regenerated (#500). Comparing mtime also sidesteps the case
+ * where a root-owned dev-container build left that copy behind: a
+ * non-root developer can't delete or overwrite it, but the resolver just
+ * reads past it once a newer bundle exists elsewhere.
+ */
+export function pickNewestSpec(candidates: string[]): { specPath: string; stale: string[] } | null {
+  const found = candidates
+    .filter(existsSync)
+    .map((specPath) => ({ specPath, mtimeMs: statSync(specPath).mtimeMs }))
+    // stable sort: equal mtimes keep the candidates' original priority order
+    .toSorted((a, b) => b.mtimeMs - a.mtimeMs);
+  const [newest, ...rest] = found;
+  if (!newest) return null;
+  return { specPath: newest.specPath, stale: rest.map((f) => f.specPath) };
+}
+
+function resolveSpecPath(): { specPath: string; stale: string[] } | null {
+  return pickNewestSpec([
     path.join(process.cwd(), 'dist/specs/openapi.json'),
     path.join(process.cwd(), '../../packages/specs/dist/openapi.json'),
     path.join(__dirname, '../../specs/openapi.json'),
-  ];
-  for (const candidate of candidates) {
-    if (existsSync(candidate)) return candidate;
-  }
-  return null;
+  ]);
 }
 
 export function registerOpenApiValidator(app: INestApplication, nodeEnv: string): void {
   const logger = new Logger('OpenApiValidator');
-  const apiSpec = resolveSpecPath();
+  const resolved = resolveSpecPath();
 
-  if (!apiSpec) {
+  if (!resolved) {
     logger.warn(
       'OpenAPI bundle not found — skipping runtime validation. Run `pnpm --filter @app/specs bundle`.',
     );
     return;
   }
+  const { specPath: apiSpec, stale } = resolved;
 
   // Express 5 + NestJS 11 do not auto-mount a JSON body parser before our
   // app-level `app.use()` middlewares run, so the openapi-validator sees
@@ -100,5 +118,8 @@ export function registerOpenApiValidator(app: INestApplication, nodeEnv: string)
     }),
   );
 
-  logger.log(`OpenAPI validator armed with spec: ${apiSpec}`);
+  logger.log(
+    `OpenAPI validator armed with spec: ${apiSpec}` +
+      (stale.length > 0 ? ` (newer than stale copy at: ${stale.join(', ')})` : ''),
+  );
 }

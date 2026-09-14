@@ -32,7 +32,7 @@
   - [x] wire into `admin/libraries/[id].vue` via `useCoursesList({ libraryId })`
   - [x] i18n keys (en + ru)
   - [x] lint/format/typecheck/test gates
-  - [ ] open PR with `Closes #510`
+  - [x] open PR with `Closes #510` — [#540](https://github.com/kkucherenkov/course_shelf/pull/540)
 - Status: in-progress
 - Blockers: —
 

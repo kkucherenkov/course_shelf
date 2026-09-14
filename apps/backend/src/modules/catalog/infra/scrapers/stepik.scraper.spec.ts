@@ -107,6 +107,31 @@ describe('StepikScraper', () => {
     expect(description).toContain('Нагрузка\n3-4 часа в неделю');
   });
 
+  it('drops script and style payloads instead of rejoining them into a tag', async () => {
+    // `<[^>]+>` removes the inner `<script>` and rejoins the outer halves into a
+    // live tag — the bypass behind `js/incomplete-multi-character-sanitization`.
+    // A parser has no such seam: the element and everything in it is gone.
+    const nasty = JSON.stringify({
+      courses: [
+        {
+          id: 1,
+          title: 'C',
+          description:
+            '<p>Lead<<script>script>alert(1)<</script>/script></p><style>.x{color:red}</style>',
+        },
+      ],
+    });
+    const scraper = new StepikScraper(fetcherFor({ course: OK(nasty) }));
+
+    const [candidate] = await scraper.scrape({ kind: 'url', url: 'https://stepik.org/course/1' });
+
+    // The payload is gone, and what survives is TEXT — `<` and `/script>` are
+    // text nodes here, not a tag. Stripping every `<` instead would corrupt the
+    // legitimate case: a course about SQL or HTML whose description really does
+    // say `WHERE x < 5` or shows a closing tag.
+    expect(candidate?.fragment.description).toBe('Lead</script>');
+  });
+
   it('uses English headings for a non-Russian course', async () => {
     const english = JSON.stringify({
       courses: [

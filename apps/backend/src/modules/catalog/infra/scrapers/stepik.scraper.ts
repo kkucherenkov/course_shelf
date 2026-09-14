@@ -17,6 +17,8 @@
  * it from the site would create a second source of truth about the user's own
  * library, and the two diverge on the first partially downloaded course.
  */
+import * as cheerio from 'cheerio';
+
 import { ScrapeFetchError } from '../../domain/scraper/scraper.errors';
 
 import type { HttpFetcher } from './http-fetcher';
@@ -99,33 +101,39 @@ interface StepikReviewSummariesResponse {
 }
 
 /**
- * Minimal HTML → text for the two fields Stepik stores as markup
- * (`description`, `requirements`).
+ * HTML → text for the two fields Stepik stores as markup (`description`,
+ * `requirements`).
  *
- * Deliberately not a parser and deliberately not a new dependency: the output
- * is plain text that the web renders with `white-space: pre-line`, so all that
- * is needed is turning block boundaries into newlines, dropping tags, and
- * decoding the handful of entities a CMS actually emits. Anything richer would
- * mean shipping a sanitiser for content that is never rendered as markup.
+ * Parsed with cheerio — already a dependency of this directory, see
+ * `html-metadata.extractor.ts` — rather than by stripping tags with a regular
+ * expression. A regex tag-stripper is the shape CodeQL flags as
+ * `js/incomplete-multi-character-sanitization`, and it is right to: such a
+ * filter is always one crafted input away from leaving markup behind, and the
+ * guarantee "this output is never rendered as HTML" has to hold for every
+ * future caller, not just today's. A parser cannot be incomplete, and `.text()`
+ * decodes entities correctly instead of against a hand-written table.
+ *
+ * Block boundaries become newlines because the web renders this with
+ * `white-space: pre-line`; `script`/`style` go first so their source never
+ * lands in a course description.
  */
 function htmlToText(html: string): string {
-  return (
-    html
-      .replaceAll(/<br\s*\/?>/gi, '\n')
-      .replaceAll(/<\/(?:p|div|h[1-6]|tr)>/gi, '\n\n')
-      .replaceAll(/<li[^>]*>/gi, '\n— ')
-      .replaceAll(/<[^>]+>/g, '')
-      .replaceAll(/&nbsp;/gi, ' ')
-      .replaceAll(/&lt;/gi, '<')
-      .replaceAll(/&gt;/gi, '>')
-      .replaceAll(/&quot;/gi, '"')
-      .replaceAll(/&#0?39;|&apos;/gi, "'")
-      // Ampersand last: decoding it earlier would let `&amp;lt;` become `<`.
-      .replaceAll(/&amp;/gi, '&')
-      .replaceAll(/[ \t]+\n/g, '\n')
-      .replaceAll(/\n{3,}/g, '\n\n')
-      .trim()
-  );
+  const $ = cheerio.load(html, null, false);
+
+  $('script, style').remove();
+  $('br').replaceWith('\n');
+  $('li').each((_, element) => {
+    $(element).prepend('\n— ');
+  });
+  $('p, div, h1, h2, h3, h4, h5, h6, tr').each((_, element) => {
+    $(element).append('\n\n');
+  });
+
+  return $.root()
+    .text()
+    .replaceAll(/[ \t]+\n/g, '\n')
+    .replaceAll(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 /** Plain-text `Heading\n<body>` block, or nothing when the body is empty. */

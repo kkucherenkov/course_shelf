@@ -193,6 +193,9 @@ model Course {
 
   @@unique([libraryId, slug], name: "uq_course_library_slug")
   @@index([libraryId])
+  // pg_trgm GIN index backing SearchPort.findCourseHits' `contains`
+  // (case-insensitive substring) search — same reasoning as transcript_cue.text.
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin)
   @@map("course")
 }
 
@@ -312,6 +315,9 @@ model Section {
   lessons  Lesson[]
 
   @@unique([courseId, position], name: "uq_section_course_position")
+  // pg_trgm GIN index backing SearchPort.findCourseHits' section-title OR
+  // clause — same reasoning as transcript_cue.text.
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin)
   @@map("section")
 }
 
@@ -344,6 +350,9 @@ model Lesson {
 
   @@unique([sectionId, position], name: "uq_lesson_section_position")
   @@index([courseId, sectionId])
+  // pg_trgm GIN index backing SearchPort.findLessonHits' `contains`
+  // (case-insensitive substring) search — same reasoning as transcript_cue.text.
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin)
   @@map("lesson")
 }
 

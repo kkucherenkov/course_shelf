@@ -18,6 +18,7 @@ import { CourseNotFoundError } from '../../domain/course/course.errors';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from '../../domain/progress/course-progress-read-model.repository';
 import { toCourseDto } from '../../courses.dto';
+import { CoursePosterTokenSigner } from '../../domain/course/course-poster-token';
 
 import { GetCourseQuery } from './get-course.query';
 
@@ -34,6 +35,7 @@ export class GetCourseHandler implements IQueryHandler<GetCourseQuery, CourseDto
     @Inject(AUTHORIZATION_SERVICE) private readonly authz: AuthorizationService,
     @Inject(COURSE_PROGRESS_READ_MODEL_REPOSITORY)
     private readonly progressRepo: CourseProgressReadModelRepository,
+    private readonly posterTokenSigner: CoursePosterTokenSigner,
   ) {}
 
   async execute(query: GetCourseQuery): Promise<CourseDto> {
@@ -54,6 +56,6 @@ export class GetCourseHandler implements IQueryHandler<GetCourseQuery, CourseDto
 
     const progressRow = await this.progressRepo.findByUserAndCourse(query.actor.id, course.id);
 
-    return toCourseDto(course, progressRow);
+    return toCourseDto(course, (id) => this.posterTokenSigner.signUrl(id), progressRow);
   }
 }

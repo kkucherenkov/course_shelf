@@ -36,6 +36,7 @@ import { LIBRARY_REPOSITORY } from '../../domain/library/library.repository';
 import { parseCourseJson, normaliseCourseJson } from '../../domain/scan/course-json.schema';
 import { FS_ADAPTER } from '../../domain/scan/fs-adapter';
 import { MetadataLinker } from '../scan/metadata-linker';
+import { PosterSyncService } from '../scan/poster-sync.service';
 import { BackfillCourseMetadataCommand } from './backfill-course-metadata.command';
 
 import type { CourseRepository } from '../../domain/course/course.repository';
@@ -76,6 +77,7 @@ export class BackfillCourseMetadataHandler implements ICommandHandler<
     @Inject(COURSE_REPOSITORY) private readonly courseRepo: CourseRepository,
     @Inject(FS_ADAPTER) private readonly fs: FsAdapter,
     private readonly linker: MetadataLinker,
+    private readonly posterSync: PosterSyncService,
     private readonly centrifugo: CentrifugoService,
   ) {}
 
@@ -174,7 +176,7 @@ export class BackfillCourseMetadataHandler implements ICommandHandler<
             course.setReleaseDate(new Date(normalised.releaseDate));
           }
           if (normalised.posterUrl !== undefined) {
-            course.setPosterUrl(normalised.posterUrl);
+            await this.posterSync.applyPosterUrl(course, normalised.posterUrl);
           }
           if (normalised.externalIds !== undefined) {
             course.setExternalIds([...normalised.externalIds]);

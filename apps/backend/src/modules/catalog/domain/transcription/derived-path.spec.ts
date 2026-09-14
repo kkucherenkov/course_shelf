@@ -1,9 +1,14 @@
 /**
- * Spec for derivedTranscriptPath / derivedThumbnailPath — pure, no filesystem, no DI.
+ * Spec for derivedTranscriptPath / derivedThumbnailPath / derivedCoursePosterPath —
+ * pure, no filesystem, no DI.
  */
 import { describe, expect, it } from 'vitest';
 
-import { derivedThumbnailPath, derivedTranscriptPath } from './derived-path';
+import {
+  derivedCoursePosterPath,
+  derivedThumbnailPath,
+  derivedTranscriptPath,
+} from './derived-path';
 import { DerivedPathEscapedError } from './transcription.errors';
 
 const base = {
@@ -98,6 +103,52 @@ describe('derivedThumbnailPath', () => {
   it('rejects a traversal attempt in the library id', () => {
     expect(() =>
       derivedThumbnailPath({ ...thumbBase, libraryId: '../../etc', videoPath: 'a.mp4' }),
+    ).toThrow(DerivedPathEscapedError);
+  });
+});
+
+describe('derivedCoursePosterPath', () => {
+  const posterBase = { derivedRoot: '/data/derived', libraryId: 'lib-1', extension: '.jpg' };
+
+  it('lands under <derivedRoot>/<libraryId>/posters/<courseId><extension>', () => {
+    expect(derivedCoursePosterPath({ ...posterBase, courseId: 'course-1' })).toBe(
+      '/data/derived/lib-1/posters/course-1.jpg',
+    );
+  });
+
+  it('keeps extensions apart', () => {
+    const jpg = derivedCoursePosterPath({ ...posterBase, courseId: 'c1' });
+    const png = derivedCoursePosterPath({ ...posterBase, courseId: 'c1', extension: '.png' });
+    expect(jpg).not.toBe(png);
+  });
+
+  it('keeps libraries apart', () => {
+    const one = derivedCoursePosterPath({ ...posterBase, courseId: 'c1' });
+    const two = derivedCoursePosterPath({ ...posterBase, courseId: 'c1', libraryId: 'lib-2' });
+    expect(one).not.toBe(two);
+  });
+
+  it('rejects a traversal attempt in the courseId', () => {
+    expect(() => derivedCoursePosterPath({ ...posterBase, courseId: '../../etc/passwd' })).toThrow(
+      DerivedPathEscapedError,
+    );
+  });
+
+  it('rejects an extension outside the fixed allowlist', () => {
+    expect(() =>
+      derivedCoursePosterPath({ ...posterBase, courseId: 'c1', extension: '.svg' }),
+    ).toThrow(DerivedPathEscapedError);
+  });
+
+  it('rejects an extension crafted for traversal', () => {
+    expect(() =>
+      derivedCoursePosterPath({ ...posterBase, courseId: 'c1', extension: '/../../x.jpg' }),
+    ).toThrow(DerivedPathEscapedError);
+  });
+
+  it('rejects a traversal attempt in the library id', () => {
+    expect(() =>
+      derivedCoursePosterPath({ ...posterBase, libraryId: '../../etc', courseId: 'c1' }),
     ).toThrow(DerivedPathEscapedError);
   });
 });

@@ -164,3 +164,57 @@ export class CourseLinkUnknownEntityError extends DomainError {
     this.name = 'CourseLinkUnknownEntityError';
   }
 }
+
+// ---------------------------------------------------------------------------
+// Poster (#496)
+// ---------------------------------------------------------------------------
+
+/**
+ * Base class for every CoursePosterTokenSigner.verify() failure. Status 401 —
+ * a fresh token is minted on the next CourseDto response, so the caller just
+ * needs to re-fetch, not re-authenticate. Detail messages never echo the
+ * offending token value.
+ */
+export class CoursePosterTokenInvalidError extends DomainError {
+  constructor(detail: string, code = 'course-poster-token-invalid') {
+    super({ code, status: 401, title: 'Poster token invalid', detail });
+    this.name = 'CoursePosterTokenInvalidError';
+  }
+}
+
+export class CoursePosterTokenMalformedError extends CoursePosterTokenInvalidError {
+  constructor() {
+    super('Token is malformed.', 'course-poster-token-malformed');
+    this.name = 'CoursePosterTokenMalformedError';
+  }
+}
+
+export class CoursePosterTokenTamperedError extends CoursePosterTokenInvalidError {
+  constructor() {
+    super('Token signature does not match.', 'course-poster-token-tampered');
+    this.name = 'CoursePosterTokenTamperedError';
+  }
+}
+
+export class CoursePosterTokenExpiredError extends CoursePosterTokenInvalidError {
+  constructor() {
+    super('Token has expired.', 'course-poster-token-expired');
+    this.name = 'CoursePosterTokenExpiredError';
+  }
+}
+
+/** The token was issued for a different course than the one being accessed. */
+export class CoursePosterTokenMismatchError extends CoursePosterTokenInvalidError {
+  constructor() {
+    super('Token was issued for a different course.', 'course-poster-token-mismatch');
+    this.name = 'CoursePosterTokenMismatchError';
+  }
+}
+
+/** No poster stored for this course, or the stored file is missing on disk. */
+export class CoursePosterNotFoundError extends NotFound {
+  constructor(courseId: string) {
+    super(`Course "${courseId}" has no stored poster.`, 'course-poster-not-found');
+    this.name = 'CoursePosterNotFoundError';
+  }
+}

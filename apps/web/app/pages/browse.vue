@@ -144,6 +144,10 @@
       lessons: item.progress.lessonsTotal,
       completed: item.progress.lessonsCompleted,
       accent: accentFromId(item.id),
+      // #496: posterUrl is our own signed /courses/:id/poster URL (or null —
+      // no poster was ever downloaded). `cover` is bound straight to the
+      // card's CSS `background`, so the shorthand carries position/size too.
+      cover: item.posterUrl ? `url(${item.posterUrl}) center / cover no-repeat` : undefined,
     };
   }
 </script>

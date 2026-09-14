@@ -3,11 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Course } from '../../domain/course/course';
 import { Studio } from '../../domain/studio/studio';
 import { StudioNotFoundError } from '../../domain/studio/studio.errors';
+import { CoursePosterTokenSigner } from '../../domain/course/course-poster-token';
 import { GetStudioQuery } from './get-studio.query';
 import { GetStudioHandler } from './get-studio.handler';
 
 import type { StudioRepository } from '../../domain/studio/studio.repository';
 import type { CourseRepository } from '../../domain/course/course.repository';
+import type { AppConfig } from '../../../../common/config/app-config';
+
+function makePosterTokenSigner(): CoursePosterTokenSigner {
+  return new CoursePosterTokenSigner({
+    posterToken: { secret: 'test-secret', hkdfInfo: 'test:poster-token:v1', ttlSeconds: 900 },
+  } as unknown as AppConfig);
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -68,7 +76,7 @@ describe('GetStudioHandler', () => {
   beforeEach(() => {
     studioRepo = makeStudioRepo();
     courseRepo = makeCourseRepo();
-    handler = new GetStudioHandler(studioRepo, courseRepo);
+    handler = new GetStudioHandler(studioRepo, courseRepo, makePosterTokenSigner());
   });
 
   it('returns StudioDetailDto on happy path', async () => {

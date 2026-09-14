@@ -169,6 +169,7 @@ export default {
       lessons: '{n} урок | {n} урока | {n} уроков',
       durationValue: '{h} ч {m} мин',
       progress: 'Прогресс',
+      descriptionHeading: 'О курсе',
       ctaStart: 'Начать',
       ctaRewatch: 'Пересмотреть сначала',
       ctaResume: 'Продолжить — Раздел {section} · У{lesson}',

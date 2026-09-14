@@ -379,13 +379,20 @@ parameters = { "path.slug" = "seed-tag-fundamentals" }
 # built before overrides are applied. Verified all three locally against
 # schemathesis 4.25.2.
 #
-# What IS enough: disable only the two phases that must invent a slug. The
-# operation stays SELECTED (76/76, not 75/76 as `enabled = false` would give),
-# the Examples and Stateful phases still exercise it, and every check —
-# `not_a_server_error` included — stays armed on what they send.
+# What IS enough: disable every phase that must invent a slug. The operation
+# stays SELECTED (76/76, not 75/76 as `enabled = false` would give), the
+# Examples phase still exercises it from the declared examples, and every
+# check — `not_a_server_error` included — stays armed on what it sends.
 #
-# Known cost: no generated or negative data reaches these four operations, so a
-# defect only a fuzzer would find is now invisible on them. That is the price of
+# `stateful` is in the list because it generates too: with coverage and fuzzing
+# off, CI still reported one Schema Error, attributed to "Stateful tests" rather
+# than to an operation. That phase cannot be reproduced offline — it needs a live
+# API, and the offline run reports it as skipped — so unlike the three findings
+# above, this one was established from CI rather than locally.
+#
+# Known cost: only the declared examples reach these four operations. No
+# generated, negative or link-chained data does, so a defect only a fuzzer or a
+# scenario would find is now invisible on them. That is the price of
 # keeping the published contract honest about what a slug is; loosening the
 # pattern so the fuzzer could generate values would make every generated client
 # and every reader of the docs believe `FOO BAR` is a valid slug.
@@ -396,18 +403,22 @@ parameters = { "path.slug" = "seed-tag-fundamentals" }
 include-name = "PATCH /api/v1/courses/{id}"
 phases.coverage.enabled = false
 phases.fuzzing.enabled = false
+phases.stateful.enabled = false
 
 [[operations]]
 include-name = "POST /api/v1/admin/instructors"
 phases.coverage.enabled = false
 phases.fuzzing.enabled = false
+phases.stateful.enabled = false
 
 [[operations]]
 include-name = "POST /api/v1/admin/studios"
 phases.coverage.enabled = false
 phases.fuzzing.enabled = false
+phases.stateful.enabled = false
 
 [[operations]]
 include-name = "POST /api/v1/admin/tags"
 phases.coverage.enabled = false
 phases.fuzzing.enabled = false
+phases.stateful.enabled = false

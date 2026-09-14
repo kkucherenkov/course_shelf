@@ -14,7 +14,7 @@
  *   /lib/01 - Course A/course.json   (title: "Course A from JSON")
  *   /lib/02 - Course B (no json)/01 - Episode.mp4
  *   /lib/.hidden/skip.mp4             → skipped (dotfile folder)
- *   /lib/02 - Course B (no json)/broken.txt → unsupported extension ScanError
+ *   /lib/02 - Course B (no json)/broken.txt → no sibling video, silently skipped (#523)
  *
  * Stem-match regression fixture (E06-F03-S02):
  *   /lib/03 - Neovim Course/01 - Intro.mp4
@@ -22,8 +22,8 @@
  *   /lib/03 - Neovim Course/01 - Intro.en.srt → subtitle (lang=en), NOT a ScanError
  *
  * Acceptance assertions per the story:
- *   First scan:  coursesDiscovered=2, filesAdded=3, filesUpdated=0, filesScanned=4,
- *                errors.length=1 (broken.txt).
+ *   First scan:  coursesDiscovered=2, filesAdded=3, filesUpdated=0, filesScanned=3,
+ *                errors.length=0.
  *   Second scan: all counters zero (no-op — FS unchanged).
  *   course.json overrides folder title for Course A.
  *   Malformed course.json adds a ScanError without failing the scan.
@@ -617,7 +617,7 @@ describe('RunScanHandler', () => {
   // -------------------------------------------------------------------------
   // Happy path — first scan
   // -------------------------------------------------------------------------
-  it('first scan: filesAdded=3, filesScanned=4, coursesDiscovered=2, errors.length=1', async () => {
+  it('first scan: filesAdded=3, filesScanned=3, coursesDiscovered=2, errors.length=0', async () => {
     vi.useRealTimers();
 
     const scan = await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -631,12 +631,11 @@ describe('RunScanHandler', () => {
     expect(saved.filesAdded).toBe(3); // 2 mp4s in Course A + 1 mp4 in Course B
     expect(saved.filesUpdated).toBe(0);
     // course.json is read for metadata but not counted as a lesson file.
-    // broken.txt is unsupported → only adds an error, not counted.
+    // broken.txt has no sibling video, so it is silently skipped (#523).
     // So filesScanned = 3 (the three .mp4 files).
     expect(saved.filesScanned).toBe(3);
     expect(saved.coursesDiscovered).toBe(2);
-    expect(saved.errors).toHaveLength(1);
-    expect(saved.errors[0]?.code).toBe('unsupported-extension');
+    expect(saved.errors).toHaveLength(0);
   });
 
   it('course.json title overrides folder-derived title for Course A', async () => {
@@ -703,6 +702,48 @@ describe('RunScanHandler', () => {
     expect(saved.status).toBe('succeeded');
     const jsonError = saved.errors.find((e) => e.code === 'course-json-invalid');
     expect(jsonError).toBeDefined();
+  });
+
+  // -------------------------------------------------------------------------
+  // #523: a video-less stem group is course material, not a scan error.
+  //
+  // Real course folders hold far more than their videos — slides, archived
+  // exercises, sample code — and none of it shares a stem with a video.
+  // Before this fix every one of those files became an 'unsupported-extension'
+  // ScanError: 9201 of them on a clean import of the maintainer's library.
+  // -------------------------------------------------------------------------
+  it('slides, an archive and source code with no sibling video produce zero ScanErrors', async () => {
+    vi.useRealTimers();
+
+    const junkFiles: FileRecord[] = [
+      { path: '/lib/Junk Course/01 - Intro.mp4', mtime: BASE_TIME, size: 100 },
+      // No video shares these stems — each used to be its own ScanError.
+      { path: '/lib/Junk Course/Extra Slides.pdf', mtime: BASE_TIME, size: 40 },
+      { path: '/lib/Junk Course/Exercises.zip', mtime: BASE_TIME, size: 400 },
+      { path: '/lib/Junk Course/starter.cs', mtime: BASE_TIME, size: 20 },
+    ];
+    const junkScanRepo = makeScanRepo();
+    const junkHandler = new RunScanHandler(
+      libraryRepo,
+      junkScanRepo,
+      makeCourseRepo(),
+      makeLessonRepo(),
+      new FakeFsAdapter(junkFiles),
+      makePassthroughFfmpeg(),
+      makeTranscriptRepo(),
+      makeFakeAppConfig(),
+      centrifugo,
+      makeMetadataLinker(),
+    );
+
+    const scan = await junkHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+    await drainMicrotasks();
+
+    const saved = junkScanRepo.store.get(scan.id)!;
+    expect(saved.status).toBe('succeeded');
+    // The count that mattered: zero, not one per junk file.
+    expect(saved.errors).toHaveLength(0);
+    expect(saved.coursesDiscovered).toBe(1);
   });
 
   // -------------------------------------------------------------------------
@@ -1718,7 +1759,7 @@ describe('RunScanHandler', () => {
       expect(p.libraryName).toBe('Test Library');
     });
 
-    it('publishes finished event with status=succeeded on successful walk', async () => {
+    it('publishes finished event with status=succeeded (no errors: broken.txt is silently skipped)', async () => {
       vi.useRealTimers();
 
       const scan = await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1745,11 +1786,12 @@ describe('RunScanHandler', () => {
       };
       expect(f.kind).toBe('finished');
       expect(f.scanId).toBe(scan.id);
-      // Has scan errors (broken.txt) → status='partial', not 'succeeded'.
-      expect(f.status).toBe('partial');
+      // broken.txt has no sibling video, so it is silently skipped (#523) —
+      // no errors, status stays 'succeeded'.
+      expect(f.status).toBe('succeeded');
       expect(f.filesAdded).toBe(3);
       expect(f.coursesDiscovered).toBe(2);
-      expect(f.errorsCount).toBe(1);
+      expect(f.errorsCount).toBe(0);
     });
 
     it('publishes finished event with status=succeeded when there are no errors', async () => {
@@ -3424,6 +3466,43 @@ describe('RunScanHandler', () => {
       expect(slugs).toContain('йога');
       expect(slugs.find((s) => s !== 'йога')).toMatch(/^йога-[\da-f]{8}$/u);
       expect(scan.errors.filter((e) => e.code === 'course-slug-collision')).toHaveLength(1);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // #504: a library-wide scan must not duplicate a course whose slug was
+  // edited through the API. update-course-metadata.handler.ts treats title
+  // and slug as independent patch fields, so an operator editing the slug
+  // alone leaves the folder-derived slug the next scan computes pointing at
+  // nothing in `existingSlugSet` — the skip used to miss and re-import the
+  // folder as a second course with fresh lesson ids. The folder is matched on
+  // its own identity (a lesson's videoPath), which an API edit cannot touch.
+  // -------------------------------------------------------------------------
+  describe('#504: a slug edited through the API', () => {
+    it('does not stop the next scan from recognising the folder as already imported', async () => {
+      vi.useRealTimers();
+      const folder = 'Edited Slug Course';
+
+      const first = await scanFolders([folder]);
+      expect(first.courses).toHaveLength(1);
+      expect(first.lessons).toHaveLength(1);
+
+      // Simulate PATCH /courses/{id} { slug: '...' } — same repo.save() call
+      // update-course-metadata.handler.ts makes.
+      const course = first.courses[0]!;
+      course.changeSlug('operator-renamed-slug');
+      await first.courseRepo.save(course);
+
+      const second = await scanFolders([folder], first);
+
+      // One course, not two — matched on the folder, not the now-stale
+      // derived slug.
+      expect(second.courses).toHaveLength(1);
+      expect(second.courses[0]!.slug).toBe('operator-renamed-slug');
+      // One lesson, and the SAME lesson — no re-import minted a fresh id.
+      expect(second.lessons).toHaveLength(1);
+      expect(second.lessons[0]!.id).toBe(first.lessons[0]!.id);
+      expect(second.scan.errors).toHaveLength(0);
     });
   });
 

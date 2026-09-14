@@ -90,6 +90,8 @@ class _$LessonOutlineItem extends LessonOutlineItem {
   @override
   final bool hasMaterials;
   @override
+  final bool hasTranscript;
+  @override
   final LessonOutlineItemStateEnum state;
   @override
   final int progressPercent;
@@ -104,6 +106,7 @@ class _$LessonOutlineItem extends LessonOutlineItem {
     required this.title,
     required this.durationSeconds,
     required this.hasMaterials,
+    required this.hasTranscript,
     required this.state,
     required this.progressPercent,
   }) : super._();
@@ -124,6 +127,7 @@ class _$LessonOutlineItem extends LessonOutlineItem {
         title == other.title &&
         durationSeconds == other.durationSeconds &&
         hasMaterials == other.hasMaterials &&
+        hasTranscript == other.hasTranscript &&
         state == other.state &&
         progressPercent == other.progressPercent;
   }
@@ -136,6 +140,7 @@ class _$LessonOutlineItem extends LessonOutlineItem {
     _$hash = $jc(_$hash, title.hashCode);
     _$hash = $jc(_$hash, durationSeconds.hashCode);
     _$hash = $jc(_$hash, hasMaterials.hashCode);
+    _$hash = $jc(_$hash, hasTranscript.hashCode);
     _$hash = $jc(_$hash, state.hashCode);
     _$hash = $jc(_$hash, progressPercent.hashCode);
     _$hash = $jf(_$hash);
@@ -150,6 +155,7 @@ class _$LessonOutlineItem extends LessonOutlineItem {
           ..add('title', title)
           ..add('durationSeconds', durationSeconds)
           ..add('hasMaterials', hasMaterials)
+          ..add('hasTranscript', hasTranscript)
           ..add('state', state)
           ..add('progressPercent', progressPercent))
         .toString();
@@ -181,6 +187,11 @@ class LessonOutlineItemBuilder
   bool? get hasMaterials => _$this._hasMaterials;
   set hasMaterials(bool? hasMaterials) => _$this._hasMaterials = hasMaterials;
 
+  bool? _hasTranscript;
+  bool? get hasTranscript => _$this._hasTranscript;
+  set hasTranscript(bool? hasTranscript) =>
+      _$this._hasTranscript = hasTranscript;
+
   LessonOutlineItemStateEnum? _state;
   LessonOutlineItemStateEnum? get state => _$this._state;
   set state(LessonOutlineItemStateEnum? state) => _$this._state = state;
@@ -202,6 +213,7 @@ class LessonOutlineItemBuilder
       _title = $v.title;
       _durationSeconds = $v.durationSeconds;
       _hasMaterials = $v.hasMaterials;
+      _hasTranscript = $v.hasTranscript;
       _state = $v.state;
       _progressPercent = $v.progressPercent;
       _$v = null;
@@ -250,6 +262,11 @@ class LessonOutlineItemBuilder
             hasMaterials,
             r'LessonOutlineItem',
             'hasMaterials',
+          ),
+          hasTranscript: BuiltValueNullFieldError.checkNotNull(
+            hasTranscript,
+            r'LessonOutlineItem',
+            'hasTranscript',
           ),
           state: BuiltValueNullFieldError.checkNotNull(
             state,

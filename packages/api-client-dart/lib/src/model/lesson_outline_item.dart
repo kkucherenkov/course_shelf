@@ -17,6 +17,7 @@ part 'lesson_outline_item.g.dart';
 /// * [title] 
 /// * [durationSeconds] 
 /// * [hasMaterials] - Whether the lesson has at least one sidecar material.
+/// * [hasTranscript] - Whether the lesson has a transcript track — a sidecar subtitle, or a generated transcript in the instance's configured transcription language. Same union `LessonDto.subtitles` uses; this is a presence flag rather than the language list because a generated transcript's language is not yet stable across instances.
 /// * [state] - Per-user lesson state. Derived: `completed` when the `LessonProgress` row has `completed: true`; `in-progress` when it has progress but is not complete; `locked` when the requester does not hold a READ grant on the course's library (defensive — usually the whole course 403s before this); `not-started` otherwise.
 /// * [progressPercent] - 0..100 — only meaningful when `state === 'in-progress'`.
 @BuiltValue()
@@ -36,6 +37,10 @@ abstract class LessonOutlineItem implements Built<LessonOutlineItem, LessonOutli
   /// Whether the lesson has at least one sidecar material.
   @BuiltValueField(wireName: r'hasMaterials')
   bool get hasMaterials;
+
+  /// Whether the lesson has a transcript track — a sidecar subtitle, or a generated transcript in the instance's configured transcription language. Same union `LessonDto.subtitles` uses; this is a presence flag rather than the language list because a generated transcript's language is not yet stable across instances.
+  @BuiltValueField(wireName: r'hasTranscript')
+  bool get hasTranscript;
 
   /// Per-user lesson state. Derived: `completed` when the `LessonProgress` row has `completed: true`; `in-progress` when it has progress but is not complete; `locked` when the requester does not hold a READ grant on the course's library (defensive — usually the whole course 403s before this); `not-started` otherwise.
   @BuiltValueField(wireName: r'state')
@@ -92,6 +97,11 @@ class _$LessonOutlineItemSerializer implements PrimitiveSerializer<LessonOutline
     yield r'hasMaterials';
     yield serializers.serialize(
       object.hasMaterials,
+      specifiedType: const FullType(bool),
+    );
+    yield r'hasTranscript';
+    yield serializers.serialize(
+      object.hasTranscript,
       specifiedType: const FullType(bool),
     );
     yield r'state';
@@ -161,6 +171,13 @@ class _$LessonOutlineItemSerializer implements PrimitiveSerializer<LessonOutline
             specifiedType: const FullType(bool),
           ) as bool;
           result.hasMaterials = valueDes;
+          break;
+        case r'hasTranscript':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(bool),
+          ) as bool;
+          result.hasTranscript = valueDes;
           break;
         case r'state':
           final valueDes = serializers.deserialize(

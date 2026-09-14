@@ -3168,6 +3168,8 @@ export interface components {
       durationSeconds: number;
       /** @description Whether the lesson has at least one sidecar material. */
       hasMaterials: boolean;
+      /** @description Whether the lesson has a transcript track — a sidecar subtitle, or a generated transcript in the instance's configured transcription language. Same union `LessonDto.subtitles` uses; this is a presence flag rather than the language list because a generated transcript's language is not yet stable across instances. */
+      hasTranscript: boolean;
       /**
        * @description Per-user lesson state. Derived: `completed` when the `LessonProgress` row has `completed: true`; `in-progress` when it has progress but is not complete; `locked` when the requester does not hold a READ grant on the course's library (defensive — usually the whole course 403s before this); `not-started` otherwise.
        * @enum {string}

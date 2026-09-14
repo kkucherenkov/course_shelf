@@ -13,11 +13,16 @@ part 'instance_config_dto.g.dart';
 /// Public runtime configuration. Read once at app boot; cache for the session.
 ///
 /// Properties:
+/// * [version] - The running server's version, as the release tag names it. Shown in the client so a stale cached SPA is distinguishable from a stale server. Already public: `GET /health` reports the same string without credentials, so this exposes nothing new.
 /// * [selfRegistration] - When false, sign-up CTAs are hidden and /sign-up redirects to /sign-in.
 /// * [emailVerificationRequired] - When true, sign-up wizard renders the 6-digit-code step between account creation and library setup.
 /// * [ssoProviders] - Configured OAuth / SSO providers. Empty array in v1 — Better Auth's `genericOAuth` plugin lands in v2.
 @BuiltValue()
 abstract class InstanceConfigDto implements Built<InstanceConfigDto, InstanceConfigDtoBuilder> {
+  /// The running server's version, as the release tag names it. Shown in the client so a stale cached SPA is distinguishable from a stale server. Already public: `GET /health` reports the same string without credentials, so this exposes nothing new.
+  @BuiltValueField(wireName: r'version')
+  String get version;
+
   /// When false, sign-up CTAs are hidden and /sign-up redirects to /sign-in.
   @BuiltValueField(wireName: r'selfRegistration')
   bool get selfRegistration;
@@ -53,6 +58,11 @@ class _$InstanceConfigDtoSerializer implements PrimitiveSerializer<InstanceConfi
     InstanceConfigDto object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'version';
+    yield serializers.serialize(
+      object.version,
+      specifiedType: const FullType(String),
+    );
     yield r'selfRegistration';
     yield serializers.serialize(
       object.selfRegistration,
@@ -91,6 +101,13 @@ class _$InstanceConfigDtoSerializer implements PrimitiveSerializer<InstanceConfi
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'version':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.version = valueDes;
+          break;
         case r'selfRegistration':
           final valueDes = serializers.deserialize(
             value,

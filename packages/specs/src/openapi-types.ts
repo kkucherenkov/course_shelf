@@ -3305,6 +3305,11 @@ export interface components {
     };
     /** @description Public runtime configuration. Read once at app boot; cache for the session. */
     InstanceConfigDto: {
+      /**
+       * @description The running server's version, as the release tag names it. Shown in the client so a stale cached SPA is distinguishable from a stale server. Already public: `GET /health` reports the same string without credentials, so this exposes nothing new.
+       * @example 1.4.0
+       */
+      version: string;
       /** @description When false, sign-up CTAs are hidden and /sign-up redirects to /sign-in. */
       selfRegistration: boolean;
       /** @description When true, sign-up wizard renders the 6-digit-code step between account creation and library setup. */

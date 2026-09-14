@@ -36,6 +36,8 @@
 
   const { t } = useI18n();
   const toast = useToast();
+  const { config: instanceConfig } = useInstanceConfig();
+  const serverVersion = computed(() => instanceConfig.value.version || '—');
   const authStore = useAuthStore();
   const prefs = usePreferencesStore();
   const colorMode = useColorMode();
@@ -507,6 +509,23 @@
               :label="t('pages.settings.accountSignOutOthersCta')"
               @click="signOutOthersDialogOpen = true"
             />
+          </div>
+        </div>
+      </section>
+
+      <!-- ── About ──────────────────────────────────────────────────────── -->
+      <section class="settings-section" aria-labelledby="section-about">
+        <h2 id="section-about" class="settings-section__title">
+          {{ t('pages.settings.sectionAbout') }}
+        </h2>
+
+        <div class="settings-row">
+          <div class="settings-row__left">
+            <span class="settings-row__label">{{ t('pages.settings.aboutVersionLabel') }}</span>
+            <span class="settings-row__help">{{ t('pages.settings.aboutVersionHelp') }}</span>
+          </div>
+          <div class="settings-row__control">
+            <span class="settings-row__value" data-test="server-version">{{ serverVersion }}</span>
           </div>
         </div>
       </section>

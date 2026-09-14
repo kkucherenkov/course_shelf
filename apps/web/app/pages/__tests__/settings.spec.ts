@@ -19,6 +19,18 @@ vi.stubGlobal('useI18n', () => ({ t: (key: string) => key }));
 vi.stubGlobal('useToast', () => ({ add: vi.fn() }));
 vi.stubGlobal('useColorMode', () => ({ preference: 'dark' }));
 vi.stubGlobal('navigateTo', vi.fn());
+// `useInstanceConfig` is a Nuxt auto-import; without a stub the mount throws.
+vi.stubGlobal('useInstanceConfig', () => ({
+  config: {
+    value: {
+      version: '9.9.9-test',
+      selfRegistration: true,
+      emailVerificationRequired: false,
+      ssoProviders: [],
+    },
+  },
+  refresh: vi.fn(),
+}));
 
 // ── SDK mock ───────────────────────────────────────────────────────────────
 vi.mock('@app/api-client-ts', () => ({
@@ -126,6 +138,30 @@ describe('settings page', () => {
     expect(text).toContain('pages.settings.accountSignOutOthersCta');
     // The email stays visible — reading it is useful, changing it was not wired.
     expect(text).toContain('owner@example.com');
+  });
+
+  it('shows the running server version', async () => {
+    const wrapper = await mountSettings();
+
+    expect(wrapper.find('[data-test="server-version"]').text()).toBe('9.9.9-test');
+  });
+
+  it('shows a dash rather than a guess when the backend could not be reached', async () => {
+    vi.stubGlobal('useInstanceConfig', () => ({
+      config: {
+        value: {
+          version: '',
+          selfRegistration: true,
+          emailVerificationRequired: false,
+          ssoProviders: [],
+        },
+      },
+      refresh: vi.fn(),
+    }));
+
+    const wrapper = await mountSettings();
+
+    expect(wrapper.find('[data-test="server-version"]').text()).toBe('—');
   });
 
   it('offers no avatar upload', async () => {

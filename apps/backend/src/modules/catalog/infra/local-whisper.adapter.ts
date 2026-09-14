@@ -8,8 +8,10 @@
  * 30 seconds that is right for ffprobe: on NAS-grade CPU a long lecture is
  * measured in hours, and killing it at 30s would mean never finishing anything.
  *
- * The binary writes `<outBase>.srt` itself; we return that path rather than
- * parsing stdout, which whisper.cpp uses for progress chatter.
+ * The binary writes `<outBase>.srt` itself; we return that path directly
+ * rather than trusting anything whisper prints about it. stdout/stderr are
+ * still captured and scanned for the `auto-detected language` line (#501) —
+ * the one piece of information a `-l auto` run has no other way to surface.
  */
 import { execFile } from 'node:child_process';
 
@@ -23,6 +25,19 @@ import type {
   TranscribeResult,
   WhisperAdapter,
 } from '../domain/transcription/whisper.port';
+
+/**
+ * whisper.cpp's `whisper_full_with_state` logs this line on every `-l auto`
+ * run, not just its `-dl` detect-only mode (#501) — so parsing it costs
+ * nothing extra. whisper.cpp's own logging goes to stderr; stdout is checked
+ * too rather than assumed empty, since nothing here depends on which stream
+ * it lands on.
+ */
+const DETECTED_LANGUAGE_RE = /auto-detected language:\s*([a-zA-Z-]+)/;
+
+function parseDetectedLanguage(stdout: string, stderr: string): string | undefined {
+  return DETECTED_LANGUAGE_RE.exec(`${stdout}\n${stderr}`)?.[1];
+}
 
 /**
  * Manual promise wrapper around execFile — same reason as LocalFfmpegAdapter:
@@ -72,13 +87,23 @@ export class LocalWhisperAdapter implements WhisperAdapter {
       outBaseAbsolutePath,
     ];
 
+    let result: { stdout: string; stderr: string };
     try {
-      await execFileAsync(cfg.whisperPath, args, { timeout: cfg.timeoutMs });
+      result = await execFileAsync(cfg.whisperPath, args, { timeout: cfg.timeoutMs });
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       throw new WhisperFailedError(audioAbsolutePath, detail);
     }
 
-    return { srtAbsolutePath: `${outBaseAbsolutePath}.srt` };
+    // Only `-l auto` has anything to detect — an explicit language is already
+    // known, and trusting the log line there would be trusting whisper's
+    // opinion over the caller's explicit request.
+    const detectedLanguage =
+      language === 'auto' ? parseDetectedLanguage(result.stdout, result.stderr) : undefined;
+
+    return {
+      srtAbsolutePath: `${outBaseAbsolutePath}.srt`,
+      ...(detectedLanguage === undefined ? {} : { detectedLanguage }),
+    };
   }
 }

@@ -43,23 +43,6 @@ export function languageOf(filePath: string): string {
 }
 
 /**
- * `AppConfig.transcription.language` → the language a generated transcript is
- * actually filed under. `'auto'` means whisper detects the language per
- * lesson rather than the config naming one, so the recorded language is
- * `und` — mirroring `Subtitle.fromFile`'s own default for a suffix-less
- * sidecar. Any other value passes through unchanged.
- *
- * Single source of truth for this mapping — every caller that needs to look
- * up a lesson's generated transcript (`GetLessonHandler`,
- * `GetCourseOutlineHandler`) resolves the language here rather than
- * duplicating the `'auto'` check, so a future change to what `und` means only
- * has one call site to update.
- */
-export function resolveTranscriptionLanguage(configuredLanguage: string): string {
-  return configuredLanguage === 'auto' ? 'und' : configuredLanguage;
-}
-
-/**
  * Collapse a lesson's subtitle files to one per language.
  *
  * `Lesson.en.srt` and `Lesson.en.vtt` are the same track in two containers, but

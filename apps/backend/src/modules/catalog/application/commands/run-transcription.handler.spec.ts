@@ -31,10 +31,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn(async () => undefined),
   readFile: vi.fn(async () => 'WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello\n'),
+  rename: vi.fn(async () => undefined),
   rm: vi.fn(async () => undefined),
 }));
 
-import { readFile, rm } from 'node:fs/promises';
+import { readFile, rename, rm } from 'node:fs/promises';
 
 import { Course } from '../../domain/course/course';
 import { CourseNotFoundError } from '../../domain/course/course.errors';
@@ -143,6 +144,8 @@ function makeTranscriptionRepo(seed: Transcription[] = []): FakeTranscriptionRep
     listForLibrary: vi.fn(async (libraryId: string, limit: number) =>
       [...store.values()].filter((t) => t.libraryId === libraryId).slice(0, limit),
     ),
+    // Not exercised by the walk — the boot-recovery pass is its own service.
+    findStaleRunning: vi.fn(async () => []),
   };
   return repo;
 }
@@ -158,6 +161,13 @@ function makeTranscriptRepo(
   return {
     written,
     findGeneratedForLessons: vi.fn(async () => existing),
+    // Auto-mode's any-language lookup — same signatures, tagged with a
+    // placeholder language the tests below never inspect (they read
+    // `written[].language`, what the run PRODUCES, not this lookup's input).
+    findAnyGeneratedForLessons: vi.fn(
+      async () =>
+        new Map([...existing].map(([lessonId, sig]) => [lessonId, { ...sig, language: 'und' }])),
+    ),
     replaceGenerated: vi.fn(async (input: ReplaceGeneratedInput) => {
       written.push(input);
     }),
@@ -181,13 +191,19 @@ function makeFfmpeg(failFor = new Set<string>()): FfmpegAdapter {
   } as unknown as FfmpegAdapter;
 }
 
-function makeWhisper(failForAudioOfLesson = new Set<string>()): WhisperAdapter {
+function makeWhisper(
+  failForAudioOfLesson = new Set<string>(),
+  detectedLanguage?: string,
+): WhisperAdapter {
   return {
     transcribe: vi.fn(async (req: { outBaseAbsolutePath: string }) => {
       if ([...failForAudioOfLesson].some((frag) => req.outBaseAbsolutePath.includes(frag))) {
         throw new WhisperFailedError('audio.wav', 'exit 1');
       }
-      return { srtAbsolutePath: `${req.outBaseAbsolutePath}.srt` };
+      return {
+        srtAbsolutePath: `${req.outBaseAbsolutePath}.srt`,
+        ...(detectedLanguage === undefined ? {} : { detectedLanguage }),
+      };
     }),
   };
 }
@@ -195,6 +211,7 @@ function makeWhisper(failForAudioOfLesson = new Set<string>()): WhisperAdapter {
 function makeAppConfig(overrides: { configured?: boolean; language?: string } = {}): AppConfig {
   return {
     derivedPath: '/derived',
+    bootId: 'boot-test',
     transcription: {
       whisperPath: 'whisper-cli',
       modelPath: '/models/base.bin',
@@ -288,11 +305,12 @@ function makeHandler(options: {
   language?: string;
   whisperFailsFor?: Set<string>;
   ffmpegFailsFor?: Set<string>;
+  detectedLanguage?: string;
 }): Harness {
   const lessons = options.lessons ?? [];
   const transcriptions = makeTranscriptionRepo(options.seedRuns ?? []);
   const transcripts = makeTranscriptRepo(options.existing);
-  const whisper = makeWhisper(options.whisperFailsFor);
+  const whisper = makeWhisper(options.whisperFailsFor, options.detectedLanguage);
   const ffmpeg = makeFfmpeg(options.ffmpegFailsFor);
   const centrifugo = makeCentrifugo();
 
@@ -363,7 +381,10 @@ describe('RunTranscriptionHandler', () => {
     expect(transcripts.written).toHaveLength(1);
     const written = transcripts.written[0];
     expect(written?.lessonId).toBe('l3');
-    // `-l auto` gives nothing to read the detection back from → `und`.
+    // The fake whisper adapter never returns a `detectedLanguage`, so the
+    // deployment's own configured language (`auto` here) resolves to `und` —
+    // see the `auto-detects a language and renames to match` case below for
+    // what happens once whisper DOES report something.
     expect(written?.language).toBe('und');
     expect(written?.sourcePath).toBe('course-1/new.mp4');
     expect(written?.derivedPath).toBe('/derived/lib-1/course-1/new.mp4.und.srt');
@@ -490,6 +511,7 @@ describe('RunTranscriptionHandler', () => {
       libraryId: 'lib-1',
       force: false,
       lessonsTotal: 3,
+      bootId: 'boot-other',
     });
     const { handler, transcriptions } = makeHandler({
       lessons: [makeLesson('l1', 'a.mp4')],
@@ -553,6 +575,63 @@ describe('RunTranscriptionHandler', () => {
 
     expect(transcripts.written[0]?.language).toBe('ru');
     expect(transcripts.written[0]?.derivedPath).toBe('/derived/lib-1/course-1/a.mp4.ru.srt');
+  });
+
+  // -------------------------------------------------------------------------
+  // #501 — auto-detected language
+  // -------------------------------------------------------------------------
+
+  describe('auto-detected language', () => {
+    it('files the transcript under whisper’s detected language and renames the file to match', async () => {
+      const { handler, transcripts } = makeHandler({
+        lessons: [makeLesson('l1', 'a.mp4')],
+        detectedLanguage: 'ru',
+      });
+
+      await handler.execute(new RunTranscriptionCommand('lib-1', false, ACTOR_USER_ID));
+      await drainWalk();
+
+      expect(transcripts.written[0]?.language).toBe('ru');
+      expect(transcripts.written[0]?.derivedPath).toBe('/derived/lib-1/course-1/a.mp4.ru.srt');
+      // Whisper wrote to the `und` working bucket; the final row lives at the
+      // `ru` path LessonFileLocator will recompute from the DB language.
+      expect(rename).toHaveBeenCalledWith(
+        '/derived/lib-1/course-1/a.mp4.und.srt',
+        '/derived/lib-1/course-1/a.mp4.ru.srt',
+      );
+    });
+
+    it('falls back to the deployment default on an unsupported detected language, without renaming', async () => {
+      const { handler, transcripts } = makeHandler({
+        lessons: [makeLesson('l1', 'a.mp4')],
+        detectedLanguage: 'uk', // Ukrainian — not one of the two this library supports.
+      });
+
+      await handler.execute(new RunTranscriptionCommand('lib-1', false, ACTOR_USER_ID));
+      await drainWalk();
+
+      expect(transcripts.written[0]?.language).toBe('und');
+      expect(rename).not.toHaveBeenCalled();
+    });
+
+    it('recognises a lesson already transcribed in a previously-detected language and skips it', async () => {
+      // A prior auto run tagged this lesson `ru`; the pre-run lookup for an
+      // auto run must find it without being told which language to look for.
+      const existing = new Map([['l1', { sourceMtime: BASE_TIME, sourceSize: 100 }]]);
+      const { handler, transcripts, whisper } = makeHandler({
+        lessons: [makeLesson('l1', 'a.mp4')],
+        existing,
+      });
+
+      const run = await handler.execute(new RunTranscriptionCommand('lib-1', false, ACTOR_USER_ID));
+      await drainWalk();
+
+      expect(transcripts.findAnyGeneratedForLessons).toHaveBeenCalledWith(['l1']);
+      expect(transcripts.findGeneratedForLessons).not.toHaveBeenCalled();
+      expect(whisper.transcribe).not.toHaveBeenCalled();
+      expect(run.lessonsSkipped).toBe(1);
+      expect(run.lessonsTranscribed).toBe(0);
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -666,6 +745,7 @@ describe('RunTranscriptionHandler', () => {
         libraryId: 'lib-1',
         force: false,
         lessonsTotal: 5464,
+        bootId: 'boot-other',
       });
       const { handler, transcriptions } = makeHandler({
         lessons: twoCourseLessons(),

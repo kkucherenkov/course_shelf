@@ -725,6 +725,7 @@ export default {
       statusSucceeded: 'Succeeded',
       statusFailed: 'Failed',
       statusCancelled: 'Cancelled',
+      statusInterrupted: 'Interrupted',
       statSkipped: 'Skipped',
       statTranscribed: 'Transcribed',
       statFailed: 'Failed',

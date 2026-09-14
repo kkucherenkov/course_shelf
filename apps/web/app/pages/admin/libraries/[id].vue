@@ -329,6 +329,7 @@
             :label-succeeded="t('admin.transcription.statusSucceeded')"
             :label-failed="t('admin.transcription.statusFailed')"
             :label-cancelled="t('admin.transcription.statusCancelled')"
+            :label-interrupted="t('admin.transcription.statusInterrupted')"
             :stat-skipped="t('admin.transcription.statSkipped')"
             :stat-transcribed="t('admin.transcription.statTranscribed')"
             :stat-failed="t('admin.transcription.statFailed')"

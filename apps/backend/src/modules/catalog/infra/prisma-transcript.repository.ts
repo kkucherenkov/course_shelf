@@ -23,6 +23,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 
 import type {
+  AnyGeneratedTranscriptSignature,
   ExistingTranscriptSignature,
   GeneratedTranscriptSignature,
   ReplaceGeneratedInput,
@@ -61,6 +62,34 @@ export class PrismaTranscriptRepository implements TranscriptRepository {
     return new Map(
       rows.map((r) => [r.lessonId, { sourceMtime: r.sourceMtime, sourceSize: r.sourceSize }]),
     );
+  }
+
+  async findAnyGeneratedForLessons(
+    lessonIds: readonly string[],
+  ): Promise<Map<string, AnyGeneratedTranscriptSignature>> {
+    if (lessonIds.length === 0) return new Map();
+
+    const rows = await this.prisma.transcript.findMany({
+      where: { lessonId: { in: [...lessonIds] }, origin: 'generated' },
+      select: { lessonId: true, language: true, sourceMtime: true, sourceSize: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // A lesson can have more than one generated row (an explicit-language run
+    // and a later auto run both touched it) — rows arrive newest first, so
+    // the first one seen per lessonId is the one a resumed run would
+    // reproduce, and every later duplicate for the same lesson is dropped.
+    const result = new Map<string, AnyGeneratedTranscriptSignature>();
+    for (const r of rows) {
+      if (!result.has(r.lessonId)) {
+        result.set(r.lessonId, {
+          language: r.language,
+          sourceMtime: r.sourceMtime,
+          sourceSize: r.sourceSize,
+        });
+      }
+    }
+    return result;
   }
 
   async replaceGenerated(input: ReplaceGeneratedInput): Promise<void> {

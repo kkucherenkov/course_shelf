@@ -28,6 +28,7 @@ const TRANSCRIPTION_SELECT = {
   force: true,
   startedAt: true,
   finishedAt: true,
+  bootId: true,
   lessonsTotal: true,
   lessonsSkipped: true,
   lessonsTranscribed: true,
@@ -44,6 +45,7 @@ interface TranscriptionRow {
   force: boolean;
   startedAt: Date;
   finishedAt: Date | null;
+  bootId: string;
   lessonsTotal: number;
   lessonsSkipped: number;
   lessonsTranscribed: number;
@@ -68,6 +70,7 @@ export class PrismaTranscriptionRepository implements TranscriptionRepository {
           force: transcription.force,
           startedAt: transcription.startedAt,
           finishedAt: transcription.finishedAt ?? null,
+          bootId: transcription.bootId,
           lessonsTotal: transcription.lessonsTotal,
           lessonsSkipped: transcription.lessonsSkipped,
           lessonsTranscribed: transcription.lessonsTranscribed,
@@ -135,6 +138,14 @@ export class PrismaTranscriptionRepository implements TranscriptionRepository {
     return rows.map((row) => this.rowToAggregate(row));
   }
 
+  async findStaleRunning(currentBootId: string): Promise<Transcription[]> {
+    const rows = await this.prisma.transcription.findMany({
+      where: { status: 'running', bootId: { not: currentBootId } },
+      select: TRANSCRIPTION_SELECT,
+    });
+    return rows.map((row) => this.rowToAggregate(row));
+  }
+
   // ---------------------------------------------------------------------------
   // Private mapper — row shape → domain aggregate
   // ---------------------------------------------------------------------------
@@ -146,6 +157,7 @@ export class PrismaTranscriptionRepository implements TranscriptionRepository {
       force: row.force,
       startedAt: row.startedAt,
       finishedAt: row.finishedAt ?? undefined,
+      bootId: row.bootId,
       lessonsTotal: row.lessonsTotal,
       lessonsSkipped: row.lessonsSkipped,
       lessonsTranscribed: row.lessonsTranscribed,

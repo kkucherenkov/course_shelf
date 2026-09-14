@@ -17,9 +17,8 @@ import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
 import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
 import type { LessonProgressRepository } from '../../../../common/learning-progress';
-import type { AppConfig } from '../../../../common/config/app-config';
 import type {
-  GeneratedTranscriptSignature,
+  AnyGeneratedTranscriptSignature,
   TranscriptRepository,
 } from '../../domain/transcription/transcript.repository';
 
@@ -92,10 +91,11 @@ function makeLessonProgressRepo(rows: LessonProgress[] = []): LessonProgressRepo
 }
 
 function makeTranscriptRepo(
-  generated = new Map<string, GeneratedTranscriptSignature>(),
+  generated = new Map<string, AnyGeneratedTranscriptSignature>(),
 ): TranscriptRepository {
   return {
-    findGeneratedForLessons: vi.fn().mockResolvedValue(generated),
+    findGeneratedForLessons: vi.fn().mockResolvedValue(new Map()),
+    findAnyGeneratedForLessons: vi.fn().mockResolvedValue(generated),
     replaceGenerated: vi.fn(),
     findExisting: vi.fn().mockResolvedValue(null),
     replaceSidecar: vi.fn(),
@@ -103,12 +103,8 @@ function makeTranscriptRepo(
   };
 }
 
-function makeAppConfig(language = 'auto'): AppConfig {
-  return { transcription: { language } } as unknown as AppConfig;
-}
-
-function makeGeneratedSignature(): GeneratedTranscriptSignature {
-  return { sourceMtime: NOW, sourceSize: 1024 };
+function makeGeneratedSignature(language = 'en'): AnyGeneratedTranscriptSignature {
+  return { language, sourceMtime: NOW, sourceSize: 1024 };
 }
 
 function makeCourse(
@@ -255,7 +251,6 @@ describe('GetCourseOutlineHandler', () => {
         makeProgressRepo(courseProgressRow),
         makeLessonProgressRepo(progressRows),
         transcriptRepo,
-        makeAppConfig(),
       );
     });
 
@@ -301,11 +296,8 @@ describe('GetCourseOutlineHandler', () => {
     it('looks up generated transcripts in one batched call across every lesson id', async () => {
       await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
 
-      expect(transcriptRepo.findGeneratedForLessons).toHaveBeenCalledTimes(1);
-      expect(transcriptRepo.findGeneratedForLessons).toHaveBeenCalledWith(
-        ['l1', 'l2', 'l3'],
-        'und', // appConfig.transcription.language defaults to 'auto' → 'und'
-      );
+      expect(transcriptRepo.findAnyGeneratedForLessons).toHaveBeenCalledTimes(1);
+      expect(transcriptRepo.findAnyGeneratedForLessons).toHaveBeenCalledWith(['l1', 'l2', 'l3']);
     });
 
     it('derives lesson state: in-progress', async () => {
@@ -355,7 +347,6 @@ describe('GetCourseOutlineHandler', () => {
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
         makeTranscriptRepo(),
-        makeAppConfig(),
       );
     });
 
@@ -388,7 +379,6 @@ describe('GetCourseOutlineHandler', () => {
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
         makeTranscriptRepo(),
-        makeAppConfig(),
       );
 
       await expect(
@@ -410,7 +400,6 @@ describe('GetCourseOutlineHandler', () => {
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
         makeTranscriptRepo(),
-        makeAppConfig(),
       );
 
       await expect(
@@ -453,7 +442,6 @@ describe('GetCourseOutlineHandler', () => {
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
         makeTranscriptRepo(),
-        makeAppConfig(),
       );
 
       const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
@@ -495,7 +483,6 @@ describe('GetCourseOutlineHandler', () => {
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
         makeTranscriptRepo(),
-        makeAppConfig(),
       );
 
       const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
@@ -535,7 +522,6 @@ describe('GetCourseOutlineHandler', () => {
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
         makeTranscriptRepo(),
-        makeAppConfig(),
       );
 
       const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));

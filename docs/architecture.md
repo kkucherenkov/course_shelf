@@ -484,14 +484,27 @@ Many-to-many to `Instructor`, `Studio`, `Tag` through explicit join models.
 `ExternalId` links a course to an upstream source; `IdentifyTask` holds a
 proposed metadata match awaiting apply/discard.
 
-**Transcription** — `Transcription` (same status machine as `Scan`) →
-`TranscriptionErrorRecord` (per-lesson, non-fatal), plus the artefacts a run
-produces: `Transcript` (unique per `(lessonId, language)`, `origin` telling a
-hand-made sidecar from a generated one, and the video's `(mtime, size)` that
-makes a re-run a cheap no-op) → `TranscriptCue`. `Transcript` deliberately
-carries no foreign key to `Lesson` or `Subtitle`: saving a lesson recreates its
-subtitle rows, so anything cascading from either would be erased by the next
-ordinary scan.
+**Transcription** — `Transcription` (same status machine as `Scan`, plus
+`interrupted`) → `TranscriptionErrorRecord` (per-lesson, non-fatal), plus the
+artefacts a run produces: `Transcript` (unique per `(lessonId, language)`,
+`origin` telling a hand-made sidecar from a generated one, and the video's
+`(mtime, size)` that makes a re-run a cheap no-op) → `TranscriptCue`.
+`Transcript` deliberately carries no foreign key to `Lesson` or `Subtitle`:
+saving a lesson recreates its subtitle rows, so anything cascading from either
+would be erased by the next ordinary scan.
+
+`Transcription.bootId` identifies the process that started the run — a random
+id generated once per process start (`AppConfig.bootId`), not env-derived. A
+process that is killed mid-run (a container recreate, a SIGKILL) gets no
+chance to write a terminal state, so the row stays `running` forever and the
+at-most-one-running-per-library guard refuses every future run. Recovery
+happens at the *next* boot instead of at failure time: `bootId` makes "no
+live owner" a single equality check rather than a heartbeat staleness window
+that needs a number picked for it — any `running` row whose `bootId` differs
+from the booting process's necessarily belongs to one that is no longer there.
+`TranscriptionRecoveryService` (`OnApplicationBootstrap`) transitions each to
+`interrupted`; per-lesson `Transcript` rows are untouched, and the skip rule
+makes a plain re-run cheap.
 
 **Learning** — `LessonProgress` (per user per lesson; the 90 % completion
 threshold lives in the `LessonProgress` aggregate,

@@ -35,7 +35,7 @@ abstract class AdminTranscriptionListItem implements Built<AdminTranscriptionLis
 
   @BuiltValueField(wireName: r'status')
   TranscriptionStatus get status;
-  // enum statusEnum {  running,  succeeded,  failed,  cancelled,  };
+  // enum statusEnum {  running,  succeeded,  failed,  cancelled,  interrupted,  };
 
   /// When true, the run redid existing generated transcripts — which is why its `lessonsTotal` and `lessonsTranscribed` are close together.
   @BuiltValueField(wireName: r'force')

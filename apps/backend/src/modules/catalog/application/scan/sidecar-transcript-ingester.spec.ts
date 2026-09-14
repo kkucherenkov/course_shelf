@@ -34,6 +34,7 @@ function makeTranscripts(
   return {
     calls,
     findGeneratedForLessons: vi.fn(async () => new Map()),
+    findAnyGeneratedForLessons: vi.fn(async () => new Map()),
     replaceGenerated: vi.fn(async () => undefined),
     findExisting: vi.fn(async (lessonId: string, language: string) => {
       return existing.get(`${lessonId}:${language}`) ?? null;

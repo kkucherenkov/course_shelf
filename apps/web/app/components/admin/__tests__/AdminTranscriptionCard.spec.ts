@@ -40,6 +40,7 @@ const baseProps = {
   labelSucceeded: 'Succeeded',
   labelFailed: 'Failed',
   labelCancelled: 'Cancelled',
+  labelInterrupted: 'Interrupted',
   statSkipped: 'Skipped',
   statTranscribed: 'Transcribed',
   statFailed: 'Failed',

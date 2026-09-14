@@ -730,6 +730,7 @@ export default {
       statusSucceeded: 'Успешно',
       statusFailed: 'Ошибка',
       statusCancelled: 'Отменено',
+      statusInterrupted: 'Прервано',
       statSkipped: 'Пропущено',
       statTranscribed: 'Транскрибировано',
       statFailed: 'Ошибок',

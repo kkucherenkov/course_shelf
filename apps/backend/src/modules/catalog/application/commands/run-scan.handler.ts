@@ -78,6 +78,7 @@ import { derivedThumbnailPath } from '../../domain/transcription/derived-path';
 import { TRANSCRIPT_REPOSITORY } from '../../domain/transcription/transcript.repository';
 
 import { MetadataLinker } from '../scan/metadata-linker';
+import { PosterSyncService } from '../scan/poster-sync.service';
 import { ingestSidecarTranscripts } from '../scan/sidecar-transcript-ingester';
 import { isCourseLevel } from '../../domain/course/course';
 import { RunScanCommand } from './run-scan.command';
@@ -167,6 +168,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
     private readonly appConfig: AppConfig,
     private readonly centrifugo: CentrifugoService,
     private readonly linker: MetadataLinker,
+    private readonly posterSync: PosterSyncService,
   ) {}
 
   async execute(command: RunScanCommand): Promise<Scan> {
@@ -1103,7 +1105,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
                   course.setReleaseDate(new Date(normalisedCourseJson.releaseDate));
                 }
                 if (normalisedCourseJson.posterUrl !== undefined) {
-                  course.setPosterUrl(normalisedCourseJson.posterUrl);
+                  await this.posterSync.applyPosterUrl(course, normalisedCourseJson.posterUrl);
                 }
                 if (normalisedCourseJson.externalIds !== undefined) {
                   course.setExternalIds([...normalisedCourseJson.externalIds]);

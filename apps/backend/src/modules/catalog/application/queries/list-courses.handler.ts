@@ -27,6 +27,7 @@ import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
 import { LESSON_REPOSITORY } from '../../domain/lesson/lesson.repository';
 import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from '../../domain/progress/course-progress-read-model.repository';
 import { toCourseDto } from '../../courses.dto';
+import { CoursePosterTokenSigner } from '../../domain/course/course-poster-token';
 
 import { ListCoursesQuery } from './list-courses.query';
 
@@ -59,6 +60,7 @@ export class ListCoursesHandler implements IQueryHandler<ListCoursesQuery, Cours
     @Inject(COURSE_PROGRESS_READ_MODEL_REPOSITORY)
     private readonly progressRepo: CourseProgressReadModelRepository,
     @Inject(LESSON_REPOSITORY) private readonly lessonRepo: LessonRepository,
+    private readonly posterTokenSigner: CoursePosterTokenSigner,
   ) {}
 
   async execute(query: ListCoursesQuery): Promise<CourseDto[]> {
@@ -84,7 +86,9 @@ export class ListCoursesHandler implements IQueryHandler<ListCoursesQuery, Cours
     );
     const progressMap = new Map(progressRows.map((p) => [p.courseId, p]));
 
-    const dtos = visibleCourses.map((c) => toCourseDto(c, progressMap.get(c.id)));
+    const dtos = visibleCourses.map((c) =>
+      toCourseDto(c, (id) => this.posterTokenSigner.signUrl(id), progressMap.get(c.id)),
+    );
 
     // Status filter — operates on the projected percent so a course with
     // no progress row falls into 'not-started' (toCourseDto returns the

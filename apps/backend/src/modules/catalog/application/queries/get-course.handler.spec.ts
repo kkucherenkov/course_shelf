@@ -4,12 +4,20 @@ import { Course } from '../../domain/course/course';
 import { CourseNotFoundError } from '../../domain/course/course.errors';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { CourseProgressReadModel } from '../../domain/progress/course-progress-read-model';
+import { CoursePosterTokenSigner } from '../../domain/course/course-poster-token';
 import { GetCourseQuery } from './get-course.query';
 import { GetCourseHandler } from './get-course.handler';
 
 import type { CourseRepository } from '../../domain/course/course.repository';
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
 import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
+import type { AppConfig } from '../../../../common/config/app-config';
+
+function makePosterTokenSigner(): CoursePosterTokenSigner {
+  return new CoursePosterTokenSigner({
+    posterToken: { secret: 'test-secret', hkdfInfo: 'test:poster-token:v1', ttlSeconds: 900 },
+  } as unknown as AppConfig);
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -88,7 +96,7 @@ describe('GetCourseHandler', () => {
     beforeEach(() => {
       repo = makeRepo();
       const authz = makeAuthz(true);
-      handler = new GetCourseHandler(repo, authz, makeProgressRepo(null));
+      handler = new GetCourseHandler(repo, authz, makeProgressRepo(null), makePosterTokenSigner());
     });
 
     it('returns CourseDto with zero progress placeholder when no projection row', async () => {
@@ -110,7 +118,12 @@ describe('GetCourseHandler', () => {
       vi.mocked(repo.findById).mockResolvedValue(course);
 
       const progressRow = makeProgressRow();
-      handler = new GetCourseHandler(repo, makeAuthz(true), makeProgressRepo(progressRow));
+      handler = new GetCourseHandler(
+        repo,
+        makeAuthz(true),
+        makeProgressRepo(progressRow),
+        makePosterTokenSigner(),
+      );
 
       const result = await handler.execute(new GetCourseQuery('course-1', adminActor));
 
@@ -124,7 +137,7 @@ describe('GetCourseHandler', () => {
       vi.mocked(repo.findById).mockResolvedValue(makeCourse());
 
       const progressRepo = makeProgressRepo(null);
-      handler = new GetCourseHandler(repo, makeAuthz(true), progressRepo);
+      handler = new GetCourseHandler(repo, makeAuthz(true), progressRepo, makePosterTokenSigner());
 
       await handler.execute(new GetCourseQuery('course-1', adminActor));
 
@@ -136,7 +149,7 @@ describe('GetCourseHandler', () => {
     beforeEach(() => {
       repo = makeRepo();
       const authz = makeAuthz(false);
-      handler = new GetCourseHandler(repo, authz, makeProgressRepo(null));
+      handler = new GetCourseHandler(repo, authz, makeProgressRepo(null), makePosterTokenSigner());
     });
 
     it('throws PermissionDenied when course exists but no grant', async () => {
@@ -152,7 +165,7 @@ describe('GetCourseHandler', () => {
     beforeEach(() => {
       repo = makeRepo();
       const authz = makeAuthz(true);
-      handler = new GetCourseHandler(repo, authz, makeProgressRepo(null));
+      handler = new GetCourseHandler(repo, authz, makeProgressRepo(null), makePosterTokenSigner());
     });
 
     it('throws CourseNotFoundError when course does not exist', async () => {

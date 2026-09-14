@@ -19,6 +19,8 @@ import { ListCoursesQuery } from './application/queries/list-courses.query';
 import type { CommandBus, QueryBus } from '@nestjs/cqrs';
 import type { SessionContext } from '../../common/auth/decorators';
 import type { CourseDto } from '@app/api-client-ts';
+import type { CoursePosterLocator } from './domain/course/course-poster-locator';
+import type { CoursePosterTokenSigner } from './domain/course/course-poster-token';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -41,6 +43,17 @@ function makeQueryBus(result: unknown): QueryBus {
   return { execute: vi.fn().mockResolvedValue(result) } as unknown as QueryBus;
 }
 
+// Poster (#496) route deps — unexercised by these tests (see courses.controller
+// GET :id/poster for the dedicated poster-route coverage); stubbed so the
+// constructor is satisfied.
+function makePosterLocator(): CoursePosterLocator {
+  return { locate: vi.fn() } as unknown as CoursePosterLocator;
+}
+
+function makePosterTokenSigner(): CoursePosterTokenSigner {
+  return { sign: vi.fn(), signUrl: vi.fn(), verify: vi.fn() } as unknown as CoursePosterTokenSigner;
+}
+
 // ── PATCH /courses/:id — rating pair validation ───────────────────────────────
 
 describe('CoursesController › updateCourse — rating-fields-must-be-paired', () => {
@@ -49,7 +62,12 @@ describe('CoursesController › updateCourse — rating-fields-must-be-paired', 
 
   beforeEach(() => {
     commandBus = makeCommandBus(stubCourse);
-    controller = new CoursesController(commandBus, makeQueryBus(stubCourse));
+    controller = new CoursesController(
+      commandBus,
+      makeQueryBus(stubCourse),
+      makePosterLocator(),
+      makePosterTokenSigner(),
+    );
   });
 
   it('throws BadRequestException when ratingAverage is provided but ratingCount is absent', async () => {
@@ -111,7 +129,12 @@ describe('CoursesController › updateCourse — enrichment patch fields', () =>
 
   beforeEach(() => {
     commandBus = makeCommandBus(stubCourse);
-    controller = new CoursesController(commandBus, makeQueryBus(stubCourse));
+    controller = new CoursesController(
+      commandBus,
+      makeQueryBus(stubCourse),
+      makePosterLocator(),
+      makePosterTokenSigner(),
+    );
   });
 
   it('passes instructorIds, studioIds, tagIds to the command patch', async () => {
@@ -169,7 +192,12 @@ function dispatch(query: {
   sort?: string;
 }): ListCoursesQuery {
   const queryBus = makeQueryBus([]);
-  const controller = new CoursesController(makeCommandBus(undefined), queryBus);
+  const controller = new CoursesController(
+    makeCommandBus(undefined),
+    queryBus,
+    makePosterLocator(),
+    makePosterTokenSigner(),
+  );
   void controller.listCourses(
     session,
     undefined,

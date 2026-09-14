@@ -656,6 +656,44 @@ export interface paths {
     patch: operations['updateCourse'];
     trace?: never;
   };
+  '/api/v1/courses/{id}/poster': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Download a course's stored poster image
+     * @description Serves the poster HttpPosterDownloader saved under DERIVED_PATH after
+     *     a scrape or an admin edit set `Course.posterUrl` (#496). The raw
+     *     upstream URL is never exposed to the browser — the SPA's CSP is
+     *     `img-src 'self' data: blob:`, so a remote image would be blocked
+     *     regardless.
+     *
+     *     Authenticated by the `token` query parameter — `<img src>` cannot
+     *     send the Authorization header the SPA otherwise uses for every other
+     *     request. The token is bound to `(courseId, expiresAt)` only, not a
+     *     user: `CourseDto.posterUrl` already embeds a fresh one on every
+     *     list/get response, so there is no separate "issue token" endpoint —
+     *     minting one per poster on a course grid would be a request per card.
+     *     Default TTL 15 minutes.
+     *
+     *     This is the 5th route in the #278 binary-exception family (see the
+     *     comment above `/api/v1/stream/lessons/{id}`): the response is raw
+     *     image bytes with no JSON schema, so `express-openapi-validator`
+     *     skips it — documented here for the contract and generated clients
+     *     only.
+     */
+    get: operations['getCoursePoster'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/courses/{id}/outline': {
     parameters: {
       query?: never;
@@ -5673,6 +5711,52 @@ export interface operations {
         };
       };
       422: components['responses']['UnprocessableEntity'];
+      429: components['responses']['TooManyRequests'];
+    };
+  };
+  getCoursePoster: {
+    parameters: {
+      query: {
+        /** @description Signed poster token embedded in CourseDto.posterUrl. */
+        token: string;
+      };
+      header?: never;
+      path: {
+        /** @description Course cuid. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The poster image bytes. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/octet-stream': string;
+        };
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Token missing, malformed, expired, or bound to another course. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description No such course, no stored poster, or the file is missing on disk. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
       429: components['responses']['TooManyRequests'];
     };
   };

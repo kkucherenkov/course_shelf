@@ -53,6 +53,18 @@ describe('HttpFetcher', () => {
 
           break;
         }
+        case '/image': {
+          res
+            .writeHead(200, { 'content-type': 'image/jpeg' })
+            .end(Buffer.from([0xff, 0xd8, 0xff, 0x00]));
+
+          break;
+        }
+        case '/redirect-to-image': {
+          res.writeHead(302, { location: '/image' }).end();
+
+          break;
+        }
         case '/challenge': {
           res
             .writeHead(403, { 'content-type': 'text/html' })
@@ -109,6 +121,39 @@ describe('HttpFetcher', () => {
     const f = new HttpFetcher({ ...cfg, allowLoopbackForTests: true });
     const result = await f.fetchText(`${base}/forbidden`);
     expect(result.status).toBe(403);
+  });
+
+  // fetchBinary (#496) — reuses the same guard/redirect/timeout loop as fetchText.
+  describe('fetchBinary', () => {
+    it('returns raw bytes, not a utf8-decoded string', async () => {
+      const f = new HttpFetcher({ ...cfg, allowLoopbackForTests: true });
+      const result = await f.fetchBinary(`${base}/image`);
+      expect(result.status).toBe(200);
+      expect(result.headers.get('content-type')).toBe('image/jpeg');
+      expect(Buffer.compare(result.body, Buffer.from([0xff, 0xd8, 0xff, 0x00]))).toBe(0);
+    });
+
+    it('follows a redirect to the final binary response', async () => {
+      const f = new HttpFetcher({ ...cfg, allowLoopbackForTests: true });
+      const result = await f.fetchBinary(`${base}/redirect-to-image`);
+      expect(result.status).toBe(200);
+      expect(Buffer.compare(result.body, Buffer.from([0xff, 0xd8, 0xff, 0x00]))).toBe(0);
+    });
+
+    it('rejects loopback by default (same SSRF guard as fetchText)', async () => {
+      const f = new HttpFetcher(cfg);
+      await expect(f.fetchBinary(`${base}/image`)).rejects.toBeInstanceOf(ScrapeFetchError);
+    });
+
+    it('aborts when the response exceeds maxResponseBytes', async () => {
+      const f = new HttpFetcher({ ...cfg, allowLoopbackForTests: true });
+      await expect(f.fetchBinary(`${base}/huge`)).rejects.toBeInstanceOf(ScrapeFetchError);
+    });
+
+    it('rejects non-http(s) schemes', async () => {
+      const f = new HttpFetcher(cfg);
+      await expect(f.fetchBinary('file:///etc/passwd')).rejects.toBeInstanceOf(ScrapeFetchError);
+    });
   });
 });
 

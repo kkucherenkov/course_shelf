@@ -3538,6 +3538,57 @@ export type UpdateCourseResponses = {
 
 export type UpdateCourseResponse = UpdateCourseResponses[keyof UpdateCourseResponses];
 
+export type GetCoursePosterData = {
+    body?: never;
+    path: {
+        /**
+         * Course cuid.
+         */
+        id: string;
+    };
+    query: {
+        /**
+         * Signed poster token embedded in CourseDto.posterUrl.
+         */
+        token: string;
+    };
+    url: '/api/v1/courses/{id}/poster';
+};
+
+export type GetCoursePosterErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
+     */
+    400: Problem;
+    /**
+     * Token missing, malformed, expired, or bound to another course.
+     */
+    401: Problem;
+    /**
+     * No such course, no stored poster, or the file is missing on disk.
+     */
+    404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type GetCoursePosterError = GetCoursePosterErrors[keyof GetCoursePosterErrors];
+
+export type GetCoursePosterResponses = {
+    /**
+     * The poster image bytes.
+     */
+    200: Blob | File;
+};
+
+export type GetCoursePosterResponse = GetCoursePosterResponses[keyof GetCoursePosterResponses];
+
 export type GetCourseOutlineData = {
     body?: never;
     path: {

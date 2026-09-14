@@ -8657,6 +8657,7 @@ components:
         - title
         - durationSeconds
         - hasMaterials
+        - hasTranscript
         - state
         - progressPercent
       description: >-
@@ -8678,6 +8679,15 @@ components:
         hasMaterials:
           type: boolean
           description: Whether the lesson has at least one sidecar material.
+        hasTranscript:
+          type: boolean
+          description: >-
+            Whether the lesson has a transcript track — a sidecar subtitle,
+            or a generated transcript in the instance's configured
+            transcription language. Same union `LessonDto.subtitles` uses;
+            this is a presence flag rather than the language list because a
+            generated transcript's language is not yet stable across
+            instances.
         state:
           type: string
           enum: [not-started, in-progress, completed, locked]

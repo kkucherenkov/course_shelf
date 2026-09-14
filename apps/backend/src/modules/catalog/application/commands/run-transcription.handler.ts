@@ -1,13 +1,26 @@
 /**
  * WHY this file exists:
- * Orchestrates one transcription pass over a library, modelled on
- * `run-scan.handler.ts` down to the fire-and-forget shape:
- *   1. Verify the library exists.
- *   2. Refuse when no whisper model is configured — a run that can only fail is
+ * Orchestrates one transcription pass, modelled on `run-scan.handler.ts` down
+ * to the fire-and-forget shape:
+ *   1. Resolve the scope: a course id (POST /courses/{id}/transcription) yields
+ *      its library; otherwise the library id came straight off the URL.
+ *   2. Verify the library exists.
+ *   3. Refuse when no whisper model is configured — a run that can only fail is
  *      worse than no run.
- *   3. Refuse when a run is already going for this library.
- *   4. Persist a Transcription in status=running and RETURN it (202 Accepted).
- *   5. Fire-and-forget the walk so the response flushes before whisper starts.
+ *   4. Refuse when a run is already going for this library.
+ *   5. Persist a Transcription in status=running and RETURN it (202 Accepted).
+ *   6. Fire-and-forget the walk so the response flushes before whisper starts.
+ *
+ * Scope (E32-F02-S01) narrows the lesson list to one course and nothing else;
+ * every later step is identical, skip rule included. It exists because a
+ * library-wide run is not affordable: measured on a Pentium Gold 8505,
+ * whisper.cpp `base` spends ~19.5 minutes per lesson, so five thousand lessons
+ * is weeks of continuous CPU and thirty lessons is one night.
+ *
+ * A scoped run is blocked by the same already-running guard as a library-wide
+ * one. Whisper saturates every core it is given; a second concurrent run halves
+ * the first rather than finishing sooner, so "start this instead" has to be an
+ * explicit cancel — which is what the 409's detail tells the operator to do.
  *
  * Per lesson, in outline order:
  *   skip rule → audio extraction → whisper → cue parsing → one transaction for
@@ -36,6 +49,7 @@ import { nanoid } from 'nanoid';
 import { CentrifugoService } from '../../../../common/centrifugo/centrifugo.service';
 import { AppConfig } from '../../../../common/config/app-config';
 import { convertSrtToVtt, extractCues } from '../../../../shared/subtitle-converter';
+import { CourseNotFoundError } from '../../domain/course/course.errors';
 import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
 import { LESSON_REPOSITORY } from '../../domain/lesson/lesson.repository';
 import { LibraryNotFoundError } from '../../domain/library/library.errors';
@@ -56,6 +70,7 @@ import { WHISPER_ADAPTER } from '../../domain/transcription/whisper.port';
 
 import { RunTranscriptionCommand } from './run-transcription.command';
 
+import type { Course } from '../../domain/course/course';
 import type { CourseRepository } from '../../domain/course/course.repository';
 import type { Lesson } from '../../domain/lesson/lesson';
 import type { LessonRepository } from '../../domain/lesson/lesson.repository';
@@ -91,6 +106,22 @@ function resolveLanguage(configured: string): string {
   return configured === 'auto' ? 'und' : configured;
 }
 
+/**
+ * The scope pair, spread into every lifecycle event so the UI can say
+ * "transcribing <course>" instead of implying a whole-library run. Empty for a
+ * library-wide run — the two fields are set together or not at all.
+ */
+function scopeFields(
+  transcription: Transcription,
+): { scopeCourseId: string; scopeCourseName: string } | Record<string, never> {
+  return transcription.scopeCourseId === undefined
+    ? {}
+    : {
+        scopeCourseId: transcription.scopeCourseId,
+        scopeCourseName: transcription.scopeCourseName ?? '',
+      };
+}
+
 /** The machine-readable keys the contract documents for TranscriptionErrorDto. */
 function failureCode(error: unknown): string {
   if (error instanceof WhisperFailedError) return 'whisper-failed';
@@ -116,24 +147,40 @@ export class RunTranscriptionHandler implements ICommandHandler<
   ) {}
 
   async execute(command: RunTranscriptionCommand): Promise<Transcription> {
-    const library = await this.libraryRepo.findById(command.libraryId);
-    if (!library) throw new LibraryNotFoundError(command.libraryId);
+    // A scoped run only ever has a courseId; the library comes from the course.
+    let scopeCourse: Course | undefined;
+    let libraryId = command.libraryId;
+    if (command.scope) {
+      const course = await this.courseRepo.findById(command.scope.courseId);
+      if (!course) throw new CourseNotFoundError(command.scope.courseId);
+      scopeCourse = course;
+      libraryId = course.libraryId;
+    }
+    // Unreachable via the two real call sites (TranscriptionsController always
+    // passes libraryId; CoursesController always passes scope) — defensive only.
+    if (!libraryId) throw new LibraryNotFoundError('');
+
+    const library = await this.libraryRepo.findById(libraryId);
+    if (!library) throw new LibraryNotFoundError(libraryId);
 
     // Refuse before persisting anything: a run with no model can only fail.
     if (!this.appConfig.transcription.configured) throw new TranscriptionNotConfiguredError();
 
-    const running = await this.transcriptions.findRunningForLibrary(command.libraryId);
-    if (running) throw new TranscriptionAlreadyRunningError(command.libraryId);
+    const running = await this.transcriptions.findRunningForLibrary(libraryId);
+    if (running) throw new TranscriptionAlreadyRunningError(libraryId, running.id);
 
     // The total is known up front because the walk needs the lesson list anyway,
     // and a progress bar without a denominator is a spinner with extra steps.
-    const lessons = await this.loadLessons(library.id);
+    const lessons = await this.loadLessons(library.id, scopeCourse);
 
     const transcription = Transcription.start({
       id: nanoid(),
       libraryId: library.id,
       force: command.force,
       lessonsTotal: lessons.length,
+      ...(scopeCourse
+        ? { scope: { courseId: scopeCourse.id, courseName: scopeCourse.title } }
+        : {}),
     });
     await this.transcriptions.save(transcription);
 
@@ -145,11 +192,12 @@ export class RunTranscriptionHandler implements ICommandHandler<
       libraryName: library.name,
       at: new Date().toISOString(),
       lessonsTotal: transcription.lessonsTotal,
+      ...scopeFields(transcription),
     });
 
     // Fire-and-forget so the event loop can flush the 202 before whisper starts.
     Promise.resolve()
-      .then(() => this.walk(transcription, library, lessons, channel))
+      .then(() => this.walk(transcription, library, lessons, channel, command.language))
       .catch(() => {
         // walk() handles its own errors and persists the terminal state. This
         // catch is a belt-and-suspenders guard for a truly unexpected throw.
@@ -159,12 +207,15 @@ export class RunTranscriptionHandler implements ICommandHandler<
   }
 
   /**
-   * Every lesson in the library, course by course. One query per course rather
-   * than one per lesson; the catalog has no lessons-by-library port and adding
-   * one for a walk that then spends hours in whisper would be optimising the
-   * wrong three milliseconds.
+   * The lessons this run will consider: one course's when scoped, otherwise the
+   * whole library's, course by course. One query per course rather than one per
+   * lesson; the catalog has no lessons-by-library port and adding one for a walk
+   * that then spends hours in whisper would be optimising the wrong three
+   * milliseconds.
    */
-  private async loadLessons(libraryId: string): Promise<Lesson[]> {
+  private async loadLessons(libraryId: string, scopeCourse?: Course): Promise<Lesson[]> {
+    if (scopeCourse) return [...(await this.lessonRepo.findByCourse(scopeCourse.id))];
+
     const courses = await this.courseRepo.findManyByLibrary(libraryId);
     const lessons: Lesson[] = [];
     for (const course of courses) {
@@ -182,8 +233,12 @@ export class RunTranscriptionHandler implements ICommandHandler<
     library: Library,
     lessons: readonly Lesson[],
     channel: string,
+    requestedLanguage?: string,
   ): Promise<void> {
-    const language = resolveLanguage(this.appConfig.transcription.language);
+    // What whisper is told (`auto` included) vs. what the transcript is filed
+    // under — the two differ only for `auto`, which reports nothing back.
+    const whisperLanguage = requestedLanguage ?? this.appConfig.transcription.language;
+    const language = resolveLanguage(whisperLanguage);
     let cancelled = false;
     let lastSkipPublishedAt = 0;
 
@@ -198,6 +253,7 @@ export class RunTranscriptionHandler implements ICommandHandler<
         lessonsSkipped: transcription.lessonsSkipped,
         lessonsTranscribed: transcription.lessonsTranscribed,
         lessonsFailed: transcription.lessonsFailed,
+        ...scopeFields(transcription),
       });
     };
 
@@ -227,7 +283,7 @@ export class RunTranscriptionHandler implements ICommandHandler<
         });
 
         if (decision === 'transcribe') {
-          await this.transcribeLesson(transcription, library, lesson, language);
+          await this.transcribeLesson(transcription, library, lesson, language, whisperLanguage);
         } else {
           transcription.recordSkipped();
         }
@@ -275,6 +331,7 @@ export class RunTranscriptionHandler implements ICommandHandler<
         lessonsSkipped: transcription.lessonsSkipped,
         lessonsTranscribed: transcription.lessonsTranscribed,
         lessonsFailed: transcription.lessonsFailed,
+        ...scopeFields(transcription),
       });
 
       await this.transcriptions.save(transcription).catch(() => {
@@ -300,6 +357,7 @@ export class RunTranscriptionHandler implements ICommandHandler<
     library: Library,
     lesson: Lesson,
     language: string,
+    whisperLanguage: string,
   ): Promise<void> {
     const audioPath = path.join(os.tmpdir(), `cs-transcribe-${nanoid()}.wav`);
 
@@ -331,6 +389,7 @@ export class RunTranscriptionHandler implements ICommandHandler<
       const { srtAbsolutePath } = await this.whisper.transcribe({
         audioAbsolutePath: audioPath,
         outBaseAbsolutePath: outBase,
+        language: whisperLanguage,
       });
 
       const srt = await readFile(srtAbsolutePath, 'utf8');

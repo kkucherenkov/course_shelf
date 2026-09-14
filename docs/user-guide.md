@@ -550,13 +550,22 @@ are the only signal — look for a line shaped
 
 ### Transcription
 
-`Admin → Libraries → (library) → Transcribe` generates a subtitle track for
-every lesson that has neither a hand-made `.srt`/`.vtt` sidecar nor an
+**Transcribe** on a course page generates a subtitle track for every lesson in
+that course that has neither a hand-made `.srt`/`.vtt` sidecar nor an
 up-to-date generated one — a lesson you already subtitled yourself is never
-touched. **Start** offers a "re-transcribe everything" checkbox for redoing
-generated transcripts after switching models or languages; while a run is
-going, the same spot offers **Cancel**, which stops after the lesson
-currently in flight rather than mid-file.
+touched.
+
+Prefer this to the library-wide button. Transcription runs at roughly twenty
+minutes of CPU per lesson on modest hardware, so one course is an overnight
+job while a five-thousand-lesson library is weeks. `Admin → Libraries →
+(library) → Transcribe` still exists and does the same thing for everything at
+once; **Start** there offers a "re-transcribe everything" checkbox for redoing
+generated transcripts after switching models or languages.
+
+One run per library at a time, whichever button started it: whisper uses every
+core it is given, so a second run would only halve the first. If a run is
+already going, the refusal names it and tells you to **Cancel** it first —
+cancelling stops after the lesson currently in flight rather than mid-file.
 
 Progress is counters against the total — skipped, transcribed, failed — over
 the same realtime channel the scan card already uses, plus an error list, one

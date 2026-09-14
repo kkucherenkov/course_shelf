@@ -192,6 +192,9 @@ export default {
       rescanCta: 'Пересканировать',
       toastRescanStarted: 'Пересканирование запущено.',
       toastRescanError: 'Не удалось запустить пересканирование. Попробуйте ещё раз.',
+      transcribeCta: 'Расшифровать',
+      toastTranscribeStarted: 'Расшифровка запущена. Она идёт в фоне.',
+      toastTranscribeError: 'Не удалось запустить расшифровку. Попробуйте ещё раз.',
     },
     courseEdit: {
       title: 'Редактирование метаданных курса',

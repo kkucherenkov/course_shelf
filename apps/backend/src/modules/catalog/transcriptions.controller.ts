@@ -59,7 +59,13 @@ export class TranscriptionsController {
     @Body() body?: StartTranscriptionRequest,
   ): Promise<TranscriptionDto> {
     const transcription = await this.commandBus.execute<RunTranscriptionCommand, Transcription>(
-      new RunTranscriptionCommand(id, body?.force ?? false, session.user.id),
+      new RunTranscriptionCommand(
+        id,
+        body?.force ?? false,
+        session.user.id,
+        undefined,
+        body?.language,
+      ),
     );
     return toTranscriptionDto(transcription);
   }

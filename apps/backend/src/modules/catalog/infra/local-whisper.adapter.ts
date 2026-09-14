@@ -53,6 +53,10 @@ export class LocalWhisperAdapter implements WhisperAdapter {
   async transcribe(req: TranscribeRequest): Promise<TranscribeResult> {
     const cfg = this.appConfig.transcription;
     const { audioAbsolutePath, outBaseAbsolutePath } = req;
+    // A per-run language beats the deployment default: `auto` makes whisper
+    // run a detection pass on every file, which is repeated work on a library
+    // that is effectively one or two languages.
+    const language = req.language ?? cfg.language;
 
     const args = [
       '-m',
@@ -62,7 +66,7 @@ export class LocalWhisperAdapter implements WhisperAdapter {
       '-t',
       String(cfg.threads),
       '-l',
-      cfg.language,
+      language,
       '-osrt',
       '-of',
       outBaseAbsolutePath,

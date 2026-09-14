@@ -1,10 +1,11 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { AppButton, AppNoPermission, AppSkeleton } from '@app/ui';
-  import { runCourseRescan, client } from '@app/api-client-ts';
+  import { runCourseRescan, startCourseTranscription, client } from '@app/api-client-ts';
   import type { CourseMaterialItem, LessonOutlineItem } from '@app/api-client-ts';
 
   import { accentFromId } from '~/utils/course-accent';
+  import { problemDetail } from '~/utils/library-register';
   import { useCourseOutline } from '~/composables/useCourseOutline';
   import { useMaterialDownload } from '~/composables/useMaterialDownload';
   import { useAuthStore } from '~/stores/auth';
@@ -55,6 +56,37 @@
       toast.add({ title: t('pages.courseDetail.toastRescanError'), color: 'error' });
     } finally {
       isRescanning.value = false;
+    }
+  }
+
+  // Admin-only course transcription (E32-F02-S01). Same shape as the rescan
+  // above, with one difference: the server's own `detail` is shown on failure
+  // rather than a canned sentence. The 409 here is the interesting case — it
+  // names the run already in flight and the cancel route, and swallowing that
+  // would leave the operator with "could not start" and nothing to act on.
+  const isTranscribing = ref(false);
+
+  async function onTranscribe(): Promise<void> {
+    isTranscribing.value = true;
+    try {
+      const { error } = await startCourseTranscription({
+        client,
+        throwOnError: false,
+        path: { id: courseId },
+        body: {},
+      });
+      if (error) {
+        toast.add({
+          title: problemDetail(error) ?? t('pages.courseDetail.toastTranscribeError'),
+          color: 'error',
+        });
+        return;
+      }
+      toast.add({ title: t('pages.courseDetail.toastTranscribeStarted'), color: 'success' });
+    } catch {
+      toast.add({ title: t('pages.courseDetail.toastTranscribeError'), color: 'error' });
+    } finally {
+      isTranscribing.value = false;
     }
   }
 
@@ -284,6 +316,15 @@
           :loading="isRescanning"
           class="page-course-detail__rescan-cta"
           @click="onRescan"
+        />
+        <AppButton
+          variant="ghost"
+          size="sm"
+          icon-leading="subtitles"
+          :label="t('pages.courseDetail.transcribeCta')"
+          :loading="isTranscribing"
+          class="page-course-detail__transcribe-cta"
+          @click="onTranscribe"
         />
       </div>
 

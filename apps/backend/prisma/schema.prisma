@@ -437,6 +437,10 @@ model Transcription {
   lessonsTranscribed Int                        @default(0)
   lessonsFailed      Int                        @default(0)
   errors             TranscriptionErrorRecord[]
+  // Set when this run was scoped to one course (E32-F02-S01) via
+  // POST /courses/{id}/transcription rather than the library-wide default.
+  scopeCourseId      String?
+  scopeCourseName    String?
 
   @@index([libraryId, status])
   @@index([libraryId, startedAt])

@@ -84,12 +84,38 @@ describe('Transcription aggregate', () => {
         lessonsTranscribed: 1,
         lessonsFailed: 1,
         errors: [{ lessonId: 'l9', message: 'boom' }],
+        scopeCourseId: 'course-1',
+        scopeCourseName: 'Pragmatic Clean Architecture',
       });
 
       expect(t.status).toBe('succeeded');
       expect(t.lessonsSkipped).toBe(8);
       expect(t.errors).toHaveLength(1);
+      expect(t.scopeCourseId).toBe('course-1');
+      expect(t.scopeCourseName).toBe('Pragmatic Clean Architecture');
       expect(() => t.recordSkipped()).toThrow(TranscriptionInTerminalStateError);
+    });
+  });
+
+  describe('scope (E32-F02-S01)', () => {
+    it('is absent for a library-wide run', () => {
+      const t = running();
+
+      expect(t.scopeCourseId).toBeUndefined();
+      expect(t.scopeCourseName).toBeUndefined();
+    });
+
+    it('names the course a scoped run was started for', () => {
+      const t = Transcription.start({
+        id: 't-scoped',
+        libraryId: 'lib-1',
+        force: false,
+        lessonsTotal: 3,
+        scope: { courseId: 'course-1', courseName: 'Pragmatic Clean Architecture' },
+      });
+
+      expect(t.scopeCourseId).toBe('course-1');
+      expect(t.scopeCourseName).toBe('Pragmatic Clean Architecture');
     });
   });
 

@@ -17,6 +17,14 @@
  *   - A second run while one is running rejects with TranscriptionAlreadyRunning.
  *   - The temporary `.wav` is removed on both the success and the failure path.
  *   - A missing library is a LibraryNotFoundError before anything is written.
+ *
+ * And, for the scoped run (E32-F02-S01):
+ *   - A scoped run walks its own course's lessons and never a sibling's.
+ *   - The skip rule still applies inside the scope.
+ *   - The scope is named on the record and on all three lifecycle events.
+ *   - The already-running guard applies to a scoped run too, and its 409 says
+ *     which run is in flight and how to cancel it.
+ *   - A per-request language reaches whisper and files the transcript under it.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -29,6 +37,7 @@ vi.mock('node:fs/promises', () => ({
 import { readFile, rm } from 'node:fs/promises';
 
 import { Course } from '../../domain/course/course';
+import { CourseNotFoundError } from '../../domain/course/course.errors';
 import { Lesson } from '../../domain/lesson/lesson';
 import { Subtitle } from '../../domain/lesson/subtitle';
 import { Library } from '../../domain/library/library';
@@ -209,25 +218,25 @@ function makeLibrary(): Library {
   return Library.register({ id: 'lib-1', name: 'Test Library', rootPath: ROOT });
 }
 
-function makeCourse(): Course {
-  const course = Course.create({
-    id: 'course-1',
-    libraryId: 'lib-1',
-    slug: 'course-1',
-    title: 'Course One',
-  });
-  course.addSection({ id: 'section-1', title: 'Lessons', position: 1 });
+function makeCourse(id = 'course-1', title = 'Course One'): Course {
+  const course = Course.create({ id, libraryId: 'lib-1', slug: id, title });
+  course.addSection({ id: `section-${id}`, title: 'Lessons', position: 1 });
   return course;
 }
 
-function makeLesson(id: string, file: string, subtitlePaths: string[] = []): Lesson {
+function makeLesson(
+  id: string,
+  file: string,
+  subtitlePaths: string[] = [],
+  courseId = 'course-1',
+): Lesson {
   const lesson = Lesson.create({
     id,
-    courseId: 'course-1',
-    sectionId: 'section-1',
+    courseId,
+    sectionId: `section-${courseId}`,
     position: 1,
     title: file,
-    videoPath: `${ROOT}/course-1/${file}`,
+    videoPath: `${ROOT}/${courseId}/${file}`,
     mtime: BASE_TIME,
     sizeBytes: 100,
   });
@@ -235,6 +244,23 @@ function makeLesson(id: string, file: string, subtitlePaths: string[] = []): Les
     lesson.addSubtitle(Subtitle.fromFile({ id: `sub-${id}-${String(i)}`, path: p }));
   }
   return lesson;
+}
+
+const TWO_COURSES = [makeCourse('course-1', 'Course One'), makeCourse('course-2', 'Course Two')];
+
+/** Two courses, two lessons each — what every scoped case below is about. */
+function twoCourseLessons(): Lesson[] {
+  return [
+    makeLesson('l1', 'a.mp4', [], 'course-1'),
+    makeLesson('l2', 'b.mp4', [], 'course-1'),
+    makeLesson('l3', 'c.mp4', [], 'course-2'),
+    makeLesson('l4', 'd.mp4', [], 'course-2'),
+  ];
+}
+
+/** The command POST /courses/{id}/transcription builds. */
+function scoped(courseId: string, language?: string): RunTranscriptionCommand {
+  return new RunTranscriptionCommand(undefined, false, ACTOR_USER_ID, { courseId }, language);
 }
 
 /** Pump the event loop so the fire-and-forget walk finishes. */
@@ -255,6 +281,7 @@ interface Harness {
 
 function makeHandler(options: {
   lessons?: Lesson[];
+  courses?: Course[];
   existing?: Map<string, GeneratedTranscriptSignature>;
   seedRuns?: Transcription[];
   configured?: boolean;
@@ -271,7 +298,7 @@ function makeHandler(options: {
 
   const handler = new RunTranscriptionHandler(
     makeLibraryRepo(makeLibrary()),
-    makeCourseRepo([makeCourse()]),
+    makeCourseRepo(options.courses ?? [makeCourse()]),
     makeLessonRepo(lessons),
     transcriptions,
     transcripts,
@@ -526,5 +553,159 @@ describe('RunTranscriptionHandler', () => {
 
     expect(transcripts.written[0]?.language).toBe('ru');
     expect(transcripts.written[0]?.derivedPath).toBe('/derived/lib-1/course-1/a.mp4.ru.srt');
+  });
+
+  // -------------------------------------------------------------------------
+  // Scoped run — POST /courses/{id}/transcription (E32-F02-S01)
+  // -------------------------------------------------------------------------
+
+  describe('scoped to one course', () => {
+    it('transcribes only that course and never touches a sibling', async () => {
+      const { handler, transcripts, whisper } = makeHandler({
+        lessons: twoCourseLessons(),
+        courses: TWO_COURSES,
+      });
+
+      const run = await handler.execute(scoped('course-2'));
+      await drainWalk();
+
+      expect(run.lessonsTotal).toBe(2);
+      expect(run.lessonsTranscribed).toBe(2);
+      expect(run.status).toBe('succeeded');
+      expect(whisper.transcribe).toHaveBeenCalledTimes(2);
+      expect(transcripts.written.map((w) => w.lessonId)).toEqual(['l3', 'l4']);
+      expect(transcripts.written.map((w) => w.sourcePath)).toEqual([
+        'course-2/c.mp4',
+        'course-2/d.mp4',
+      ]);
+    });
+
+    it('resolves the library from the course, not from the request', async () => {
+      const { handler } = makeHandler({ lessons: twoCourseLessons(), courses: TWO_COURSES });
+
+      const run = await handler.execute(scoped('course-2'));
+
+      expect(run.libraryId).toBe('lib-1');
+    });
+
+    it('still honours the skip rule inside the scope', async () => {
+      const lessons = [
+        makeLesson('l3', 'has-sidecar.mp4', [`${ROOT}/course-2/has-sidecar.en.srt`], 'course-2'),
+        makeLesson('l4', 'already-done.mp4', [], 'course-2'),
+        makeLesson('l5', 'new.mp4', [], 'course-2'),
+      ];
+      const existing = new Map<string, GeneratedTranscriptSignature>([
+        ['l4', { sourceMtime: BASE_TIME, sourceSize: 100 }],
+      ]);
+
+      const { handler, transcripts, whisper } = makeHandler({
+        lessons,
+        courses: TWO_COURSES,
+        existing,
+      });
+
+      const run = await handler.execute(scoped('course-2'));
+      await drainWalk();
+
+      expect(run.lessonsSkipped).toBe(2);
+      expect(run.lessonsTranscribed).toBe(1);
+      expect(whisper.transcribe).toHaveBeenCalledTimes(1);
+      expect(transcripts.written.map((w) => w.lessonId)).toEqual(['l5']);
+    });
+
+    it('names the scoped course on the record and on every lifecycle event', async () => {
+      const { handler, centrifugo } = makeHandler({
+        lessons: twoCourseLessons(),
+        courses: TWO_COURSES,
+      });
+
+      const run = await handler.execute(scoped('course-2'));
+      await drainWalk();
+
+      expect(run.scopeCourseId).toBe('course-2');
+      expect(run.scopeCourseName).toBe('Course Two');
+
+      const payloads = vi
+        .mocked(centrifugo.publish)
+        .mock.calls.map(
+          ([, payload]) =>
+            payload as { kind: string; scopeCourseId?: string; scopeCourseName?: string },
+        );
+
+      expect(payloads.map((p) => p.kind)).toEqual([
+        'transcription-started',
+        'transcription-progress',
+        'transcription-progress',
+        'transcription-finished',
+      ]);
+      for (const payload of payloads) {
+        expect(payload.scopeCourseId).toBe('course-2');
+        expect(payload.scopeCourseName).toBe('Course Two');
+      }
+    });
+
+    it('leaves the scope off a library-wide run entirely', async () => {
+      const { handler, centrifugo } = makeHandler({ lessons: [makeLesson('l1', 'a.mp4')] });
+
+      const run = await handler.execute(new RunTranscriptionCommand('lib-1', false, ACTOR_USER_ID));
+      await drainWalk();
+
+      expect(run.scopeCourseId).toBeUndefined();
+      for (const [, payload] of vi.mocked(centrifugo.publish).mock.calls) {
+        expect(payload as Record<string, unknown>).not.toHaveProperty('scopeCourseId');
+      }
+    });
+
+    // The deliberate decision this story had to make: whisper saturates every
+    // core, so one run per library stands — scoped or not. The 409 has to say
+    // which run and how to stop it, because the operator hitting this is
+    // usually trying to escape a library-wide run they regret.
+    it('is refused while any run for the same library is going, and says how to stop it', async () => {
+      const already = Transcription.start({
+        id: 'run-existing',
+        libraryId: 'lib-1',
+        force: false,
+        lessonsTotal: 5464,
+      });
+      const { handler, transcriptions } = makeHandler({
+        lessons: twoCourseLessons(),
+        courses: TWO_COURSES,
+        seedRuns: [already],
+      });
+
+      const error = await handler.execute(scoped('course-2')).catch((error_: unknown) => error_);
+
+      expect(error).toBeInstanceOf(TranscriptionAlreadyRunningError);
+      expect((error as TranscriptionAlreadyRunningError).detail).toContain('run-existing');
+      expect((error as TranscriptionAlreadyRunningError).detail).toContain(
+        'POST /api/v1/transcriptions/run-existing/cancel',
+      );
+      expect(transcriptions.store.size).toBe(1);
+    });
+
+    it('rejects an unknown course before writing anything', async () => {
+      const { handler, transcriptions } = makeHandler({
+        lessons: twoCourseLessons(),
+        courses: TWO_COURSES,
+      });
+
+      await expect(handler.execute(scoped('course-nope'))).rejects.toThrow(CourseNotFoundError);
+      expect(transcriptions.store.size).toBe(0);
+    });
+
+    it('sends a requested language to whisper instead of the deployment default', async () => {
+      const { handler, transcripts, whisper } = makeHandler({
+        lessons: [makeLesson('l3', 'c.mp4', [], 'course-2')],
+        courses: TWO_COURSES,
+        language: 'auto',
+      });
+
+      await handler.execute(scoped('course-2', 'ru'));
+      await drainWalk();
+
+      expect(vi.mocked(whisper.transcribe).mock.calls[0]?.[0].language).toBe('ru');
+      expect(transcripts.written[0]?.language).toBe('ru');
+      expect(transcripts.written[0]?.derivedPath).toBe('/derived/lib-1/course-2/c.mp4.ru.srt');
+    });
   });
 });

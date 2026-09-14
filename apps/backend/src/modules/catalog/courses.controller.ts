@@ -36,7 +36,9 @@ import { UpdateCourseMetadataCommand } from './application/commands/update-cours
 import { MarkCourseCompleteCommand } from './application/commands/mark-course-complete.command';
 import { ResetCourseProgressCommand } from './application/commands/reset-course-progress.command';
 import { RunScanCommand } from './application/commands/run-scan.command';
+import { RunTranscriptionCommand } from './application/commands/run-transcription.command';
 import { toScanDto } from './scans.dto';
+import { toTranscriptionDto } from './transcriptions.dto';
 import {
   ListCoursesQuery,
   type CourseListDurationBucket,
@@ -49,12 +51,15 @@ import { GetCourseDownloadEstimateQuery } from './application/queries/get-course
 
 import type { SessionContext } from '../../common/auth/decorators';
 import type { Scan } from './domain/scan/scan';
+import type { Transcription } from './domain/transcription/transcription';
 import type {
   CourseDto,
   CourseDownloadEstimateDto,
   CourseListDto,
   CourseOutlineDto,
   ScanDto,
+  StartTranscriptionRequest,
+  TranscriptionDto,
   UpdateCourseRequest,
 } from '@app/api-client-ts';
 
@@ -198,6 +203,31 @@ export class CoursesController {
       new RunScanCommand(undefined, session.user.id, { courseId: id }),
     );
     return toScanDto(scan);
+  }
+
+  /**
+   * POST /api/v1/courses/:id/transcription — admin only (E32-F02-S01)
+   * Transcribes only this course's lessons instead of the whole library.
+   * Accepts and returns exactly like POST /libraries/:id/transcriptions.
+   */
+  @UseGuards(AdminGuard)
+  @Post(':id/transcription')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async startCourseTranscription(
+    @Param('id') id: string,
+    @Session() session: SessionContext,
+    @Body() body?: StartTranscriptionRequest,
+  ): Promise<TranscriptionDto> {
+    const transcription = await this.commandBus.execute<RunTranscriptionCommand, Transcription>(
+      new RunTranscriptionCommand(
+        undefined,
+        body?.force ?? false,
+        session.user.id,
+        { courseId: id },
+        body?.language,
+      ),
+    );
+    return toTranscriptionDto(transcription);
   }
 
   /** PATCH /api/v1/courses/:id — admin only */

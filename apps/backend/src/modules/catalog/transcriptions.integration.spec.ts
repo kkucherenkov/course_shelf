@@ -13,6 +13,8 @@
  *   4. GET .../latest → 200, and 404 before anything has run
  *   5. GET .../transcriptions → 200 with the history
  *   6. POST /api/v1/transcriptions/{id}/cancel → 202, and 409 once terminal
+ *   7. POST /api/v1/courses/{id}/transcription → 202 carrying the scope, 404
+ *      for an unknown course, and 409 naming the run to cancel
  *
  * The route shapes are the point: `setGlobalPrefix('api')` + URI versioning is
  * what turns `libraries/:id/transcriptions` into `/api/v1/...`, and getting that
@@ -39,6 +41,7 @@ import { CancelTranscriptionHandler } from './application/commands/cancel-transc
 import { RunTranscriptionHandler } from './application/commands/run-transcription.handler';
 import { GetLatestTranscriptionHandler } from './application/queries/get-latest-transcription.handler';
 import { ListTranscriptionsHandler } from './application/queries/list-transcriptions.handler';
+import { Course } from './domain/course/course';
 import { COURSE_REPOSITORY } from './domain/course/course.repository';
 import { LESSON_REPOSITORY } from './domain/lesson/lesson.repository';
 import { LIBRARY_REPOSITORY } from './domain/library/library.repository';
@@ -48,12 +51,24 @@ import { Transcription } from './domain/transcription/transcription';
 import { TRANSCRIPT_REPOSITORY } from './domain/transcription/transcript.repository';
 import { TRANSCRIPTION_REPOSITORY } from './domain/transcription/transcription.repository';
 import { WHISPER_ADAPTER } from './domain/transcription/whisper.port';
+import { CoursesController } from './courses.controller';
 import { TranscriptionCancelController } from './transcription-cancel.controller';
 import { TranscriptionsController } from './transcriptions.controller';
 
 import type { TranscriptionRepository } from './domain/transcription/transcription.repository';
 
 const LIBRARY_ID = 'lib-1';
+const COURSE_ID = 'course-1';
+
+/** The one course the scoped route resolves; it deliberately has no lessons. */
+function scopedCourse(): Course {
+  return Course.create({
+    id: COURSE_ID,
+    libraryId: LIBRARY_ID,
+    slug: 'course-1',
+    title: 'Pragmatic Clean Architecture',
+  });
+}
 
 @Injectable()
 class PassThroughAdminGuard implements CanActivate {
@@ -98,7 +113,7 @@ async function buildApp(options: {
 }): Promise<INestApplication> {
   const moduleRef = await Test.createTestingModule({
     imports: [CqrsModule],
-    controllers: [TranscriptionsController, TranscriptionCancelController],
+    controllers: [TranscriptionsController, TranscriptionCancelController, CoursesController],
     providers: [
       { provide: APP_FILTER, useClass: HttpExceptionFilter },
       RunTranscriptionHandler,
@@ -125,9 +140,16 @@ async function buildApp(options: {
               : null,
         },
       },
-      // No courses → no lessons → the walk finishes immediately, which is what
-      // these tests want: they are about the HTTP boundary, not the walk.
-      { provide: COURSE_REPOSITORY, useValue: { findManyByLibrary: async () => [] } },
+      // No lessons → the walk finishes immediately, which is what these tests
+      // want: they are about the HTTP boundary, not the walk. `findById` exists
+      // so the course-scoped route has a course to resolve its library from.
+      {
+        provide: COURSE_REPOSITORY,
+        useValue: {
+          findManyByLibrary: async () => [],
+          findById: async (id: string) => (id === COURSE_ID ? scopedCourse() : null),
+        },
+      },
       { provide: LESSON_REPOSITORY, useValue: { findByCourse: async () => [] } },
       { provide: FFMPEG_ADAPTER, useValue: { extractAudio: async () => undefined } },
       { provide: WHISPER_ADAPTER, useValue: { transcribe: async () => ({ srtAbsolutePath: '' }) } },
@@ -213,6 +235,55 @@ describe('Transcription routes [integration]', () => {
 
     expect(res.status).toBe(409);
     expect(res.headers['content-type']).toContain('application/problem+json');
+  });
+
+  it('202 — POST /courses/{id}/transcription names the scoped course', async () => {
+    app = await buildApp({});
+
+    const res = await request(app.getHttpServer())
+      .post(`/api/v1/courses/${COURSE_ID}/transcription`)
+      .send({ force: false, language: 'ru' });
+
+    expect(res.status).toBe(202);
+    expect(res.body).toMatchObject({
+      // The library is resolved from the course, never sent by the client.
+      libraryId: LIBRARY_ID,
+      status: 'running',
+      force: false,
+      scopeCourseId: COURSE_ID,
+      scopeCourseName: 'Pragmatic Clean Architecture',
+    });
+  });
+
+  it('404 problem+json — POST /courses/{id}/transcription for an unknown course', async () => {
+    app = await buildApp({});
+
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/courses/nope/transcription')
+      .send({});
+
+    expect(res.status).toBe(404);
+    expect(res.headers['content-type']).toContain('application/problem+json');
+  });
+
+  it('409 — a scoped run is refused while a library-wide run is going, and says how to stop it', async () => {
+    const running = Transcription.start({
+      id: 'run-1',
+      libraryId: LIBRARY_ID,
+      force: false,
+      lessonsTotal: 5464,
+    });
+    app = await buildApp({ seedRuns: [running] });
+
+    const res = await request(app.getHttpServer())
+      .post(`/api/v1/courses/${COURSE_ID}/transcription`)
+      .send({});
+
+    expect(res.status).toBe(409);
+    expect(res.headers['content-type']).toContain('application/problem+json');
+    expect((res.body as { detail: string }).detail).toContain(
+      'POST /api/v1/transcriptions/run-1/cancel',
+    );
   });
 
   it('404 — GET latest before anything has run', async () => {

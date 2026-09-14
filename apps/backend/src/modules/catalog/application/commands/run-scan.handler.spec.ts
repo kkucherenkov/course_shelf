@@ -68,6 +68,7 @@ import { Studio } from '../../domain/studio/studio';
 import { Tag } from '../../domain/tag/tag';
 import { Scan } from '../../domain/scan/scan';
 import { ScanAlreadyRunningError } from '../../domain/scan/scan.errors';
+import { slugify } from '../../domain/shared-vo/entity-slug';
 import { MetadataLinker } from '../scan/metadata-linker';
 import { RunScanCommand } from './run-scan.command';
 import { RunScanHandler } from './run-scan.handler';
@@ -548,14 +549,12 @@ function makeLibrary(): Library {
   return Library.register({ id: 'lib-1', name: 'Test Library', rootPath: '/lib' });
 }
 
-// toSlug() (run-scan.handler.ts) is module-private; fixture folder names used
-// with it below have no punctuation requiring normalisation beyond
-// lower-casing and hyphenating spaces.
+// toSlug() (run-scan.handler.ts) is module-private, but it is only `slugify`
+// plus an 'untitled' fallback — call the real thing rather than keeping a
+// second copy of the derivation here, which is how this helper came to still
+// strip `[^a-z0-9]` long after that was the defect under test.
 function toSlugForTest(folder: string): string {
-  return folder
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]+/g, '-')
-    .replaceAll(/^-+|-+$/g, '');
+  return slugify(folder);
 }
 
 // ---------------------------------------------------------------------------
@@ -3184,6 +3183,177 @@ describe('RunScanHandler', () => {
       // The one lesson that did survive keeps its id — its progress and
       // bookmarks are the only ones in this course that ever existed.
       expect(lessonRepo2.store.get('lesson-survivor')?.videoPath).toBe(survivor);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // tuxedo 132: a Latin-free course title must not delete the course.
+  //
+  // toSlug used to strip `[^a-z0-9]`, so every Latin-free title reduced to ''
+  // and fell back to the literal 'untitled'. The duplicate-slug guard then
+  // treated the second such folder as already-imported and `continue`d, with
+  // no ScanError. Measured on the maintainer's library: eight Cyrillic course
+  // folders, one imported, seven dropped, 253 lessons gone.
+  // -------------------------------------------------------------------------
+  /** Repositories a scan writes into, so a second scan can reuse the first's state. */
+  interface ScanRepos {
+    courseRepo: ReturnType<typeof makeCourseRepo>;
+    lessonRepo: ReturnType<typeof makeLessonRepo>;
+  }
+
+  /**
+   * Runs one library-wide scan over a fixture of one video per top-level
+   * folder. Pass the previous call's result back in as `repos` to rescan the
+   * same library — that is what makes the idempotency assertions below real.
+   */
+  async function scanFolders(
+    folders: string[],
+    repos?: ScanRepos,
+  ): Promise<ScanRepos & { courses: Course[]; lessons: Lesson[]; scan: Scan }> {
+    const courseRepo2 = repos?.courseRepo ?? makeCourseRepo();
+    const lessonRepo2 = repos?.lessonRepo ?? makeLessonRepo();
+    const scanRepo2 = makeScanRepo();
+    const files: FileRecord[] = folders.map((f) => ({
+      path: `/lib/${f}/01 - Intro.mp4`,
+      mtime: BASE_TIME,
+      size: 100,
+    }));
+    const h = new RunScanHandler(
+      libraryRepo,
+      scanRepo2,
+      courseRepo2,
+      lessonRepo2,
+      new FakeFsAdapter(files),
+      makePassthroughFfmpeg(),
+      makeTranscriptRepo(),
+      makeFakeAppConfig(),
+      centrifugo,
+      makeMetadataLinker(),
+    );
+
+    const started = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+    await drainMicrotasks();
+
+    return {
+      courses: [...courseRepo2.store.values()],
+      lessons: [...lessonRepo2.store.values()],
+      scan: scanRepo2.store.get(started.id)!,
+      courseRepo: courseRepo2,
+      lessonRepo: lessonRepo2,
+    };
+  }
+
+  describe('tuxedo 132: non-Latin course titles', () => {
+    const CYRILLIC_FOLDERS = [
+      'Графы и комбинаторика',
+      'Алгоритмы и структуры данных',
+      'Дискретная математика',
+      'Теория вероятностей',
+      'Линейная алгебра',
+      'Математический анализ',
+      'Функциональное программирование',
+      'Основы криптографии',
+    ];
+
+    it('imports every Latin-free course, each under its own slug', async () => {
+      vi.useRealTimers();
+      const { courses, lessons, scan } = await scanFolders(CYRILLIC_FOLDERS);
+
+      // The assertion whose absence cost 253 lessons: eight folders in, eight
+      // courses out — not one course and seven silent skips.
+      expect(courses).toHaveLength(CYRILLIC_FOLDERS.length);
+      expect(lessons).toHaveLength(CYRILLIC_FOLDERS.length);
+      expect(scan.coursesDiscovered).toBe(courses.length);
+
+      const slugs = courses.map((c) => c.slug);
+      expect(new Set(slugs).size).toBe(CYRILLIC_FOLDERS.length);
+      expect(slugs).not.toContain('untitled');
+      expect(slugs).toContain('графы-и-комбинаторика');
+
+      expect(scan.status).toBe('succeeded');
+      expect(scan.errors).toHaveLength(0);
+    });
+
+    it('accented Latin still slugifies the way it always did', async () => {
+      vi.useRealTimers();
+      const { courses } = await scanFolders(['Café Racer', 'Naive Bayes']);
+      expect(courses.map((c) => c.slug).toSorted()).toEqual(['café-racer', 'naive-bayes']);
+    });
+
+    it('rescanning a Cyrillic library is a no-op, not a re-import', async () => {
+      vi.useRealTimers();
+      const first = await scanFolders(CYRILLIC_FOLDERS);
+      const second = await scanFolders(CYRILLIC_FOLDERS, first);
+
+      expect(first.courses).toHaveLength(CYRILLIC_FOLDERS.length);
+      expect(second.courses.map((c) => c.slug).toSorted()).toEqual(
+        first.courses.map((c) => c.slug).toSorted(),
+      );
+      expect(second.scan.errors).toHaveLength(0);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // A slug collision is a naming coincidence, not an import. Both folders are
+  // real courses and both must land; the loser takes a deterministic
+  // folder-derived discriminator and the operator is told it happened.
+  // -------------------------------------------------------------------------
+  describe('tuxedo 132: slug collisions', () => {
+    // Two distinct folders whose titles reduce to the same slug.
+    const COLLIDING = ['Графы!', 'Графы?'];
+
+    it('imports both colliding courses and records a ScanError', async () => {
+      vi.useRealTimers();
+      const { courses, lessons, scan } = await scanFolders(COLLIDING);
+
+      expect(courses).toHaveLength(2);
+      expect(lessons).toHaveLength(2);
+
+      const slugs = courses.map((c) => c.slug).toSorted();
+      expect(slugs).toContain('графы');
+      expect(new Set(slugs).size).toBe(2);
+      // The loser keeps the base slug as its stem and gains a suffix.
+      expect(slugs.find((s) => s !== 'графы')).toMatch(/^графы-[\da-f]{8}$/u);
+
+      expect(scan.status).toBe('succeeded');
+      const collision = scan.errors.filter((e) => e.code === 'course-slug-collision');
+      expect(collision).toHaveLength(1);
+      expect(collision[0]!.message).toContain('графы-');
+    });
+
+    it('gives the same folder the same discriminated slug on every scan', async () => {
+      vi.useRealTimers();
+      const first = await scanFolders(COLLIDING);
+      const second = await scanFolders(COLLIDING, first);
+
+      // A counter-based discriminator would renumber here and import a third
+      // course; a folder-derived one reproduces the same two slugs and skips.
+      expect(second.courses.map((c) => c.slug).toSorted()).toEqual(
+        first.courses.map((c) => c.slug).toSorted(),
+      );
+      expect(second.courses).toHaveLength(2);
+      // Nothing was dropped this time, so nothing is reported either.
+      expect(second.scan.errors.filter((e) => e.code === 'course-slug-collision')).toHaveLength(0);
+    });
+
+    it('treats the two Unicode encodings of one folder title as one slug', async () => {
+      vi.useRealTimers();
+      // Same visual name, two encodings — what a library shared between macOS
+      // (NFD) and Linux (NFC) actually looks like on disk. Both are real
+      // folders, so both import; NFC normalisation is what makes the second
+      // one collide (and be reported) instead of silently becoming a second
+      // row the unique index cannot see as a duplicate.
+      const nfc = 'Йога';
+      const nfd = nfc.normalize('NFD');
+      expect(nfc).not.toBe(nfd);
+
+      const { courses, scan } = await scanFolders([nfc, nfd]);
+
+      const slugs = courses.map((c) => c.slug).toSorted();
+      expect(slugs).toHaveLength(2);
+      expect(slugs).toContain('йога');
+      expect(slugs.find((s) => s !== 'йога')).toMatch(/^йога-[\da-f]{8}$/u);
+      expect(scan.errors.filter((e) => e.code === 'course-slug-collision')).toHaveLength(1);
     });
   });
 

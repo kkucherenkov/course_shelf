@@ -21,9 +21,12 @@
  *     persists the terminal state.
  *
  * Two idempotency modes, and scope is what picks between them:
- *   - Library-wide scan (no scope): a course whose slug is already in the DB is
+ *   - Library-wide scan (no scope): a folder that is ALREADY IMPORTED is
  *     SKIPPED. Re-importing it would clobber metadata the user edited through
- *     the API, and across a whole library the user's edit wins.
+ *     the API, and across a whole library the user's edit wins. "Already
+ *     imported" means the slug is taken AND belongs to this folder — a slug
+ *     taken by a different folder is a collision, not an import, and the
+ *     second folder imports under a discriminated slug with a ScanError.
  *   - Scoped rescan (POST /courses/{id}/rescan): FORCE-RESYNC. Pressing
  *     "Rescan" on one course page means "re-import this course from disk", so
  *     scope IS the force signal — there is no second flag. Sections, lesson
@@ -42,6 +45,7 @@
 import { Inject, Logger } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { nanoid } from 'nanoid';
+import { createHash } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -65,6 +69,7 @@ import { FFMPEG_ADAPTER } from '../../domain/scan/ffmpeg-adapter';
 import { FS_ADAPTER } from '../../domain/scan/fs-adapter';
 import { parseFolderName, parseLessonFileName } from '../../domain/scan/folder-name.parser';
 import { assignLessonPositions } from '../../domain/scan/lesson-position';
+import { SLUG_MAX_LENGTH, slugify } from '../../domain/shared-vo/entity-slug';
 import { stemMatch } from '../../domain/scan/stem-match';
 import { Scan } from '../../domain/scan/scan';
 import { ScanAlreadyRunningError } from '../../domain/scan/scan.errors';
@@ -94,32 +99,57 @@ import type {
 } from '../../domain/scan/scan';
 
 // ---------------------------------------------------------------------------
-// Slug helper
+// Slug helpers
 //
-// Converts a human-readable folder/course title to a URL-safe slug that
-// satisfies the Slug value-object regex: lowercase alphanum + hyphens, no
-// leading/trailing hyphen, max 100 chars.
-//
-// Algorithm:
-//   1. Lower-case the whole string.
-//   2. Replace any run of non-alphanumeric characters (spaces, dots, underscores,
-//      parentheses, etc.) with a single hyphen.
-//   3. Strip leading/trailing hyphens.
-//   4. Truncate to 100 chars, then strip any newly-trailing hyphen.
+// `toSlug` is `slugify` (domain/shared-vo/entity-slug) with the scan's own
+// answer to an unsluggable title: the walk must keep going, so it falls back
+// to a literal instead of throwing the way the upsert handlers want it to.
+// The derivation itself — charset, NFC normalisation, length cap — lives in
+// exactly one place, which is the point: this function used to hold its own
+// copy stripping `[^a-z0-9]`, so EVERY Latin-free title collapsed to
+// 'untitled' and the duplicate-slug guard below dropped all but the first.
+// Measured on the maintainer's library: eight Cyrillic course folders, one
+// imported, 253 lessons lost with no ScanError to show for it.
 //
 // Examples:
 //   'Pragmatic Clean Architecture'  → 'pragmatic-clean-architecture'
 //   '01 - NestJS: Basics & Beyond'  → '01-nestjs-basics-beyond'
-//   '02 - Course B (no json)'       → '02-course-b-no-json'
+//   'Графы и комбинаторика'         → 'графы-и-комбинаторика'
 // ---------------------------------------------------------------------------
 function toSlug(title: string): string {
-  const raw = title
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]+/g, '-')
-    .replaceAll(/^-+|-+$/g, '')
-    .slice(0, 100)
-    .replaceAll(/-+$/g, '');
-  return raw === '' ? 'untitled' : raw;
+  try {
+    return slugify(title);
+  } catch {
+    // Symbol-only title (e.g. '!!!'). Every such folder gets the same slug, so
+    // the second one onwards goes down the collision path below — which now
+    // imports it under a discriminated slug instead of dropping it.
+    return 'untitled';
+  }
+}
+
+/**
+ * Deterministic per-folder suffix used to break a slug collision.
+ *
+ * Derived from the folder name rather than from a counter, so the same folder
+ * gets the same discriminated slug on every scan. A counter would renumber the
+ * moment a sibling folder is added or removed, and the rescan would import a
+ * second copy of a course it already had.
+ */
+function slugDiscriminator(folderName: string): string {
+  return createHash('sha256').update(folderName).digest('hex').slice(0, 8);
+}
+
+/**
+ * `base`, shortened to make room, plus a folder-derived suffix — still within
+ * the slug length cap. The trailing strip covers what the cut can leave
+ * behind: a hyphen, an orphaned combining mark, or half of an astral character.
+ */
+function discriminatedSlug(base: string, folderName: string): string {
+  const suffix = slugDiscriminator(folderName);
+  const head = base
+    .slice(0, SLUG_MAX_LENGTH - suffix.length - 1)
+    .replace(/[-\p{M}\uD800-\uDBFF]+$/u, '');
+  return `${head}-${suffix}`;
 }
 
 @CommandHandler(RunScanCommand)
@@ -317,6 +347,18 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       const existingCourses = await this.courseRepo.findManyByLibrary(libraryId);
       const existingSlugSet = new Set(existingCourses.map((c) => c.slug));
 
+      // Which top-level folder each already-imported slug came from, filled in
+      // from that course's lessons below (Course has no folder column).
+      //
+      // WHY it is needed: "this slug is taken" and "this FOLDER is already
+      // imported" used to be the same question, because one title could only
+      // ever produce one slug. Once a taken slug can belong to a different
+      // folder, answering the second question with the first is what silently
+      // drops a course. With the owner known, a taken slug splits into two
+      // cases — mine (skip, idempotent) and someone else's (discriminate and
+      // import, with a ScanError) — and neither is silent.
+      const existingFolderBySlug = new Map<string, string>();
+
       // Every lesson already known for this library, keyed by its stored
       // videoPath — the same absolute-path string the walk produces, since
       // that is what Lesson.create() was given when the row was first written.
@@ -349,6 +391,14 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
         for (const course of existingCourses) {
           for (const lesson of await this.lessonRepo.findByCourse(course.id)) {
             existingLessonByVideoPath.set(lesson.videoPath, lesson);
+            if (!existingFolderBySlug.has(course.slug)) {
+              // Every lesson of one course lives under one top-level folder, so
+              // the first one answers for all of them.
+              const [folder] = path.relative(rootPath, lesson.videoPath).split(/[/\\]/);
+              if (folder !== undefined && folder !== '') {
+                existingFolderBySlug.set(course.slug, folder);
+              }
+            }
           }
         }
       }
@@ -703,9 +753,9 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           // -------------------------------------------------------------------
           // Persist Course + Section + Lesson rows.
           //
-          // Library-wide scan: SKIP on duplicate slug (v1). Re-importing would
-          // clobber user-renamed metadata (e.g. a user renamed the course title
-          // via the API) — the user's edit wins.
+          // Library-wide scan: SKIP a folder that is ALREADY IMPORTED (v1).
+          // Re-importing would clobber user-renamed metadata (e.g. a user
+          // renamed the course title via the API) — the user's edit wins.
           //
           // Scoped rescan: FORCE-RESYNC this one course instead (E32-F01-S03).
           // The skip is why a rescan could not repair anything: it fires 140
@@ -715,12 +765,52 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           // course's own folder (every other topFolder was skipped), so this
           // branch can only be that course's folder, and `scopeCourse` is the
           // aggregate the request named.
+          //
+          // "Already imported" is NOT "slug is taken". Two folders whose titles
+          // legitimately reduce to one slug are two courses, and treating the
+          // second as an idempotent skip is what cost 253 lessons without so
+          // much as a ScanError. The loser now takes a folder-derived
+          // discriminator and imports, and the operator is told.
           // -------------------------------------------------------------------
-          const slug = toSlug(courseTitle);
+          let slug = toSlug(courseTitle);
 
           if (scopeCourse === undefined && existingSlugSet.has(slug)) {
-            // Course already persisted from a previous scan — do not overwrite.
-            continue;
+            const owner = existingFolderBySlug.get(slug);
+            const relFolder = path.relative(rootPath, courseFolder);
+
+            if (owner === folderName) {
+              // This folder's own course, persisted by an earlier scan.
+              continue;
+            }
+            if (owner === undefined) {
+              // A course row holds the slug but owns no lesson that could say
+              // which folder it came from — in practice this same folder, whose
+              // lessons failed to persist on an earlier scan. Claiming the slug
+              // would collide on uq_course_library_slug, so the folder is
+              // skipped, but it is reported: a scoped rescan repairs it.
+              scan.recordError({
+                path: relFolder,
+                message:
+                  `Slug "${slug}" is held by a course with no lessons, so this folder cannot be ` +
+                  `matched to it. Rescan that course to re-import its lessons.`,
+                code: 'course-slug-collision',
+              });
+              continue;
+            }
+
+            // A DIFFERENT folder holds the slug. Both are real courses.
+            slug = discriminatedSlug(slug, folderName);
+            if (existingSlugSet.has(slug)) {
+              // Already imported under the discriminated slug — nothing to do.
+              continue;
+            }
+            scan.recordError({
+              path: relFolder,
+              message:
+                `Course title "${courseTitle}" reduces to a slug "${folderName}" shares with ` +
+                `"${owner}"; imported as "${slug}" instead.`,
+              code: 'course-slug-collision',
+            });
           }
 
           try {
@@ -763,10 +853,11 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
             }
             await this.courseRepo.save(course);
 
-            // Mark slug as known so subsequent folders in the same scan with
-            // the same slug are also skipped (edge case — two folders that
-            // normalise to the same slug).
+            // Mark the slug as taken, and by whom, so a later folder in THIS
+            // same scan whose title reduces to it takes the discriminated
+            // branch above instead of being skipped.
             existingSlugSet.add(slug);
+            existingFolderBySlug.set(slug, folderName);
 
             // Build a title → sectionId lookup from the freshly-created sections.
             const sectionIdByTitle = new Map<string, string>(
@@ -1022,7 +1113,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       // generated file is unlinked best-effort.
       //
       // On a library-wide scan the Lesson row itself is left alone, matching
-      // the "skip on duplicate slug" idempotency the rest of that walk lives
+      // the "skip an already-imported folder" idempotency the rest of that walk lives
       // with. On a force-resync the row goes too (below) — a resync exists to
       // make the course match the disk, and a lesson pointing at a file that
       // is gone is exactly the drift it is there to remove.

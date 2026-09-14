@@ -20,22 +20,31 @@
  *   - On any unexpected exception inside the walk, calls scan.fail() and
  *     persists the terminal state.
  *
- * Two idempotency modes, and scope is what picks between them:
+ * Two idempotency modes, and scope is what picks between them. Both
+ * reconcile lessons by videoPath and keep their id, because LessonProgress /
+ * Bookmark / Note / Transcript all reference lessonId with no foreign key
+ * behind them — a new id orphans all four silently. An id is reused only
+ * when the matched lesson's courseId is this course: the library-wide index
+ * (`existingLessonByVideoPath`) spans every course, so that check is what
+ * stops a lesson being adopted across a course boundary (#544).
  *   - Library-wide scan (no scope): a folder that is ALREADY IMPORTED is
- *     SKIPPED. Re-importing it would clobber metadata the user edited through
- *     the API, and across a whole library the user's edit wins. "Already
- *     imported" means the slug is taken AND belongs to this folder — a slug
- *     taken by a different folder is a collision, not an import, and the
- *     second folder imports under a discriminated slug with a ScanError.
+ *     RECONCILED, not skipped and not re-created — every scan corrects
+ *     lesson positions, the class of bug that left 153 lessons across 6
+ *     courses stuck in the order a since-replaced filename parser produced
+ *     (#544). Course-level metadata (title, slug, poster, level, language,
+ *     rating, instructor/studio/tag links) is never re-derived — the user's
+ *     edit through the API wins — and neither are sections: a section folder
+ *     with no persisted match is left for a scoped rescan, and a lesson
+ *     whose video vanished from disk is not removed. "Already imported"
+ *     means the slug is taken AND belongs to this folder — a slug taken by a
+ *     different folder is a collision, not an import, and the second folder
+ *     imports under a discriminated slug with a ScanError.
  *   - Scoped rescan (POST /courses/{id}/rescan): FORCE-RESYNC. Pressing
  *     "Rescan" on one course page means "re-import this course from disk", so
- *     scope IS the force signal — there is no second flag. Sections, lesson
- *     order and lesson rows come back from disk; the course row itself (title,
- *     slug, poster, level, language, rating, instructor/studio/tag links) is
- *     never re-derived, which is the property the skip existed to protect.
- *     Lessons are reconciled by videoPath and keep their id, because
- *     LessonProgress / Bookmark / Note / Transcript all reference lessonId
- *     with no foreign key behind them — a new id orphans all four silently.
+ *     scope IS the force signal — there is no second flag. On top of the
+ *     library-wide reconciliation above, sections are re-derived from disk
+ *     and a lesson whose video is gone is deleted, along with every row that
+ *     references its id.
  *
  * NOTE: v2 will move the async walk to a background worker queue (BullMQ).
  * For v1 the fire-and-forget in-process approach is intentional.
@@ -371,6 +380,14 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       // set first, before either one's derived slug enters the picture.
       const importedFolderNames = new Set<string>();
 
+      // Same identity, but resolving to the actual Course aggregate rather
+      // than just its name — a library-wide scan on an already-imported
+      // folder reconciles that course (#544) instead of skipping it, and
+      // needs the aggregate itself to do that. Populated alongside
+      // `importedFolderNames` below, never separately, so the two can never
+      // disagree on which folders are "already imported".
+      const courseByFolderName = new Map<string, Course>();
+
       // Every lesson already known for this library, keyed by its stored
       // videoPath — the same absolute-path string the walk produces, since
       // that is what Lesson.create() was given when the row was first written.
@@ -408,6 +425,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
             const [folder] = path.relative(rootPath, lesson.videoPath).split(/[/\\]/);
             if (folder !== undefined && folder !== '') {
               importedFolderNames.add(folder);
+              courseByFolderName.set(folder, course);
               if (!existingFolderBySlug.has(course.slug)) {
                 existingFolderBySlug.set(course.slug, folder);
               }
@@ -758,69 +776,82 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           // -------------------------------------------------------------------
           // Persist Course + Section + Lesson rows.
           //
-          // Library-wide scan: SKIP a folder that is ALREADY IMPORTED (v1).
-          // Re-importing would clobber user-renamed metadata (e.g. a user
-          // renamed the course title via the API) — the user's edit wins.
+          // Library-wide scan, folder already imported: RECONCILE (#544), not
+          // skip and not re-create. Lesson positions and lesson ids are
+          // recomputed the same way a scoped rescan recomputes them, minus
+          // the two things scope alone still does: course-level metadata is
+          // never re-derived (a user's title/slug/poster edit through the API
+          // wins) and sections are left exactly as persisted — a section
+          // folder with no matching persisted section produces
+          // 'lesson-section-unresolvable' for its lessons rather than a new
+          // section, and a lesson whose video vanished is not removed. Both
+          // are deliberately narrower than force-resync: what was measured
+          // (153 lessons across 6 courses, see the issue) is lessons stuck at
+          // a stale POSITION, never a missing section or a vanished file, so
+          // this is the minimum that fixes it.
           //
-          // Scoped rescan: FORCE-RESYNC this one course instead (E32-F01-S03).
-          // The skip is why a rescan could not repair anything: it fires 140
-          // lines before the only lessonRepo.save, so a course already in the
-          // DB never got a lesson written, however many the walk found. Scope
-          // is the force signal — the walk above only grouped the scoped
-          // course's own folder (every other topFolder was skipped), so this
-          // branch can only be that course's folder, and `scopeCourse` is the
-          // aggregate the request named.
+          // Scoped rescan: FORCE-RESYNC this one course instead (E32-F01-S03)
+          // — the above, plus sections re-derived from disk and a vanished
+          // lesson's row removed. Scope is the force signal — the walk above
+          // only grouped the scoped course's own folder (every other
+          // topFolder was skipped), so this branch can only be that course's
+          // folder, and `scopeCourse` is the aggregate the request named.
           //
+          // Library-wide scan, folder genuinely new: build a fresh course.
           // "Already imported" is NOT "slug is taken". Two folders whose titles
           // legitimately reduce to one slug are two courses, and treating the
           // second as an idempotent skip is what cost 253 lessons without so
           // much as a ScanError. The loser now takes a folder-derived
           // discriminator and imports, and the operator is told.
           // -------------------------------------------------------------------
+
+          // Matched on the folder, not on `slug` — see `courseByFolderName`
+          // above for why the slug cannot be trusted for this check (#504).
+          // `scopeCourse` already resolved its own course upfront (a scoped
+          // rescan's `courseEntries` only ever has that one folder), so this
+          // lookup only fires on the library-wide path.
+          const reconcileCourse =
+            scopeCourse === undefined ? courseByFolderName.get(folderName) : undefined;
+
           let slug = toSlug(courseTitle);
 
-          if (scopeCourse === undefined) {
-            if (importedFolderNames.has(folderName)) {
-              // This folder's own course, persisted by an earlier scan.
-              // Matched on the folder, not on `slug` — see `importedFolderNames`
-              // above for why the slug cannot be trusted for this check (#504).
-              continue;
-            }
+          if (
+            scopeCourse === undefined &&
+            reconcileCourse === undefined &&
+            existingSlugSet.has(slug)
+          ) {
+            const owner = existingFolderBySlug.get(slug);
+            const relFolder = path.relative(rootPath, courseFolder);
 
-            if (existingSlugSet.has(slug)) {
-              const owner = existingFolderBySlug.get(slug);
-              const relFolder = path.relative(rootPath, courseFolder);
-
-              if (owner === undefined) {
-                // A course row holds the slug but owns no lesson that could say
-                // which folder it came from — in practice this same folder, whose
-                // lessons failed to persist on an earlier scan. Claiming the slug
-                // would collide on uq_course_library_slug, so the folder is
-                // skipped, but it is reported: a scoped rescan repairs it.
-                scan.recordError({
-                  path: relFolder,
-                  message:
-                    `Slug "${slug}" is held by a course with no lessons, so this folder cannot be ` +
-                    `matched to it. Rescan that course to re-import its lessons.`,
-                  code: 'course-slug-collision',
-                });
-                continue;
-              }
-
-              // A DIFFERENT folder holds the slug. Both are real courses.
-              slug = discriminatedSlug(slug, folderName);
-              if (existingSlugSet.has(slug)) {
-                // Already imported under the discriminated slug — nothing to do.
-                continue;
-              }
+            if (owner === undefined) {
+              // A course row holds the slug but owns no lesson that could say
+              // which folder it came from — in practice this same folder, whose
+              // lessons failed to persist on an earlier scan. Claiming the slug
+              // would collide on uq_course_library_slug, so the folder is
+              // skipped, but it is reported: a scoped rescan repairs it.
               scan.recordError({
                 path: relFolder,
                 message:
-                  `Course title "${courseTitle}" reduces to a slug "${folderName}" shares with ` +
-                  `"${owner}"; imported as "${slug}" instead.`,
+                  `Slug "${slug}" is held by a course with no lessons, so this folder cannot be ` +
+                  `matched to it. Rescan that course to re-import its lessons.`,
                 code: 'course-slug-collision',
               });
+              continue;
             }
+
+            // A DIFFERENT folder holds the slug. Both are real courses.
+            slug = discriminatedSlug(slug, folderName);
+            if (existingSlugSet.has(slug)) {
+              // Already imported under the discriminated slug — nothing to do.
+              continue;
+            }
+            scan.recordError({
+              path: relFolder,
+              message:
+                `Course title "${courseTitle}" reduces to a slug "${folderName}" shares with ` +
+                `"${owner}"; imported as "${slug}" instead.`,
+              code: 'course-slug-collision',
+            });
           }
 
           try {
@@ -850,6 +881,15 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
                   title,
                 })),
               );
+            } else if (reconcileCourse) {
+              // Reconcile (#544): keep the course row AND its sections exactly
+              // as persisted — only lesson positions and lesson ids are
+              // recomputed below. Re-deriving sections here would mean a
+              // section whose folder was renamed or removed on disk gets
+              // dropped and cascades its lessons with it, on every ordinary
+              // scan rather than only when an operator explicitly asks for a
+              // rescan; that stays force-resync-only, see the comment above.
+              course = reconcileCourse;
             } else {
               course = Course.create({
                 id: nanoid(),
@@ -863,11 +903,17 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
             }
             await this.courseRepo.save(course);
 
-            // Mark the slug as taken, and by whom, so a later folder in THIS
-            // same scan whose title reduces to it takes the discriminated
-            // branch above instead of being skipped.
-            existingSlugSet.add(slug);
-            existingFolderBySlug.set(slug, folderName);
+            if (scopeCourse === undefined && reconcileCourse === undefined) {
+              // Mark the slug as taken, and by whom, so a later folder in THIS
+              // same scan whose title reduces to it takes the discriminated
+              // branch above instead of being skipped. Skipped for scopeCourse/
+              // reconcileCourse: `slug` here is only `courseTitle`'s derivation
+              // (folder or course.json), not the persisted course's actual
+              // slug — recording it would be wrong bookkeeping for a course
+              // that already has a real slug in `existingSlugSet`.
+              existingSlugSet.add(slug);
+              existingFolderBySlug.set(slug, folderName);
+            }
 
             // Build a title → sectionId lookup from the freshly-created sections.
             const sectionIdByTitle = new Map<string, string>(
@@ -963,13 +1009,14 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               }
             }
 
-            // Force-resync: empty this course's positive position range before
-            // writing the new order back. Lessons are saved one at a time, and
-            // a resync that inserts a lesson the first import missed shifts
-            // every later lesson in its section — without parking, the first
-            // shifted lesson lands on a position the row after it still holds
-            // and loses the (sectionId, position) unique constraint.
-            if (scopeCourse) {
+            // Force-resync or reconcile (#544): empty this course's positive
+            // position range before writing the new order back. Lessons are
+            // saved one at a time, and a resync/reconcile that reorders even
+            // one lesson shifts every later lesson in its section — without
+            // parking, the first shifted lesson lands on a position the row
+            // after it still holds and loses the (sectionId, position)
+            // unique constraint.
+            if (scopeCourse || reconcileCourse) {
               await this.lessonRepo.parkPositionsForResync(course.id);
             }
 
@@ -981,16 +1028,29 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- guaranteed above
               const lessonPosition = positionByVideoPath.get(entry.videoPath)!;
 
-              // Force-resync: reconcile by videoPath and keep the existing
-              // lesson's id. Progress, bookmarks, notes and transcripts all
-              // point at lessonId with no foreign key, so minting a new id
-              // orphans every one of them with nothing left to collect them.
-              // Only the scoped path reuses ids: on a library-wide scan the map
-              // spans other courses, and adopting their lesson ids would move
-              // rows between courses.
-              const reusableLessonId = scopeCourse
-                ? existingLessonByVideoPath.get(entry.videoPath)?.id
-                : undefined;
+              // Force-resync or reconcile (#544): match by videoPath and keep
+              // the existing lesson's id. Progress, bookmarks, notes and
+              // transcripts all point at lessonId with no foreign key, so
+              // minting a new id orphans every one of them with nothing left
+              // to collect them. Only scopeCourse/reconcileCourse reuse ids at
+              // all — on a library-wide scan of a genuinely new folder there
+              // is no existing course to match against.
+              //
+              // The `courseId` check is the safety net #544 needs now that
+              // reuse is live on the library-wide path too:
+              // `existingLessonByVideoPath` spans every course in the library
+              // there, not just this one, so without it a stray videoPath
+              // collision (or corrupted data) could hand this course a lesson
+              // id that actually belongs to a different one — silently moving
+              // that row's progress/bookmarks/notes/transcripts with it.
+              const matchedExistingLesson =
+                scopeCourse || reconcileCourse
+                  ? existingLessonByVideoPath.get(entry.videoPath)
+                  : undefined;
+              const reusableLessonId =
+                matchedExistingLesson?.courseId === course.id
+                  ? matchedExistingLesson.id
+                  : undefined;
 
               try {
                 const lesson = Lesson.create({
@@ -1071,13 +1131,18 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
             // non-fatal (logged as 'metadata-link-failed') so a bad link never
             // aborts the scan or discards the already-persisted course+lessons.
             //
-            // Never on a force-resync: course.json is the FIRST import's source
-            // of metadata, and after that the course row belongs to whoever
-            // edited it through the API. Re-linking would silently revert a
-            // renamed title, a replaced poster or a curated tag list — the very
-            // thing the skip this path bypasses was protecting.
+            // Never on a force-resync or a reconcile (#544): course.json is
+            // the FIRST import's source of metadata, and after that the
+            // course row belongs to whoever edited it through the API.
+            // Re-linking would silently revert a renamed title, a replaced
+            // poster or a curated tag list — the very thing the old skip was
+            // protecting, and reconcile protects the same way.
             // -------------------------------------------------------------------
-            if (normalisedCourseJson !== undefined && scopeCourse === undefined) {
+            if (
+              normalisedCourseJson !== undefined &&
+              scopeCourse === undefined &&
+              reconcileCourse === undefined
+            ) {
               try {
                 const instructorRefs = await this.linker.upsertInstructorsByName(
                   normalisedCourseJson.instructorNames ?? [],

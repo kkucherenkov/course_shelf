@@ -34,7 +34,7 @@ import { AppConfig } from '../../../../common/config/app-config';
 import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
 import { LESSON_REPOSITORY } from '../../domain/lesson/lesson.repository';
 import { LessonNotFoundError } from '../../domain/lesson/lesson.errors';
-import { languageLabel } from '../../domain/lesson/subtitle';
+import { languageLabel, resolveTranscriptionLanguage } from '../../domain/lesson/subtitle';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from '../../domain/progress/course-progress-read-model.repository';
 import { TRANSCRIPT_REPOSITORY } from '../../domain/transcription/transcript.repository';
@@ -110,13 +110,9 @@ export class GetLessonHandler implements IQueryHandler<GetLessonQuery, LessonDto
           }
         : LESSON_PROGRESS_PLACEHOLDER;
 
-    // 'auto' means whisper detects the language per lesson rather than the
-    // config naming one; the recorded transcript language is then `und`,
-    // mirroring Subtitle.fromFile's own default for a suffix-less sidecar.
-    const transcriptionLanguage =
-      this.appConfig.transcription.language === 'auto'
-        ? 'und'
-        : this.appConfig.transcription.language;
+    const transcriptionLanguage = resolveTranscriptionLanguage(
+      this.appConfig.transcription.language,
+    );
     const sidecarLanguages = new Set(lesson.subtitles.map((s) => s.language.toLowerCase()));
     const generated = sidecarLanguages.has(transcriptionLanguage.toLowerCase())
       ? new Map<string, unknown>()

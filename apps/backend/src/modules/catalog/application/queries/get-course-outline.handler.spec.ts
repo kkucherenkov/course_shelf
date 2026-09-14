@@ -4,6 +4,7 @@ import { brand } from '../../../../shared/branded-id';
 import { Course } from '../../domain/course/course';
 import { Lesson } from '../../domain/lesson/lesson';
 import { Material } from '../../domain/lesson/material';
+import { Subtitle } from '../../domain/lesson/subtitle';
 import { CourseNotFoundError } from '../../domain/course/course.errors';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { CourseProgressReadModel } from '../../domain/progress/course-progress-read-model';
@@ -16,6 +17,11 @@ import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
 import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
 import type { LessonProgressRepository } from '../../../../common/learning-progress';
+import type { AppConfig } from '../../../../common/config/app-config';
+import type {
+  GeneratedTranscriptSignature,
+  TranscriptRepository,
+} from '../../domain/transcription/transcript.repository';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -85,6 +91,26 @@ function makeLessonProgressRepo(rows: LessonProgress[] = []): LessonProgressRepo
   };
 }
 
+function makeTranscriptRepo(
+  generated = new Map<string, GeneratedTranscriptSignature>(),
+): TranscriptRepository {
+  return {
+    findGeneratedForLessons: vi.fn().mockResolvedValue(generated),
+    replaceGenerated: vi.fn(),
+    findExisting: vi.fn().mockResolvedValue(null),
+    replaceSidecar: vi.fn(),
+    deleteForLesson: vi.fn(),
+  };
+}
+
+function makeAppConfig(language = 'auto'): AppConfig {
+  return { transcription: { language } } as unknown as AppConfig;
+}
+
+function makeGeneratedSignature(): GeneratedTranscriptSignature {
+  return { sourceMtime: NOW, sourceSize: 1024 };
+}
+
 function makeCourse(
   opts: { id?: string; sections?: { id: string; position: number; title: string }[] } = {},
 ): Course {
@@ -110,6 +136,7 @@ function makeLesson(opts: {
   position: number;
   duration?: number;
   materials?: Material[];
+  subtitles?: Subtitle[];
 }): Lesson {
   return Lesson.reconstitute({
     id: brand<string, 'Lesson'>(opts.id),
@@ -124,8 +151,12 @@ function makeLesson(opts: {
     createdAt: NOW,
     updatedAt: NOW,
     materials: opts.materials ?? [],
-    subtitles: [],
+    subtitles: opts.subtitles ?? [],
   });
+}
+
+function makeSubtitle(language = 'en'): Subtitle {
+  return Subtitle.reconstitute({ id: `sub-${language}`, language, path: `lesson.${language}.srt` });
 }
 
 function makeMaterial(id: string): Material {
@@ -163,6 +194,7 @@ function makeLessonProgress(
 describe('GetCourseOutlineHandler', () => {
   let courseRepo: CourseRepository;
   let lessonRepo: LessonRepository;
+  let transcriptRepo: TranscriptRepository;
   let handler: GetCourseOutlineHandler;
 
   describe('happy path — course with two sections, various lesson states', () => {
@@ -179,8 +211,18 @@ describe('GetCourseOutlineHandler', () => {
 
       const mat = makeMaterial('mat-1');
       const lessons = [
-        makeLesson({ id: 'l1', sectionId: 'sec-1', position: 1, duration: 60, materials: [mat] }),
+        // l1: has a sidecar subtitle → hasTranscript via the sidecar half of the union.
+        makeLesson({
+          id: 'l1',
+          sectionId: 'sec-1',
+          position: 1,
+          duration: 60,
+          materials: [mat],
+          subtitles: [makeSubtitle('en')],
+        }),
+        // l2: neither sidecar nor generated → hasTranscript: false.
         makeLesson({ id: 'l2', sectionId: 'sec-1', position: 2, duration: 90 }),
+        // l3: no sidecar, but the batched generated lookup has a row → hasTranscript via generated.
         makeLesson({ id: 'l3', sectionId: 'sec-2', position: 1, duration: 120 }),
       ];
 
@@ -204,12 +246,16 @@ describe('GetCourseOutlineHandler', () => {
         lastSeenLessonId: 'l1',
       });
 
+      transcriptRepo = makeTranscriptRepo(new Map([['l3', makeGeneratedSignature()]]));
+
       handler = new GetCourseOutlineHandler(
         courseRepo,
         lessonRepo,
         makeAuthz(true),
         makeProgressRepo(courseProgressRow),
         makeLessonProgressRepo(progressRows),
+        transcriptRepo,
+        makeAppConfig(),
       );
     });
 
@@ -241,6 +287,25 @@ describe('GetCourseOutlineHandler', () => {
       expect(l1?.state).toBe('completed');
       expect(l1?.progressPercent).toBe(100);
       expect(l1?.hasMaterials).toBe(true);
+      expect(l1?.hasTranscript).toBe(true); // via sidecar subtitle
+    });
+
+    it('derives hasTranscript for every combination of sidecar / generated', async () => {
+      const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
+
+      expect(result.sections[0]?.lessons[0]?.hasTranscript).toBe(true); // l1: sidecar
+      expect(result.sections[0]?.lessons[1]?.hasTranscript).toBe(false); // l2: neither
+      expect(result.sections[1]?.lessons[0]?.hasTranscript).toBe(true); // l3: generated
+    });
+
+    it('looks up generated transcripts in one batched call across every lesson id', async () => {
+      await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
+
+      expect(transcriptRepo.findGeneratedForLessons).toHaveBeenCalledTimes(1);
+      expect(transcriptRepo.findGeneratedForLessons).toHaveBeenCalledWith(
+        ['l1', 'l2', 'l3'],
+        'und', // appConfig.transcription.language defaults to 'auto' → 'und'
+      );
     });
 
     it('derives lesson state: in-progress', async () => {
@@ -289,6 +354,8 @@ describe('GetCourseOutlineHandler', () => {
         makeAuthz(true),
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
     });
 
@@ -320,6 +387,8 @@ describe('GetCourseOutlineHandler', () => {
         makeAuthz(false),
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       await expect(
@@ -340,6 +409,8 @@ describe('GetCourseOutlineHandler', () => {
         makeAuthz(true),
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       await expect(
@@ -381,6 +452,8 @@ describe('GetCourseOutlineHandler', () => {
         makeAuthz(true),
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
@@ -421,6 +494,8 @@ describe('GetCourseOutlineHandler', () => {
         makeAuthz(true),
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
@@ -459,6 +534,8 @@ describe('GetCourseOutlineHandler', () => {
         makeAuthz(true),
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
+        makeTranscriptRepo(),
+        makeAppConfig(),
       );
 
       const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));

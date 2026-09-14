@@ -394,3 +394,68 @@ checks.positive_data_acceptance.expected-statuses = ["2xx", 401, 403, 404, 409, 
 [[operations]]
 include-name = "POST /api/v1/admin/tags"
 checks.positive_data_acceptance.expected-statuses = ["2xx", 401, 403, 404, 409, 422, "5xx"]
+
+# ---------------------------------------------------------------------------
+# `offset`/`limit` query parameters: the negation has no wire-level type to
+# violate
+# ---------------------------------------------------------------------------
+#
+# `negative_data_rejection` mutates the JSON-level type of `offset`/`limit`
+# from `integer` to something else — but a query string carries no types.
+# When the generator's chosen replacement is a digit string (Hypothesis
+# reaches for `"0"`/`"1"` often; that is what happened here), it serialises
+# byte-identical to a valid request: `offset=1` on the wire either way.
+# `express-openapi-validator` coerces it back to a number and answers 200,
+# which is the correct, required behaviour for a query parameter — the check
+# then reports the case it *generated* (a JSON string) instead of the one it
+# *sent* (indistinguishable from valid). Confirmed directly: a hand-built
+# request with `offset=1` gets 200 against a live stack; nothing here is
+# hypothetical.
+#
+# Whether a given CI run is green depends on whether the generator's mutation
+# for a given case happens to look like a bare non-negative integer or not —
+# same false-positive shape `POST /realtime/token`, `PUT /notes` and the
+# `/libraries/{id}` family above already carry this exemption for, each for
+# its own reason. First observed on `GET /catalog/tags` (issue #528, PR #526's
+# CI run), but the parameter, not the operation, is at fault: eleven
+# operations declare `offset` and/or `limit` as `type: integer` in query, and
+# every one of them is exposed to the identical mechanism. Fixed across all
+# eleven for the same coin-flip reason the rest of this file gives — a gate
+# that fails on a seed is worse than one with a documented hole.
+#
+# Two fixes were weighed, not guessed — both required a live stack to judge:
+#
+#   1. This one: disable `negative_data_rejection` where the negation is
+#      unsound. Only that one check drops on these operations; every other
+#      check (`not_a_server_error`, `positive_data_acceptance`,
+#      `response_schema_conformance`, …) stays fully armed.
+#   2. Stop declaring `offset`/`limit` as `type: integer` on the wire (string
+#      + `pattern`), so the negation becomes expressible again. Rejected: the
+#      type is duplicated inline 14 times across these eleven operations
+#      (no shared `$ref` to retype in one place), retyping it changes what
+#      every generated client emits and what the handler reads off
+#      `req.query` today, and it is therefore a wire-breaking change under
+#      this repo's own versioning rule — a new `/api/v2` prefix and an ADR to
+#      fix a gate false-positive is disproportionate, and reaches well past
+#      what a spec-only change can carry alone.
+#
+# Known cost: a genuine "the API accepted an out-of-range offset/limit" bug on
+# any of these eleven operations would now be caught only by
+# `positive_data_acceptance` / `response_schema_conformance` on a
+# schema-compliant value, not by this check deliberately sending a
+# non-compliant one.
+[[operations]]
+include-operation-id = [
+  "getContinueWatching",
+  "getRecentlyAdded",
+  "getRecentlyCompleted",
+  "listAdminScans",
+  "listAdminTranscriptions",
+  "listAdminUsers",
+  "listInstructors",
+  "listLibraryTranscriptions",
+  "listStudios",
+  "listTags",
+  "searchCatalogue",
+]
+checks.negative_data_rejection.enabled = false

@@ -41,7 +41,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 
 - Created: 2026-09-14
 - Completed: 2026-09-14
-- Result: PR_URL
+- Result: https://github.com/kkucherenkov/course_shelf/pull/475
 - Owner: claude (backend-engineer)
 - Spec: `packages/specs/openapi/openapi.yaml` → new
   `POST /api/v1/courses/{id}/transcription`, `TranscriptionDto.scopeCourseId` /

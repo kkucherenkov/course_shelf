@@ -8310,7 +8310,14 @@ components:
           maxLength: 200
         description:
           type: string
-          maxLength: 4000
+          # A scraped course page carries more than a summary: promo copy plus
+          # "what you'll learn" bullets plus audience/requirements text, all
+          # concatenated into this one field. Stepik course 181875 (an
+          # ordinary paid course, not an outlier) measured at 4203 chars
+          # across those sections — doubling that baseline gives room for
+          # similar variance elsewhere while still bounding the field against
+          # a runaway scrape.
+          maxLength: 8000
         sections:
           type: array
           items:
@@ -10034,7 +10041,8 @@ components:
           maxLength: 200
         description:
           type: string
-          maxLength: 4000
+          # Same cap as CourseDto.description — see the comment there.
+          maxLength: 8000
         slug:
           $ref: "#/components/schemas/CourseSlug"
         instructorIds:

@@ -357,6 +357,67 @@ describe('LessonFileLocator', () => {
     expect(transcriptRepo.findGeneratedForLessons).toHaveBeenCalledWith([LESSON_ID], 'fr');
   });
 
+  it('locateSubtitle resolves a generated transcript when videoPath is stored absolute', async () => {
+    // The scan records what it walked, so `Lesson.videoPath` is absolute in
+    // practice even though `derivedTranscriptPath` documents it as
+    // library-relative. `run-transcription.handler.ts` normalises before
+    // writing the .srt; the read has to normalise identically or `path.resolve`
+    // drops the derived root and the traversal guard refuses our own file.
+    const lessonAbsolutePath = {
+      id: LESSON_ID,
+      courseId: COURSE_ID,
+      videoPath: path.resolve(ROOT, VIDEO_RELATIVE),
+      subtitles: [],
+      materials: [],
+    };
+    const transcriptRepo = makeTranscriptRepo({
+      findGeneratedForLessons: vi
+        .fn()
+        .mockResolvedValue(new Map([[LESSON_ID, { sourceMtime: new Date(), sourceSize: 1 }]])),
+    });
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonAbsolutePath) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+      transcriptRepo,
+      makeAppConfig('/srv/derived'),
+    );
+
+    const result = await locator.locateSubtitle(LESSON_ID, 'fr');
+
+    expect(result.absolutePath).toBe(
+      path.resolve('/srv/derived', LIBRARY_ID, `${VIDEO_RELATIVE}.fr.srt`),
+    );
+  });
+
+  it('locateSubtitle still refuses an absolute videoPath pointing outside the library root', async () => {
+    // Normalising must not weaken the guard: an absolute path that is not under
+    // the library root relativises to something starting with `..`, which
+    // `derivedTranscriptPath` refuses exactly as before.
+    const escapingLesson = {
+      id: LESSON_ID,
+      courseId: COURSE_ID,
+      videoPath: '/etc/passwd',
+      subtitles: [],
+      materials: [],
+    };
+    const transcriptRepo = makeTranscriptRepo({
+      findGeneratedForLessons: vi
+        .fn()
+        .mockResolvedValue(new Map([[LESSON_ID, { sourceMtime: new Date(), sourceSize: 1 }]])),
+    });
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(escapingLesson) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+      transcriptRepo,
+    );
+
+    await expect(locator.locateSubtitle(LESSON_ID, 'fr')).rejects.toBeInstanceOf(
+      DerivedPathEscapedError,
+    );
+  });
+
   it('locateSubtitle prefers a sidecar over a generated transcript in the same language', async () => {
     const lessonWithVtt = makeLessonWithSubtitles([
       { language: 'en', path: SUBTITLE_VTT_RELATIVE },

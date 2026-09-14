@@ -363,62 +363,34 @@ include-name = "GET /api/v1/catalog/tags/{slug}"
 parameters = { "path.slug" = "seed-tag-fundamentals" }
 
 # ---------------------------------------------------------------------------
-# Slug-bearing write operations: generation phases off, everything else armed
+# Admin upserts: a rejected slug is a 422, and that is the contract
 # ---------------------------------------------------------------------------
 #
-# `EntitySlug` and `CourseSlug` are `^[\p{Ll}\p{Lo}\p{Lm}\p{N}]…$` — Unicode
-# property escapes, so a Cyrillic or CJK course title keeps its own script in
-# the slug instead of being transliterated or deleted (a Latin-free title used
-# to collapse to `untitled` and take the whole course with it).
+# With the slug `pattern` off the wire (see the two slug schemas in
+# openapi.yaml), the generator can finally build values for these bodies — and
+# it builds invalid slugs, which is exactly what it should do. The API answers
+# 422 `entity-slug-invalid` from the `EntitySlug` value object, and
+# `positive_data_acceptance` counts any non-2xx answer to schema-valid data as a
+# finding: schema-valid is no longer the same as domain-valid for this field.
 #
-# Schemathesis generates values with Hypothesis over Python's `re`, which does
-# not implement `\p{...}`. It reports this honestly — "the pattern is valid;
-# values matching it are what cannot be built" — and counts it as a Schema
-# Error, which fails the run. An `example` on the schema does not help (both
-# already carry one), and neither does a `parameters` override: the strategy is
-# built before overrides are applied. Verified all three locally against
-# schemathesis 4.25.2.
+# 422 is therefore added to the expected set rather than the check being turned
+# off, the same treatment `PATCH /api/v1/courses/{id}` already carries above for
+# invariants JSON Schema cannot express.
 #
-# What IS enough: disable every phase that must invent a slug. The operation
-# stays SELECTED (76/76, not 75/76 as `enabled = false` would give), the
-# Examples phase still exercises it from the declared examples, and every
-# check — `not_a_server_error` included — stays armed on what it sends.
-#
-# `stateful` is in the list because it generates too: with coverage and fuzzing
-# off, CI still reported one Schema Error, attributed to "Stateful tests" rather
-# than to an operation. That phase cannot be reproduced offline — it needs a live
-# API, and the offline run reports it as skipped — so unlike the three findings
-# above, this one was established from CI rather than locally.
-#
-# Known cost: only the declared examples reach these four operations. No
-# generated, negative or link-chained data does, so a defect only a fuzzer or a
-# scenario would find is now invisible on them. That is the price of
-# keeping the published contract honest about what a slug is; loosening the
-# pattern so the fuzzer could generate values would make every generated client
-# and every reader of the docs believe `FOO BAR` is a valid slug.
-#
-# Revisit when Schemathesis supports Unicode property escapes.
-
-[[operations]]
-include-name = "PATCH /api/v1/courses/{id}"
-phases.coverage.enabled = false
-phases.fuzzing.enabled = false
-phases.stateful.enabled = false
+# Applied to all three admin upserts, not only the one a run happened to trip:
+# they share the field and the value object, and which of them a stateful
+# scenario reaches depends on the seed. A gate that fails on a coin flip is
+# worse than one with a documented hole — the same reasoning this file applies
+# to the `/libraries/{id}` family.
 
 [[operations]]
 include-name = "POST /api/v1/admin/instructors"
-phases.coverage.enabled = false
-phases.fuzzing.enabled = false
-phases.stateful.enabled = false
+checks.positive_data_acceptance.expected-statuses = ["2xx", 401, 403, 404, 409, 422, "5xx"]
 
 [[operations]]
 include-name = "POST /api/v1/admin/studios"
-phases.coverage.enabled = false
-phases.fuzzing.enabled = false
-phases.stateful.enabled = false
+checks.positive_data_acceptance.expected-statuses = ["2xx", 401, 403, 404, 409, 422, "5xx"]
 
 [[operations]]
 include-name = "POST /api/v1/admin/tags"
-phases.coverage.enabled = false
-phases.fuzzing.enabled = false
-phases.stateful.enabled = false
+checks.positive_data_acceptance.expected-statuses = ["2xx", 401, 403, 404, 409, 422, "5xx"]

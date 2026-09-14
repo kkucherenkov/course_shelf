@@ -22,7 +22,7 @@ import { DomainError, InvariantViolation } from '../../../../shared/domain-error
 export class EntitySlugInvalidError extends InvariantViolation {
   constructor(entityName: string, raw: string) {
     super(
-      `${entityName} slug "${raw}" is invalid. Must be 1–100 chars, lowercase ASCII letters, ` +
+      `${entityName} slug "${raw}" is invalid. Must be 1–100 chars, lowercase letters in any script, ` +
         'digits, and hyphens; cannot start or end with a hyphen.',
       'entity-slug-invalid',
     );

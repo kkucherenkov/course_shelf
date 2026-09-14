@@ -15,26 +15,33 @@ import { Slug } from '../course/slug';
 import { EntitySlug, SLUG_MAX_LENGTH, SLUG_PATTERN, SLUG_RE, slugify } from './entity-slug';
 import { EntitySlugInvalidError } from './shared.errors';
 
-/** The `pattern` of a named schema as written in `packages/specs/openapi/openapi.yaml`. */
-function patternFromSpec(schemaName: string): string {
+/** The body of a named schema as written in `packages/specs/openapi/openapi.yaml`. */
+function schemaFromSpec(schemaName: string): string {
   // Vitest's root is `apps/backend` (see vitest.config.ts).
   const specPath = path.resolve(process.cwd(), '../../packages/specs/openapi/openapi.yaml');
   const doc = readFileSync(specPath, 'utf8');
-  const schema = doc.slice(doc.indexOf(`    ${schemaName}:`));
-  const line = /^\s*pattern: "(.+)"$/m.exec(schema);
-  if (!line?.[1]) throw new Error(`${schemaName} pattern not found in openapi.yaml`);
-  // YAML double-quoted scalars halve the backslashes; undo that so the result is
-  // the regex source the validator compiles.
-  return line[1].replaceAll('\\\\', '\\');
+  const start = doc.indexOf(`    ${schemaName}:`);
+  if (start === -1) throw new Error(`${schemaName} not found in openapi.yaml`);
+  const rest = doc.slice(start + schemaName.length + 6);
+  const end = /\n {4}[A-Za-z]/.exec(rest);
+  return rest.slice(0, end ? end.index : undefined);
 }
 
 describe('SLUG_PATTERN', () => {
-  it.each(['CourseSlug', 'EntitySlug'])(
-    'is character-for-character the %s pattern in openapi.yaml',
-    (schemaName) => {
-      expect(SLUG_PATTERN).toBe(patternFromSpec(schemaName));
-    },
-  );
+  // The wire schema deliberately carries NO `pattern`. It used to mirror this
+  // regex character-for-character, which is the stronger contract — but the
+  // pattern can only be written with Unicode property escapes, and the
+  // contract-test generator cannot build values for those. The gate then failed
+  // or passed depending on which operations a stateful scenario chained into,
+  // and a check that flips on a seed is worth less than the guarantee it was
+  // buying. The shape is enforced here, in the domain; the schema describes it
+  // in prose and the API answers 422 instead of 400.
+  //
+  // This test exists so that re-adding a `pattern` is a decision rather than an
+  // accident: it will fail, and whoever sees it should read this comment first.
+  it.each(['CourseSlug', 'EntitySlug'])('%s carries no pattern on the wire', (schemaName) => {
+    expect(schemaFromSpec(schemaName)).not.toContain('pattern:');
+  });
 
   it(String.raw`needs the u flag — without it every \p escape matches nothing`, () => {
     // The trap this pattern is one typo away from: `\p{L}` compiles fine in a

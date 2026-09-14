@@ -15,7 +15,7 @@ import { DomainError, InvariantViolation, NotFound } from '../../../../shared/do
 export class CourseSlugInvalidError extends InvariantViolation {
   constructor(raw: string) {
     super(
-      `Course slug "${raw}" is invalid. Must be 1–100 chars, lowercase ASCII letters, digits, ` +
+      `Course slug "${raw}" is invalid. Must be 1–100 chars, lowercase letters in any script, digits, ` +
         'and hyphens; cannot start or end with a hyphen.',
       'course-slug-invalid',
     );

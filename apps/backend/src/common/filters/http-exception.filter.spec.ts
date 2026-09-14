@@ -1,25 +1,44 @@
 /**
- * Tests for HttpExceptionFilter's handling of errors raised *outside* the Nest
- * pipeline.
+ * Tests for HttpExceptionFilter.
  *
- * `express-openapi-validator` is mounted with `app.use('/api', …)`, so it runs
- * ahead of the Nest router and rejects an unknown path / a method the path does
- * not define by calling `next(err)` with its own `HttpError`. Nest's express
- * error handler funnels that into the global filter, where it used to miss both
- * the `DomainError` and the `HttpException` branch and come out as a 500.
+ * Two concerns, both exercised through the real filter and a real Nest app
+ * rather than deduced from reading the source:
  *
- * The test boots the real middleware against a three-route inline document
- * rather than the bundled spec: `packages/specs/dist/openapi.json` is a build
+ * 1. Errors raised *outside* the Nest pipeline. `express-openapi-validator`
+ *    is mounted with `app.use('/api', …)`, so it runs ahead of the Nest
+ *    router and rejects an unknown path / a method the path does not define
+ *    by calling `next(err)` with its own `HttpError`. Nest's express error
+ *    handler funnels that into the global filter, where it used to miss both
+ *    the `DomainError` and the `HttpException` branch and come out as a 500.
+ *
+ * 2. A Nest `HttpException` built from an object (`new BadRequestException({
+ *    code, detail })`, the shape every controller in this codebase uses).
+ *    `HttpException.getResponse()` returns that object verbatim — Nest does
+ *    not add `message`/`error`/`statusCode` to a caller-supplied object — but
+ *    the filter used to read only `obj.message` / `obj.error`, so `code` and
+ *    `detail` were silently dropped and the response came out as a bare
+ *    `about:blank` 400 (#479).
+ *
+ * The test boots the real middleware against a small inline document rather
+ * than the bundled spec: `packages/specs/dist/openapi.json` is a build
  * artefact and is not committed, so depending on it would make this suite
  * order-dependent on `pnpm spec:bundle`.
  */
-import { Controller, Get, INestApplication, VersioningType } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  INestApplication,
+  VersioningType,
+} from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import express from 'express';
 import * as OpenApiValidator from 'express-openapi-validator';
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
+
+import { LibraryUpdateEmptyError } from '../../modules/catalog/domain/library/library.errors';
 
 import { HttpExceptionFilter } from './http-exception.filter';
 
@@ -33,6 +52,8 @@ const API_SPEC = {
   paths: {
     '/api/v1/things': { get: jsonOk },
     '/api/v1/things/boom': { get: jsonOk },
+    '/api/v1/things/bad-request': { get: jsonOk },
+    '/api/v1/things/domain-bad-request': { get: jsonOk },
   },
 };
 
@@ -46,6 +67,24 @@ class ThingsController {
   @Get('boom')
   boom(): never {
     throw new Error('kaboom');
+  }
+
+  // Mirrors `courses.controller.ts`'s rating-fields-must-be-paired check —
+  // the exact shape (#479) that lost `code`/`detail` on the way out.
+  @Get('bad-request')
+  badRequest(): never {
+    throw new BadRequestException({
+      code: 'rating-fields-must-be-paired',
+      detail: 'ratingAverage and ratingCount must be supplied together (or both omitted).',
+    });
+  }
+
+  // A real `DomainError` at the same 400 status, for comparison: this one
+  // never lost its `code`/`detail` — the bug was specific to the
+  // `HttpException` branch.
+  @Get('domain-bad-request')
+  domainBadRequest(): never {
+    throw new LibraryUpdateEmptyError();
   }
 }
 
@@ -117,5 +156,44 @@ describe('HttpExceptionFilter — express-openapi-validator errors', () => {
 
     expect(res.status).toBe(500);
     expect(res.body).toMatchObject({ status: 500, title: 'Internal Server Error' });
+  });
+});
+
+describe('HttpExceptionFilter — HttpException built from an object (#479)', () => {
+  it('a BadRequestException built from an object keeps code and detail', async () => {
+    app = await buildApp();
+
+    const res = await request(app.getHttpServer()).get('/api/v1/things/bad-request');
+
+    expect(res.status).toBe(400);
+    expect(res.headers['content-type']).toContain('application/problem+json');
+    expect(res.body).toMatchObject({
+      status: 400,
+      title: 'Bad Request',
+      code: 'rating-fields-must-be-paired',
+      detail: 'ratingAverage and ratingCount must be supplied together (or both omitted).',
+    });
+  });
+
+  it('matches the shape of a real DomainError at the same 400 status', async () => {
+    app = await buildApp();
+
+    const httpExceptionRes = await request(app.getHttpServer()).get('/api/v1/things/bad-request');
+    const domainErrorRes = await request(app.getHttpServer()).get(
+      '/api/v1/things/domain-bad-request',
+    );
+
+    expect(domainErrorRes.body).toMatchObject({
+      status: 400,
+      title: 'Bad Request',
+      code: 'library-update-empty',
+      detail: 'At least one of `name` must be provided.',
+    });
+    // Both carry `code` and `detail` alongside the RFC 9457 baseline —
+    // the client can no longer tell a controller-thrown BadRequestException
+    // apart from a DomainError by which fields are missing.
+    expect(Object.keys(httpExceptionRes.body).toSorted()).toEqual(
+      Object.keys(domainErrorRes.body).toSorted(),
+    );
   });
 });

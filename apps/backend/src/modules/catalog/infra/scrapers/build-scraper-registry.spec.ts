@@ -46,7 +46,7 @@ describe('buildScraperRegistry', () => {
 
     const registry = buildScraperRegistry(config, derivedRoot);
     const ids = registry.all().map((s) => s.id);
-    expect(ids).toEqual(['udemy', 'coursera', 'my-site', 'json-ld']);
+    expect(ids).toEqual(['udemy', 'coursera', 'stepik', 'my-site', 'json-ld']);
   });
 
   it('rejects a definition whose id collides with a built-in and keeps the built-in', () => {
@@ -59,11 +59,11 @@ describe('buildScraperRegistry', () => {
 
     const registry = buildScraperRegistry(config, derivedRoot);
     const ids = registry.all().map((s) => s.id);
-    expect(ids).toEqual(['udemy', 'coursera', 'json-ld']);
+    expect(ids).toEqual(['udemy', 'coursera', 'stepik', 'json-ld']);
   });
 
   it('boots clean (registry has only the built-ins) when $DERIVED_PATH/scrapers does not exist', () => {
     const registry = buildScraperRegistry(config, path.join(derivedRoot, 'never-created'));
-    expect(registry.all().map((s) => s.id)).toEqual(['udemy', 'coursera', 'json-ld']);
+    expect(registry.all().map((s) => s.id)).toEqual(['udemy', 'coursera', 'stepik', 'json-ld']);
   });
 });

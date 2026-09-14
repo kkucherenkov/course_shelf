@@ -421,9 +421,18 @@ Two tools for filling in metadata you did not write by hand.
 
 **Scrape preview** fetches metadata for a course from a URL and shows you what
 it found *before* anything is written. Built-in extractors cover Udemy,
-YouTube, Coursera (its own public catalogue API — no configuration needed),
-JSON-LD (the schema.org markup most course sites publish) and generic HTML
-metadata.
+YouTube, Coursera and Stepik (each through its own public catalogue API — no
+configuration needed), JSON-LD (the schema.org markup most course sites
+publish) and generic HTML metadata.
+
+Stepik fills the most of any built-in: title, the full description, cover,
+language, release date, instructors and a real rating. Its page splits what
+reads as one description across several blocks — the body, "what you'll learn",
+who the course is for, requirements and workload — so they are folded into the
+one description field under headings, in the course's own language. The
+course's section list is deliberately **not** imported: your outline comes from
+the folders and files on disk, and a second source for it would disagree with
+the first partly downloaded course.
 
 **Udemy is the exception — its course pages cannot be fetched.**
 `www.udemy.com/course/…` sits behind a Cloudflare bot/JS challenge that no
@@ -458,7 +467,7 @@ There is also a **maintenance backfill** that recomputes derived metadata
 
 ### Authoring a scraper definition
 
-The built-in scrapers (Udemy, YouTube, Coursera, generic JSON-LD) cover the
+The built-in scrapers (Udemy, YouTube, Coursera, Stepik, generic JSON-LD) cover the
 common cases. For a site none of them recognise, drop a JSON file under
 `DERIVED_PATH/scrapers/` — no rebuild, no code. The backend reads every
 `*.json` file there once at startup and registers each as a scraper, checked
@@ -510,7 +519,7 @@ definition does not mention — `posterUrl`, in this case — still come through
 from the generic extractor untouched.
 
 - **`id`** must be unique — a definition whose id matches a built-in scraper
-  (`udemy`, `youtube`, `coursera`, `json-ld`) or another definition is rejected, never
+  (`udemy`, `youtube`, `coursera`, `stepik`, `json-ld`) or another definition is rejected, never
   silently overridden.
 - **`kinds`** is the subset of `url` / `name` / `fragment` this definition
   supports. Most definitions only need `["url"]`.

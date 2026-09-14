@@ -1,8 +1,9 @@
 /**
  * WHY this file exists:
  * Builds the real (non-mock) scraper registry: built-ins (YouTube when keyed,
- * Udemy when enabled, Coursera unconditionally — its catalogue API needs no
- * key), then every declarative definition loaded from `$DERIVED_PATH/scrapers`,
+ * Udemy when enabled, Coursera and Stepik unconditionally — their catalogue
+ * APIs need no key), then every declarative definition loaded from
+ * `$DERIVED_PATH/scrapers`,
  * then the generic json-ld fallback last — pulled
  * out of catalog.module.ts's SCRAPER_REGISTRY factory so the ordering
  * contract (declarative scrapers before json-ld, an id colliding with a
@@ -28,6 +29,7 @@ import { HttpFetcher } from './http-fetcher';
 import { JsonLdScraper } from './json-ld.scraper';
 import { RuleExtractor } from './rule-extractor';
 import { ScraperDefinitionLoader } from './scraper-definition.loader';
+import { StepikScraper } from './stepik.scraper';
 import { DefaultScraperRegistry } from './scraper.registry';
 import { UdemyScraper } from './udemy.scraper';
 import { YouTubeScraper } from './youtube.scraper';
@@ -51,7 +53,8 @@ export function buildScraperRegistry(
   if (scrapers.udemy.enabled) {
     list.push(new UdemyScraper(fetcher, extractor));
   }
-  list.push(new CourseraScraper(fetcher)); // no key, no config — always on
+  // Both catalogue APIs are keyless, so neither is gated on config — always on.
+  list.push(new CourseraScraper(fetcher), new StepikScraper(fetcher));
 
   // Reserved even though json-ld is pushed last, below — an id colliding
   // with the generic fallback is exactly as undebuggable as one colliding

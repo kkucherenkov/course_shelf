@@ -43,6 +43,8 @@ export const Locked: Story = { args: { ...base, state: 'locked' } };
 
 export const WithMaterials: Story = { args: { ...base, materials: true } };
 
+export const WithTranscript: Story = { args: { ...base, transcript: true } };
+
 export const Loading: Story = { args: { ...base, loading: true } };
 
 export const Stack: Story = {
@@ -69,6 +71,8 @@ export const Localised: Story = {
     progress: 42,
     materials: true,
     materialsLabel: 'Есть материалы',
+    transcript: true,
+    transcriptLabel: 'Есть транскрипт',
     loadingLabel: 'Загрузка урока',
     formatWatched: (percent: number) => `Просмотрено ${String(percent)}%`,
   },

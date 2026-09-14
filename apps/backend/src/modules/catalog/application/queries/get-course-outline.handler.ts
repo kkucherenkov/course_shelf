@@ -15,6 +15,12 @@
  *   - Lessons come from LessonRepository.findByCourse (ordered by sectionId, position).
  *   - Per-lesson state is derived from the LessonProgress rows for the actor.
  *   - materials[] is the flat, deduplicated list ordered by (lesson.position, material.id).
+ *   - hasTranscript mirrors the union GetLessonHandler builds `subtitles` from:
+ *     a sidecar Subtitle row, or a generated Transcript row in whatever
+ *     language it actually landed in (#535) — not a config-guessed language,
+ *     which an `auto`-mode deployment can't answer per lesson. The generated
+ *     half is one batched `findAnyGeneratedForLessons` call across every
+ *     lesson in the course — never one query per row (E32-F03, #514).
  *
  * No NestJS HTTP exceptions — HttpExceptionFilter translates DomainError subclasses.
  */
@@ -28,6 +34,7 @@ import { CourseNotFoundError } from '../../domain/course/course.errors';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from '../../domain/progress/course-progress-read-model.repository';
 import { LESSON_PROGRESS_REPOSITORY } from '../../../../common/learning-progress';
+import { TRANSCRIPT_REPOSITORY } from '../../domain/transcription/transcript.repository';
 
 import { GetCourseOutlineQuery } from './get-course-outline.query';
 
@@ -39,6 +46,7 @@ import type { CourseRepository } from '../../domain/course/course.repository';
 import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
 import type { LessonProgressRepository } from '../../../../common/learning-progress';
+import type { TranscriptRepository } from '../../domain/transcription/transcript.repository';
 import type {
   CourseOutlineDto,
   CourseOutlineSummary,
@@ -60,6 +68,7 @@ export class GetCourseOutlineHandler implements IQueryHandler<
     private readonly progressRepo: CourseProgressReadModelRepository,
     @Inject(LESSON_PROGRESS_REPOSITORY)
     private readonly lessonProgressRepo: LessonProgressRepository,
+    @Inject(TRANSCRIPT_REPOSITORY) private readonly transcripts: TranscriptRepository,
   ) {}
 
   async execute(query: GetCourseOutlineQuery): Promise<CourseOutlineDto> {
@@ -83,11 +92,14 @@ export class GetCourseOutlineHandler implements IQueryHandler<
     // 3. Load lessons with materials (one query, sorted by sectionId, position).
     const lessons = await this.lessonRepo.findByCourse(courseId);
 
-    // 4. Load per-lesson progress for the actor (one query — no N+1).
+    // 4. Load per-lesson progress for the actor, and per-lesson generated
+    // transcripts (any language — #535), each in one batched query across
+    // every lesson id — no N+1 (#514).
     const lessonIds = lessons.map((l) => String(l.id));
-    const [progressRows, courseProgressRow] = await Promise.all([
+    const [progressRows, courseProgressRow, generatedTranscripts] = await Promise.all([
       this.lessonProgressRepo.findManyByUserAndLessons(actor.id, lessonIds),
       this.progressRepo.findByUserAndCourse(actor.id, courseId),
+      this.transcripts.findAnyGeneratedForLessons(lessonIds),
     ]);
 
     // Index progress rows by lessonId for O(1) lookup.
@@ -128,6 +140,7 @@ export class GetCourseOutlineHandler implements IQueryHandler<
           title: lesson.title,
           durationSeconds: lesson.duration ?? 0,
           hasMaterials: lesson.materials.length > 0,
+          hasTranscript: lesson.subtitles.length > 0 || generatedTranscripts.has(String(lesson.id)),
           state,
           progressPercent,
         };

@@ -14,8 +14,6 @@
   - [x] registry wiring (unconditional — no key, like Coursera)
   - [x] tests
   - [x] card `E30-F02-S02`, `TODO.md` row, `docs/user-guide.md`
-- Status: in-progress
-- Blockers: —
 
 ## T-2026-09-14-fix-centrifugo-namespaces — declare the namespaces the contract uses
 

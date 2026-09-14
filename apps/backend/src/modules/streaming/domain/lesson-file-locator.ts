@@ -157,6 +157,7 @@ export class LessonFileLocator {
         lessonId,
         lesson.courseId,
         lesson.videoPath,
+        library.rootPath,
         course.libraryId,
         langLower,
       );
@@ -253,6 +254,7 @@ export class LessonFileLocator {
     lessonId: string,
     courseId: string,
     videoPath: string,
+    libraryRoot: string,
     libraryId: string,
     language: string,
   ): Promise<LocatedSubtitle> {
@@ -261,10 +263,21 @@ export class LessonFileLocator {
       throw new SubtitleNotFoundError(lessonId, language);
     }
 
+    // `derivedTranscriptPath` documents `videoPath` as library-relative, but the
+    // scan records what it walked, so the stored value is absolute in practice.
+    // Feeding it raw makes `path.resolve` drop the derived root, and the
+    // traversal guard then correctly refuses our own transcript with a 500 —
+    // every generated track unreachable. Resolve then relativise, exactly as
+    // `run-transcription.handler.ts` does before writing the file, so the read
+    // reproduces the path the write produced. This does not weaken the guard: an
+    // absolute path outside the library root relativises to `..`-prefixed and is
+    // refused as before.
+    const relativeVideoPath = path.relative(libraryRoot, path.resolve(libraryRoot, videoPath));
+
     const absolutePath = derivedTranscriptPath({
       derivedRoot: this.appConfig.derivedPath,
       libraryId,
-      videoPath,
+      videoPath: relativeVideoPath,
       language,
     });
 

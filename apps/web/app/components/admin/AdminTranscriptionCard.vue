@@ -17,6 +17,7 @@
     labelSucceeded: string;
     labelFailed: string;
     labelCancelled: string;
+    labelInterrupted: string;
     statSkipped: string;
     statTranscribed: string;
     statFailed: string;
@@ -51,6 +52,7 @@
       succeeded: props.labelSucceeded,
       failed: props.labelFailed,
       cancelled: props.labelCancelled,
+      interrupted: props.labelInterrupted,
     };
     return map[status];
   }
@@ -240,7 +242,8 @@
         }
       }
 
-      &[data-status='cancelled'] {
+      &[data-status='cancelled'],
+      &[data-status='interrupted'] {
         background: var(--surface-raised);
         color: var(--text-muted);
 

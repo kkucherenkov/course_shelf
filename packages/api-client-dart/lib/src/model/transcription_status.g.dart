@@ -14,6 +14,9 @@ const TranscriptionStatus _$failed = const TranscriptionStatus._('failed');
 const TranscriptionStatus _$cancelled = const TranscriptionStatus._(
   'cancelled',
 );
+const TranscriptionStatus _$interrupted = const TranscriptionStatus._(
+  'interrupted',
+);
 
 TranscriptionStatus _$valueOf(String name) {
   switch (name) {
@@ -25,13 +28,21 @@ TranscriptionStatus _$valueOf(String name) {
       return _$failed;
     case 'cancelled':
       return _$cancelled;
+    case 'interrupted':
+      return _$interrupted;
     default:
       throw ArgumentError(name);
   }
 }
 
 final BuiltSet<TranscriptionStatus> _$values = BuiltSet<TranscriptionStatus>(
-  const <TranscriptionStatus>[_$running, _$succeeded, _$failed, _$cancelled],
+  const <TranscriptionStatus>[
+    _$running,
+    _$succeeded,
+    _$failed,
+    _$cancelled,
+    _$interrupted,
+  ],
 );
 
 class _$TranscriptionStatusMeta {
@@ -40,6 +51,7 @@ class _$TranscriptionStatusMeta {
   TranscriptionStatus get succeeded => _$succeeded;
   TranscriptionStatus get failed => _$failed;
   TranscriptionStatus get cancelled => _$cancelled;
+  TranscriptionStatus get interrupted => _$interrupted;
   TranscriptionStatus valueOf(String name) => _$valueOf(name);
   BuiltSet<TranscriptionStatus> get values => _$values;
 }
@@ -60,12 +72,14 @@ class _$TranscriptionStatusSerializer
     'succeeded': 'succeeded',
     'failed': 'failed',
     'cancelled': 'cancelled',
+    'interrupted': 'interrupted',
   };
   static const Map<Object, String> _fromWire = const <Object, String>{
     'running': 'running',
     'succeeded': 'succeeded',
     'failed': 'failed',
     'cancelled': 'cancelled',
+    'interrupted': 'interrupted',
   };
 
   @override

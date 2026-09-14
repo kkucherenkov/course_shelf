@@ -11,18 +11,21 @@ part 'transcription_status.g.dart';
 
 class TranscriptionStatus extends EnumClass {
 
-  /// Transcription-run lifecycle. Mirrors `ScanStatus`; `cancelled` is reachable here because a run can be stopped from the admin screen.
+  /// Transcription-run lifecycle. Mirrors `ScanStatus` with one addition: `interrupted` is written by a boot-time recovery pass when the process that owned a `running` run died (a SIGKILL, a container recreate) before it could write a terminal state itself — the run's per-lesson work is not lost, and a plain re-run finishes cheaply thanks to the skip rule. `cancelled` is reachable here because a run can also be stopped from the admin screen.
   @BuiltValueEnumConst(wireName: r'running')
   static const TranscriptionStatus running = _$running;
-  /// Transcription-run lifecycle. Mirrors `ScanStatus`; `cancelled` is reachable here because a run can be stopped from the admin screen.
+  /// Transcription-run lifecycle. Mirrors `ScanStatus` with one addition: `interrupted` is written by a boot-time recovery pass when the process that owned a `running` run died (a SIGKILL, a container recreate) before it could write a terminal state itself — the run's per-lesson work is not lost, and a plain re-run finishes cheaply thanks to the skip rule. `cancelled` is reachable here because a run can also be stopped from the admin screen.
   @BuiltValueEnumConst(wireName: r'succeeded')
   static const TranscriptionStatus succeeded = _$succeeded;
-  /// Transcription-run lifecycle. Mirrors `ScanStatus`; `cancelled` is reachable here because a run can be stopped from the admin screen.
+  /// Transcription-run lifecycle. Mirrors `ScanStatus` with one addition: `interrupted` is written by a boot-time recovery pass when the process that owned a `running` run died (a SIGKILL, a container recreate) before it could write a terminal state itself — the run's per-lesson work is not lost, and a plain re-run finishes cheaply thanks to the skip rule. `cancelled` is reachable here because a run can also be stopped from the admin screen.
   @BuiltValueEnumConst(wireName: r'failed')
   static const TranscriptionStatus failed = _$failed;
-  /// Transcription-run lifecycle. Mirrors `ScanStatus`; `cancelled` is reachable here because a run can be stopped from the admin screen.
+  /// Transcription-run lifecycle. Mirrors `ScanStatus` with one addition: `interrupted` is written by a boot-time recovery pass when the process that owned a `running` run died (a SIGKILL, a container recreate) before it could write a terminal state itself — the run's per-lesson work is not lost, and a plain re-run finishes cheaply thanks to the skip rule. `cancelled` is reachable here because a run can also be stopped from the admin screen.
   @BuiltValueEnumConst(wireName: r'cancelled')
   static const TranscriptionStatus cancelled = _$cancelled;
+  /// Transcription-run lifecycle. Mirrors `ScanStatus` with one addition: `interrupted` is written by a boot-time recovery pass when the process that owned a `running` run died (a SIGKILL, a container recreate) before it could write a terminal state itself — the run's per-lesson work is not lost, and a plain re-run finishes cheaply thanks to the skip rule. `cancelled` is reachable here because a run can also be stopped from the admin screen.
+  @BuiltValueEnumConst(wireName: r'interrupted')
+  static const TranscriptionStatus interrupted = _$interrupted;
 
   static Serializer<TranscriptionStatus> get serializer => _$transcriptionStatusSerializer;
 

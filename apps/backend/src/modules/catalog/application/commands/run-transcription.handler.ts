@@ -38,7 +38,7 @@
  *
  * No NestJS HTTP exceptions here — boundaries/element-types enforces this at lint time.
  */
-import { mkdir, readFile, rm } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -55,6 +55,7 @@ import { LESSON_REPOSITORY } from '../../domain/lesson/lesson.repository';
 import { LibraryNotFoundError } from '../../domain/library/library.errors';
 import { LIBRARY_REPOSITORY } from '../../domain/library/library.repository';
 import { FFMPEG_ADAPTER } from '../../domain/scan/ffmpeg-adapter';
+import { resolveDetectedLanguage } from '../../domain/transcription/detected-language';
 import { derivedTranscriptPath } from '../../domain/transcription/derived-path';
 import { decideTranscription } from '../../domain/transcription/skip-rule';
 import { Transcription } from '../../domain/transcription/transcription';
@@ -97,10 +98,13 @@ const AUDIO_EXTRACT_TIMEOUT_MS = 3_600_000;
 const SKIP_PROGRESS_INTERVAL_MS = 1000;
 
 /**
- * `-l auto` lets whisper detect the language but gives us nothing to read the
- * detection back from, so an auto run is recorded as `und` — the convention
- * `Subtitle.fromFile` already uses for a sidecar with no language suffix. It
- * also keeps the string "auto" out of generated filenames.
+ * `-l auto` makes whisper decide the language per file, which is only known
+ * after it runs (#501) — `und`, the convention `Subtitle.fromFile` already
+ * uses for a sidecar with no language suffix, is the WORKING bucket a
+ * lesson's `.srt` is written to before that. It is also the fallback once
+ * whisper has run, for whatever `resolveDetectedLanguage` does not trust:
+ * nothing whisper prints, an unsupported language, or `mode: mock`, where no
+ * detection line exists at all.
  */
 function resolveLanguage(configured: string): string {
   return configured === 'auto' ? 'und' : configured;
@@ -178,6 +182,7 @@ export class RunTranscriptionHandler implements ICommandHandler<
       libraryId: library.id,
       force: command.force,
       lessonsTotal: lessons.length,
+      bootId: this.appConfig.bootId,
       ...(scopeCourse
         ? { scope: { courseId: scopeCourse.id, courseName: scopeCourse.title } }
         : {}),
@@ -258,10 +263,16 @@ export class RunTranscriptionHandler implements ICommandHandler<
     };
 
     try {
-      const existing = await this.transcripts.findGeneratedForLessons(
-        lessons.map((l) => l.id),
-        language,
-      );
+      // Auto mode has no single language to filter by up front — whisper
+      // decides per lesson, so any language this lesson previously landed in
+      // counts as "already done" (#501). An explicit language keeps the
+      // narrower lookup: an existing `ru` transcript must not make a
+      // `language: en` run skip a lesson it has never produced English for.
+      const lessonIds = lessons.map((l) => l.id);
+      const existing =
+        whisperLanguage === 'auto'
+          ? await this.transcripts.findAnyGeneratedForLessons(lessonIds)
+          : await this.transcripts.findGeneratedForLessons(lessonIds, language);
 
       for (const lesson of lessons) {
         // Cancellation is cooperative and checked BETWEEN lessons: an in-flight
@@ -386,22 +397,51 @@ export class RunTranscriptionHandler implements ICommandHandler<
         timeoutMs: AUDIO_EXTRACT_TIMEOUT_MS,
       });
 
-      const { srtAbsolutePath } = await this.whisper.transcribe({
+      const { srtAbsolutePath, detectedLanguage } = await this.whisper.transcribe({
         audioAbsolutePath: audioPath,
         outBaseAbsolutePath: outBase,
         language: whisperLanguage,
       });
 
-      const srt = await readFile(srtAbsolutePath, 'utf8');
+      // `language` is the WORKING bucket the file was just written under
+      // (always `und` for auto mode, since detection only happens inside the
+      // call above). The FINAL language — what gets persisted and what
+      // LessonFileLocator will expect the file to be named — is only known
+      // now. Fall back to the deployment's own configured language, not to
+      // `language`: an explicit per-request `auto` override on a
+      // non-auto-default deployment should still fail toward that default.
+      const finalLanguage =
+        whisperLanguage === 'auto'
+          ? resolveDetectedLanguage(
+              detectedLanguage,
+              resolveLanguage(this.appConfig.transcription.language),
+            )
+          : language;
+
+      // LessonFileLocator recomputes this path from the DB's `language`
+      // column rather than trusting a stored path — so the file must
+      // actually live where that recomputation expects it.
+      let finalSrtPath = srtAbsolutePath;
+      if (finalLanguage !== language) {
+        finalSrtPath = derivedTranscriptPath({
+          derivedRoot: this.appConfig.derivedPath,
+          libraryId: library.id,
+          videoPath: relativeVideoPath,
+          language: finalLanguage,
+        });
+        await rename(srtAbsolutePath, finalSrtPath);
+      }
+
+      const srt = await readFile(finalSrtPath, 'utf8');
       const cues = extractCues(convertSrtToVtt(srt));
 
       await this.transcripts.replaceGenerated({
         lessonId: lesson.id,
-        language,
+        language: finalLanguage,
         sourcePath: relativeVideoPath,
         sourceMtime: lesson.mtime,
         sourceSize: lesson.sizeBytes,
-        derivedPath: srtAbsolutePath,
+        derivedPath: finalSrtPath,
         cues,
       });
 

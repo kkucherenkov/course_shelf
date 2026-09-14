@@ -19,6 +19,14 @@ export interface TranscribeRequest {
 
 export interface TranscribeResult {
   readonly srtAbsolutePath: string;
+  /**
+   * The raw tag whisper.cpp printed for `-l auto` (e.g. `ru`), parsed from its
+   * `auto-detected language: <tag>` log line — undefined for an explicit
+   * `language`, where nothing needs detecting, or when the line was not
+   * found. Unconstrained here; `resolveDetectedLanguage` (domain) decides
+   * whether to trust it.
+   */
+  readonly detectedLanguage?: string;
 }
 
 export interface WhisperAdapter {

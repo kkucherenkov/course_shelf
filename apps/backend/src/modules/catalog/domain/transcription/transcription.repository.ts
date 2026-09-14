@@ -36,4 +36,13 @@ export interface TranscriptionRepository {
 
   /** History for one library, newest first, capped at `limit`. */
   listForLibrary(libraryId: string, limit: number): Promise<Transcription[]>;
+
+  /**
+   * Every `running` run across every library whose `bootId` is not
+   * `currentBootId` — by construction, every run started before the current
+   * process booted. Drives the boot-time recovery pass (#525): a fresh
+   * process has started nothing yet, so any row this returns was left
+   * running by a process that no longer exists.
+   */
+  findStaleRunning(currentBootId: string): Promise<Transcription[]>;
 }

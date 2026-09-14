@@ -1,0 +1,10 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AdminCourseList > matches snapshot (with items) 1`] = `
+"<!-- Skeleton -->
+<!-- List -->
+<ul data-v-ca7af1a1="" class="adm-course-list">
+  <li data-v-ca7af1a1="" class="adm-course-list__item"><a data-v-ca7af1a1="" href="/courses/course-1" class="adm-course-list__link"><span data-v-ca7af1a1="" class="adm-course-list__title">Pragmatic Clean Architecture</span><span data-v-ca7af1a1="" class="adm-course-list__lessons">24 lessons</span><span data-v-ca7af1a1="" class="i-heroicons-chevron-right adm-course-list__chevron" aria-hidden="true"></span></a></li>
+  <li data-v-ca7af1a1="" class="adm-course-list__item"><a data-v-ca7af1a1="" href="/courses/course-2" class="adm-course-list__link"><span data-v-ca7af1a1="" class="adm-course-list__title">Domain-Driven Design</span><span data-v-ca7af1a1="" class="adm-course-list__lessons">18 lessons</span><span data-v-ca7af1a1="" class="i-heroicons-chevron-right adm-course-list__chevron" aria-hidden="true"></span></a></li>
+</ul>"
+`;

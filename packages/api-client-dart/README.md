@@ -107,6 +107,7 @@ Class | Method | HTTP request | Description
 [*CatalogApi*](doc/CatalogApi.md) | [**getCourse**](doc/CatalogApi.md#getcourse) | **GET** /api/v1/courses/{id} | Get a single course
 [*CatalogApi*](doc/CatalogApi.md) | [**getCourseDownloadEstimate**](doc/CatalogApi.md#getcoursedownloadestimate) | **GET** /api/v1/courses/{id}/download-estimate | Total download size for a course
 [*CatalogApi*](doc/CatalogApi.md) | [**getCourseOutline**](doc/CatalogApi.md#getcourseoutline) | **GET** /api/v1/courses/{id}/outline | Full course outline — sections, lessons (lite), and aggregated materials
+[*CatalogApi*](doc/CatalogApi.md) | [**getCoursePoster**](doc/CatalogApi.md#getcourseposter) | **GET** /api/v1/courses/{id}/poster | Download a course&#39;s stored poster image
 [*CatalogApi*](doc/CatalogApi.md) | [**getLatestLibraryScan**](doc/CatalogApi.md#getlatestlibraryscan) | **GET** /api/v1/libraries/{id}/scans/latest | Get the most recent scan for a library
 [*CatalogApi*](doc/CatalogApi.md) | [**getLatestTranscription**](doc/CatalogApi.md#getlatesttranscription) | **GET** /api/v1/libraries/{id}/transcriptions/latest | Get the most recent transcription run for a library
 [*CatalogApi*](doc/CatalogApi.md) | [**getLesson**](doc/CatalogApi.md#getlesson) | **GET** /api/v1/lessons/{id} | Get a lesson with its materials and subtitles

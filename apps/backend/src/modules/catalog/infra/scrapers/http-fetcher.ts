@@ -12,6 +12,12 @@
  * lives here, not per-scraper: the shape is host-agnostic (any site behind
  * such a challenge produces the same markers), so every scraper that fetches
  * through this class benefits without its own detection code.
+ *
+ * fetchBinary() (#496) reuses the same guard/redirect/timeout/size-cap loop
+ * as fetchText() for course-poster downloads — the trust boundary (a URL a
+ * scraper pulled from third-party page content) is identical, so it goes
+ * through the same egress point rather than a second one with its own SSRF
+ * guard to keep in sync.
  */
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
@@ -30,6 +36,12 @@ export interface FetchResult {
   readonly status: number;
   readonly headers: Headers;
   readonly body: string;
+}
+
+export interface FetchBinaryResult {
+  readonly status: number;
+  readonly headers: Headers;
+  readonly body: Buffer;
 }
 
 const MAX_REDIRECTS = 5;
@@ -120,6 +132,34 @@ export class HttpFetcher {
     throw new ScrapeFetchError(rawUrl, new Error('Too many redirects'));
   }
 
+  /**
+   * Same hop-loop as fetchText, returning raw bytes instead of decoded text —
+   * a poster image would be corrupted by the utf8 decode fetchText applies.
+   */
+  async fetchBinary(rawUrl: string): Promise<FetchBinaryResult> {
+    let currentUrl = rawUrl;
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
+      const url = this.parseAndGuard(currentUrl);
+
+      const guardBlocked = await isBlockedHostname(
+        url.hostname,
+        this.config.allowLoopbackForTests ?? false,
+      );
+      if (guardBlocked) {
+        throw new ScrapeFetchError(rawUrl, new Error(`Blocked address for host ${url.hostname}`));
+      }
+
+      const res = await this.doFetchBinary(url, rawUrl);
+      const location = res.headers.get('location');
+      if (res.status >= 300 && res.status < 400 && location) {
+        currentUrl = new URL(location, url).toString();
+        continue;
+      }
+      return res;
+    }
+    throw new ScrapeFetchError(rawUrl, new Error('Too many redirects'));
+  }
+
   private parseAndGuard(rawUrl: string): URL {
     let url: URL;
     try {
@@ -162,8 +202,39 @@ export class HttpFetcher {
     }
   }
 
+  private async doFetchBinary(url: URL, rawUrl: string): Promise<FetchBinaryResult> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      controller.abort();
+    }, this.config.httpTimeoutMs);
+    try {
+      const res = await fetch(url, {
+        redirect: 'manual',
+        signal: controller.signal,
+        headers: { 'user-agent': this.config.userAgent, accept: 'image/*' },
+      });
+      if (res.status >= 300 && res.status < 400) {
+        return { status: res.status, headers: res.headers, body: Buffer.alloc(0) };
+      }
+      const body = await this.readCappedBytes(res, rawUrl);
+      return { status: res.status, headers: res.headers, body };
+    } catch (error) {
+      if (error instanceof ScrapeFetchError) {
+        throw error;
+      }
+      throw new ScrapeFetchError(rawUrl, error);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   private async readCapped(res: Response, rawUrl: string): Promise<string> {
-    if (!res.body) return '';
+    const bytes = await this.readCappedBytes(res, rawUrl);
+    return bytes.toString('utf8');
+  }
+
+  private async readCappedBytes(res: Response, rawUrl: string): Promise<Buffer> {
+    if (!res.body) return Buffer.alloc(0);
     // Cast to well-typed reader — undici's ReadableStream<Uint8Array> is compatible
     // at runtime but the @types/node declaration loses the generic under CommonJS.
     const reader = res.body.getReader() as ReadableStreamDefaultReader<Uint8Array>;
@@ -179,6 +250,6 @@ export class HttpFetcher {
       }
       chunks.push(value);
     }
-    return Buffer.concat(chunks).toString('utf8');
+    return Buffer.concat(chunks);
   }
 }

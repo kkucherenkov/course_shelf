@@ -10,6 +10,7 @@ import { STUDIO_REPOSITORY } from '../../domain/studio/studio.repository';
 import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
 import { StudioNotFoundError } from '../../domain/studio/studio.errors';
 import { toStudioDetailDto } from '../../catalog-entities.dto';
+import { CoursePosterTokenSigner } from '../../domain/course/course-poster-token';
 
 import { GetStudioQuery } from './get-studio.query';
 
@@ -22,6 +23,7 @@ export class GetStudioHandler implements IQueryHandler<GetStudioQuery, StudioDet
   constructor(
     @Inject(STUDIO_REPOSITORY) private readonly repo: StudioRepository,
     @Inject(COURSE_REPOSITORY) private readonly courseRepo: CourseRepository,
+    private readonly posterTokenSigner: CoursePosterTokenSigner,
   ) {}
 
   async execute(query: GetStudioQuery): Promise<StudioDetailDto> {
@@ -37,6 +39,6 @@ export class GetStudioHandler implements IQueryHandler<GetStudioQuery, StudioDet
 
     const courses = courseIds.length > 0 ? await this.courseRepo.findByIds(courseIds) : [];
 
-    return toStudioDetailDto(studio, total, courses);
+    return toStudioDetailDto(studio, total, courses, (id) => this.posterTokenSigner.signUrl(id));
   }
 }

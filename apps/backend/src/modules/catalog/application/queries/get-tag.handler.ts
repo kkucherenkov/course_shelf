@@ -10,6 +10,7 @@ import { TAG_REPOSITORY } from '../../domain/tag/tag.repository';
 import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
 import { TagNotFoundError } from '../../domain/tag/tag.errors';
 import { toTagDetailDto } from '../../catalog-entities.dto';
+import { CoursePosterTokenSigner } from '../../domain/course/course-poster-token';
 
 import { GetTagQuery } from './get-tag.query';
 
@@ -22,6 +23,7 @@ export class GetTagHandler implements IQueryHandler<GetTagQuery, TagDetailDto> {
   constructor(
     @Inject(TAG_REPOSITORY) private readonly repo: TagRepository,
     @Inject(COURSE_REPOSITORY) private readonly courseRepo: CourseRepository,
+    private readonly posterTokenSigner: CoursePosterTokenSigner,
   ) {}
 
   async execute(query: GetTagQuery): Promise<TagDetailDto> {
@@ -37,6 +39,6 @@ export class GetTagHandler implements IQueryHandler<GetTagQuery, TagDetailDto> {
 
     const courses = courseIds.length > 0 ? await this.courseRepo.findByIds(courseIds) : [];
 
-    return toTagDetailDto(tag, total, courses);
+    return toTagDetailDto(tag, total, courses, (id) => this.posterTokenSigner.signUrl(id));
   }
 }

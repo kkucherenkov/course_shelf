@@ -104,7 +104,9 @@ vi.mock('@app/ui', () => ({
   CoursePosterCard: {
     name: 'CoursePosterCard',
     props: ['course', 'interactive'],
-    template: '<div />',
+    // Exposes course.cover as a data attribute so #496's toCourse() mapping
+    // (CourseDto.posterUrl → the card's CSS background) is inspectable.
+    template: '<div :data-cover="course.cover" />',
   },
 }));
 
@@ -248,5 +250,34 @@ describe('browse page filters', () => {
 
     expect(wrapper.text()).toContain('pages.browse.emptyFilteredTitle');
     expect(wrapper.find('[data-testid="browse-empty-clear"]').exists()).toBe(true);
+  });
+
+  // #496: a course with a downloaded poster shows it; one without falls back
+  // to the accent placeholder CoursePosterCard already renders on undefined.
+  it('passes a background-image cover for a course with a stored poster, and none without', async () => {
+    courses.value = {
+      items: [
+        {
+          id: 'c-poster',
+          title: 'Has Poster',
+          posterUrl: '/api/v1/courses/c-poster/poster?token=tok',
+        },
+        { id: 'c-none', title: 'No Poster', posterUrl: null },
+      ].map(
+        (course) =>
+          ({
+            ...course,
+            instructors: [],
+            progress: { percent: 0, lessonsCompleted: 0, lessonsTotal: 0 },
+          }) as unknown as CourseListDto['items'][number],
+      ),
+    };
+    const wrapper = await mountBrowse();
+
+    const cards = wrapper.findAll('[data-cover]');
+    expect(cards[0]?.attributes('data-cover')).toBe(
+      'url(/api/v1/courses/c-poster/poster?token=tok) center / cover no-repeat',
+    );
+    expect(cards[1]?.attributes('data-cover')).toBeUndefined();
   });
 });

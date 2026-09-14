@@ -30,6 +30,7 @@ import { StudioSlugAlreadyTakenError } from '../../domain/studio/studio.errors';
 import { Tag } from '../../domain/tag/tag';
 import { TagSlugAlreadyTakenError } from '../../domain/tag/tag.errors';
 import { MetadataLinker } from '../scan/metadata-linker';
+import { PosterSyncService } from '../scan/poster-sync.service';
 import { BackfillCourseMetadataCommand } from './backfill-course-metadata.command';
 import { BackfillCourseMetadataHandler } from './backfill-course-metadata.handler';
 
@@ -39,7 +40,13 @@ import type { StudioRepository } from '../../domain/studio/studio.repository';
 import type { TagRepository } from '../../domain/tag/tag.repository';
 import type { LibraryRepository } from '../../domain/library/library.repository';
 import type { FsAdapter } from '../../domain/scan/fs-adapter';
+import type { PosterDownloader } from '../../domain/course/poster-downloader.port';
 import type { CentrifugoService } from '../../../../common/centrifugo/centrifugo.service';
+
+/** Fake PosterDownloader that never reaches the network — resolves undefined (no poster). */
+function makePosterDownloader(): PosterDownloader {
+  return { download: vi.fn(async () => undefined) };
+}
 
 // ---------------------------------------------------------------------------
 // Fake repositories
@@ -234,6 +241,7 @@ function makeHandler(
     repos.courseRepo,
     fs,
     linker,
+    new PosterSyncService(makePosterDownloader()),
     centrifugo,
   );
 }

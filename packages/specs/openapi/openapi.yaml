@@ -2734,6 +2734,72 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
         "429":
           $ref: "#/components/responses/TooManyRequests"
+  /api/v1/courses/{id}/poster:
+    get:
+      operationId: getCoursePoster
+      summary: Download a course's stored poster image
+      description: |
+        Serves the poster HttpPosterDownloader saved under DERIVED_PATH after
+        a scrape or an admin edit set `Course.posterUrl` (#496). The raw
+        upstream URL is never exposed to the browser — the SPA's CSP is
+        `img-src 'self' data: blob:`, so a remote image would be blocked
+        regardless.
+
+        Authenticated by the `token` query parameter — `<img src>` cannot
+        send the Authorization header the SPA otherwise uses for every other
+        request. The token is bound to `(courseId, expiresAt)` only, not a
+        user: `CourseDto.posterUrl` already embeds a fresh one on every
+        list/get response, so there is no separate "issue token" endpoint —
+        minting one per poster on a course grid would be a request per card.
+        Default TTL 15 minutes.
+
+        This is the 5th route in the #278 binary-exception family (see the
+        comment above `/api/v1/stream/lessons/{id}`): the response is raw
+        image bytes with no JSON schema, so `express-openapi-validator`
+        skips it — documented here for the contract and generated clients
+        only.
+      tags: [Catalog]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: Course cuid.
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            pattern: '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'
+          description: Signed poster token embedded in CourseDto.posterUrl.
+      responses:
+        "200":
+          description: The poster image bytes.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Token missing, malformed, expired, or bound to another course.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: No such course, no stored poster, or the file is missing on disk.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/courses/{id}/outline:
     get:
       operationId: getCourseOutline

@@ -93,8 +93,10 @@ export function registerOpenApiValidator(app: INestApplication, nodeEnv: string)
       // an opaque `application/octet-stream` body. Note the alternative is
       // written to match only the download sub-route — `POST /v1/admin/backups`
       // itself IS in the spec and must stay validated.
+      // `/v1/courses/<id>/poster` (#496) is exempt for the same reason: an
+      // image byte body, no JSON schema — the 5th route in the #278 family.
       ignorePaths:
-        /\/v1\/(?:auth(?:\/|$)|stream\/lessons\/|stream\/materials\/|admin\/backups\/[^/]+\/download)/,
+        /\/v1\/(?:auth(?:\/|$)|stream\/lessons\/|stream\/materials\/|admin\/backups\/[^/]+\/download|courses\/[^/]+\/poster(?:\?|$))/,
     }),
   );
 

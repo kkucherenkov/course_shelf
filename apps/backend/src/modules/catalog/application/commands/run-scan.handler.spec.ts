@@ -70,6 +70,7 @@ import { Scan } from '../../domain/scan/scan';
 import { ScanAlreadyRunningError } from '../../domain/scan/scan.errors';
 import { slugify } from '../../domain/shared-vo/entity-slug';
 import { MetadataLinker } from '../scan/metadata-linker';
+import { PosterSyncService } from '../scan/poster-sync.service';
 import { RunScanCommand } from './run-scan.command';
 import { RunScanHandler } from './run-scan.handler';
 
@@ -83,6 +84,7 @@ import type { FsAdapter, FsEntry } from '../../domain/scan/fs-adapter';
 import type { LibraryRepository } from '../../domain/library/library.repository';
 import type { ScanRepository } from '../../domain/scan/scan.repository';
 import type { TranscriptRepository } from '../../domain/transcription/transcript.repository';
+import type { PosterDownloader } from '../../domain/course/poster-downloader.port';
 import type { AppConfig } from '../../../../common/config/app-config';
 import type { CentrifugoService } from '../../../../common/centrifugo/centrifugo.service';
 
@@ -313,6 +315,15 @@ function makeTagRepo(): TagRepository & { store: Map<string, Tag> } {
     count: vi.fn(async () => 0),
     findCoursesForTag: vi.fn(async () => ({ courseIds: [], total: 0 })),
   };
+}
+
+/** Fake PosterDownloader that never actually reaches the network — resolves undefined (no poster). */
+function makePosterDownloader(): PosterDownloader {
+  return { download: vi.fn(async () => undefined) };
+}
+
+function makePosterSync(downloader?: PosterDownloader): PosterSyncService {
+  return new PosterSyncService(downloader ?? makePosterDownloader());
 }
 
 function makeMetadataLinker(
@@ -607,6 +618,7 @@ describe('RunScanHandler', () => {
       makeFakeAppConfig(),
       centrifugo,
       makeMetadataLinker(),
+      makePosterSync(),
     );
   });
 
@@ -693,6 +705,7 @@ describe('RunScanHandler', () => {
       makeFakeAppConfig(),
       centrifugo,
       makeMetadataLinker(),
+      makePosterSync(),
     );
 
     const scan = await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -734,6 +747,7 @@ describe('RunScanHandler', () => {
       makeFakeAppConfig(),
       centrifugo,
       makeMetadataLinker(),
+      makePosterSync(),
     );
 
     const scan = await junkHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -761,6 +775,7 @@ describe('RunScanHandler', () => {
       makeFakeAppConfig(),
       centrifugo,
       makeMetadataLinker(),
+      makePosterSync(),
     );
 
     await expect(
@@ -795,6 +810,7 @@ describe('RunScanHandler', () => {
       makeFakeAppConfig(),
       centrifugo,
       makeMetadataLinker(),
+      makePosterSync(),
     );
 
     await expect(
@@ -851,6 +867,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await neovimHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -921,6 +938,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await cacheHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -975,6 +993,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       await dupHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1021,6 +1040,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await dotHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1088,6 +1108,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await ffHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1153,6 +1174,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await thumbHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1195,6 +1217,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await failHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1280,6 +1303,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1331,6 +1355,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1382,6 +1407,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1419,6 +1445,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1461,6 +1488,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await orderHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1541,6 +1569,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1597,6 +1626,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1815,6 +1845,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         cleanCentrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await cleanHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1856,6 +1887,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         failCentrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await failHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -1909,6 +1941,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         makeCentrifugoService(),
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       await orderingHandler.execute(new RunScanCommand('lib-x', ACTOR_USER_ID));
@@ -1941,6 +1974,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         makeCentrifugoService(),
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       await orderingHandler.execute(new RunScanCommand('lib-y', ACTOR_USER_ID));
@@ -2011,6 +2045,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         makeCentrifugoService(),
         metadataLinker,
+        makePosterSync(),
       );
 
       const scan = await metadataHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -2088,6 +2123,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         makeCentrifugoService(),
         v1Linker,
+        makePosterSync(),
       );
 
       const scan = await v1Handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -2144,6 +2180,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         makeCentrifugoService(),
         emptyLinker,
+        makePosterSync(),
       );
 
       await emptyHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -2197,6 +2234,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         makeCentrifugoService(),
         idempotentLinker,
+        makePosterSync(),
       );
 
       await firstHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -2223,6 +2261,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         makeCentrifugoService(),
         idempotentLinker,
+        makePosterSync(),
       );
 
       await secondHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -2265,6 +2304,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -2313,6 +2353,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -2366,6 +2407,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -2401,6 +2443,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -2436,6 +2479,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -2490,6 +2534,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -2534,6 +2579,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -2656,6 +2702,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       return { h, scanRepo2, courseRepo2, lessonRepo2, transcriptRepo, ids };
@@ -2736,6 +2783,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         scopedCentrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(
@@ -2811,6 +2859,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(
@@ -2951,6 +3000,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       return { h, scanRepo2, courseRepo2, lessonRepo2, transcriptRepo, target };
@@ -3078,6 +3128,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       await h.execute(new RunScanCommand(undefined, ACTOR_USER_ID, { courseId: 'course-target' }));
@@ -3120,6 +3171,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -3172,6 +3224,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -3221,6 +3274,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
@@ -3284,6 +3338,7 @@ describe('RunScanHandler', () => {
         makeFakeAppConfig(),
         centrifugo,
         makeMetadataLinker(),
+        makePosterSync(),
       );
 
       await h.execute(new RunScanCommand(undefined, ACTOR_USER_ID, { courseId: course.id }));
@@ -3341,6 +3396,7 @@ describe('RunScanHandler', () => {
       makeFakeAppConfig(),
       centrifugo,
       makeMetadataLinker(),
+      makePosterSync(),
     );
 
     const started = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));

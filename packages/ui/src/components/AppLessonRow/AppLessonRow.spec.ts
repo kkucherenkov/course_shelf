@@ -99,6 +99,16 @@ describe('AppLessonRow', () => {
     expect(withMaterials.find('.app-lesson-row__materials').exists()).toBe(true);
   });
 
+  it('renders a subtitles icon when transcript=true and omits it otherwise', () => {
+    const without = mount(AppLessonRow, { props: baseProps });
+    expect(without.find('.app-lesson-row__transcript').exists()).toBe(false);
+
+    const withTranscript = mount(AppLessonRow, {
+      props: { ...baseProps, transcript: true },
+    });
+    expect(withTranscript.find('.app-lesson-row__transcript').exists()).toBe(true);
+  });
+
   it('emits select on click and on Enter / Space keydown', async () => {
     const wrapper = mount(AppLessonRow, { props: baseProps });
     await wrapper.find('.app-lesson-row').trigger('click');

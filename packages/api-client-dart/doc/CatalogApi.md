@@ -29,6 +29,7 @@ Method | HTTP request | Description
 [**runCourseRescan**](CatalogApi.md#runcourserescan) | **POST** /api/v1/courses/{id}/rescan | Rescan a single course
 [**runLibraryScan**](CatalogApi.md#runlibraryscan) | **POST** /api/v1/libraries/{id}/scans | Trigger a scan of a library
 [**searchCatalogue**](CatalogApi.md#searchcatalogue) | **GET** /api/v1/search | Search the catalogue (courses + lessons + transcripts)
+[**startCourseTranscription**](CatalogApi.md#startcoursetranscription) | **POST** /api/v1/courses/{id}/transcription | Transcribe a single course
 [**startTranscription**](CatalogApi.md#starttranscription) | **POST** /api/v1/libraries/{id}/transcriptions | Start a transcription run for a library
 [**updateCourse**](CatalogApi.md#updatecourse) | **PATCH** /api/v1/courses/{id} | Update course metadata
 [**updateLibrary**](CatalogApi.md#updatelibrary) | **PATCH** /api/v1/libraries/{id} | Rename a library
@@ -897,6 +898,51 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **startCourseTranscription**
+> TranscriptionDto startCourseTranscription(id, startTranscriptionRequest)
+
+Transcribe a single course
+
+Transcribes only this course's lessons instead of every lesson in the library. The same skip rule applies inside the scope: a lesson with a hand-made subtitle sidecar is skipped, and so is one whose generated transcript still matches the video's `(mtime, size)`.  This is the shape that is actually usable. Measured on a Pentium Gold 8505, whisper.cpp `base` takes roughly twenty minutes per lesson, so a five-thousand-lesson library is weeks of continuous CPU while a thirty-lesson course is an overnight job. The library-wide endpoint (`POST /libraries/{id}/transcriptions`) is unchanged and still exists for deployments where that is affordable.  One run per library at a time, scoped or not: whisper saturates every core it is given, so a second concurrent run halves the first rather than finishing sooner. Starting a scoped run while any run is going answers 409 naming the run in flight; cancel it via `POST /transcriptions/{id}/cancel` and start the scoped run again.  Returns 202 immediately with `status: running`, exactly like `POST /libraries/{id}/transcriptions`; clients poll `GET /libraries/{id}/transcriptions/latest`. The response and the realtime `scans:user:{userId}` events carry `scopeCourseId` / `scopeCourseName` so the UI can say \"transcribing <course>\" rather than implying a whole-library run. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String id = id_example; // String | Server-generated cuid identifying the course to transcribe.
+final StartTranscriptionRequest startTranscriptionRequest = {"force":false}; // StartTranscriptionRequest | 
+
+try {
+    final response = api.startCourseTranscription(id, startTranscriptionRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->startCourseTranscription: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the course to transcribe. | 
+ **startTranscriptionRequest** | [**StartTranscriptionRequest**](StartTranscriptionRequest.md)|  | [optional] 
+
+### Return type
+
+[**TranscriptionDto**](TranscriptionDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **startTranscription**
 > TranscriptionDto startTranscription(id, startTranscriptionRequest)
 
@@ -910,7 +956,7 @@ import 'package:app_api_client/api.dart';
 
 final api = AppApiClient().getCatalogApi();
 final String id = id_example; // String | Server-generated cuid identifying the library to transcribe.
-final StartTranscriptionRequest startTranscriptionRequest = {"force":false}; // StartTranscriptionRequest | 
+final StartTranscriptionRequest startTranscriptionRequest = {force=false}; // StartTranscriptionRequest | 
 
 try {
     final response = api.startTranscription(id, startTranscriptionRequest);

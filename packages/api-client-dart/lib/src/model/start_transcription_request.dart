@@ -12,11 +12,16 @@ part 'start_transcription_request.g.dart';
 ///
 /// Properties:
 /// * [force] - Re-transcribe lessons that already have a generated transcript. Hand-made subtitle sidecars are never overwritten.
+/// * [language] - BCP-47 primary subtag for this run, or `auto`. Overrides the deployment's `WHISPER_LANGUAGE` for this run only. Naming the language skips whisper's per-file detection pass, which is repeated work on a library that is effectively one or two languages; it also records the transcript under that language tag instead of `und`, which is what `auto` can report. Omitted means \"use whatever this deployment is configured with\". A transcript is identified by `(lesson, language)`, so a run that names a language different from the one already on disk transcribes rather than skips — that is the point, not a bug.
 @BuiltValue()
 abstract class StartTranscriptionRequest implements Built<StartTranscriptionRequest, StartTranscriptionRequestBuilder> {
   /// Re-transcribe lessons that already have a generated transcript. Hand-made subtitle sidecars are never overwritten.
   @BuiltValueField(wireName: r'force')
   bool? get force;
+
+  /// BCP-47 primary subtag for this run, or `auto`. Overrides the deployment's `WHISPER_LANGUAGE` for this run only. Naming the language skips whisper's per-file detection pass, which is repeated work on a library that is effectively one or two languages; it also records the transcript under that language tag instead of `und`, which is what `auto` can report. Omitted means \"use whatever this deployment is configured with\". A transcript is identified by `(lesson, language)`, so a run that names a language different from the one already on disk transcribes rather than skips — that is the point, not a bug.
+  @BuiltValueField(wireName: r'language')
+  String? get language;
 
   StartTranscriptionRequest._();
 
@@ -49,6 +54,13 @@ class _$StartTranscriptionRequestSerializer implements PrimitiveSerializer<Start
         specifiedType: const FullType(bool),
       );
     }
+    if (object.language != null) {
+      yield r'language';
+      yield serializers.serialize(
+        object.language,
+        specifiedType: const FullType(String),
+      );
+    }
   }
 
   @override
@@ -78,6 +90,13 @@ class _$StartTranscriptionRequestSerializer implements PrimitiveSerializer<Start
             specifiedType: const FullType(bool),
           ) as bool;
           result.force = valueDes;
+          break;
+        case r'language':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.language = valueDes;
           break;
         default:
           unhandled.add(key);

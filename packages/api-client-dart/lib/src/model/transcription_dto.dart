@@ -25,6 +25,8 @@ part 'transcription_dto.g.dart';
 /// * [lessonsTranscribed] - Lessons for which a transcript was produced by this run.
 /// * [lessonsFailed] - Lessons that raised an error; one entry each in `errors`.
 /// * [errors] - Non-fatal per-lesson errors encountered during the run.
+/// * [scopeCourseId] - cuid of the course this run was scoped to. Absent for a library-wide run (`POST /libraries/{id}/transcriptions`) — present only for `POST /courses/{id}/transcription`.
+/// * [scopeCourseName] - Title of the scoped course, so the UI can render \"transcribing <course>\" without a second round-trip. Absent for a library-wide run.
 @BuiltValue()
 abstract class TranscriptionDto implements Built<TranscriptionDto, TranscriptionDtoBuilder> {
   /// Server-generated cuid identifying this transcription run.
@@ -70,6 +72,14 @@ abstract class TranscriptionDto implements Built<TranscriptionDto, Transcription
   /// Non-fatal per-lesson errors encountered during the run.
   @BuiltValueField(wireName: r'errors')
   BuiltList<TranscriptionErrorDto> get errors;
+
+  /// cuid of the course this run was scoped to. Absent for a library-wide run (`POST /libraries/{id}/transcriptions`) — present only for `POST /courses/{id}/transcription`.
+  @BuiltValueField(wireName: r'scopeCourseId')
+  String? get scopeCourseId;
+
+  /// Title of the scoped course, so the UI can render \"transcribing <course>\" without a second round-trip. Absent for a library-wide run.
+  @BuiltValueField(wireName: r'scopeCourseName')
+  String? get scopeCourseName;
 
   TranscriptionDto._();
 
@@ -151,6 +161,20 @@ class _$TranscriptionDtoSerializer implements PrimitiveSerializer<TranscriptionD
       object.errors,
       specifiedType: const FullType(BuiltList, [FullType(TranscriptionErrorDto)]),
     );
+    if (object.scopeCourseId != null) {
+      yield r'scopeCourseId';
+      yield serializers.serialize(
+        object.scopeCourseId,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.scopeCourseName != null) {
+      yield r'scopeCourseName';
+      yield serializers.serialize(
+        object.scopeCourseName,
+        specifiedType: const FullType(String),
+      );
+    }
   }
 
   @override
@@ -250,6 +274,20 @@ class _$TranscriptionDtoSerializer implements PrimitiveSerializer<TranscriptionD
             specifiedType: const FullType(BuiltList, [FullType(TranscriptionErrorDto)]),
           ) as BuiltList<TranscriptionErrorDto>;
           result.errors.replace(valueDes);
+          break;
+        case r'scopeCourseId':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.scopeCourseId = valueDes;
+          break;
+        case r'scopeCourseName':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.scopeCourseName = valueDes;
           break;
         default:
           unhandled.add(key);

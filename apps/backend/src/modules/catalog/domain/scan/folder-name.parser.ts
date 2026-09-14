@@ -1,7 +1,7 @@
 /**
  * WHY this file exists:
- * Parses folder and file names in the conventional library tree layout. Three
- * priority tiers are tried in order; the first match wins:
+ * Parses folder and file names in the conventional library tree layout.
+ * Priority tiers are tried in order; the first match wins:
  *
  *   1. Numeric prefix:        `01 - Title` / `01. Title` / `01_Title` /
  *                             `01 Title` / `07`                   (Udemy-style
@@ -19,15 +19,31 @@
  *   4. Trailing digits:       `lesson23` / `Занятие5` (lesson files only)
  *      (No separator between the word and the digits, so there is nothing to
  *      split into a label — the label stays the full basename, same as tier
- *      5. Recovers a stable numeric order for this convention instead of
+ *      6. Recovers a stable numeric order for this convention instead of
  *      falling back to alphabetical (`lesson1, lesson10, lesson11, …,
  *      lesson2`) — see E32-F01-S01 / lesson-loss-report.md.)
- *   5. Bare title:            anything that did not match above.
+ *   5. Marker-introduced:     `Лекция #9. Этология` / `Lecture №12`
+ *      (Tiers 1–4 all require the ordinal at the very start or the very end
+ *      of the name; a title that carries it in the middle, flagged by `#` or
+ *      `№`, matches none of them. #499: measured on the maintainer's library
+ *      — 46 video files across three courses, one a 25-lecture series that
+ *      read 9, 19, 23, 15, 21, … before this tier existed. The label is left
+ *      as the full basename rather than splicing the marker out — unlike
+ *      tiers 1/2's leading prefix, there is no single safe cut point in the
+ *      middle of a sentence.)
+ *   6. Bare title:            anything that did not match above.
  *
  * When a numeric prefix matches but no descriptive label follows (e.g. a folder
  * literally named `07` or a file like `07.mp4`), the label falls back to the
  * trimmed basename so we never produce an empty string — section/lesson titles
  * downstream are required to be non-empty.
+ *
+ * A lesson file whose whole basename is a calendar date (`2022-11-12.mp4`) is
+ * exempted from Tier 1: PREFIX_RE would otherwise read the year as the
+ * ordinal and split off `MM-DD` as the label (#498). The date has no
+ * meaningful ordinal to extract, so it is kept intact as the label instead —
+ * `lesson-position.ts` already falls back to sorting by path, which orders an
+ * ISO date correctly on its own.
  *
  * Returns `unsupportedExtension: true` for lesson files whose extension is
  * not in `SUPPORTED_EXTENSIONS`. Callers record a ScanError and skip; nothing
@@ -101,6 +117,21 @@ const COMPOSITE_LESSON_RE = /^(\d+)\.(\d+)(?:\s+(.+))?$/;
  */
 const TRAILING_DIGITS_RE = /^(.*\D)(\d+)$/;
 
+/**
+ * Tier 5 — marker-introduced ordinal: `#` or `№` anywhere in the name,
+ * immediately followed by digits (`Лекция #9`, `Lecture №12`). Unlike
+ * Tiers 1–4, not anchored to either end — `#`/`№` is itself the marker, so
+ * there is no ambiguity about which digits are the ordinal. See #499.
+ */
+const MARKER_ORDINAL_RE = /[#№]\s*(\d+)/;
+
+/**
+ * A whole basename that reads as a calendar date (`2022-11-12`) is not a
+ * numeric-ordinal-prefixed name — see the file-level WHY comment (#498).
+ * Lesson files only; folder names have not shown this convention.
+ */
+const CALENDAR_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 function applyPrefix(
   match: RegExpExecArray,
   fallbackLabel: string,
@@ -128,13 +159,20 @@ export function parseFolderName(name: string): ParsedFolderName {
     };
   }
 
+  // Tier 5 — marker-introduced ordinal (`#`/`№`), anywhere in the name.
+  const marker = MARKER_ORDINAL_RE.exec(trimmed);
+  if (marker) {
+    return { ordinal: Number.parseInt(marker[1] ?? '', 10), label: trimmed };
+  }
+
   return { label: trimmed };
 }
 
 /**
- * Parse a lesson file name. Tries composite (`N.M …`) first, then numeric
- * prefix (`NN -`/`NN.`), then bare. Strips and reports the extension; sets
- * `unsupportedExtension: true` when it is not in SUPPORTED_EXTENSIONS.
+ * Parse a lesson file name. Tries the calendar-date exemption, then composite
+ * (`N.M …`), then numeric prefix (`NN -`/`NN.`), then trailing digits, then
+ * marker-introduced (`#`/`№`), then bare. Strips and reports the extension;
+ * sets `unsupportedExtension: true` when it is not in SUPPORTED_EXTENSIONS.
  */
 export function parseLessonFileName(name: string): ParsedLessonFileName {
   const trimmed = name.trim();
@@ -147,6 +185,15 @@ export function parseLessonFileName(name: string): ParsedLessonFileName {
   const extension = trimmed.slice(lastDot).toLowerCase();
   const fileBasename = trimmed.slice(0, lastDot);
   const supported = SUPPORTED_EXTENSIONS.has(extension);
+
+  // Calendar-date basename (`2022-11-12`) — see the file-level WHY (#498).
+  // Checked first so PREFIX_RE never gets a chance to read the year as an
+  // ordinal and split the rest off as a bogus label.
+  if (CALENDAR_DATE_RE.test(fileBasename)) {
+    const label = fileBasename.trim();
+    if (supported) return { label, extension };
+    return { label, extension, unsupportedExtension: true };
+  }
 
   // Tier 3 — composite first so `2.5 Установка на Windows` does not get
   // mis-parsed by Tier 1 as `ordinal=2, label="5 Установка на Windows"`.
@@ -180,7 +227,17 @@ export function parseLessonFileName(name: string): ParsedLessonFileName {
     return { ordinal, label, extension, unsupportedExtension: true };
   }
 
-  // Tier 5 — bare title.
+  // Tier 5 — marker-introduced ordinal (`#`/`№`), anywhere in the name. Label
+  // stays the full basename — see the file-level WHY (#499).
+  const marker = MARKER_ORDINAL_RE.exec(fileBasename);
+  if (marker) {
+    const ordinal = Number.parseInt(marker[1] ?? '', 10);
+    const label = fileBasename.trim();
+    if (supported) return { ordinal, label, extension };
+    return { ordinal, label, extension, unsupportedExtension: true };
+  }
+
+  // Tier 6 — bare title.
   if (supported) return { label: fileBasename.trim(), extension };
   return { label: fileBasename.trim(), extension, unsupportedExtension: true };
 }

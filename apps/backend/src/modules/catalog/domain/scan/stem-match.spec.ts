@@ -201,4 +201,29 @@ describe('stemMatch', () => {
     expect(canonicalStem).toBe('Introduction');
     expect(kind).toBe('video');
   });
+
+  // -------------------------------------------------------------------------
+  // Language-suffix false positives (#503) — a short dotted suffix that is
+  // NOT a real language code must not be stripped, so the subtitle keeps
+  // sharing its video's canonical stem.
+  // -------------------------------------------------------------------------
+
+  it('"Connect with Vue.js.vtt" does not strip ".js" as a language — pairs with its video', () => {
+    const video = stemMatch('/lib/Connect with Vue.js.mp4');
+    const subtitle = stemMatch('/lib/Connect with Vue.js.vtt');
+    expect(subtitle.canonicalStem).toBe(video.canonicalStem);
+    expect(subtitle.canonicalStem).toBe('Connect with Vue.js');
+  });
+
+  it('"lesson.go.srt" does not strip ".go" as a language — pairs with its video', () => {
+    const video = stemMatch('/lib/lesson.go.mp4');
+    const subtitle = stemMatch('/lib/lesson.go.srt');
+    expect(subtitle.canonicalStem).toBe(video.canonicalStem);
+    expect(subtitle.canonicalStem).toBe('lesson.go');
+  });
+
+  it('a genuine 3-letter language code ("rus") is still stripped', () => {
+    const { canonicalStem } = stemMatch('/lib/Intro.rus.srt');
+    expect(canonicalStem).toBe('Intro');
+  });
 });

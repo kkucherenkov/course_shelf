@@ -1393,6 +1393,60 @@ describe('RunScanHandler', () => {
   });
 
   // -------------------------------------------------------------------------
+  // tuxedo 145/129/137: the parser's silence made itself invisible — a course
+  // whose lesson order fell back to file-path order (no ordinal parsed for
+  // at least one lesson) must now raise a 'course-order-unreliable'
+  // ScanError, once per course, not once per file.
+  // -------------------------------------------------------------------------
+  describe('course-order-unreliable signal', () => {
+    it('fires once per course when at least one lesson has no parseable ordinal', async () => {
+      vi.useRealTimers();
+
+      const files: FileRecord[] = [
+        { path: '/lib/06 - Order Course/01 - Intro.mp4', mtime: BASE_TIME, size: 100 },
+        // Bare title — no tier parses an ordinal out of this.
+        { path: '/lib/06 - Order Course/Bonus Episode.mp4', mtime: BASE_TIME, size: 100 },
+      ];
+
+      const orderScanRepo = makeScanRepo();
+      const orderHandler = new RunScanHandler(
+        libraryRepo,
+        orderScanRepo,
+        makeCourseRepo(),
+        makeLessonRepo(),
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+      );
+
+      const scan = await orderHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = orderScanRepo.store.get(scan.id)!;
+      expect(saved.status).toBe('succeeded');
+
+      const orderErrors = saved.errors.filter((e) => e.code === 'course-order-unreliable');
+      expect(orderErrors).toHaveLength(1); // one per course, not one per file
+      expect(orderErrors[0]?.path).toBe('06 - Order Course');
+      expect(orderErrors[0]?.message).toContain('1 of 2 lesson(s)');
+    });
+
+    it('does not fire when every lesson in the course parses an ordinal', async () => {
+      vi.useRealTimers();
+
+      const scan = await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = scanRepo.store.get(scan.id)!;
+      const orderErrors = saved.errors.filter((e) => e.code === 'course-order-unreliable');
+      expect(orderErrors).toHaveLength(0);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // E25-F04-S01: orphan Transcript cleanup
   // -------------------------------------------------------------------------
   describe('E25-F04-S01: orphan transcript cleanup', () => {
@@ -2347,7 +2401,12 @@ describe('RunScanHandler', () => {
 
       const saved = scanRepo2.store.get(scan.id)!;
       expect(saved.status).toBe('succeeded');
-      expect(saved.errors).toHaveLength(0);
+      // "Bonus.mp4" parses no ordinal — advisory 'course-order-unreliable',
+      // not a failure. See the "course-order-unreliable signal" describe
+      // block for the dedicated test; this one still asserts zero *other*
+      // errors and the resulting position order.
+      expect(saved.errors).toHaveLength(1);
+      expect(saved.errors[0]?.code).toBe('course-order-unreliable');
       expect(lessonRepo2.store.size).toBe(3);
 
       const byVideoPath = new Map([...lessonRepo2.store.values()].map((l) => [l.videoPath, l]));
@@ -3076,7 +3135,15 @@ describe('RunScanHandler', () => {
       const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
-      expect(scanRepo2.store.get(scan.id)!.errors).toHaveLength(0);
+      const saved = scanRepo2.store.get(scan.id)!;
+      // Every "video.mp4" parses no ordinal — one advisory
+      // 'course-order-unreliable' for the whole course, not a failure and not
+      // one per section.
+      expect(saved.errors).toHaveLength(1);
+      expect(saved.errors[0]?.code).toBe('course-order-unreliable');
+      expect(saved.errors[0]?.message).toContain(
+        `${String(sectionCount)} of ${String(sectionCount)} lesson(s)`,
+      );
       expect([...lessonRepo2.store.values()].map((l) => l.videoPath).toSorted()).toEqual(
         videoPaths.toSorted(),
       );

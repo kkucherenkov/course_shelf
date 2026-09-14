@@ -23,9 +23,18 @@
  *
  * Subtitle stem stripping:
  *   For files with `.srt` / `.vtt` extensions, a trailing `.<lang>` suffix
- *   (2–3 lowercase letters) is also stripped so `Intro.en.srt` and `Intro.mp4`
+ *   (2–3 letters) is also stripped so `Intro.en.srt` and `Intro.mp4`
  *   both produce the canonical stem `Intro`.
  *
+ *   The suffix is validated against `Intl.DisplayNames` — a real language
+ *   code, not any short dotted suffix (#503). Before this, `Connect with
+ *   Vue.js.vtt` read as language "js" on stem "Connect with Vue", while its
+ *   video `Connect with Vue.js.mp4` kept the stem "Connect with Vue.js" — the
+ *   two never shared a canonical stem, so the sidecar never paired and was
+ *   reported as `unsupported-extension` instead. Measured: 7 files (six
+ *   `.js`, one `.go`) out of 3267 subtitles in the maintainer's library.
+ *
+
  * Ignored files (kind: 'ignored'):
  *   Files matching `*.cache.vtt` are generated caches produced by the SRT→VTT
  *   conversion endpoint (E08-F02-S02). They must not be treated as discovered
@@ -84,8 +93,26 @@ const SINGLE_PREFIX_RE = /^(\d+)(?:[\s\-._]+|$)/;
 /**
  * Language suffix for subtitle files: `.en`, `.ru`, `.eng`, etc.
  * Matched against the stem (after the main extension has been stripped).
+ * A syntactic match alone is not enough — see `isKnownLanguageCode` below.
  */
 const LANG_SUFFIX_RE = /\.([a-z]{2,3})$/i;
+
+/**
+ * Validates a 2–3 letter suffix as a real language code rather than any
+ * short dotted suffix (#503). `Intl.DisplayNames` with `fallback: 'none'`
+ * returns `undefined` for a well-formed-but-unknown tag (`js`, `go`, `md`)
+ * and a display name for a real one (`en` → "English", `rus` → "Russian") —
+ * a platform-native validator, so no hand-maintained language list here.
+ */
+const LANGUAGE_NAMES = new Intl.DisplayNames(['en'], { type: 'language', fallback: 'none' });
+
+function isKnownLanguageCode(code: string): boolean {
+  try {
+    return LANGUAGE_NAMES.of(code.toLowerCase()) !== undefined;
+  } catch {
+    return false;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -135,7 +162,7 @@ export function stemMatch(filePath: string): StemMatchResult {
   // `Intro.en.srt` and `Intro.mp4` share the same canonical stem.
   if (kind === 'subtitle') {
     const langMatch = LANG_SUFFIX_RE.exec(rawStem);
-    if (langMatch) {
+    if (langMatch && isKnownLanguageCode(langMatch[1] ?? '')) {
       rawStem = rawStem.slice(0, rawStem.length - langMatch[0].length);
     }
   }

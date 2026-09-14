@@ -50,7 +50,7 @@ title asc` — it truncates the candidate pool **alphabetically across the
         tier-scoped queries
   - [x] update unit tests for the new query shape
   - [x] lint/format/typecheck/test gates green
-  - [ ] open PR with `Closes #524`
+  - [x] open PR with `Closes #524` — [#534](https://github.com/kkucherenkov/course_shelf/pull/534)
 - Status: in-progress
 - Blockers: —
 

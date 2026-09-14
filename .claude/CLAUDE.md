@@ -292,7 +292,11 @@ Either way the lane discipline is the same:
   same state and pick the same id.
 
   **Resolve them as a union: keep both sides, newest first, never drop another
-  lane's entry.** `done.md` sits in exactly the same position as `active.md` —
+  lane's entry — with one exception.** An entry the other side has already
+  _moved_ from `active.md` to `done.md` must not be kept on the `active.md`
+  side: a blind union resurrects it and the same task then sits in both files.
+  Check `done.md` on the branch you are merging in before keeping an entry your
+  side still has. This bit the change that first wrote this paragraph down. `done.md` sits in exactly the same position as `active.md` —
   append-only at the top — so every second and third lane to merge hits a
   conflict there. One wave produced three, each resolved identically. Resolve
   every conflict region, not just the first, and check that no marker survived

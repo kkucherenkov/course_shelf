@@ -285,10 +285,27 @@ Either way the lane discipline is the same:
 - A file two lanes both need (`packages/specs/openapi/openapi.yaml`,
   `docker/compose.yml`, a shared module) belongs to exactly one of them; the
   others wait for that PR to land.
-- `specs/tasks/active.md` is the exception — every lane appends its own entry
-  at the top and the union is resolved at merge. Id the entry
-  `T-YYYY-MM-DD-<your branch slug>`; there is no counter to allocate, precisely
-  so that two lanes cannot read the same state and pick the same id.
+- `specs/tasks/active.md` **and `specs/tasks/done.md`** are the exception —
+  every lane appends its own entry at the top of whichever applies, and the
+  union is resolved at merge. Id the entry `T-YYYY-MM-DD-<your branch slug>`;
+  there is no counter to allocate, precisely so that two lanes cannot read the
+  same state and pick the same id.
+
+  **Resolve them as a union: keep both sides, newest first, never drop another
+  lane's entry — with one exception.** An entry the other side has already
+  _moved_ from `active.md` to `done.md` must not be kept on the `active.md`
+  side: a blind union resurrects it and the same task then sits in both files.
+  Check `done.md` on the branch you are merging in before keeping an entry your
+  side still has. This bit the change that first wrote this paragraph down. `done.md` sits in exactly the same position as `active.md` —
+  append-only at the top — so every second and third lane to merge hits a
+  conflict there. One wave produced three, each resolved identically. Resolve
+  every conflict region, not just the first, and check that no marker survived
+  before committing: a half-resolved file has been committed here before.
+
+  `docs/roadmap/TODO.md` is **not** in this category. Lanes ticking different
+  rows merge cleanly because they touch different lines; only two lanes
+  inserting a new row at the same point conflict, and that is an ordinary
+  conflict to resolve on its merits, not a union.
 
 ## Fix root causes, not symptoms
 

@@ -54,15 +54,19 @@
         reachable (mirrors `local-ffmpeg.adapter.integration.spec.ts`)
   - [x] docs/architecture.md §8 data model paragraph
   - [x] lint/format/typecheck/test gates
+  - [x] fix `apps/web` fallout: `AdminTranscriptionCard.vue`'s
+        `Record<TranscriptionStatus, string>` needed the new member — CI's
+        `nuxt typecheck` caught it, not `AdminLibraryRow.vue` (that one's
+        status prop is `AdminLibraryListItem`'s Scan status, a different type
+        that never touches `interrupted` — an earlier note here named the
+        wrong file)
   - [x] PR
 - Status: in-progress
 - Blockers: —
-- Known follow-ups (not in this PR): `apps/web/app/components/admin/AdminLibraryRow.vue:50`
-  hand-rolls the status union and will not know about `interrupted` — a
-  frontend-lane task. `Scan` has the identical stale-`running` shape; fixing
-  it is out of scope per the lane brief unless it falls out of this mechanism
-  for free, which it does not (separate table, separate repository) — open a
-  follow-up task instead of widening this PR.
+- Known follow-ups (not in this PR): `Scan` has the identical stale-`running`
+  shape; fixing it is out of scope per the lane brief unless it falls out of
+  this mechanism for free, which it does not (separate table, separate
+  repository) — open a follow-up task instead of widening this PR.
 
 ## T-2026-09-14-document-union-merge — the working agreement names only half the union-merged files
 

@@ -359,6 +359,16 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       // import, with a ScanError) — and neither is silent.
       const existingFolderBySlug = new Map<string, string>();
 
+      // Top-level folders that already own a persisted course, from that
+      // course's own lessons — never from its slug (#504). A slug is a label
+      // an operator can edit through PATCH /courses/{id}
+      // (update-course-metadata.handler.ts treats title and slug as
+      // independent fields), and once edited it stops matching what this
+      // folder derives on the next scan. Matching on the folder itself is
+      // what a slug edit cannot break; the identity check below reads this
+      // set first, before either one's derived slug enters the picture.
+      const importedFolderNames = new Set<string>();
+
       // Every lesson already known for this library, keyed by its stored
       // videoPath — the same absolute-path string the walk produces, since
       // that is what Lesson.create() was given when the row was first written.
@@ -391,11 +401,12 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
         for (const course of existingCourses) {
           for (const lesson of await this.lessonRepo.findByCourse(course.id)) {
             existingLessonByVideoPath.set(lesson.videoPath, lesson);
-            if (!existingFolderBySlug.has(course.slug)) {
-              // Every lesson of one course lives under one top-level folder, so
-              // the first one answers for all of them.
-              const [folder] = path.relative(rootPath, lesson.videoPath).split(/[/\\]/);
-              if (folder !== undefined && folder !== '') {
+            // Every lesson of one course lives under one top-level folder, so
+            // the first one answers for all of them.
+            const [folder] = path.relative(rootPath, lesson.videoPath).split(/[/\\]/);
+            if (folder !== undefined && folder !== '') {
+              importedFolderNames.add(folder);
+              if (!existingFolderBySlug.has(course.slug)) {
                 existingFolderBySlug.set(course.slug, folder);
               }
             }
@@ -565,8 +576,15 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
         //   Video file participates in incremental comparison (filesAdded/Updated).
         //   Sidecars do NOT bump filesAdded/filesUpdated — only the video does.
         //   Unsupported files in the group are still ScanErrors (belt-and-suspenders).
-        // - Groups WITHOUT a video: every non-video file in the group falls
-        //   back to being an unsupported-extension ScanError (original behaviour).
+        // - Groups WITHOUT a video: silently skipped (#523). Material and
+        //   Subtitle are both value objects scoped to a Lesson (see
+        //   domain/lesson/material.ts) — with no video there is no lesson to
+        //   attach them to. A course folder holds far more than its videos
+        //   (slides, exercises, sample code, archives), and none of that is a
+        //   scan failure. Measured on a clean import of the maintainer's
+        //   library: 9201 unsupported-extension errors and 3 genuine ones;
+        //   PR #519 stopped the walk descending into node_modules/vendor/etc
+        //   but left ~7800 of the 9201 in place — this branch is the rest.
         // -----------------------------------------------------------------------
 
         const lessonFiles: string[] = [];
@@ -718,25 +736,10 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
                 code: 'unsupported-extension',
               });
             }
-          } else {
-            // No video in this stem group — all files are unsupported-extension errors.
-            const allFiles = [
-              ...group.materials,
-              ...group.subtitles.map((s) => ({ path: s.path, size: 0 })),
-              ...group.unsupported.map((u) => ({ path: u.path, size: 0 })),
-            ];
-            for (const f of allFiles) {
-              const basename = path.basename(f.path);
-              const ext = basename.includes('.')
-                ? basename.slice(basename.lastIndexOf('.')).toLowerCase()
-                : '';
-              scan.recordError({
-                path: path.relative(rootPath, f.path),
-                message: `Unsupported file extension "${ext}".`,
-                code: 'unsupported-extension',
-              });
-            }
           }
+          // No video in this stem group: nothing to do. See the WHY above
+          // Step 2 — not a failure, and nowhere to attach these files without
+          // a lesson (#523).
         }
 
         // Record the course if it has at least one lesson file.
@@ -774,43 +777,48 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           // -------------------------------------------------------------------
           let slug = toSlug(courseTitle);
 
-          if (scopeCourse === undefined && existingSlugSet.has(slug)) {
-            const owner = existingFolderBySlug.get(slug);
-            const relFolder = path.relative(rootPath, courseFolder);
-
-            if (owner === folderName) {
+          if (scopeCourse === undefined) {
+            if (importedFolderNames.has(folderName)) {
               // This folder's own course, persisted by an earlier scan.
+              // Matched on the folder, not on `slug` — see `importedFolderNames`
+              // above for why the slug cannot be trusted for this check (#504).
               continue;
             }
-            if (owner === undefined) {
-              // A course row holds the slug but owns no lesson that could say
-              // which folder it came from — in practice this same folder, whose
-              // lessons failed to persist on an earlier scan. Claiming the slug
-              // would collide on uq_course_library_slug, so the folder is
-              // skipped, but it is reported: a scoped rescan repairs it.
+
+            if (existingSlugSet.has(slug)) {
+              const owner = existingFolderBySlug.get(slug);
+              const relFolder = path.relative(rootPath, courseFolder);
+
+              if (owner === undefined) {
+                // A course row holds the slug but owns no lesson that could say
+                // which folder it came from — in practice this same folder, whose
+                // lessons failed to persist on an earlier scan. Claiming the slug
+                // would collide on uq_course_library_slug, so the folder is
+                // skipped, but it is reported: a scoped rescan repairs it.
+                scan.recordError({
+                  path: relFolder,
+                  message:
+                    `Slug "${slug}" is held by a course with no lessons, so this folder cannot be ` +
+                    `matched to it. Rescan that course to re-import its lessons.`,
+                  code: 'course-slug-collision',
+                });
+                continue;
+              }
+
+              // A DIFFERENT folder holds the slug. Both are real courses.
+              slug = discriminatedSlug(slug, folderName);
+              if (existingSlugSet.has(slug)) {
+                // Already imported under the discriminated slug — nothing to do.
+                continue;
+              }
               scan.recordError({
                 path: relFolder,
                 message:
-                  `Slug "${slug}" is held by a course with no lessons, so this folder cannot be ` +
-                  `matched to it. Rescan that course to re-import its lessons.`,
+                  `Course title "${courseTitle}" reduces to a slug "${folderName}" shares with ` +
+                  `"${owner}"; imported as "${slug}" instead.`,
                 code: 'course-slug-collision',
               });
-              continue;
             }
-
-            // A DIFFERENT folder holds the slug. Both are real courses.
-            slug = discriminatedSlug(slug, folderName);
-            if (existingSlugSet.has(slug)) {
-              // Already imported under the discriminated slug — nothing to do.
-              continue;
-            }
-            scan.recordError({
-              path: relFolder,
-              message:
-                `Course title "${courseTitle}" reduces to a slug "${folderName}" shares with ` +
-                `"${owner}"; imported as "${slug}" instead.`,
-              code: 'course-slug-collision',
-            });
           }
 
           try {

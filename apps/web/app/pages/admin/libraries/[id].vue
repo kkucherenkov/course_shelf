@@ -5,12 +5,16 @@
   import { runLibraryScan, client } from '@app/api-client-ts';
 
   import AdminCopyablePath from '~/components/admin/AdminCopyablePath.vue';
+  import AdminCourseList, {
+    type AdminCourseListItem,
+  } from '~/components/admin/AdminCourseList.vue';
   import AdminScansTable from '~/components/admin/AdminScansTable.vue';
   import AdminEditLibrarySheet from '~/components/admin/AdminEditLibrarySheet.vue';
   import AdminRemoveLibraryDialog from '~/components/admin/AdminRemoveLibraryDialog.vue';
   import AdminTranscriptionCard from '~/components/admin/AdminTranscriptionCard.vue';
   import { useAdminLibraries } from '~/composables/useAdminLibraries';
   import { useAdminLibraryScans } from '~/composables/useAdminLibraryScans';
+  import { useCoursesList } from '~/composables/useCoursesList';
   import { useScanProgress } from '~/composables/useScanProgress';
   import { useTranscriptionProgress } from '~/composables/useTranscriptionProgress';
 
@@ -67,6 +71,22 @@
 
   const scanItems = computed(() => scansData.value?.items ?? []);
   const scansLoading = computed(() => scansStatus.value === 'pending');
+
+  // Courses in this library (#510) — an admin fixing a bad import had no way
+  // to reach a single course from the admin section. `listCourses` already
+  // supports `libraryId` and "admins see all", so this reuses the same
+  // composable Browse uses rather than adding a dedicated admin endpoint.
+  const { data: coursesData, status: coursesFetchStatus } = useCoursesList({ libraryId });
+
+  const courseItems = computed<AdminCourseListItem[]>(
+    () =>
+      coursesData.value?.items.map((c) => ({
+        id: c.id,
+        title: c.title,
+        lessonsLabel: t('pages.admin.libraryDetail.courseLessons', { n: c.progress.lessonsTotal }),
+      })) ?? [],
+  );
+  const coursesLoading = computed(() => coursesFetchStatus.value === 'pending');
 
   // Live scan progress polling
   const {
@@ -290,6 +310,20 @@
               </UButton>
             </template>
           </AppBanner>
+
+          <!-- Courses in this library (#510) -->
+          <div class="adm-lib-detail__tbl-h">
+            <h3 class="adm-lib-detail__tbl-title">
+              {{ t('pages.admin.libraryDetail.coursesHeading') }}
+            </h3>
+          </div>
+
+          <AdminCourseList
+            class="adm-lib-detail__courses"
+            :items="courseItems"
+            :loading="coursesLoading"
+            :empty-label="t('pages.admin.libraryDetail.coursesEmpty')"
+          />
 
           <!-- Scan history table -->
           <div class="adm-lib-detail__tbl-h">
@@ -570,6 +604,11 @@
     // ── Transcription card ───────────────────────────────────────────────────
     &__transcription {
       margin-top: var(--space-4);
+    }
+
+    // ── Courses list ──────────────────────────────────────────────────────────
+    &__courses {
+      margin-bottom: var(--space-5);
     }
 
     // ── Table heading ─────────────────────────────────────────────────────────

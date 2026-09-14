@@ -84,4 +84,14 @@ export interface LessonRepository {
   getLessonStatsByCourseIds(
     courseIds: string[],
   ): Promise<Map<string, { lessonCount: number; totalDurationSeconds: number }>>;
+
+  /**
+   * Which of these lesson ids currently exist, as a Set. One batch query
+   * rather than an exists() per id — used to verify a denormalised reference
+   * (e.g. `CourseProgressReadModel.lastSeenLessonId`) still points at a real
+   * row before it is returned over the wire (#497): a scoped rescan can
+   * delete a lesson without touching that projection field, unlike
+   * `lessonsTotal`/`percent`, which self-heal on the next progress event.
+   */
+  existsByIds(ids: readonly string[]): Promise<Set<string>>;
 }

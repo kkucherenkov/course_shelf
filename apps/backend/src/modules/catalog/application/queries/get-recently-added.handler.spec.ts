@@ -62,6 +62,7 @@ function makeLessonRepo(
     parkPositionsForResync: vi.fn(),
     removeMany: vi.fn(),
     getLessonStatsByCourseIds: vi.fn().mockResolvedValue(statsMap),
+    existsByIds: vi.fn().mockResolvedValue(new Set()),
   };
 }
 

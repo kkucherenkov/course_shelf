@@ -107,6 +107,7 @@ function makeLessonRepo(overrides?: Partial<LessonRepository>): LessonRepository
     parkPositionsForResync: vi.fn(),
     removeMany: vi.fn(),
     getLessonStatsByCourseIds: vi.fn(),
+    existsByIds: vi.fn().mockResolvedValue(new Set()),
     ...overrides,
   };
 }

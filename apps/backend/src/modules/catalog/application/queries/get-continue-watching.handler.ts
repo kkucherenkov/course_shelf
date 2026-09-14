@@ -8,9 +8,16 @@
  *   1. Fetch all progress rows for the user, sorted by lastSeenAt DESC.
  *   2. Cap to the requested limit.
  *   3. Bulk-fetch courses + libraries in two queries (no N+1).
- *   4. Filter by AuthorizationService.canSee — defensive even though grants
+ *   4. Batch-verify lastSeenLessonId still exists (#497) — a scoped rescan
+ *      can delete a lesson without touching this projection field, unlike
+ *      lessonsTotal/percent, which self-heal on the next progress event. One
+ *      findMany, not one exists() per row.
+ *   5. Filter by AuthorizationService.canSee — defensive even though grants
  *      normally do not revoke after progress was recorded.
- *   5. Map to ContinueWatchingItem[].
+ *   6. Map to ContinueWatchingItem[], dropping rows whose last-seen lesson no
+ *      longer exists — lastSeenLessonId is required on the wire, so a stale
+ *      id cannot be sent as-is, and no lesson in the course is a better
+ *      substitute than the one the user actually last watched.
  *
  * librarySlug note: the Library aggregate in this codebase uses `name` (not a
  * URL slug). The generated ContinueWatchingItem schema marks librarySlug as
@@ -24,12 +31,14 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 
 import { AUTHORIZATION_SERVICE } from '../../../../common/access/authorization.service';
 import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
+import { LESSON_REPOSITORY } from '../../domain/lesson/lesson.repository';
 import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from '../../domain/progress/course-progress-read-model.repository';
 
 import { GetContinueWatchingQuery } from './get-continue-watching.query';
 
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
 import type { CourseRepository } from '../../domain/course/course.repository';
+import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
 import type { ContinueWatchingDto, ContinueWatchingItem } from '@app/api-client-ts';
 import type { LibraryId } from '../../../../common/access/authorization.service';
@@ -43,6 +52,7 @@ export class GetContinueWatchingHandler implements IQueryHandler<
     @Inject(COURSE_PROGRESS_READ_MODEL_REPOSITORY)
     private readonly progressRepo: CourseProgressReadModelRepository,
     @Inject(COURSE_REPOSITORY) private readonly courseRepo: CourseRepository,
+    @Inject(LESSON_REPOSITORY) private readonly lessonRepo: LessonRepository,
     @Inject(AUTHORIZATION_SERVICE) private readonly authz: AuthorizationService,
   ) {}
 
@@ -67,7 +77,12 @@ export class GetContinueWatchingHandler implements IQueryHandler<
     const courses = await this.courseRepo.findByIds(courseIds);
     const courseMap = new Map<string, (typeof courses)[number]>(courses.map((c) => [c.id, c]));
 
-    // 4. Authorization filter — defensive even though grants normally do not
+    // 4. Batch-verify lastSeenLessonId still exists (#497).
+    const existingLessonIds = await this.lessonRepo.existsByIds(
+      rows.map((r) => r.lastSeenLessonId),
+    );
+
+    // 5. Authorization filter — defensive even though grants normally do not
     //    revoke after progress was recorded. Admins always pass.
     const visible = await Promise.all(
       rows.map((row) => {
@@ -81,9 +96,9 @@ export class GetContinueWatchingHandler implements IQueryHandler<
       }),
     );
 
-    // 5. Map to ContinueWatchingItem[].
+    // 6. Map to ContinueWatchingItem[].
     const items: ContinueWatchingItem[] = rows
-      .filter((_, i) => visible[i])
+      .filter((row, i) => visible[i] && existingLessonIds.has(row.lastSeenLessonId))
       .flatMap((row) => {
         const course = courseMap.get(row.courseId);
         if (!course) return [];

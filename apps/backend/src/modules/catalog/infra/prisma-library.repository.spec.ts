@@ -19,6 +19,9 @@ import { PrismaLibraryRepository } from './prisma-library.repository';
 
 import type { LibraryId } from '../domain/library/library';
 
+const { unlinkMock } = vi.hoisted(() => ({ unlinkMock: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('node:fs/promises', () => ({ unlink: unlinkMock }));
+
 // ---------------------------------------------------------------------------
 // Minimal PrismaService mock — only the methods the repository actually uses.
 // ---------------------------------------------------------------------------
@@ -53,6 +56,10 @@ function makeTxClient() {
       findMany: vi.fn().mockResolvedValue([]),
     },
     lessonProgress: {
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+    transcript: {
+      findMany: vi.fn().mockResolvedValue([]),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     bookmark: {
@@ -121,6 +128,7 @@ describe('PrismaLibraryRepository', () => {
     prisma = makePrisma();
     // Cast: we only need the `library` delegate surface.
     repo = new PrismaLibraryRepository(prisma as never);
+    unlinkMock.mockClear();
   });
 
   // -------------------------------------------------------------------------
@@ -314,9 +322,63 @@ describe('PrismaLibraryRepository', () => {
     expect(tx.courseProgressReadModel.deleteMany).toHaveBeenCalledWith({
       where: { courseId: { in: courseIds } },
     });
+    expect(tx.transcript.deleteMany).toHaveBeenCalledWith({
+      where: { lessonId: { in: lessonIds } },
+    });
     expect(tx.scan.deleteMany).toHaveBeenCalledWith({ where: { libraryId: 'lib-1' } });
     expect(tx.course.deleteMany).toHaveBeenCalledWith({ where: { libraryId: 'lib-1' } });
     expect(tx.library.delete).toHaveBeenCalledWith({ where: { id: 'lib-1' } });
+  });
+
+  // -------------------------------------------------------------------------
+  // removeWithCascade — transcript/cue cleanup (#502)
+  // -------------------------------------------------------------------------
+  it('removeWithCascade deletes every Transcript row for the library and unlinks derivedPath files', async () => {
+    const lessonIds = ['l-1', 'l-2'];
+    const tx = makeTxClient();
+    tx.course.findMany.mockResolvedValue([{ id: 'c-1' }]);
+    tx.lesson.findMany.mockResolvedValue(lessonIds.map((id) => ({ id })));
+    tx.transcript.findMany.mockResolvedValue([
+      { derivedPath: '/derived/lib-1/l-1.en.srt' },
+      { derivedPath: null }, // sidecar-origin: nothing to unlink
+      { derivedPath: '/derived/lib-1/l-2.en.srt' },
+    ]);
+    vi.mocked(prisma.$transaction).mockImplementation(
+      async (fn: (tx: ReturnType<typeof makeTxClient>) => Promise<unknown>) => fn(tx),
+    );
+
+    await repo.removeWithCascade('lib-1');
+
+    // TranscriptCue carries no independent deleteMany call — it cascades via
+    // the `onDelete: Cascade` FK on transcript_cue.transcriptId, so the count
+    // that matters is: every Transcript row for these lessons is gone.
+    expect(tx.transcript.findMany).toHaveBeenCalledWith({
+      where: { lessonId: { in: lessonIds } },
+      select: { derivedPath: true },
+    });
+    expect(tx.transcript.deleteMany).toHaveBeenCalledWith({
+      where: { lessonId: { in: lessonIds } },
+    });
+    expect(unlinkMock).toHaveBeenCalledTimes(2);
+    expect(unlinkMock).toHaveBeenCalledWith('/derived/lib-1/l-1.en.srt');
+    expect(unlinkMock).toHaveBeenCalledWith('/derived/lib-1/l-2.en.srt');
+  });
+
+  it('removeWithCascade succeeds even when a derivedPath unlink fails (best-effort)', async () => {
+    const tx = makeTxClient();
+    tx.course.findMany.mockResolvedValue([{ id: 'c-1' }]);
+    tx.lesson.findMany.mockResolvedValue([{ id: 'l-1' }]);
+    tx.transcript.findMany.mockResolvedValue([{ derivedPath: '/derived/lib-1/l-1.en.srt' }]);
+    vi.mocked(prisma.$transaction).mockImplementation(
+      async (fn: (tx: ReturnType<typeof makeTxClient>) => Promise<unknown>) => fn(tx),
+    );
+    unlinkMock.mockRejectedValueOnce(new Error('ENOENT'));
+
+    const result = await repo.removeWithCascade('lib-1');
+
+    // The DB rows are the source of truth — a missing derived file must not
+    // fail the whole library deletion.
+    expect(result).toBe(true);
   });
 
   it('removeWithCascade returns false when library is not found (P2025)', async () => {

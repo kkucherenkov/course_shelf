@@ -237,6 +237,16 @@ export class PrismaLessonRepository implements LessonRepository {
     return result;
   }
 
+  async existsByIds(ids: readonly string[]): Promise<Set<string>> {
+    if (ids.length === 0) return new Set();
+
+    const rows = await this.prisma.lesson.findMany({
+      where: { id: { in: [...ids] } },
+      select: { id: true },
+    });
+    return new Set(rows.map((r) => r.id));
+  }
+
   // ---------------------------------------------------------------------------
   // Private mapper — row shape → domain aggregate
   // ---------------------------------------------------------------------------

@@ -25,6 +25,9 @@ export class AdminPublicController {
   getInstance(): InstanceConfigDto {
     const instance = this.appConfig.instance;
     return {
+      // `AppConfig.runtime.version` is APP_VERSION, the same string
+      // `GET /health` already reports without credentials.
+      version: this.appConfig.runtime.version,
       selfRegistration: instance.selfRegistration,
       emailVerificationRequired: instance.emailVerificationRequired,
       ssoProviders: instance.ssoProviders.map((p) => ({

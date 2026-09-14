@@ -8,6 +8,8 @@ part of 'instance_config_dto.dart';
 
 class _$InstanceConfigDto extends InstanceConfigDto {
   @override
+  final String version;
+  @override
   final bool selfRegistration;
   @override
   final bool emailVerificationRequired;
@@ -19,6 +21,7 @@ class _$InstanceConfigDto extends InstanceConfigDto {
   ]) => (InstanceConfigDtoBuilder()..update(updates))._build();
 
   _$InstanceConfigDto._({
+    required this.version,
     required this.selfRegistration,
     required this.emailVerificationRequired,
     required this.ssoProviders,
@@ -35,6 +38,7 @@ class _$InstanceConfigDto extends InstanceConfigDto {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is InstanceConfigDto &&
+        version == other.version &&
         selfRegistration == other.selfRegistration &&
         emailVerificationRequired == other.emailVerificationRequired &&
         ssoProviders == other.ssoProviders;
@@ -43,6 +47,7 @@ class _$InstanceConfigDto extends InstanceConfigDto {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, version.hashCode);
     _$hash = $jc(_$hash, selfRegistration.hashCode);
     _$hash = $jc(_$hash, emailVerificationRequired.hashCode);
     _$hash = $jc(_$hash, ssoProviders.hashCode);
@@ -53,6 +58,7 @@ class _$InstanceConfigDto extends InstanceConfigDto {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'InstanceConfigDto')
+          ..add('version', version)
           ..add('selfRegistration', selfRegistration)
           ..add('emailVerificationRequired', emailVerificationRequired)
           ..add('ssoProviders', ssoProviders))
@@ -63,6 +69,10 @@ class _$InstanceConfigDto extends InstanceConfigDto {
 class InstanceConfigDtoBuilder
     implements Builder<InstanceConfigDto, InstanceConfigDtoBuilder> {
   _$InstanceConfigDto? _$v;
+
+  String? _version;
+  String? get version => _$this._version;
+  set version(String? version) => _$this._version = version;
 
   bool? _selfRegistration;
   bool? get selfRegistration => _$this._selfRegistration;
@@ -87,6 +97,7 @@ class InstanceConfigDtoBuilder
   InstanceConfigDtoBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _version = $v.version;
       _selfRegistration = $v.selfRegistration;
       _emailVerificationRequired = $v.emailVerificationRequired;
       _ssoProviders = $v.ssoProviders.toBuilder();
@@ -114,6 +125,11 @@ class InstanceConfigDtoBuilder
       _$result =
           _$v ??
           _$InstanceConfigDto._(
+            version: BuiltValueNullFieldError.checkNotNull(
+              version,
+              r'InstanceConfigDto',
+              'version',
+            ),
             selfRegistration: BuiltValueNullFieldError.checkNotNull(
               selfRegistration,
               r'InstanceConfigDto',

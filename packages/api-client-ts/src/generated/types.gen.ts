@@ -1276,6 +1276,10 @@ export type HasUsersResponse = {
  */
 export type InstanceConfigDto = {
     /**
+     * The running server's version, as the release tag names it. Shown in the client so a stale cached SPA is distinguishable from a stale server. Already public: `GET /health` reports the same string without credentials, so this exposes nothing new.
+     */
+    version: string;
+    /**
      * When false, sign-up CTAs are hidden and /sign-up redirects to /sign-in.
      */
     selfRegistration: boolean;

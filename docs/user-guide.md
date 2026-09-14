@@ -219,10 +219,14 @@ When it finishes you get counts (`scanned` / `added` / `updated` /
 `coursesDiscovered`) and the list of per-file errors, if any. Scans can also be
 cancelled mid-run.
 
-A library scan **never re-imports a course it already knows**. That is
-deliberate: it is what stops a scan from overwriting a title you edited or a
-poster you replaced. It also means a library scan cannot repair a course that
-imported badly — for that, rescan the course itself.
+A library scan **never re-imports a course it already knows** — your title,
+poster and other course-level edits are always kept. It does keep that
+course's lesson order and lesson list in sync with its folder: a new video is
+picked up, and every lesson's position is recomputed from its filename, so a
+renamed file resorts the course the same way a per-course **Rescan** would.
+What a library scan will not do for an already-known course is add a
+brand-new section folder or remove a lesson whose video is gone — for either
+of those, rescan the course itself.
 
 ### Rescanning one course
 
@@ -621,14 +625,16 @@ errors on that folder. The usual causes are a video extension outside the
 supported five, or a `course.json` that failed to parse.
 
 **A course is there but some of its lessons are missing.** Fix whatever the
-scan reported, then use **Rescan** on the course page. Running the library scan
-again will not help — it skips courses it has already imported (see
+scan reported. If the missing lessons sit in a section the course already
+has, the next library scan picks them up on its own. If they are in a section
+folder the course has never had before, or a lesson's video file is gone, use
+**Rescan** on the course page instead (see
 [Rescanning one course](#rescanning-one-course)).
 
 **Lessons appear in the wrong order.** Folder-name inference did not find the
 ordinals you expected. Either rename to a recognised pattern (`01 - Title`) or
-declare the order explicitly in `course.json`, then **Rescan** the course —
-renumbering only happens on a course rescan.
+declare the order explicitly in `course.json`, then scan again — a plain
+library scan renumbers an already-known course the same way **Rescan** does.
 
 **A lesson has no duration or thumbnail.** ffmpeg/ffprobe is not available to
 the server. Install it, then re-scan.

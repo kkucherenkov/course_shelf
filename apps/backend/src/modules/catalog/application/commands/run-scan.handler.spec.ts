@@ -1259,6 +1259,11 @@ describe('RunScanHandler', () => {
         slug: toSlugForTest(courseFolder),
         title: courseFolder,
       });
+      // A real persisted course always has a section — Lesson.section is a
+      // real FK. Without one, a library-wide scan's reconcile (#544) cannot
+      // resolve `entry`'s section and records 'lesson-section-unresolvable'
+      // instead of silently succeeding the way the old skip made this look.
+      course.addSection({ id: 'section-sidecar', title: 'Lessons', position: 1 });
       courseRepo.store.set(course.id, course);
 
       const lesson = Lesson.create({
@@ -1700,34 +1705,57 @@ describe('RunScanHandler', () => {
     });
 
     // -----------------------------------------------------------------------
-    // Idempotency: second scan on the same folder must NOT call courseRepo.save
-    // again for already-known slugs.
+    // Idempotency (#544): a second scan RECONCILES both already-known
+    // courses — courseRepo.save / lessonRepo.save fire again (reconcile
+    // re-persists every discovered lesson, the same as a scoped rescan does)
+    // — but every course, section, lesson id and position comes out
+    // byte-identical, because nothing on disk changed. That is the actual
+    // idempotency guarantee; "no repo call happened" was never the contract,
+    // "nothing observable changed" is.
     // -----------------------------------------------------------------------
-    it('second scan skips already-persisted courses (idempotency)', async () => {
+    it('second scan reconciles already-persisted courses to an identical state', async () => {
       vi.useRealTimers();
 
       // First scan — persists both courses.
       await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
-      // 3 saves on first scan: 2 for Course A (initial + metadata) + 1 for Course B.
-      expect(courseRepo.save).toHaveBeenCalledTimes(3);
-      expect(lessonRepo.save).toHaveBeenCalledTimes(3);
+      const coursesAfterFirst = [...courseRepo.store.values()]
+        .map((c) => ({ id: c.id, slug: c.slug, sections: c.sections.map((s) => s.id) }))
+        .toSorted((a, b) => a.slug.localeCompare(b.slug));
+      const lessonsAfterFirst = [...lessonRepo.store.values()]
+        .map((l) => ({ id: l.id, sectionId: l.sectionId, position: l.position }))
+        .toSorted((a, b) => a.id.localeCompare(b.id));
 
-      // Second scan — same FS, same slugs → skip both courses.
+      // Second scan — same FS, same slugs → reconcile, not re-create.
       await handler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
-      // courseRepo.save must NOT have been called again (slugs already known).
-      expect(courseRepo.save).toHaveBeenCalledTimes(3);
-      // lessonRepo.save must NOT have been called again.
-      expect(lessonRepo.save).toHaveBeenCalledTimes(3);
+      // Same two course rows (same id/slug/section ids), same three lesson
+      // rows (same id/sectionId/position) — a reconcile, not a duplicate.
+      const coursesAfterSecond = [...courseRepo.store.values()]
+        .map((c) => ({ id: c.id, slug: c.slug, sections: c.sections.map((s) => s.id) }))
+        .toSorted((a, b) => a.slug.localeCompare(b.slug));
+      const lessonsAfterSecond = [...lessonRepo.store.values()]
+        .map((l) => ({ id: l.id, sectionId: l.sectionId, position: l.position }))
+        .toSorted((a, b) => a.id.localeCompare(b.id));
+      expect(coursesAfterSecond).toEqual(coursesAfterFirst);
+      expect(lessonsAfterSecond).toEqual(lessonsAfterFirst);
+      expect(courseRepo.store.size).toBe(2);
+      expect(lessonRepo.store.size).toBe(3);
+
+      // Reconcile parks and re-persists every lesson every scan (E32-F01-S01
+      // batch renumbering) — a second, unchanged scan still calls save.
+      expect(lessonRepo.parkPositionsForResync).toHaveBeenCalledTimes(2);
+      expect(lessonRepo.save).toHaveBeenCalledTimes(6);
 
       // Scan aggregate still records coursesDiscovered (counter always bumped).
       const scans = [...scanRepo.store.values()].toSorted(
         (a, b) => b.startedAt.getTime() - a.startedAt.getTime(),
       );
       expect(scans[0]!.coursesDiscovered).toBe(2);
+      expect(scans[0]!.status).toBe('succeeded');
+      expect(scans[0]!.errors).toHaveLength(0);
     });
   });
 
@@ -3154,12 +3182,12 @@ describe('RunScanHandler', () => {
       expect(lessonRepo2.parkPositionsForResync).toHaveBeenCalledWith('course-target');
     });
 
-    it('a library-wide scan still skips a course it already imported', async () => {
+    it('a library-wide scan reconciles a course it already imported, not skips it (#544)', async () => {
       vi.useRealTimers();
       const { courseRepo2, lessonRepo2, transcriptRepo } = seedFixture();
       const scanRepo2 = makeScanRepo();
-      // "Other Course" keeps the slug its folder produces, so the v1 skip
-      // applies to it — and its folder has a video the DB does not know about.
+      // "Other Course" keeps the slug its folder produces, and its folder now
+      // has a second video the DB does not know about yet.
       const h = new RunScanHandler(
         libraryRepo,
         scanRepo2,
@@ -3177,16 +3205,21 @@ describe('RunScanHandler', () => {
         makePosterSync(),
       );
 
-      await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
       await drainMicrotasks();
 
-      // The new file was NOT imported: a full scan must not overwrite a course
-      // that is already persisted (the metadata-clobbering rule v1 set).
-      expect(
-        [...lessonRepo2.store.values()].filter((l) => l.courseId === 'course-other'),
-      ).toHaveLength(1);
-      expect(lessonRepo2.parkPositionsForResync).not.toHaveBeenCalled();
+      // The new file WAS imported: a library-wide scan now reconciles an
+      // already-imported folder instead of skipping it (#544).
+      const otherLessons = [...lessonRepo2.store.values()].filter(
+        (l) => l.courseId === 'course-other',
+      );
+      expect(otherLessons).toHaveLength(2);
+      // The pre-existing lesson kept its id — no re-import minted a fresh one.
+      expect(otherLessons.find((l) => l.videoPath === otherVideoPath)?.id).toBe('lesson-other');
+      expect(lessonRepo2.parkPositionsForResync).toHaveBeenCalledWith('course-other');
+      // Reconcile is narrower than force-resync: never deletes a lesson.
       expect(lessonRepo2.removeMany).not.toHaveBeenCalled();
+      expect(scanRepo2.store.get(scan.id)!.errors).toHaveLength(0);
     });
   });
 
@@ -3566,9 +3599,250 @@ describe('RunScanHandler', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Library-wide scan is unchanged — the existing 41+ tests above already
-  // construct RunScanCommand(libraryId, actorUserId) with no scope and pass
-  // unmodified, which is the regression proof for "library-wide scan still
-  // behaves exactly as before" (E32-F01-S02 acceptance).
+  // #544: library-wide scan reconciles an already-imported folder.
+  //
+  // The maintainer's production library, measured: 5973 (course, sectionId,
+  // position, filename) rows dumped from prod and run through the real
+  // `parseLessonFileName` + `assignLessonPositions` (reproduced independently
+  // here, not copied from the issue) show 153 lessons across exactly 6
+  // courses sitting at a stale position — data imported before the current
+  // filename parser existed. A library-wide scan used to skip every one of
+  // those 6 folders outright (`importedFolderNames.has(folderName) →
+  // continue`), so nothing short of an operator rescanning each of the 6 by
+  // hand could ever fix it.
   // -------------------------------------------------------------------------
+  describe('#544: library-wide reconcile', () => {
+    // -----------------------------------------------------------------------
+    // The safety net #544 needs: `existingLessonByVideoPath` spans every
+    // course in the library on a library-wide scan (unlike a scoped rescan,
+    // where it is one course's own lessons). Reuse is now live on that path
+    // too, so a lesson id must never be adopted from a course other than the
+    // one being reconciled — without the `courseId` check this test fails:
+    // "Course A"'s reconcile would rewrite "lesson-b-stray" in place,
+    // silently moving it (and every row that references its id with no FK
+    // behind it — progress, bookmarks, notes, transcripts) from Course B to
+    // Course A.
+    // -----------------------------------------------------------------------
+    it('never adopts a lesson id that belongs to a different course', async () => {
+      vi.useRealTimers();
+
+      const courseA = Course.create({
+        id: 'course-a-544',
+        libraryId: 'lib-1',
+        slug: 'course-a-544',
+        title: 'Course A',
+      });
+      courseA.addSection({ id: 'sec-a-544', title: 'Lessons', position: 1 });
+      const courseB = Course.create({
+        id: 'course-b-544',
+        libraryId: 'lib-1',
+        slug: 'course-b-544',
+        title: 'Course B',
+      });
+      courseB.addSection({ id: 'sec-b-544', title: 'Lessons', position: 1 });
+
+      const courseRepo2 = makeCourseRepo();
+      // Course B inserted first, Course A second — `courseByFolderName`
+      // resolves "Course A" (the folder both entries below claim) to
+      // whichever course is processed LAST, so this order is what makes
+      // Course A win the folder, the correct outcome, while Course B's
+      // colliding entry is still live in `existingLessonByVideoPath` for the
+      // guard to reject.
+      courseRepo2.store.set(courseB.id, courseB);
+      courseRepo2.store.set(courseA.id, courseA);
+
+      const lessonRepo2 = makeLessonRepo();
+      lessonRepo2.store.set(
+        'lesson-a-cover',
+        Lesson.create({
+          id: 'lesson-a-cover',
+          courseId: courseA.id,
+          sectionId: 'sec-a-544',
+          position: 1,
+          title: 'Cover',
+          videoPath: '/lib/Course A/00 - Cover.mp4',
+          mtime: BASE_TIME,
+          sizeBytes: 100,
+        }),
+      );
+      // A stray row: same videoPath a file under "Course A" will resolve to,
+      // but persisted under Course B — the corrupted-data shape the guard
+      // exists for (see the comment above).
+      lessonRepo2.store.set(
+        'lesson-b-stray',
+        Lesson.create({
+          id: 'lesson-b-stray',
+          courseId: courseB.id,
+          sectionId: 'sec-b-544',
+          position: 1,
+          title: 'Stray',
+          videoPath: '/lib/Course A/01 - Intro.mp4',
+          mtime: BASE_TIME,
+          sizeBytes: 100,
+        }),
+      );
+
+      const files: FileRecord[] = [
+        { path: '/lib/Course A/00 - Cover.mp4', mtime: BASE_TIME, size: 100 },
+        { path: '/lib/Course A/01 - Intro.mp4', mtime: BASE_TIME, size: 100 },
+      ];
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+        makePosterSync(),
+      );
+
+      await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      // Course B's stray row is completely untouched — still its own course,
+      // still its own id, still the same videoPath.
+      const strayAfter = lessonRepo2.store.get('lesson-b-stray');
+      expect(strayAfter?.courseId).toBe(courseB.id);
+      expect(strayAfter?.videoPath).toBe('/lib/Course A/01 - Intro.mp4');
+      expect([...lessonRepo2.store.values()].filter((l) => l.courseId === courseB.id)).toHaveLength(
+        1,
+      );
+
+      // Course A got its own, freshly-minted lesson for "01 - Intro.mp4" —
+      // never "lesson-b-stray" wearing a new courseId.
+      const introForA = [...lessonRepo2.store.values()].find(
+        (l) => l.courseId === courseA.id && l.videoPath === '/lib/Course A/01 - Intro.mp4',
+      );
+      expect(introForA).toBeDefined();
+      expect(introForA!.id).not.toBe('lesson-b-stray');
+      expect([...lessonRepo2.store.values()].filter((l) => l.courseId === courseA.id)).toHaveLength(
+        2,
+      );
+    });
+
+    // -----------------------------------------------------------------------
+    // Real data (measured, not deduced): 18 rows from ORDER-LESSONS.tsv for
+    // "Nuxt - интенсивный базовый курс" — one of the 6 flagged courses,
+    // chosen for being the smallest. Both the stored positions (the `1`..`18`
+    // column dumped from prod) and the filenames are the real values; only
+    // the videoPath prefix is synthetic (a real absolute prod path was not
+    // in the dump). Recomputing through the real
+    // `parseLessonFileName`/`assignLessonPositions` swaps lessons 1↔2 and
+    // 3↔4 ("1-nuxt-about-ui-google-and-generate.mp4" and "2-nuxt-deploy.mp4"
+    // sort before their un-prefixed same-ordinal siblings); 5..18 are
+    // already correct. 8 of the 18 filenames ("*-hw*-intro/feedback") carry
+    // no ordinal at all — the real reason this course also gets an advisory
+    // 'course-order-unreliable', not a bug in this fixture.
+    // -----------------------------------------------------------------------
+    it('reorders a real course from ORDER-LESSONS.tsv and keeps every lesson id', async () => {
+      vi.useRealTimers();
+
+      const folder = 'Nuxt - интенсивный базовый курс';
+      // [filename, stale stored position] — column order matches the TSV dump.
+      const rows: [string, number][] = [
+        ['nuxt-1.mp4', 1],
+        ['1-nuxt-about-ui-google-and-generate.mp4', 2],
+        ['nuxt-2.mp4', 3],
+        ['2-nuxt-deploy.mp4', 4],
+        ['nuxt-3.mp4', 5],
+        ['nuxt-4.mp4', 6],
+        ['nuxt-5.mp4', 7],
+        ['nuxt-6.mp4', 8],
+        ['nuxt-7.mp4', 9],
+        ['nuxt-8.mp4', 10],
+        ['nuxt-hw5-intro.mp4', 11],
+        ['nuxt-hw3-intro.mp4', 12],
+        ['nuxt-hw3-feedback.mp4', 13],
+        ['nuxt-hw4-intro.mp4', 14],
+        ['nuxt-1-hw-intro.mp4', 15],
+        ['nuxt-hw1-feedback.mp4', 16],
+        ['nuxt-hw6-intro.mp4', 17],
+        ['nuxt-hw7-intro.mp4', 18],
+      ];
+      // Recomputed by assignLessonPositions() against the same 18 filenames —
+      // only the first 4 move; 5..18 land back on their stored position.
+      const expectedPosition = new Map<string, number>(rows);
+      expectedPosition.set('nuxt-1.mp4', 2);
+      expectedPosition.set('1-nuxt-about-ui-google-and-generate.mp4', 1);
+      expectedPosition.set('nuxt-2.mp4', 4);
+      expectedPosition.set('2-nuxt-deploy.mp4', 3);
+
+      const courseRepo2 = makeCourseRepo();
+      const course = Course.create({
+        id: 'course-nuxt-544',
+        libraryId: 'lib-1',
+        slug: toSlugForTest(folder),
+        title: folder,
+      });
+      course.addSection({ id: 'sec-nuxt-544', title: 'Lessons', position: 1 });
+      courseRepo2.store.set(course.id, course);
+
+      const lessonRepo2 = makeLessonRepo();
+      const idByFilename = new Map<string, string>();
+      for (const [filename, position] of rows) {
+        const id = `lesson-nuxt-${filename}`;
+        idByFilename.set(filename, id);
+        lessonRepo2.store.set(
+          id,
+          Lesson.create({
+            id,
+            courseId: course.id,
+            sectionId: 'sec-nuxt-544',
+            position,
+            title: filename,
+            videoPath: `/lib/${folder}/${filename}`,
+            mtime: BASE_TIME,
+            sizeBytes: 100,
+          }),
+        );
+      }
+
+      const files: FileRecord[] = rows.map(([filename]) => ({
+        path: `/lib/${folder}/${filename}`,
+        mtime: BASE_TIME,
+        size: 100,
+      }));
+      const scanRepo2 = makeScanRepo();
+      const h = new RunScanHandler(
+        libraryRepo,
+        scanRepo2,
+        courseRepo2,
+        lessonRepo2,
+        new FakeFsAdapter(files),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        centrifugo,
+        makeMetadataLinker(),
+        makePosterSync(),
+      );
+
+      const scan = await h.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = scanRepo2.store.get(scan.id)!;
+      expect(saved.status).toBe('succeeded');
+      expect(lessonRepo2.parkPositionsForResync).toHaveBeenCalledWith(course.id);
+
+      for (const [filename] of rows) {
+        const id = idByFilename.get(filename)!;
+        const lesson = lessonRepo2.store.get(id);
+        // The id never changed, however far the lesson moved — progress,
+        // bookmarks, notes and transcripts hang off exactly this id.
+        expect(lesson?.id).toBe(id);
+        expect(lesson?.position).toBe(expectedPosition.get(filename));
+      }
+      expect(lessonRepo2.store.size).toBe(18);
+
+      // Advisory, not a failure: 8 of 18 filenames carry no ordinal.
+      const orderErrors = saved.errors.filter((e) => e.code === 'course-order-unreliable');
+      expect(orderErrors).toHaveLength(1);
+      expect(orderErrors[0]?.message).toContain('8 of 18 lesson(s)');
+    });
+  });
 });

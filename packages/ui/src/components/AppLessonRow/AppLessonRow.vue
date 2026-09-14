@@ -20,6 +20,8 @@
       state?: LessonState;
       /** Renders a small PDF icon in the trailing area when true. */
       materials?: boolean;
+      /** Renders a small subtitles icon in the trailing area when true. */
+      transcript?: boolean;
       /** Highlights the row as the active lesson (soft accent + 3px leading bar). */
       current?: boolean;
       /** 0..100; only rendered when state === 'in-progress'. */
@@ -30,6 +32,8 @@
       loadingLabel?: string;
       /** Accessible name; override to translate. */
       materialsLabel?: string;
+      /** Accessible name; override to translate. */
+      transcriptLabel?: string;
       /**
        * Renders the "<n>% watched" meta line. A callback rather than a plain
        * string because only the consumer knows where its locale puts the
@@ -40,11 +44,13 @@
     {
       state: 'not-started',
       materials: false,
+      transcript: false,
       current: false,
       progress: 0,
       loading: false,
       loadingLabel: 'Loading lesson',
       materialsLabel: 'Materials available',
+      transcriptLabel: 'Transcript available',
       formatWatched: undefined,
     },
   );
@@ -155,6 +161,13 @@
         :size="14"
         :title="materialsLabel"
         class="app-lesson-row__materials"
+      />
+      <IconCS
+        v-if="transcript"
+        name="subtitles"
+        :size="14"
+        :title="transcriptLabel"
+        class="app-lesson-row__transcript"
       />
       <span class="app-lesson-row__duration">{{ formattedDuration }}</span>
     </div>
@@ -279,7 +292,8 @@
       font-size: var(--text-xs);
     }
 
-    &__materials {
+    &__materials,
+    &__transcript {
       flex-shrink: 0;
     }
 

@@ -613,6 +613,10 @@ export default {
       sectionAppearance: 'Внешний вид',
       sectionPlayback: 'Воспроизведение',
       sectionAccount: 'Аккаунт',
+      sectionAbout: 'О программе',
+      aboutVersionLabel: 'Версия сервера',
+      aboutVersionHelp:
+        'Версия, на которой работает этот инстанс. Указывайте её в отчёте об ошибке.',
       profileNameLabel: 'Отображаемое имя',
       profileNameHelp: 'Отображается в верхней панели и профиле.',
       profileNamePlaceholder: 'Ваше имя',

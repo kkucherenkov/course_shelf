@@ -12,6 +12,10 @@ import { getAdminInstance, client } from '@app/api-client-ts';
 import type { InstanceConfigDto } from '@app/api-client-ts';
 
 const DEFAULT_CONFIG: InstanceConfigDto = {
+  // Empty, not a guess: this default is what the UI shows when the backend
+  // could not be reached, and a wrong version is worse than none. The settings
+  // row renders a dash for it.
+  version: '',
   selfRegistration: true,
   emailVerificationRequired: false,
   // Present only to satisfy the DTO — the web client renders no SSO surface.

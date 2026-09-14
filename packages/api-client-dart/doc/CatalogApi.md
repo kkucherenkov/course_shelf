@@ -14,6 +14,7 @@ Method | HTTP request | Description
 [**getCourse**](CatalogApi.md#getcourse) | **GET** /api/v1/courses/{id} | Get a single course
 [**getCourseDownloadEstimate**](CatalogApi.md#getcoursedownloadestimate) | **GET** /api/v1/courses/{id}/download-estimate | Total download size for a course
 [**getCourseOutline**](CatalogApi.md#getcourseoutline) | **GET** /api/v1/courses/{id}/outline | Full course outline — sections, lessons (lite), and aggregated materials
+[**getCoursePoster**](CatalogApi.md#getcourseposter) | **GET** /api/v1/courses/{id}/poster | Download a course&#39;s stored poster image
 [**getLatestLibraryScan**](CatalogApi.md#getlatestlibraryscan) | **GET** /api/v1/libraries/{id}/scans/latest | Get the most recent scan for a library
 [**getLatestTranscription**](CatalogApi.md#getlatesttranscription) | **GET** /api/v1/libraries/{id}/transcriptions/latest | Get the most recent transcription run for a library
 [**getLesson**](CatalogApi.md#getlesson) | **GET** /api/v1/lessons/{id} | Get a lesson with its materials and subtitles
@@ -247,6 +248,51 @@ Name | Type | Description  | Notes
 
  - **Content-Type**: Not defined
  - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getCoursePoster**
+> Uint8List getCoursePoster(id, token)
+
+Download a course's stored poster image
+
+Serves the poster HttpPosterDownloader saved under DERIVED_PATH after a scrape or an admin edit set `Course.posterUrl` (#496). The raw upstream URL is never exposed to the browser — the SPA's CSP is `img-src 'self' data: blob:`, so a remote image would be blocked regardless.  Authenticated by the `token` query parameter — `<img src>` cannot send the Authorization header the SPA otherwise uses for every other request. The token is bound to `(courseId, expiresAt)` only, not a user: `CourseDto.posterUrl` already embeds a fresh one on every list/get response, so there is no separate \"issue token\" endpoint — minting one per poster on a course grid would be a request per card. Default TTL 15 minutes.  This is the 5th route in the #278 binary-exception family (see the comment above `/api/v1/stream/lessons/{id}`): the response is raw image bytes with no JSON schema, so `express-openapi-validator` skips it — documented here for the contract and generated clients only. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String id = id_example; // String | Course cuid.
+final String token = token_example; // String | Signed poster token embedded in CourseDto.posterUrl.
+
+try {
+    final response = api.getCoursePoster(id, token);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->getCoursePoster: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Course cuid. | 
+ **token** | **String**| Signed poster token embedded in CourseDto.posterUrl. | 
+
+### Return type
+
+[**Uint8List**](Uint8List.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/octet-stream, application/problem+json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

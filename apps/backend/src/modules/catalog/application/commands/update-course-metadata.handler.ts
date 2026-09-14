@@ -30,6 +30,8 @@ import { INSTRUCTOR_REPOSITORY } from '../../domain/instructor/instructor.reposi
 import { STUDIO_REPOSITORY } from '../../domain/studio/studio.repository';
 import { TAG_REPOSITORY } from '../../domain/tag/tag.repository';
 import { toCourseDto } from '../../courses.dto';
+import { PosterSyncService } from '../scan/poster-sync.service';
+import { CoursePosterTokenSigner } from '../../domain/course/course-poster-token';
 
 import { UpdateCourseMetadataCommand } from './update-course-metadata.command';
 
@@ -49,6 +51,8 @@ export class UpdateCourseMetadataHandler implements ICommandHandler<
     @Inject(INSTRUCTOR_REPOSITORY) private readonly instructorRepo: InstructorRepository,
     @Inject(STUDIO_REPOSITORY) private readonly studioRepo: StudioRepository,
     @Inject(TAG_REPOSITORY) private readonly tagRepo: TagRepository,
+    private readonly posterSync: PosterSyncService,
+    private readonly posterTokenSigner: CoursePosterTokenSigner,
   ) {}
 
   async execute(command: UpdateCourseMetadataCommand): Promise<CourseDto> {
@@ -74,7 +78,7 @@ export class UpdateCourseMetadataHandler implements ICommandHandler<
       course.changeSlug(patch.slug);
     }
     if (patch.posterUrl !== undefined) {
-      course.setPosterUrl(patch.posterUrl ?? undefined);
+      await this.posterSync.applyPosterUrl(course, patch.posterUrl ?? undefined);
     }
     if (patch.level !== undefined) {
       course.setLevel(patch.level ?? undefined);
@@ -167,6 +171,6 @@ export class UpdateCourseMetadataHandler implements ICommandHandler<
     // CourseSlugAlreadyTakenError (P2002) propagates from the adapter.
     await this.repo.save(course);
 
-    return toCourseDto(course);
+    return toCourseDto(course, (id) => this.posterTokenSigner.signUrl(id));
   }
 }

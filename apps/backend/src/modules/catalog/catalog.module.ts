@@ -28,6 +28,8 @@
  *   - PrismaTranscriptRepository bound behind TRANSCRIPT_REPOSITORY
  *   - NodeFsAdapter bound behind the FS_ADAPTER port token
  *   - LocalFfmpegAdapter bound behind the FFMPEG_ADAPTER port token
+ *   - HttpPosterDownloader bound behind the POSTER_DOWNLOADER port token (#496)
+ *   - PosterSyncService, CoursePosterTokenSigner, CoursePosterLocator (#496)
  *   - AdminGuard (provided here for ScansController/CoursesController)
  *   - SCRAPER_REGISTRY factory: mock (createMockScrapers) or real
  *     (buildScraperRegistry — YouTube/Udemy/declarative definitions from
@@ -126,6 +128,9 @@ import { LESSON_REPOSITORY } from './domain/lesson/lesson.repository';
 import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from './domain/progress/course-progress-read-model.repository';
 import { FFMPEG_ADAPTER } from './domain/scan/ffmpeg-adapter';
 import { FS_ADAPTER } from './domain/scan/fs-adapter';
+import { POSTER_DOWNLOADER } from './domain/course/poster-downloader.port';
+import { CoursePosterTokenSigner } from './domain/course/course-poster-token';
+import { CoursePosterLocator } from './domain/course/course-poster-locator';
 import { SEARCH_PORT } from './domain/search.port';
 import { INSTRUCTOR_REPOSITORY } from './domain/instructor/instructor.repository';
 import { STUDIO_REPOSITORY } from './domain/studio/studio.repository';
@@ -148,7 +153,9 @@ import { LocalFfmpegAdapter } from './infra/local-ffmpeg.adapter';
 import { LocalWhisperAdapter } from './infra/local-whisper.adapter';
 import { MockWhisperAdapter } from './infra/mock-whisper.adapter';
 import { NodeFsAdapter } from './infra/node-fs-adapter';
+import { HttpPosterDownloader } from './infra/http-poster-downloader';
 import { IDENTIFY_TASK_REPOSITORY } from './domain/identify/identify-task.repository';
+import { PosterSyncService } from './application/scan/poster-sync.service';
 
 @Module({
   imports: [CqrsModule, CommonAccessModule, LearningProgressModule],
@@ -219,6 +226,10 @@ import { IDENTIFY_TASK_REPOSITORY } from './domain/identify/identify-task.reposi
       inject: [AppConfig],
     },
     MetadataLinker,
+    PosterSyncService,
+    CoursePosterTokenSigner,
+    CoursePosterLocator,
+    { provide: POSTER_DOWNLOADER, useClass: HttpPosterDownloader },
     LessonCompletedHandler,
     LessonProgressRecordedHandler,
     RebuildProjectionsService,

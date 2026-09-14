@@ -15,6 +15,10 @@
  * and forward the actor into the query so the handler can apply grant-based
  * filtering.
  */
+import { createReadStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
+import path from 'node:path';
+
 import {
   BadRequestException,
   Body,
@@ -26,12 +30,17 @@ import {
   Patch,
   Post,
   Query,
+  Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
 import { AdminGuard } from '../../common/auth/admin.guard';
-import { Session } from '../../common/auth/decorators';
+import { AllowAnonymous, Session } from '../../common/auth/decorators';
+import { CoursePosterLocator } from './domain/course/course-poster-locator';
+import { CoursePosterTokenSigner } from './domain/course/course-poster-token';
+import { CoursePosterTokenInvalidError } from './domain/course/course.errors';
 import { UpdateCourseMetadataCommand } from './application/commands/update-course-metadata.command';
 import { MarkCourseCompleteCommand } from './application/commands/mark-course-complete.command';
 import { ResetCourseProgressCommand } from './application/commands/reset-course-progress.command';
@@ -50,6 +59,7 @@ import { GetCourseOutlineQuery } from './application/queries/get-course-outline.
 import { GetCourseDownloadEstimateQuery } from './application/queries/get-course-download-estimate.query';
 
 import type { SessionContext } from '../../common/auth/decorators';
+import type { Request, Response } from 'express';
 import type { Scan } from './domain/scan/scan';
 import type { Transcription } from './domain/transcription/transcription';
 import type {
@@ -99,11 +109,26 @@ function parseDurationBucket(raw: string | undefined): CourseListDurationBucket 
     : 'all';
 }
 
+/** Extension → MIME — matches the fixed allowlist HttpPosterDownloader writes with. */
+const POSTER_MIME_MAP: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+};
+
+function posterMimeType(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase();
+  return POSTER_MIME_MAP[ext] ?? 'application/octet-stream';
+}
+
 @Controller({ path: 'courses', version: '1' })
 export class CoursesController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly posterLocator: CoursePosterLocator,
+    private readonly posterTokenSigner: CoursePosterTokenSigner,
   ) {}
 
   /** GET /api/v1/courses?libraryId=…&status=…&durationBucket=…&instructorId=…&sort=… */
@@ -135,6 +160,53 @@ export class CoursesController {
   async getCourse(@Param('id') id: string, @Session() session: SessionContext): Promise<CourseDto> {
     const actor = session.user;
     return this.queryBus.execute<GetCourseQuery, CourseDto>(new GetCourseQuery(id, actor));
+  }
+
+  /**
+   * GET /api/v1/courses/:id/poster?token=… (#496)
+   *
+   *   200 — the poster image bytes.
+   *   401 — missing / expired / tampered / wrong-course token.
+   *   404 — no such course, no stored poster, or the file is missing on disk.
+   *
+   * WHY @AllowAnonymous(): the caller presents a short-lived HMAC poster
+   * token (embedded in CourseDto.posterUrl by toCourseDto) as the auth
+   * mechanism — an `<img src>` cannot send the Authorization header the SPA
+   * otherwise uses. CoursePosterTokenSigner.verify() is the sole auth check.
+   *
+   * WHY @Res(): same documented NestJS escape hatch StreamingController uses
+   * for every binary response — Nest's return-value pipeline does not stream
+   * bytes with a custom Content-Type.
+   *
+   * Exempt from the OpenAPI response-body validator (raw bytes, no JSON
+   * schema) — see openapi-validator.middleware.ts ignorePaths. Follows the
+   * same documented-exception pattern as the four routes #278 already
+   * carved out (stream/lessons, stream/materials, admin/backups/download).
+   */
+  @AllowAnonymous()
+  @Get(':id/poster')
+  async getCoursePoster(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Query('token') token: string,
+  ): Promise<void> {
+    if (!token) {
+      throw new CoursePosterTokenInvalidError('Poster token is required.');
+    }
+    this.posterTokenSigner.verify(token, id);
+
+    const { absolutePath, sizeBytes } = await this.posterLocator.locate(id);
+
+    // Same CORP override streaming uses — the <img> may load from a
+    // different origin than this API in dev (proxy vs bare backend port).
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Content-Type', posterMimeType(absolutePath));
+    res.setHeader('Content-Length', sizeBytes);
+    res.status(200);
+    const stream = createReadStream(absolutePath);
+    req.on('close', () => stream.destroy());
+    await pipeline(stream, res);
   }
 
   /** GET /api/v1/courses/:id/outline */

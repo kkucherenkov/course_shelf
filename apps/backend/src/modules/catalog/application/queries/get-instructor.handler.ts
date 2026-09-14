@@ -11,6 +11,7 @@ import { INSTRUCTOR_REPOSITORY } from '../../domain/instructor/instructor.reposi
 import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
 import { InstructorNotFoundError } from '../../domain/instructor/instructor.errors';
 import { toInstructorDetailDto } from '../../catalog-entities.dto';
+import { CoursePosterTokenSigner } from '../../domain/course/course-poster-token';
 
 import { GetInstructorQuery } from './get-instructor.query';
 
@@ -26,6 +27,7 @@ export class GetInstructorHandler implements IQueryHandler<
   constructor(
     @Inject(INSTRUCTOR_REPOSITORY) private readonly repo: InstructorRepository,
     @Inject(COURSE_REPOSITORY) private readonly courseRepo: CourseRepository,
+    private readonly posterTokenSigner: CoursePosterTokenSigner,
   ) {}
 
   async execute(query: GetInstructorQuery): Promise<InstructorDetailDto> {
@@ -41,6 +43,8 @@ export class GetInstructorHandler implements IQueryHandler<
 
     const courses = courseIds.length > 0 ? await this.courseRepo.findByIds(courseIds) : [];
 
-    return toInstructorDetailDto(instructor, total, courses);
+    return toInstructorDetailDto(instructor, total, courses, (id) =>
+      this.posterTokenSigner.signUrl(id),
+    );
   }
 }

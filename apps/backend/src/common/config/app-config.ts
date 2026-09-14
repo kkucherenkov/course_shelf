@@ -73,6 +73,29 @@ export interface StreamingConfig {
   readonly ttlSeconds: number;
 }
 
+export interface PosterTokenConfig {
+  /**
+   * Master key passed to HKDF as IKM. Re-uses BETTER_AUTH_SECRET, exactly as
+   * `StreamingConfig` does — the info string below is what separates the
+   * derived subkeys.
+   */
+  readonly secret: string;
+  /**
+   * HKDF info string for the course-poster token. Deliberately different from
+   * the streaming/backup ones so a poster token can never be replayed against
+   * those routes. Default: "courseshelf:poster-token:v1".
+   * Env: POSTER_TOKEN_HKDF_INFO.
+   */
+  readonly hkdfInfo: string;
+  /**
+   * TTL for a poster token, in seconds. Default: 900 (15 min) — same as the
+   * stream token: the token is embedded in every CourseDto a list/get query
+   * returns, so it must outlive a normal browsing session, not just one click.
+   * Env: POSTER_TOKEN_TTL_SECONDS.
+   */
+  readonly ttlSeconds: number;
+}
+
 export interface BackupsConfig {
   /**
    * Master key passed to HKDF as IKM. Re-uses BETTER_AUTH_SECRET, exactly as
@@ -376,6 +399,14 @@ export class AppConfig {
       secret: this.requireString('BETTER_AUTH_SECRET'),
       hkdfInfo: this.stringOrDefault('STREAM_TOKEN_HKDF_INFO', 'courseshelf:stream-token:v1'),
       ttlSeconds: this.numberOrDefault('STREAM_TOKEN_TTL_SECONDS', 900),
+    };
+  }
+
+  get posterToken(): PosterTokenConfig {
+    return {
+      secret: this.requireString('BETTER_AUTH_SECRET'),
+      hkdfInfo: this.stringOrDefault('POSTER_TOKEN_HKDF_INFO', 'courseshelf:poster-token:v1'),
+      ttlSeconds: this.numberOrDefault('POSTER_TOKEN_TTL_SECONDS', 900),
     };
   }
 

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Course } from '../../domain/course/course';
 import { CourseProgressReadModel } from '../../domain/progress/course-progress-read-model';
+import { CoursePosterTokenSigner } from '../../domain/course/course-poster-token';
 import { ListCoursesQuery } from './list-courses.query';
 import { ListCoursesHandler } from './list-courses.handler';
 
@@ -9,6 +10,13 @@ import type { CourseRepository } from '../../domain/course/course.repository';
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
 import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
 import type { LessonRepository } from '../../domain/lesson/lesson.repository';
+import type { AppConfig } from '../../../../common/config/app-config';
+
+function makePosterTokenSigner(): CoursePosterTokenSigner {
+  return new CoursePosterTokenSigner({
+    posterToken: { secret: 'test-secret', hkdfInfo: 'test:poster-token:v1', ttlSeconds: 900 },
+  } as unknown as AppConfig);
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -127,6 +135,7 @@ function buildStatusHandler(progressRows: CourseProgressReadModel[]): ListCourse
     makeAuthz(true),
     makeProgressRepo(progressRows),
     makeLessonRepo(),
+    makePosterTokenSigner(),
   );
 }
 
@@ -156,7 +165,13 @@ function buildSortHandler(
 ): ListCoursesHandler {
   const r = makeRepo();
   vi.mocked(r.findAll).mockResolvedValue(courses);
-  return new ListCoursesHandler(r, makeAuthz(true), makeProgressRepo(), makeLessonRepo(durations));
+  return new ListCoursesHandler(
+    r,
+    makeAuthz(true),
+    makeProgressRepo(),
+    makeLessonRepo(durations),
+    makePosterTokenSigner(),
+  );
 }
 
 /**
@@ -185,7 +200,13 @@ function buildInstructorHandler(): ListCoursesHandler {
 
   const r = makeRepo();
   vi.mocked(r.findAll).mockResolvedValue([withRef, other, none]);
-  return new ListCoursesHandler(r, makeAuthz(true), makeProgressRepo(), makeLessonRepo());
+  return new ListCoursesHandler(
+    r,
+    makeAuthz(true),
+    makeProgressRepo(),
+    makeLessonRepo(),
+    makePosterTokenSigner(),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -200,7 +221,13 @@ describe('ListCoursesHandler', () => {
     beforeEach(() => {
       repo = makeRepo();
       const authz = makeAuthz(true);
-      handler = new ListCoursesHandler(repo, authz, makeProgressRepo(), makeLessonRepo());
+      handler = new ListCoursesHandler(
+        repo,
+        authz,
+        makeProgressRepo(),
+        makeLessonRepo(),
+        makePosterTokenSigner(),
+      );
     });
 
     it('returns empty array when no courses', async () => {
@@ -242,7 +269,13 @@ describe('ListCoursesHandler', () => {
       const progressRow = makeProgressRow('c1');
       const progressRepo = makeProgressRepo([progressRow]);
       const authz = makeAuthz(true);
-      handler = new ListCoursesHandler(repo, authz, progressRepo, makeLessonRepo());
+      handler = new ListCoursesHandler(
+        repo,
+        authz,
+        progressRepo,
+        makeLessonRepo(),
+        makePosterTokenSigner(),
+      );
 
       const result = await handler.execute(new ListCoursesQuery(adminActor));
 
@@ -258,7 +291,13 @@ describe('ListCoursesHandler', () => {
 
       const progressRepo = makeProgressRepo([]); // no rows
       const authz = makeAuthz(true);
-      handler = new ListCoursesHandler(repo, authz, progressRepo, makeLessonRepo());
+      handler = new ListCoursesHandler(
+        repo,
+        authz,
+        progressRepo,
+        makeLessonRepo(),
+        makePosterTokenSigner(),
+      );
 
       const result = await handler.execute(new ListCoursesQuery(adminActor));
 
@@ -272,7 +311,13 @@ describe('ListCoursesHandler', () => {
 
       const progressRepo = makeProgressRepo([]);
       const authz = makeAuthz(true);
-      handler = new ListCoursesHandler(repo, authz, progressRepo, makeLessonRepo());
+      handler = new ListCoursesHandler(
+        repo,
+        authz,
+        progressRepo,
+        makeLessonRepo(),
+        makePosterTokenSigner(),
+      );
 
       await handler.execute(new ListCoursesQuery(adminActor));
 
@@ -293,7 +338,13 @@ describe('ListCoursesHandler', () => {
         invalidate: vi.fn(),
         listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
       };
-      handler = new ListCoursesHandler(repo, authz, makeProgressRepo(), makeLessonRepo());
+      handler = new ListCoursesHandler(
+        repo,
+        authz,
+        makeProgressRepo(),
+        makeLessonRepo(),
+        makePosterTokenSigner(),
+      );
 
       const result = await handler.execute(new ListCoursesQuery(userActor));
 
@@ -306,7 +357,13 @@ describe('ListCoursesHandler', () => {
     beforeEach(() => {
       repo = makeRepo();
       const authz = makeAuthz(false);
-      handler = new ListCoursesHandler(repo, authz, makeProgressRepo(), makeLessonRepo());
+      handler = new ListCoursesHandler(
+        repo,
+        authz,
+        makeProgressRepo(),
+        makeLessonRepo(),
+        makePosterTokenSigner(),
+      );
     });
 
     it('returns empty array even when courses exist', async () => {
@@ -319,7 +376,13 @@ describe('ListCoursesHandler', () => {
 
     it('calls canSee for each course', async () => {
       const authz = makeAuthz(false);
-      handler = new ListCoursesHandler(repo, authz, makeProgressRepo(), makeLessonRepo());
+      handler = new ListCoursesHandler(
+        repo,
+        authz,
+        makeProgressRepo(),
+        makeLessonRepo(),
+        makePosterTokenSigner(),
+      );
       vi.mocked(repo.findAll).mockResolvedValue([
         makeCourse({ id: 'c1' }),
         makeCourse({ id: 'c2', slug: 'other' }),
@@ -477,7 +540,13 @@ describe('ListCoursesHandler', () => {
       const r = makeRepo();
       vi.mocked(r.findAll).mockResolvedValue([makeCourse({ id: 'c1' })]);
       const lessonRepo = makeLessonRepo({ c1: 1 * HOUR });
-      const h = new ListCoursesHandler(r, makeAuthz(true), makeProgressRepo(), lessonRepo);
+      const h = new ListCoursesHandler(
+        r,
+        makeAuthz(true),
+        makeProgressRepo(),
+        lessonRepo,
+        makePosterTokenSigner(),
+      );
 
       await h.execute(new ListCoursesQuery(adminActor));
 

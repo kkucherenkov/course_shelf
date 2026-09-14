@@ -43,6 +43,8 @@ import { GetLatestTranscriptionHandler } from './application/queries/get-latest-
 import { ListTranscriptionsHandler } from './application/queries/list-transcriptions.handler';
 import { Course } from './domain/course/course';
 import { COURSE_REPOSITORY } from './domain/course/course.repository';
+import { CoursePosterLocator } from './domain/course/course-poster-locator';
+import { CoursePosterTokenSigner } from './domain/course/course-poster-token';
 import { LESSON_REPOSITORY } from './domain/lesson/lesson.repository';
 import { LIBRARY_REPOSITORY } from './domain/library/library.repository';
 import { Library } from './domain/library/library';
@@ -173,6 +175,13 @@ async function buildApp(options: {
         },
       },
       { provide: CentrifugoService, useValue: { publish: vi.fn().mockResolvedValue(undefined) } },
+      // CoursesController now also serves GET :id/poster (#496) — unexercised
+      // here, stubbed so its constructor is satisfied.
+      { provide: CoursePosterLocator, useValue: { locate: vi.fn() } },
+      {
+        provide: CoursePosterTokenSigner,
+        useValue: { sign: vi.fn(), signUrl: vi.fn(), verify: vi.fn() },
+      },
     ],
   })
     .overrideGuard(AdminGuard)

@@ -46,9 +46,11 @@ export interface SearchPort {
    * title ILIKE %q%. Distinct on course id. When libraryIds is null, no
    * library filter is applied (admin path).
    *
-   * The adapter MAY return more than `limit` rows — the handler is responsible
-   * for the final slice. In practice the adapter passes `take: limit` directly
-   * to Prisma for efficiency.
+   * The adapter MAY return up to 3× `limit` rows — it runs three tier-scoped
+   * queries (exact-prefix, word-prefix, everything else, see #524) each
+   * capped at `limit`, so a high-tier hit can never be crowded out by
+   * lower-tier noise sharing a single cap. The handler re-ranks and takes the
+   * final slice.
    */
   findCourseHits(
     q: string,

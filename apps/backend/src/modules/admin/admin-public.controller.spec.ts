@@ -18,9 +18,12 @@ function makePort(hasAnyUserResult: boolean): DashboardPort {
   };
 }
 
-function makeAppConfig(instance: AuthInstanceConfig): AppConfig {
-  // Only `instance` is read by the new route — everything else stubbed minimally.
-  return { instance } as unknown as AppConfig;
+const STUB_VERSION = '9.9.9-test';
+
+function makeAppConfig(instance: AuthInstanceConfig, version = STUB_VERSION): AppConfig {
+  // `instance` and `runtime.version` are what the route reads — everything else
+  // stubbed minimally.
+  return { instance, runtime: { version } } as unknown as AppConfig;
 }
 
 function makeController(
@@ -68,10 +71,23 @@ describe('AdminPublicController', () => {
       const result = controller.getInstance();
 
       expect(result).toEqual({
+        version: STUB_VERSION,
         selfRegistration: true,
         emailVerificationRequired: false,
         ssoProviders: [],
       });
+    });
+
+    it('reports the running version, the same string GET /health already publishes', () => {
+      const controller = makeController(
+        makePort(true),
+        makeAppConfig(
+          { selfRegistration: true, emailVerificationRequired: false, ssoProviders: [] },
+          '1.4.0',
+        ),
+      );
+
+      expect(controller.getInstance().version).toBe('1.4.0');
     });
 
     it('reflects emailVerificationRequired=true when admin enabled the plugin', () => {

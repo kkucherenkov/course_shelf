@@ -8861,12 +8861,21 @@ components:
 
     InstanceConfigDto:
       type: object
-      required: [selfRegistration, emailVerificationRequired, ssoProviders]
+      required: [selfRegistration, emailVerificationRequired, ssoProviders, version]
       additionalProperties: false
       description: >-
         Public runtime configuration. Read once at app boot; cache for the
         session.
       properties:
+        version:
+          type: string
+          minLength: 1
+          description: >-
+            The running server's version, as the release tag names it. Shown in
+            the client so a stale cached SPA is distinguishable from a stale
+            server. Already public: `GET /health` reports the same string
+            without credentials, so this exposes nothing new.
+          example: "1.4.0"
         selfRegistration:
           type: boolean
           description: When false, sign-up CTAs are hidden and /sign-up redirects to /sign-in.

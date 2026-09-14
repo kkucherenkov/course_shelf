@@ -164,6 +164,35 @@ describe('useTranscriptionProgress', () => {
     expect(mockGetLatestTranscription).toHaveBeenCalledTimes(1);
   });
 
+  it('retries after a failed initial fetch and recovers without a reload', async () => {
+    vi.useFakeTimers();
+    try {
+      mockGetLatestTranscription
+        .mockResolvedValueOnce({
+          data: null,
+          error: { message: 'network hiccup' },
+          response: { status: 500 },
+        })
+        .mockResolvedValueOnce({ data: baseDto, error: null, response: { status: 200 } });
+
+      const { transcription, error } = useTranscriptionProgress(ref('lib-1'));
+      triggerMount();
+
+      await vi.advanceTimersByTimeAsync(0);
+      expect(mockGetLatestTranscription).toHaveBeenCalledTimes(1);
+      expect(error.value).not.toBeNull();
+
+      // No reload, no realtime event — just the 2s retry timer.
+      await vi.advanceTimersByTimeAsync(2000);
+
+      expect(mockGetLatestTranscription).toHaveBeenCalledTimes(2);
+      expect(transcription.value).toEqual(baseDto);
+      expect(error.value).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('unsubscribes on unmount', () => {
     useTranscriptionProgress(ref('lib-1'));
     triggerMount();

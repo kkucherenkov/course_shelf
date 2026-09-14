@@ -93,10 +93,16 @@ export interface ProgressUpdated {
 }
 
 /**
- * Discriminated union of per-user scan lifecycle events delivered on
- * `scans:user:{userId}`. The `kind` field identifies the concrete
- * type: `started`, `progress` (throttled to no more than ~1 per
- * second per scan), or `finished`.
+ * Discriminated union of every per-user job lifecycle event delivered
+ * on `scans:user:{userId}`. The `kind` field identifies the concrete
+ * type: a scan publishes `started`, throttled `progress` (no more
+ * than ~1 per second per scan), and a final `finished`; a
+ * transcription run publishes the same three-phase shape prefixed
+ * `transcription-` instead, because it is a second, longer-running
+ * job kind fanned out on the same per-user channel rather than a
+ * variant of a scan. A receiver must not assume the union is closed
+ * at three kinds — treat any `kind` you do not handle as belonging to
+ * a job kind you do not render, not as the terminal event.
  *
  */
 export type ScanLifecycleEvent =
@@ -154,6 +160,70 @@ export type ScanLifecycleEvent =
       scopeCourseId?: string;
       /**
        * Title of the scoped course. Absent for a library-wide scan.
+       */
+      scopeCourseName?: string;
+    }
+  | {
+      kind: 'transcription-started';
+      /**
+       * cuid
+       */
+      transcriptionId: string;
+      libraryId: string;
+      libraryName: string;
+      at: string;
+      /**
+       * Lessons this run will consider, known up front.
+       */
+      lessonsTotal: number;
+      /**
+       * cuid of the course this run was scoped to. Absent for a library-wide run.
+       */
+      scopeCourseId?: string;
+      /**
+       * Title of the scoped course. Absent for a library-wide run.
+       */
+      scopeCourseName?: string;
+    }
+  | {
+      kind: 'transcription-progress';
+      transcriptionId: string;
+      libraryId: string;
+      libraryName: string;
+      at: string;
+      lessonsTotal: number;
+      lessonsSkipped: number;
+      lessonsTranscribed: number;
+      lessonsFailed: number;
+      /**
+       * cuid of the course this run was scoped to. Absent for a library-wide run.
+       */
+      scopeCourseId?: string;
+      /**
+       * Title of the scoped course. Absent for a library-wide run.
+       */
+      scopeCourseName?: string;
+    }
+  | {
+      kind: 'transcription-finished';
+      transcriptionId: string;
+      libraryId: string;
+      libraryName: string;
+      at: string;
+      /**
+       * Terminal status of a transcription run, as carried by `transcription-finished`. Mirrors the OpenAPI `TranscriptionStatus` enum minus `running` — a finished event is by definition no longer running.
+       */
+      status: 'succeeded' | 'failed' | 'cancelled';
+      lessonsTotal: number;
+      lessonsSkipped: number;
+      lessonsTranscribed: number;
+      lessonsFailed: number;
+      /**
+       * cuid of the course this run was scoped to. Absent for a library-wide run.
+       */
+      scopeCourseId?: string;
+      /**
+       * Title of the scoped course. Absent for a library-wide run.
        */
       scopeCourseName?: string;
     };

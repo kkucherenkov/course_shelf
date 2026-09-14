@@ -80,12 +80,17 @@ channels:
       scanLifecycle:
         $ref: "#/components/messages/ScanLifecycleEvent"
     description: |
-      Per-user scan lifecycle fan-out. The user who triggered a library
-      scan receives `started`, throttled `progress`, and a final
-      `finished` event so the SPA's floating notifier can render live
-      counters without polling. Pre-authorised in the connection token
-      (no per-channel subscribe-time auth needed) — only the user's own
-      scans are fanned out here.
+      Per-user lifecycle fan-out, shared by two job kinds that both run
+      against a library: a scan (`started` / `progress` / `finished`) and a
+      transcription pass (`transcription-started` / `transcription-progress`
+      / `transcription-finished`). The user who triggered the job receives
+      throttled progress and a final terminal event so the SPA's floating
+      notifier and the admin transcription panel can render live state
+      without polling. Pre-authorised in the connection token (no
+      per-channel subscribe-time auth needed) — only the user's own jobs
+      are fanned out here. A receiver must switch on `kind` and ignore
+      values it does not recognise, the same discipline a new job kind
+      added to this channel in the future would require.
 
   maintenanceBackfill:
     address: "maintenance:backfill:{jobId}"
@@ -144,7 +149,7 @@ operations:
     action: receive
     channel:
       $ref: "#/channels/scansUser"
-    summary: Listen for own library-scan lifecycle events
+    summary: Listen for own library-scan and transcription lifecycle events
     messages:
       - $ref: "#/channels/scansUser/messages/scanLifecycle"
 
@@ -318,14 +323,23 @@ components:
 
     ScanLifecycleEvent:
       description: |
-        Discriminated union of per-user scan lifecycle events delivered on
-        `scans:user:{userId}`. The `kind` field identifies the concrete
-        type: `started`, `progress` (throttled to no more than ~1 per
-        second per scan), or `finished`.
+        Discriminated union of every per-user job lifecycle event delivered
+        on `scans:user:{userId}`. The `kind` field identifies the concrete
+        type: a scan publishes `started`, throttled `progress` (no more
+        than ~1 per second per scan), and a final `finished`; a
+        transcription run publishes the same three-phase shape prefixed
+        `transcription-` instead, because it is a second, longer-running
+        job kind fanned out on the same per-user channel rather than a
+        variant of a scan. A receiver must not assume the union is closed
+        at three kinds — treat any `kind` you do not handle as belonging to
+        a job kind you do not render, not as the terminal event.
       oneOf:
         - $ref: "#/components/schemas/ScanLifecycleStarted"
         - $ref: "#/components/schemas/ScanLifecycleProgress"
         - $ref: "#/components/schemas/ScanLifecycleFinished"
+        - $ref: "#/components/schemas/TranscriptionLifecycleStarted"
+        - $ref: "#/components/schemas/TranscriptionLifecycleProgress"
+        - $ref: "#/components/schemas/TranscriptionLifecycleFinished"
 
     ScanLifecycleStarted:
       type: object
@@ -440,6 +454,134 @@ components:
         scopeCourseName:
           type: string
           description: Title of the scoped course. Absent for a library-wide scan.
+
+    TranscriptionStatus:
+      type: string
+      enum: [succeeded, failed, cancelled]
+      description: >-
+        Terminal status of a transcription run, as carried by
+        `transcription-finished`. Mirrors the OpenAPI `TranscriptionStatus`
+        enum minus `running` — a finished event is by definition no longer
+        running.
+
+    TranscriptionLifecycleStarted:
+      type: object
+      required: [kind, transcriptionId, libraryId, libraryName, at, lessonsTotal]
+      properties:
+        kind:
+          type: string
+          enum: [transcription-started]
+        transcriptionId:
+          type: string
+          description: cuid
+        libraryId:
+          type: string
+        libraryName:
+          type: string
+        at:
+          type: string
+          format: date-time
+        lessonsTotal:
+          type: integer
+          minimum: 0
+          description: Lessons this run will consider, known up front.
+        scopeCourseId:
+          type: string
+          description: cuid of the course this run was scoped to. Absent for a library-wide run.
+        scopeCourseName:
+          type: string
+          description: Title of the scoped course. Absent for a library-wide run.
+
+    TranscriptionLifecycleProgress:
+      type: object
+      required:
+        - kind
+        - transcriptionId
+        - libraryId
+        - libraryName
+        - at
+        - lessonsTotal
+        - lessonsSkipped
+        - lessonsTranscribed
+        - lessonsFailed
+      properties:
+        kind:
+          type: string
+          enum: [transcription-progress]
+        transcriptionId:
+          type: string
+        libraryId:
+          type: string
+        libraryName:
+          type: string
+        at:
+          type: string
+          format: date-time
+        lessonsTotal:
+          type: integer
+          minimum: 0
+        lessonsSkipped:
+          type: integer
+          minimum: 0
+        lessonsTranscribed:
+          type: integer
+          minimum: 0
+        lessonsFailed:
+          type: integer
+          minimum: 0
+        scopeCourseId:
+          type: string
+          description: cuid of the course this run was scoped to. Absent for a library-wide run.
+        scopeCourseName:
+          type: string
+          description: Title of the scoped course. Absent for a library-wide run.
+
+    TranscriptionLifecycleFinished:
+      type: object
+      required:
+        - kind
+        - transcriptionId
+        - libraryId
+        - libraryName
+        - at
+        - status
+        - lessonsTotal
+        - lessonsSkipped
+        - lessonsTranscribed
+        - lessonsFailed
+      properties:
+        kind:
+          type: string
+          enum: [transcription-finished]
+        transcriptionId:
+          type: string
+        libraryId:
+          type: string
+        libraryName:
+          type: string
+        at:
+          type: string
+          format: date-time
+        status:
+          $ref: "#/components/schemas/TranscriptionStatus"
+        lessonsTotal:
+          type: integer
+          minimum: 0
+        lessonsSkipped:
+          type: integer
+          minimum: 0
+        lessonsTranscribed:
+          type: integer
+          minimum: 0
+        lessonsFailed:
+          type: integer
+          minimum: 0
+        scopeCourseId:
+          type: string
+          description: cuid of the course this run was scoped to. Absent for a library-wide run.
+        scopeCourseName:
+          type: string
+          description: Title of the scoped course. Absent for a library-wide run.
 
     NoteUpdated:
       type: object

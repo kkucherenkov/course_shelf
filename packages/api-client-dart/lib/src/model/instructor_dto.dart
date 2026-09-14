@@ -14,7 +14,7 @@ part 'instructor_dto.g.dart';
 ///
 /// Properties:
 /// * [id] - Server-generated cuid.
-/// * [slug] - URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens; cannot start or end with a hyphen. Shared by Instructor, Studio, and Tag aggregates.
+/// * [slug] - URL-safe slug. 1–100 characters, lowercase Unicode letters, digits, and hyphens; cannot start or end with a hyphen. Non-ASCII scripts are kept as themselves rather than transliterated, so `Андрей Нягой` slugs to `андрей-нягой` — an entity is only ever addressed by id, and the slug's jobs are uniqueness and human recognition. Values are NFC-normalised, so two encodings of the same visual name are the same slug. Shared by Instructor, Studio, and Tag aggregates.
 /// * [displayName] - Human-readable instructor name.
 /// * [externalIds] - External system references for this instructor.
 /// * [coursesTotal] - Total number of courses linked to this instructor.
@@ -26,7 +26,7 @@ abstract class InstructorDto implements Built<InstructorDto, InstructorDtoBuilde
   @BuiltValueField(wireName: r'id')
   String get id;
 
-  /// URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens; cannot start or end with a hyphen. Shared by Instructor, Studio, and Tag aggregates.
+  /// URL-safe slug. 1–100 characters, lowercase Unicode letters, digits, and hyphens; cannot start or end with a hyphen. Non-ASCII scripts are kept as themselves rather than transliterated, so `Андрей Нягой` slugs to `андрей-нягой` — an entity is only ever addressed by id, and the slug's jobs are uniqueness and human recognition. Values are NFC-normalised, so two encodings of the same visual name are the same slug. Shared by Instructor, Studio, and Tag aggregates.
   @BuiltValueField(wireName: r'slug')
   String get slug;
 

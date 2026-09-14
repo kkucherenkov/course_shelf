@@ -12,7 +12,7 @@ part 'studio_ref.g.dart';
 ///
 /// Properties:
 /// * [id] - Server-generated cuid of the studio.
-/// * [slug] - URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens; cannot start or end with a hyphen. Shared by Instructor, Studio, and Tag aggregates.
+/// * [slug] - URL-safe slug. 1–100 characters, lowercase Unicode letters, digits, and hyphens; cannot start or end with a hyphen. Non-ASCII scripts are kept as themselves rather than transliterated, so `Андрей Нягой` slugs to `андрей-нягой` — an entity is only ever addressed by id, and the slug's jobs are uniqueness and human recognition. Values are NFC-normalised, so two encodings of the same visual name are the same slug. Shared by Instructor, Studio, and Tag aggregates.
 /// * [displayName] 
 @BuiltValue()
 abstract class StudioRef implements Built<StudioRef, StudioRefBuilder> {
@@ -20,7 +20,7 @@ abstract class StudioRef implements Built<StudioRef, StudioRefBuilder> {
   @BuiltValueField(wireName: r'id')
   String get id;
 
-  /// URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens; cannot start or end with a hyphen. Shared by Instructor, Studio, and Tag aggregates.
+  /// URL-safe slug. 1–100 characters, lowercase Unicode letters, digits, and hyphens; cannot start or end with a hyphen. Non-ASCII scripts are kept as themselves rather than transliterated, so `Андрей Нягой` slugs to `андрей-нягой` — an entity is only ever addressed by id, and the slug's jobs are uniqueness and human recognition. Values are NFC-normalised, so two encodings of the same visual name are the same slug. Shared by Instructor, Studio, and Tag aggregates.
   @BuiltValueField(wireName: r'slug')
   String get slug;
 

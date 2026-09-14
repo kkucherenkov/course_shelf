@@ -13,7 +13,7 @@ part 'scan_error.g.dart';
 /// Properties:
 /// * [path] - Filesystem path relative to the library root, e.g. `01 - Intro to DDD/03 - Aggregates.mp4`.
 /// * [message] - Human-readable description of what went wrong.
-/// * [code] - Machine-readable error key (e.g. `course-json-invalid`, `unreadable-file`, `unsupported-extension`).
+/// * [code] - Machine-readable error key (e.g. `course-json-invalid`, `unreadable-file`, `unsupported-extension`, `course-slug-collision`).
 @BuiltValue()
 abstract class ScanError implements Built<ScanError, ScanErrorBuilder> {
   /// Filesystem path relative to the library root, e.g. `01 - Intro to DDD/03 - Aggregates.mp4`.
@@ -24,7 +24,7 @@ abstract class ScanError implements Built<ScanError, ScanErrorBuilder> {
   @BuiltValueField(wireName: r'message')
   String get message;
 
-  /// Machine-readable error key (e.g. `course-json-invalid`, `unreadable-file`, `unsupported-extension`).
+  /// Machine-readable error key (e.g. `course-json-invalid`, `unreadable-file`, `unsupported-extension`, `course-slug-collision`).
   @BuiltValueField(wireName: r'code')
   String? get code;
 

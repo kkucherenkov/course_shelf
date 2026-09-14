@@ -1761,7 +1761,7 @@ export interface components {
      */
     CourseLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'all_levels';
     /**
-     * @description URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens; cannot start or end with a hyphen. Shared by Instructor, Studio, and Tag aggregates.
+     * @description URL-safe slug. 1–100 characters, lowercase Unicode letters, digits, and hyphens; cannot start or end with a hyphen. Non-ASCII scripts are kept as themselves rather than transliterated, so `Андрей Нягой` slugs to `андрей-нягой` — an entity is only ever addressed by id, and the slug's jobs are uniqueness and human recognition. Values are NFC-normalised, so two encodings of the same visual name are the same slug. Shared by Instructor, Studio, and Tag aggregates.
      * @example andrei-neagoie
      */
     EntitySlug: string;
@@ -3179,7 +3179,7 @@ export interface components {
       lessonCount: number;
     };
     /**
-     * @description URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens; cannot start or end with a hyphen. Unique within a library.
+     * @description URL-safe slug. 1–100 characters, lowercase Unicode letters, digits, and hyphens; cannot start or end with a hyphen. Unique within a library. Non-ASCII scripts are kept as themselves rather than transliterated, so `Графы и комбинаторика` slugs to `графы-и-комбинаторика` — a course is only ever addressed by id, and the slug's jobs are uniqueness within the library and human recognition. Values are NFC-normalised, so two encodings of the same visual title are the same slug.
      * @example pragmatic-clean-architecture
      */
     CourseSlug: string;
@@ -3711,7 +3711,7 @@ export interface components {
       path: string;
       /** @description Human-readable description of what went wrong. */
       message: string;
-      /** @description Machine-readable error key (e.g. `course-json-invalid`, `unreadable-file`, `unsupported-extension`). */
+      /** @description Machine-readable error key (e.g. `course-json-invalid`, `unreadable-file`, `unsupported-extension`, `course-slug-collision`). */
       code?: string;
     };
     /**

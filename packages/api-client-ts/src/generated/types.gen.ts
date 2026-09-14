@@ -60,7 +60,7 @@ export type BackfillMetadataRequest = {
 export type CourseLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'all_levels';
 
 /**
- * URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens; cannot start or end with a hyphen. Shared by Instructor, Studio, and Tag aggregates.
+ * URL-safe slug. 1–100 characters, lowercase Unicode letters, digits, and hyphens; cannot start or end with a hyphen. Non-ASCII scripts are kept as themselves rather than transliterated, so `Андрей Нягой` slugs to `андрей-нягой` — an entity is only ever addressed by id, and the slug's jobs are uniqueness and human recognition. Values are NFC-normalised, so two encodings of the same visual name are the same slug. Shared by Instructor, Studio, and Tag aggregates.
  */
 export type EntitySlug = string;
 
@@ -1221,7 +1221,7 @@ export type CourseDownloadEstimateDto = {
 };
 
 /**
- * URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens; cannot start or end with a hyphen. Unique within a library.
+ * URL-safe slug. 1–100 characters, lowercase Unicode letters, digits, and hyphens; cannot start or end with a hyphen. Unique within a library. Non-ASCII scripts are kept as themselves rather than transliterated, so `Графы и комбинаторика` slugs to `графы-и-комбинаторика` — a course is only ever addressed by id, and the slug's jobs are uniqueness within the library and human recognition. Values are NFC-normalised, so two encodings of the same visual title are the same slug.
  */
 export type CourseSlug = string;
 
@@ -1781,7 +1781,7 @@ export type ScanError = {
      */
     message: string;
     /**
-     * Machine-readable error key (e.g. `course-json-invalid`, `unreadable-file`, `unsupported-extension`).
+     * Machine-readable error key (e.g. `course-json-invalid`, `unreadable-file`, `unsupported-extension`, `course-slug-collision`).
      */
     code?: string;
 };

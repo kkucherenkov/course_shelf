@@ -141,7 +141,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
         status,
         instance,
       };
-      if (typeof obj['message'] === 'string') {
+      // `HttpException.createBody` passes a caller-supplied object straight
+      // through `getResponse()` unchanged — Nest itself never adds `code` or
+      // `detail`. Every controller in this codebase throws `new
+      // BadRequestException({ code, detail })` (the same shape as
+      // `DomainError`), so those keys take priority; `message`/`error` remain
+      // the fallback for exceptions Nest itself builds (e.g. `ValidationPipe`).
+      if (typeof obj['code'] === 'string') {
+        problem.code = obj['code'];
+      }
+      if (typeof obj['detail'] === 'string') {
+        problem.detail = obj['detail'];
+      } else if (typeof obj['message'] === 'string') {
         problem.detail = obj['message'];
       }
       if (Array.isArray(obj['message'])) {

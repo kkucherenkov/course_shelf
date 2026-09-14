@@ -32,6 +32,8 @@ const TRANSCRIPTION_SELECT = {
   lessonsSkipped: true,
   lessonsTranscribed: true,
   lessonsFailed: true,
+  scopeCourseId: true,
+  scopeCourseName: true,
   errors: { select: { lessonId: true, message: true, code: true } },
 } as const;
 
@@ -46,6 +48,8 @@ interface TranscriptionRow {
   lessonsSkipped: number;
   lessonsTranscribed: number;
   lessonsFailed: number;
+  scopeCourseId: string | null;
+  scopeCourseName: string | null;
   errors: { lessonId: string; message: string; code: string | null }[];
 }
 
@@ -68,6 +72,8 @@ export class PrismaTranscriptionRepository implements TranscriptionRepository {
           lessonsSkipped: transcription.lessonsSkipped,
           lessonsTranscribed: transcription.lessonsTranscribed,
           lessonsFailed: transcription.lessonsFailed,
+          scopeCourseId: transcription.scopeCourseId ?? null,
+          scopeCourseName: transcription.scopeCourseName ?? null,
         },
         update: {
           status: transcription.status,
@@ -144,6 +150,8 @@ export class PrismaTranscriptionRepository implements TranscriptionRepository {
       lessonsSkipped: row.lessonsSkipped,
       lessonsTranscribed: row.lessonsTranscribed,
       lessonsFailed: row.lessonsFailed,
+      scopeCourseId: row.scopeCourseId ?? undefined,
+      scopeCourseName: row.scopeCourseName ?? undefined,
       errors: row.errors.map((e) => ({
         lessonId: e.lessonId,
         message: e.message,

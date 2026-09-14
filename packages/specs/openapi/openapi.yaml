@@ -3104,6 +3104,162 @@ paths:
                     detail: A scan is already running for library clxvp1234567890abcdefghij.
         "429":
           $ref: "#/components/responses/TooManyRequests"
+  /api/v1/courses/{id}/transcription:
+    post:
+      operationId: startCourseTranscription
+      summary: Transcribe a single course
+      description: |
+        Transcribes only this course's lessons instead of every lesson in the
+        library. The same skip rule applies inside the scope: a lesson with a
+        hand-made subtitle sidecar is skipped, and so is one whose generated
+        transcript still matches the video's `(mtime, size)`.
+
+        This is the shape that is actually usable. Measured on a Pentium Gold
+        8505, whisper.cpp `base` takes roughly twenty minutes per lesson, so a
+        five-thousand-lesson library is weeks of continuous CPU while a
+        thirty-lesson course is an overnight job. The library-wide endpoint
+        (`POST /libraries/{id}/transcriptions`) is unchanged and still exists
+        for deployments where that is affordable.
+
+        One run per library at a time, scoped or not: whisper saturates every
+        core it is given, so a second concurrent run halves the first rather
+        than finishing sooner. Starting a scoped run while any run is going
+        answers 409 naming the run in flight; cancel it via
+        `POST /transcriptions/{id}/cancel` and start the scoped run again.
+
+        Returns 202 immediately with `status: running`, exactly like
+        `POST /libraries/{id}/transcriptions`; clients poll
+        `GET /libraries/{id}/transcriptions/latest`. The response and the
+        realtime `scans:user:{userId}` events carry `scopeCourseId` /
+        `scopeCourseName` so the UI can say "transcribing <course>" rather
+        than implying a whole-library run.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the course to transcribe.
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartTranscriptionRequest"
+            examples:
+              incremental:
+                summary: Default — skip what is already transcribed
+                value:
+                  force: false
+              namedLanguage:
+                summary: Skip whisper's per-file detection pass
+                value:
+                  force: false
+                  language: ru
+      responses:
+        "202":
+          description: Transcription accepted and running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptionDto"
+              examples:
+                accepted:
+                  value:
+                    id: clxvtrn0000000000000000002
+                    libraryId: clxvp1234567890abcdefghij
+                    status: running
+                    force: false
+                    startedAt: "2026-09-14T10:30:00Z"
+                    lessonsTotal: 30
+                    lessonsSkipped: 0
+                    lessonsTranscribed: 0
+                    lessonsFailed: 0
+                    errors: []
+                    scopeCourseId: clxvcrs0000000000000000001
+                    scopeCourseName: Pragmatic Clean Architecture
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only admins may start transcription runs.
+        "404":
+          description: Course not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No course with that id exists.
+        "409":
+          description: >-
+            A transcription is already running for this course's library —
+            scoped or library-wide. The `detail` names the run in flight and
+            the cancel route, because the operator's next move is always
+            either "wait" or "cancel that one".
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                conflict:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: "A transcription is already running for library
+                      clxvp1234567890abcdefghij (run clxvtrn0000000000000000001).
+                      Cancel it with POST /api/v1/transcriptions/clxvtrn0000000000000000001/cancel
+                      before starting another."
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "503":
+          description: >-
+            The transcription backend is not usable — the whisper binary or the
+            model file configured for this deployment is missing. Fails fast
+            rather than starting a run that cannot produce anything.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                modelMissing:
+                  value:
+                    type: about:blank
+                    title: Service Unavailable
+                    status: 503
+                    detail: The configured whisper model file was not found.
   /api/v1/catalog/instructors:
     get:
       operationId: listInstructors
@@ -5188,7 +5344,10 @@ paths:
                     status: 404
                     detail: No library with that id exists.
         "409":
-          description: A transcription is already running for this library
+          description: >-
+            A transcription is already running for this library. The `detail`
+            names the run in flight and the cancel route, because the
+            operator's next move is always either "wait" or "cancel that one".
           content:
             application/problem+json:
               schema:
@@ -5199,7 +5358,10 @@ paths:
                     type: about:blank
                     title: Conflict
                     status: 409
-                    detail: A transcription is already running for library clxvp1234567890abcdefghij.
+                    detail: "A transcription is already running for library
+                      clxvp1234567890abcdefghij (run clxvtrn0000000000000000001).
+                      Cancel it with POST /api/v1/transcriptions/clxvtrn0000000000000000001/cancel
+                      before starting another."
         "429":
           $ref: "#/components/responses/TooManyRequests"
         "503":
@@ -9541,6 +9703,18 @@ components:
           items:
             $ref: "#/components/schemas/TranscriptionErrorDto"
           description: Non-fatal per-lesson errors encountered during the run.
+        scopeCourseId:
+          type: string
+          description: >-
+            cuid of the course this run was scoped to. Absent for a
+            library-wide run (`POST /libraries/{id}/transcriptions`) — present
+            only for `POST /courses/{id}/transcription`.
+        scopeCourseName:
+          type: string
+          description: >-
+            Title of the scoped course, so the UI can render "transcribing
+            <course>" without a second round-trip. Absent for a library-wide
+            run.
       example:
         id: clxvtrn0000000000000000001
         libraryId: clxvp1234567890abcdefghij
@@ -9582,6 +9756,21 @@ components:
           description: >-
             Re-transcribe lessons that already have a generated transcript.
             Hand-made subtitle sidecars are never overwritten.
+        language:
+          type: string
+          pattern: "^(auto|[a-z]{2})$"
+          description: >-
+            BCP-47 primary subtag for this run, or `auto`. Overrides the
+            deployment's `WHISPER_LANGUAGE` for this run only. Naming the
+            language skips whisper's per-file detection pass, which is
+            repeated work on a library that is effectively one or two
+            languages; it also records the transcript under that language tag
+            instead of `und`, which is what `auto` can report. Omitted means
+            "use whatever this deployment is configured with".
+
+            A transcript is identified by `(lesson, language)`, so a run that
+            names a language different from the one already on disk transcribes
+            rather than skips — that is the point, not a bug.
       example:
         force: false
 

@@ -817,6 +817,49 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/courses/{id}/transcription': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Transcribe a single course
+     * @description Transcribes only this course's lessons instead of every lesson in the
+     *     library. The same skip rule applies inside the scope: a lesson with a
+     *     hand-made subtitle sidecar is skipped, and so is one whose generated
+     *     transcript still matches the video's `(mtime, size)`.
+     *
+     *     This is the shape that is actually usable. Measured on a Pentium Gold
+     *     8505, whisper.cpp `base` takes roughly twenty minutes per lesson, so a
+     *     five-thousand-lesson library is weeks of continuous CPU while a
+     *     thirty-lesson course is an overnight job. The library-wide endpoint
+     *     (`POST /libraries/{id}/transcriptions`) is unchanged and still exists
+     *     for deployments where that is affordable.
+     *
+     *     One run per library at a time, scoped or not: whisper saturates every
+     *     core it is given, so a second concurrent run halves the first rather
+     *     than finishing sooner. Starting a scoped run while any run is going
+     *     answers 409 naming the run in flight; cancel it via
+     *     `POST /transcriptions/{id}/cancel` and start the scoped run again.
+     *
+     *     Returns 202 immediately with `status: running`, exactly like
+     *     `POST /libraries/{id}/transcriptions`; clients poll
+     *     `GET /libraries/{id}/transcriptions/latest`. The response and the
+     *     realtime `scans:user:{userId}` events carry `scopeCourseId` /
+     *     `scopeCourseName` so the UI can say "transcribing <course>" rather
+     *     than implying a whole-library run.
+     */
+    post: operations['startCourseTranscription'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/catalog/instructors': {
     parameters: {
       query?: never;
@@ -3790,6 +3833,10 @@ export interface components {
       lessonsFailed: number;
       /** @description Non-fatal per-lesson errors encountered during the run. */
       errors: components['schemas']['TranscriptionErrorDto'][];
+      /** @description cuid of the course this run was scoped to. Absent for a library-wide run (`POST /libraries/{id}/transcriptions`) — present only for `POST /courses/{id}/transcription`. */
+      scopeCourseId?: string;
+      /** @description Title of the scoped course, so the UI can render "transcribing <course>" without a second round-trip. Absent for a library-wide run. */
+      scopeCourseName?: string;
     };
     /** @description One library's transcription history, ordered by `startedAt` descending (newest first). The cross-library admin list uses `AdminTranscriptionListDto` instead — it needs `libraryName` per row and does not ship the nested `errors` arrays. */
     TranscriptionListDto: {
@@ -3807,6 +3854,11 @@ export interface components {
        * @default false
        */
       force: boolean;
+      /**
+       * @description BCP-47 primary subtag for this run, or `auto`. Overrides the deployment's `WHISPER_LANGUAGE` for this run only. Naming the language skips whisper's per-file detection pass, which is repeated work on a library that is effectively one or two languages; it also records the transcript under that language tag instead of `und`, which is what `auto` can report. Omitted means "use whatever this deployment is configured with".
+       *     A transcript is identified by `(lesson, language)`, so a run that names a language different from the one already on disk transcribes rather than skips — that is the point, not a bug.
+       */
+      language?: string;
     };
     /**
      * @description A completed metadata-database snapshot plus the short-lived signed URL for downloading it. Shaped after `MaterialDownloadUrlDto` — the extra fields describe the archive itself so the caller can show what it got without a second request.
@@ -5889,6 +5941,80 @@ export interface operations {
       429: components['responses']['TooManyRequests'];
     };
   };
+  startCourseTranscription: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the course to transcribe. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['StartTranscriptionRequest'];
+      };
+    };
+    responses: {
+      /** @description Transcription accepted and running */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TranscriptionDto'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Course not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description A transcription is already running for this course's library — scoped or library-wide. The `detail` names the run in flight and the cancel route, because the operator's next move is always either "wait" or "cancel that one". */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+      /** @description The transcription backend is not usable — the whisper binary or the model file configured for this deployment is missing. Fails fast rather than starting a run that cannot produce anything. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
   listInstructors: {
     parameters: {
       query?: {
@@ -7188,7 +7314,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description A transcription is already running for this library */
+      /** @description A transcription is already running for this library. The `detail` names the run in flight and the cancel route, because the operator's next move is always either "wait" or "cancel that one". */
       409: {
         headers: {
           [name: string]: unknown;

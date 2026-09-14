@@ -190,6 +190,9 @@ export default {
       rescanCta: 'Rescan',
       toastRescanStarted: 'Rescan started.',
       toastRescanError: 'Could not start the rescan. Please try again.',
+      transcribeCta: 'Transcribe',
+      toastTranscribeStarted: 'Transcription started. It runs in the background.',
+      toastTranscribeError: 'Could not start the transcription. Please try again.',
     },
     courseEdit: {
       title: 'Edit course metadata',

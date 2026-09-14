@@ -28,5 +28,14 @@ export function toTranscriptionDto(transcription: Transcription): TranscriptionD
       message: e.message,
       ...(e.code === undefined ? {} : { code: e.code }),
     })),
+    // scopeCourseId and scopeCourseName are always set together by
+    // Transcription.start()'s `scope` option — the fallback reflects that
+    // pairing, which the two independently-optional fields can't express.
+    ...(transcription.scopeCourseId === undefined
+      ? {}
+      : {
+          scopeCourseId: transcription.scopeCourseId,
+          scopeCourseName: transcription.scopeCourseName ?? '',
+        }),
   };
 }

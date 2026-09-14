@@ -40,6 +40,12 @@ export interface TranscriptionProps {
   readonly lessonsTranscribed: number;
   readonly lessonsFailed: number;
   readonly errors: TranscriptionErrorEntry[];
+  /**
+   * Set when this run was scoped to one course (E32-F02-S01) rather than the
+   * whole library. Absent for the library-wide default.
+   */
+  readonly scopeCourseId: string | undefined;
+  readonly scopeCourseName: string | undefined;
 }
 
 const TERMINAL_STATUSES: ReadonlySet<TranscriptionStatusValue> = new Set([
@@ -60,6 +66,8 @@ export class Transcription {
   private _lessonsTranscribed: number;
   private _lessonsFailed: number;
   private readonly _errors: TranscriptionErrorEntry[];
+  readonly scopeCourseId: string | undefined;
+  readonly scopeCourseName: string | undefined;
 
   private constructor(props: TranscriptionProps) {
     this.id = props.id;
@@ -73,6 +81,8 @@ export class Transcription {
     this._lessonsTranscribed = props.lessonsTranscribed;
     this._lessonsFailed = props.lessonsFailed;
     this._errors = [...props.errors];
+    this.scopeCourseId = props.scopeCourseId;
+    this.scopeCourseName = props.scopeCourseName;
   }
 
   // ---------------------------------------------------------------------------
@@ -121,6 +131,8 @@ export class Transcription {
     force: boolean;
     lessonsTotal: number;
     now?: Date;
+    /** Present only for `POST /courses/{id}/transcription`. */
+    scope?: { courseId: string; courseName: string };
   }): Transcription {
     return new Transcription({
       id: brand<string, 'Transcription'>(props.id),
@@ -134,6 +146,8 @@ export class Transcription {
       lessonsTranscribed: 0,
       lessonsFailed: 0,
       errors: [],
+      scopeCourseId: props.scope?.courseId,
+      scopeCourseName: props.scope?.courseName,
     });
   }
 

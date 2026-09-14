@@ -114,6 +114,22 @@ describe('LocalWhisperAdapter', () => {
     expect(args.slice(args.indexOf('-t'), args.indexOf('-t') + 2)).toEqual(['-t', '2']);
   });
 
+  it("prefers the request's language over the deployment default", async () => {
+    mockResolve();
+    const adapter = new LocalWhisperAdapter(makeAppConfig({ language: 'auto' }));
+
+    await adapter.transcribe({
+      audioAbsolutePath: '/tmp/a.wav',
+      outBaseAbsolutePath: '/out/a',
+      language: 'ru',
+    });
+
+    // `auto` costs a detection pass on every single file; naming the language
+    // for one run is the whole point of the per-request override.
+    const args = vi.mocked(execFile).mock.calls[0]?.[1] as string[];
+    expect(args.slice(args.indexOf('-l'), args.indexOf('-l') + 2)).toEqual(['-l', 'ru']);
+  });
+
   it('raises WhisperFailedError when the process exits non-zero', async () => {
     mockReject('Command failed: whisper-cli');
     const adapter = new LocalWhisperAdapter(makeAppConfig());

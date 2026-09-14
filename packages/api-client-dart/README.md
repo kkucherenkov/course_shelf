@@ -122,6 +122,7 @@ Class | Method | HTTP request | Description
 [*CatalogApi*](doc/CatalogApi.md) | [**runCourseRescan**](doc/CatalogApi.md#runcourserescan) | **POST** /api/v1/courses/{id}/rescan | Rescan a single course
 [*CatalogApi*](doc/CatalogApi.md) | [**runLibraryScan**](doc/CatalogApi.md#runlibraryscan) | **POST** /api/v1/libraries/{id}/scans | Trigger a scan of a library
 [*CatalogApi*](doc/CatalogApi.md) | [**searchCatalogue**](doc/CatalogApi.md#searchcatalogue) | **GET** /api/v1/search | Search the catalogue (courses + lessons + transcripts)
+[*CatalogApi*](doc/CatalogApi.md) | [**startCourseTranscription**](doc/CatalogApi.md#startcoursetranscription) | **POST** /api/v1/courses/{id}/transcription | Transcribe a single course
 [*CatalogApi*](doc/CatalogApi.md) | [**startTranscription**](doc/CatalogApi.md#starttranscription) | **POST** /api/v1/libraries/{id}/transcriptions | Start a transcription run for a library
 [*CatalogApi*](doc/CatalogApi.md) | [**updateCourse**](doc/CatalogApi.md#updatecourse) | **PATCH** /api/v1/courses/{id} | Update course metadata
 [*CatalogApi*](doc/CatalogApi.md) | [**updateLibrary**](doc/CatalogApi.md#updatelibrary) | **PATCH** /api/v1/libraries/{id} | Rename a library

@@ -19,6 +19,8 @@ Name | Type | Description | Notes
 **lessonsTranscribed** | **int** | Lessons for which a transcript was produced by this run. | 
 **lessonsFailed** | **int** | Lessons that raised an error; one entry each in `errors`. | 
 **errors** | [**BuiltList&lt;TranscriptionErrorDto&gt;**](TranscriptionErrorDto.md) | Non-fatal per-lesson errors encountered during the run. | 
+**scopeCourseId** | **String** | cuid of the course this run was scoped to. Absent for a library-wide run (`POST /libraries/{id}/transcriptions`) — present only for `POST /courses/{id}/transcription`. | [optional] 
+**scopeCourseName** | **String** | Title of the scoped course, so the UI can render \"transcribing <course>\" without a second round-trip. Absent for a library-wide run. | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

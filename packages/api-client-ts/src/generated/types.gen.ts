@@ -1859,6 +1859,14 @@ export type TranscriptionDto = {
      * Non-fatal per-lesson errors encountered during the run.
      */
     errors: Array<TranscriptionErrorDto>;
+    /**
+     * cuid of the course this run was scoped to. Absent for a library-wide run (`POST /libraries/{id}/transcriptions`) — present only for `POST /courses/{id}/transcription`.
+     */
+    scopeCourseId?: string;
+    /**
+     * Title of the scoped course, so the UI can render "transcribing <course>" without a second round-trip. Absent for a library-wide run.
+     */
+    scopeCourseName?: string;
 };
 
 /**
@@ -1876,6 +1884,11 @@ export type StartTranscriptionRequest = {
      * Re-transcribe lessons that already have a generated transcript. Hand-made subtitle sidecars are never overwritten.
      */
     force?: boolean;
+    /**
+     * BCP-47 primary subtag for this run, or `auto`. Overrides the deployment's `WHISPER_LANGUAGE` for this run only. Naming the language skips whisper's per-file detection pass, which is repeated work on a library that is effectively one or two languages; it also records the transcript under that language tag instead of `und`, which is what `auto` can report. Omitted means "use whatever this deployment is configured with".
+     * A transcript is identified by `(lesson, language)`, so a run that names a language different from the one already on disk transcribes rather than skips — that is the point, not a bug.
+     */
+    language?: string;
 };
 
 /**
@@ -3773,6 +3786,64 @@ export type RunCourseRescanResponses = {
 
 export type RunCourseRescanResponse = RunCourseRescanResponses[keyof RunCourseRescanResponses];
 
+export type StartCourseTranscriptionData = {
+    body?: StartTranscriptionRequest;
+    path: {
+        /**
+         * Server-generated cuid identifying the course to transcribe.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/courses/{id}/transcription';
+};
+
+export type StartCourseTranscriptionErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Course not found
+     */
+    404: Problem;
+    /**
+     * A transcription is already running for this course's library — scoped or library-wide. The `detail` names the run in flight and the cancel route, because the operator's next move is always either "wait" or "cancel that one".
+     */
+    409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+    /**
+     * The transcription backend is not usable — the whisper binary or the model file configured for this deployment is missing. Fails fast rather than starting a run that cannot produce anything.
+     */
+    503: Problem;
+};
+
+export type StartCourseTranscriptionError = StartCourseTranscriptionErrors[keyof StartCourseTranscriptionErrors];
+
+export type StartCourseTranscriptionResponses = {
+    /**
+     * Transcription accepted and running
+     */
+    202: TranscriptionDto;
+};
+
+export type StartCourseTranscriptionResponse = StartCourseTranscriptionResponses[keyof StartCourseTranscriptionResponses];
+
 export type ListInstructorsData = {
     body?: never;
     path?: never;
@@ -5065,7 +5136,7 @@ export type StartTranscriptionErrors = {
      */
     404: Problem;
     /**
-     * A transcription is already running for this library
+     * A transcription is already running for this library. The `detail` names the run in flight and the cancel route, because the operator's next move is always either "wait" or "cancel that one".
      */
     409: Problem;
     /**

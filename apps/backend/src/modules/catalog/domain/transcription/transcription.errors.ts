@@ -51,16 +51,27 @@ export class TranscriptionNotConfiguredError extends DomainError {
 }
 
 /**
- * Thrown when a run is requested for a library that already has one going.
- * Mirrors `ScanAlreadyRunningError`; the contract documents 409 for it.
+ * Thrown when a run is requested for a library that already has one going —
+ * library-wide or scoped to one course. One run per library is deliberate:
+ * whisper saturates every core it is given, so a second concurrent run halves
+ * the first rather than finishing sooner.
+ *
+ * The detail names the run in flight and the cancel route because the operator
+ * hitting this has exactly two moves — wait, or cancel that run — and a bare
+ * "already running" tells them neither. It is especially the wrong message for
+ * the case this exists to serve: someone who started a library-wide run,
+ * watched it estimate weeks, and now wants one course instead.
  */
 export class TranscriptionAlreadyRunningError extends DomainError {
-  constructor(libraryId: string) {
+  constructor(libraryId: string, runningTranscriptionId: string) {
     super({
       code: 'transcription-already-running',
       status: 409,
       title: 'Conflict',
-      detail: `A transcription is already running for library ${libraryId}.`,
+      detail:
+        `A transcription is already running for library ${libraryId} ` +
+        `(run ${runningTranscriptionId}). Cancel it with ` +
+        `POST /api/v1/transcriptions/${runningTranscriptionId}/cancel before starting another.`,
     });
     this.name = 'TranscriptionAlreadyRunningError';
   }

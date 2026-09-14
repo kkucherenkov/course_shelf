@@ -1691,6 +1691,109 @@ class CatalogApi {
     );
   }
 
+  /// Transcribe a single course
+  /// Transcribes only this course&#39;s lessons instead of every lesson in the library. The same skip rule applies inside the scope: a lesson with a hand-made subtitle sidecar is skipped, and so is one whose generated transcript still matches the video&#39;s &#x60;(mtime, size)&#x60;.  This is the shape that is actually usable. Measured on a Pentium Gold 8505, whisper.cpp &#x60;base&#x60; takes roughly twenty minutes per lesson, so a five-thousand-lesson library is weeks of continuous CPU while a thirty-lesson course is an overnight job. The library-wide endpoint (&#x60;POST /libraries/{id}/transcriptions&#x60;) is unchanged and still exists for deployments where that is affordable.  One run per library at a time, scoped or not: whisper saturates every core it is given, so a second concurrent run halves the first rather than finishing sooner. Starting a scoped run while any run is going answers 409 naming the run in flight; cancel it via &#x60;POST /transcriptions/{id}/cancel&#x60; and start the scoped run again.  Returns 202 immediately with &#x60;status: running&#x60;, exactly like &#x60;POST /libraries/{id}/transcriptions&#x60;; clients poll &#x60;GET /libraries/{id}/transcriptions/latest&#x60;. The response and the realtime &#x60;scans:user:{userId}&#x60; events carry &#x60;scopeCourseId&#x60; / &#x60;scopeCourseName&#x60; so the UI can say \&quot;transcribing &lt;course&gt;\&quot; rather than implying a whole-library run. 
+  ///
+  /// Parameters:
+  /// * [id] - Server-generated cuid identifying the course to transcribe.
+  /// * [startTranscriptionRequest] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [TranscriptionDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<TranscriptionDto>> startCourseTranscription({ 
+    required String id,
+    StartTranscriptionRequest? startTranscriptionRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/courses/{id}/transcription'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(StartTranscriptionRequest);
+      _bodyData = startTranscriptionRequest == null ? null : _serializers.serialize(startTranscriptionRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    TranscriptionDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TranscriptionDto),
+      ) as TranscriptionDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<TranscriptionDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
   /// Start a transcription run for a library
   /// Walks the library&#39;s lessons and generates a transcript for every video that has neither a hand-made subtitle track nor an up-to-date generated one. Returns 202 immediately with &#x60;status: running&#x60;; clients poll &#x60;GET /libraries/{id}/transcriptions/latest&#x60;. A second run with no filesystem changes is observably a no-op (&#x60;lessonsTranscribed&#x60; is zero and every lesson lands in &#x60;lessonsSkipped&#x60;). 
   ///

@@ -9,12 +9,14 @@ part of 'start_transcription_request.dart';
 class _$StartTranscriptionRequest extends StartTranscriptionRequest {
   @override
   final bool? force;
+  @override
+  final String? language;
 
   factory _$StartTranscriptionRequest([
     void Function(StartTranscriptionRequestBuilder)? updates,
   ]) => (StartTranscriptionRequestBuilder()..update(updates))._build();
 
-  _$StartTranscriptionRequest._({this.force}) : super._();
+  _$StartTranscriptionRequest._({this.force, this.language}) : super._();
   @override
   StartTranscriptionRequest rebuild(
     void Function(StartTranscriptionRequestBuilder) updates,
@@ -27,22 +29,26 @@ class _$StartTranscriptionRequest extends StartTranscriptionRequest {
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is StartTranscriptionRequest && force == other.force;
+    return other is StartTranscriptionRequest &&
+        force == other.force &&
+        language == other.language;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
     _$hash = $jc(_$hash, force.hashCode);
+    _$hash = $jc(_$hash, language.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
 
   @override
   String toString() {
-    return (newBuiltValueToStringHelper(
-      r'StartTranscriptionRequest',
-    )..add('force', force)).toString();
+    return (newBuiltValueToStringHelper(r'StartTranscriptionRequest')
+          ..add('force', force)
+          ..add('language', language))
+        .toString();
   }
 }
 
@@ -55,6 +61,10 @@ class StartTranscriptionRequestBuilder
   bool? get force => _$this._force;
   set force(bool? force) => _$this._force = force;
 
+  String? _language;
+  String? get language => _$this._language;
+  set language(String? language) => _$this._language = language;
+
   StartTranscriptionRequestBuilder() {
     StartTranscriptionRequest._defaults(this);
   }
@@ -63,6 +73,7 @@ class StartTranscriptionRequestBuilder
     final $v = _$v;
     if ($v != null) {
       _force = $v.force;
+      _language = $v.language;
       _$v = null;
     }
     return this;
@@ -82,7 +93,8 @@ class StartTranscriptionRequestBuilder
   StartTranscriptionRequest build() => _build();
 
   _$StartTranscriptionRequest _build() {
-    final _$result = _$v ?? _$StartTranscriptionRequest._(force: force);
+    final _$result =
+        _$v ?? _$StartTranscriptionRequest._(force: force, language: language);
     replace(_$result);
     return _$result;
   }

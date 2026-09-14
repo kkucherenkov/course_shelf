@@ -29,6 +29,10 @@ class _$TranscriptionDto extends TranscriptionDto {
   final int lessonsFailed;
   @override
   final BuiltList<TranscriptionErrorDto> errors;
+  @override
+  final String? scopeCourseId;
+  @override
+  final String? scopeCourseName;
 
   factory _$TranscriptionDto([
     void Function(TranscriptionDtoBuilder)? updates,
@@ -46,6 +50,8 @@ class _$TranscriptionDto extends TranscriptionDto {
     required this.lessonsTranscribed,
     required this.lessonsFailed,
     required this.errors,
+    this.scopeCourseId,
+    this.scopeCourseName,
   }) : super._();
   @override
   TranscriptionDto rebuild(void Function(TranscriptionDtoBuilder) updates) =>
@@ -69,7 +75,9 @@ class _$TranscriptionDto extends TranscriptionDto {
         lessonsSkipped == other.lessonsSkipped &&
         lessonsTranscribed == other.lessonsTranscribed &&
         lessonsFailed == other.lessonsFailed &&
-        errors == other.errors;
+        errors == other.errors &&
+        scopeCourseId == other.scopeCourseId &&
+        scopeCourseName == other.scopeCourseName;
   }
 
   @override
@@ -86,6 +94,8 @@ class _$TranscriptionDto extends TranscriptionDto {
     _$hash = $jc(_$hash, lessonsTranscribed.hashCode);
     _$hash = $jc(_$hash, lessonsFailed.hashCode);
     _$hash = $jc(_$hash, errors.hashCode);
+    _$hash = $jc(_$hash, scopeCourseId.hashCode);
+    _$hash = $jc(_$hash, scopeCourseName.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -103,7 +113,9 @@ class _$TranscriptionDto extends TranscriptionDto {
           ..add('lessonsSkipped', lessonsSkipped)
           ..add('lessonsTranscribed', lessonsTranscribed)
           ..add('lessonsFailed', lessonsFailed)
-          ..add('errors', errors))
+          ..add('errors', errors)
+          ..add('scopeCourseId', scopeCourseId)
+          ..add('scopeCourseName', scopeCourseName))
         .toString();
   }
 }
@@ -161,6 +173,16 @@ class TranscriptionDtoBuilder
   set errors(ListBuilder<TranscriptionErrorDto>? errors) =>
       _$this._errors = errors;
 
+  String? _scopeCourseId;
+  String? get scopeCourseId => _$this._scopeCourseId;
+  set scopeCourseId(String? scopeCourseId) =>
+      _$this._scopeCourseId = scopeCourseId;
+
+  String? _scopeCourseName;
+  String? get scopeCourseName => _$this._scopeCourseName;
+  set scopeCourseName(String? scopeCourseName) =>
+      _$this._scopeCourseName = scopeCourseName;
+
   TranscriptionDtoBuilder() {
     TranscriptionDto._defaults(this);
   }
@@ -179,6 +201,8 @@ class TranscriptionDtoBuilder
       _lessonsTranscribed = $v.lessonsTranscribed;
       _lessonsFailed = $v.lessonsFailed;
       _errors = $v.errors.toBuilder();
+      _scopeCourseId = $v.scopeCourseId;
+      _scopeCourseName = $v.scopeCourseName;
       _$v = null;
     }
     return this;
@@ -250,6 +274,8 @@ class TranscriptionDtoBuilder
               'lessonsFailed',
             ),
             errors: errors.build(),
+            scopeCourseId: scopeCourseId,
+            scopeCourseName: scopeCourseName,
           );
     } catch (_) {
       late String _$failedField;

@@ -9,6 +9,12 @@ export interface TranscribeRequest {
   readonly audioAbsolutePath: string;
   /** Output path WITHOUT the extension — whisper.cpp appends `.srt` itself. */
   readonly outBaseAbsolutePath: string;
+  /**
+   * Language tag for this run, or `auto`. Undefined means "use whatever the
+   * deployment is configured with" (`WHISPER_LANGUAGE`). Naming it skips the
+   * per-file detection pass `auto` costs on every single video.
+   */
+  readonly language?: string;
 }
 
 export interface TranscribeResult {

@@ -39,6 +39,12 @@ const SAFE_LANGUAGE = /^[A-Za-z0-9_-]{1,16}$/;
 /** cuid/uuid-shaped ids only — a library id is never a path fragment. */
 const SAFE_LIBRARY_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
+/** Same shape as SAFE_LIBRARY_ID — a course id is never a path fragment either. */
+const SAFE_COURSE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
+/** Fixed allowlist — callers must map a verified Content-Type to one of these, never a raw string. */
+const SAFE_POSTER_EXTENSION = /^\.(?:jpg|png|webp|gif)$/;
+
 /**
  * Resolve `<derivedRoot>/<libraryId>/<suffixed videoPath>`, refusing to leave
  * `<derivedRoot>/<libraryId>`. Shared by `derivedTranscriptPath` and
@@ -99,4 +105,38 @@ export function derivedThumbnailPath(input: DerivedThumbnailPathInput): string {
   const { derivedRoot, libraryId, videoPath } = input;
 
   return resolveUnderLibraryRoot(derivedRoot, libraryId, `${videoPath}.thumb.jpg`);
+}
+
+export interface DerivedCoursePosterPathInput {
+  readonly derivedRoot: string;
+  readonly libraryId: string;
+  readonly courseId: string;
+  /** Already validated against SAFE_POSTER_EXTENSION by the caller (a Content-Type→extension map, never a raw string). */
+  readonly extension: string;
+}
+
+/**
+ * Absolute path of a course's downloaded poster image (#496).
+ *
+ * Unlike the video-relative transcript/thumbnail, a course has no
+ * library-relative "source path" to suffix — `courseId` and a whitelisted
+ * extension are both server-controlled, so there is no untrusted path
+ * fragment here. Still routed through `resolveUnderLibraryRoot` (not a new
+ * guard) because it lands under the same writable `<derivedRoot>/<libraryId>`
+ * scope as the thumbnail above.
+ *
+ * @throws DerivedPathEscapedError — invalid libraryId/courseId/extension, or
+ *   (defensively) an escaping result.
+ */
+export function derivedCoursePosterPath(input: DerivedCoursePosterPathInput): string {
+  const { derivedRoot, libraryId, courseId, extension } = input;
+
+  if (!SAFE_COURSE_ID.test(courseId)) {
+    throw new DerivedPathEscapedError(`courseId: ${courseId}`);
+  }
+  if (!SAFE_POSTER_EXTENSION.test(extension)) {
+    throw new DerivedPathEscapedError(`extension: ${extension}`);
+  }
+
+  return resolveUnderLibraryRoot(derivedRoot, libraryId, `posters/${courseId}${extension}`);
 }

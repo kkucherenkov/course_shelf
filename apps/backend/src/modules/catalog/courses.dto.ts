@@ -15,11 +15,25 @@
  * ratingAverage, ratingCount, externalIds, sourceUpdatedAt). All are present
  * with null placeholders on every response so the DTO shape is stable for callers
  * that do not yet consume them.
+ *
+ * Poster (#496): `CourseDto.posterUrl` is NOT `Course.posterUrl` (the raw
+ * third-party CDN URL — blocked by the SPA's CSP img-src). When a poster has
+ * been downloaded (`Course.posterStoragePath` set), it is our own signed,
+ * short-lived `/courses/:id/poster?token=...` URL instead; otherwise `null`.
+ * `signPosterToken` is required (no default) so every call site is forced to
+ * decide how it signs — see CoursePosterTokenSigner.
  */
 import type { Course } from './domain/course/course';
 import type { CourseProgressReadModel } from './domain/progress/course-progress-read-model';
 import type { CourseDto, CourseProgress, ExternalIdRef, SectionDto } from '@app/api-client-ts';
 import type { InstructorRef, StudioRef, TagRef } from './domain/shared-vo/refs';
+
+/**
+ * Builds the full signed `/courses/:id/poster?token=...` URL for `courseId`.
+ * Injected (rather than a raw CoursePosterTokenSigner) so this file stays
+ * crypto- and route-shape-free.
+ */
+export type PosterTokenSigner = (courseId: string) => string;
 
 /** Fallback — used when no projection row exists yet for this (user, course). */
 const PROGRESS_PLACEHOLDER: CourseProgress = {
@@ -30,6 +44,7 @@ const PROGRESS_PLACEHOLDER: CourseProgress = {
 
 export function toCourseDto(
   course: Course,
+  signPosterToken: PosterTokenSigner,
   progressRow?: CourseProgressReadModel | null,
 ): CourseDto {
   const sections: SectionDto[] = course.sections.map((s) => ({
@@ -74,7 +89,7 @@ export function toCourseDto(
     releaseDate: course.releaseDate
       ? (course.releaseDate.toISOString().split('T')[0] ?? null)
       : null,
-    posterUrl: course.posterUrl ?? null,
+    posterUrl: course.posterStoragePath ? signPosterToken(course.id) : null,
     ratingAverage: course.ratingAverage ?? null,
     ratingCount: course.ratingCount ?? null,
     externalIds: [...course.externalIds] as ExternalIdRef[],

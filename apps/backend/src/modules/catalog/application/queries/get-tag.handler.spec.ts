@@ -3,11 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Course } from '../../domain/course/course';
 import { Tag } from '../../domain/tag/tag';
 import { TagNotFoundError } from '../../domain/tag/tag.errors';
+import { CoursePosterTokenSigner } from '../../domain/course/course-poster-token';
 import { GetTagQuery } from './get-tag.query';
 import { GetTagHandler } from './get-tag.handler';
 
 import type { TagRepository } from '../../domain/tag/tag.repository';
 import type { CourseRepository } from '../../domain/course/course.repository';
+import type { AppConfig } from '../../../../common/config/app-config';
+
+function makePosterTokenSigner(): CoursePosterTokenSigner {
+  return new CoursePosterTokenSigner({
+    posterToken: { secret: 'test-secret', hkdfInfo: 'test:poster-token:v1', ttlSeconds: 900 },
+  } as unknown as AppConfig);
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -69,7 +77,7 @@ describe('GetTagHandler', () => {
   beforeEach(() => {
     tagRepo = makeTagRepo();
     courseRepo = makeCourseRepo();
-    handler = new GetTagHandler(tagRepo, courseRepo);
+    handler = new GetTagHandler(tagRepo, courseRepo, makePosterTokenSigner());
   });
 
   it('returns TagDetailDto on happy path', async () => {

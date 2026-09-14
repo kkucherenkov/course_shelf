@@ -3,11 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Course } from '../../domain/course/course';
 import { Instructor } from '../../domain/instructor/instructor';
 import { InstructorNotFoundError } from '../../domain/instructor/instructor.errors';
+import { CoursePosterTokenSigner } from '../../domain/course/course-poster-token';
 import { GetInstructorQuery } from './get-instructor.query';
 import { GetInstructorHandler } from './get-instructor.handler';
 
 import type { InstructorRepository } from '../../domain/instructor/instructor.repository';
 import type { CourseRepository } from '../../domain/course/course.repository';
+import type { AppConfig } from '../../../../common/config/app-config';
+
+function makePosterTokenSigner(): CoursePosterTokenSigner {
+  return new CoursePosterTokenSigner({
+    posterToken: { secret: 'test-secret', hkdfInfo: 'test:poster-token:v1', ttlSeconds: 900 },
+  } as unknown as AppConfig);
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -68,7 +76,7 @@ describe('GetInstructorHandler', () => {
   beforeEach(() => {
     instructorRepo = makeInstructorRepo();
     courseRepo = makeCourseRepo();
-    handler = new GetInstructorHandler(instructorRepo, courseRepo);
+    handler = new GetInstructorHandler(instructorRepo, courseRepo, makePosterTokenSigner());
   });
 
   it('returns InstructorDetailDto on happy path', async () => {

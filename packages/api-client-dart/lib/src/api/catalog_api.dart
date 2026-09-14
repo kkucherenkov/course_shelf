@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
+import 'dart:typed_data';
 import 'package:app_api_client/src/api_util.dart';
 import 'package:app_api_client/src/model/continue_watching_dto.dart';
 import 'package:app_api_client/src/model/course_download_estimate_dto.dart';
@@ -435,6 +436,86 @@ class CatalogApi {
     }
 
     return Response<CourseOutlineDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Download a course&#39;s stored poster image
+  /// Serves the poster HttpPosterDownloader saved under DERIVED_PATH after a scrape or an admin edit set &#x60;Course.posterUrl&#x60; (#496). The raw upstream URL is never exposed to the browser — the SPA&#39;s CSP is &#x60;img-src &#39;self&#39; data: blob:&#x60;, so a remote image would be blocked regardless.  Authenticated by the &#x60;token&#x60; query parameter — &#x60;&lt;img src&gt;&#x60; cannot send the Authorization header the SPA otherwise uses for every other request. The token is bound to &#x60;(courseId, expiresAt)&#x60; only, not a user: &#x60;CourseDto.posterUrl&#x60; already embeds a fresh one on every list/get response, so there is no separate \&quot;issue token\&quot; endpoint — minting one per poster on a course grid would be a request per card. Default TTL 15 minutes.  This is the 5th route in the #278 binary-exception family (see the comment above &#x60;/api/v1/stream/lessons/{id}&#x60;): the response is raw image bytes with no JSON schema, so &#x60;express-openapi-validator&#x60; skips it — documented here for the contract and generated clients only. 
+  ///
+  /// Parameters:
+  /// * [id] - Course cuid.
+  /// * [token] - Signed poster token embedded in CourseDto.posterUrl.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [Uint8List] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<Uint8List>> getCoursePoster({ 
+    required String id,
+    required String token,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/courses/{id}/poster'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'GET',
+      responseType: ResponseType.bytes,
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      r'token': encodeQueryParameter(_serializers, token, const FullType(String)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    Uint8List? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : rawResponse as Uint8List;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<Uint8List>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

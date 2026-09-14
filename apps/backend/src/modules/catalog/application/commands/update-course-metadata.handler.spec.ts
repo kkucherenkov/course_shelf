@@ -9,6 +9,8 @@ import {
   CourseSlugAlreadyTakenError,
   CourseLinkUnknownEntityError,
 } from '../../domain/course/course.errors';
+import { PosterSyncService } from '../scan/poster-sync.service';
+import { CoursePosterTokenSigner } from '../../domain/course/course-poster-token';
 import { UpdateCourseMetadataCommand } from './update-course-metadata.command';
 import { UpdateCourseMetadataHandler } from './update-course-metadata.handler';
 
@@ -16,6 +18,8 @@ import type { CourseRepository } from '../../domain/course/course.repository';
 import type { InstructorRepository } from '../../domain/instructor/instructor.repository';
 import type { StudioRepository } from '../../domain/studio/studio.repository';
 import type { TagRepository } from '../../domain/tag/tag.repository';
+import type { PosterDownloader } from '../../domain/course/poster-downloader.port';
+import type { AppConfig } from '../../../../common/config/app-config';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -98,6 +102,17 @@ function makeTag(
   return Tag.create({ id, displayName, slug, category, now: new Date('2026-01-01T00:00:00.000Z') });
 }
 
+/** Fake PosterDownloader — `storagePath` undefined means "download failed". */
+function makePosterDownloader(storagePath: string | undefined): PosterDownloader {
+  return { download: vi.fn(async () => storagePath) };
+}
+
+function makeFakeAppConfig(): AppConfig {
+  return {
+    posterToken: { secret: 'test-secret', hkdfInfo: 'test:poster-token:v1', ttlSeconds: 900 },
+  } as unknown as AppConfig;
+}
+
 const adminActor = { id: 'admin-1', role: 'admin' };
 
 // ---------------------------------------------------------------------------
@@ -109,6 +124,7 @@ describe('UpdateCourseMetadataHandler', () => {
   let instructorRepo: InstructorRepository;
   let studioRepo: StudioRepository;
   let tagRepo: TagRepository;
+  let posterDownloader: PosterDownloader;
   let handler: UpdateCourseMetadataHandler;
 
   beforeEach(() => {
@@ -116,7 +132,18 @@ describe('UpdateCourseMetadataHandler', () => {
     instructorRepo = makeInstructorRepo();
     studioRepo = makeStudioRepo();
     tagRepo = makeTagRepo();
-    handler = new UpdateCourseMetadataHandler(courseRepo, instructorRepo, studioRepo, tagRepo);
+    // Default: the download "succeeds" and stores under a fixed path — tests
+    // that don't touch posterUrl never call this; the ones that do assert on
+    // the resulting signed URL, not the raw one (#496).
+    posterDownloader = makePosterDownloader('/derived/lib-1/posters/course-1.jpg');
+    handler = new UpdateCourseMetadataHandler(
+      courseRepo,
+      instructorRepo,
+      studioRepo,
+      tagRepo,
+      new PosterSyncService(posterDownloader),
+      new CoursePosterTokenSigner(makeFakeAppConfig()),
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -181,7 +208,11 @@ describe('UpdateCourseMetadataHandler', () => {
   // New scalar fields
   // ---------------------------------------------------------------------------
 
-  it('sets posterUrl when provided', async () => {
+  // #496: CourseDto.posterUrl is never the raw third-party URL passed in —
+  // it is our own signed /courses/:id/poster URL once a download succeeds,
+  // and null when no poster is stored (download never attempted or failed).
+
+  it('downloads the poster and returns our own signed URL, not the raw one', async () => {
     const course = makeCourse();
     vi.mocked(courseRepo.findById).mockResolvedValue(course);
     vi.mocked(courseRepo.save).mockResolvedValue(undefined);
@@ -192,12 +223,41 @@ describe('UpdateCourseMetadataHandler', () => {
       }),
     );
 
-    expect(result.posterUrl).toBe('https://example.com/poster.jpg');
+    expect(posterDownloader.download).toHaveBeenCalledWith({
+      courseId: 'course-1',
+      libraryId: 'lib-1',
+      url: 'https://example.com/poster.jpg',
+    });
+    expect(result.posterUrl).toMatch(/^\/api\/v1\/courses\/course-1\/poster\?token=/);
   });
 
-  it('clears posterUrl when null is passed', async () => {
+  it('returns null posterUrl when the download fails', async () => {
+    posterDownloader = makePosterDownloader(undefined);
+    handler = new UpdateCourseMetadataHandler(
+      courseRepo,
+      instructorRepo,
+      studioRepo,
+      tagRepo,
+      new PosterSyncService(posterDownloader),
+      new CoursePosterTokenSigner(makeFakeAppConfig()),
+    );
+    const course = makeCourse();
+    vi.mocked(courseRepo.findById).mockResolvedValue(course);
+    vi.mocked(courseRepo.save).mockResolvedValue(undefined);
+
+    const result = await handler.execute(
+      new UpdateCourseMetadataCommand('course-1', adminActor, {
+        posterUrl: 'https://example.com/poster.jpg',
+      }),
+    );
+
+    expect(result.posterUrl).toBeNull();
+  });
+
+  it('clears posterUrl (and the stored poster) when null is passed', async () => {
     const course = makeCourse();
     course.setPosterUrl('https://example.com/poster.jpg');
+    course.setPosterStoragePath('/derived/lib-1/posters/course-1.jpg');
     vi.mocked(courseRepo.findById).mockResolvedValue(course);
     vi.mocked(courseRepo.save).mockResolvedValue(undefined);
 
@@ -206,6 +266,8 @@ describe('UpdateCourseMetadataHandler', () => {
     );
 
     expect(result.posterUrl).toBeNull();
+    expect(course.posterStoragePath).toBeUndefined();
+    expect(posterDownloader.download).not.toHaveBeenCalled();
   });
 
   it('sets level when provided', async () => {
@@ -498,7 +560,7 @@ describe('UpdateCourseMetadataHandler', () => {
     );
 
     expect(result.title).toBe('Mixed Patch');
-    expect(result.posterUrl).toBe('https://example.com/p.jpg');
+    expect(result.posterUrl).toMatch(/^\/api\/v1\/courses\/course-1\/poster\?token=/);
     expect(result.tags).toHaveLength(1);
     // Only one save call — the patch is atomic.
     expect(courseRepo.save).toHaveBeenCalledOnce();

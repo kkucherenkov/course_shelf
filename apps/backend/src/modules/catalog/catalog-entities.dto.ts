@@ -10,6 +10,7 @@
  */
 import { toCourseDto } from './courses.dto';
 
+import type { PosterTokenSigner } from './courses.dto';
 import type { Instructor } from './domain/instructor/instructor';
 import type { Studio } from './domain/studio/studio';
 import type { Tag } from './domain/tag/tag';
@@ -98,10 +99,11 @@ export function toInstructorDetailDto(
   instructor: Instructor,
   coursesTotal: number,
   courses: Course[],
+  signPosterToken: PosterTokenSigner,
 ): InstructorDetailDto {
   return {
     instructor: toInstructorDto(instructor, coursesTotal),
-    courses: courses.map((c) => toCourseDto(c)),
+    courses: courses.map((c) => toCourseDto(c, signPosterToken)),
     coursesTotal,
   };
 }
@@ -150,10 +152,11 @@ export function toStudioDetailDto(
   studio: Studio,
   coursesTotal: number,
   courses: Course[],
+  signPosterToken: PosterTokenSigner,
 ): StudioDetailDto {
   return {
     studio: toStudioDto(studio, coursesTotal),
-    courses: courses.map((c) => toCourseDto(c)),
+    courses: courses.map((c) => toCourseDto(c, signPosterToken)),
     coursesTotal,
   };
 }
@@ -199,10 +202,15 @@ export function toTagListDto(
 }
 
 /** Map a Tag aggregate + paginated courses to TagDetailDto. */
-export function toTagDetailDto(tag: Tag, coursesTotal: number, courses: Course[]): TagDetailDto {
+export function toTagDetailDto(
+  tag: Tag,
+  coursesTotal: number,
+  courses: Course[],
+  signPosterToken: PosterTokenSigner,
+): TagDetailDto {
   return {
     tag: toTagDto(tag, coursesTotal),
-    courses: courses.map((c) => toCourseDto(c)),
+    courses: courses.map((c) => toCourseDto(c, signPosterToken)),
     coursesTotal,
   };
 }

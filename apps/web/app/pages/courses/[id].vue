@@ -12,6 +12,7 @@
 
   import CourseHero from '~/components/course-detail/CourseHero.vue';
   import CourseActions from '~/components/course-detail/CourseActions.vue';
+  import CourseDescription from '~/components/course-detail/CourseDescription.vue';
   import CourseSectionsList from '~/components/course-detail/CourseSectionsList.vue';
   import CourseMaterialsRail from '~/components/course-detail/CourseMaterialsRail.vue';
   import CourseCompletedBanner from '~/components/course-detail/CourseCompletedBanner.vue';
@@ -330,8 +331,14 @@
 
       <!-- Two-column layout: sections + rail -->
       <div class="page-course-detail__layout">
-        <!-- Main: completed banner + section list -->
+        <!-- Main: full description + completed banner + section list -->
         <div class="page-course-detail__main">
+          <CourseDescription
+            v-if="data.course.description"
+            :heading="t('pages.courseDetail.descriptionHeading')"
+            :description="data.course.description"
+            class="page-course-detail__description"
+          />
           <CourseCompletedBanner
             v-if="courseState === 'completed'"
             :label="completedBannerLabel"
@@ -405,6 +412,10 @@
 
     &__actions {
       // Stays below hero, above section list
+    }
+
+    &__description {
+      // First item in the main column — the full text the hero only leads into
     }
 
     &__admin-actions {

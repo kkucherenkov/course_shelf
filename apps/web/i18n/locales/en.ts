@@ -167,6 +167,7 @@ export default {
       lessons: '{n} lesson | {n} lessons',
       durationValue: '{h}h {m}m',
       progress: 'Progress',
+      descriptionHeading: 'About this course',
       ctaStart: 'Start',
       ctaRewatch: 'Rewatch from start',
       ctaResume: 'Resume — Section {section} · L{lesson}',

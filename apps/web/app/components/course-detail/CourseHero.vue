@@ -3,6 +3,7 @@
   import { AppProgressLinear, COVER } from '@app/ui';
   import type { CourseOutlineSummary } from '@app/api-client-ts';
   import type { CourseAccent } from '@app/ui';
+  import { descriptionLead } from '~/utils/description-lead';
 
   const props = defineProps<{
     course: CourseOutlineSummary;
@@ -17,6 +18,10 @@
 
   // Cover background reuses the single source of truth from @app/ui.
   const coverStyle = computed(() => ({ background: COVER[props.accent] }));
+
+  // The card only ever shows the lead — the full description (bullet lists
+  // and all) lives below the fold in CourseDescription. See description-lead.ts.
+  const descriptionLeadText = computed(() => descriptionLead(props.course.description ?? ''));
 </script>
 
 <template>
@@ -44,8 +49,8 @@
         />
         <span class="course-hero__progress-text">{{ course.progress.percent }}%</span>
       </div>
-      <p v-if="course.description" class="course-hero__description">
-        {{ course.description }}
+      <p v-if="descriptionLeadText" class="course-hero__description">
+        {{ descriptionLeadText }}
       </p>
     </div>
   </div>

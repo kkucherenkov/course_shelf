@@ -69,6 +69,7 @@ function makeLessonRepo(durations: Record<string, number> = {}): LessonRepositor
       }
       return Promise.resolve(map);
     }),
+    existsByIds: vi.fn().mockResolvedValue(new Set()),
   };
 }
 

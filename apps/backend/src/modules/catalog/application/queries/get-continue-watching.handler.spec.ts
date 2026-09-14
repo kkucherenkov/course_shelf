@@ -15,6 +15,7 @@ import { GetContinueWatchingQuery } from './get-continue-watching.query';
 import { GetContinueWatchingHandler } from './get-continue-watching.handler';
 
 import type { CourseRepository } from '../../domain/course/course.repository';
+import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
 
@@ -83,18 +84,36 @@ function makeAuthz(allow: boolean): AuthorizationService {
   };
 }
 
+/** Defaults to "every id exists" — tests that care about #497 override this. */
+function makeLessonRepo(existingIds?: string[]): LessonRepository {
+  return {
+    save: vi.fn(),
+    findById: vi.fn(),
+    findByCourse: vi.fn(),
+    findBySection: vi.fn(),
+    parkPositionsForResync: vi.fn(),
+    removeMany: vi.fn(),
+    getLessonStatsByCourseIds: vi.fn(),
+    existsByIds: vi
+      .fn()
+      .mockImplementation((ids: readonly string[]) => Promise.resolve(new Set(existingIds ?? ids))),
+  };
+}
+
 function makeHandler(opts: {
   rows?: CourseProgressReadModel[];
   courses?: Course[];
   allow?: boolean;
+  existingLessonIds?: string[];
 }) {
   const rows = opts.rows ?? [];
   const courses = opts.courses ?? [];
   const progressRepo = makeProgressRepo(rows);
   const courseRepo = makeCourseRepo(courses);
+  const lessonRepo = makeLessonRepo(opts.existingLessonIds);
   const authz = makeAuthz(opts.allow ?? true);
-  const handler = new GetContinueWatchingHandler(progressRepo, courseRepo, authz);
-  return { handler, progressRepo, courseRepo, authz };
+  const handler = new GetContinueWatchingHandler(progressRepo, courseRepo, lessonRepo, authz);
+  return { handler, progressRepo, courseRepo, lessonRepo, authz };
 }
 
 // ---------------------------------------------------------------------------
@@ -156,11 +175,59 @@ describe('GetContinueWatchingHandler', () => {
         invalidate: vi.fn(),
         listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
       };
-      const handler = new GetContinueWatchingHandler(progressRepo, courseRepo, authz);
+      const lessonRepo = makeLessonRepo();
+      const handler = new GetContinueWatchingHandler(progressRepo, courseRepo, lessonRepo, authz);
       const result = await handler.execute(new GetContinueWatchingQuery(USER, 10));
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0]?.courseId).toBe('course-1');
+    });
+  });
+
+  describe('lastSeenLessonId resolution (#497)', () => {
+    it('omits an item whose lastSeenLessonId no longer exists', async () => {
+      const rows = [
+        CourseProgressReadModel.create({
+          id: 'cprm-course-1',
+          userId: USER.id,
+          courseId: 'course-1',
+          lessonsCompleted: 2,
+          lessonsTotal: 5,
+          percent: 40,
+          lastSeenAt: NOW,
+          lastSeenLessonId: 'lesson-deleted',
+        }),
+        makeProgressRow('course-2', EARLIER), // lastSeenLessonId: 'lesson-1', kept
+      ];
+      const courses = [makeCourse('course-1'), makeCourse('course-2')];
+      // Only 'lesson-1' still exists — 'lesson-deleted' does not.
+      const { handler } = makeHandler({
+        rows,
+        courses,
+        allow: true,
+        existingLessonIds: ['lesson-1'],
+      });
+
+      const result = await handler.execute(new GetContinueWatchingQuery(ADMIN, 10));
+
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]?.courseId).toBe('course-2');
+    });
+
+    it('keeps an item whose lastSeenLessonId still exists', async () => {
+      const rows = [makeProgressRow('course-1', NOW)];
+      const courses = [makeCourse('course-1')];
+      const { handler } = makeHandler({
+        rows,
+        courses,
+        allow: true,
+        existingLessonIds: ['lesson-1'],
+      });
+
+      const result = await handler.execute(new GetContinueWatchingQuery(ADMIN, 10));
+
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]?.lastSeenLessonId).toBe('lesson-1');
     });
   });
 

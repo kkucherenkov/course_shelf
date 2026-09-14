@@ -13,6 +13,8 @@
  * P2002 when a unique constraint is violated. We catch it here and rethrow as
  * LibraryAlreadyExistsError so the application layer stays free of Prisma types.
  */
+import { unlink } from 'node:fs/promises';
+
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
@@ -174,17 +176,32 @@ export class PrismaLibraryRepository implements LibraryRepository {
    *   3. lessonProgress.deleteMany  where lessonId in lessonIds
    *   4. bookmark.deleteMany        where lessonId in lessonIds
    *   5. note.deleteMany            where lessonId in lessonIds
-   *   6. courseProgressReadModel.deleteMany  where courseId in courseIds
-   *   7. accessGrant.deleteMany     where libraryId=id OR courseId in courseIds
-   *   8. scan.deleteMany            where libraryId=id
+   *   6. transcript.deleteMany      where lessonId in lessonIds
+   *      (TranscriptCue cascades via FK; derivedPath files unlinked
+   *      best-effort after the transaction commits — see below)
+   *   7. courseProgressReadModel.deleteMany  where courseId in courseIds
+   *   8. accessGrant.deleteMany     where libraryId=id OR courseId in courseIds
+   *   9. scan.deleteMany            where libraryId=id
    *      (ScanErrorRecord + DiscoveredFile cascade via FK)
-   *   9. course.deleteMany          where libraryId=id
+   *  10. course.deleteMany          where libraryId=id
    *      (Section / Lesson / Material / Subtitle cascade via FK)
-   *  10. library.delete             where id=id  → P2025 if missing → return false
+   *  11. library.delete             where id=id  → P2025 if missing → return false
+   *
+   * Step 6 exists because #502: `Transcript`/`TranscriptCue` carry no foreign
+   * key to `Lesson` (docs/architecture.md:491 — saving a lesson recreates its
+   * subtitle rows, so anything cascading from either would be erased by the
+   * next ordinary scan). Nothing deletes them for us; wiping a library by hand
+   * before this fix left 1761 orphan transcripts and 216442 orphan cues behind,
+   * surfacing as E27 search hits for lessons that no longer exist.
    *
    * Returns true on success, false when the library was not found.
    */
   async removeWithCascade(id: string): Promise<boolean> {
+    // Filled in during the transaction (step 6), unlinked best-effort after
+    // it commits — same DB-first, unlink-after order as
+    // TranscriptRepository.deleteForLesson.
+    let derivedPaths: string[] = [];
+
     try {
       await this.prisma.$transaction(async (tx) => {
         // Step 1 — collect course ids.
@@ -209,28 +226,51 @@ export class PrismaLibraryRepository implements LibraryRepository {
             await tx.bookmark.deleteMany({ where: { lessonId: { in: lessonIds } } });
             // Step 5
             await tx.note.deleteMany({ where: { lessonId: { in: lessonIds } } });
+
+            // Step 6 — transcripts (+cues, cascading via FK). No FK to Lesson
+            // exists, so this is the only thing that ever deletes them.
+            const transcriptRows = await tx.transcript.findMany({
+              where: { lessonId: { in: lessonIds } },
+              select: { derivedPath: true },
+            });
+            derivedPaths = transcriptRows
+              .map((t) => t.derivedPath)
+              .filter((p): p is string => p !== null);
+            await tx.transcript.deleteMany({ where: { lessonId: { in: lessonIds } } });
           }
 
-          // Step 6
+          // Step 7
           await tx.courseProgressReadModel.deleteMany({ where: { courseId: { in: courseIds } } });
         }
 
-        // Step 7 — access grants targeting the library itself, or any of its courses.
+        // Step 8 — access grants targeting the library itself, or any of its courses.
         const grantWhere: Prisma.AccessGrantWhereInput =
           courseIds.length > 0
             ? { OR: [{ libraryId: id }, { courseId: { in: courseIds } }] }
             : { libraryId: id };
         await tx.accessGrant.deleteMany({ where: grantWhere });
 
-        // Step 8 — scans (ScanErrorRecord + DiscoveredFile cascade automatically).
+        // Step 9 — scans (ScanErrorRecord + DiscoveredFile cascade automatically).
         await tx.scan.deleteMany({ where: { libraryId: id } });
 
-        // Step 9 — courses (Section / Lesson / Material / Subtitle cascade automatically).
+        // Step 10 — courses (Section / Lesson / Material / Subtitle cascade automatically).
         await tx.course.deleteMany({ where: { libraryId: id } });
 
-        // Step 10 — the library itself; throws P2025 if already gone.
+        // Step 11 — the library itself; throws P2025 if already gone.
         await tx.library.delete({ where: { id } });
       });
+
+      // Best-effort: the DB rows are already gone, which is the source of
+      // truth the rest of the app reads. A file left behind here is a disk
+      // leak, not a correctness bug.
+      await Promise.all(
+        derivedPaths.map((p) =>
+          unlink(p).catch(() => {
+            // Best-effort: the file may already be gone, or the derived volume
+            // may be temporarily unavailable. The DB rows are already deleted.
+          }),
+        ),
+      );
 
       return true;
     } catch (error) {

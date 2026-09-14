@@ -6,6 +6,13 @@
  * walk() behaviour:
  *   - Uses fs.opendir() recursively to yield every entry under rootPath.
  *   - Skips dotfiles (basename starts with '.') at every level.
+ *   - Does not descend into IGNORED_DIRECTORY_NAMES (#506): these can never
+ *     hold lesson content, only the dependency tree of sample code a course
+ *     folder ships alongside its videos. A single course folder with its own
+ *     `node_modules` turned a 68-course library scan into 9201 spurious
+ *     `unsupported-extension` errors before this existed — filtering the
+ *     resulting DiscoveredFile rows afterwards would still pay the full
+ *     directory-read cost. Skipping the yield AND the recursion avoids both.
  *   - On stat/read error for a single entry, yields a special error entry
  *     with isDirectory=false, size=0, and stores the error details in the
  *     entry's `error` field so the caller can record a ScanError. The walk
@@ -18,6 +25,20 @@ import { opendir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { FsAdapter, FsEntry } from '../domain/scan/fs-adapter';
+
+/**
+ * Directory names the walk never descends into: package-manager dependency
+ * trees and their close relatives. Course folders legitimately ship slides,
+ * archives and sample source code — this list targets only the generated
+ * trees that ship alongside that source, never hand-authored course content.
+ * Data, not a condition buried in the loop — extending it is a one-line diff.
+ */
+const IGNORED_DIRECTORY_NAMES: ReadonlySet<string> = new Set([
+  'node_modules',
+  '__pycache__',
+  'vendor',
+  'bower_components',
+]);
 
 @Injectable()
 export class NodeFsAdapter implements FsAdapter {
@@ -46,6 +67,9 @@ export class NodeFsAdapter implements FsAdapter {
       const fullPath = path.join(dirPath, entry.name);
 
       if (entry.isDirectory()) {
+        // Never descend into a dependency/build cache — no yield, no recursion.
+        if (IGNORED_DIRECTORY_NAMES.has(entry.name)) continue;
+
         // Yield the directory entry itself, then recurse.
         yield {
           path: fullPath,

@@ -243,6 +243,9 @@ function makeLessonRepo(): LessonRepository & { store: Map<string, Lesson> } {
       async (courseIds: string[]) =>
         new Map(courseIds.map((id) => [id, { lessonCount: 0, totalDurationSeconds: 0 }])),
     ),
+    // Mechanical stub for LessonRepository's #497 addition — this fake's
+    // callers (run-scan.handler.ts) never call it.
+    existsByIds: vi.fn().mockResolvedValue(new Set()),
   };
 }
 

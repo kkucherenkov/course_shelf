@@ -275,8 +275,5 @@ them would quietly reopen a milestone that is finished.
 - [x] [E32-F01-S02](./tasks/E32-F01-S02.md) `A` — Rescan a single course · ⇐ E32-F01-S01
 - [x] [E32-F01-S03](./tasks/E32-F01-S03.md) `A` — A course rescan re-imports the course · ⇐ E32-F01-S02
 - [x] [E32-F01-S04](./tasks/E32-F01-S04.md) `A` — Two videos may share a filename in different section folders · ⇐ E32-F01-S03
-<<<<<<< HEAD
 - [x] [E32-F01-S05](./tasks/E32-F01-S05.md) `A` — A course title with no Latin letters must not delete the course · ⇐ E32-F01-S04
-=======
 - [x] [E32-F02-S01](./tasks/E32-F02-S01.md) `A` — Transcribe a single course · ⇐ E32-F01-S02
->>>>>>> 0121c852 (feat(backend): transcribe one course instead of the whole library)

@@ -882,6 +882,15 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               parsed: ParsedLessonFileName;
             }[] = [];
 
+            // Counts lessons whose filename gave the parser no ordinal at all
+            // (tuxedo 145/129/137 investigation, #499/#498/#503): their position
+            // falls back to lexicographic videoPath order in
+            // assignLessonPositions(), which is indistinguishable from a
+            // correctly-parsed order unless something says so. One ScanError per
+            // COURSE below, not per file — tuxedo 128/#506 is the reason this
+            // scan already writes far too many per-file errors.
+            let ordinalMissingCount = 0;
+
             for (const entry of discoveredLessons) {
               const videoBasename = path.basename(entry.videoPath);
               const relFromCourse = path.relative(courseFolder, entry.videoPath);
@@ -908,7 +917,24 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
                 continue;
               }
 
+              if (parsed.ordinal === undefined) ordinalMissingCount++;
               resolved.push({ entry, sectionId, lessonTitle: parsed.label, parsed });
+            }
+
+            if (ordinalMissingCount > 0) {
+              // Advisory, not a failure: the course imported fine, its lesson
+              // order is a best-effort guess for `ordinalMissingCount` of
+              // `resolved.length` lessons. A distinct code (rather than reusing
+              // e.g. 'lesson-persist-failed') keeps it queryable apart from
+              // actual failures — nothing here failed.
+              scan.recordError({
+                path: path.relative(rootPath, courseFolder),
+                message:
+                  `${String(ordinalMissingCount)} of ${String(resolved.length)} lesson(s) had ` +
+                  `no parseable ordinal in their filename; their order falls back to ` +
+                  `file-path order instead of the filename's own numbering.`,
+                code: 'course-order-unreliable',
+              });
             }
 
             const positionByVideoPath = new Map<string, number>();

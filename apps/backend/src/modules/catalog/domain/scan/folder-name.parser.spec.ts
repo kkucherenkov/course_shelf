@@ -138,6 +138,16 @@ describe('parseFolderName', () => {
     expect(result.ordinal).toBeUndefined();
     expect(result.label).toBe('01a');
   });
+
+  // -------------------------------------------------------------------------
+  // Marker-introduced ordinal (#499) — same tier as parseLessonFileName's.
+  // -------------------------------------------------------------------------
+
+  it('parses a "#"-marked ordinal mid-title (folder form)', () => {
+    const result = parseFolderName('Лекция #9. Этология');
+    expect(result.ordinal).toBe(9);
+    expect(result.label).toBe('Лекция #9. Этология');
+  });
 });
 
 describe('parseLessonFileName', () => {
@@ -292,5 +302,62 @@ describe('parseLessonFileName', () => {
     const result = parseLessonFileName('lesson23.pdf');
     expect(result.ordinal).toBe(23);
     expect(result.unsupportedExtension).toBe(true);
+  });
+
+  // -------------------------------------------------------------------------
+  // Marker-introduced ordinal (#499) — real filenames from the maintainer's
+  // library. Every one of tiers 1–4 missed these: the `#` sits mid-string,
+  // not at the start or end of the basename.
+  // -------------------------------------------------------------------------
+
+  it('parses "Лекция #9." marker mid-title', () => {
+    const result = parseLessonFileName(
+      'Биология поведения человека Лекция #9. Этология [Роберт Сапольски, 2010. Стэнфорд].mp4',
+    );
+    expect(result.ordinal).toBe(9);
+    expect(result.label).toBe(
+      'Биология поведения человека Лекция #9. Этология [Роберт Сапольски, 2010. Стэнфорд]',
+    );
+    expect(result.unsupportedExtension).toBeUndefined();
+  });
+
+  it('parses "Лекция #1." marker mid-title, with a full stop before the marker word', () => {
+    const result = parseLessonFileName(
+      'Биология поведения человека. Лекция #1. Введение [Роберт Сапольски, 2010. Стэнфорд].mp4',
+    );
+    expect(result.ordinal).toBe(1);
+  });
+
+  it('parses "№" as the marker as well as "#"', () => {
+    const result = parseLessonFileName('Lecture №12 - Recap.mp4');
+    expect(result.ordinal).toBe(12);
+  });
+
+  // -------------------------------------------------------------------------
+  // Calendar-date basename (#498) — PREFIX_RE used to read the year as the
+  // ordinal and split off "MM-DD" as the label.
+  // -------------------------------------------------------------------------
+
+  it('keeps a calendar-date basename intact, with no ordinal', () => {
+    const result = parseLessonFileName('2022-11-12.mp4');
+    expect(result.ordinal).toBeUndefined();
+    expect(result.label).toBe('2022-11-12');
+  });
+
+  it('two calendar-date session recordings keep distinct, intact labels', () => {
+    const a = parseLessonFileName('2022-11-12.mp4');
+    const b = parseLessonFileName('2022-11-13.mp4');
+    expect(a.label).toBe('2022-11-12');
+    expect(b.label).toBe('2022-11-13');
+    expect(a.ordinal).toBeUndefined();
+    expect(b.ordinal).toBeUndefined();
+  });
+
+  it('a genuine numeric prefix still wins when the basename is not a calendar date', () => {
+    // Regression guard: CALENDAR_DATE_RE must not swallow "2022 - Title" or
+    // similar four-digit-prefixed titles that are not dates.
+    const result = parseLessonFileName('2022 - Title.mp4');
+    expect(result.ordinal).toBe(2022);
+    expect(result.label).toBe('Title');
   });
 });

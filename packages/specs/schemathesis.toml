@@ -361,3 +361,53 @@ parameters = { "path.slug" = "seed-studio-analytical-engine" }
 [[operations]]
 include-name = "GET /api/v1/catalog/tags/{slug}"
 parameters = { "path.slug" = "seed-tag-fundamentals" }
+
+# ---------------------------------------------------------------------------
+# Slug-bearing write operations: generation phases off, everything else armed
+# ---------------------------------------------------------------------------
+#
+# `EntitySlug` and `CourseSlug` are `^[\p{Ll}\p{Lo}\p{Lm}\p{N}]…$` — Unicode
+# property escapes, so a Cyrillic or CJK course title keeps its own script in
+# the slug instead of being transliterated or deleted (a Latin-free title used
+# to collapse to `untitled` and take the whole course with it).
+#
+# Schemathesis generates values with Hypothesis over Python's `re`, which does
+# not implement `\p{...}`. It reports this honestly — "the pattern is valid;
+# values matching it are what cannot be built" — and counts it as a Schema
+# Error, which fails the run. An `example` on the schema does not help (both
+# already carry one), and neither does a `parameters` override: the strategy is
+# built before overrides are applied. Verified all three locally against
+# schemathesis 4.25.2.
+#
+# What IS enough: disable only the two phases that must invent a slug. The
+# operation stays SELECTED (76/76, not 75/76 as `enabled = false` would give),
+# the Examples and Stateful phases still exercise it, and every check —
+# `not_a_server_error` included — stays armed on what they send.
+#
+# Known cost: no generated or negative data reaches these four operations, so a
+# defect only a fuzzer would find is now invisible on them. That is the price of
+# keeping the published contract honest about what a slug is; loosening the
+# pattern so the fuzzer could generate values would make every generated client
+# and every reader of the docs believe `FOO BAR` is a valid slug.
+#
+# Revisit when Schemathesis supports Unicode property escapes.
+
+[[operations]]
+include-name = "PATCH /api/v1/courses/{id}"
+phases.coverage.enabled = false
+phases.fuzzing.enabled = false
+
+[[operations]]
+include-name = "POST /api/v1/admin/instructors"
+phases.coverage.enabled = false
+phases.fuzzing.enabled = false
+
+[[operations]]
+include-name = "POST /api/v1/admin/studios"
+phases.coverage.enabled = false
+phases.fuzzing.enabled = false
+
+[[operations]]
+include-name = "POST /api/v1/admin/tags"
+phases.coverage.enabled = false
+phases.fuzzing.enabled = false

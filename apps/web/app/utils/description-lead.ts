@@ -16,8 +16,21 @@
  */
 export const DESCRIPTION_LEAD_MAX_CHARS = 220;
 
+/**
+ * The cap counts what a reader calls a character, not what `String.length`
+ * calls one. Scraped promo copy carries emoji, flags and combining marks:
+ * `String.prototype.slice` cuts UTF-16 code units and can leave half a
+ * surrogate pair (rendered as `�`), and spreading into an array fixes only
+ * that much — a flag (`🇷🇺`, two regional indicators) or a ZWJ sequence
+ * (`👩‍💻`) still splits apart. Grapheme segmentation is the only cut that
+ * matches the cap's intent. Constructed once: building a segmenter costs
+ * more than running one.
+ */
+const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+
 export function descriptionLead(description: string): string {
   const firstLine = (description.trim().split(/\r?\n/)[0] ?? '').trim();
-  if (firstLine.length <= DESCRIPTION_LEAD_MAX_CHARS) return firstLine;
-  return `${firstLine.slice(0, DESCRIPTION_LEAD_MAX_CHARS).trimEnd()}…`;
+  const chars = Array.from(graphemes.segment(firstLine), (s) => s.segment);
+  if (chars.length <= DESCRIPTION_LEAD_MAX_CHARS) return firstLine;
+  return `${chars.slice(0, DESCRIPTION_LEAD_MAX_CHARS).join('').trimEnd()}…`;
 }

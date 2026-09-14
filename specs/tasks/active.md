@@ -14,11 +14,12 @@
 - Sub-steps:
   - [x] document `transcription-*` events + `scopeCourseId`/`scopeCourseName`
         in `centrifugo.yaml`; `spec:validate && spec:bundle && spec:codegen`
-  - [ ] `scanLifecycle` store ignores kinds it does not own (runtime guard,
+  - [x] `scanLifecycle` store ignores kinds it does not own (runtime guard,
         not compile-time narrowing); audit other channel subscribers
-  - [ ] `useTranscriptionProgress` polls every 2s while running and retries
+  - [x] `useTranscriptionProgress` polls every 2s while running and retries
         on a failed fetch, mirroring `useLatestScan`
-  - [ ] tests for both fixes; gates; PR
+  - [x] tests for both fixes; gates
+  - [ ] PR
 - Status: in-progress
 - Blockers: —
 

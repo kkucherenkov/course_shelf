@@ -24,7 +24,6 @@ import { Centrifuge } from 'centrifuge';
 import { issueRealtimeToken, client } from '@app/api-client-ts';
 import { useAuthStore } from '~/stores/auth';
 import { useScanLifecycleStore } from '~/stores/scanLifecycle';
-import type { ScanLifecycleEvent } from '~/stores/scanLifecycle';
 
 type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error';
 
@@ -167,7 +166,10 @@ export function useScanLifecycle(): { status: Ref<ConnectionStatus> } {
     if (!auth.isAuthenticated || !auth.user?.id) return;
 
     unsubscribe = subscribeToScansChannel(auth.user.id, (data) => {
-      useScanLifecycleStore().applyEvent(data as ScanLifecycleEvent);
+      // Every kind on this channel is dispatched here — applyEvent is the
+      // one that decides whether it owns this `kind` (e.g. it ignores
+      // `transcription-*`, handled instead by useTranscriptionProgress).
+      useScanLifecycleStore().applyEvent(data);
     });
   });
 

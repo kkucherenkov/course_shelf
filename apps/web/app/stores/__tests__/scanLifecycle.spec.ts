@@ -240,6 +240,49 @@ describe('useScanLifecycleStore', () => {
     expect(store.active[1]?.scanId).toBe('scan-older');
   });
 
+  // ── foreign kinds (same channel, different job) ───────────────────────────
+
+  it('ignores a transcription-* event instead of rendering it as a finished scan', () => {
+    const store = useScanLifecycleStore();
+
+    store.applyEvent({
+      kind: 'started',
+      scanId: 'scan-1',
+      libraryId: 'lib-1',
+      libraryName: 'CS Library',
+      at: '2026-04-28T10:00:00.000Z',
+    });
+
+    // A transcription-finished publication lands on the same
+    // scans:user:{userId} channel and must not be mistaken for scan-1's own
+    // "finished" — it carries none of the fields a finished scan needs.
+    store.applyEvent({
+      kind: 'transcription-finished',
+      transcriptionId: 'tr-1',
+      libraryId: 'lib-1',
+      libraryName: 'CS Library',
+      at: '2026-04-28T10:00:05.000Z',
+      status: 'succeeded',
+      lessonsTotal: 48,
+      lessonsSkipped: 0,
+      lessonsTranscribed: 48,
+      lessonsFailed: 0,
+    });
+
+    expect(store.active).toHaveLength(1);
+    expect(store.active[0]?.scanId).toBe('scan-1');
+    expect(store.active[0]?.finished).toBeUndefined();
+  });
+
+  it('ignores an unknown kind with no active scans and creates nothing', () => {
+    const store = useScanLifecycleStore();
+
+    store.applyEvent({ kind: 'transcription-started', transcriptionId: 'tr-1' });
+
+    expect(store.active).toHaveLength(0);
+    expect(store.hasAnyActive).toBe(false);
+  });
+
   // ── partial status ─────────────────────────────────────────────────────────
 
   it('handles partial finished status', () => {

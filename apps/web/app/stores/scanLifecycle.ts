@@ -67,6 +67,29 @@ export type ScanLifecycleEvent =
 const MAX_RECENTLY_FINISHED = 3;
 const ACTIVE_REMOVAL_DELAY_MS = 6000;
 
+/** The only kinds this store owns. Everything else on the shared
+ * `scans:user:{userId}` channel (currently `transcription-*`) is a different
+ * job type fanned out on the same channel — see `centrifugo.yaml`. */
+const SCAN_LIFECYCLE_KINDS: ReadonlySet<string> = new Set(['started', 'progress', 'finished']);
+
+/**
+ * Runtime discriminant check for a value straight off the wire. The `kind`
+ * union `ScanLifecycleEvent` declares is not the whole contract — the
+ * channel also carries `transcription-*` kinds — so TypeScript's narrowing
+ * inside `applyEvent` cannot be trusted to have ruled those out; this is
+ * where that actually happens. Takes `unknown` rather than a typed event:
+ * the whole point is that nothing has verified the shape yet.
+ */
+function isScanLifecycleEvent(value: unknown): value is ScanLifecycleEvent {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'kind' in value &&
+    typeof value.kind === 'string' &&
+    SCAN_LIFECYCLE_KINDS.has(value.kind)
+  );
+}
+
 export const useScanLifecycleStore = defineStore('scanLifecycle', () => {
   const activeScanMap = ref<Map<string, ActiveScan>>(new Map());
   const recentlyFinished = ref<ActiveScan[]>([]);
@@ -86,7 +109,9 @@ export const useScanLifecycleStore = defineStore('scanLifecycle', () => {
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
-  function applyEvent(event: ScanLifecycleEvent): void {
+  function applyEvent(event: unknown): void {
+    if (!isScanLifecycleEvent(event)) return;
+
     if (event.kind === 'started') {
       activeScanMap.value = new Map(activeScanMap.value).set(event.scanId, {
         scanId: event.scanId,
@@ -127,7 +152,9 @@ export const useScanLifecycleStore = defineStore('scanLifecycle', () => {
       return;
     }
 
-    // event.kind === 'finished' at this point (TypeScript narrows the union).
+    // event.kind === 'finished' at this point — the isScanLifecycleEvent
+    // guard above already ruled out every other kind at runtime, so this
+    // narrowing is actually true, not just typechecker-true.
     const existing = activeScanMap.value.get(event.scanId);
     const updated: ActiveScan = {
       ...(existing ?? {

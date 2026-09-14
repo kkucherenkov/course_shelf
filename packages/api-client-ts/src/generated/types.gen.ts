@@ -1794,9 +1794,9 @@ export type ScanError = {
 export type ScanStatus = 'running' | 'succeeded' | 'failed' | 'cancelled';
 
 /**
- * Transcription-run lifecycle. Mirrors `ScanStatus`; `cancelled` is reachable here because a run can be stopped from the admin screen.
+ * Transcription-run lifecycle. Mirrors `ScanStatus` with one addition: `interrupted` is written by a boot-time recovery pass when the process that owned a `running` run died (a SIGKILL, a container recreate) before it could write a terminal state itself — the run's per-lesson work is not lost, and a plain re-run finishes cheaply thanks to the skip rule. `cancelled` is reachable here because a run can also be stopped from the admin screen.
  */
-export type TranscriptionStatus = 'running' | 'succeeded' | 'failed' | 'cancelled';
+export type TranscriptionStatus = 'running' | 'succeeded' | 'failed' | 'cancelled' | 'interrupted';
 
 /**
  * A non-fatal per-lesson failure. One unreadable or undecodable video costs its own lesson, never the run.

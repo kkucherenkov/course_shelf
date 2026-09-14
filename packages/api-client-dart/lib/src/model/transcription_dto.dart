@@ -39,7 +39,7 @@ abstract class TranscriptionDto implements Built<TranscriptionDto, Transcription
 
   @BuiltValueField(wireName: r'status')
   TranscriptionStatus get status;
-  // enum statusEnum {  running,  succeeded,  failed,  cancelled,  };
+  // enum statusEnum {  running,  succeeded,  failed,  cancelled,  interrupted,  };
 
   /// When true, existing generated transcripts were redone.
   @BuiltValueField(wireName: r'force')

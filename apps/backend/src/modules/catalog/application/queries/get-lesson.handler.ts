@@ -10,12 +10,12 @@
  * The returned LessonDto carries:
  *   - materials: { id, kind, label, sizeBytes } — no path field.
  *   - subtitles: { id, language, label } — no path field. Unions sidecar
- *     subtitles with a generated transcript in the instance's configured
- *     transcription language (E25-F03-S03), flagged `generated: true`. A
- *     sidecar in that same language wins — the generated entry is added only
- *     when no sidecar already covers it. The port only supports checking one
- *     language at a time, which matches this instance running one configured
- *     WHISPER_LANGUAGE — see AppConfig.transcription.
+ *     subtitles with the lesson's generated transcript, if any (E25-F03-S03),
+ *     flagged `generated: true`. The language shown is whatever the row
+ *     actually carries — an `auto`-mode run tags it with whatever whisper
+ *     detected (#501), not a config-guessed value — and a sidecar in that
+ *     same language wins: the generated entry is added only when no sidecar
+ *     already covers it.
  *   - progress: populated from CourseProgressReadModel (E10-F01-S01).
  *     Falls back to zero placeholder when no projection row exists yet.
  *
@@ -30,7 +30,6 @@ import { Inject } from '@nestjs/common';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 
 import { AUTHORIZATION_SERVICE } from '../../../../common/access/authorization.service';
-import { AppConfig } from '../../../../common/config/app-config';
 import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
 import { LESSON_REPOSITORY } from '../../domain/lesson/lesson.repository';
 import { LessonNotFoundError } from '../../domain/lesson/lesson.errors';
@@ -65,7 +64,6 @@ export class GetLessonHandler implements IQueryHandler<GetLessonQuery, LessonDto
     @Inject(COURSE_PROGRESS_READ_MODEL_REPOSITORY)
     private readonly progressRepo: CourseProgressReadModelRepository,
     @Inject(TRANSCRIPT_REPOSITORY) private readonly transcripts: TranscriptRepository,
-    private readonly appConfig: AppConfig,
   ) {}
 
   async execute(query: GetLessonQuery): Promise<LessonDto> {
@@ -110,17 +108,16 @@ export class GetLessonHandler implements IQueryHandler<GetLessonQuery, LessonDto
           }
         : LESSON_PROGRESS_PLACEHOLDER;
 
-    // 'auto' means whisper detects the language per lesson rather than the
-    // config naming one; the recorded transcript language is then `und`,
-    // mirroring Subtitle.fromFile's own default for a suffix-less sidecar.
-    const transcriptionLanguage =
-      this.appConfig.transcription.language === 'auto'
-        ? 'und'
-        : this.appConfig.transcription.language;
+    // The generated row's own language, whatever whisper actually produced —
+    // not a value guessed from AppConfig.transcription.language, which an
+    // `auto`-mode deployment can't answer per lesson (#501).
+    const generatedByLesson = await this.transcripts.findAnyGeneratedForLessons([lesson.id]);
+    const generatedRow = generatedByLesson.get(lesson.id);
     const sidecarLanguages = new Set(lesson.subtitles.map((s) => s.language.toLowerCase()));
-    const generated = sidecarLanguages.has(transcriptionLanguage.toLowerCase())
-      ? new Map<string, unknown>()
-      : await this.transcripts.findGeneratedForLessons([lesson.id], transcriptionLanguage);
+    const generatedTrack =
+      generatedRow !== undefined && !sidecarLanguages.has(generatedRow.language.toLowerCase())
+        ? generatedRow
+        : undefined;
 
     // Map to DTO — raw filesystem paths are deliberately omitted (NFR-S-01).
     return {
@@ -142,16 +139,16 @@ export class GetLessonHandler implements IQueryHandler<GetLessonQuery, LessonDto
           language: s.language,
           label: s.label,
         })),
-        ...(generated.has(lesson.id)
-          ? [
+        ...(generatedTrack === undefined
+          ? []
+          : [
               {
-                id: `generated:${lesson.id}:${transcriptionLanguage}`,
-                language: transcriptionLanguage,
-                label: languageLabel(transcriptionLanguage),
+                id: `generated:${lesson.id}:${generatedTrack.language}`,
+                language: generatedTrack.language,
+                label: languageLabel(generatedTrack.language),
                 generated: true,
               },
-            ]
-          : []),
+            ]),
       ],
       progress,
     };

@@ -140,6 +140,7 @@ function makeLibraryRepo(overrides?: Partial<LibraryRepository>): LibraryReposit
 function makeTranscriptRepo(overrides?: Partial<TranscriptRepository>): TranscriptRepository {
   return {
     findGeneratedForLessons: vi.fn().mockResolvedValue(new Map()),
+    findAnyGeneratedForLessons: vi.fn().mockResolvedValue(new Map()),
     replaceGenerated: vi.fn(),
     findExisting: vi.fn().mockResolvedValue(null),
     replaceSidecar: vi.fn(),

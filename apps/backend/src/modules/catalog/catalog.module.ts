@@ -9,6 +9,8 @@
  *   - HomeController (HTTP entry point for home-row endpoints)
  *   - CatalogScrapeAdminController (admin scrape-preview + scrapers list)
  *   - Command/query handlers (application layer)
+ *   - TranscriptionRecoveryService: OnApplicationBootstrap hook that
+ *     interrupts any `running` transcription left by a killed process (#525)
  *   - Event handlers subscribing to Learning events:
  *     - LessonCompletedHandler
  *     - LessonProgressRecordedHandler
@@ -97,6 +99,7 @@ import { MetadataLinker } from './application/scan/metadata-linker';
 import { LessonCompletedHandler } from './application/event-handlers/lesson-completed.handler';
 import { LessonProgressRecordedHandler } from './application/event-handlers/lesson-progress-recorded.handler';
 import { RebuildProjectionsService } from './application/projections/rebuild-projections.service';
+import { TranscriptionRecoveryService } from './application/recovery/transcription-recovery.service';
 import { RunIdentifyTaskHandler } from './application/commands/run-identify-task.handler';
 import { ApplyIdentifyResultHandler } from './application/commands/apply-identify-result.handler';
 import { DiscardIdentifyTaskHandler } from './application/commands/discard-identify-task.handler';
@@ -219,6 +222,7 @@ import { IDENTIFY_TASK_REPOSITORY } from './domain/identify/identify-task.reposi
     LessonCompletedHandler,
     LessonProgressRecordedHandler,
     RebuildProjectionsService,
+    TranscriptionRecoveryService,
     AdminGuard,
     { provide: EXTERNAL_ID_REPOSITORY, useClass: PrismaExternalIdRepository },
     { provide: IDENTIFY_TASK_REPOSITORY, useClass: PrismaIdentifyTaskRepository },

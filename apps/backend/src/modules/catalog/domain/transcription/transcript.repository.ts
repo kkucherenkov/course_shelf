@@ -45,6 +45,11 @@ export interface GeneratedTranscriptSignature {
   readonly sourceSize: number;
 }
 
+/** `GeneratedTranscriptSignature` plus the language the row actually landed in. */
+export interface AnyGeneratedTranscriptSignature extends GeneratedTranscriptSignature {
+  readonly language: string;
+}
+
 /** A transcript's origin, mirroring the Prisma `TranscriptOrigin` enum. */
 export type TranscriptOriginValue = 'sidecar' | 'generated';
 
@@ -86,6 +91,18 @@ export interface TranscriptRepository {
     lessonIds: readonly string[],
     language: string,
   ): Promise<Map<string, GeneratedTranscriptSignature>>;
+
+  /**
+   * Like `findGeneratedForLessons`, but not filtered to one language — for an
+   * `auto`-mode run, which language a lesson lands in is decided per file
+   * inside whisper, so the run has no single language to filter by before it
+   * starts (#501). When a lesson has more than one generated row (an
+   * explicit-language run and a later auto run both touched it), the most
+   * recently created one wins — that is the one a resumed run would reproduce.
+   */
+  findAnyGeneratedForLessons(
+    lessonIds: readonly string[],
+  ): Promise<Map<string, AnyGeneratedTranscriptSignature>>;
 
   /**
    * Replace the generated transcript for `(lessonId, language)` — delete the old

@@ -451,6 +451,9 @@ function makeTranscriptRepo(): TranscriptRepository & { store: Map<string, FakeT
       }
       return result;
     }),
+    // Not exercised by the scan walk — the transcription run is the only
+    // caller of the any-language lookup (#501).
+    findAnyGeneratedForLessons: vi.fn(async () => new Map()),
     replaceGenerated: vi.fn(
       async (input: {
         lessonId: string;

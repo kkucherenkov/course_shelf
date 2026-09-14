@@ -18,7 +18,12 @@ import type { Id } from '../../../../shared/branded-id';
 export type TranscriptionId = Id<'Transcription'>;
 
 /** Machine-readable status matching the OpenAPI TranscriptionStatus enum. */
-export type TranscriptionStatusValue = 'running' | 'succeeded' | 'failed' | 'cancelled';
+export type TranscriptionStatusValue =
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+  | 'cancelled'
+  | 'interrupted';
 
 /** A non-fatal per-lesson failure recorded during the run. */
 export interface TranscriptionErrorEntry {
@@ -35,6 +40,14 @@ export interface TranscriptionProps {
   readonly startedAt: Date;
   /** undefined while the run is going; set on terminal transition. */
   readonly finishedAt: Date | undefined;
+  /**
+   * Id of the process that started this run, stamped once at `start()` and
+   * never changed. Lets a boot-time recovery pass decide "no live owner"
+   * without a heartbeat: a `running` row whose bootId differs from the
+   * current process's bootId cannot belong to the process asking — see
+   * `AppConfig.bootId`.
+   */
+  readonly bootId: string;
   readonly lessonsTotal: number;
   readonly lessonsSkipped: number;
   readonly lessonsTranscribed: number;
@@ -52,6 +65,7 @@ const TERMINAL_STATUSES: ReadonlySet<TranscriptionStatusValue> = new Set([
   'succeeded',
   'failed',
   'cancelled',
+  'interrupted',
 ]);
 
 export class Transcription {
@@ -59,6 +73,7 @@ export class Transcription {
   readonly libraryId: string;
   readonly force: boolean;
   readonly startedAt: Date;
+  readonly bootId: string;
   private _status: TranscriptionStatusValue;
   private _finishedAt: Date | undefined;
   private readonly _lessonsTotal: number;
@@ -74,6 +89,7 @@ export class Transcription {
     this.libraryId = props.libraryId;
     this.force = props.force;
     this.startedAt = props.startedAt;
+    this.bootId = props.bootId;
     this._status = props.status;
     this._finishedAt = props.finishedAt;
     this._lessonsTotal = props.lessonsTotal;
@@ -130,6 +146,8 @@ export class Transcription {
     libraryId: string;
     force: boolean;
     lessonsTotal: number;
+    /** See `AppConfig.bootId` — identifies the process starting this run. */
+    bootId: string;
     now?: Date;
     /** Present only for `POST /courses/{id}/transcription`. */
     scope?: { courseId: string; courseName: string };
@@ -140,6 +158,7 @@ export class Transcription {
       status: 'running',
       force: props.force,
       startedAt: props.now ?? new Date(),
+      bootId: props.bootId,
       finishedAt: undefined,
       lessonsTotal: props.lessonsTotal,
       lessonsSkipped: 0,
@@ -206,6 +225,20 @@ export class Transcription {
   cancel(now?: Date): void {
     this.assertRunning();
     this._status = 'cancelled';
+    this._finishedAt = now ?? new Date();
+  }
+
+  /**
+   * Transition to interrupted — written by the boot-time recovery pass for a
+   * run whose owning process died (SIGKILL, a container recreate) before it
+   * could write a terminal state itself. Sets finishedAt. Distinct from
+   * `fail()`: nothing about the run went wrong, the process just isn't there
+   * anymore — the operator's next move is a plain re-run, which the skip rule
+   * makes cheap, not a bug hunt.
+   */
+  interrupt(now?: Date): void {
+    this.assertRunning();
+    this._status = 'interrupted';
     this._finishedAt = now ?? new Date();
   }
 }

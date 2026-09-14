@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { nanoid } from 'nanoid';
 
 export interface CentrifugoConfig {
   readonly apiUrl: string;
@@ -191,6 +192,21 @@ export class AppConfig {
    * "a syscall per request" into "a syscall at boot".
    */
   readonly transcription: TranscriptionConfig;
+
+  /**
+   * Random id generated once when this process starts — not read from the
+   * environment, but a per-process singleton is exactly what AppConfig
+   * already is, so a second provider just to hold one random string would be
+   * ceremony for its own sake.
+   *
+   * Stamped onto a Transcription run at `Transcription.start()`. A boot-time
+   * recovery pass (#525) compares it against every persisted `running` row:
+   * this process has started nothing yet, so any row whose bootId differs
+   * from this one was left running by a process that is no longer there —
+   * "no live owner" becomes a single equality check instead of a heartbeat
+   * staleness window that needs a number picked for it.
+   */
+  readonly bootId: string = nanoid();
 
   constructor(private readonly config: ConfigService) {
     this.transcription = this.buildTranscription();

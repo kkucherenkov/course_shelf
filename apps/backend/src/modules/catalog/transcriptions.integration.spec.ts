@@ -104,6 +104,9 @@ function makeTranscriptionRepo(seed: Transcription[] = []): TranscriptionReposit
     listForLibrary: vi.fn(async (libraryId: string, limit: number) =>
       [...store.values()].filter((t) => t.libraryId === libraryId).slice(0, limit),
     ),
+    // Not exercised here — the boot-recovery pass is its own service, tested
+    // in transcription-recovery.service.spec.ts.
+    findStaleRunning: vi.fn(async () => []),
   };
 }
 
@@ -128,6 +131,7 @@ async function buildApp(options: {
         provide: TRANSCRIPT_REPOSITORY,
         useValue: {
           findGeneratedForLessons: async () => new Map(),
+          findAnyGeneratedForLessons: async () => new Map(),
           replaceGenerated: async () => undefined,
         },
       },
@@ -157,6 +161,7 @@ async function buildApp(options: {
         provide: AppConfig,
         useValue: {
           derivedPath: '/derived',
+          bootId: 'boot-test',
           transcription: {
             whisperPath: 'whisper-cli',
             modelPath: options.configured === false ? '' : '/models/base.bin',
@@ -226,6 +231,7 @@ describe('Transcription routes [integration]', () => {
       libraryId: LIBRARY_ID,
       force: false,
       lessonsTotal: 0,
+      bootId: 'boot-other',
     });
     app = await buildApp({ seedRuns: [running] });
 
@@ -272,6 +278,7 @@ describe('Transcription routes [integration]', () => {
       libraryId: LIBRARY_ID,
       force: false,
       lessonsTotal: 5464,
+      bootId: 'boot-other',
     });
     app = await buildApp({ seedRuns: [running] });
 
@@ -302,6 +309,7 @@ describe('Transcription routes [integration]', () => {
       libraryId: LIBRARY_ID,
       force: false,
       lessonsTotal: 2,
+      bootId: 'boot-other',
     });
     finished.recordSkipped();
     finished.complete();
@@ -334,6 +342,7 @@ describe('Transcription routes [integration]', () => {
       libraryId: LIBRARY_ID,
       force: false,
       lessonsTotal: 5,
+      bootId: 'boot-other',
     });
     app = await buildApp({ seedRuns: [running] });
 

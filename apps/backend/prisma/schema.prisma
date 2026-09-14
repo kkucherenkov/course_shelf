@@ -423,6 +423,10 @@ enum TranscriptionStatus {
   succeeded
   failed
   cancelled
+  // Written by the boot-time recovery pass (#525): the process that owned
+  // this `running` row died (SIGKILL, a container recreate) before it could
+  // write a terminal state itself.
+  interrupted
 }
 
 model Transcription {
@@ -432,6 +436,11 @@ model Transcription {
   force              Boolean                    @default(false)
   startedAt          DateTime                   @default(now())
   finishedAt         DateTime?
+  // Id of the process that started this run (AppConfig.bootId), stamped once
+  // and never updated. Default "" covers rows written before this column
+  // existed — they predate any process's bootId and read as stale to every
+  // future boot, which is correct: nothing has owned them since.
+  bootId             String                     @default("")
   lessonsTotal       Int                        @default(0)
   lessonsSkipped     Int                        @default(0)
   lessonsTranscribed Int                        @default(0)
@@ -444,6 +453,9 @@ model Transcription {
 
   @@index([libraryId, status])
   @@index([libraryId, startedAt])
+  // Backs the boot-time recovery pass's findStaleRunning — a library-less
+  // scan for every currently-running row, across every library.
+  @@index([status])
   @@map("transcription")
 }
 

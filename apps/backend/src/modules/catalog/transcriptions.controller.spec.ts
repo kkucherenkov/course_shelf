@@ -22,6 +22,7 @@ function makeRun(): Transcription {
     libraryId: 'lib-1',
     force: false,
     lessonsTotal: 3,
+    bootId: 'boot-1',
   });
 }
 

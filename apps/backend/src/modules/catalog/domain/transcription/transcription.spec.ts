@@ -11,7 +11,13 @@ import { Transcription } from './transcription';
 const NOW = new Date('2026-08-29T12:00:00.000Z');
 
 function running(): Transcription {
-  return Transcription.start({ id: 't1', libraryId: 'lib-1', force: false, lessonsTotal: 3 });
+  return Transcription.start({
+    id: 't1',
+    libraryId: 'lib-1',
+    force: false,
+    lessonsTotal: 3,
+    bootId: 'boot-1',
+  });
 }
 
 /** Every way a run can be closed, so each terminal state is proven to lock it. */
@@ -19,6 +25,7 @@ const CLOSERS: readonly [string, (t: Transcription) => void][] = [
   ['complete', (t) => t.complete()],
   ['fail', (t) => t.fail()],
   ['cancel', (t) => t.cancel()],
+  ['interrupt', (t) => t.interrupt()],
 ];
 
 describe('Transcription aggregate', () => {
@@ -29,11 +36,13 @@ describe('Transcription aggregate', () => {
         libraryId: 'lib-1',
         force: true,
         lessonsTotal: 3,
+        bootId: 'boot-1',
         now: NOW,
       });
 
       expect(t.id).toBe('t1');
       expect(t.libraryId).toBe('lib-1');
+      expect(t.bootId).toBe('boot-1');
       expect(t.force).toBe(true);
       expect(t.status).toBe('running');
       expect(t.lessonsTotal).toBe(3);
@@ -78,6 +87,7 @@ describe('Transcription aggregate', () => {
         status: 'succeeded',
         force: false,
         startedAt: NOW,
+        bootId: 'boot-1',
         finishedAt: NOW,
         lessonsTotal: 10,
         lessonsSkipped: 8,
@@ -111,6 +121,7 @@ describe('Transcription aggregate', () => {
         libraryId: 'lib-1',
         force: false,
         lessonsTotal: 3,
+        bootId: 'boot-1',
         scope: { courseId: 'course-1', courseName: 'Pragmatic Clean Architecture' },
       });
 
@@ -143,6 +154,14 @@ describe('Transcription aggregate', () => {
       expect(t.status).toBe('cancelled');
       expect(t.finishedAt).toBeDefined();
     });
+
+    it('interrupts with a finishedAt', () => {
+      const t = running();
+      t.interrupt(NOW);
+
+      expect(t.status).toBe('interrupted');
+      expect(t.finishedAt).toEqual(NOW);
+    });
   });
 
   describe('terminal-state guard', () => {
@@ -157,6 +176,7 @@ describe('Transcription aggregate', () => {
         () => t.complete(),
         () => t.fail(),
         () => t.cancel(),
+        () => t.interrupt(),
       ];
 
       for (const mutate of mutations) {

@@ -8,8 +8,11 @@
  * Scenarios covered:
  *   1. Exact argv: model, input, threads, language, SRT output base.
  *   2. An explicit language is passed through instead of 'auto'.
- *   3. Non-zero exit → WhisperFailedError.
- *   4. Timeout (execFile kills the child) → WhisperFailedError.
+ *   3. An auto run parses the detected language from stdout/stderr (#501).
+ *   4. An explicit-language run never attempts to parse one.
+ *   5. An auto run with no detection line omits detectedLanguage.
+ *   6. Non-zero exit → WhisperFailedError.
+ *   7. Timeout (execFile kills the child) → WhisperFailedError.
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
@@ -29,11 +32,11 @@ import type { AppConfig, TranscriptionConfig } from '../../../common/config/app-
 
 type ExecFileCb = (error: Error | null, stdout: string, stderr: string) => void;
 
-function mockResolve(): void {
+function mockResolve(stdout = '', stderr = ''): void {
   vi.mocked(execFile).mockImplementation(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test helper mock
     (...args: any[]) => {
-      (args.at(-1) as ExecFileCb)(null, '', '');
+      (args.at(-1) as ExecFileCb)(null, stdout, stderr);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return {} as any;
     },
@@ -128,6 +131,46 @@ describe('LocalWhisperAdapter', () => {
     // for one run is the whole point of the per-request override.
     const args = vi.mocked(execFile).mock.calls[0]?.[1] as string[];
     expect(args.slice(args.indexOf('-l'), args.indexOf('-l') + 2)).toEqual(['-l', 'ru']);
+  });
+
+  it('parses the auto-detected language from stderr on an auto run (#501)', async () => {
+    mockResolve('', 'whisper_full_with_state: auto-detected language: ru (p = 0.996468)\n');
+    const adapter = new LocalWhisperAdapter(makeAppConfig({ language: 'auto' }));
+
+    const result = await adapter.transcribe({
+      audioAbsolutePath: '/tmp/a.wav',
+      outBaseAbsolutePath: '/out/a',
+    });
+
+    expect(result.detectedLanguage).toBe('ru');
+  });
+
+  it('does not attempt to detect a language for an explicit request', async () => {
+    // Even if the string happened to be present, an explicit request has
+    // nothing to detect — trusting the line here would be trusting whisper's
+    // opinion over the caller's explicit choice.
+    mockResolve('', 'whisper_full_with_state: auto-detected language: ru (p = 0.996468)\n');
+    const adapter = new LocalWhisperAdapter(makeAppConfig({ language: 'en' }));
+
+    const result = await adapter.transcribe({
+      audioAbsolutePath: '/tmp/a.wav',
+      outBaseAbsolutePath: '/out/a',
+      language: 'en',
+    });
+
+    expect(result.detectedLanguage).toBeUndefined();
+  });
+
+  it('omits detectedLanguage on an auto run with no detection line', async () => {
+    mockResolve('', 'whisper_full_with_state: some other log line\n');
+    const adapter = new LocalWhisperAdapter(makeAppConfig({ language: 'auto' }));
+
+    const result = await adapter.transcribe({
+      audioAbsolutePath: '/tmp/a.wav',
+      outBaseAbsolutePath: '/out/a',
+    });
+
+    expect(result.detectedLanguage).toBeUndefined();
   });
 
   it('raises WhisperFailedError when the process exits non-zero', async () => {

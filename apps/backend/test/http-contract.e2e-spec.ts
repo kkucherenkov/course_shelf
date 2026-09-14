@@ -38,6 +38,17 @@ function identifyBody(releaseDate: string): Record<string, unknown> {
   return { source: 'youtube', fragment: { title: 'Fixture', releaseDate } };
 }
 
+/** `GET /api/v1/catalog/instructors/{slug}` — the `slug` path param is an `EntitySlug`. */
+function bySlug(slug: string): string {
+  return `/api/v1/catalog/instructors/${encodeURIComponent(slug)}`;
+}
+
+/** Validation errors that point inside the request body, ignoring response-schema ones. */
+function bodyErrorPaths(res: { body: unknown }): string[] {
+  const problem = res.body as { errors?: { path?: string }[] };
+  return (problem.errors ?? []).map((e) => e.path ?? '').filter((p) => p.startsWith('/body'));
+}
+
 describe('express-openapi-validator', () => {
   it('rejects a body with an undeclared property as RFC 9457 problem+json', async () => {
     ctx = await createE2eApp();
@@ -116,6 +127,83 @@ describe('express-openapi-validator', () => {
 
     expect(res.status).toBe(404);
     expect(res.headers['content-type']).toContain('application/problem+json');
+  });
+
+  // -------------------------------------------------------------------------
+  // tuxedo 132: the slug charset is Unicode, and `\p{L}` is inert in a regex
+  // compiled without the `u` flag. A unit test on the domain regex cannot
+  // prove the VALIDATOR honours it — only a real request through the real
+  // middleware can, and getting that wrong would reject every slug in the API
+  // rather than fix the bug it was written for.
+  // -------------------------------------------------------------------------
+  describe('the Unicode slug pattern as the running validator compiles it', () => {
+    // `GET /api/v1/catalog/instructors/{slug}` types its path parameter as
+    // `EntitySlug`, so the request never reaches a handler without the
+    // validator having applied the pattern. This harness mounts no catalog
+    // controller, so a slug the validator ACCEPTS falls through to 404 — which
+    // that operation declares, unlike 405/500, so the response validator is
+    // satisfied too and the 400/404 split is exactly the pattern's verdict.
+    it.each([
+      ['Cyrillic', 'андрей-нягой'],
+      ['Han', '李伟'],
+      ['Greek', 'αλγόριθμοι'],
+      ['Japanese with a prolonged sound mark', 'コンピューター'],
+      ['Devanagari with combining vowel signs', 'कंप्यूटर'],
+      ['accented Latin', 'ólafur-arnalds'],
+      ['plain ASCII', 'andrei-neagoie'],
+    ])('accepts a %s slug', async (_label, slug) => {
+      ctx = await createE2eApp();
+
+      const res = await request(ctx.server).get(bySlug(slug));
+
+      expect(res.status).toBe(404);
+    });
+
+    it.each([
+      ['uppercase', 'Андрей-Нягой'],
+      ['a leading hyphen', '-андрей'],
+      ['a trailing hyphen', 'андрей-'],
+      ['a space', 'андрей нягой'],
+      ['an underscore', 'андрей_нягой'],
+      ['101 characters', 'а'.repeat(101)],
+    ])('still rejects a slug with %s', async (_label, slug) => {
+      ctx = await createE2eApp();
+
+      const res = await request(ctx.server).get(bySlug(slug));
+
+      expect(res.status).toBe(400);
+      expect(res.headers['content-type']).toContain('application/problem+json');
+    });
+
+    // `UpsertInstructorRequest.displayName` carries its own `[\p{L}\p{N}]`
+    // search — the rule that made a Cyrillic instructor unrecordable while it
+    // was `[A-Za-z0-9]`. This harness mounts no admin controller either, and
+    // that operation declares no 404, so the reply is a 400 about the RESPONSE
+    // whichever way the body goes. Read the error paths instead of the status:
+    // only a rejected body produces an error pointing inside `/body`.
+    it.each(['Андрей Нягой', '李伟', 'Ólafur Arnalds 2', 'Andrei Neagoie'])(
+      'accepts the display name %s',
+      async (displayName) => {
+        ctx = await createE2eApp();
+
+        const res = await request(ctx.server)
+          .post('/api/v1/admin/instructors')
+          .send({ displayName });
+
+        expect(bodyErrorPaths(res)).toEqual([]);
+      },
+    );
+
+    it('rejects a display name with no letter or digit in any script', async () => {
+      ctx = await createE2eApp();
+
+      // slugify() throws on this, so the contract must not promise to take it.
+      const res = await request(ctx.server)
+        .post('/api/v1/admin/instructors')
+        .send({ displayName: '«»' });
+
+      expect(bodyErrorPaths(res)).toContain('/body/displayName');
+    });
   });
 });
 

@@ -6450,12 +6450,17 @@ components:
 
     EntitySlug:
       type: string
-      pattern: "^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$"
+      pattern: "^[\\p{Ll}\\p{Lo}\\p{Lm}\\p{N}](?:[\\p{Ll}\\p{Lo}\\p{Lm}\\p{N}\\p{M}-]{0,98}[\\p{Ll}\\p{Lo}\\p{Lm}\\p{N}])?$"
       minLength: 1
       maxLength: 100
       description: >-
-        URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens;
-        cannot start or end with a hyphen. Shared by Instructor, Studio, and Tag aggregates.
+        URL-safe slug. 1–100 characters, lowercase Unicode letters, digits, and
+        hyphens; cannot start or end with a hyphen. Non-ASCII scripts are kept
+        as themselves rather than transliterated, so `Андрей Нягой` slugs to
+        `андрей-нягой` — an entity is only ever addressed by id, and the slug's
+        jobs are uniqueness and human recognition. Values are NFC-normalised, so
+        two encodings of the same visual name are the same slug. Shared by
+        Instructor, Studio, and Tag aggregates.
       example: andrei-neagoie
 
     ExternalIdRef:
@@ -7253,12 +7258,15 @@ components:
           minLength: 1
           maxLength: 200
           # slugify() derives the slug from this when `slug` is omitted, and an
-          # input with no ASCII alphanumeric reduces to "" and is rejected 422
-          # `entity-slug-invalid`. `pattern` is a search, not a full match, so
-          # "Ólafur Arnalds 2" passes and "«»" does not. Stated here so the
-          # contract no longer promises to accept input the domain refuses
-          # (#321).
-          pattern: "[A-Za-z0-9]"
+          # input with no letter or digit in any script reduces to "" and is
+          # rejected 422 `entity-slug-invalid`. `pattern` is a search, not a
+          # full match, so "Ólafur Arnalds 2" and "Андрей Нягой" pass while
+          # "«»" does not. Stated here so the contract no longer promises to
+          # accept input the domain refuses (#321). The class was
+          # `[A-Za-z0-9]` until slugs went Unicode, which made this the reason
+          # a Cyrillic instructor name could not be recorded at all: the
+          # validator rejected it before the domain was consulted.
+          pattern: "[\\p{L}\\p{N}]"
           description: Human-readable name displayed in the UI.
         slug:
           $ref: "#/components/schemas/EntitySlug"
@@ -7287,12 +7295,15 @@ components:
           minLength: 1
           maxLength: 200
           # slugify() derives the slug from this when `slug` is omitted, and an
-          # input with no ASCII alphanumeric reduces to "" and is rejected 422
-          # `entity-slug-invalid`. `pattern` is a search, not a full match, so
-          # "Ólafur Arnalds 2" passes and "«»" does not. Stated here so the
-          # contract no longer promises to accept input the domain refuses
-          # (#321).
-          pattern: "[A-Za-z0-9]"
+          # input with no letter or digit in any script reduces to "" and is
+          # rejected 422 `entity-slug-invalid`. `pattern` is a search, not a
+          # full match, so "Ólafur Arnalds 2" and "Андрей Нягой" pass while
+          # "«»" does not. Stated here so the contract no longer promises to
+          # accept input the domain refuses (#321). The class was
+          # `[A-Za-z0-9]` until slugs went Unicode, which made this the reason
+          # a Cyrillic instructor name could not be recorded at all: the
+          # validator rejected it before the domain was consulted.
+          pattern: "[\\p{L}\\p{N}]"
           description: Human-readable studio name.
         slug:
           $ref: "#/components/schemas/EntitySlug"
@@ -7321,12 +7332,15 @@ components:
           minLength: 1
           maxLength: 200
           # slugify() derives the slug from this when `slug` is omitted, and an
-          # input with no ASCII alphanumeric reduces to "" and is rejected 422
-          # `entity-slug-invalid`. `pattern` is a search, not a full match, so
-          # "Ólafur Arnalds 2" passes and "«»" does not. Stated here so the
-          # contract no longer promises to accept input the domain refuses
-          # (#321).
-          pattern: "[A-Za-z0-9]"
+          # input with no letter or digit in any script reduces to "" and is
+          # rejected 422 `entity-slug-invalid`. `pattern` is a search, not a
+          # full match, so "Ólafur Arnalds 2" and "Андрей Нягой" pass while
+          # "«»" does not. Stated here so the contract no longer promises to
+          # accept input the domain refuses (#321). The class was
+          # `[A-Za-z0-9]` until slugs went Unicode, which made this the reason
+          # a Cyrillic instructor name could not be recorded at all: the
+          # validator rejected it before the domain was consulted.
+          pattern: "[\\p{L}\\p{N}]"
           description: Human-readable tag name.
         slug:
           $ref: "#/components/schemas/EntitySlug"
@@ -8523,10 +8537,15 @@ components:
 
     CourseSlug:
       type: string
-      pattern: "^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$"
+      pattern: "^[\\p{Ll}\\p{Lo}\\p{Lm}\\p{N}](?:[\\p{Ll}\\p{Lo}\\p{Lm}\\p{N}\\p{M}-]{0,98}[\\p{Ll}\\p{Lo}\\p{Lm}\\p{N}])?$"
       description: >-
-        URL-safe slug. 1–100 chars, lowercase ASCII letters, digits, and hyphens;
-        cannot start or end with a hyphen. Unique within a library.
+        URL-safe slug. 1–100 characters, lowercase Unicode letters, digits, and
+        hyphens; cannot start or end with a hyphen. Unique within a library.
+        Non-ASCII scripts are kept as themselves rather than transliterated, so
+        `Графы и комбинаторика` slugs to `графы-и-комбинаторика` — a course is
+        only ever addressed by id, and the slug's jobs are uniqueness within the
+        library and human recognition. Values are NFC-normalised, so two
+        encodings of the same visual title are the same slug.
       example: pragmatic-clean-architecture
 
     DependencyStatus:
@@ -9416,7 +9435,7 @@ components:
           description: >-
             Machine-readable error key
             (e.g. `course-json-invalid`, `unreadable-file`,
-            `unsupported-extension`).
+            `unsupported-extension`, `course-slug-collision`).
       example:
         path: "02 - Patterns/05 - Repositories.mp4"
         message: "File is not readable — permission denied."

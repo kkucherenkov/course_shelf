@@ -745,6 +745,7 @@ export default {
     lessonRow: {
       loading: 'Loading lesson',
       materials: 'Materials available',
+      transcript: 'Transcript available',
       watched: '{n}% watched',
     },
     sectionHeader: {

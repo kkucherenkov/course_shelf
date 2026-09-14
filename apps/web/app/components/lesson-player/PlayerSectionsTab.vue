@@ -57,12 +57,14 @@
           <AppLessonRow
             :loading-label="t('ui.lessonRow.loading')"
             :materials-label="t('ui.lessonRow.materials')"
+            :transcript-label="t('ui.lessonRow.transcript')"
             :format-watched="formatWatched"
             :num="lesson.position"
             :title="lesson.title"
             :duration="lesson.durationSeconds"
             :state="lesson.state"
             :materials="lesson.hasMaterials"
+            :transcript="lesson.hasTranscript"
             :current="lesson.id === props.currentLessonId"
             :progress="lesson.progressPercent"
           />

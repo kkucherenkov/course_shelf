@@ -750,6 +750,7 @@ export default {
     lessonRow: {
       loading: 'Загрузка урока',
       materials: 'Есть материалы',
+      transcript: 'Есть транскрипт',
       watched: 'Просмотрено {n}%',
     },
     sectionHeader: {

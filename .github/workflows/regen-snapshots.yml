@@ -96,9 +96,18 @@ jobs:
             # throws away a 20-minute capture (exit 128). Replay onto whatever
             # arrived first — the two jobs stage disjoint paths
             # (packages/ui/test/__snapshots__ vs tests/e2e), so this cannot conflict.
+            #
+            # `--autostash` is load-bearing, not tidiness: the capture leaves the
+            # worktree dirty (the diff PNGs under `__diff_output__`, the built
+            # tokens and Storybook output are never staged), and a plain
+            # `git pull --rebase` refuses outright with "cannot pull with rebase:
+            # You have unstaged changes". That is not a lost race, so retrying it
+            # could never succeed — the 2026-09-14 run captured correct
+            # baselines, committed them, then discarded the commit three times
+            # over and reported a race it never had.
             for attempt in 1 2 3; do
-              git pull --rebase origin "$GITHUB_REF_NAME" && git push && exit 0
-              echo "push attempt $attempt lost the race — retrying"
+              git pull --rebase --autostash origin "$GITHUB_REF_NAME" && git push && exit 0
+              echo "push attempt $attempt failed — see the git error above; retrying"
               sleep 5
             done
             echo "::error::could not push regenerated baselines after 3 attempts"
@@ -175,8 +184,8 @@ jobs:
             # See the storybook job — these two race on the same branch. Disjoint
             # paths, so replaying onto the winner cannot conflict.
             for attempt in 1 2 3; do
-              git pull --rebase origin "$GITHUB_REF_NAME" && git push && exit 0
-              echo "push attempt $attempt lost the race — retrying"
+              git pull --rebase --autostash origin "$GITHUB_REF_NAME" && git push && exit 0
+              echo "push attempt $attempt failed — see the git error above; retrying"
               sleep 5
             done
             echo "::error::could not push regenerated baselines after 3 attempts"
@@ -240,8 +249,8 @@ jobs:
             # branch. They stage disjoint paths, so replaying onto whoever
             # landed first cannot conflict.
             for attempt in 1 2 3; do
-              git pull --rebase origin "$GITHUB_REF_NAME" && git push && exit 0
-              echo "push attempt $attempt lost the race — retrying"
+              git pull --rebase --autostash origin "$GITHUB_REF_NAME" && git push && exit 0
+              echo "push attempt $attempt failed — see the git error above; retrying"
               sleep 5
             done
             echo "::error::could not push regenerated goldens after 3 attempts"

@@ -63,8 +63,18 @@ const libraries = ref<LibraryListDto>({
     },
   ],
 });
+const librariesStatus = ref<'idle' | 'pending' | 'success' | 'error'>('success');
 vi.mock('~/composables/useLibraries', () => ({
-  useLibraries: () => ({ data: libraries }),
+  useLibraries: () => ({ data: libraries, status: librariesStatus }),
+}));
+
+// Default to admin so every pre-existing test below (none of which cares
+// which empty-state copy renders) keeps seeing exactly the message it did
+// before #579 — the no-access / no-courses split only matters once a test
+// deliberately sets a non-admin role.
+const authUser = ref<{ role?: string } | null>({ role: 'admin' });
+vi.mock('~/stores/auth', () => ({
+  useAuthStore: () => ({ user: authUser.value }),
 }));
 
 const instructors = ref<InstructorListDto>({ items: [], total: 0, offset: 0, limit: 100 });
@@ -91,6 +101,11 @@ vi.mock('@app/ui', () => ({
     name: 'AppEmptyState',
     props: ['icon', 'title', 'body'],
     template: '<div>{{ title }}<slot name="action" /></div>',
+  },
+  AppNoPermission: {
+    name: 'AppNoPermission',
+    props: ['icon', 'title', 'body'],
+    template: '<div class="no-permission">{{ title }}</div>',
   },
   AppSelect: {
     name: 'AppSelect',
@@ -128,6 +143,8 @@ describe('browse page filters', () => {
     instructors.value = { items: [], total: 0, offset: 0, limit: 100 };
     lastOptions = {};
     replace.mockClear();
+    librariesStatus.value = 'success';
+    authUser.value = { role: 'admin' };
   });
 
   it('renders the library, duration and sort controls', async () => {
@@ -250,6 +267,41 @@ describe('browse page filters', () => {
 
     expect(wrapper.text()).toContain('pages.browse.emptyFilteredTitle');
     expect(wrapper.find('[data-testid="browse-empty-clear"]').exists()).toBe(true);
+  });
+
+  // #579: an unfiltered empty shelf means something different depending on
+  // who's asking — the copy (and whether it's even actionable) must follow.
+  describe('empty shelf — no active filter', () => {
+    it('tells an admin with zero libraries to add one and scan it', async () => {
+      authUser.value = { role: 'admin' };
+      libraries.value = { items: [] };
+      const wrapper = await mountBrowse();
+
+      expect(wrapper.text()).toContain('pages.browse.emptyTitle');
+      expect(wrapper.find('.no-permission').exists()).toBe(false);
+    });
+
+    it("tells a member with no grants it's an access problem, not a library one", async () => {
+      authUser.value = { role: 'member' };
+      libraries.value = { items: [] };
+      const wrapper = await mountBrowse();
+
+      expect(wrapper.find('.no-permission').text()).toContain('pages.browse.emptyNoAccessTitle');
+      // The admin-only "add a library" copy must not leak to a member who
+      // cannot reach /admin at all.
+      expect(wrapper.text()).not.toContain('pages.browse.emptyTitle');
+    });
+
+    it('tells a member with a granted-but-empty library to check back, not to add a library', async () => {
+      authUser.value = { role: 'member' };
+      libraries.value = {
+        items: [{ id: 'lib-1', name: 'Backend', rootPath: '/srv/backend' }],
+      } as unknown as LibraryListDto;
+      const wrapper = await mountBrowse();
+
+      expect(wrapper.text()).toContain('pages.browse.emptyNoCoursesTitle');
+      expect(wrapper.find('.no-permission').exists()).toBe(false);
+    });
   });
 
   // #496: a course with a downloaded poster shows it; one without falls back

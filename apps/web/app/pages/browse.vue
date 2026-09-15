@@ -5,6 +5,7 @@
     AppButton,
     AppChip,
     AppEmptyState,
+    AppNoPermission,
     AppSelect,
     AppSkeleton,
     CoursePosterCard,
@@ -22,6 +23,7 @@
   import { useInstructors } from '~/composables/useInstructors';
   import { useLibraries } from '~/composables/useLibraries';
   import { useQueryStringState } from '~/composables/useQueryStringState';
+  import { useAuthStore } from '~/stores/auth';
   import { accentFromId } from '~/utils/course-accent';
 
   definePageMeta({ layout: 'default' });
@@ -98,7 +100,7 @@
   // Library and instructor options come from their own endpoints. Both are
   // non-fatal: an errored list collapses to just the "any" option, so a
   // broken sidecar request never takes the shelf down with it.
-  const { data: librariesData } = useLibraries();
+  const { data: librariesData, status: librariesStatus } = useLibraries();
   const { data: instructorsData } = useInstructors();
 
   const libraryOptions = computed<{ id: string; label: string }[]>(() => [
@@ -122,6 +124,41 @@
       libraryId.value !== COURSE_LIST_DEFAULTS.libraryId ||
       instructorId.value !== COURSE_LIST_DEFAULTS.instructorId,
   );
+
+  // ── Empty state (#579) ───────────────────────────────────────────────────────
+  //
+  // `useCoursesList` returning zero items is ambiguous on its own: it means
+  // something different depending on who's asking. `GET /libraries` answers
+  // that — it returns only the libraries the requester has READ access to
+  // (everything, for an admin) — so its own emptiness tells apart "nothing
+  // was ever granted to this account" from "granted, but truly nothing to see".
+  const auth = useAuthStore();
+  const isAdmin = computed(() => auth.user?.role?.toLowerCase() === 'admin');
+
+  type BrowseEmptyKind = 'filtered' | 'no-access' | 'no-courses' | 'no-library';
+
+  const emptyKind = computed<BrowseEmptyKind>(() => {
+    if (hasActiveFilter.value) return 'filtered';
+    // Libraries haven't resolved yet — default to the safe, always-true
+    // copy rather than briefly asserting "no access" off `useLibraries`'s
+    // pre-fetch `{ items: [] }` default.
+    if (librariesStatus.value === 'pending' || librariesStatus.value === 'idle') {
+      return 'no-library';
+    }
+    if (isAdmin.value) return 'no-library';
+    return (librariesData.value?.items.length ?? 0) > 0 ? 'no-courses' : 'no-access';
+  });
+
+  const emptyTitle = computed<string>(() => {
+    if (emptyKind.value === 'filtered') return t('pages.browse.emptyFilteredTitle');
+    if (emptyKind.value === 'no-courses') return t('pages.browse.emptyNoCoursesTitle');
+    return t('pages.browse.emptyTitle');
+  });
+  const emptyBody = computed<string>(() => {
+    if (emptyKind.value === 'filtered') return t('pages.browse.emptyFilteredBody');
+    if (emptyKind.value === 'no-courses') return t('pages.browse.emptyNoCoursesBody');
+    return t('pages.browse.emptyBody');
+  });
 
   function selectStatus(value: CourseListStatusFilter): void {
     status.value = value;
@@ -255,14 +292,22 @@
       </template>
     </AppBanner>
 
-    <!-- Empty -->
+    <!-- Empty — no grants: a student's problem is access, not the library -->
+    <AppNoPermission
+      v-else-if="items.length === 0 && emptyKind === 'no-access'"
+      icon="lock"
+      :title="t('pages.browse.emptyNoAccessTitle')"
+      :body="t('pages.browse.emptyNoAccessBody')"
+    />
+
+    <!-- Empty — filtered / granted-but-empty / true empty-library (admin) -->
     <AppEmptyState
       v-else-if="items.length === 0"
       icon="folder"
-      :title="hasActiveFilter ? t('pages.browse.emptyFilteredTitle') : t('pages.browse.emptyTitle')"
-      :body="hasActiveFilter ? t('pages.browse.emptyFilteredBody') : t('pages.browse.emptyBody')"
+      :title="emptyTitle"
+      :body="emptyBody"
     >
-      <template v-if="hasActiveFilter" #action>
+      <template v-if="emptyKind === 'filtered'" #action>
         <AppButton
           variant="secondary"
           size="sm"

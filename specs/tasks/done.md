@@ -2,6 +2,30 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-09-16-admin-surface — admin surface: CSP icons, identify queue course name, permissions completeness
+
+- Created: 2026-09-16
+- Completed: 2026-09-16
+- Owner: claude
+- Spec: n/a (bug fixes, one spec-first field addition)
+- Goal: three admin-surface defects fixed — `/admin` icons blocked by CSP
+  (fetch to api.iconify.design), identify queue rows unidentifiable without
+  opening the task, permissions screen undercounting course-level grants for
+  libraries that were never expanded.
+- Spec diff: openapi.yaml — `IdentifyTaskDto.courseTitle` (required)
+- Codegen impact: yes
+- Sub-steps:
+  - [x] Closes #571 — replace every `i-heroicons-*` under `apps/web/app/pages/admin` and
+        `apps/web/app/components/admin` with `IconCS`; add `circle-stack` +
+        `academic-cap` glyphs to `@app/ui` IconCS
+  - [x] Closes #575 — spec-first `courseTitle` on `IdentifyTaskDto`, backend handlers,
+        `AdminIdentifyTaskRow` shows course title + i18n relative time,
+        status filter (default `proposed`) on the queue page, retry button → AppButton
+  - [x] Closes #576 — resolve courseId→libraryId for permission overrides
+        independent of library-row expansion (`getCourse` per granted course)
+- Status: done
+- Result: https://github.com/kkucherenkov/course_shelf/pull/587
+
 ## T-2026-09-16-hero-poster — course page hero never renders the poster
 
 - Created: 2026-09-16

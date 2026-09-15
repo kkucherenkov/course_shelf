@@ -154,15 +154,28 @@ describe('layouts/default.vue', () => {
     expect(shell.props('otherLocale')).toEqual({ code: 'ru', name: 'Русский' });
   });
 
-  it('Ctrl+K opens the command palette (#607)', async () => {
+  it('the command palette is not mounted until first opened (#607, no stray app-dialog)', async () => {
     routePath = '/';
     authUser = { displayName: 'Admin User', role: 'admin' };
     authToken = 'token-123';
     const w = await mountDefaultLayout();
-    const palette = w.getComponent({ name: 'AppCommandPalette' });
-    expect(palette.props('open')).toBe(false);
+    // Mounting it unconditionally would leave AppDialog's native
+    // `<dialog class="app-dialog">` permanently in every page's DOM, even
+    // closed — see `paletteMounted`'s doc comment in default.vue.
+    expect(w.findComponent({ name: 'AppCommandPalette' }).exists()).toBe(false);
+  });
+
+  it('Ctrl+K mounts and opens the command palette (#607)', async () => {
+    routePath = '/';
+    authUser = { displayName: 'Admin User', role: 'admin' };
+    authToken = 'token-123';
+    const w = await mountDefaultLayout();
 
     globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+    // Two ticks: one mounts AppCommandPalette (`paletteMounted`), the next
+    // flips `open` — see default.vue's `onGlobalKeydown` comment for why
+    // the two are deliberately not in the same tick.
+    await w.vm.$nextTick();
     await w.vm.$nextTick();
 
     expect(w.getComponent({ name: 'AppCommandPalette' }).props('open')).toBe(true);
@@ -174,6 +187,9 @@ describe('layouts/default.vue', () => {
     authToken = 'token-123';
     navigateToMock.mockClear();
     const w = await mountDefaultLayout();
+    globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+    await w.vm.$nextTick();
+    await w.vm.$nextTick();
     const palette = w.getComponent({ name: 'AppCommandPalette' });
     const homeCommand = (palette.props('commands') as { id: string; to?: string }[]).find(
       (c) => c.id === 'nav-home',

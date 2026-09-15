@@ -24,7 +24,7 @@
    * gracefully to an empty name/initials for that brief window; nothing
    * downstream crashes on it.
    */
-  import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+  import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
   import { AppNavigationShell, AppCommandPalette } from '@app/ui';
   import type { IconName, Command } from '@app/ui';
 
@@ -262,6 +262,15 @@
   }
 
   const paletteOpen = ref(false);
+  // Stays false until the palette is opened for the first time, then stays
+  // true forever after — see `onGlobalKeydown` for why. Mounting
+  // AppCommandPalette unconditionally would leave its AppDialog's native
+  // `<dialog class="app-dialog">` permanently in the DOM (closed, but
+  // present): every other page that locates `.app-dialog` by itself
+  // (e.g. course-detail's reset-progress confirm) started resolving to two
+  // elements — a strict-mode Playwright violation, not a visual one — the
+  // moment this shell rendered on their page too.
+  const paletteMounted = ref(false);
 
   const paletteCommands = computed<PaletteCommand[]>(() => {
     const navGroup = t('ui.nav.primary');
@@ -295,7 +304,18 @@
     if (!hasSession.value) return;
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
-      paletteOpen.value = !paletteOpen.value;
+      if (!paletteMounted.value) {
+        // First open: mount closed, then flip `open` on the next tick so
+        // AppDialog's own `watch(() => props.open)` — which is not
+        // `immediate` — sees an actual false→true transition and calls
+        // `showModal()`. Born-open would otherwise never call it.
+        paletteMounted.value = true;
+        void nextTick(() => {
+          paletteOpen.value = true;
+        });
+      } else {
+        paletteOpen.value = !paletteOpen.value;
+      }
     }
   }
 
@@ -347,9 +367,9 @@
   <!-- Floating scan lifecycle notifier — fixed position, sits above everything. -->
   <ScanLifecycleNotifier v-if="hasSession" />
 
-  <!-- Cmd/Ctrl+K (#607) -->
+  <!-- Cmd/Ctrl+K (#607) — lazily mounted, see `paletteMounted`'s comment. -->
   <AppCommandPalette
-    v-if="hasSession"
+    v-if="hasSession && paletteMounted"
     v-model:open="paletteOpen"
     :commands="paletteCommands"
     :title="t('ui.commandPalette.title')"
@@ -358,8 +378,14 @@
     @select="onPaletteSelect"
   />
 
-  <!-- No token at all: middleware will redirect to /sign-in shortly. -->
-  <main v-else class="default-layout-bare">
+  <!-- No token at all: middleware will redirect to /sign-in shortly.
+       Explicit condition, not `v-else` — three other elements above each
+       carry their own `v-if`, and `v-else` binds to whichever one is
+       textually adjacent, not to `hasSession` specifically. That silently
+       repointed itself at `AppCommandPalette`'s `v-if` when it was added,
+       which is `false` until the palette's first open — making this branch
+       render even with a live session. -->
+  <main v-if="!hasSession" class="default-layout-bare">
     <slot />
   </main>
 </template>

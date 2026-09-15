@@ -46,6 +46,47 @@
 - Blockers: — (file only runs on a real release tag or manual dispatch;
   cannot be exercised by this PR's own CI)
 
+## T-2026-09-15-identify-queue-web — identify-task queue surface in apps/web
+
+- Created: 2026-09-15
+- Owner: claude
+- Spec: none — `runIdentifyTask`/`listIdentifyTasks`/`getIdentifyTask`/
+  `applyIdentifyResult`/`discardIdentifyTask` already in `openapi.yaml` and
+  the generated client; card `E30-F03-S02` (landing via #548, read off
+  `origin/docs/e30-identify-card` since #548 isn't merged yet).
+- Goal: an admin queue over identify tasks — list, open one into a per-field
+  `MergePolicyDto` comparison (current course value vs scraped fragment),
+  apply or discard. The only path that resolves scraped instructor/studio/tag
+  names into entities (`apply-identify-result.handler.ts` upserts them); the
+  existing scrape-preview panel can't (E30-F03-S01 shipped it read-only on
+  purpose). Closes #546.
+- Design: `useIdentifyTasks.ts` — `useIdentifyTasksList`, `useIdentifyTask`
+  (bundles task + its course in one `useAsyncData` since the course id is
+  only known after the task loads), `queueIdentifyTask` (plain mutation,
+  mirrors `useCourseScrapePreview.run`), and `buildMergePolicy` — the one
+  function that fills all 12 `MergePolicyDto` keys explicitly so an
+  omitted field never silently defaults to `merge` server-side.
+- Sub-steps:
+  - [x] `useIdentifyTasks` composable + `buildMergePolicy` spec
+  - [x] `pages/admin/identify-tasks/index.vue` queue list + `AdminIdentifyTaskRow`
+  - [x] `pages/admin/identify-tasks/[id].vue` review page + `AdminIdentifyTaskReview`
+  - [x] "queue for review" action in `CourseScrapePreviewPanel.vue`
+  - [x] nav entry in `layouts/default.vue`
+  - [x] i18n keys (en + ru), `pnpm check:i18n` green
+  - [x] component/composable specs (401 web tests green)
+  - [x] lint/stylelint/format/typecheck gates green
+  - [x] PR `Closes #546` — [#552](https://github.com/kkucherenkov/course_shelf/pull/552)
+  - [ ] CI green on #552
+  - [x] #548 merged (landed on `main` ahead of this branch, picked up via
+        rebase) — ticked `E30-F03-S02` sub-steps, card `Status` → In progress
+        with a note pointing at #552. Left `docs/roadmap/TODO.md`'s row and
+        the card's `Status: Done` for the actual merge of #552.
+- Status: in-progress
+- Blockers: — (not verified against a running Docker stack — this host's
+  `course_shelf` compose stack was not up and default ports 3000/5432/8080
+  collide with two unrelated stacks already running on it; verified via
+  `pnpm --filter @app/web test`, `typecheck`, `check:i18n` instead)
+
 ## T-2026-09-14-contract-gate-determinism — `negative_data_rejection` coin flip on numeric query params
 
 - Created: 2026-09-14

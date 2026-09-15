@@ -8,10 +8,12 @@
    *
    * `instructorNames` / `studioName` / `tags` are shown for reference only —
    * they are raw scraped names, not entity ids, and resolving them is the
-   * identify pipeline's job (Stage 4, out of scope here). The admin reads
-   * the name and picks the matching entity in the pickers above instead.
+   * identify pipeline's job. The admin reads the name and picks the
+   * matching entity in the pickers above, or — via "Queue for review"
+   * (E30-F03-S02) — sends the candidate to the identify-task queue, which
+   * resolves those names into real entities on apply.
    */
-  import { computed, ref } from 'vue';
+  import { computed, reactive, ref } from 'vue';
   import {
     AppField,
     AppTextField,
@@ -23,6 +25,7 @@
   import type { CourseLevel, ScrapeCandidateDto } from '@app/api-client-ts';
   import type { CourseFormField, CourseFormState } from '~/composables/useCourseEdit';
   import { useCourseScrapePreview } from '~/composables/useCourseScrapePreview';
+  import { queueIdentifyTask } from '~/composables/useIdentifyTasks';
 
   const props = defineProps<{
     courseId: string;
@@ -63,6 +66,29 @@
         : { kind: 'name', query: value, source: source ?? '' },
     );
     if (err) runError.value = t('pages.courseEdit.scrapePreview.error');
+  }
+
+  // ── Queue for review ──────────────────────────────────────────────────────────
+
+  const queueingIndex = ref<number | null>(null);
+  const queuedTaskIdByIndex = reactive<Record<number, string>>({});
+  const queueError = ref('');
+
+  async function onQueue(candidate: ScrapeCandidateDto, index: number): Promise<void> {
+    queueError.value = '';
+    queueingIndex.value = index;
+    try {
+      const task = await queueIdentifyTask(props.courseId, {
+        fragment: candidate.fragment,
+        source: candidate.source,
+        sourceUrl: candidate.sourceUrl,
+      });
+      queuedTaskIdByIndex[index] = task.id;
+    } catch {
+      queueError.value = t('pages.courseEdit.scrapePreview.queueError');
+    } finally {
+      queueingIndex.value = null;
+    }
   }
 
   // ── Field comparison ──────────────────────────────────────────────────────────
@@ -305,7 +331,32 @@
           t('pages.courseEdit.scrapePreview.entityHint')
         }}</span>
       </p>
+
+      <div class="course-scrape-preview__queue-row">
+        <AppButton
+          type="button"
+          variant="secondary"
+          size="sm"
+          :label="
+            queueingIndex === ci
+              ? t('pages.courseEdit.scrapePreview.queuing')
+              : t('pages.courseEdit.scrapePreview.queueForReview')
+          "
+          :loading="queueingIndex === ci"
+          :disabled="Boolean(queuedTaskIdByIndex[ci])"
+          @click="onQueue(candidate, ci)"
+        />
+        <NuxtLink
+          v-if="queuedTaskIdByIndex[ci]"
+          :to="`/admin/identify-tasks/${queuedTaskIdByIndex[ci]}`"
+          class="course-scrape-preview__queue-link"
+        >
+          {{ t('pages.courseEdit.scrapePreview.viewQueuedTask') }}
+        </NuxtLink>
+      </div>
     </article>
+
+    <p v-if="queueError" class="course-scrape-preview__error">{{ queueError }}</p>
   </section>
 </template>
 
@@ -412,6 +463,24 @@
     &__hint-note {
       display: block;
       font-style: italic;
+    }
+
+    &__queue-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding-top: var(--space-2);
+      border-top: 1px solid var(--border-default);
+    }
+
+    &__queue-link {
+      font-size: var(--text-sm);
+      color: var(--brand-accent);
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
     }
   }
 </style>

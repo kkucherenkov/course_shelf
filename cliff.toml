@@ -26,7 +26,7 @@ body = """
 ### {{ group | upper_first }}
 
 {% for commit in commits -%}
-- {% if commit.scope %}**{{ commit.scope }}**: {% endif -%}{{ commit.message | upper_first }}{% if commit.id %} ({{ commit.id | truncate(length=7, end="") }}){% endif %}
+- {% if commit.scope %}**{{ commit.scope }}**: {% endif -%}{{ commit.message | split(pat="\n") | first | trim | upper_first }}{% if commit.id %} ({{ commit.id | truncate(length=7, end="") }}){% endif %}
 {% endfor %}
 {% endfor %}
 """
@@ -34,7 +34,7 @@ trim = true
 
 [git]
 conventional_commits = true
-filter_unconventional = true
+filter_unconventional = false
 split_commits = false
 commit_parsers = [
   { message = "^feat",     group = "Features" },
@@ -48,7 +48,8 @@ commit_parsers = [
   { message = "^chore",    group = "Chores" },
   { message = "^style",    group = "Style" },
   { message = "^revert",   group = "Reverts" },
-  # Anything else gets dropped (filter_unconventional = true).
+  # Catch-all: nothing may vanish from the notes silently.
+  { message = ".*",       group = "Other" },
 ]
 filter_commits = false
 tag_pattern = "^v[0-9]+\\.[0-9]+\\.[0-9]+-release$"

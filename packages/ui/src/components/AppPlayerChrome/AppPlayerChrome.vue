@@ -1,7 +1,8 @@
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
+  import { computed, onUnmounted, ref, watch } from 'vue';
 
   import AppButton from '../AppButton/AppButton.vue';
+  import AppDialog from '../AppDialog/AppDialog.vue';
   import IconCS from '../IconCS/IconCS.vue';
 
   export type PlayerState =
@@ -27,7 +28,7 @@
     player: string;
     buffering: string;
     pip: string;
-    settings: string;
+    shortcuts: string;
     seek: string;
     bookmarkAt: string;
     pause: string;
@@ -39,6 +40,7 @@
     speed: string;
     subtitlesEnable: string;
     subtitlesDisable: string;
+    subtitlesUnavailable: string;
     fullscreenEnter: string;
     fullscreenExit: string;
   }
@@ -59,6 +61,8 @@
       muted?: boolean;
       /** Subtitles toggle state. */
       subtitlesEnabled?: boolean;
+      /** Whether the lesson has any subtitle tracks — disables the CC button when false. */
+      subtitlesAvailable?: boolean;
       /** Show the picture-in-picture button. */
       pipAvailable?: boolean;
       /** Show the fullscreen button as toggled-on. */
@@ -89,6 +93,10 @@
       hasNext?: boolean;
       /** Localized screen-reader labels; English defaults fill any gaps. */
       ariaLabels?: Partial<PlayerChromeAriaLabels>;
+      /** Title of the keyboard-shortcuts dialog opened by the gear button. */
+      shortcutsTitle?: string;
+      /** One pre-translated line per shortcut, shown in the dialog body. */
+      shortcuts?: string[];
     }>(),
     {
       state: 'idle',
@@ -96,6 +104,7 @@
       speed: 1,
       muted: false,
       subtitlesEnabled: false,
+      subtitlesAvailable: true,
       pipAvailable: true,
       fullscreen: false,
       mode: 'overlay',
@@ -113,6 +122,8 @@
       hasPrev: true,
       hasNext: true,
       ariaLabels: () => ({}),
+      shortcutsTitle: 'Keyboard shortcuts',
+      shortcuts: () => [],
     },
   );
 
@@ -135,7 +146,7 @@
     player: 'Lesson video player',
     buffering: 'Buffering',
     pip: 'Picture in picture',
-    settings: 'Settings',
+    shortcuts: 'Keyboard shortcuts',
     seek: 'Seek',
     bookmarkAt: 'Bookmark at {time}',
     pause: 'Pause',
@@ -147,6 +158,7 @@
     speed: 'Playback speed',
     subtitlesEnable: 'Enable subtitles',
     subtitlesDisable: 'Disable subtitles',
+    subtitlesUnavailable: 'No subtitles for this lesson',
     fullscreenEnter: 'Enter fullscreen',
     fullscreenExit: 'Exit fullscreen',
   };
@@ -156,11 +168,57 @@
   const SEEK_STEP_S = 5;
   const SEEK_LARGE_S = 10;
   const FRAME_STEP_S = 1 / 24;
+  // Idle-hide delay for the overlay while playing — long enough to read the
+  // scrubber position at a glance, short enough not to leave stale controls
+  // parked over the picture (matches the common YouTube-class default).
+  const IDLE_HIDE_MS = 3000;
 
+  const rootRef = ref<HTMLDivElement | null>(null);
   const scrubberRef = ref<HTMLDivElement | null>(null);
+  const shortcutsOpen = ref(false);
 
   const isPlaying = computed(() => props.state === 'playing');
   const isInert = computed(() => props.state === 'locked' || props.state === 'error');
+
+  // ── Overlay idle-hide ───────────────────────────────────────────────────────
+  // Only while actively playing — paused/buffering/error/locked/end always
+  // keep the overlay up, since there is nothing to "get out of the way" of.
+  // Focus is handled separately in CSS (`:focus-within`), not here: a
+  // keyboard user tabbing through the controls must never lose them.
+
+  const controlsHidden = ref(false);
+  let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function clearIdleTimer(): void {
+    if (idleTimer !== null) {
+      clearTimeout(idleTimer);
+      idleTimer = null;
+    }
+  }
+
+  function scheduleIdleHide(): void {
+    clearIdleTimer();
+    if (!isPlaying.value) return;
+    idleTimer = setTimeout(() => {
+      controlsHidden.value = true;
+    }, IDLE_HIDE_MS);
+  }
+
+  function showControls(): void {
+    controlsHidden.value = false;
+    scheduleIdleHide();
+  }
+
+  watch(
+    isPlaying,
+    (playing) => {
+      if (playing) scheduleIdleHide();
+      else showControls();
+    },
+    { immediate: true },
+  );
+
+  onUnmounted(clearIdleTimer);
 
   const playedFraction = computed(() => clamp01(props.position / nonZero(props.duration)));
   const bufferedFraction = computed(() =>
@@ -301,19 +359,31 @@
       seekTo(Number.parseInt(event.key, 10) / 10);
     }
   }
+
+  // The page can only reach this component's own root DOM node through an
+  // explicit expose — fullscreen has to target the chrome, not the `<video>`
+  // it wraps, or every control painted in the overlay slot disappears.
+  defineExpose({
+    getRootEl: (): HTMLDivElement | null => rootRef.value,
+  });
 </script>
 
 <template>
   <div
+    ref="rootRef"
     :class="[
       'app-player-chrome',
       `app-player-chrome--${mode}`,
       `app-player-chrome--state-${state}`,
+      { 'app-player-chrome--idle-hidden': controlsHidden },
     ]"
     :tabindex="isInert ? -1 : 0"
     role="region"
     :aria-label="aria.player"
     @keydown="onKeydown"
+    @pointermove="showControls"
+    @focusin="showControls"
+    @focusout="scheduleIdleHide"
   >
     <div class="app-player-chrome__frame" aria-hidden="true">
       <slot name="frame"> video frame · placeholder </slot>
@@ -385,11 +455,18 @@
             type="button"
             class="app-player-chrome__btn"
             :aria-label="aria.pip"
+            :disabled="isInert"
             @click="emit('togglePip')"
           >
             <IconCS name="pip" :size="16" />
           </button>
-          <button type="button" class="app-player-chrome__btn" :aria-label="aria.settings">
+          <button
+            type="button"
+            class="app-player-chrome__btn"
+            :aria-label="aria.shortcuts"
+            :disabled="isInert"
+            @click="shortcutsOpen = true"
+          >
             <IconCS name="settings" :size="16" />
           </button>
         </div>
@@ -482,6 +559,7 @@
             class="app-player-chrome__btn"
             :aria-label="muted ? aria.unmute : aria.mute"
             :aria-pressed="muted ? 'true' : 'false'"
+            :disabled="isInert"
             @click="emit('toggleMute')"
           >
             <IconCS :name="muted ? 'volume-mute' : 'volume'" :size="16" />
@@ -494,6 +572,7 @@
             type="button"
             class="app-player-chrome__btn app-player-chrome__btn--text"
             :aria-label="aria.speed"
+            :disabled="isInert"
             @click="emit('speed', props.speed)"
           >
             {{ speedLabel }}
@@ -501,8 +580,15 @@
           <button
             type="button"
             class="app-player-chrome__btn"
-            :aria-label="subtitlesEnabled ? aria.subtitlesDisable : aria.subtitlesEnable"
+            :aria-label="
+              !subtitlesAvailable
+                ? aria.subtitlesUnavailable
+                : subtitlesEnabled
+                  ? aria.subtitlesDisable
+                  : aria.subtitlesEnable
+            "
             :aria-pressed="subtitlesEnabled ? 'true' : 'false'"
+            :disabled="isInert || !subtitlesAvailable"
             @click="emit('toggleSubtitles')"
           >
             <IconCS name="subtitles" :size="16" />
@@ -511,6 +597,7 @@
             type="button"
             class="app-player-chrome__btn"
             :aria-label="fullscreen ? aria.fullscreenExit : aria.fullscreenEnter"
+            :disabled="isInert"
             :aria-pressed="fullscreen ? 'true' : 'false'"
             @click="emit('toggleFullscreen')"
           >
@@ -528,6 +615,20 @@
         :style="{ width: `${String(playedFraction * 100)}%` }"
       />
     </div>
+
+    <!-- Keyboard-shortcuts help, opened by the gear button -->
+    <AppDialog
+      :open="shortcutsOpen"
+      size="sm"
+      :title="shortcutsTitle"
+      @update:open="shortcutsOpen = $event"
+    >
+      <ul class="app-player-chrome__shortcuts">
+        <li v-for="line in shortcuts" :key="line" class="app-player-chrome__shortcuts-item">
+          {{ line }}
+        </li>
+      </ul>
+    </AppDialog>
   </div>
 </template>
 
@@ -612,6 +713,27 @@
       );
       color: var(--media-fg);
       transition: opacity var(--dur-base);
+    }
+
+    // Idle-hide: the overlay (scrubber, play/pause, next lesson, bookmarks,
+    // subtitles) fades out after a few seconds of inactivity while playing —
+    // see the `IDLE_HIDE_MS` timer in the script. The `:focus-within`
+    // override below always wins on specificity (three selectors vs. two),
+    // so a keyboard user tabbed into any control never loses it mid-fade.
+    &--idle-hidden &__overlay {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    &:focus-within#{&}--idle-hidden &__overlay {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &__overlay {
+        transition: none;
+      }
     }
 
     &__top {
@@ -901,6 +1023,21 @@
     // ---- Mode-specific overrides ----
     &--minimal &__overlay {
       display: none;
+    }
+
+    // ---- Keyboard-shortcuts dialog body ----
+    &__shortcuts {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    &__shortcuts-item {
+      font-size: var(--text-sm);
+      color: var(--text-fg);
     }
   }
 

@@ -1,7 +1,26 @@
 import { mount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { nextTick } from 'vue';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import AppPlayerChrome from './AppPlayerChrome.vue';
+
+// The gear button opens an AppDialog (native <dialog>). JSDOM/happy-dom don't
+// implement showModal()/close() — see AppDialog.spec.ts for the same stub.
+beforeAll(() => {
+  const proto = HTMLElement.prototype as unknown as HTMLDialogElement;
+  if (typeof proto.showModal !== 'function') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test-only DOM polyfill
+    (proto as any).showModal = function (this: HTMLDialogElement) {
+      (this as unknown as Record<string, unknown>)['open'] = true;
+    };
+  }
+  if (typeof proto.close !== 'function') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test-only DOM polyfill
+    (proto as any).close = function (this: HTMLDialogElement) {
+      (this as unknown as Record<string, unknown>)['open'] = false;
+    };
+  }
+});
 
 const baseProps = {
   position: 60, // 1:00
@@ -212,6 +231,25 @@ describe('AppPlayerChrome', () => {
       ).toBe(true);
     });
 
+    // Previously only play was gated — mute/speed/subtitles/fullscreen/pip
+    // stayed clickable in locked/error and kept emitting into a dead video.
+    it('disables mute, speed, subtitles, fullscreen and pip in locked / error states', () => {
+      for (const state of ['locked', 'error'] as const) {
+        const wrapper = makeWrapper({ state });
+        for (const label of [
+          'Mute',
+          'Playback speed',
+          'Enable subtitles',
+          'Enter fullscreen',
+          'Picture in picture',
+        ]) {
+          expect(
+            (wrapper.find(`button[aria-label="${label}"]`).element as HTMLButtonElement).disabled,
+          ).toBe(true);
+        }
+      }
+    });
+
     it('disables the prev control when hasPrev is false', () => {
       const wrapper = makeWrapper({ hasPrev: false });
       expect(
@@ -240,6 +278,111 @@ describe('AppPlayerChrome', () => {
       });
       expect(wrapper.find('button[aria-label="Следующий урок"]').exists()).toBe(true);
       expect(wrapper.find('[aria-label="Видеоплеер"]').exists()).toBe(true);
+    });
+
+    // Two thirds of lessons have no transcript track — the CC button used to
+    // stay enabled and silently self-revert (`onTextTracksChange` flips
+    // `subtitlesOn` straight back to false with no feedback to the user).
+    it('disables the CC button and swaps its label when no subtitles are available', () => {
+      const wrapper = makeWrapper({ subtitlesAvailable: false });
+      const cc = wrapper.find('button[aria-label="No subtitles for this lesson"]');
+      expect(cc.exists()).toBe(true);
+      expect((cc.element as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('keeps the CC button enabled and labelled normally when subtitles exist', () => {
+      const wrapper = makeWrapper({ subtitlesAvailable: true });
+      expect(
+        (wrapper.find('button[aria-label="Enable subtitles"]').element as HTMLButtonElement)
+          .disabled,
+      ).toBe(false);
+    });
+  });
+
+  describe('keyboard-shortcuts dialog', () => {
+    it('opens on gear click, titled and listing every shortcut line', async () => {
+      const wrapper = makeWrapper({
+        shortcutsTitle: 'Shortcuts',
+        shortcuts: ['Space — Play/pause', 'F — Fullscreen'],
+      });
+      await wrapper.find('button[aria-label="Keyboard shortcuts"]').trigger('click');
+      expect(wrapper.text()).toContain('Shortcuts');
+      const items = wrapper.findAll('.app-player-chrome__shortcuts-item');
+      expect(items.map((i) => i.text())).toEqual(['Space — Play/pause', 'F — Fullscreen']);
+    });
+
+    it('disables the gear button in locked / error states', () => {
+      const wrapper = makeWrapper({ state: 'error' });
+      expect(
+        (wrapper.find('button[aria-label="Keyboard shortcuts"]').element as HTMLButtonElement)
+          .disabled,
+      ).toBe(true);
+    });
+  });
+
+  describe('exposed root element', () => {
+    it('getRootEl() returns the component root, for the page to fullscreen', () => {
+      const wrapper = makeWrapper();
+      expect(wrapper.vm.getRootEl()).toBe(wrapper.element);
+    });
+  });
+
+  describe('overlay idle-hide', () => {
+    // A ref flip inside a real (fake-clock) setTimeout callback still has to
+    // clear Vue's microtask-based render scheduler before the DOM reflects
+    // it — `nextTick()` after every `advanceTimersByTime` call, not just a
+    // synchronous assertion.
+    it('hides the overlay after the idle delay while playing', async () => {
+      vi.useFakeTimers();
+      const wrapper = makeWrapper({ state: 'playing' });
+      expect(wrapper.classes()).not.toContain('app-player-chrome--idle-hidden');
+      vi.advanceTimersByTime(3000);
+      await nextTick();
+      expect(wrapper.classes()).toContain('app-player-chrome--idle-hidden');
+      vi.useRealTimers();
+    });
+
+    it('never hides while paused, buffering, locked, or errored', async () => {
+      vi.useFakeTimers();
+      for (const state of ['paused', 'buffering', 'locked', 'error'] as const) {
+        const wrapper = makeWrapper({ state });
+        vi.advanceTimersByTime(10_000);
+        await nextTick();
+        expect(wrapper.classes()).not.toContain('app-player-chrome--idle-hidden');
+      }
+      vi.useRealTimers();
+    });
+
+    it('re-shows on pointermove and restarts the idle countdown', async () => {
+      vi.useFakeTimers();
+      const wrapper = makeWrapper({ state: 'playing' });
+      vi.advanceTimersByTime(3000);
+      await nextTick();
+      expect(wrapper.classes()).toContain('app-player-chrome--idle-hidden');
+
+      await wrapper.find('.app-player-chrome').trigger('pointermove');
+      expect(wrapper.classes()).not.toContain('app-player-chrome--idle-hidden');
+
+      // Still hidden again after another full delay, not immediately.
+      vi.advanceTimersByTime(2999);
+      await nextTick();
+      expect(wrapper.classes()).not.toContain('app-player-chrome--idle-hidden');
+      vi.advanceTimersByTime(1);
+      await nextTick();
+      expect(wrapper.classes()).toContain('app-player-chrome--idle-hidden');
+      vi.useRealTimers();
+    });
+
+    it('re-shows when playback pauses', async () => {
+      vi.useFakeTimers();
+      const wrapper = makeWrapper({ state: 'playing' });
+      vi.advanceTimersByTime(3000);
+      await nextTick();
+      expect(wrapper.classes()).toContain('app-player-chrome--idle-hidden');
+
+      await wrapper.setProps({ state: 'paused' });
+      expect(wrapper.classes()).not.toContain('app-player-chrome--idle-hidden');
+      vi.useRealTimers();
     });
   });
 

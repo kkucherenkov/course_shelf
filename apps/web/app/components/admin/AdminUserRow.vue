@@ -7,6 +7,7 @@
     AdminUserRole,
   } from '@app/api-client-ts';
   import AdminRoleChip from './AdminRoleChip.vue';
+  import { avatarBgFromId } from '~/utils/avatar-color';
 
   const props = defineProps<Props>();
 
@@ -18,25 +19,6 @@
     /** Fired when the "More" icon button is clicked. */
     more: [];
   }>();
-
-  // Deterministic accent colours derived from user id.
-  // Palette of 6 background CSS colours that pair well with white text.
-  const AVATAR_PALETTES = [
-    '#4f76c8', // indigo
-    '#2d9e7a', // teal
-    '#c07a2e', // amber
-    '#8a4fc8', // violet
-    '#b04040', // coral
-    '#4a8cb0', // blue-grey
-  ];
-
-  function avatarBgFromId(id: string): string {
-    let h = 0;
-    for (let i = 0; i < id.length; i++) h = ((h * 31 + (id.codePointAt(i) ?? 0)) >>> 0) >>> 0;
-    // AVATAR_PALETTES has 6 entries; modulo guarantees a valid index.
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- palette is statically non-empty
-    return AVATAR_PALETTES[h % AVATAR_PALETTES.length]!;
-  }
 
   interface Props {
     user: AdminUserListItem;
@@ -172,7 +154,10 @@
       font-size: $avatar-font;
       font-weight: 600;
       font-family: var(--font-mono);
-      color: var(--brand-accent-fg); // white text on accent backgrounds per design tokens
+      // Theme-independent: --avatar-* backgrounds don't flip with the page
+      // theme (hashed from the user id), so a theme-flipped foreground like
+      // --brand-accent-fg went near-black-on-blue in dark mode.
+      color: var(--media-fg);
       flex-shrink: 0;
       user-select: none;
     }

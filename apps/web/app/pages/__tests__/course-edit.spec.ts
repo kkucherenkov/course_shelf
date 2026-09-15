@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { mount } from '@vue/test-utils';
 import type { CourseDto } from '@app/api-client-ts';
 
@@ -21,6 +21,15 @@ vi.stubGlobal('useI18n', () => ({ t: (key: string) => key }));
 vi.stubGlobal('useRoute', () => ({ params: { id: 'course-1' } }));
 vi.stubGlobal('useToast', () => ({ add: vi.fn() }));
 vi.stubGlobal('navigateTo', vi.fn());
+// edit.vue calls these lifecycle hooks bare (relies on Nuxt's auto-import at
+// real app runtime); wire them to Vue's real implementations for the same
+// reason `sign-up.spec.ts` does for `onUnmounted`.
+vi.stubGlobal('onMounted', onMounted);
+vi.stubGlobal('onUnmounted', onUnmounted);
+
+// The leave guard itself is covered by course-edit-leave-guard.spec.ts —
+// this file only needs `onBeforeRouteLeave` to not blow up outside a router.
+vi.mock('vue-router', () => ({ onBeforeRouteLeave: vi.fn() }));
 
 // ── useCourseEdit ──────────────────────────────────────────────────────────
 const mockSave = vi.fn();
@@ -46,6 +55,12 @@ vi.mock('@app/ui', () => ({
     template: '<button>{{ label }}</button>',
   },
   AppSkeleton: { name: 'AppSkeleton', props: ['width', 'height'], template: '<span />' },
+  AppDialog: {
+    name: 'AppDialog',
+    props: ['open', 'size', 'title', 'description'],
+    emits: ['update:open'],
+    template: '<div v-if="open"><slot name="footer" /></div>',
+  },
 }));
 
 function makeCourse(): CourseDto {

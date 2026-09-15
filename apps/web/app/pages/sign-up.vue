@@ -46,20 +46,19 @@
 
   const currentStep = ref<StepId>('account');
 
-  // Visible steps depend on emailVerificationRequired.
-  const visibleSteps = computed<StepDef[]>(() => {
-    if (config.value.emailVerificationRequired) {
-      return [
-        { id: 'account', label: t('pages.signUp.stepAccount') },
-        { id: 'verify', label: t('pages.signUp.stepVerify') },
-        { id: 'library', label: t('pages.signUp.stepLibrary') },
-      ];
-    }
-    return [
-      { id: 'account', label: t('pages.signUp.stepAccount') },
-      { id: 'library', label: t('pages.signUp.stepLibrary') },
-    ];
-  });
+  // Visible steps depend on emailVerificationRequired — and the library step
+  // only ever applies to the first admin, bootstrapping the instance. A
+  // later self-registered account (`config.selfRegistration` on) is never an
+  // Owner-Admin, and `POST /libraries` 403s a non-Owner-Admin's attempt to
+  // register one, so walking that account through the form would only end
+  // in a request the server was always going to refuse.
+  const visibleSteps = computed<StepDef[]>(() => [
+    { id: 'account', label: t('pages.signUp.stepAccount') },
+    ...(config.value.emailVerificationRequired
+      ? [{ id: 'verify', label: t('pages.signUp.stepVerify') }]
+      : []),
+    ...(isFirstAdmin.value ? [{ id: 'library', label: t('pages.signUp.stepLibrary') }] : []),
+  ]);
 
   // ── Form state ───────────────────────────────────────────────────────────────
 
@@ -123,8 +122,19 @@
       currentStep.value = 'verify';
       startResendCountdown();
     } else {
-      currentStep.value = 'library';
+      await afterAccountReady();
     }
+  }
+
+  // Routes past account creation (and verification, when required): the
+  // first admin still has a library to register, everyone else is done —
+  // see `visibleSteps`'s doc comment for why the step doesn't apply to them.
+  async function afterAccountReady(): Promise<void> {
+    if (isFirstAdmin.value) {
+      currentStep.value = 'library';
+      return;
+    }
+    await navigateTo('/');
   }
 
   // ── Step 2 — verification ──────────────────────────────────────────────────
@@ -157,7 +167,7 @@
       step2Error.value = verifyErrorMessage(result.code);
       return;
     }
-    currentStep.value = 'library';
+    await afterAccountReady();
   }
 
   async function onResend(): Promise<void> {
@@ -245,7 +255,7 @@
     () => {
       // If currently on 'verify' but verification is no longer required, skip ahead.
       if (currentStep.value === 'verify' && !config.value.emailVerificationRequired) {
-        currentStep.value = 'library';
+        void afterAccountReady();
       }
     },
   );

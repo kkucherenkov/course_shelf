@@ -4,6 +4,118 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 
 ## T-2026-09-16-admin-surface — admin surface: CSP icons, identify queue course name, permissions completeness
 
+## T-2026-09-16-course-covers — one course, four different covers
+
+- Created: 2026-09-16
+- Owner: claude
+- Spec: none — audit finding, issue #569 (tuxedo 24 / #267's private-hex ask
+  resolved onto the same PR).
+- Goal: `cover-map.ts`'s `initials()` (length-filtered words) and
+  `search.vue`'s inline duplicate (raw first-two-words) disagreed on ~30/68
+  real course titles, and search always painted the flat `--brand-accent`
+  while the catalog hashed a per-course colour from `COVER` — one course, up
+  to four different covers depending on where you looked. Also: `COVER` and
+  `AVATAR_PALETTES` (duplicated across `AdminUserRow.vue` and
+  `admin/permissions/[userId].vue`) were private hex literals DESIGN.md
+  forbids; `coral` had no backing token at all.
+- Root cause: two independent, undertested string-splitting algorithms for
+  the same monogram, plus per-course colour never having been wired into
+  `search.vue` in the first place.
+- Found along the way (not part of the original ask): both avatar circles
+  read `--brand-accent-fg`, a token that flips per theme, against a
+  background that intentionally doesn't — near-black-on-blue in dark mode.
+  Also: axe's `color-contrast` gate never caught the pre-existing
+  under-4.5:1 cover/avatar hues because every initials/avatar element is
+  `aria-hidden="true"` (correctly — the name is already exposed elsewhere),
+  which exempts it from axe regardless of hex-vs-token. Tokenizing does not
+  close that CI gap; noted in the PR, not fixed here.
+- Sub-steps:
+  - [x] one `initials()` in `@app/ui` — stopword/punctuation filtered, falls
+        back to a single word's own first two letters (fixes "Основы Git" vs
+        "Основы Golang" colliding on the stopword's initial)
+  - [x] `search.vue` consumes that `initials()` plus `COVER[accentFromId]`
+        for both course and lesson thumbs, replacing the flat accent
+  - [x] `COVER` (6 hues) and `AVATAR_PALETTES` (6 hues, extracted into
+        `apps/web/app/utils/avatar-color.ts`) moved into `tokens.json`
+        (`media.cover*`, new `avatar.*` group), darkened where the original
+        hex didn't clear 4.5:1 against the white text drawn on it
+  - [x] both avatar foregrounds switched to the theme-independent
+        `--media-fg`
+  - [x] tests: `cover-map.spec.ts`, `avatar-color.spec.ts` new; regression
+        assertions added to `AdminUserRow.spec.ts` and `search.spec.ts` —
+        all confirmed red against the pre-fix code, green after
+  - [x] `pnpm design:build` regenerated; gates green (lint/test/typecheck ×
+        `@app/ui`/`@app/web`/`@app/design-tokens`, stylelint, format,
+        check:i18n, design:audit)
+- Status: done
+- Completed: 2026-09-16
+- PR: https://github.com/kkucherenkov/course_shelf/pull/584
+
+## T-2026-09-16-player-chrome — player chrome controls: dead settings, fullscreen, overlay, settings button
+
+- Created: 2026-09-16
+- Owner: claude
+- Goal: wire the five dead settings controls into the lesson player, fix
+  fullscreen (targets `<video>` instead of the chrome root, so controls vanish),
+  make the overlay auto-hide on idle, and give the settings gear a handler.
+- Issues: #565 (dead settings), #566 (fullscreen strips controls), #567
+  (overlay never hides), #574 (settings button has no handler). Plus two
+  "Отдельно" defects: disabled state in `error` doesn't cover mute/speed/
+  subtitles/fullscreen/pip, and the CC button stays enabled with zero tracks.
+- Sub-steps:
+  - [x] #565: `useLessonPlayer.attach` seeds initial speed from
+        `prefs.defaultSpeed`; `[lessonId].vue` gates `startCountdown()` on
+        `prefs.autoplayNext`; unify the two speed ladders into one exported
+        const; wire `completionThreshold` into `PlayerSectionsTab.vue` via a
+        small pure helper in `preferences.ts`; drop the non-functional `cozy`
+        density tier (comfortable/compact only) and fix the help copy
+  - [x] #566: `AppPlayerChrome` exposes its root element; the page attaches it
+        to `useLessonPlayer`; fullscreen is requested on that root, not the
+        `<video>`
+  - [x] #567: idle-hide the overlay while playing (timer), restore on
+        pointermove/focusin/pause, never hide while `:focus-within`, respect
+        `prefers-reduced-motion`
+  - [x] #574: wire the settings gear to a keyboard-shortcuts dialog
+        (`AppDialog`, existing keymap, translated lines from the page)
+  - [x] extra: disable mute/speed/subtitles/fullscreen/pip when `isInert`
+  - [x] extra: disable the CC button when the lesson has zero subtitle tracks
+  - [x] tests for every fix above (failing before, green after); i18n keys in
+        both locales; gates (lint/stylelint/format, turbo lint/test/typecheck)
+- Notes: `completionThreshold` is wired only into `PlayerSectionsTab.vue`
+  (this lane's file) — `CourseSectionsList.vue` (edit-guard's) renders the
+  same outline data unthreshold-ed; parity there is that lane's call, not
+  filed as a defect here since it renders server-truth correctly today. The
+  `density` tier was reduced to comfortable/compact (not removed outright):
+  `compact` already had a real, working consumer in `AppInput`/`AppSelect`,
+  only `cozy` was the dead duplicate.
+- Status: done
+- Completed: 2026-09-16
+- Result: https://github.com/kkucherenkov/course_shelf/pull/585
+
+## T-2026-09-16-nav-shell-mobile-admin-access — mobile nav overflow + AppNavigationShell fixes
+
+- Created: 2026-09-16
+- Owner: claude
+- Spec: —
+- Goal: `/admin` (and any nav beyond the bottom-tab's first slots) reachable
+  below 600px; fix hardcoded English strings, raw role enum, wrong active-route
+  highlight on `/settings`, and the topbar theme toggle silently destroying the
+  "System" preference — all inside `AppNavigationShell` / `layouts/default.vue`.
+- Sub-steps:
+  - [x] AppNavigationShell: overflow "More" bottom-tab + AppDialog nav drawer (admin nav reachable on mobile) — closes #568
+  - [x] AppNavigationShell: translate avatar-menu items (Profile/Settings/theme/Sign out) via props
+  - [x] AppNavigationShell: `user.roleLabel` prop instead of raw `user.role` enum text
+  - [x] AppNavigationShell: 3-way theme cycle (light → dark → system) so topbar toggle no longer destroys "System"
+  - [x] layouts/default.vue: `activeRoute` branch for `/settings`
+  - [x] i18n keys (en+ru) for all of the above
+  - [x] Storybook stories + spec coverage for the new behaviour
+  - [x] lint/stylelint/format + typecheck/test gates
+- Status: done
+- Completed: 2026-09-16
+- Result: [PR #583](https://github.com/kkucherenkov/course_shelf/pull/583)
+
+## T-2026-09-16-auth-bearer — session restore and refresh go through bearer, not cookies
+
 - Created: 2026-09-16
 - Completed: 2026-09-16
 - Owner: claude
@@ -25,6 +137,48 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
         independent of library-row expansion (`getCourse` per granted course)
 - Status: done
 - Result: https://github.com/kkucherenkov/course_shelf/pull/587
+
+- Spec: none — bug fixes reported by the maintainer from a live audit.
+- Result: https://github.com/kkucherenkov/course_shelf/pull/580 (closes #577, #572, #581)
+- Goal: `useAuthStore.refresh()` (and everything routed through it —
+  `auth.global.ts`, `api.client.ts`'s 401 handler, `useStreamUrl`,
+  `useScanLifecycle`) must authenticate `getSession()` with the bearer token
+  from `localStorage`, not rely on the `better-auth.session_token` cookie.
+  With cookies cleared and a valid token in storage, `refresh()` used to
+  always return `false` and bounce the user to `/sign-in`.
+- Root cause: `createClient()` in `stores/auth.ts` set
+  `fetchOptions.credentials: 'include'` but never attached an
+  `Authorization` header to Better Auth's own client — only the generated
+  `@app/api-client-ts` client got that treatment, via `api.client.ts`'s
+  request interceptor. Better Auth's `$fetch` never saw the header.
+- Fix: pass a `Bearer` `auth` accessor through `createClient()`'s
+  `fetchOptions.auth` so every Better Auth client call (not just
+  `getSession`) carries the token automatically — the same mechanism
+  `@better-fetch/fetch` already exposes and the same shape as
+  `api.client.ts`'s interceptor, just at the client-config layer instead of
+  per-request.
+- Related (#572): with the header never attached, every `refresh()` call
+  failed and left the dead token in `localStorage`, so every subsequent
+  navigation re-attempted the same doomed round-trip. `refresh()` now clears
+  the stale token on a confirmed "no session" response (no error, no user),
+  while leaving it in place on a network/server error — an outage shouldn't
+  sign a valid session out.
+- Session cookie (`credentials: 'include'`) left in place — backend side
+  untouched, called out as no-longer-load-bearing for the SPA in a comment
+  rather than removed, per the maintainer's request not to touch that side
+  in this PR.
+- Follow-up found during review (#581): the fix above preserves the token on
+  a transient `refresh()` failure, but `auth.global.ts` redirected to
+  `/sign-in` unconditionally on `!isAuthenticated` regardless of why — a
+  429 from the shared rate limiter (the same mechanism #572 measured: 45/56
+  navigations) silently signed a live session out. Middleware now passes
+  the navigation through instead when the token survived (transient failure
+  or mid-cooldown), leaving the destination page's own API calls — which
+  already retry once through `refresh()` on a 401 via `api.client.ts` — as
+  the authoritative check. A `useSessionRefreshCooldown.ts` composable (same
+  extract-for-testability shape as `useHasUsersCache.ts`) backs off retrying
+  `refresh()` for 5s after a transient failure so repeated navigations
+  during an outage don't keep re-hitting the same rate limit.
 
 ## T-2026-09-16-hero-poster — course page hero never renders the poster
 

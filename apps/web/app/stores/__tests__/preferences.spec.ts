@@ -22,7 +22,7 @@ vi.stubGlobal('localStorage', localStorageMock);
 // ---------------------------------------------------------------------------
 // Import store AFTER mock in place
 // ---------------------------------------------------------------------------
-import { usePreferencesStore } from '../preferences';
+import { usePreferencesStore, effectiveLessonState } from '../preferences';
 
 const STORAGE_KEY = 'cs.web.preferences';
 
@@ -80,12 +80,12 @@ describe('usePreferencesStore', () => {
   it('persists state to localStorage after mutation', async () => {
     const { nextTick } = await import('vue');
     const store = usePreferencesStore();
-    store.setDensity('cozy');
+    store.setDensity('compact');
     await nextTick();
     const raw = localStorageMock.getItem(STORAGE_KEY);
     expect(raw).not.toBeNull();
     const parsed = JSON.parse(raw!);
-    expect(parsed.density).toBe('cozy');
+    expect(parsed.density).toBe('compact');
   });
 
   it('hydrates from localStorage on store creation', async () => {
@@ -128,5 +128,38 @@ describe('usePreferencesStore', () => {
     setActivePinia(createPinia());
     const store = usePreferencesStore();
     expect(store.density).toBe('comfortable');
+  });
+
+  // The 'cozy' tier was dropped — it rendered identically to 'comfortable'
+  // (no CSS ever keyed off it). A value stored before this change must not
+  // crash the app; it falls back like any other unrecognised density.
+  it('falls back to comfortable when stored density is the retired "cozy" value', () => {
+    localStorageMock.setItem(STORAGE_KEY, JSON.stringify({ density: 'cozy' }));
+    setActivePinia(createPinia());
+    const store = usePreferencesStore();
+    expect(store.density).toBe('comfortable');
+  });
+
+  // ── effectiveLessonState ──────────────────────────────────────────────────
+
+  describe('effectiveLessonState', () => {
+    it('promotes in-progress to completed once the threshold is cleared', () => {
+      expect(effectiveLessonState({ state: 'in-progress', progressPercent: 80 }, 70)).toBe(
+        'completed',
+      );
+    });
+
+    it('leaves in-progress alone below the threshold', () => {
+      expect(effectiveLessonState({ state: 'in-progress', progressPercent: 60 }, 70)).toBe(
+        'in-progress',
+      );
+    });
+
+    it.each(['completed', 'not-started', 'locked'] as const)(
+      'passes %s through unchanged regardless of progressPercent',
+      (state) => {
+        expect(effectiveLessonState({ state, progressPercent: 0 }, 70)).toBe(state);
+      },
+    );
   });
 });

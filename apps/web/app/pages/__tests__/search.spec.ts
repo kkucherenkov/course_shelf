@@ -13,7 +13,12 @@ import { reactive, ref, type Ref } from 'vue';
 import { mount, type VueWrapper } from '@vue/test-utils';
 
 import type { LocationQuery } from 'vue-router';
-import type { SearchResultDto, SearchTranscriptHitDto } from '@app/api-client-ts';
+import type {
+  SearchCourseHit,
+  SearchLessonHit,
+  SearchResultDto,
+  SearchTranscriptHitDto,
+} from '@app/api-client-ts';
 import type { SearchStatus } from '../../composables/useSearch';
 
 const route = reactive<{ query: LocationQuery }>({ query: { q: 'hooks' } });
@@ -35,24 +40,61 @@ vi.mock('~/composables/useSearch', () => ({
   }),
 }));
 
-vi.mock('@app/ui', () => ({
-  AppButton: {
-    name: 'AppButton',
-    props: ['variant', 'size', 'label', 'to'],
-    template: '<button />',
-  },
-  AppEmptyState: {
-    name: 'AppEmptyState',
-    props: ['icon', 'title', 'body'],
-    template: '<div class="empty-state">{{ title }}<slot name="action" /></div>',
-  },
-  AppSkeleton: { name: 'AppSkeleton', props: ['width', 'height', 'radius'], template: '<div />' },
-  AppRow: {
-    name: 'AppRow',
-    template: '<div><slot name="leading" /><slot /><slot name="trailing" /></div>',
-  },
-  IconCS: { name: 'IconCS', props: ['name', 'size'], template: '<i />' },
-}));
+vi.mock('@app/ui', async () => {
+  // `initials`/`COVER` are the actual fix under test (#569: search.vue must
+  // consume the one shared implementation, not a local copy) — keep them
+  // real, pulled from the dependency-free submodule directly (the full
+  // `@app/ui` barrel drags in Nuxt UI components this test environment
+  // can't resolve). Only the presentational components below are stubbed.
+  const { initials, COVER } = await import('@app/ui/components/CourseCard/cover-map.ts');
+  return {
+    initials,
+    COVER,
+    AppButton: {
+      name: 'AppButton',
+      props: ['variant', 'size', 'label', 'to'],
+      template: '<button />',
+    },
+    AppEmptyState: {
+      name: 'AppEmptyState',
+      props: ['icon', 'title', 'body'],
+      template: '<div class="empty-state">{{ title }}<slot name="action" /></div>',
+    },
+    AppSkeleton: {
+      name: 'AppSkeleton',
+      props: ['width', 'height', 'radius'],
+      template: '<div />',
+    },
+    AppRow: {
+      name: 'AppRow',
+      template: '<div><slot name="leading" /><slot /><slot name="trailing" /></div>',
+    },
+    IconCS: { name: 'IconCS', props: ['name', 'size'], template: '<i />' },
+  };
+});
+
+function courseHit(overrides: Partial<SearchCourseHit> = {}): SearchCourseHit {
+  return {
+    id: 'course-1',
+    libraryId: 'lib-1',
+    title: 'Advanced Vue Patterns',
+    slug: 'advanced-vue-patterns',
+    lessonsTotal: 12,
+    ...overrides,
+  };
+}
+
+function lessonHit(overrides: Partial<SearchLessonHit> = {}): SearchLessonHit {
+  return {
+    id: 'lesson-1',
+    courseId: 'course-1',
+    courseTitle: 'Advanced Vue Patterns',
+    sectionTitle: 'Section 1',
+    title: 'Composables',
+    position: 1,
+    ...overrides,
+  };
+}
 
 function hit(overrides: Partial<SearchTranscriptHitDto> = {}): SearchTranscriptHitDto {
   return {
@@ -92,5 +134,41 @@ describe('search page — transcript wiring', () => {
     const wrapper = await mountSearch();
     expect(wrapper.find('.empty-state').exists()).toBe(false);
     expect(wrapper.find('.search-transcript-group').exists()).toBe(true);
+  });
+});
+
+// Regression coverage for #569: a course hit and a lesson hit for the same
+// course used to render two different sets of initials (this page split
+// `title` on raw whitespace; @app/ui's CourseCard filtered by word length)
+// on a flat `--brand-accent` fill, instead of the catalog's per-course hue.
+describe('search page — course/lesson cover identity', () => {
+  beforeEach(() => {
+    route.query = { q: 'vue' };
+    searchStatus.value = 'success';
+  });
+
+  it('renders the course thumb with @app/ui initials() and the per-course COVER accent', async () => {
+    searchData.value = {
+      query: 'vue',
+      courses: [courseHit({ title: 'Основы Vue' })],
+      lessons: [],
+    };
+    const wrapper = await mountSearch();
+    expect(wrapper.find('.page-search__item-initials').text()).toBe('VU');
+    const thumb = wrapper.find('.page-search__item-thumb');
+    expect(thumb.attributes('style')).toMatch(/var\(--media-cover-[a-z]+\)/);
+    expect(thumb.attributes('style')).not.toContain('brand-accent');
+  });
+
+  it('gives a lesson thumb the same cover accent as its parent course', async () => {
+    searchData.value = {
+      query: 'vue',
+      courses: [],
+      lessons: [lessonHit({ courseId: 'course-42', courseTitle: 'Advanced Vue Patterns' })],
+    };
+    const wrapper = await mountSearch();
+    expect(wrapper.find('.page-search__item-initials').text()).toBe('AV');
+    const thumb = wrapper.find('.page-search__item-thumb');
+    expect(thumb.attributes('style')).toMatch(/var\(--media-cover-[a-z]+\)/);
   });
 });

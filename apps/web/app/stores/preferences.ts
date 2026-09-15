@@ -11,6 +11,7 @@
 
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
+import type { LessonOutlineItem } from '@app/api-client-ts';
 
 // ── Storage key ──────────────────────────────────────────────────────────────
 
@@ -18,7 +19,7 @@ const STORAGE_KEY = 'cs.web.preferences';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type Density = 'comfortable' | 'cozy' | 'compact';
+export type Density = 'comfortable' | 'compact';
 
 export interface PreferencesState {
   density: Density;
@@ -52,7 +53,7 @@ function loadFromStorage(): PreferencesState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULTS };
     const parsed = JSON.parse(raw) as Partial<PreferencesState>;
-    const validDensities: Density[] = ['comfortable', 'cozy', 'compact'];
+    const validDensities: Density[] = ['comfortable', 'compact'];
     const rawDensity = parsed.density;
     return {
       density:
@@ -87,14 +88,18 @@ export const usePreferencesStore = defineStore('preferences', () => {
   const initial = loadFromStorage();
 
   const density = ref<Density>(initial.density);
-  // TODO: useLessonPlayer reads this when it lands
+  // Seeds `useLessonPlayer`'s initial playback rate — see `[lessonId].vue`.
   const defaultSpeed = ref<number>(initial.defaultSpeed);
+  // Gates auto-advance in `[lessonId].vue`'s `ended` watcher.
   const autoplayNext = ref<boolean>(initial.autoplayNext);
   const resumeWhereLeftOff = ref<boolean>(initial.resumeWhereLeftOff);
   /**
-   * Per-user display threshold for showing "completed" badge.
-   * The backend uses 90 % as a hard threshold for `completed: true`;
-   * this value only affects client-side UI indicators (e.g. lesson row badge).
+   * Per-user display threshold for showing the "completed" badge.
+   * The backend uses 90 % as a hard threshold for `completed: true`, and
+   * only reports a percentage at all while `state === 'in-progress'` — a
+   * lesson the backend already flagged complete can't be "un-completed"
+   * here. `effectiveLessonState` below is the one place this threshold is
+   * applied; it loosens (or tightens) that call for `in-progress` lessons.
    */
   const completionThreshold = ref<number>(initial.completionThreshold);
 
@@ -151,3 +156,22 @@ export const usePreferencesStore = defineStore('preferences', () => {
     setCompletionThreshold,
   };
 });
+
+// ── completionThreshold consumer ────────────────────────────────────────────
+
+/**
+ * Overrides an `in-progress` lesson to `completed` once its watched
+ * percentage clears the user's threshold. Consumed by
+ * `PlayerSectionsTab.vue`. A lesson the backend already marked `completed`
+ * (its fixed 90 % threshold) or `locked`/`not-started` passes through
+ * unchanged — there is no raw percentage to compare for those states.
+ */
+export function effectiveLessonState(
+  lesson: Pick<LessonOutlineItem, 'state' | 'progressPercent'>,
+  completionThresholdPercent: number,
+): LessonOutlineItem['state'] {
+  if (lesson.state === 'in-progress' && lesson.progressPercent >= completionThresholdPercent) {
+    return 'completed';
+  }
+  return lesson.state;
+}

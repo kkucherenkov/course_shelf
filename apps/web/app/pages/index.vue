@@ -127,6 +127,15 @@
     const n = recentlyCompleted.data.value?.items.length ?? 0;
     return t('pages.home.recentlyCompleted.count', n, { named: { n } });
   });
+
+  // "Add courses to a library" is an admin-only action (#579) — a member
+  // reading it has nothing to act on, so the empty row tells them what's
+  // actually true for their account instead.
+  const recentlyAddedEmptyBody = computed(() =>
+    userRole.value === 'ADMIN'
+      ? t('pages.home.recentlyAdded.emptyBody')
+      : t('pages.home.recentlyAdded.emptyBodyMember'),
+  );
 </script>
 
 <template>
@@ -177,7 +186,7 @@
           :status="recentlyAdded.status.value"
           :empty="(recentlyAdded.data.value?.items.length ?? 0) === 0"
           :empty-title="t('pages.home.recentlyAdded.empty')"
-          :empty-body="t('pages.home.recentlyAdded.emptyBody')"
+          :empty-body="recentlyAddedEmptyBody"
           :error-title="t('pages.home.recentlyAdded.error')"
           :retry-label="t('pages.home.recentlyAdded.retry')"
           :skeleton-count="6"

@@ -78,6 +78,8 @@
     buildSubtitleTracks(streamUrl.value, lessonData.value?.subtitles, locale.value),
   );
 
+  const preferencesStore = usePreferencesStore();
+
   // ── Player state ─────────────────────────────────────────────────────────────
 
   const {
@@ -101,7 +103,8 @@
     onToggleFullscreen,
     attach,
     detach,
-  } = useLessonPlayer();
+    attachChromeRoot,
+  } = useLessonPlayer({ initialSpeed: preferencesStore.defaultSpeed });
 
   // ── Progress reporter ────────────────────────────────────────────────────────
 
@@ -116,6 +119,14 @@
   // ── Video element ref ────────────────────────────────────────────────────────
 
   const videoRef = ref<HTMLVideoElement | null>(null);
+  // A local shape rather than `InstanceType<typeof AppPlayerChrome>` — the
+  // latter type-checks fine under `nuxt typecheck` (Volar resolves the
+  // cross-package `defineExpose` macro) but ESLint's type-aware linting
+  // doesn't share that resolution and flags every member access as unsafe.
+  interface PlayerChromeHandle {
+    getRootEl: () => HTMLElement | null;
+  }
+  const chromeRef = ref<PlayerChromeHandle | null>(null);
   let hasSetStartTime = false;
 
   // ── Transcript ────────────────────────────────────────────────────────────────
@@ -125,8 +136,6 @@
     position,
     preferredLanguage: locale,
   });
-
-  const preferencesStore = usePreferencesStore();
 
   // `?t=` deep link — a link to a moment must land on that moment, so it beats
   // both the stored resume position and the "Resume where I left off"
@@ -170,6 +179,14 @@
     else detach();
   });
 
+  // The chrome only mounts once loading finishes (see template `v-else`), so
+  // `chromeRef` starts null — mirror the videoRef pattern above rather than
+  // attaching once in `onMounted`.
+  watch(chromeRef, (instance) => {
+    const rootEl = instance?.getRootEl() ?? null;
+    if (rootEl) attachChromeRoot(rootEl);
+  });
+
   // ── Auto-advance ─────────────────────────────────────────────────────────────
 
   const countdown = ref(5);
@@ -196,7 +213,7 @@
     player: t('pages.lessonPlayer.aria.player'),
     buffering: t('pages.lessonPlayer.aria.buffering'),
     pip: t('pages.lessonPlayer.aria.pip'),
-    settings: t('pages.lessonPlayer.aria.settings'),
+    shortcuts: t('pages.lessonPlayer.aria.shortcuts'),
     seek: t('pages.lessonPlayer.aria.seek'),
     bookmarkAt: t('pages.lessonPlayer.aria.bookmarkAt', { time: '{time}' }),
     pause: t('pages.lessonPlayer.aria.pause'),
@@ -208,15 +225,32 @@
     speed: t('pages.lessonPlayer.aria.speed'),
     subtitlesEnable: t('pages.lessonPlayer.aria.subtitlesEnable'),
     subtitlesDisable: t('pages.lessonPlayer.aria.subtitlesDisable'),
+    subtitlesUnavailable: t('pages.lessonPlayer.aria.subtitlesUnavailable'),
     fullscreenEnter: t('pages.lessonPlayer.aria.fullscreenEnter'),
     fullscreenExit: t('pages.lessonPlayer.aria.fullscreenExit'),
   }));
 
-  const endNext = computed<{ title: string; countdownSec: number } | undefined>(() => {
+  // Real availability — dropped/unbuildable subtitle entries never reach the
+  // `<track>` list, so an empty result here means the CC button has nothing
+  // to toggle.
+  const subtitlesAvailable = computed(() => subtitleTracks.value.length > 0);
+
+  const lessonShortcuts = computed(() => [
+    t('pages.lessonPlayer.shortcuts.playPause'),
+    t('pages.lessonPlayer.shortcuts.seekSmall'),
+    t('pages.lessonPlayer.shortcuts.seekLarge'),
+    t('pages.lessonPlayer.shortcuts.frameStep'),
+    t('pages.lessonPlayer.shortcuts.fullscreen'),
+    t('pages.lessonPlayer.shortcuts.mute'),
+    t('pages.lessonPlayer.shortcuts.jumpPercent'),
+  ]);
+
+  const endNext = computed<{ title: string; countdownSec?: number } | undefined>(() => {
     if (!nextLesson.value) return;
     return {
       title: nextLesson.value.title,
-      countdownSec: countdown.value,
+      // No countdown line when autoplay is off — nothing is actually ticking.
+      countdownSec: preferencesStore.autoplayNext ? countdown.value : undefined,
     };
   });
 
@@ -245,7 +279,7 @@
   }
 
   watch(ended, (isEnded) => {
-    if (isEnded && nextLesson.value) {
+    if (isEnded && nextLesson.value && preferencesStore.autoplayNext) {
       startCountdown();
     }
   });
@@ -376,6 +410,7 @@
         <!-- Player column -->
         <div class="page-lesson-player__player-col">
           <AppPlayerChrome
+            ref="chromeRef"
             :state="chromeState"
             :position="position"
             :duration="duration"
@@ -383,6 +418,7 @@
             :speed="speed"
             :muted="muted"
             :subtitles-enabled="subtitlesOn"
+            :subtitles-available="subtitlesAvailable"
             :fullscreen="fullscreen"
             :lesson-title="lessonData?.title ?? ''"
             :lesson-subtitle="lessonSubtitle"
@@ -396,6 +432,8 @@
             :up-next-label="t('pages.lessonPlayer.upNextIn', { n: '{n}' })"
             :stay-label="t('pages.lessonPlayer.stayHere')"
             :play-next-label="t('pages.lessonPlayer.playNext')"
+            :shortcuts-title="t('pages.lessonPlayer.shortcuts.title')"
+            :shortcuts="lessonShortcuts"
             :aria-labels="chromeAria"
             @play="onPlay"
             @pause="onPause"

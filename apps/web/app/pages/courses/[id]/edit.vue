@@ -12,7 +12,8 @@
    * detail page is just a convenience link, not the boundary.
    */
   import { ref } from 'vue';
-  import { AppBanner, AppButton, AppSkeleton } from '@app/ui';
+  import { onBeforeRouteLeave } from 'vue-router';
+  import { AppBanner, AppButton, AppDialog, AppSkeleton } from '@app/ui';
   import type { UpdateCourseRequest } from '@app/api-client-ts';
   import { useCourseEdit } from '~/composables/useCourseEdit';
   import CourseMetadataForm from '~/components/course-edit/CourseMetadataForm.vue';
@@ -45,6 +46,58 @@
     toast.add({ title: t('pages.courseEdit.saveSuccess'), color: 'success' });
   }
 
+  // ── Leave guard (#570) ────────────────────────────────────────────────────
+  //
+  // The only exit affordance left on this page is the footer's Cancel button
+  // (see template) — the header used to carry a second "Back to course" link
+  // to the same route, which was pure duplication now that every route away
+  // from here goes through `onBeforeRouteLeave` below regardless of which
+  // widget triggered it (a link click, `navigateTo`, or the sidebar nav).
+  // `InstanceType<typeof CourseMetadataForm>` doesn't carry what `defineExpose`
+  // adds (that's a known gap in Vue's template-ref typing, not this file's
+  // doing) — spelling out the one exposed member we read is Vue's own
+  // documented workaround.
+  const formRef = ref<{ hasChanges: boolean } | null>(null);
+  const leaveConfirmOpen = ref(false);
+  let resolveLeaveConfirm: ((discard: boolean) => void) | null = null;
+
+  function confirmDiscard(): Promise<boolean> {
+    leaveConfirmOpen.value = true;
+    return new Promise((resolve) => {
+      resolveLeaveConfirm = resolve;
+    });
+  }
+
+  function settleLeaveConfirm(discard: boolean): void {
+    leaveConfirmOpen.value = false;
+    resolveLeaveConfirm?.(discard);
+    resolveLeaveConfirm = null;
+  }
+
+  onBeforeRouteLeave(async () => {
+    if (!formRef.value?.hasChanges) return true;
+    return confirmDiscard();
+  });
+
+  function onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (!formRef.value?.hasChanges) return;
+    // Browsers show their own generic prompt here — the string is ignored by
+    // every modern engine, only the presence of `returnValue` matters.
+    event.preventDefault();
+    // `returnValue` is formally deprecated but still the only thing Firefox
+    // honours to actually show the prompt — `preventDefault()` alone is not
+    // enough there yet.
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    event.returnValue = '';
+  }
+
+  onMounted(() => {
+    globalThis.window.addEventListener('beforeunload', onBeforeUnload);
+  });
+  onUnmounted(() => {
+    globalThis.window.removeEventListener('beforeunload', onBeforeUnload);
+  });
+
   function onCancel(): void {
     void navigateTo(`/courses/${courseId}`);
   }
@@ -54,12 +107,6 @@
   <div class="page-course-edit">
     <div class="page-course-edit__header">
       <h1 class="page-course-edit__title">{{ t('pages.courseEdit.title') }}</h1>
-      <AppButton
-        variant="ghost"
-        size="sm"
-        :label="t('pages.courseEdit.back')"
-        :to="`/courses/${courseId}`"
-      />
     </div>
 
     <div v-if="status === 'error'" class="page-course-edit__error">
@@ -75,12 +122,34 @@
 
     <CourseMetadataForm
       v-else-if="data"
+      ref="formRef"
       :key="formVersion"
       :course="data"
       :saving="saving"
       @submit="onSubmit"
       @cancel="onCancel"
     />
+
+    <AppDialog
+      :open="leaveConfirmOpen"
+      size="sm"
+      :title="t('pages.courseEdit.leaveGuard.title')"
+      :description="t('pages.courseEdit.leaveGuard.description')"
+      @update:open="(open) => !open && settleLeaveConfirm(false)"
+    >
+      <template #footer>
+        <AppButton
+          variant="ghost"
+          :label="t('pages.courseEdit.leaveGuard.stay')"
+          @click="settleLeaveConfirm(false)"
+        />
+        <AppButton
+          variant="destructive"
+          :label="t('pages.courseEdit.leaveGuard.discard')"
+          @click="settleLeaveConfirm(true)"
+        />
+      </template>
+    </AppDialog>
   </div>
 </template>
 

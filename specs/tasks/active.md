@@ -75,7 +75,8 @@
   - [x] i18n keys (en + ru), `pnpm check:i18n` green
   - [x] component/composable specs (401 web tests green)
   - [x] lint/stylelint/format/typecheck gates green
-  - [ ] PR `Closes #546`
+  - [x] PR `Closes #546` — [#552](https://github.com/kkucherenkov/course_shelf/pull/552)
+  - [ ] CI green on #552
   - [ ] once #548 (card) is merged: tick `E30-F03-S02` sub-steps, flip
         `docs/roadmap/TODO.md` row, mark card done
 - Status: in-progress

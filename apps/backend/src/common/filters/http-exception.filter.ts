@@ -85,6 +85,23 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const http = host.switchToHttp();
     const response = http.getResponse<Response>();
     const request = http.getRequest<Request>();
+
+    // A streaming route (`/stream/lessons/{id}`) has already written status +
+    // headers by the time the client aborts mid-body — a range seek, a
+    // closed tab — which Express surfaces here as `ERR_STREAM_PREMATURE_CLOSE`.
+    // There is no client left to receive a `problem+json` body, and writing
+    // to a response whose headers are sent throws `ERR_HTTP_HEADERS_SENT` on
+    // top of the original error. Log that the client is gone and stop —
+    // this is not a server failure, so no `error` log, no Sentry capture.
+    if (response.headersSent) {
+      this.logger.warn(
+        `${request.method} ${request.originalUrl || request.url} — client disconnected before the response finished: ${
+          exception instanceof Error ? exception.message : String(exception)
+        }`,
+      );
+      return;
+    }
+
     const external = externalHttpError(exception);
     const problem = this.toProblem(exception, external, request.originalUrl || request.url);
 

@@ -710,9 +710,18 @@ Security gates: TruffleHog, an OSI-permissive `license-checker` allowlist, and
 **osv-scanner v2.3.8** with a jq filter gating on CRITICAL + HIGH (an empty
 scanner output is treated as a failure, not a pass).
 
-⚠ **`main` has no branch protection.** PRs can merge with zero passing checks,
-and one already has. Every gate above is advisory until that is fixed — see
-[§18](#18--known-architectural-debt).
+**`main` is branch-protected**: the four jobs above (`Checks (lint ·
+typecheck · test · specs · ui audit)`, `Codegen drift guard`, `Flutter
+(analyze · test · goldens)`, `Security (secret scan · license audit ·
+vulnerabilities)`) are required status checks, and `strict` mode is on — a
+branch must be up to date with `main` before GitHub will let it merge.
+`enforce_admins` is off and no review is required.
+
+That combination is why the parallel-lane workflow (`.claude/CLAUDE.md`,
+**Parallel work**) merges one PR at a time rather than all at once: `strict`
+forces every branch but the first to rebase and re-run CI against whatever
+just landed, while `enforce_admins: false` lets the maintainer merge a
+branch that fell behind without waiting on that re-run.
 
 ---
 

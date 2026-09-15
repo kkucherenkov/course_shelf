@@ -280,6 +280,21 @@ abstract final class AppMedia {
   static const Color scrimSoft = Color(0x66000000);
   static const Color scrimMedium = Color(0x8C000000);
   static const Color scrimStrong = Color(0x99000000);
+  static const Color coverTeal = Color(0xFF33716B);
+  static const Color coverAmber = Color(0xFF8E5C14);
+  static const Color coverIndigo = Color(0xFF5C629F);
+  static const Color coverWarm = Color(0xFF5C5644);
+  static const Color coverCoral = Color(0xFF9E5045);
+  static const Color coverNeutral = Color(0xFF454952);
+}
+
+abstract final class AppAvatarPalette {
+  static const Color indigo = Color(0xFF4D73C3);
+  static const Color teal = Color(0xFF268466);
+  static const Color amber = Color(0xFFA36827);
+  static const Color violet = Color(0xFF8A4FC8);
+  static const Color coral = Color(0xFFB04040);
+  static const Color blueGrey = Color(0xFF417C9B);
 }
 
 abstract final class AppZIndex {

@@ -3,7 +3,7 @@
 exports[`AdminUserRow > matches snapshot 1`] = `
 "<div data-v-222c1c3d="" class="adm-user-row" role="row">
   <!-- Avatar -->
-  <div data-v-222c1c3d="" class="adm-user-row__avatar" aria-hidden="true" style="background: #b04040;">A</div><!-- Name + email -->
+  <div data-v-222c1c3d="" class="adm-user-row__avatar" aria-hidden="true" style="background: var(--avatar-coral);">A</div><!-- Name + email -->
   <div data-v-222c1c3d="" class="adm-user-row__name-col">
     <div data-v-222c1c3d="" class="adm-user-row__name">Alice</div>
     <div data-v-222c1c3d="" class="adm-user-row__email">alice@example.com</div>

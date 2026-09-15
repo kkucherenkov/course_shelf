@@ -96,4 +96,15 @@ describe('AdminUserRow', () => {
     const w = mount(AdminUserRow, { props: baseProps });
     expect(w.html()).toMatchSnapshot();
   });
+
+  // Regression guard for #569: the avatar background used to be a private
+  // hex literal picked from a local array duplicated in this file and
+  // admin/permissions/[userId].vue. It must now resolve through the shared
+  // `avatar-color.ts` util to a `--avatar-*` design token, never a raw hex.
+  it('sets the avatar background to an --avatar-* token, not a hex literal', () => {
+    const w = mount(AdminUserRow, { props: baseProps });
+    const style = w.find('.adm-user-row__avatar').attributes('style') ?? '';
+    expect(style).toMatch(/var\(--avatar-[a-z-]+\)/);
+    expect(style).not.toMatch(/#[0-9a-fA-F]{3,6}/);
+  });
 });

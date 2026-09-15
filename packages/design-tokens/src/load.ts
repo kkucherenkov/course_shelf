@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type {
+  AvatarFile,
   ColorFile,
   MediaFile,
   MotionFile,
@@ -22,6 +23,7 @@ interface DocsTokensFile {
   zIndex: MotionFile['zIndex'];
   opacity: OpacityFile['opacity'];
   media: MediaFile['media'];
+  avatar: AvatarFile['avatar'];
   typography: TypographyFile['typography'];
 }
 
@@ -41,5 +43,6 @@ export function loadTokens(repoRoot: string): TokenBundle {
     motion: { motion: raw.motion, zIndex: raw.zIndex },
     opacity: { opacity: raw.opacity },
     media: { media: raw.media },
+    avatar: { avatar: raw.avatar },
   };
 }

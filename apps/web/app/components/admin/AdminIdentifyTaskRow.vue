@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { AppBadge } from '@app/ui';
+  import { AppBadge, IconCS } from '@app/ui';
   import type { IdentifyTaskDto, IdentifyTaskStatus } from '@app/api-client-ts';
 
   interface Props {
@@ -17,6 +17,8 @@
     click: [];
   }>();
 
+  const { t } = useI18n();
+
   type BadgeColor = 'warning' | 'success' | 'neutral';
 
   const statusBadge = computed<{ label: string; color: BadgeColor }>(() => {
@@ -28,22 +30,17 @@
     return map[props.task.status];
   });
 
-  // Short id, matching the shorthand `pages/admin/index.vue` already uses for
-  // `scan.libraryId` — this row links straight to `/courses/{courseId}` so
-  // the full id is one click away, not something worth spelling out here.
-  const courseIdShort = computed(() => `${props.task.courseId.slice(0, 8)}…`);
-
   function formatRelative(isoString: string): string {
     const now = Date.now();
     const then = new Date(isoString).getTime();
     const diffSec = Math.floor((now - then) / 1000);
-    if (diffSec < 60) return `${String(diffSec)}s ago`;
+    if (diffSec < 60) return t('pages.admin.identifyTasks.timeAgoSeconds', { n: diffSec });
     const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${String(diffMin)}m ago`;
+    if (diffMin < 60) return t('pages.admin.identifyTasks.timeAgoMinutes', { n: diffMin });
     const diffH = Math.floor(diffMin / 60);
-    if (diffH < 24) return `${String(diffH)}h ago`;
+    if (diffH < 24) return t('pages.admin.identifyTasks.timeAgoHours', { n: diffH });
     const diffD = Math.floor(diffH / 24);
-    return `${String(diffD)}d ago`;
+    return t('pages.admin.identifyTasks.timeAgoDays', { n: diffD });
   }
 </script>
 
@@ -64,15 +61,15 @@
     />
 
     <div class="adm-identify-row__main">
-      <div class="adm-identify-row__source">{{ props.task.source }}</div>
+      <div class="adm-identify-row__title">{{ props.task.courseTitle }}</div>
       <div class="adm-identify-row__meta">
-        <span>{{ courseIdShort }}</span>
+        <span>{{ props.task.source }}</span>
         <span class="adm-identify-row__sep">·</span>
         <span>{{ formatRelative(props.task.createdAt) }}</span>
       </div>
     </div>
 
-    <span class="i-heroicons-chevron-right adm-identify-row__chevron" aria-hidden="true" />
+    <IconCS name="chevron-right" class="adm-identify-row__chevron" />
   </div>
 </template>
 
@@ -108,7 +105,7 @@
       flex: 1;
     }
 
-    &__source {
+    &__title {
       font-weight: 500;
       color: var(--text-loud);
       font-size: var(--text-sm);
@@ -123,12 +120,10 @@
       font-size: var(--text-xs);
       color: var(--text-muted);
       margin-top: var(--space-1);
-      font-family: var(--font-mono);
     }
 
     &__sep {
       color: var(--text-subtle);
-      font-family: initial;
     }
 
     &__chevron {

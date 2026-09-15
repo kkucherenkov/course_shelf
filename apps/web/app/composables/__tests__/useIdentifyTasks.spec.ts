@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ref } from 'vue';
-import type { IdentifyTaskDto, MergePolicyDto } from '@app/api-client-ts';
+import type { IdentifyTaskDto, IdentifyTaskStatus, MergePolicyDto } from '@app/api-client-ts';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -37,6 +37,7 @@ function makeTask(overrides: Partial<IdentifyTaskDto> = {}): IdentifyTaskDto {
   return {
     id: 'task-1',
     courseId: 'course-1',
+    courseTitle: 'Scraped Course',
     status: 'proposed',
     source: 'coursera',
     scrapedFragment: { title: 'Scraped Title' },
@@ -70,6 +71,71 @@ describe('buildMergePolicy', () => {
     // Every other field is still present, not omitted.
     expect(policy.description).toBe('merge');
     expect(policy.externalIds).toBe('merge');
+  });
+});
+
+// ── useIdentifyTasksList ─────────────────────────────────────────────────────
+
+describe('useIdentifyTasksList', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+  });
+
+  it('queries without a status filter and keys on "all" when unset', async () => {
+    let capturedFetcher: (() => Promise<unknown>) | undefined;
+    let capturedKey: (() => string) | undefined;
+    let capturedWatch: unknown[] | undefined;
+    vi.stubGlobal(
+      'useAsyncData',
+      (keyFn: () => string, fetcher: () => Promise<unknown>, opts: { watch?: unknown[] }) => {
+        capturedKey = keyFn;
+        capturedFetcher = fetcher;
+        capturedWatch = opts.watch;
+        return { data: ref(undefined), status: ref('idle'), error: ref(null), refresh: vi.fn() };
+      },
+    );
+    mockListIdentifyTasks.mockResolvedValueOnce({
+      data: { tasks: [] },
+      error: null,
+      response: { status: 200 },
+    });
+
+    const { useIdentifyTasksList } = await import('../useIdentifyTasks');
+    const statusFilter = ref<IdentifyTaskStatus | undefined>(undefined);
+    useIdentifyTasksList(statusFilter);
+
+    expect(capturedKey?.()).toBe('identify-tasks:all');
+    expect(capturedWatch).toEqual([statusFilter]);
+    await capturedFetcher?.();
+    expect(mockListIdentifyTasks).toHaveBeenCalledWith(
+      expect.objectContaining({ query: undefined }),
+    );
+  });
+
+  it('forwards the status filter to the query and to the fetch key', async () => {
+    let capturedFetcher: (() => Promise<unknown>) | undefined;
+    let capturedKey: (() => string) | undefined;
+    vi.stubGlobal('useAsyncData', (keyFn: () => string, fetcher: () => Promise<unknown>) => {
+      capturedKey = keyFn;
+      capturedFetcher = fetcher;
+      return { data: ref(undefined), status: ref('idle'), error: ref(null), refresh: vi.fn() };
+    });
+    mockListIdentifyTasks.mockResolvedValueOnce({
+      data: { tasks: [makeTask()] },
+      error: null,
+      response: { status: 200 },
+    });
+
+    const { useIdentifyTasksList } = await import('../useIdentifyTasks');
+    const statusFilter = ref<IdentifyTaskStatus | undefined>('proposed');
+    useIdentifyTasksList(statusFilter);
+
+    expect(capturedKey?.()).toBe('identify-tasks:proposed');
+    await capturedFetcher?.();
+    expect(mockListIdentifyTasks).toHaveBeenCalledWith(
+      expect.objectContaining({ query: { status: 'proposed' } }),
+    );
   });
 });
 

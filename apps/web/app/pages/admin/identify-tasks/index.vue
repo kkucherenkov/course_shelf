@@ -6,8 +6,9 @@
    * middleware is the real guard (redirects non-admins before this component
    * ever runs) — same pattern as `pages/courses/[id]/edit.vue`.
    */
-  import { computed, provide } from 'vue';
-  import { AppBanner, AppEmptyState } from '@app/ui';
+  import { computed, provide, ref } from 'vue';
+  import { AppBanner, AppButton, AppEmptyState, AppSelect } from '@app/ui';
+  import type { IdentifyTaskStatus } from '@app/api-client-ts';
   import AdminIdentifyTaskRow from '~/components/admin/AdminIdentifyTaskRow.vue';
   import { useIdentifyTasksList } from '~/composables/useIdentifyTasks';
 
@@ -19,7 +20,22 @@
   const pageTitle = computed(() => t('pages.admin.identifyTasks.title'));
   provide('adminPageTitle', pageTitle);
 
-  const { data, status, error, refetch } = useIdentifyTasksList();
+  // Status filter — defaults to `proposed`, the only status that actually
+  // needs an admin's attention. 'all' is the AppSelect sentinel for "no
+  // status filter", mapped to `undefined` before it reaches the composable.
+  type StatusFilterValue = IdentifyTaskStatus | 'all';
+  const statusFilterValue = ref<StatusFilterValue>('proposed');
+  const statusFilter = computed<IdentifyTaskStatus | undefined>(() =>
+    statusFilterValue.value === 'all' ? undefined : statusFilterValue.value,
+  );
+  const statusFilterOptions = computed<{ id: StatusFilterValue; label: string }[]>(() => [
+    { id: 'proposed', label: t('pages.admin.identifyTasks.statusProposed') },
+    { id: 'applied', label: t('pages.admin.identifyTasks.statusApplied') },
+    { id: 'discarded', label: t('pages.admin.identifyTasks.statusDiscarded') },
+    { id: 'all', label: t('pages.admin.identifyTasks.filterAll') },
+  ]);
+
+  const { data, status, error, refetch } = useIdentifyTasksList(statusFilter);
 
   const isLoading = computed(() => status.value === 'pending');
   const hasError = computed(() => status.value === 'error');
@@ -43,6 +59,17 @@
         <h2 class="adm-identify-tasks__title">{{ t('pages.admin.identifyTasks.title') }}</h2>
         <p v-if="subtitle" class="adm-identify-tasks__sub">{{ subtitle }}</p>
       </div>
+      <label class="adm-identify-tasks__filter">
+        <span class="adm-identify-tasks__filter-label">
+          {{ t('pages.admin.identifyTasks.filterLabel') }}
+        </span>
+        <AppSelect
+          v-model="statusFilterValue"
+          :options="statusFilterOptions"
+          size="sm"
+          data-testid="identify-tasks-status-filter"
+        />
+      </label>
     </div>
 
     <AppBanner
@@ -53,9 +80,9 @@
       class="adm-identify-tasks__error-banner"
     >
       <template #actions>
-        <UButton size="sm" variant="outline" color="error" @click="refetch()">
+        <AppButton size="sm" variant="secondary" @click="refetch()">
           {{ t('pages.admin.identifyTasks.errorRetry') }}
-        </UButton>
+        </AppButton>
       </template>
     </AppBanner>
 
@@ -119,6 +146,19 @@
       margin: var(--space-1) 0 0;
       font-size: var(--text-sm);
       color: var(--text-muted);
+    }
+
+    &__filter {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-shrink: 0;
+    }
+
+    &__filter-label {
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+      flex-shrink: 0;
     }
 
     &__error-banner {

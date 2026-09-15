@@ -619,6 +619,12 @@ export default {
         statusProposed: 'Proposed',
         statusApplied: 'Applied',
         statusDiscarded: 'Discarded',
+        filterLabel: 'Status',
+        filterAll: 'All statuses',
+        timeAgoSeconds: '{n}s ago',
+        timeAgoMinutes: '{n}m ago',
+        timeAgoHours: '{n}h ago',
+        timeAgoDays: '{n}d ago',
       },
       identifyTaskDetail: {
         title: 'Review identify task',

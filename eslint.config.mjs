@@ -46,6 +46,25 @@ export default [
     },
   },
   {
+    // The audit harness runs in Node but hands functions to Playwright, which
+    // evaluates them inside the page — so one file legitimately spans both
+    // scopes and neither `globals.node` nor `globals.browser` alone describes
+    // it. It is an operator tool, not shipped code: console output is its
+    // interface and `process.exit` its exit code.
+    files: ['.claude/skills/**/*.mjs'],
+    languageOptions: {
+      globals: { document: 'readonly', getComputedStyle: 'readonly', window: 'readonly' },
+    },
+    rules: {
+      'no-console': 'off',
+      'unicorn/no-process-exit': 'off',
+      'unicorn/prefer-top-level-await': 'off',
+      'unicorn/consistent-function-scoping': 'off',
+      'unicorn/no-await-expression-member': 'off',
+      'unicorn/prefer-dom-node-text-content': 'off',
+    },
+  },
+  {
     ignores: [
       '**/node_modules/**',
       '**/dist/**',

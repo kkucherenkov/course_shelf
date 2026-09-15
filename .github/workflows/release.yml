@@ -8,9 +8,15 @@ name: Release (ghcr)
 #   - a GitHub Release with the deploy-ready artefact bundle (compose rendered
 #     with REGISTRY / REGISTRY_NAMESPACE / RELEASE_TAG pinned)
 #
+# Between build and push, the backend image is smoke-tested: whisper-cli runs
+# for real, inside that image, against a real ggml model — the 1.3.0 release
+# shipped one that died with "Illegal instruction (core dumped)" on the
+# target machine because every gate that ran it used WHISPER_MODE=mock. A
+# failure there stops the job before anything is pushed or released.
+#
 # A `workflow_dispatch` run is a dry run: it renders and validates the release
-# compose against HEAD and stops there — no login, no image build, no
-# release. It exists because the tag-only trigger meant this file was
+# compose against HEAD and stops there — no login, no image build, no smoke
+# test, no release. It exists because the tag-only trigger meant this file was
 # untestable without cutting a real release, which is exactly how a stale
 # placeholder list survived for weeks (see the render+validate step below).
 #
@@ -155,8 +161,10 @@ jobs:
             --username "${{ github.actor }}" \
             --password-stdin
 
-      # ─── Build + push images ─────────────────────────────────────────────
-      - name: Build and push release images
+      # ─── Build images ────────────────────────────────────────────────────
+      # Build only — pushed further down, after the whisper smoke test below
+      # has had a chance to fail the job first.
+      - name: Build release images
         if: github.event_name != 'workflow_dispatch'
         env:
           SEMVER: ${{ steps.version.outputs.semver }}
@@ -167,7 +175,7 @@ jobs:
 
           NS="$REGISTRY_NAMESPACE"
 
-          publish() {
+          build() {
             local name="$1"
             local dockerfile="$2"
             local image="$REGISTRY/$NS/$name"
@@ -185,6 +193,77 @@ jobs:
               -t "$image:latest" \
               .
             echo "::endgroup::"
+          }
+
+          build courseshelf-backend apps/backend/Dockerfile
+          build courseshelf-web     apps/web/Dockerfile
+
+      # ─── Whisper smoke test ──────────────────────────────────────────────
+      # Runs whisper-cli INSIDE the just-built backend image, not on the
+      # runner — the 1.3.0 defect was a build that only failed on the
+      # target CPU (implicit `-march=native`), so a runner-side check
+      # would not have caught it. Backend unit tests run WHISPER_MODE=mock
+      # and even the e2e job's production-shaped image sets the same, so
+      # this is the only place in the whole pipeline the real binary runs.
+      #
+      # Deliberately before "Push release images" below: a step with a
+      # plain `if:` (no always()/failure()) implicitly requires success(),
+      # so a failure here already skips the push and everything after it —
+      # no extra guard needed.
+      - name: Whisper smoke test
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          SEMVER: ${{ steps.version.outputs.semver }}
+        run: |
+          # No `-e`: a failed `docker run` must fall through to the status
+          # check below, not exit the script before it runs.
+          set -uo pipefail
+
+          IMAGE="$REGISTRY/$REGISTRY_NAMESPACE/courseshelf-backend:${SEMVER}"
+          MODEL="$RUNNER_TEMP/ggml-tiny.bin"
+
+          # Same source the maintainer-facing `pnpm whisper:model` script
+          # uses (scripts/fetch-whisper-model.ts) — tiny model, ~75 MB, kept
+          # out of the image and out of the repo, fetched once per run.
+          curl -sSfL \
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin" \
+            -o "$MODEL"
+
+          # ffmpeg generates the 1s silent wav inside the container — no
+          # fixture binary in the repo. whisper-cli does the rest.
+          OUTPUT=$(docker run --rm \
+            -v "$MODEL:/tmp/ggml-tiny.bin:ro" \
+            "$IMAGE" \
+            sh -c 'ffmpeg -hide_banner -loglevel error -f lavfi \
+                     -i anullsrc=r=16000:cl=mono -t 1 -y /tmp/silence.wav \
+                   && whisper-cli -m /tmp/ggml-tiny.bin -f /tmp/silence.wav -nt' 2>&1)
+          STATUS=$?
+
+          echo "$OUTPUT"
+
+          # A SIGILL kill (illegal instruction) shows up as a shell message
+          # on some paths, not just a non-zero exit — check both.
+          if [ "$STATUS" -ne 0 ] || printf '%s' "$OUTPUT" | grep -qi 'illegal instruction'; then
+            echo "::error::whisper-cli failed inside the built backend image (exit=$STATUS)." \
+                 "Likely a non-portable build (e.g. -march=native / GGML_NATIVE not OFF)." >&2
+            exit 1
+          fi
+
+      # ─── Push images ─────────────────────────────────────────────────────
+      - name: Push release images
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          SEMVER: ${{ steps.version.outputs.semver }}
+          MAJOR: ${{ steps.version.outputs.major }}
+          MINOR: ${{ steps.version.outputs.minor }}
+        run: |
+          set -euo pipefail
+
+          NS="$REGISTRY_NAMESPACE"
+
+          push() {
+            local name="$1"
+            local image="$REGISTRY/$NS/$name"
 
             echo "::group::push $name"
             docker push "$image:$SEMVER"
@@ -194,8 +273,8 @@ jobs:
             echo "::endgroup::"
           }
 
-          publish courseshelf-backend     apps/backend/Dockerfile
-          publish courseshelf-web         apps/web/Dockerfile
+          push courseshelf-backend
+          push courseshelf-web
 
       # ─── Changelog (git-cliff) ───────────────────────────────────────────
       - name: Install git-cliff

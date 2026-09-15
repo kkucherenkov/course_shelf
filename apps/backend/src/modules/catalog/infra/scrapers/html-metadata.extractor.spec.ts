@@ -53,4 +53,47 @@ describe('HtmlMetadataExtractor', () => {
     expect(f.title).toBeUndefined();
     expect(f).toEqual({});
   });
+
+  it('extracts a fragment from schema.org Product JSON-LD (Stepik)', () => {
+    const html = `<!doctype html><html><head>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Product","name":"Stepik Course",
+ "description":"Learn something new","image":"https://cdn.test/stepik-poster.jpg",
+ "logo":"https://cdn.test/stepik-logo.png",
+ "aggregateRating":{"@type":"AggregateRating","ratingValue":5.0,"ratingCount":62}}
+</script></head><body></body></html>`;
+    const f = extractor.extract(html);
+    expect(f.title).toBe('Stepik Course');
+    expect(f.description).toBe('Learn something new');
+    expect(f.posterUrl).toBe('https://cdn.test/stepik-poster.jpg');
+    expect(f.ratingAverage).toBe(5);
+    expect(f.ratingCount).toBe(62);
+  });
+
+  it('accepts an array-form @type containing VideoObject', () => {
+    const html = `<!doctype html><html><head>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":["VideoObject","Thing"],"name":"Lecture 1"}
+</script></head><body></body></html>`;
+    const f = extractor.extract(html);
+    expect(f.title).toBe('Lecture 1');
+  });
+
+  it('accepts an array-form @type containing Product', () => {
+    const html = `<!doctype html><html><head>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":["Product","Thing"],"name":"Bundled Course"}
+</script></head><body></body></html>`;
+    const f = extractor.extract(html);
+    expect(f.title).toBe('Bundled Course');
+  });
+
+  it('still accepts scalar @type Course (regression)', () => {
+    const html = `<!doctype html><html><head>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"Plain Course"}
+</script></head><body></body></html>`;
+    const f = extractor.extract(html);
+    expect(f.title).toBe('Plain Course');
+  });
 });

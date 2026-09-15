@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { AppButton, AppEmptyState, AppSkeleton } from '@app/ui';
+  import { AppButton, AppEmptyState, AppSkeleton, COVER, initials } from '@app/ui';
   import type {
     SearchCourseHit,
     SearchLessonHit,
@@ -9,7 +9,15 @@
 
   import { useSearch } from '~/composables/useSearch';
   import { highlight } from '~/utils/highlight';
+  import { accentFromId } from '~/utils/course-accent';
   import SearchTranscriptGroup from '~/components/search/SearchTranscriptGroup.vue';
+
+  // Same per-course identity colour as the catalog (CourseCard) — a course's
+  // thumb here used to always be the flat `--brand-accent`, so opening the
+  // course from a search hit landed on a differently-coloured card (#569).
+  function coverStyle(id: string): { background: string } {
+    return { background: COVER[accentFromId(id)] };
+  }
 
   definePageMeta({ layout: 'default' });
 
@@ -145,16 +153,12 @@
         <ul class="page-search__list" role="list">
           <li v-for="course in courses" :key="course.id" class="page-search__list-item">
             <NuxtLink :to="`/courses/${course.id}`" class="page-search__item">
-              <div class="page-search__item-thumb" aria-hidden="true">
-                <span class="page-search__item-initials">
-                  {{
-                    course.title
-                      .split(/\s+/)
-                      .slice(0, 2)
-                      .map((w) => w[0]?.toUpperCase() ?? '')
-                      .join('')
-                  }}
-                </span>
+              <div
+                class="page-search__item-thumb"
+                aria-hidden="true"
+                :style="coverStyle(course.id)"
+              >
+                <span class="page-search__item-initials">{{ initials(course.title) }}</span>
               </div>
               <div class="page-search__item-body">
                 <p class="page-search__item-title">
@@ -184,16 +188,12 @@
               :to="`/courses/${lesson.courseId}/lessons/${lesson.id}`"
               class="page-search__item"
             >
-              <div class="page-search__item-thumb" aria-hidden="true">
-                <span class="page-search__item-initials">
-                  {{
-                    lesson.courseTitle
-                      .split(/\s+/)
-                      .slice(0, 2)
-                      .map((w) => w[0]?.toUpperCase() ?? '')
-                      .join('')
-                  }}
-                </span>
+              <div
+                class="page-search__item-thumb"
+                aria-hidden="true"
+                :style="coverStyle(lesson.courseId)"
+              >
+                <span class="page-search__item-initials">{{ initials(lesson.courseTitle) }}</span>
               </div>
               <div class="page-search__item-body">
                 <p class="page-search__item-breadcrumb">
@@ -324,16 +324,19 @@
       place-items: center;
       flex-shrink: 0;
       overflow: hidden;
-      // One empty-poster treatment for courses and lessons alike: the accent
-      // fill. White initials (--brand-accent-fg) pass contrast on it — the old
-      // light --surface-overlay lesson thumb failed that and has been removed.
-      background: var(--brand-accent);
+      // Background is the per-course `COVER[accentFromId]` swatch set via
+      // the `:style` binding in the template — same identity colour as the
+      // catalog's CourseCard for the same course (#569).
     }
 
     &__item-initials {
       font-size: var(--text-xs);
       font-weight: var(--fw-bold);
-      color: var(--brand-accent-fg);
+      // Theme-independent: the cover swatch behind it doesn't flip with the
+      // page theme either (see @app/ui's COVER), so a theme-flipped
+      // foreground like --brand-accent-fg would go near-black-on-navy in
+      // dark mode. Same token CourseCard's poster/wide cards pair with it.
+      color: var(--media-fg-secondary);
       letter-spacing: 0.04em;
     }
 

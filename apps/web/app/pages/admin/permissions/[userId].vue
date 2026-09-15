@@ -12,6 +12,7 @@
   import { useAdminUser } from '~/composables/useAdminUser';
   import { useAdminLibraries } from '~/composables/useAdminLibraries';
   import { useAccessGrants } from '~/composables/useAccessGrants';
+  import { avatarBgFromId } from '~/utils/avatar-color';
 
   definePageMeta({ middleware: 'admin' });
 
@@ -164,16 +165,6 @@
     }
   }
 
-  // ── Avatar helpers ───────────────────────────────────────────────────────────
-  const AVATAR_PALETTES = ['#4f76c8', '#2d9e7a', '#c07a2e', '#8a4fc8', '#b04040', '#4a8cb0'];
-
-  function avatarBgFromId(id: string): string {
-    let h = 0;
-    for (let i = 0; i < id.length; i++) h = ((h * 31 + (id.codePointAt(i) ?? 0)) >>> 0) >>> 0;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- palette is statically non-empty
-    return AVATAR_PALETTES[h % AVATAR_PALETTES.length]!;
-  }
-
   const userInitials = computed<string>(() => {
     if (!user.value) return '';
     const name = user.value.displayName ?? user.value.name;
@@ -186,7 +177,7 @@
   });
 
   const userAvatarBg = computed<string>(() =>
-    user.value ? avatarBgFromId(user.value.id) : '#4f76c8',
+    user.value ? avatarBgFromId(user.value.id) : 'var(--avatar-indigo)',
   );
 </script>
 
@@ -380,7 +371,10 @@
       font-size: $avatar-font;
       font-weight: 600;
       font-family: var(--font-mono);
-      color: var(--brand-accent-fg);
+      // Theme-independent: --avatar-* backgrounds don't flip with the page
+      // theme (hashed from the user id), so a theme-flipped foreground like
+      // --brand-accent-fg went near-black-on-blue in dark mode.
+      color: var(--media-fg);
       user-select: none;
     }
 

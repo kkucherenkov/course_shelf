@@ -90,6 +90,15 @@ export interface MediaFile {
   media: Record<string, DtcgLeaf>;
 }
 
+// User-avatar identity swatches. Theme-INDEPENDENT for the same reason as
+// `MediaFile`: an avatar's colour is a hash of the user id, not a function of
+// the page theme, so it (and its `--media-fg` text) must not flip in dark
+// mode. The group carries a `$description` key, so emitters must skip
+// `$`-prefixed keys, same as `MediaFile`.
+export interface AvatarFile {
+  avatar: Record<string, DtcgLeaf>;
+}
+
 export interface TokenBundle {
   color: ColorFile;
   typography: TypographyFile;
@@ -99,6 +108,7 @@ export interface TokenBundle {
   motion: MotionFile;
   opacity: OpacityFile;
   media: MediaFile;
+  avatar: AvatarFile;
 }
 
 export const BANNER = [

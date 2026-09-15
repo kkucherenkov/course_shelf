@@ -231,6 +231,14 @@ export function emitDart(tokens: TokenBundle): string {
     if (key.startsWith('$')) continue;
     parts.push(`  static const Color ${camel(key)} = ${colorToDart(leaf.$value.toString())};`);
   }
+  // Avatar-identity colours are theme-INDEPENDENT for the same reason as
+  // AppMedia above — a user avatar's colour is a hash of the id, not the
+  // page theme.
+  parts.push('}', '', 'abstract final class AppAvatarPalette {');
+  for (const [key, leaf] of Object.entries(tokens.avatar.avatar)) {
+    if (key.startsWith('$')) continue;
+    parts.push(`  static const Color ${camel(key)} = ${colorToDart(leaf.$value.toString())};`);
+  }
   parts.push('}', '', 'abstract final class AppZIndex {');
   for (const [key, leaf] of Object.entries(tokens.motion.zIndex)) {
     if (key.startsWith('$')) continue;

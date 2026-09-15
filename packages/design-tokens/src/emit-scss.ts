@@ -136,6 +136,13 @@ export function emitScss(tokens: TokenBundle): string {
     sections.push(`  --media-${kebab(key)}: ${leaf.$value.toString()};`);
   }
 
+  // Avatar-identity colours — same theme-independent contract as media.*
+  // above: a user avatar's colour is a hash of the id, not the page theme.
+  for (const [key, leaf] of Object.entries(tokens.avatar.avatar)) {
+    if (key.startsWith('$')) continue;
+    sections.push(`  --avatar-${kebab(key)}: ${leaf.$value.toString()};`);
+  }
+
   for (const [roleKey, role] of Object.entries(tokens.typography.typography.role)) {
     if (roleKey.startsWith('$')) continue;
     const size = tokens.typography.typography.font.size[role.size]?.$value ?? '';

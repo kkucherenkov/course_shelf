@@ -21,6 +21,7 @@
       :image="avatarUrl"
       :name="name"
       :role="avatarRole"
+      :role-label="roleLabel"
       size="xl"
       class="home-greeting__avatar"
     />

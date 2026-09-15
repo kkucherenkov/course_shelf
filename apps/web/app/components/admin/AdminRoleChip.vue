@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { ref, computed } from 'vue';
+  import { IconCS } from '@app/ui';
   import type { AdminUserRole } from '@app/api-client-ts';
 
   // Extend the visual role concept with 'disabled' for banned users.
@@ -101,17 +102,9 @@
       @click="toggleMenu"
       @keydown="onKeydown"
     >
-      <span
-        v-if="visualRole === 'admin'"
-        class="i-heroicons-shield-check adm-role-chip__icon"
-        aria-hidden="true"
-      />
+      <IconCS v-if="visualRole === 'admin'" name="shield" :size="11" class="adm-role-chip__icon" />
       {{ chipLabel }}
-      <span
-        v-if="editable"
-        class="i-heroicons-chevron-down adm-role-chip__caret"
-        aria-hidden="true"
-      />
+      <IconCS v-if="editable" name="chevron-down" :size="11" class="adm-role-chip__caret" />
     </span>
 
     <!-- Dropdown menu -->

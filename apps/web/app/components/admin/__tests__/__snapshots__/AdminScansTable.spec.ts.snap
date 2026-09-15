@@ -53,7 +53,7 @@ exports[`AdminScansTable > matches snapshot (with items) 1`] = `
         <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell adm-scans-tbl__added"> +5</td><!-- Errors (lg) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell">0</td><!-- Files+Added combined (md) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--md-combined adm-scans-tbl__num-cell">200 <span data-v-164d419a="" class="adm-scans-tbl__added">+5</span></td><!-- Chevron -->
-        <td data-v-164d419a="" class="adm-scans-tbl__chevron-cell"><span data-v-164d419a="" class="i-heroicons-chevron-right adm-scans-tbl__chevron" aria-hidden="true"></span></td>
+        <td data-v-164d419a="" class="adm-scans-tbl__chevron-cell"><svg data-v-164d419a="" class="stub-icon adm-scans-tbl__chevron" data-name="chevron-right"></svg></td>
       </tr>
       <tr data-v-164d419a="" tabindex="0" class="adm-scans-tbl__row">
         <!-- Library name (dashboard only) -->
@@ -66,7 +66,7 @@ exports[`AdminScansTable > matches snapshot (with items) 1`] = `
         <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell adm-scans-tbl__added"> +0</td><!-- Errors (lg) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell adm-scans-tbl__errors--nonzero">3</td><!-- Files+Added combined (md) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--md-combined adm-scans-tbl__num-cell">50 <span data-v-164d419a="" class="adm-scans-tbl__added">+0</span></td><!-- Chevron -->
-        <td data-v-164d419a="" class="adm-scans-tbl__chevron-cell"><span data-v-164d419a="" class="i-heroicons-chevron-right adm-scans-tbl__chevron" aria-hidden="true"></span></td>
+        <td data-v-164d419a="" class="adm-scans-tbl__chevron-cell"><svg data-v-164d419a="" class="stub-icon adm-scans-tbl__chevron" data-name="chevron-right"></svg></td>
       </tr>
     </tbody>
   </table>

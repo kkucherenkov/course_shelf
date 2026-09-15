@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue';
+  import { IconCS } from '@app/ui';
   import type { AdminLibraryListItem, AccessGrantDto, CourseDto } from '@app/api-client-ts';
 
   interface Props {
@@ -54,7 +55,7 @@
       <!-- Library info -->
       <div class="adm-perm-row__info">
         <div class="adm-perm-row__icon" aria-hidden="true">
-          <span class="i-heroicons-building-library" />
+          <IconCS name="library" :size="14" />
         </div>
         <div class="adm-perm-row__meta">
           <div class="adm-perm-row__name">
@@ -99,10 +100,11 @@
         :aria-expanded="expanded"
         @click="toggleExpanded"
       >
-        <span
-          class="i-heroicons-chevron-down adm-perm-row__chevron-icon"
+        <IconCS
+          name="chevron-down"
+          :size="14"
+          class="adm-perm-row__chevron-icon"
           :class="{ 'adm-perm-row__chevron-icon--open': expanded }"
-          aria-hidden="true"
         />
       </button>
     </div>
@@ -157,10 +159,7 @@
         </div>
 
         <div v-if="courses.length === 0" class="adm-perm-overrides__empty">
-          <span
-            class="i-heroicons-academic-cap adm-perm-overrides__empty-icon"
-            aria-hidden="true"
-          />
+          <IconCS name="academic-cap" class="adm-perm-overrides__empty-icon" />
         </div>
       </template>
     </div>

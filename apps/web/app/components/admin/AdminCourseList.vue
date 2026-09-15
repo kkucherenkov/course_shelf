@@ -1,4 +1,6 @@
 <script setup lang="ts">
+  import { IconCS } from '@app/ui';
+
   /**
    * A course's admin entry point (#510). Reaching a single course was
    * impossible from the admin section — this lists every course in a
@@ -44,7 +46,7 @@
       <NuxtLink :to="`/courses/${item.id}`" class="adm-course-list__link">
         <span class="adm-course-list__title">{{ item.title }}</span>
         <span class="adm-course-list__lessons">{{ item.lessonsLabel }}</span>
-        <span class="i-heroicons-chevron-right adm-course-list__chevron" aria-hidden="true" />
+        <IconCS name="chevron-right" :size="14" class="adm-course-list__chevron" />
       </NuxtLink>
     </li>
   </ul>

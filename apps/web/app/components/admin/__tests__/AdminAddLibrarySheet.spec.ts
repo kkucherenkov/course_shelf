@@ -41,6 +41,11 @@ vi.mock('@app/ui', () => ({
     props: ['type', 'variant', 'label', 'disabled', 'loading'],
     template: '<button :type="type || \'button\'">{{ label }}</button>',
   },
+  IconCS: {
+    name: 'IconCS',
+    props: ['name', 'size'],
+    template: '<svg class="stub-icon" :data-name="name" />',
+  },
 }));
 
 const baseProps = {

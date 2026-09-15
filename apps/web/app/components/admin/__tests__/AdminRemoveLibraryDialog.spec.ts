@@ -23,6 +23,14 @@ vi.mock('@app/api-client-ts', () => ({
   client: {},
 }));
 
+vi.mock('@app/ui', () => ({
+  IconCS: {
+    name: 'IconCS',
+    props: ['name', 'size'],
+    template: '<svg class="stub-icon" :data-name="name" />',
+  },
+}));
+
 const baseLibrary = { id: 'lib-1', name: 'Computer Science' };
 
 const baseProps = {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, provide, ref } from 'vue';
-  import { AppBanner, AppEmptyState } from '@app/ui';
+  import { AppBanner, AppEmptyState, IconCS } from '@app/ui';
   import { runLibraryScan, client } from '@app/api-client-ts';
 
   import AdminLibraryRow from '~/components/admin/AdminLibraryRow.vue';
@@ -71,11 +71,9 @@
         <p v-if="subtitle" class="adm-libraries__sub">{{ subtitle }}</p>
       </div>
       <div class="adm-libraries__page-actions">
-        <UButton
-          icon="i-heroicons-plus"
-          :label="t('pages.admin.libraries.addCta')"
-          @click="openSheet"
-        />
+        <UButton :label="t('pages.admin.libraries.addCta')" @click="openSheet">
+          <template #leading><IconCS name="plus" :size="20" /></template>
+        </UButton>
       </div>
     </div>
 
@@ -115,11 +113,9 @@
       :body="t('pages.admin.libraries.emptyBody')"
     >
       <template #actions>
-        <UButton
-          icon="i-heroicons-plus"
-          :label="t('pages.admin.libraries.emptyAction')"
-          @click="openSheet"
-        />
+        <UButton :label="t('pages.admin.libraries.emptyAction')" @click="openSheet">
+          <template #leading><IconCS name="plus" :size="20" /></template>
+        </UButton>
       </template>
     </AppEmptyState>
 

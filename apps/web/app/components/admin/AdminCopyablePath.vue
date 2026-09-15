@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { ref } from 'vue';
+  import { IconCS } from '@app/ui';
 
   interface Props {
     /** The path string to display and copy. */
@@ -36,11 +37,7 @@
     :aria-label="props.ariaLabel"
     @click="copyPath"
   >
-    <span
-      :class="copied ? 'i-heroicons-check' : 'i-heroicons-clipboard-document'"
-      class="adm-copyable-path__icon"
-      aria-hidden="true"
-    />
+    <IconCS :name="copied ? 'check' : 'copy'" :size="12" class="adm-copyable-path__icon" />
     <span class="adm-copyable-path__text">{{ props.path }}</span>
   </button>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, provide, ref, watch } from 'vue';
-  import { AppBanner, AppEmptyState } from '@app/ui';
+  import { AppBanner, AppEmptyState, IconCS } from '@app/ui';
   import type { AdminUpdateUserRequest, AdminUserRole } from '@app/api-client-ts';
 
   import AdminUserRow from '~/components/admin/AdminUserRow.vue';
@@ -102,7 +102,7 @@
     <!-- Search -->
     <div class="adm-users__search-row">
       <div class="adm-users__search-wrap">
-        <span class="i-heroicons-magnifying-glass adm-users__search-icon" aria-hidden="true" />
+        <IconCS name="search" class="adm-users__search-icon" />
         <input
           v-model="searchInput"
           type="search"

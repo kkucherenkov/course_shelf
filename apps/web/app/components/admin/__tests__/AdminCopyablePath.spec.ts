@@ -6,6 +6,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import AdminCopyablePath from '../AdminCopyablePath.vue';
 
+vi.mock('@app/ui', () => ({
+  IconCS: {
+    name: 'IconCS',
+    props: ['name', 'size'],
+    template: '<svg class="stub-icon" :data-name="name" />',
+  },
+}));
+
 describe('AdminCopyablePath', () => {
   beforeEach(() => {
     // Stub navigator.clipboard
@@ -26,8 +34,8 @@ describe('AdminCopyablePath', () => {
     const wrapper = mount(AdminCopyablePath, {
       props: { path: '/srv', ariaLabel: 'Copy' },
     });
-    expect(wrapper.find('.i-heroicons-clipboard-document').exists()).toBe(true);
-    expect(wrapper.find('.i-heroicons-check').exists()).toBe(false);
+    expect(wrapper.find('[data-name="copy"]').exists()).toBe(true);
+    expect(wrapper.find('[data-name="check"]').exists()).toBe(false);
   });
 
   it('copies path to clipboard and shows check icon on click', async () => {
@@ -39,7 +47,7 @@ describe('AdminCopyablePath', () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('/srv/courses');
     // After click the --copied class should be present
     expect(wrapper.find('.adm-copyable-path--copied').exists()).toBe(true);
-    expect(wrapper.find('.i-heroicons-check').exists()).toBe(true);
+    expect(wrapper.find('[data-name="check"]').exists()).toBe(true);
   });
 
   it('matches snapshot', () => {

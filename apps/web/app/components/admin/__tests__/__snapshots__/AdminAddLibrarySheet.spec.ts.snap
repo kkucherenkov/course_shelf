@@ -3,7 +3,7 @@
 exports[`AdminAddLibrarySheet > matches snapshot 1`] = `
 "<div data-v-ad7033c1="" class="adm-add-library-sheet">
   <div data-v-ad7033c1="" class="adm-add-library-sheet__header">
-    <h3 data-v-ad7033c1="" class="adm-add-library-sheet__title">Add library</h3><button data-v-ad7033c1="" type="button" class="adm-add-library-sheet__close" aria-label="Cancel"><span data-v-ad7033c1="" class="i-heroicons-x-mark" aria-hidden="true"></span></button>
+    <h3 data-v-ad7033c1="" class="adm-add-library-sheet__title">Add library</h3><button data-v-ad7033c1="" type="button" class="adm-add-library-sheet__close" aria-label="Cancel"><svg data-v-ad7033c1="" class="stub-icon" data-name="x"></svg></button>
   </div>
   <div data-v-ad7033c1="" class="adm-add-library-sheet__body">
     <!--v-if-->

@@ -2,7 +2,7 @@
 
 exports[`AdminStatCard > matches snapshot (default state) 1`] = `
 "<div data-v-131fe48f="" class="admin-stat-card">
-  <div data-v-131fe48f="" class="admin-stat-card__header"><span data-v-131fe48f="" class="admin-stat-card__icon-wrap" aria-hidden="true"><span data-v-131fe48f="" class="i-heroicons-home admin-stat-card__icon"></span></span><span data-v-131fe48f="" class="admin-stat-card__label">Libraries</span></div>
+  <div data-v-131fe48f="" class="admin-stat-card__header"><span data-v-131fe48f="" class="admin-stat-card__icon-wrap" aria-hidden="true"><svg data-v-131fe48f="" class="stub-icon admin-stat-card__icon" data-name="home"></svg></span><span data-v-131fe48f="" class="admin-stat-card__label">Libraries</span></div>
   <div data-v-131fe48f="" class="admin-stat-card__value">6</div>
   <div data-v-131fe48f="" class="admin-stat-card__meta">10 courses</div>
 </div>"

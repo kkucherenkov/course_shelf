@@ -72,7 +72,9 @@
     | 'corner-down-right'
     | 'hard-drive'
     | 'github'
-    | 'banner';
+    | 'banner'
+    | 'circle-stack'
+    | 'academic-cap';
 
   const props = withDefaults(
     defineProps<{
@@ -547,6 +549,21 @@
 
     <!-- banner (also the default fallback in the JSX) -->
     <circle v-else-if="name === 'banner'" cx="12" cy="12" r="9" />
+
+    <!-- circle-stack -->
+    <template v-else-if="name === 'circle-stack'">
+      <ellipse cx="12" cy="5" rx="8" ry="3" />
+      <ellipse cx="12" cy="12" rx="8" ry="3" />
+      <ellipse cx="12" cy="19" rx="8" ry="3" />
+    </template>
+
+    <!-- academic-cap -->
+    <template v-else-if="name === 'academic-cap'">
+      <path d="M12 4L2 9l10 5 10-5-10-5z" />
+      <path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5" />
+      <path d="M21 9v5" />
+      <circle cx="21" cy="16" r="0.6" fill="currentColor" />
+    </template>
   </svg>
 </template>
 

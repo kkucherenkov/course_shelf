@@ -16,6 +16,14 @@ vi.mock('../AdminCopyablePath.vue', () => ({
   },
 }));
 
+vi.mock('@app/ui', () => ({
+  IconCS: {
+    name: 'IconCS',
+    props: ['name', 'size'],
+    template: '<svg class="stub-icon" :data-name="name" />',
+  },
+}));
+
 const baseLibrary: AdminLibraryListItem = {
   id: 'lib-1',
   name: 'Computer Science',

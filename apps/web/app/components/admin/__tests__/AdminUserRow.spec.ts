@@ -18,6 +18,14 @@ vi.mock('../AdminRoleChip.vue', () => ({
   },
 }));
 
+vi.mock('@app/ui', () => ({
+  IconCS: {
+    name: 'IconCS',
+    props: ['name', 'size'],
+    template: '<svg class="stub-icon" :data-name="name" />',
+  },
+}));
+
 const baseUser: AdminUserListItem = {
   id: 'user-abc',
   email: 'alice@example.com',

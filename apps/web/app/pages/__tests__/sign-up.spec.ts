@@ -52,9 +52,13 @@ vi.mock('~/stores/auth', () => ({
   }),
 }));
 
+// `useLibraries.ts`'s `registerLibraryRequest` — which the page now calls
+// instead of `registerLibrary` directly — imports both of these itself.
 const mockRegisterLibrary = vi.fn();
+const mockListLibraries = vi.fn();
 vi.mock('@app/api-client-ts', () => ({
   registerLibrary: (...args: unknown[]) => mockRegisterLibrary(...args),
+  listLibraries: (...args: unknown[]) => mockListLibraries(...args),
   client: {},
 }));
 

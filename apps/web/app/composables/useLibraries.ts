@@ -4,6 +4,11 @@
  * `useLibraries` — list libraries (cached per session).
  * `useLatestScan(libraryId)` — fetch the latest scan for a library; auto-poll
  * every 2s while the scan status is `running`.
+ * `registerLibraryRequest` — the raw `registerLibrary` call plus its
+ * idempotent-conflict handling, usable without the list-fetching composable
+ * above it. `useLibraries().register` wraps it; `AdminAddLibrarySheet.vue`
+ * and `pages/sign-up.vue`'s library step call it directly — see its own
+ * doc comment for why they don't go through `useLibraries()` itself.
  */
 
 import {
@@ -23,6 +28,49 @@ import type {
 import { problemDetail } from '~/utils/library-register';
 
 export type LibrariesStatus = 'idle' | 'pending' | 'success' | 'error';
+
+/** Thrown by `registerLibraryRequest`. `detail` is the server's own
+ * problem-document explanation, or null when it sent none (e.g. a
+ * network-level failure never reached a response). */
+export class RegisterLibraryError extends Error {
+  constructor(public readonly detail: string | null) {
+    super(detail ?? 'Failed to register library');
+    this.name = 'RegisterLibraryError';
+  }
+}
+
+/**
+ * Raw `registerLibrary` call plus the one place its idempotent-on-`rootPath`
+ * contract is acted on: a defensive 409 (the endpoint is documented as
+ * always answering 201, existing row included — but a caller can't assume
+ * that holds forever) is resolved by looking the matching row up via a fresh
+ * `listLibraries` call and returning it exactly as if it had just been
+ * created. Every other failure becomes `RegisterLibraryError`, carrying the
+ * server's own explanation when it sent one.
+ *
+ * Deliberately free of `useAsyncData` — `pages/sign-up.vue`'s library step
+ * reaches this before the account it belongs to is authenticated for
+ * anything else in the app to have a reason to load the library list.
+ * Mounting the full `useLibraries()` composable there would fire an
+ * authenticated `listLibraries` GET the moment the page mounts, at step 1 —
+ * before sign-up has run. The response interceptor treats that 401 as a dead
+ * session and redirects to `/sign-in`, taking the wizard down with it. This
+ * function only touches the network when actually called.
+ */
+export async function registerLibraryRequest(body: RegisterLibraryRequest): Promise<LibraryDto> {
+  const res = await registerLibrary({ client, throwOnError: false, body });
+  if (!res.error) return res.data;
+
+  if (res.response.status === 409) {
+    const listRes = await listLibraries({ client, throwOnError: false });
+    const existing = listRes.error
+      ? undefined
+      : listRes.data.items.find((l) => l.rootPath === body.rootPath);
+    if (existing) return existing;
+  }
+
+  throw new RegisterLibraryError(problemDetail(res.error));
+}
 
 export function useLibraries(): {
   data: Ref<LibraryListDto | undefined>;
@@ -54,25 +102,14 @@ export function useLibraries(): {
 
   async function register(body: RegisterLibraryRequest): Promise<LibraryDto> {
     registerErrorDetail.value = null;
-    const res = await registerLibrary({ client, throwOnError: false, body });
-    if (res.error) {
-      // 409 Conflict means a library at the same rootPath already exists.
-      // Refetch the list and surface the existing row to the caller — same
-      // outcome from the user's perspective ("the library is here now").
-      if (res.response.status === 409) {
-        await refresh();
-        const existing = data.value.items.find((l) => l.rootPath === body.rootPath);
-        if (existing) return existing;
-      }
-      // Everything else is a real failure the server described: a 400 names the
-      // offending field and rule ("request/body/rootPath must match pattern
-      // ..."), a 403 names the missing permission. Keep it for the caller.
-      registerErrorDetail.value = problemDetail(res.error);
-      throw new Error(registerErrorDetail.value ?? 'Failed to register library');
+    try {
+      const created = await registerLibraryRequest(body);
+      await refresh();
+      return created;
+    } catch (error_) {
+      registerErrorDetail.value = error_ instanceof RegisterLibraryError ? error_.detail : null;
+      throw error_;
     }
-    const created = res.data;
-    await refresh();
-    return created;
   }
 
   return {

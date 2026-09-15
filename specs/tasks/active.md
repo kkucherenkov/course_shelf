@@ -80,46 +80,38 @@
 - Blockers: — (file only runs on a real release tag or manual dispatch;
   cannot be exercised by this PR's own CI)
 
-## T-2026-09-15-identify-queue-web — identify-task queue surface in apps/web
+## T-2026-09-15-library-register-composable — HTTP + 409 handling duplicated outside useLibraries
 
 - Created: 2026-09-15
 - Owner: claude
-- Spec: none — `runIdentifyTask`/`listIdentifyTasks`/`getIdentifyTask`/
-  `applyIdentifyResult`/`discardIdentifyTask` already in `openapi.yaml` and
-  the generated client; card `E30-F03-S02` (landing via #548, read off
-  `origin/docs/e30-identify-card` since #548 isn't merged yet).
-- Goal: an admin queue over identify tasks — list, open one into a per-field
-  `MergePolicyDto` comparison (current course value vs scraped fragment),
-  apply or discard. The only path that resolves scraped instructor/studio/tag
-  names into entities (`apply-identify-result.handler.ts` upserts them); the
-  existing scrape-preview panel can't (E30-F03-S01 shipped it read-only on
-  purpose). Closes #546.
-- Design: `useIdentifyTasks.ts` — `useIdentifyTasksList`, `useIdentifyTask`
-  (bundles task + its course in one `useAsyncData` since the course id is
-  only known after the task loads), `queueIdentifyTask` (plain mutation,
-  mirrors `useCourseScrapePreview.run`), and `buildMergePolicy` — the one
-  function that fills all 12 `MergePolicyDto` keys explicitly so an
-  omitted field never silently defaults to `merge` server-side.
+- Spec: none — `registerLibrary`/`listLibraries` already in the generated
+  client; no wire change. Closes #495.
+- Goal: `AdminAddLibrarySheet.vue` and `pages/sign-up.vue` (step 3) both call
+  `registerLibrary`/`client` directly instead of `useLibraries`, each
+  hand-rolling their own idempotent-conflict handling. Pull the HTTP call +
+  conflict handling into one place in `useLibraries.ts`.
+- Design: extract `registerLibraryRequest` (plain async fn, no
+  `useAsyncData`) — resolves a defensive 409 via a fresh `listLibraries` call
+  and returns the existing row, or throws `RegisterLibraryError(detail)`.
+  `useLibraries().register` becomes a thin wrapper around it (refetches its
+  own list cache after). Kept deliberately free of `useAsyncData`: mounting
+  the full `useLibraries()` composable in `sign-up.vue` would fire an
+  authenticated `listLibraries` GET at step-1 mount time, before the account
+  exists — the response interceptor treats that 401 as a dead session and
+  redirects to `/sign-in`, breaking the wizard. `registerLibraryRequest` only
+  hits the network when actually called (step-3 submit, post-auth).
 - Sub-steps:
-  - [x] `useIdentifyTasks` composable + `buildMergePolicy` spec
-  - [x] `pages/admin/identify-tasks/index.vue` queue list + `AdminIdentifyTaskRow`
-  - [x] `pages/admin/identify-tasks/[id].vue` review page + `AdminIdentifyTaskReview`
-  - [x] "queue for review" action in `CourseScrapePreviewPanel.vue`
-  - [x] nav entry in `layouts/default.vue`
-  - [x] i18n keys (en + ru), `pnpm check:i18n` green
-  - [x] component/composable specs (401 web tests green)
-  - [x] lint/stylelint/format/typecheck gates green
-  - [x] PR `Closes #546` — [#552](https://github.com/kkucherenkov/course_shelf/pull/552)
-  - [ ] CI green on #552
-  - [x] #548 merged (landed on `main` ahead of this branch, picked up via
-        rebase) — ticked `E30-F03-S02` sub-steps, card `Status` → In progress
-        with a note pointing at #552. Left `docs/roadmap/TODO.md`'s row and
-        the card's `Status: Done` for the actual merge of #552.
+  - [x] `registerLibraryRequest` + `RegisterLibraryError` in `useLibraries.ts`
+  - [x] `AdminAddLibrarySheet.vue` calls it instead of raw `registerLibrary`
+  - [x] `pages/sign-up.vue` step 3 calls it instead of raw `registerLibrary`
+  - [x] update `useLibraries.spec.ts`'s 409 test for the new call path +
+        add coverage for `registerLibraryRequest` itself
+  - [x] lint/stylelint/format/typecheck gates green, 387 web tests green
+  - [x] PR `Closes #495` — [#553](https://github.com/kkucherenkov/course_shelf/pull/553)
+  - [x] CI green on #553
+  - [ ] merge #553
 - Status: in-progress
-- Blockers: — (not verified against a running Docker stack — this host's
-  `course_shelf` compose stack was not up and default ports 3000/5432/8080
-  collide with two unrelated stacks already running on it; verified via
-  `pnpm --filter @app/web test`, `typecheck`, `check:i18n` instead)
+- Blockers: —
 
 ## T-2026-09-14-contract-gate-determinism — `negative_data_rejection` coin flip on numeric query params
 

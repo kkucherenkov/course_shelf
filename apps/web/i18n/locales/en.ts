@@ -439,6 +439,10 @@ export default {
     admin: {
       navDashboard: 'Dashboard',
       navLibraries: 'Libraries',
+      // Distinct from `navLibraries` above (the member-facing /libraries
+      // link) — the admin sidebar used to repeat the same word for two
+      // different destinations.
+      navLibrariesManage: 'Manage libraries',
       navUsers: 'Users',
       navPermissions: 'Permissions',
       navIdentifyTasks: 'Identify tasks',
@@ -878,6 +882,11 @@ export default {
       roleUser: 'User',
       roleAdmin: 'Administrator',
       roleGuest: 'Guest',
+    },
+    commandPalette: {
+      title: 'Command palette',
+      placeholder: 'Type a command…',
+      empty: 'No commands match.',
     },
     noteEditor: {
       syncing: 'Syncing…',

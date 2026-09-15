@@ -253,6 +253,11 @@ every lesson as deleted.
 
 ## Everyday use
 
+**Cmd/Ctrl+K** opens a command palette from anywhere in the app — jump to
+Home, Browse, Settings, an admin section, or sign out, without leaving the
+page. (This is separate from the search-as-you-type command palette
+mentioned under *Browse and search* below.)
+
 ### Home
 
 Four rows, each answering a different question:
@@ -390,7 +395,9 @@ Four groups, saved automatically as you change them.
 **Account** — sign out of this device; sign out of *all other* devices
 (revokes every session but the current one, behind a confirmation dialog).
 
-**Languages.** English and Russian, on both web and mobile.
+**Languages.** English and Russian, on both web and mobile. On web, switch
+directly from the top bar — a button next to the theme toggle, showing the
+other language's own name.
 
 ---
 

@@ -3182,6 +3182,8 @@ export interface components {
       /** @description Sum of `Lesson.duration` across the course (whole seconds). */
       totalDurationSeconds: number;
       progress: components['schemas']['CourseProgress'];
+      /** @description Signed `/courses/{id}/poster?token=...` URL (same signing as `CourseDto.posterUrl`, #496) — never the raw third-party source. Null when no poster was downloaded. */
+      posterUrl?: string | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */

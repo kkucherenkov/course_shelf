@@ -10,6 +10,7 @@ import { CourseNotFoundError } from '../../domain/course/course.errors';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { CourseProgressReadModel } from '../../domain/progress/course-progress-read-model';
 import { LessonProgress } from '../../../../common/learning-progress';
+import { CoursePosterTokenSigner } from '../../domain/course/course-poster-token';
 import { GetCourseOutlineQuery } from './get-course-outline.query';
 import { GetCourseOutlineHandler } from './get-course-outline.handler';
 
@@ -18,6 +19,7 @@ import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
 import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
 import type { LessonProgressRepository } from '../../../../common/learning-progress';
+import type { AppConfig } from '../../../../common/config/app-config';
 import type {
   AnyGeneratedTranscriptSignature,
   TranscriptRepository,
@@ -30,6 +32,12 @@ import type {
 const NOW = new Date('2026-01-01T00:00:00.000Z');
 
 const adminActor = { id: 'user-1', role: 'admin' };
+
+function makePosterTokenSigner(): CoursePosterTokenSigner {
+  return new CoursePosterTokenSigner({
+    posterToken: { secret: 'test-secret', hkdfInfo: 'test:poster-token:v1', ttlSeconds: 900 },
+  } as unknown as AppConfig);
+}
 
 function makeCourseRepo(): CourseRepository {
   return {
@@ -254,6 +262,7 @@ describe('GetCourseOutlineHandler', () => {
         makeProgressRepo(courseProgressRow),
         makeLessonProgressRepo(progressRows),
         transcriptRepo,
+        makePosterTokenSigner(),
       );
     });
 
@@ -350,6 +359,7 @@ describe('GetCourseOutlineHandler', () => {
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
         makeTranscriptRepo(),
+        makePosterTokenSigner(),
       );
     });
 
@@ -382,6 +392,7 @@ describe('GetCourseOutlineHandler', () => {
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
         makeTranscriptRepo(),
+        makePosterTokenSigner(),
       );
 
       await expect(
@@ -403,6 +414,7 @@ describe('GetCourseOutlineHandler', () => {
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
         makeTranscriptRepo(),
+        makePosterTokenSigner(),
       );
 
       await expect(
@@ -445,6 +457,7 @@ describe('GetCourseOutlineHandler', () => {
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
         makeTranscriptRepo(),
+        makePosterTokenSigner(),
       );
 
       const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
@@ -486,6 +499,7 @@ describe('GetCourseOutlineHandler', () => {
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
         makeTranscriptRepo(),
+        makePosterTokenSigner(),
       );
 
       const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
@@ -525,6 +539,7 @@ describe('GetCourseOutlineHandler', () => {
         makeProgressRepo(null),
         makeLessonProgressRepo([]),
         makeTranscriptRepo(),
+        makePosterTokenSigner(),
       );
 
       const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
@@ -532,6 +547,58 @@ describe('GetCourseOutlineHandler', () => {
       expect(result.sections[0]?.totalDurationSeconds).toBe(0);
       expect(result.course.totalDurationSeconds).toBe(0);
       expect(result.sections[0]?.lessons[0]?.durationSeconds).toBe(0);
+    });
+  });
+
+  // Regression for the course-detail hero showing a flat accent block instead
+  // of the downloaded poster: this endpoint's summary never carried
+  // `posterUrl` at all, unlike `CourseDto` (see courses.dto.ts).
+  describe('posterUrl', () => {
+    it('signs a poster URL when the course has a downloaded poster', async () => {
+      courseRepo = makeCourseRepo();
+      lessonRepo = makeLessonRepo();
+
+      const course = makeCourse();
+      course.setPosterStoragePath('posters/course-1.jpg');
+
+      vi.mocked(courseRepo.findById).mockResolvedValue(course);
+      vi.mocked(lessonRepo.findByCourse).mockResolvedValue([]);
+
+      handler = new GetCourseOutlineHandler(
+        courseRepo,
+        lessonRepo,
+        makeAuthz(true),
+        makeProgressRepo(null),
+        makeLessonProgressRepo([]),
+        makeTranscriptRepo(),
+        makePosterTokenSigner(),
+      );
+
+      const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
+
+      expect(result.course.posterUrl).toMatch(/^\/api\/v1\/courses\/course-1\/poster\?token=/);
+    });
+
+    it('returns null when no poster was downloaded', async () => {
+      courseRepo = makeCourseRepo();
+      lessonRepo = makeLessonRepo();
+
+      vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
+      vi.mocked(lessonRepo.findByCourse).mockResolvedValue([]);
+
+      handler = new GetCourseOutlineHandler(
+        courseRepo,
+        lessonRepo,
+        makeAuthz(true),
+        makeProgressRepo(null),
+        makeLessonProgressRepo([]),
+        makeTranscriptRepo(),
+        makePosterTokenSigner(),
+      );
+
+      const result = await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
+
+      expect(result.course.posterUrl).toBeNull();
     });
   });
 });

@@ -26,6 +26,8 @@ class _$CourseOutlineSummary extends CourseOutlineSummary {
   @override
   final CourseProgress progress;
   @override
+  final String? posterUrl;
+  @override
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
@@ -44,6 +46,7 @@ class _$CourseOutlineSummary extends CourseOutlineSummary {
     required this.lessonsTotal,
     required this.totalDurationSeconds,
     required this.progress,
+    this.posterUrl,
     required this.createdAt,
     required this.updatedAt,
   }) : super._();
@@ -69,6 +72,7 @@ class _$CourseOutlineSummary extends CourseOutlineSummary {
         lessonsTotal == other.lessonsTotal &&
         totalDurationSeconds == other.totalDurationSeconds &&
         progress == other.progress &&
+        posterUrl == other.posterUrl &&
         createdAt == other.createdAt &&
         updatedAt == other.updatedAt;
   }
@@ -85,6 +89,7 @@ class _$CourseOutlineSummary extends CourseOutlineSummary {
     _$hash = $jc(_$hash, lessonsTotal.hashCode);
     _$hash = $jc(_$hash, totalDurationSeconds.hashCode);
     _$hash = $jc(_$hash, progress.hashCode);
+    _$hash = $jc(_$hash, posterUrl.hashCode);
     _$hash = $jc(_$hash, createdAt.hashCode);
     _$hash = $jc(_$hash, updatedAt.hashCode);
     _$hash = $jf(_$hash);
@@ -103,6 +108,7 @@ class _$CourseOutlineSummary extends CourseOutlineSummary {
           ..add('lessonsTotal', lessonsTotal)
           ..add('totalDurationSeconds', totalDurationSeconds)
           ..add('progress', progress)
+          ..add('posterUrl', posterUrl)
           ..add('createdAt', createdAt)
           ..add('updatedAt', updatedAt))
         .toString();
@@ -151,6 +157,10 @@ class CourseOutlineSummaryBuilder
       _$this._progress ??= CourseProgressBuilder();
   set progress(CourseProgressBuilder? progress) => _$this._progress = progress;
 
+  String? _posterUrl;
+  String? get posterUrl => _$this._posterUrl;
+  set posterUrl(String? posterUrl) => _$this._posterUrl = posterUrl;
+
   DateTime? _createdAt;
   DateTime? get createdAt => _$this._createdAt;
   set createdAt(DateTime? createdAt) => _$this._createdAt = createdAt;
@@ -175,6 +185,7 @@ class CourseOutlineSummaryBuilder
       _lessonsTotal = $v.lessonsTotal;
       _totalDurationSeconds = $v.totalDurationSeconds;
       _progress = $v.progress.toBuilder();
+      _posterUrl = $v.posterUrl;
       _createdAt = $v.createdAt;
       _updatedAt = $v.updatedAt;
       _$v = null;
@@ -226,6 +237,7 @@ class CourseOutlineSummaryBuilder
               'totalDurationSeconds',
             ),
             progress: progress.build(),
+            posterUrl: posterUrl,
             createdAt: BuiltValueNullFieldError.checkNotNull(
               createdAt,
               r'CourseOutlineSummary',

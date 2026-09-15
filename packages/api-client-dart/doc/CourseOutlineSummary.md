@@ -17,6 +17,7 @@ Name | Type | Description | Notes
 **lessonsTotal** | **int** |  | 
 **totalDurationSeconds** | **int** | Sum of `Lesson.duration` across the course (whole seconds). | 
 **progress** | [**CourseProgress**](CourseProgress.md) |  | 
+**posterUrl** | **String** |  | [optional] 
 **createdAt** | [**DateTime**](DateTime.md) |  | 
 **updatedAt** | [**DateTime**](DateTime.md) |  | 
 

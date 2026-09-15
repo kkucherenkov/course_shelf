@@ -21,6 +21,7 @@ part 'course_outline_summary.g.dart';
 /// * [lessonsTotal] 
 /// * [totalDurationSeconds] - Sum of `Lesson.duration` across the course (whole seconds).
 /// * [progress] 
+/// * [posterUrl] 
 /// * [createdAt] 
 /// * [updatedAt] 
 @BuiltValue()
@@ -56,6 +57,9 @@ abstract class CourseOutlineSummary implements Built<CourseOutlineSummary, Cours
 
   @BuiltValueField(wireName: r'progress')
   CourseProgress get progress;
+
+  @BuiltValueField(wireName: r'posterUrl')
+  String? get posterUrl;
 
   @BuiltValueField(wireName: r'createdAt')
   DateTime get createdAt;
@@ -139,6 +143,13 @@ class _$CourseOutlineSummarySerializer implements PrimitiveSerializer<CourseOutl
       object.progress,
       specifiedType: const FullType(CourseProgress),
     );
+    if (object.posterUrl != null) {
+      yield r'posterUrl';
+      yield serializers.serialize(
+        object.posterUrl,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
     yield r'createdAt';
     yield serializers.serialize(
       object.createdAt,
@@ -236,6 +247,14 @@ class _$CourseOutlineSummarySerializer implements PrimitiveSerializer<CourseOutl
             specifiedType: const FullType(CourseProgress),
           ) as CourseProgress;
           result.progress.replace(valueDes);
+          break;
+        case r'posterUrl':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.posterUrl = valueDes;
           break;
         case r'createdAt':
           final valueDes = serializers.deserialize(

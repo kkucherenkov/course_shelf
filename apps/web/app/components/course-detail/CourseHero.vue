@@ -16,8 +16,14 @@
     progressLabel: string;
   }>();
 
-  // Cover background reuses the single source of truth from @app/ui.
-  const coverStyle = computed(() => ({ background: COVER[props.accent] }));
+  // The downloaded poster (our own signed /courses/:id/poster URL) wins when
+  // present; otherwise fall back to the accent block, the single source of
+  // truth for which lives in @app/ui. Same expression as browse.vue's `cover`.
+  const coverStyle = computed(() => ({
+    background: props.course.posterUrl
+      ? `url(${props.course.posterUrl}) center / cover no-repeat`
+      : COVER[props.accent],
+  }));
 
   // The card only ever shows the lead — the full description (bullet lists
   // and all) lives below the fold in CourseDescription. See description-lead.ts.

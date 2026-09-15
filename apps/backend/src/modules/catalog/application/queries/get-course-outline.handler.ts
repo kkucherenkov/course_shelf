@@ -35,6 +35,7 @@ import { PermissionDenied } from '../../../../shared/domain-error';
 import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from '../../domain/progress/course-progress-read-model.repository';
 import { LESSON_PROGRESS_REPOSITORY } from '../../../../common/learning-progress';
 import { TRANSCRIPT_REPOSITORY } from '../../domain/transcription/transcript.repository';
+import { CoursePosterTokenSigner } from '../../domain/course/course-poster-token';
 
 import { GetCourseOutlineQuery } from './get-course-outline.query';
 
@@ -69,6 +70,7 @@ export class GetCourseOutlineHandler implements IQueryHandler<
     @Inject(LESSON_PROGRESS_REPOSITORY)
     private readonly lessonProgressRepo: LessonProgressRepository,
     @Inject(TRANSCRIPT_REPOSITORY) private readonly transcripts: TranscriptRepository,
+    private readonly posterTokenSigner: CoursePosterTokenSigner,
   ) {}
 
   async execute(query: GetCourseOutlineQuery): Promise<CourseOutlineDto> {
@@ -214,6 +216,7 @@ export class GetCourseOutlineHandler implements IQueryHandler<
       lessonsTotal,
       totalDurationSeconds,
       progress,
+      posterUrl: course.posterStoragePath ? this.posterTokenSigner.signUrl(course.id) : null,
       createdAt: course.createdAt.toISOString(),
       updatedAt: course.updatedAt.toISOString(),
       // instructor: not present in the Course aggregate yet — omit per spec note.

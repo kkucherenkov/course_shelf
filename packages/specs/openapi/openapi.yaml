@@ -8617,6 +8617,15 @@ components:
           description: Sum of `Lesson.duration` across the course (whole seconds).
         progress:
           $ref: "#/components/schemas/CourseProgress"
+        posterUrl:
+          oneOf:
+            - type: string
+              format: uri
+            - type: "null"
+          description: >-
+            Signed `/courses/{id}/poster?token=...` URL (same signing as
+            `CourseDto.posterUrl`, #496) — never the raw third-party source.
+            Null when no poster was downloaded.
         createdAt:
           type: string
           format: date-time

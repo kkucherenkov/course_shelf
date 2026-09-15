@@ -1112,6 +1112,10 @@ export type CourseOutlineSummary = {
      */
     totalDurationSeconds: number;
     progress: CourseProgress;
+    /**
+     * Signed `/courses/{id}/poster?token=...` URL (same signing as `CourseDto.posterUrl`, #496) — never the raw third-party source. Null when no poster was downloaded.
+     */
+    posterUrl?: string | null;
     createdAt: string;
     updatedAt: string;
 };

@@ -37,9 +37,11 @@
   - [x] measure (see above)
   - [x] split build/push, insert whisper smoke step in between
   - [x] `actionlint` on the changed file
-  - [ ] open PR with `Closes #507`; ask maintainer about extending
-        `workflow_dispatch` to also build+smoke the backend image (currently
-        render+validate only) — noted as an option, not decided unilaterally
+  - [x] open PR with `Closes #507` —
+        [#550](https://github.com/kkucherenkov/course_shelf/pull/550); asked
+        the maintainer about extending `workflow_dispatch` to also
+        build+smoke the backend image (currently render+validate only), not
+        decided unilaterally
 - Status: in-progress
 - Blockers: — (file only runs on a real release tag or manual dispatch;
   cannot be exercised by this PR's own CI)

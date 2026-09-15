@@ -24,7 +24,9 @@ export default defineConfig({
     include: [
       'tests/unit/**/*.spec.ts',
       'app/pages/__tests__/**/*.spec.ts',
+      'app/layouts/__tests__/**/*.spec.ts',
       'app/stores/**/*.spec.ts',
+      'app/middleware/__tests__/**/*.spec.ts',
       'app/composables/__tests__/**/*.spec.ts',
       'app/components/**/__tests__/**/*.spec.ts',
       'app/components/__tests__/**/*.spec.ts',

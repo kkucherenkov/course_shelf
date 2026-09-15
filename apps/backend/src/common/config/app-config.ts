@@ -30,6 +30,24 @@ export interface AppRuntimeConfig {
   readonly otelEndpoint: string | null;
 }
 
+export interface CatalogConfig {
+  /**
+   * Absolute path prefixes a registered library's `rootPath` must fall
+   * under. Empty (the default) means unrestricted — dev and CI register
+   * libraries at whatever fixture path is at hand, and restricting that by
+   * default would just move the friction into every contributor's `.env`.
+   *
+   * `POST /libraries` is admin-only (#592), but the guard alone doesn't stop
+   * an admin from fat-fingering a path like `/` and kicking off a scan of
+   * the entire filesystem. `compose.prod.yml` / `compose.release.yml` set
+   * this to the same `/data/courses` the host's `COURSES_PATH` is mounted
+   * at, so in every real deployment a library can only ever point at the
+   * directory an operator actually chose to share.
+   * Env: LIBRARY_ROOT_ALLOWLIST (comma-separated).
+   */
+  readonly rootAllowlist: string[];
+}
+
 export interface AuthorizationCacheConfig {
   /** TTL for each canSee() result, in milliseconds. Default 30 000 (30 s). */
   readonly ttlMs: number;
@@ -248,6 +266,15 @@ export class AppConfig {
       version: this.stringOrDefault('APP_VERSION', '0.0.0-dev'),
       sentryDsn: sentryDsn.length > 0 ? sentryDsn : null,
       otelEndpoint: otelEndpoint.length > 0 ? otelEndpoint : null,
+    };
+  }
+
+  get catalog(): CatalogConfig {
+    return {
+      rootAllowlist: this.stringOrDefault('LIBRARY_ROOT_ALLOWLIST', '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
     };
   }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { AppButton, AppDialog } from '@app/ui';
+  import { AppButton } from '@app/ui';
 
   defineProps<{
     /** 'not-started' | 'in-progress' | 'completed' */
@@ -10,29 +10,19 @@
     primaryHref: string;
     markCompleteLabel: string;
     resetProgressLabel: string;
-    resetDialogTitle: string;
-    resetDialogDescription: string;
-    resetDialogConfirmLabel: string;
-    resetDialogCancelLabel: string;
     /** Disables both secondary buttons while a mutation is in flight. */
     mutating?: boolean;
   }>();
 
+  // No confirm dialog: resetting progress touches only the actor's own data
+  // and is fully reversible by rewatching, so it doesn't meet this product's
+  // confirm-when bar (someone else's data, irreversible without manual
+  // recovery, or hours of machine time) — same standard "Mark complete"
+  // already gets by firing straight through.
   const emit = defineEmits<{
     markComplete: [];
     resetProgress: [];
   }>();
-
-  const resetDialogOpen = ref(false);
-
-  function openResetDialog(): void {
-    resetDialogOpen.value = true;
-  }
-
-  function confirmReset(): void {
-    resetDialogOpen.value = false;
-    emit('resetProgress');
-  }
 </script>
 
 <template>
@@ -64,33 +54,9 @@
         size="md"
         icon-leading="refresh"
         :disabled="mutating || courseState === 'not-started'"
-        @click="openResetDialog"
+        @click="emit('resetProgress')"
       />
     </div>
-
-    <!-- Reset progress confirmation dialog -->
-    <AppDialog
-      :open="resetDialogOpen"
-      size="sm"
-      :title="resetDialogTitle"
-      :description="resetDialogDescription"
-      @update:open="resetDialogOpen = $event"
-    >
-      <template #footer>
-        <AppButton
-          :label="resetDialogCancelLabel"
-          variant="ghost"
-          size="md"
-          @click="resetDialogOpen = false"
-        />
-        <AppButton
-          :label="resetDialogConfirmLabel"
-          variant="destructive"
-          size="md"
-          @click="confirmReset"
-        />
-      </template>
-    </AppDialog>
   </div>
 </template>
 

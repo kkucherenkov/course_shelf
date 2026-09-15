@@ -22,12 +22,14 @@ const adminNav: NavItem[] = [
 const regularUser: ShellUser = {
   name: 'Elena Lin',
   role: 'USER',
+  roleLabel: 'User',
   initials: 'EL',
 };
 
 const adminUser: ShellUser = {
   name: 'Alex Admin',
   role: 'ADMIN',
+  roleLabel: 'Administrator',
   initials: 'AA',
 };
 
@@ -65,7 +67,7 @@ export const Default: Story = {
     components: { AppNavigationShell },
     setup() {
       const search = ref(args.searchValue ?? '');
-      const colorMode = ref<'light' | 'dark'>(args.colorMode ?? 'dark');
+      const colorMode = ref<'light' | 'dark' | 'system'>(args.colorMode ?? 'dark');
       const active = ref(args.activeRoute);
       const lastSubmit = ref('');
       return { args, search, colorMode, active, lastSubmit };
@@ -106,7 +108,7 @@ export const Admin: Story = {
     components: { AppNavigationShell },
     setup() {
       const search = ref('');
-      const colorMode = ref<'light' | 'dark'>('dark');
+      const colorMode = ref<'light' | 'dark' | 'system'>('dark');
       const active = ref(args.activeRoute);
       return { args, search, colorMode, active };
     },
@@ -139,7 +141,7 @@ export const WithRightRail: Story = {
     components: { AppNavigationShell },
     setup() {
       const search = ref('');
-      const colorMode = ref<'light' | 'dark'>('dark');
+      const colorMode = ref<'light' | 'dark' | 'system'>('dark');
       const active = ref(args.activeRoute);
       return { args, search, colorMode, active };
     },
@@ -181,7 +183,7 @@ export const Narrow: Story = {
     components: { AppNavigationShell },
     setup() {
       const search = ref('');
-      const colorMode = ref<'light' | 'dark'>('dark');
+      const colorMode = ref<'light' | 'dark' | 'system'>('dark');
       const active = ref(args.activeRoute);
       return { args, search, colorMode, active };
     },
@@ -205,6 +207,59 @@ export const Narrow: Story = {
   }),
 };
 
+// ── NarrowAdminOverflow (xs — admin nav only reachable via the "More" tab) ───
+// Regression coverage for #568: below 600px the sidebar is hidden and the
+// bottom-tab bar only has room for a handful of primary items, so admin nav
+// used to be unreachable outright. Opens with the overflow dialog already
+// showing the full nav, including the admin section.
+
+export const NarrowAdminOverflow: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'mobile1' },
+  },
+  args: {
+    activeRoute: 'admin-users',
+    adminNav: [
+      { key: 'admin-dashboard', label: 'Dashboard', icon: 'home' },
+      { key: 'admin-libraries', label: 'Libraries', icon: 'library' },
+      { key: 'admin-users', label: 'Users', icon: 'users' },
+      { key: 'admin-identify-tasks', label: 'Identify tasks', icon: 'list' },
+      { key: 'admin-permissions', label: 'Permissions', icon: 'lock' },
+      { key: 'admin-backups', label: 'Backups', icon: 'download' },
+    ],
+    user: adminUser,
+  },
+  render: (args) => ({
+    components: { AppNavigationShell },
+    setup() {
+      const search = ref('');
+      const colorMode = ref<'light' | 'dark' | 'system'>('dark');
+      const active = ref(args.activeRoute);
+      return { args, search, colorMode, active };
+    },
+    template: `
+      <div style="width: 360px; overflow: hidden;">
+        <AppNavigationShell
+          v-bind="args"
+          :activeRoute="active"
+          :searchValue="search"
+          :colorMode="colorMode"
+          @update:searchValue="search = $event"
+          @update:colorMode="colorMode = $event"
+          @nav="active = $event"
+        >
+          <div style="padding: var(--space-4);">
+            <p style="color: var(--text-secondary); margin: 0;">
+              Tap "More" in the bottom-tab bar to reach Dashboard, Libraries,
+              Users, Identify tasks, Permissions and Backups.
+            </p>
+          </div>
+        </AppNavigationShell>
+      </div>
+    `,
+  }),
+};
+
 // ── LightMode ─────────────────────────────────────────────────────────────────
 
 export const LightMode: Story = {
@@ -218,7 +273,7 @@ export const LightMode: Story = {
     components: { AppNavigationShell },
     setup() {
       const search = ref('');
-      const colorMode = ref<'light' | 'dark'>('light');
+      const colorMode = ref<'light' | 'dark' | 'system'>('light');
       const active = ref(args.activeRoute);
       return { args, search, colorMode, active };
     },
@@ -251,7 +306,7 @@ export const MenuOpen: Story = {
     components: { AppNavigationShell },
     setup() {
       const search = ref('');
-      const colorMode = ref<'light' | 'dark'>('dark');
+      const colorMode = ref<'light' | 'dark' | 'system'>('dark');
       const active = ref(args.activeRoute);
       return { args, search, colorMode, active };
     },

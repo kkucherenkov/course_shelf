@@ -2,6 +2,7 @@
   import { computed, nextTick, onUnmounted, ref, useSlots } from 'vue';
 
   import AppAvatar from '../AppAvatar/AppAvatar.vue';
+  import AppDialog from '../AppDialog/AppDialog.vue';
   import AppRow from '../AppRow/AppRow.vue';
   import IconCS from '../IconCS/IconCS.vue';
   import type { IconName } from '../IconCS/IconCS.vue';
@@ -21,17 +22,23 @@
   export interface ShellUser {
     name: string;
     role?: 'USER' | 'ADMIN' | 'GUEST';
+    /** Translated display text for `role` — e.g. "Administrator". Rendered
+     * as-is; the shell never translates `role` itself. */
+    roleLabel?: string;
     avatarUrl?: string;
     initials?: string;
   }
 
+  type ColorMode = 'light' | 'dark' | 'system';
   const props = withDefaults(
     defineProps<{
       /** Key of the currently active nav item — used to set aria-current="page". */
       activeRoute: string;
       /**
-       * Primary nav items. Bottom-tab bar renders the first 5 only
-       * (overflow is silently truncated at xs widths).
+       * Primary nav items. The bottom-tab bar (xs widths) renders the first 4
+       * (or all 5, if none of `nav`/`adminNav` overflow) plus an overflow
+       * "More" tab that opens the full nav — primary and admin — in a dialog.
+       * Nothing is ever silently unreachable at xs widths.
        */
       nav: NavItem[];
       /**
@@ -43,7 +50,7 @@
       user: ShellUser;
       searchValue?: string;
       searchPlaceholder?: string;
-      colorMode?: 'light' | 'dark';
+      colorMode?: ColorMode;
       brandName?: string;
       brandMark?: string;
       /** Landmark and menu names; override to translate. */
@@ -61,6 +68,24 @@
       rightRailLabel?: string;
       /** Visible heading over the admin section; override to translate. */
       adminLabel?: string;
+      /** Overflow bottom-tab label + title of the nav dialog it opens. */
+      moreLabel?: string;
+      /** Dismiss button aria-label on the overflow nav dialog. */
+      closeLabel?: string;
+      /** Avatar-menu item labels. */
+      profileLabel?: string;
+      settingsLabel?: string;
+      signOutLabel?: string;
+      /**
+       * Words for the three theme states, shared by the avatar-menu theme
+       * item (as the text of the state a click switches *to*) and by the
+       * topbar toggle's icon selection.
+       */
+      themeLightLabel?: string;
+      themeDarkLabel?: string;
+      themeSystemLabel?: string;
+      /** Static aria-label for the icon-only topbar theme toggle. */
+      themeToggleLabel?: string;
     }>(),
     {
       adminNav: () => [],
@@ -76,12 +101,21 @@
       sidebarLabel: 'Sidebar',
       rightRailLabel: 'Secondary content',
       adminLabel: 'Admin',
+      moreLabel: 'More',
+      closeLabel: 'Close',
+      profileLabel: 'Profile',
+      settingsLabel: 'Settings',
+      signOutLabel: 'Sign out',
+      themeLightLabel: 'Light',
+      themeDarkLabel: 'Dark',
+      themeSystemLabel: 'System',
+      themeToggleLabel: 'Toggle color theme',
     },
   );
 
   const emit = defineEmits<{
     'update:searchValue': [value: string];
-    'update:colorMode': [mode: 'light' | 'dark'];
+    'update:colorMode': [mode: ColorMode];
     /** Fired on every nav-item click with the item's key. */
     nav: [key: string];
     /** Fired when Enter is pressed in the search input. */
@@ -90,6 +124,8 @@
     settings: [];
     signOut: [];
   }>();
+
+  const THEME_CYCLE: ColorMode[] = ['light', 'dark', 'system'];
 
   const slots = useSlots();
 
@@ -157,10 +193,37 @@
 
   function onNavClick(item: NavItem) {
     emit('nav', item.key);
+    closeMobileNav();
   }
 
+  // ── Theme cycle (light → dark → system → …) ───────────────────────────────
+  // A binary toggle can only set an explicit light/dark preference, so it
+  // silently destroys "follow system" the moment it's clicked once — there
+  // was no way back to it from here. The topbar icon and the avatar-menu
+  // item both show/act on the state a click switches *to*, same convention
+  // the binary toggle used.
+
+  const nextColorMode = computed<ColorMode>(() => {
+    const idx = THEME_CYCLE.indexOf(props.colorMode);
+    // Modulo of a fixed-length array always lands in range; the fallback
+    // only satisfies the indexed-access type, never actually taken.
+    return THEME_CYCLE[(idx + 1) % THEME_CYCLE.length] ?? 'light';
+  });
+
+  const themeToggleIcon = computed<IconName>(() => {
+    if (nextColorMode.value === 'light') return 'sun';
+    if (nextColorMode.value === 'dark') return 'moon';
+    return 'sliders';
+  });
+
+  const nextColorModeLabel = computed<string>(() => {
+    if (nextColorMode.value === 'light') return props.themeLightLabel;
+    if (nextColorMode.value === 'dark') return props.themeDarkLabel;
+    return props.themeSystemLabel;
+  });
+
   function toggleColorMode() {
-    emit('update:colorMode', props.colorMode === 'dark' ? 'light' : 'dark');
+    emit('update:colorMode', nextColorMode.value);
   }
 
   function onProfile() {
@@ -189,8 +252,20 @@
     props.user.role === 'ADMIN' ? 'admin' : props.user.role === 'GUEST' ? 'guest' : undefined,
   );
 
-  // ── Bottom-tab items (max 5) ───────────────────────────────────────────────
-  const bottomTabItems = computed(() => props.nav.slice(0, 5));
+  // ── Bottom-tab items (max 5, minus 1 reserved for "More" on overflow) ──────
+  // Admin nav never fits in 5 tabs and was previously dropped outright below
+  // 600px — the whole /admin surface (#568). Any nav item beyond the first 4
+  // now has a way out: the "More" tab opens everything in a dialog instead
+  // of the bar silently truncating.
+  const showMoreTab = computed(() => props.adminNav.length > 0 || props.nav.length > 5);
+  const bottomTabItems = computed(() => props.nav.slice(0, showMoreTab.value ? 4 : 5));
+
+  // ── Mobile nav overflow dialog ──────────────────────────────────────────────
+  const mobileNavOpen = ref(false);
+
+  function closeMobileNav() {
+    mobileNavOpen.value = false;
+  }
 
   // ── Right-rail slot detection ──────────────────────────────────────────────
   const hasRightRail = computed(() => !!slots['right-rail']);
@@ -268,7 +343,7 @@
         />
         <div class="app-navigation-shell__user-info">
           <span class="app-navigation-shell__user-name">{{ user.name }}</span>
-          <span class="app-navigation-shell__user-role">{{ user.role ?? 'USER' }}</span>
+          <span class="app-navigation-shell__user-role">{{ user.roleLabel }}</span>
         </div>
         <IconCS name="settings" :size="16" class="app-navigation-shell__user-settings-icon" />
       </button>
@@ -296,10 +371,10 @@
         <button
           type="button"
           class="app-navigation-shell__theme-toggle"
-          :aria-label="`Switch to ${colorMode === 'dark' ? 'light' : 'dark'} mode`"
+          :aria-label="themeToggleLabel"
           @click="toggleColorMode"
         >
-          <IconCS :name="colorMode === 'dark' ? 'sun' : 'moon'" :size="16" />
+          <IconCS :name="themeToggleIcon" :size="16" />
         </button>
 
         <!-- Avatar trigger (topbar) -->
@@ -334,7 +409,7 @@
               @click="onProfile"
             >
               <IconCS name="user" :size="16" />
-              Profile
+              {{ profileLabel }}
             </button>
             <button
               type="button"
@@ -343,7 +418,7 @@
               @click="onSettings"
             >
               <IconCS name="settings" :size="16" />
-              Settings
+              {{ settingsLabel }}
             </button>
             <button
               type="button"
@@ -351,8 +426,8 @@
               role="menuitem"
               @click="onThemeMenuItem"
             >
-              <IconCS :name="colorMode === 'dark' ? 'sun' : 'moon'" :size="16" />
-              {{ colorMode === 'dark' ? 'Light mode' : 'Dark mode' }}
+              <IconCS :name="themeToggleIcon" :size="16" />
+              {{ nextColorModeLabel }}
             </button>
             <div class="app-navigation-shell__menu-divider" role="separator" />
             <button
@@ -362,7 +437,7 @@
               @click="onSignOut"
             >
               <IconCS name="logout" :size="16" />
-              Sign out
+              {{ signOutLabel }}
             </button>
           </div>
         </div>
@@ -399,7 +474,67 @@
         <IconCS :name="item.icon" :size="20" />
         <span class="app-navigation-shell__tab-label">{{ item.label }}</span>
       </button>
+
+      <!-- Overflow entry — opens the full nav (primary + admin) below. -->
+      <button
+        v-if="showMoreTab"
+        type="button"
+        class="app-navigation-shell__tab-item"
+        aria-haspopup="dialog"
+        :aria-expanded="mobileNavOpen ? 'true' : 'false'"
+        @click="mobileNavOpen = true"
+      >
+        <IconCS name="menu" :size="20" />
+        <span class="app-navigation-shell__tab-label">{{ moreLabel }}</span>
+      </button>
     </nav>
+
+    <!-- ── Overflow nav dialog (mirrors the sidebar, reachable at xs) ───────── -->
+    <AppDialog
+      v-if="showMoreTab"
+      :open="mobileNavOpen"
+      :title="moreLabel"
+      :dismiss-label="closeLabel"
+      size="sm"
+      @update:open="mobileNavOpen = $event"
+    >
+      <nav class="app-navigation-shell__nav" :aria-label="primaryNavLabel">
+        <AppRow
+          v-for="item in nav"
+          :key="item.key"
+          :selected="item.key === activeRoute"
+          compact
+          interactive
+          :aria-current="item.key === activeRoute ? 'page' : undefined"
+          @click="onNavClick(item)"
+        >
+          <template #leading>
+            <IconCS :name="item.icon" :size="18" />
+          </template>
+          {{ item.label }}
+        </AppRow>
+      </nav>
+
+      <template v-if="adminNav && adminNav.length > 0">
+        <div class="app-navigation-shell__admin-section">{{ adminLabel }}</div>
+        <nav class="app-navigation-shell__nav" :aria-label="adminNavLabel">
+          <AppRow
+            v-for="item in adminNav"
+            :key="item.key"
+            :selected="item.key === activeRoute"
+            compact
+            interactive
+            :aria-current="item.key === activeRoute ? 'page' : undefined"
+            @click="onNavClick(item)"
+          >
+            <template #leading>
+              <IconCS :name="item.icon" :size="18" />
+            </template>
+            {{ item.label }}
+          </AppRow>
+        </nav>
+      </template>
+    </AppDialog>
   </div>
 </template>
 

@@ -505,6 +505,10 @@ function makeTranscriptRepo(): TranscriptRepository & { store: Map<string, FakeT
         if (k.startsWith(`${lessonId}:`)) store.delete(k);
       }
     }),
+    // Not exercised by the scan walk — the language-backfill script (#555)
+    // is the only caller.
+    findGeneratedByLanguage: vi.fn(async () => []),
+    reclassifyGenerated: vi.fn(async () => undefined),
   };
 }
 

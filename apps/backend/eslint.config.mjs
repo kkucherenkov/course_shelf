@@ -14,12 +14,20 @@ export default [
     ],
   },
   {
-    // main.ts and seed.ts use CommonJS (module: CommonJS in tsconfig) so
-    // top-level await is not available, and process.exit is the only way for
-    // either entry point to signal a fatal failure. The second glob of each
-    // pair matches when lint-staged invokes ESLint from the repo root with an
-    // absolute / workspace-relative path.
-    files: ['src/main.ts', '**/backend/src/main.ts', 'src/seed.ts', '**/backend/src/seed.ts'],
+    // main.ts, seed.ts and every other src/-level CLI entry point use
+    // CommonJS (module: CommonJS in tsconfig) so top-level await is not
+    // available, and process.exit is the only way for any of them to signal
+    // a fatal failure. The second glob of each pair matches when lint-staged
+    // invokes ESLint from the repo root with an absolute / workspace-relative
+    // path.
+    files: [
+      'src/main.ts',
+      '**/backend/src/main.ts',
+      'src/seed.ts',
+      '**/backend/src/seed.ts',
+      'src/backfill-transcript-language.ts',
+      '**/backend/src/backfill-transcript-language.ts',
+    ],
     rules: {
       'unicorn/prefer-top-level-await': 'off',
       'unicorn/no-process-exit': 'off',

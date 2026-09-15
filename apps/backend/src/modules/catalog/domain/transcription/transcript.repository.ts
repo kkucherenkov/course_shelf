@@ -82,6 +82,31 @@ export interface ReplaceSidecarInput {
   readonly cues: readonly SubtitleCue[];
 }
 
+/**
+ * One `generated`-origin transcript still filed under a given `language`
+ * (#555's backfill only ever asks for `'und'`), with everything the language
+ * classifier and `derivedTranscriptPath` need — `libraryId` is not a column
+ * on `Transcript` itself (no FK to Lesson, see the file header), so the
+ * adapter resolves it via `lessonId -> Lesson.courseId -> Course.libraryId`.
+ */
+export interface GeneratedTranscriptByLanguage {
+  readonly transcriptId: string;
+  readonly libraryId: string;
+  /** Library-relative video path — feeds `derivedTranscriptPath` as-is. */
+  readonly sourcePath: string;
+  /** Absolute path of the current `.srt` under DERIVED_PATH. */
+  readonly derivedPath: string;
+  /** Every cue's text, concatenated in cue order. */
+  readonly cueText: string;
+}
+
+export interface ReclassifyGeneratedInput {
+  readonly transcriptId: string;
+  readonly oldDerivedPath: string;
+  readonly newDerivedPath: string;
+  readonly newLanguage: string;
+}
+
 export interface TranscriptRepository {
   /**
    * Signatures of the generated transcripts these lessons already have in this
@@ -128,4 +153,19 @@ export interface TranscriptRepository {
    * Never touches the Lesson row.
    */
   deleteForLesson(lessonId: string): Promise<void>;
+
+  /**
+   * Every `generated` transcript still filed under `language` — the
+   * language-backfill script (#555) is the only caller, always with `'und'`.
+   */
+  findGeneratedByLanguage(language: string): Promise<GeneratedTranscriptByLanguage[]>;
+
+  /**
+   * Renames the row's derived `.srt` file to `newDerivedPath` and only then
+   * updates `language`/`derivedPath` on the row — in that order, so a crash
+   * mid-way leaves the locator's own recomputation (from the DB column) still
+   * matching a file that exists, never pointing at one that was already
+   * renamed out from under it (#529).
+   */
+  reclassifyGenerated(input: ReclassifyGeneratedInput): Promise<void>;
 }

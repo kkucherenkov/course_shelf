@@ -177,6 +177,10 @@ function makeTranscriptRepo(
     findExisting: vi.fn(async () => null),
     replaceSidecar: vi.fn(async () => undefined),
     deleteForLesson: vi.fn(async () => undefined),
+    // Not exercised by the transcription run — the language-backfill script
+    // (#555) is the only caller.
+    findGeneratedByLanguage: vi.fn(async () => []),
+    reclassifyGenerated: vi.fn(async () => undefined),
   };
 }
 

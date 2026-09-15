@@ -5,6 +5,7 @@ import { Course } from '../../domain/course/course';
 import { Lesson } from '../../domain/lesson/lesson';
 import { Material } from '../../domain/lesson/material';
 import { Subtitle } from '../../domain/lesson/subtitle';
+import { LibraryRelativePath } from '../../domain/shared-vo/library-relative-path';
 import { CourseNotFoundError } from '../../domain/course/course.errors';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { CourseProgressReadModel } from '../../domain/progress/course-progress-read-model';
@@ -100,6 +101,8 @@ function makeTranscriptRepo(
     findExisting: vi.fn().mockResolvedValue(null),
     replaceSidecar: vi.fn(),
     deleteForLesson: vi.fn(),
+    findGeneratedByLanguage: vi.fn().mockResolvedValue([]),
+    reclassifyGenerated: vi.fn(),
   };
 }
 
@@ -140,7 +143,7 @@ function makeLesson(opts: {
     sectionId: opts.sectionId,
     position: opts.position,
     title: `Lesson ${opts.position}`,
-    videoPath: 'video.mp4',
+    videoPath: LibraryRelativePath.reconstitute('video.mp4'),
     mtime: NOW,
     sizeBytes: 1000,
     duration: opts.duration,

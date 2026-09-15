@@ -85,9 +85,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const auth = useAuthStore();
 
   // If a bearer token is present but the in-memory user is not yet hydrated
-  // (e.g. after a hard reload), attempt one silent session refresh.  This is
+  // (e.g. after a hard reload), attempt one silent session refresh. This is
   // the happy-path for page reloads: the token survives in localStorage but
-  // Pinia state is reset.
+  // Pinia state is reset. `refresh()` authenticates with that same token
+  // (see `stores/auth.ts`'s `createClient`) — it does not depend on the
+  // session cookie, so this works even with cookies cleared.
   if (!auth.isAuthenticated && auth.token) {
     await auth.refresh();
   }

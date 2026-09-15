@@ -3,6 +3,7 @@ import { brand } from '../../../../shared/branded-id';
 
 import { Course } from '../../domain/course/course';
 import { Lesson } from '../../domain/lesson/lesson';
+import { LibraryRelativePath } from '../../domain/shared-vo/library-relative-path';
 import { CourseNotFoundError } from '../../domain/course/course.errors';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { CourseProgressReadModel } from '../../domain/progress/course-progress-read-model';
@@ -119,7 +120,7 @@ function makeLesson(id: string, duration?: number): Lesson {
     sectionId: 'sec-1',
     position: 1,
     title: `Lesson ${id}`,
-    videoPath: 'video.mp4',
+    videoPath: LibraryRelativePath.reconstitute('video.mp4'),
     mtime: NOW,
     sizeBytes: 1000,
     duration,

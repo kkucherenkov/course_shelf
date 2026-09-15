@@ -15,6 +15,7 @@ import { Lesson } from './lesson';
 import { Material } from './material';
 import { Subtitle } from './subtitle';
 import { LessonPositionConflictError } from './lesson.errors';
+import { LibraryRelativePath } from '../shared-vo/library-relative-path';
 
 const NOW = new Date('2026-01-01T00:00:00.000Z');
 
@@ -25,7 +26,7 @@ function makeLesson(): Lesson {
     sectionId: 'section-1',
     position: 1,
     title: 'Intro',
-    videoPath: '/lib/course/01 - Intro.mp4',
+    videoPath: LibraryRelativePath.from('/lib/course/01 - Intro.mp4', '/lib'),
     mtime: NOW,
     sizeBytes: 1000,
     now: NOW,
@@ -49,7 +50,8 @@ describe('Lesson.create', () => {
     expect(lesson.sectionId).toBe('section-1');
     expect(lesson.position).toBe(1);
     expect(lesson.title).toBe('Intro');
-    expect(lesson.videoPath).toBe('/lib/course/01 - Intro.mp4');
+    // Stored library-relative regardless of the absolute path it was built from.
+    expect(lesson.videoPath).toBe('course/01 - Intro.mp4');
     expect(lesson.mtime).toEqual(NOW);
     expect(lesson.sizeBytes).toBe(1000);
     expect(lesson.createdAt).toEqual(NOW);
@@ -65,6 +67,20 @@ describe('Lesson.create', () => {
     const lesson = makeLesson();
     expect(lesson.materials).toHaveLength(0);
     expect(lesson.subtitles).toHaveLength(0);
+  });
+});
+
+describe('absoluteVideoPath', () => {
+  it('resolves the stored relative path back to absolute under the given library root', () => {
+    const lesson = makeLesson();
+    expect(lesson.absoluteVideoPath('/lib')).toBe('/lib/course/01 - Intro.mp4');
+  });
+
+  it('resolves under a different root — the value never carries one baked in', () => {
+    const lesson = makeLesson();
+    expect(lesson.absoluteVideoPath('/mnt/moved-library')).toBe(
+      '/mnt/moved-library/course/01 - Intro.mp4',
+    );
   });
 });
 

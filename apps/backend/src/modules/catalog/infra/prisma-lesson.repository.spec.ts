@@ -14,6 +14,7 @@ import { Prisma } from '@prisma/client';
 import { Lesson } from '../domain/lesson/lesson';
 import { Material } from '../domain/lesson/material';
 import { Subtitle } from '../domain/lesson/subtitle';
+import { LibraryRelativePath } from '../domain/shared-vo/library-relative-path';
 import { LessonPositionConflictError } from '../domain/lesson/lesson.errors';
 import { PrismaLessonRepository } from './prisma-lesson.repository';
 
@@ -46,7 +47,9 @@ function makeLessonRow(
     sectionId: 'section-1',
     position: 1,
     title: 'Intro',
-    videoPath: '/lib/course/01 - Intro.mp4',
+    // Library-relative, as it is persisted (rowToAggregate rejects an
+    // absolute-looking value).
+    videoPath: 'course/01 - Intro.mp4',
     mtime: NOW,
     sizeBytes: 1000,
     duration: null,
@@ -130,7 +133,7 @@ function makeLesson(): Lesson {
     sectionId: 'section-1',
     position: 1,
     title: 'Intro',
-    videoPath: '/lib/course/01 - Intro.mp4',
+    videoPath: LibraryRelativePath.from('/lib/course/01 - Intro.mp4', '/lib'),
     mtime: NOW,
     sizeBytes: 1000,
     now: NOW,
@@ -327,7 +330,7 @@ describe('PrismaLessonRepository', () => {
         sectionId: 'section-1',
         position: 1,
         title: 'Huge',
-        videoPath: '/lib/course/huge.mp4',
+        videoPath: LibraryRelativePath.from('/lib/course/huge.mp4', '/lib'),
         mtime: NOW,
         sizeBytes: OVERSIZED_BYTES,
         now: NOW,

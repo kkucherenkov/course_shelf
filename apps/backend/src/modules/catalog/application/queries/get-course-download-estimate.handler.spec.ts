@@ -3,6 +3,7 @@ import { brand } from '../../../../shared/branded-id';
 
 import { Course } from '../../domain/course/course';
 import { Lesson } from '../../domain/lesson/lesson';
+import { LibraryRelativePath } from '../../domain/shared-vo/library-relative-path';
 import { CourseNotFoundError } from '../../domain/course/course.errors';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { GetCourseDownloadEstimateQuery } from './get-course-download-estimate.query';
@@ -75,7 +76,7 @@ function makeLesson(opts: {
     sectionId: opts.sectionId,
     position: opts.position,
     title: `Lesson ${opts.position}`,
-    videoPath: 'video.mp4',
+    videoPath: LibraryRelativePath.reconstitute('video.mp4'),
     mtime: NOW,
     sizeBytes: opts.sizeBytes,
     duration: undefined,

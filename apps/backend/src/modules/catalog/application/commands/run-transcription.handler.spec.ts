@@ -41,6 +41,7 @@ import { Course } from '../../domain/course/course';
 import { CourseNotFoundError } from '../../domain/course/course.errors';
 import { Lesson } from '../../domain/lesson/lesson';
 import { Subtitle } from '../../domain/lesson/subtitle';
+import { LibraryRelativePath } from '../../domain/shared-vo/library-relative-path';
 import { Library } from '../../domain/library/library';
 import { LibraryNotFoundError } from '../../domain/library/library.errors';
 import { Transcription } from '../../domain/transcription/transcription';
@@ -253,7 +254,7 @@ function makeLesson(
     sectionId: `section-${courseId}`,
     position: 1,
     title: file,
-    videoPath: `${ROOT}/${courseId}/${file}`,
+    videoPath: LibraryRelativePath.from(`${ROOT}/${courseId}/${file}`, ROOT),
     mtime: BASE_TIME,
     sizeBytes: 100,
   });

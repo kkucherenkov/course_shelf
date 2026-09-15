@@ -99,6 +99,7 @@ function makeLessonRepo(overrides?: Partial<LessonRepository>): LessonRepository
       id: LESSON_ID,
       courseId: COURSE_ID,
       videoPath: VIDEO_RELATIVE,
+      absoluteVideoPath: (root: string) => path.resolve(root, VIDEO_RELATIVE),
       subtitles: [],
       materials: [],
     }),
@@ -145,6 +146,8 @@ function makeTranscriptRepo(overrides?: Partial<TranscriptRepository>): Transcri
     findExisting: vi.fn().mockResolvedValue(null),
     replaceSidecar: vi.fn(),
     deleteForLesson: vi.fn(),
+    findGeneratedByLanguage: vi.fn().mockResolvedValue([]),
+    reclassifyGenerated: vi.fn(),
     ...overrides,
   };
 }
@@ -230,6 +233,7 @@ describe('LessonFileLocator', () => {
       id: LESSON_ID,
       courseId: COURSE_ID,
       videoPath: '../../etc/passwd',
+      absoluteVideoPath: (root: string) => path.resolve(root, '../../etc/passwd'),
       subtitles: [],
       materials: [],
     };
@@ -248,6 +252,7 @@ describe('LessonFileLocator', () => {
       id: LESSON_ID,
       courseId: COURSE_ID,
       videoPath: '/etc/passwd',
+      absoluteVideoPath: (root: string) => path.resolve(root, '/etc/passwd'),
       subtitles: [],
       materials: [],
     };
@@ -358,12 +363,15 @@ describe('LessonFileLocator', () => {
     expect(transcriptRepo.findGeneratedForLessons).toHaveBeenCalledWith([LESSON_ID], 'fr');
   });
 
-  it('locateSubtitle resolves a generated transcript when videoPath is stored absolute', async () => {
-    // The scan records what it walked, so `Lesson.videoPath` is absolute in
-    // practice even though `derivedTranscriptPath` documents it as
-    // library-relative. `run-transcription.handler.ts` normalises before
-    // writing the .srt; the read has to normalise identically or `path.resolve`
-    // drops the derived root and the traversal guard refuses our own file.
+  it('locateSubtitle refuses a generated transcript when videoPath is (incorrectly) absolute', async () => {
+    // Pre-#554, the scan recorded what it walked, so `Lesson.videoPath` was
+    // absolute in practice and this locator used to re-normalise it before
+    // calling `derivedTranscriptPath` — papering over the bug at every read
+    // site instead of fixing the write side. #554 made `LibraryRelativePath`
+    // the only way to construct a real `Lesson.videoPath`, so a persisted row
+    // cannot carry an absolute value any more; this stub is a corrupted or
+    // hand-crafted object bypassing that guard, and the locator must now fail
+    // closed on it rather than silently resolving the right file by accident.
     const lessonAbsolutePath = {
       id: LESSON_ID,
       courseId: COURSE_ID,
@@ -384,10 +392,8 @@ describe('LessonFileLocator', () => {
       makeAppConfig('/srv/derived'),
     );
 
-    const result = await locator.locateSubtitle(LESSON_ID, 'fr');
-
-    expect(result.absolutePath).toBe(
-      path.resolve('/srv/derived', LIBRARY_ID, `${VIDEO_RELATIVE}.fr.srt`),
+    await expect(locator.locateSubtitle(LESSON_ID, 'fr')).rejects.toBeInstanceOf(
+      DerivedPathEscapedError,
     );
   });
 

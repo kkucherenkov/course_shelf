@@ -73,6 +73,7 @@ import { UpsertInstructorHandler } from './application/commands/upsert-instructo
 import { UpsertStudioHandler } from './application/commands/upsert-studio.handler';
 import { UpsertTagHandler } from './application/commands/upsert-tag.handler';
 import { BackfillCourseMetadataHandler } from './application/commands/backfill-course-metadata.handler';
+import { BackfillTranscriptLanguageHandler } from './application/commands/backfill-transcript-language.handler';
 import { SetCourseInstructorsHandler } from './application/commands/set-course-instructors.handler';
 import { SetCourseStudiosHandler } from './application/commands/set-course-studios.handler';
 import { SetCourseTagsHandler } from './application/commands/set-course-tags.handler';
@@ -211,6 +212,7 @@ import { PosterSyncService } from './application/scan/poster-sync.service';
     ListTagsHandler,
     GetTagHandler,
     BackfillCourseMetadataHandler,
+    BackfillTranscriptLanguageHandler,
     ScrapeCourseHandler,
     RunIdentifyTaskHandler,
     ApplyIdentifyResultHandler,

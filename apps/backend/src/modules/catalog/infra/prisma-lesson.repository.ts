@@ -20,6 +20,7 @@ import { Lesson } from '../domain/lesson/lesson';
 import { LessonPositionConflictError } from '../domain/lesson/lesson.errors';
 import { Material } from '../domain/lesson/material';
 import { Subtitle } from '../domain/lesson/subtitle';
+import { LibraryRelativePath } from '../domain/shared-vo/library-relative-path';
 
 import type { LessonRepository } from '../domain/lesson/lesson.repository';
 import type { LessonId } from '../domain/lesson/lesson';
@@ -257,7 +258,7 @@ export class PrismaLessonRepository implements LessonRepository {
       sectionId: row.sectionId,
       position: row.position,
       title: row.title,
-      videoPath: row.videoPath,
+      videoPath: LibraryRelativePath.reconstitute(row.videoPath),
       mtime: row.mtime,
       sizeBytes: Number(row.sizeBytes),
       duration: row.duration ?? undefined,

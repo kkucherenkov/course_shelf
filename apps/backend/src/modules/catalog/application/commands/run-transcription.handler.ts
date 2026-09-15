@@ -373,17 +373,16 @@ export class RunTranscriptionHandler implements ICommandHandler<
     const audioPath = path.join(os.tmpdir(), `cs-transcribe-${nanoid()}.wav`);
 
     try {
-      // videoPath is stored library-relative in principle and absolute in
-      // practice (the scan records what it walked). Resolving and then relativising
-      // normalises both forms; a path that escapes the root comes back starting
-      // with '..' and derivedTranscriptPath refuses it.
-      const absoluteVideoPath = path.resolve(library.rootPath, lesson.videoPath);
-      const relativeVideoPath = path.relative(library.rootPath, absoluteVideoPath);
+      // `lesson.videoPath` is guaranteed library-relative (LibraryRelativePath) —
+      // no normalisation needed on the way in here any more (#529 used to
+      // paper over the write side storing it absolute; #554 fixed that at
+      // the source).
+      const absoluteVideoPath = lesson.absoluteVideoPath(library.rootPath);
 
       const srtPath = derivedTranscriptPath({
         derivedRoot: this.appConfig.derivedPath,
         libraryId: library.id,
-        videoPath: relativeVideoPath,
+        videoPath: lesson.videoPath,
         language,
       });
       // whisper.cpp appends `.srt` to `-of` itself.
@@ -426,7 +425,7 @@ export class RunTranscriptionHandler implements ICommandHandler<
         finalSrtPath = derivedTranscriptPath({
           derivedRoot: this.appConfig.derivedPath,
           libraryId: library.id,
-          videoPath: relativeVideoPath,
+          videoPath: lesson.videoPath,
           language: finalLanguage,
         });
         await rename(srtAbsolutePath, finalSrtPath);
@@ -438,7 +437,7 @@ export class RunTranscriptionHandler implements ICommandHandler<
       await this.transcripts.replaceGenerated({
         lessonId: lesson.id,
         language: finalLanguage,
-        sourcePath: relativeVideoPath,
+        sourcePath: lesson.videoPath,
         sourceMtime: lesson.mtime,
         sourceSize: lesson.sizeBytes,
         derivedPath: finalSrtPath,

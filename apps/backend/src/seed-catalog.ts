@@ -35,6 +35,7 @@ import { Course } from './modules/catalog/domain/course/course';
 import { Instructor } from './modules/catalog/domain/instructor/instructor';
 import { Lesson } from './modules/catalog/domain/lesson/lesson';
 import { Library } from './modules/catalog/domain/library/library';
+import { LibraryRelativePath } from './modules/catalog/domain/shared-vo/library-relative-path';
 import { Material } from './modules/catalog/domain/lesson/material';
 import { Studio } from './modules/catalog/domain/studio/studio';
 import { Subtitle } from './modules/catalog/domain/lesson/subtitle';
@@ -249,7 +250,7 @@ export function buildSeedLesson(): Lesson {
     sectionId: SEED_IDS.section,
     position: 1,
     title: 'Welcome',
-    videoPath: `${SEED_SLUGS.course}/01-welcome.mp4`,
+    videoPath: LibraryRelativePath.reconstitute(`${SEED_SLUGS.course}/01-welcome.mp4`),
     mtime: SEED_EPOCH,
     sizeBytes: 1_048_576,
     now: SEED_EPOCH,

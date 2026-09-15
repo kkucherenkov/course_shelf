@@ -16,7 +16,7 @@
  * cleanup of a file this adapter itself wrote the path for, not a scan-domain
  * concern that needs to be fakeable the way the walk's reads do.
  */
-import { unlink } from 'node:fs/promises';
+import { rename, unlink } from 'node:fs/promises';
 
 import { Injectable } from '@nestjs/common';
 
@@ -25,7 +25,9 @@ import { PrismaService } from '../../../common/prisma/prisma.service';
 import type {
   AnyGeneratedTranscriptSignature,
   ExistingTranscriptSignature,
+  GeneratedTranscriptByLanguage,
   GeneratedTranscriptSignature,
+  ReclassifyGeneratedInput,
   ReplaceGeneratedInput,
   ReplaceSidecarInput,
   TranscriptOriginValue,
@@ -133,6 +135,61 @@ export class PrismaTranscriptRepository implements TranscriptRepository {
           }),
         ),
     );
+  }
+
+  async findGeneratedByLanguage(language: string): Promise<GeneratedTranscriptByLanguage[]> {
+    const rows = await this.prisma.transcript.findMany({
+      where: { origin: 'generated', language, derivedPath: { not: null } },
+      include: { cues: { select: { text: true }, orderBy: { startMs: 'asc' } } },
+    });
+    if (rows.length === 0) return [];
+
+    // No FK from Transcript to Lesson (see the file header) — resolve
+    // libraryId via two flat batch queries instead of a relation include.
+    const lessonIds = [...new Set(rows.map((r) => r.lessonId))];
+    const lessons = await this.prisma.lesson.findMany({
+      where: { id: { in: lessonIds } },
+      select: { id: true, courseId: true },
+    });
+    const courseIdByLessonId = new Map(lessons.map((l) => [l.id, l.courseId]));
+
+    const courseIds = [...new Set(lessons.map((l) => l.courseId))];
+    const courses = await this.prisma.course.findMany({
+      where: { id: { in: courseIds } },
+      select: { id: true, libraryId: true },
+    });
+    const libraryIdByCourseId = new Map(courses.map((c) => [c.id, c.libraryId]));
+
+    const result: GeneratedTranscriptByLanguage[] = [];
+    for (const row of rows) {
+      const courseId = courseIdByLessonId.get(row.lessonId);
+      const libraryId = courseId === undefined ? undefined : libraryIdByCourseId.get(courseId);
+      // Defensive — a transcript whose lesson (or course) vanished out from
+      // under it is an orphan the scan's own cleanup should have caught;
+      // skip rather than crash the whole backfill run over one bad row.
+      if (libraryId === undefined || row.derivedPath === null) continue;
+
+      result.push({
+        transcriptId: row.id,
+        libraryId,
+        sourcePath: row.sourcePath,
+        derivedPath: row.derivedPath,
+        cueText: row.cues.map((c) => c.text).join(' '),
+      });
+    }
+    return result;
+  }
+
+  async reclassifyGenerated(input: ReclassifyGeneratedInput): Promise<void> {
+    // Disk first — a crash here leaves the DB still pointing at the file
+    // that actually exists. Updating the row first and crashing before the
+    // rename would leave LessonFileLocator recomputing a path for a file
+    // that was never moved there (#529).
+    await rename(input.oldDerivedPath, input.newDerivedPath);
+    await this.prisma.transcript.update({
+      where: { id: input.transcriptId },
+      data: { language: input.newLanguage, derivedPath: input.newDerivedPath },
+    });
   }
 
   private async replace(input: ReplaceRowInput): Promise<void> {

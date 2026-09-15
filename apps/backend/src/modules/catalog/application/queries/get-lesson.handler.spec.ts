@@ -17,6 +17,7 @@ import { Course } from '../../domain/course/course';
 import { Lesson } from '../../domain/lesson/lesson';
 import { Material } from '../../domain/lesson/material';
 import { Subtitle } from '../../domain/lesson/subtitle';
+import { LibraryRelativePath } from '../../domain/shared-vo/library-relative-path';
 import { LessonNotFoundError } from '../../domain/lesson/lesson.errors';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { CourseProgressReadModel } from '../../domain/progress/course-progress-read-model';
@@ -75,6 +76,8 @@ function makeTranscriptRepo(overrides?: Partial<TranscriptRepository>): Transcri
     findExisting: vi.fn().mockResolvedValue(null),
     replaceSidecar: vi.fn(),
     deleteForLesson: vi.fn(),
+    findGeneratedByLanguage: vi.fn().mockResolvedValue([]),
+    reclassifyGenerated: vi.fn(),
     ...overrides,
   };
 }
@@ -100,7 +103,7 @@ function makeLesson(): Lesson {
     sectionId: 'section-1',
     position: 1,
     title: '01 - Intro',
-    videoPath: '/lib/course/01 - Intro.mp4',
+    videoPath: LibraryRelativePath.from('/lib/course/01 - Intro.mp4', '/lib'),
     mtime: NOW,
     sizeBytes: 1000,
     now: NOW,

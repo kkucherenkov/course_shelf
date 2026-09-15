@@ -25,7 +25,8 @@
     "auth:generate-schema": "better-auth generate --output prisma/schema.prisma",
     "auth:schema": "better-auth generate --output prisma/schema.prisma -y",
     "rebuild-projections": "node --experimental-strip-types scripts/rebuild-projections.ts",
-    "backfill:metadata": "node --experimental-strip-types scripts/backfill-course-metadata.ts"
+    "backfill:metadata": "node --experimental-strip-types scripts/backfill-course-metadata.ts",
+    "backfill:transcript-language": "nest build && node dist/backfill-transcript-language.js"
   },
   "dependencies": {
     "@app/api-client-ts": "workspace:*",

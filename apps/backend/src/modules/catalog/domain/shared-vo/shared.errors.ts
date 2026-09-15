@@ -57,6 +57,22 @@ export class LanguageTagInvalidError extends InvariantViolation {
 }
 
 /**
+ * Thrown by `LibraryRelativePath` when a raw path would resolve outside the
+ * library root it is being normalised against, or when a persisted value
+ * being reconstituted is absolute or `..`-traversing.
+ */
+export class LibraryRelativePathEscapedError extends InvariantViolation {
+  constructor(raw: string) {
+    super(
+      `Path "${raw}" is not a valid library-relative path — it is absolute, empty, or escapes ` +
+        'the library root.',
+      'library-relative-path-escaped',
+    );
+    this.name = 'LibraryRelativePathEscapedError';
+  }
+}
+
+/**
  * Thrown when an ExternalIdRef has a blank source/externalId or an
  * invalid URL in the optional url field.
  */

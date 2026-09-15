@@ -56,6 +56,8 @@ vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn(async () => undefined),
 }));
 
+import path from 'node:path';
+
 import { Course } from '../../domain/course/course';
 import { CourseNotFoundError } from '../../domain/course/course.errors';
 import { Instructor } from '../../domain/instructor/instructor';
@@ -69,6 +71,7 @@ import { Tag } from '../../domain/tag/tag';
 import { Scan } from '../../domain/scan/scan';
 import { ScanAlreadyRunningError } from '../../domain/scan/scan.errors';
 import { slugify } from '../../domain/shared-vo/entity-slug';
+import { LibraryRelativePath } from '../../domain/shared-vo/library-relative-path';
 import { MetadataLinker } from '../scan/metadata-linker';
 import { PosterSyncService } from '../scan/poster-sync.service';
 import { RunScanCommand } from './run-scan.command';
@@ -189,7 +192,7 @@ function withPosition(lesson: Lesson, position: number): Lesson {
     sectionId: lesson.sectionId,
     position,
     title: lesson.title,
-    videoPath: lesson.videoPath,
+    videoPath: LibraryRelativePath.reconstitute(lesson.videoPath),
     mtime: lesson.mtime,
     sizeBytes: lesson.sizeBytes,
     duration: lesson.duration,
@@ -502,6 +505,10 @@ function makeTranscriptRepo(): TranscriptRepository & { store: Map<string, FakeT
         if (k.startsWith(`${lessonId}:`)) store.delete(k);
       }
     }),
+    // Not exercised by the scan walk — the language-backfill script (#555)
+    // is the only caller.
+    findGeneratedByLanguage: vi.fn(async () => []),
+    reclassifyGenerated: vi.fn(async () => undefined),
   };
 }
 
@@ -564,6 +571,17 @@ function makeFixtureFiles(): FileRecord[] {
 
 function makeLibrary(): Library {
   return Library.register({ id: 'lib-1', name: 'Test Library', rootPath: '/lib' });
+}
+
+/**
+ * `Lesson.videoPath` is stored library-relative (`LibraryRelativePath`) —
+ * every fixture below still builds an absolute `/lib/...` path (that is what
+ * `FakeFsAdapter`'s walk yields, matching a real `FsAdapter`), so a
+ * post-persist assertion against a `Lesson`'s `.videoPath` needs the same
+ * conversion the handler itself applies at the `Lesson.create()` boundary.
+ */
+function rel(absolutePath: string): string {
+  return path.relative('/lib', absolutePath);
 }
 
 // toSlug() (run-scan.handler.ts) is module-private, but it is only `slugify`
@@ -1272,7 +1290,7 @@ describe('RunScanHandler', () => {
         sectionId: 'section-sidecar',
         position: 1,
         title: 'Intro',
-        videoPath,
+        videoPath: LibraryRelativePath.from(videoPath, '/lib'),
         mtime: BASE_TIME,
         sizeBytes: 500,
       });
@@ -1543,7 +1561,7 @@ describe('RunScanHandler', () => {
         sectionId: 'section-gone',
         position: 1,
         title: 'Intro',
-        videoPath: vanishedVideoPath,
+        videoPath: LibraryRelativePath.from(vanishedVideoPath, '/lib'),
         mtime: BASE_TIME,
         sizeBytes: 500,
       });
@@ -1608,7 +1626,7 @@ describe('RunScanHandler', () => {
         sectionId: 'section-gone-2',
         position: 1,
         title: 'Intro',
-        videoPath: vanishedVideoPath,
+        videoPath: LibraryRelativePath.from(vanishedVideoPath, '/lib'),
         mtime: BASE_TIME,
         sizeBytes: 500,
       });
@@ -2353,8 +2371,8 @@ describe('RunScanHandler', () => {
       // Trailing-digit ordinal parsing (E32-F01-S01) keeps the numeric order:
       // lesson1 → position 1, …, lesson23 → position 23.
       const byVideoPath = new Map([...lessonRepo2.store.values()].map((l) => [l.videoPath, l]));
-      expect(byVideoPath.get('/lib/DDD Course/lesson1.mp4')!.position).toBe(1);
-      expect(byVideoPath.get('/lib/DDD Course/lesson23.mp4')!.position).toBe(23);
+      expect(byVideoPath.get(rel('/lib/DDD Course/lesson1.mp4'))!.position).toBe(1);
+      expect(byVideoPath.get(rel('/lib/DDD Course/lesson23.mp4'))!.position).toBe(23);
     });
 
     it('flat, composite "N.M" prefixes (Golang shape): all 128 files import, chapter+lesson order preserved', async () => {
@@ -2401,8 +2419,8 @@ describe('RunScanHandler', () => {
       const byVideoPath = new Map([...lessonRepo2.store.values()].map((l) => [l.videoPath, l]));
       // Chapter-then-lesson order: 1.1 first, 16.8 last — never colliding on
       // the repeated lesson number ("M") alone.
-      expect(byVideoPath.get('/lib/Golang Course/1.1.mp4')!.position).toBe(1);
-      expect(byVideoPath.get('/lib/Golang Course/16.8.mp4')!.position).toBe(128);
+      expect(byVideoPath.get(rel('/lib/Golang Course/1.1.mp4'))!.position).toBe(1);
+      expect(byVideoPath.get(rel('/lib/Golang Course/16.8.mp4'))!.position).toBe(128);
     });
 
     it('already-correct nested course (49 lessons, no collisions) still imports exactly 49 — no regression', async () => {
@@ -2527,9 +2545,9 @@ describe('RunScanHandler', () => {
       expect(lessonRepo2.store.size).toBe(3);
 
       const byVideoPath = new Map([...lessonRepo2.store.values()].map((l) => [l.videoPath, l]));
-      expect(byVideoPath.get('/lib/Mixed Course/01 - Intro.mp4')!.position).toBe(1);
-      expect(byVideoPath.get('/lib/Mixed Course/lesson2.mp4')!.position).toBe(2);
-      expect(byVideoPath.get('/lib/Mixed Course/Bonus.mp4')!.position).toBe(3);
+      expect(byVideoPath.get(rel('/lib/Mixed Course/01 - Intro.mp4'))!.position).toBe(1);
+      expect(byVideoPath.get(rel('/lib/Mixed Course/lesson2.mp4'))!.position).toBe(2);
+      expect(byVideoPath.get(rel('/lib/Mixed Course/Bonus.mp4'))!.position).toBe(3);
     });
 
     it('a genuine persist-time position conflict is recorded as a ScanError, never a silent overwrite', async () => {
@@ -2548,7 +2566,7 @@ describe('RunScanHandler', () => {
 
       const lessonRepo2 = makeLessonRepo();
       lessonRepo2.save = vi.fn(async (l: Lesson) => {
-        if (l.videoPath === '/lib/Backstop Course/02 - Second.mp4') {
+        if (l.videoPath === rel('/lib/Backstop Course/02 - Second.mp4')) {
           throw new LessonPositionConflictError('simulated stale-row conflict');
         }
         lessonRepo2.store.set(l.id, l);
@@ -2580,7 +2598,7 @@ describe('RunScanHandler', () => {
       // failure does not sink the walk.
       expect(lessonRepo2.store.size).toBe(1);
       expect([...lessonRepo2.store.values()][0]!.videoPath).toBe(
-        '/lib/Backstop Course/01 - First.mp4',
+        rel('/lib/Backstop Course/01 - First.mp4'),
       );
     });
   });
@@ -2664,7 +2682,7 @@ describe('RunScanHandler', () => {
         sectionId: 'section-target',
         position: 1,
         title: 'Intro',
-        videoPath: targetVideoPath,
+        videoPath: LibraryRelativePath.from(targetVideoPath, '/lib'),
         mtime: BASE_TIME,
         sizeBytes: 500,
       });
@@ -2683,7 +2701,7 @@ describe('RunScanHandler', () => {
         sectionId: 'section-other',
         position: 1,
         title: 'Intro',
-        videoPath: otherVideoPath,
+        videoPath: LibraryRelativePath.from(otherVideoPath, '/lib'),
         mtime: BASE_TIME,
         sizeBytes: 500,
       });
@@ -2797,7 +2815,7 @@ describe('RunScanHandler', () => {
           sectionId: 'section-target',
           position: 1,
           title: 'Intro',
-          videoPath: targetVideoPath,
+          videoPath: LibraryRelativePath.from(targetVideoPath, '/lib'),
           mtime: BASE_TIME,
           sizeBytes: 500,
         }),
@@ -2965,7 +2983,7 @@ describe('RunScanHandler', () => {
           sectionId: 'sec-basics',
           position: 1,
           title: 'Values',
-          videoPath: valuesPath,
+          videoPath: LibraryRelativePath.from(valuesPath, '/lib'),
           mtime: BASE_TIME,
           sizeBytes: 500,
         }),
@@ -2978,7 +2996,7 @@ describe('RunScanHandler', () => {
           sectionId: 'sec-basics',
           position: 2,
           title: 'Removed',
-          videoPath: removedPath,
+          videoPath: LibraryRelativePath.from(removedPath, '/lib'),
           mtime: BASE_TIME,
           sizeBytes: 500,
         }),
@@ -3006,7 +3024,7 @@ describe('RunScanHandler', () => {
           sectionId: 'sec-other',
           position: 1,
           title: 'Intro',
-          videoPath: otherVideoPath,
+          videoPath: LibraryRelativePath.from(otherVideoPath, '/lib'),
           mtime: BASE_TIME,
           sizeBytes: 500,
         }),
@@ -3057,7 +3075,7 @@ describe('RunScanHandler', () => {
         .filter((l) => l.courseId === 'course-target')
         .map((l) => l.videoPath)
         .toSorted();
-      expect(videoPaths).toEqual([introPath, valuesPath, deepPath].toSorted());
+      expect(videoPaths).toEqual([introPath, valuesPath, deepPath].map((p) => rel(p)).toSorted());
     });
 
     it('renumbers every section to 1..n — no gaps, no duplicates', async () => {
@@ -3084,10 +3102,10 @@ describe('RunScanHandler', () => {
 
       const values = lessonRepo2.store.get('lesson-values');
       expect(values).toBeDefined();
-      expect(values!.videoPath).toBe(valuesPath);
+      expect(values!.videoPath).toBe(rel(valuesPath));
       // ...and no second row was minted for the same file.
       expect(
-        [...lessonRepo2.store.values()].filter((l) => l.videoPath === valuesPath),
+        [...lessonRepo2.store.values()].filter((l) => l.videoPath === rel(valuesPath)),
       ).toHaveLength(1);
     });
 
@@ -3126,7 +3144,7 @@ describe('RunScanHandler', () => {
       ]);
       expect(courseRepo2.store.get('course-target')!.slug).toBe('renamed-by-hand');
       expect(
-        [...lessonRepo2.store.values()].filter((l) => l.videoPath === valuesPath),
+        [...lessonRepo2.store.values()].filter((l) => l.videoPath === rel(valuesPath)),
       ).toHaveLength(1);
     });
 
@@ -3215,7 +3233,9 @@ describe('RunScanHandler', () => {
       );
       expect(otherLessons).toHaveLength(2);
       // The pre-existing lesson kept its id — no re-import minted a fresh one.
-      expect(otherLessons.find((l) => l.videoPath === otherVideoPath)?.id).toBe('lesson-other');
+      expect(otherLessons.find((l) => l.videoPath === rel(otherVideoPath))?.id).toBe(
+        'lesson-other',
+      );
       expect(lessonRepo2.parkPositionsForResync).toHaveBeenCalledWith('course-other');
       // Reconcile is narrower than force-resync: never deletes a lesson.
       expect(lessonRepo2.removeMany).not.toHaveBeenCalled();
@@ -3276,7 +3296,7 @@ describe('RunScanHandler', () => {
         `${String(sectionCount)} of ${String(sectionCount)} lesson(s)`,
       );
       expect([...lessonRepo2.store.values()].map((l) => l.videoPath).toSorted()).toEqual(
-        videoPaths.toSorted(),
+        videoPaths.map((p) => rel(p)).toSorted(),
       );
       // One section each, one lesson in each — never two lessons fighting over
       // a single (sectionId, position).
@@ -3319,9 +3339,14 @@ describe('RunScanHandler', () => {
       const scan = [...scanRepo2.store.values()][0]!;
       expect(scan.errors.filter((e) => e.code === 'unsupported-extension')).toHaveLength(0);
 
-      // Every lesson carries exactly its own folder's sidecars.
+      // Every lesson carries exactly its own folder's sidecars. Subtitle/
+      // Material paths are out of #554's scope and stay absolute (what the
+      // walk itself produces) — `videoPath` is now library-relative, so the
+      // directory prefix for THOSE comparisons has to come from the absolute
+      // form.
       for (const lesson of lessonRepo2.store.values()) {
-        const dir = lesson.videoPath.slice(0, lesson.videoPath.lastIndexOf('/'));
+        const absoluteVideoPath = lesson.absoluteVideoPath('/lib');
+        const dir = absoluteVideoPath.slice(0, absoluteVideoPath.lastIndexOf('/'));
         expect(lesson.subtitles.map((s) => s.path)).toEqual([`${dir}/video.en.srt`]);
         expect(lesson.materials.map((m) => m.path)).toEqual([`${dir}/video.pdf`]);
       }
@@ -3356,7 +3381,7 @@ describe('RunScanHandler', () => {
           sectionId: `sec-${String(sectionCount)}`,
           position: 1,
           title: 'video',
-          videoPath: survivor,
+          videoPath: LibraryRelativePath.from(survivor, '/lib'),
           mtime: BASE_TIME,
           sizeBytes: 100,
         }),
@@ -3381,11 +3406,11 @@ describe('RunScanHandler', () => {
       await drainMicrotasks();
 
       expect([...lessonRepo2.store.values()].map((l) => l.videoPath).toSorted()).toEqual(
-        videoPaths.toSorted(),
+        videoPaths.map((p) => rel(p)).toSorted(),
       );
       // The one lesson that did survive keeps its id — its progress and
       // bookmarks are the only ones in this course that ever existed.
-      expect(lessonRepo2.store.get('lesson-survivor')?.videoPath).toBe(survivor);
+      expect(lessonRepo2.store.get('lesson-survivor')?.videoPath).toBe(rel(survivor));
     });
   });
 
@@ -3660,7 +3685,7 @@ describe('RunScanHandler', () => {
           sectionId: 'sec-a-544',
           position: 1,
           title: 'Cover',
-          videoPath: '/lib/Course A/00 - Cover.mp4',
+          videoPath: LibraryRelativePath.from('/lib/Course A/00 - Cover.mp4', '/lib'),
           mtime: BASE_TIME,
           sizeBytes: 100,
         }),
@@ -3676,7 +3701,7 @@ describe('RunScanHandler', () => {
           sectionId: 'sec-b-544',
           position: 1,
           title: 'Stray',
-          videoPath: '/lib/Course A/01 - Intro.mp4',
+          videoPath: LibraryRelativePath.from('/lib/Course A/01 - Intro.mp4', '/lib'),
           mtime: BASE_TIME,
           sizeBytes: 100,
         }),
@@ -3708,7 +3733,7 @@ describe('RunScanHandler', () => {
       // still its own id, still the same videoPath.
       const strayAfter = lessonRepo2.store.get('lesson-b-stray');
       expect(strayAfter?.courseId).toBe(courseB.id);
-      expect(strayAfter?.videoPath).toBe('/lib/Course A/01 - Intro.mp4');
+      expect(strayAfter?.videoPath).toBe(rel('/lib/Course A/01 - Intro.mp4'));
       expect([...lessonRepo2.store.values()].filter((l) => l.courseId === courseB.id)).toHaveLength(
         1,
       );
@@ -3716,7 +3741,7 @@ describe('RunScanHandler', () => {
       // Course A got its own, freshly-minted lesson for "01 - Intro.mp4" —
       // never "lesson-b-stray" wearing a new courseId.
       const introForA = [...lessonRepo2.store.values()].find(
-        (l) => l.courseId === courseA.id && l.videoPath === '/lib/Course A/01 - Intro.mp4',
+        (l) => l.courseId === courseA.id && l.videoPath === rel('/lib/Course A/01 - Intro.mp4'),
       );
       expect(introForA).toBeDefined();
       expect(introForA!.id).not.toBe('lesson-b-stray');
@@ -3795,7 +3820,7 @@ describe('RunScanHandler', () => {
             sectionId: 'sec-nuxt-544',
             position,
             title: filename,
-            videoPath: `/lib/${folder}/${filename}`,
+            videoPath: LibraryRelativePath.from(`/lib/${folder}/${filename}`, '/lib'),
             mtime: BASE_TIME,
             sizeBytes: 100,
           }),

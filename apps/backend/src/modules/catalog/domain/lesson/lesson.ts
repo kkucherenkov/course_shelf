@@ -16,6 +16,7 @@
  *     strategy for v1 given the small cardinality.
  */
 import { brand } from '../../../../shared/branded-id';
+import { LibraryRelativePath } from '../shared-vo/library-relative-path';
 import { LessonPositionConflictError } from './lesson.errors';
 import { Material } from './material';
 import { Subtitle } from './subtitle';
@@ -30,8 +31,11 @@ export interface LessonProps {
   readonly sectionId: string;
   readonly position: number;
   readonly title: string;
-  /** Relative to library root. Never exposed in DTOs. */
-  readonly videoPath: string;
+  /**
+   * Relative to library root — the type, not a comment, is what enforces
+   * this (see `LibraryRelativePath`). Never exposed in DTOs.
+   */
+  readonly videoPath: LibraryRelativePath;
   readonly mtime: Date;
   readonly sizeBytes: number;
   readonly duration: number | undefined;
@@ -48,7 +52,7 @@ export class Lesson {
   readonly position: number;
   readonly title: string;
   /** Stored for persistence only — never returned on public accessors. */
-  private readonly _videoPath: string;
+  private readonly _videoPath: LibraryRelativePath;
   private _mtime: Date;
   private _sizeBytes: number;
   private _duration: number | undefined;
@@ -103,10 +107,16 @@ export class Lesson {
 
   /**
    * Internal accessor used ONLY by the Prisma adapter for persistence.
-   * Must never appear in any DTO mapper.
+   * Must never appear in any DTO mapper. Always library-relative — the
+   * underlying `LibraryRelativePath` guarantees it.
    */
   get videoPath(): string {
-    return this._videoPath;
+    return this._videoPath.value;
+  }
+
+  /** This lesson's video, resolved to an absolute path under `libraryRoot`. */
+  absoluteVideoPath(libraryRoot: string): string {
+    return this._videoPath.resolveAbsolute(libraryRoot);
   }
 
   // ---------------------------------------------------------------------------
@@ -125,7 +135,7 @@ export class Lesson {
     sectionId: string;
     position: number;
     title: string;
-    videoPath: string;
+    videoPath: LibraryRelativePath;
     mtime: Date;
     sizeBytes: number;
     now?: Date;

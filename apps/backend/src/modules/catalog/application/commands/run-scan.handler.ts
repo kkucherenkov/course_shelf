@@ -79,6 +79,7 @@ import { FS_ADAPTER } from '../../domain/scan/fs-adapter';
 import { parseFolderName, parseLessonFileName } from '../../domain/scan/folder-name.parser';
 import { assignLessonPositions } from '../../domain/scan/lesson-position';
 import { SLUG_MAX_LENGTH, slugify } from '../../domain/shared-vo/entity-slug';
+import { LibraryRelativePath } from '../../domain/shared-vo/library-relative-path';
 import { stemMatch } from '../../domain/scan/stem-match';
 import { Scan } from '../../domain/scan/scan';
 import { ScanAlreadyRunningError } from '../../domain/scan/scan.errors';
@@ -309,8 +310,10 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       if (scopeCourse) {
         const anyLesson = scopedLessons[0];
         if (anyLesson) {
-          const rel = path.relative(rootPath, anyLesson.videoPath);
-          targetFolderName = rel.split(/[/\\]/)[0];
+          // `videoPath` is library-relative (LibraryRelativePath) — its own
+          // first segment is already the top-level folder, no need to
+          // relativise against rootPath again.
+          targetFolderName = anyLesson.videoPath.split(/[/\\]/)[0];
         } else {
           scan.recordError({
             path: rootPath,
@@ -388,9 +391,11 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       // disagree on which folders are "already imported".
       const courseByFolderName = new Map<string, Course>();
 
-      // Every lesson already known for this library, keyed by its stored
-      // videoPath — the same absolute-path string the walk produces, since
-      // that is what Lesson.create() was given when the row was first written.
+      // Every lesson already known for this library, keyed by the ABSOLUTE
+      // path the walk itself produces (`videoFile.path` below, and
+      // `seenVideoPaths`) — `lesson.videoPath` is library-relative
+      // (LibraryRelativePath), so it is re-resolved against `rootPath` on the
+      // way in via `absoluteVideoPath()` to land in the same space.
       // Two uses (E27-F01-S01, E25-F04-S01):
       //   - a video whose course is already known still gets its sidecars
       //     re-checked every scan (v1 otherwise never revisits it at all);
@@ -410,7 +415,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       if (scopeCourse) {
         if (targetFolderName !== undefined) {
           for (const lesson of scopedLessons) {
-            existingLessonByVideoPath.set(lesson.videoPath, lesson);
+            existingLessonByVideoPath.set(lesson.absoluteVideoPath(rootPath), lesson);
           }
         }
         // targetFolderName undefined → scope was unresolvable (ScanError
@@ -419,10 +424,11 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       } else {
         for (const course of existingCourses) {
           for (const lesson of await this.lessonRepo.findByCourse(course.id)) {
-            existingLessonByVideoPath.set(lesson.videoPath, lesson);
+            existingLessonByVideoPath.set(lesson.absoluteVideoPath(rootPath), lesson);
             // Every lesson of one course lives under one top-level folder, so
-            // the first one answers for all of them.
-            const [folder] = path.relative(rootPath, lesson.videoPath).split(/[/\\]/);
+            // the first one answers for all of them. `videoPath` is already
+            // library-relative — its own first segment is the folder.
+            const [folder] = lesson.videoPath.split(/[/\\]/);
             if (folder !== undefined && folder !== '') {
               importedFolderNames.add(folder);
               courseByFolderName.set(folder, course);
@@ -1059,7 +1065,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
                   sectionId,
                   position: lessonPosition,
                   title: lessonTitle,
-                  videoPath: entry.videoPath,
+                  videoPath: LibraryRelativePath.from(entry.videoPath, rootPath),
                   mtime: entry.mtime,
                   sizeBytes: entry.sizeBytes,
                 });

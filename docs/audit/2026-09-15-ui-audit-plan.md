@@ -86,6 +86,37 @@ separately from role.
 Walk each scenario as the persona named. Record what happened, not what should
 have. A scenario that completes without incident is a result worth recording.
 
+**At every step, check that the page rendered correctly**, not only that it
+behaved. The two fail independently: a screen whose buttons all work can still
+be missing its stylesheet, and a screen that looks right can be showing stale
+data. Concretely, at each step confirm:
+
+- no text clipped, truncated without an ellipsis, or overflowing its container
+- no horizontal scrollbar on the body, at any viewport in the scenario
+- every image resolved: posters, thumbnails, avatars. A broken poster and a
+  deliberate placeholder look different; say which you saw
+- fonts loaded, rather than a fallback stack standing in
+- spacing and alignment consistent with the same component elsewhere on the page
+- nothing overlapping, nothing behind anything, no element at zero height
+- no flash of unstyled content on first paint or after a route change
+- the browser console clean of CSS and resource errors
+
+Two rendering failures in this codebase pass every functional test, so look for
+them by name:
+
+- **Design tokens are generated and gitignored.** If `pnpm design:build` has not
+  run against this checkout, the token CSS is absent and the app renders
+  unstyled while working perfectly. Confirm the build ran before you trust a
+  single visual observation.
+- **Scoped styles can vanish silently.** Vue 3.5.42 dropped `data-v-*` scoped
+  attributes, which detaches scoped CSS from its component with no error
+  anywhere (#276 — the fix is a 3.5.39 pin in `pnpm.overrides`). If a component
+  looks unstyled while its siblings look fine, check the pin before hunting the
+  component.
+
+`/dev/foundations` and `/__tokens` exist to answer "is the design system itself
+rendering?" in one page. Open them first, and again after any dependency change.
+
 ## A. First contact
 
 **A1 — a brand-new instance.** Empty database, no users. Walk the first-run
@@ -232,9 +263,45 @@ different messages expected.
 server logs noise on this (#556); the question here is whether the user ever
 sees anything.
 
-**H3 — narrow viewports on admin.** Every admin surface at 375px. The learner
-pages are tested at three widths; the admin pages were built desktop-first and
-are not.
+## I. Rendering under real content
+
+Content shapes that break layouts. These need deliberate setup, so they are
+their own group rather than a check inside another scenario.
+
+**I1 — the longest description.** A course whose description runs past 4000
+characters, with newlines and a list of learning outcomes (real: Stepik course
+181875, 4203 characters). The cap was raised and the hero reworked in #517.
+Check the hero at all three viewports, and check what a course card does with
+the same text as a subtitle.
+
+**I2 — titles that collide.** A course with 25 lessons whose titles share a long
+stem (`Биология поведения человека Лекция #N. <topic>`). Where does the outline
+truncate, and is the distinguishing part of the title still visible after it
+does?
+
+**I3 — Russian against English.** Every surface in `ru`, compared with the same
+surface in `en`. Russian runs longer; buttons, table headers, chips and tabs are
+where it shows first.
+
+**I4 — missing media.** A course whose video files are absent from disk, and one
+whose poster never downloaded. Both are real states in the restored dump. The
+page must degrade to something deliberate rather than to a broken-image icon and
+a zero-height box.
+
+**I5 — a remote poster.** The SPA ships `img-src self data: blob:`, so a poster
+served from a third-party CDN is blocked by CSP and renders as nothing. #496
+closed this by downloading posters into `DERIVED_PATH`; confirm on a scraped
+course that the image now comes from our own origin, and that a poster which
+failed to download shows a placeholder rather than a hole.
+
+**I6 — the long tail of viewports.** 375, 768, 1024, 1440 and one very wide
+window, on Home, course detail, the player, the course editor and every admin
+surface. `tests/e2e/` covers the learner pages at three widths and covers the
+editor and the admin screens at none, and those screens were built
+desktop-first, so 375px is where to start.
+
+**I7 — zoom and text scaling.** Browser zoom at 150% and 200%. Layouts built
+with fixed pixel heights break here, and nothing else in the suite looks.
 
 ---
 
@@ -266,6 +333,11 @@ broken. A UX critique of a broken screen is wasted work.
   player controls from the keyboard alone, and whether progress rings and state
   chips carry text as well as colour.
 - **Density.** Settle `cozy` versus `comfortable`.
+- **Rendering fidelity against the design system.** Pass 1 asks whether a screen
+  rendered at all; pass 2 asks whether it rendered the way the tokens and
+  `@app/ui` primitives say it should — spacing scale, type scale, colour roles,
+  border radii, and whether any surface has drifted into one-off values.
+  `pnpm design:audit` reports token drift and is the cheap half of this.
 
 ## What is NOT a finding
 

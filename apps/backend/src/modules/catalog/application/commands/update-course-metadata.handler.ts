@@ -93,10 +93,17 @@ export class UpdateCourseMetadataHandler implements ICommandHandler<
       course.setSourceUpdatedAt(patch.sourceUpdatedAt ?? undefined);
     }
     if (patch.ratingAverage !== undefined || patch.ratingCount !== undefined) {
-      // Both must be provided together, or both null/undefined to clear.
-      const avg = patch.ratingAverage ?? undefined;
-      const count = patch.ratingCount ?? undefined;
-      course.setRating(avg, count);
+      // Both keys are present whenever either is (schema `dependentRequired`
+      // plus the controller's own pairing guard) — so within this branch
+      // "null" is a real, deliberate value, not an absent key. Both null
+      // clears the rating; a lone null reads as 0 once its sibling carries
+      // a real value (#512): an average with a known-empty sample, or a
+      // sample count with no computed average, are both complete facts.
+      if (patch.ratingAverage === null && patch.ratingCount === null) {
+        course.setRating(undefined, undefined);
+      } else {
+        course.setRating(patch.ratingAverage ?? 0, patch.ratingCount ?? 0);
+      }
     }
     if (patch.externalIds !== undefined) {
       course.setExternalIds(patch.externalIds ?? []);

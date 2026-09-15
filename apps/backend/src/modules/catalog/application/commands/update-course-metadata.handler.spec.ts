@@ -379,6 +379,57 @@ describe('UpdateCourseMetadataHandler', () => {
     expect(result.ratingCount).toBeNull();
   });
 
+  // #512: a lone null reads as 0 once its sibling carries a real value.
+  // Both null (above) is still the only pairing that clears.
+
+  it('reads a null ratingCount as 0 when ratingAverage is 0', async () => {
+    const course = makeCourse();
+    vi.mocked(courseRepo.findById).mockResolvedValue(course);
+    vi.mocked(courseRepo.save).mockResolvedValue(undefined);
+
+    const result = await handler.execute(
+      new UpdateCourseMetadataCommand('course-1', adminActor, {
+        ratingAverage: 0,
+        ratingCount: null,
+      }),
+    );
+
+    expect(result.ratingAverage).toBe(0);
+    expect(result.ratingCount).toBe(0);
+  });
+
+  it('reads a null ratingCount as 0 when ratingAverage is a real average', async () => {
+    const course = makeCourse();
+    vi.mocked(courseRepo.findById).mockResolvedValue(course);
+    vi.mocked(courseRepo.save).mockResolvedValue(undefined);
+
+    const result = await handler.execute(
+      new UpdateCourseMetadataCommand('course-1', adminActor, {
+        ratingAverage: 4.5,
+        ratingCount: null,
+      }),
+    );
+
+    expect(result.ratingAverage).toBe(4.5);
+    expect(result.ratingCount).toBe(0);
+  });
+
+  it('reads a null ratingAverage as 0 when ratingCount is a real count', async () => {
+    const course = makeCourse();
+    vi.mocked(courseRepo.findById).mockResolvedValue(course);
+    vi.mocked(courseRepo.save).mockResolvedValue(undefined);
+
+    const result = await handler.execute(
+      new UpdateCourseMetadataCommand('course-1', adminActor, {
+        ratingAverage: null,
+        ratingCount: 10,
+      }),
+    );
+
+    expect(result.ratingAverage).toBe(0);
+    expect(result.ratingCount).toBe(10);
+  });
+
   it('sets externalIds when provided', async () => {
     const course = makeCourse();
     vi.mocked(courseRepo.findById).mockResolvedValue(course);

@@ -77,6 +77,12 @@
       },
       { key: 'admin-users', label: t('pages.admin.navUsers'), icon: 'users', to: '/admin/users' },
       {
+        key: 'admin-identify-tasks',
+        label: t('pages.admin.navIdentifyTasks'),
+        icon: 'list',
+        to: '/admin/identify-tasks',
+      },
+      {
         key: 'admin-permissions',
         label: t('pages.admin.navPermissions'),
         icon: 'lock',
@@ -100,6 +106,7 @@
     const p = route.path;
     if (p.startsWith('/admin/backups')) return 'admin-backups';
     if (p.startsWith('/admin/permissions')) return 'admin-permissions';
+    if (p.startsWith('/admin/identify-tasks')) return 'admin-identify-tasks';
     if (p.startsWith('/admin/users')) return 'admin-users';
     if (p.startsWith('/admin/libraries')) return 'admin-libraries';
     if (p.startsWith('/admin')) return 'admin-dashboard';

@@ -11,10 +11,20 @@
 -- Idempotent: the WHERE clause only touches rows that still start with
 -- `<rootPath>/`, so running this twice (or against a library already
 -- storing relative paths) is a no-op the second time.
+--
+-- The prefix check is a `left()` equality, not `LIKE rootPath || '/%'`:
+-- LIKE treats `_` (and `%`) in the pattern as wildcards, and `rootPath` is an
+-- arbitrary filesystem path — `_` shows up in real directory names. A
+-- library rooted at `/mnt/my_courses` would falsely match a lesson under
+-- `/mnt/myXcourses/...` (any single character in that position), and
+-- `substring` would then strip the wrong number of characters and write
+-- garbage into `videoPath` silently. `left(...) = rootPath || '/'` is a
+-- literal comparison — no character in `rootPath` is ever interpreted as a
+-- pattern.
 UPDATE "lesson" AS l
 SET "videoPath" = substring(l."videoPath" from length(lib."rootPath") + 2)
 FROM "section" AS s
 JOIN "course" AS c ON c."id" = s."courseId"
 JOIN "library" AS lib ON lib."id" = c."libraryId"
 WHERE l."sectionId" = s."id"
-  AND l."videoPath" LIKE (lib."rootPath" || '/%');
+  AND left(l."videoPath", length(lib."rootPath") + 1) = lib."rootPath" || '/';

@@ -25,10 +25,12 @@
  * order-dependent on `pnpm spec:bundle`.
  */
 import {
+  ArgumentsHost,
   BadRequestException,
   Controller,
   Get,
   INestApplication,
+  Logger,
   VersioningType,
 } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
@@ -36,7 +38,9 @@ import { Test } from '@nestjs/testing';
 import express from 'express';
 import * as OpenApiValidator from 'express-openapi-validator';
 import request from 'supertest';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import type { Request, Response } from 'express';
 
 import { LibraryUpdateEmptyError } from '../../modules/catalog/domain/library/library.errors';
 
@@ -195,5 +199,57 @@ describe('HttpExceptionFilter — HttpException built from an object (#479)', ()
     expect(Object.keys(httpExceptionRes.body).toSorted()).toEqual(
       Object.keys(domainErrorRes.body).toSorted(),
     );
+  });
+});
+
+function fakeHost(response: Partial<Response>, request: Partial<Request>): ArgumentsHost {
+  return {
+    switchToHttp: () => ({
+      getResponse: () => response,
+      getRequest: () => request,
+    }),
+  } as unknown as ArgumentsHost;
+}
+
+// #556 — a browser aborting a range request mid-stream (a seek, a tab close)
+// surfaces as ERR_STREAM_PREMATURE_CLOSE after the stream route has already
+// sent status + headers. The filter used to write to that response anyway
+// and throw ERR_HTTP_HEADERS_SENT on top. Exercised directly against
+// `catch()` — booting a real streaming route just to abort it mid-flight
+// buys nothing a mocked `Response` doesn't already prove.
+describe('HttpExceptionFilter — response already closed (#556)', () => {
+  it('does not write to a response whose headers are already sent, and logs "client disconnected"', () => {
+    const filter = new HttpExceptionFilter();
+    const setHeader = vi.fn();
+    const status = vi.fn();
+    const type = vi.fn();
+    const send = vi.fn();
+    const response: Partial<Response> = {
+      headersSent: true,
+      setHeader: setHeader as unknown as Response['setHeader'],
+      status: status.mockReturnThis() as unknown as Response['status'],
+      type: type.mockReturnThis() as unknown as Response['type'],
+      send: send as unknown as Response['send'],
+    };
+    const request: Partial<Request> = {
+      method: 'GET',
+      originalUrl: '/api/v1/stream/lessons/abc123',
+      url: '/api/v1/stream/lessons/abc123',
+    };
+
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+    filter.catch(new Error('ERR_STREAM_PREMATURE_CLOSE'), fakeHost(response, request));
+
+    expect(setHeader).not.toHaveBeenCalled();
+    expect(status).not.toHaveBeenCalled();
+    expect(type).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('client disconnected'));
+
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 });

@@ -36,7 +36,9 @@
 </script>
 
 <template>
-  <div class="page-setup" data-testid="page-setup">
+  <!-- No shell here (`layout: false`, pre-auth) — this page is its own
+       `<main>` landmark (#590). -->
+  <main class="page-setup" data-testid="page-setup">
     <div class="page-setup__card">
       <header class="page-setup__header">
         <h1 class="page-setup__title">
@@ -88,7 +90,7 @@
         {{ t('pages.setup.legalFootnote') }}
       </p>
     </div>
-  </div>
+  </main>
 </template>
 
 <style lang="scss" scoped>

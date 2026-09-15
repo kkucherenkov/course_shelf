@@ -7,13 +7,14 @@
 </script>
 
 <template>
-  <div class="tokens-redirect">
+  <!-- No shell here (`layout: false`) — own `<main>` landmark (#590). -->
+  <main class="tokens-redirect">
     <p>
       This page has moved to
       <NuxtLink to="/dev/foundations">/dev/foundations</NuxtLink>.
     </p>
     <NuxtLink to="/dev/foundations" class="tokens-redirect__link">Go to Foundations</NuxtLink>
-  </div>
+  </main>
 </template>
 
 <style lang="scss" scoped>

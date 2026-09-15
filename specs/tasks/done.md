@@ -8,7 +8,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Completed: 2026-09-16
 - Owner: claude
 - Spec: none — bug fixes reported by the maintainer from a live audit.
-- Result: https://github.com/kkucherenkov/course_shelf/pull/580 (closes #577, #572)
+- Result: https://github.com/kkucherenkov/course_shelf/pull/580 (closes #577, #572, #581)
 - Goal: `useAuthStore.refresh()` (and everything routed through it —
   `auth.global.ts`, `api.client.ts`'s 401 handler, `useStreamUrl`,
   `useScanLifecycle`) must authenticate `getSession()` with the bearer token
@@ -36,6 +36,18 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   untouched, called out as no-longer-load-bearing for the SPA in a comment
   rather than removed, per the maintainer's request not to touch that side
   in this PR.
+- Follow-up found during review (#581): the fix above preserves the token on
+  a transient `refresh()` failure, but `auth.global.ts` redirected to
+  `/sign-in` unconditionally on `!isAuthenticated` regardless of why — a
+  429 from the shared rate limiter (the same mechanism #572 measured: 45/56
+  navigations) silently signed a live session out. Middleware now passes
+  the navigation through instead when the token survived (transient failure
+  or mid-cooldown), leaving the destination page's own API calls — which
+  already retry once through `refresh()` on a 401 via `api.client.ts` — as
+  the authoritative check. A `useSessionRefreshCooldown.ts` composable (same
+  extract-for-testability shape as `useHasUsersCache.ts`) backs off retrying
+  `refresh()` for 5s after a transient failure so repeated navigations
+  during an outage don't keep re-hitting the same rate limit.
 
 ## T-2026-09-16-hero-poster — course page hero never renders the poster
 

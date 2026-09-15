@@ -9,19 +9,32 @@
  *     the wizard promotes the new account to ADMIN.
  *  2. `hasUsers === true` + target is /setup → redirect /sign-in (locked).
  *  3. Public routes (/sign-in, /sign-up, /forgot, /reset, /signup, /__tokens) → pass through.
- *  4. Not authenticated → redirect /sign-in.
- *  5. Authenticated → pass through.
+ *  4. Not authenticated, refresh() confirmed the session is gone → redirect
+ *     /sign-in.
+ *  5. Not authenticated, refresh() failed transiently (network/5xx/429) or
+ *     is still cooling down from a previous transient failure → pass
+ *     through. The token survives (only a confirmed "no session" answer
+ *     clears it — see `stores/auth.ts`'s `refresh()`), so redirecting here
+ *     would silently sign a live session out over a hiccup (#581). The
+ *     destination page's own API calls are the authoritative check from
+ *     here — they retry once through `refresh()` on a 401 (`api.client.ts`).
+ *  6. Authenticated → pass through.
  *
  * The `hasUsers` result is cached for the browser session in
  * `~/composables/useHasUsersCache.ts`; tests can reset it via
  * `resetHasUsersCache()` without breaking Nuxt's route-middleware contract
- * (this file exports only `default`).
+ * (this file exports only `default`). The transient-refresh-failure cooldown
+ * lives in `~/composables/useSessionRefreshCooldown.ts` for the same reason.
  */
 
 import { getAdminHasUsers, client } from '@app/api-client-ts';
 
 import { useAuthStore } from '~/stores/auth';
 import { hasUsersCache } from '~/composables/useHasUsersCache';
+import {
+  lastTransientRefreshFailureAt,
+  isRefreshCoolingDown,
+} from '~/composables/useSessionRefreshCooldown';
 
 const PUBLIC_ROUTES = new Set([
   '/sign-in',
@@ -90,11 +103,28 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // Pinia state is reset. `refresh()` authenticates with that same token
   // (see `stores/auth.ts`'s `createClient`) — it does not depend on the
   // session cookie, so this works even with cookies cleared.
-  if (!auth.isAuthenticated && auth.token) {
-    await auth.refresh();
+  //
+  // Skip the retry while a previous attempt is still cooling down (#581):
+  // get-session shares a rate limiter with the rest of the API, and
+  // retrying on every navigation during an outage just re-hits it and
+  // stretches the outage out.
+  if (!auth.isAuthenticated && auth.token && !isRefreshCoolingDown()) {
+    const ok = await auth.refresh();
+    if (!ok && auth.token) {
+      // Token survived the attempt — refresh() only clears it on a
+      // confirmed "no session" answer, so this was a transient failure.
+      lastTransientRefreshFailureAt.value = Date.now();
+    }
   }
 
   if (!auth.isAuthenticated) {
+    if (auth.token) {
+      // A live token with no confirmed session: either the refresh above
+      // just failed transiently, or an earlier one is still cooling down.
+      // See the decision matrix above — pass through rather than signing a
+      // possibly-valid session out.
+      return;
+    }
     return navigateTo('/sign-in');
   }
 });

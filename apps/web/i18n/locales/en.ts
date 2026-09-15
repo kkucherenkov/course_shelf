@@ -28,6 +28,7 @@ export default {
         heading: 'Recently added',
         empty: 'Your library is empty',
         emptyBody: 'Add courses to a library and they will appear here.',
+        emptyBodyMember: 'New courses will show up here once an administrator adds them.',
         error: 'Could not load recently added courses',
         retry: 'Retry',
       },
@@ -197,7 +198,6 @@ export default {
     },
     courseEdit: {
       title: 'Edit course metadata',
-      back: 'Back to course',
       loadingError: 'Could not load this course. Please try again.',
       retry: 'Retry',
       saveCta: 'Save changes',
@@ -206,6 +206,12 @@ export default {
       saveSuccess: 'Course updated.',
       saveError: 'Could not save changes. Please try again.',
       unsavedWarning: 'You have unsaved changes.',
+      leaveGuard: {
+        title: 'Discard unsaved changes?',
+        description: "You have unsaved changes. Leaving now won't save them.",
+        stay: 'Keep editing',
+        discard: 'Discard changes',
+      },
       sections: {
         basics: 'Basics',
         classification: 'Classification',
@@ -374,6 +380,12 @@ export default {
       subtitleLoading: 'Loading your courses…',
       emptyTitle: 'No courses yet',
       emptyBody: 'Add a library and trigger a scan to see courses here.',
+      emptyNoAccessTitle: 'No courses available to you yet',
+      emptyNoAccessBody:
+        'You have not been granted access to a course library. Ask an administrator to grant you access.',
+      emptyNoCoursesTitle: 'No courses here yet',
+      emptyNoCoursesBody:
+        'The library you have access to does not have any courses yet. Check back later.',
       emptyFilteredTitle: 'No courses match this filter',
       emptyFilteredBody: 'Clear the filter to see your whole shelf.',
       emptyShowAll: 'Show all courses',

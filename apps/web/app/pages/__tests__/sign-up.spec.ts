@@ -119,9 +119,14 @@ async function flush(): Promise<void> {
   await nextTick();
 }
 
-/** Clears step 1 (email verification is off in these tests) and lands on the library form. */
+/**
+ * Clears step 1 (email verification is off in these tests) and lands on the
+ * library form. Only the first admin ever reaches this step (#579) — that's
+ * `hasUsers: false`, not the suite's default `true`.
+ */
 async function reachLibraryStep(): Promise<VueWrapper> {
   selfRegistration.value = true;
+  hasUsers.value = false;
   const wrapper = await mountPage();
   await wrapper.find('form').trigger('submit');
   await flush();
@@ -174,6 +179,64 @@ describe('pages/sign-up.vue', () => {
 
     expect(wrapper.find('[data-testid="page-sign-up"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="page-sign-up-disabled"]').exists()).toBe(false);
+  });
+
+  /**
+   * The library step is bootstrap-only (#579): `POST /libraries` 403s
+   * anyone but an Owner-Admin, and only the very first account is promoted
+   * to admin. A second account self-registering (self-registration on)
+   * used to be walked through this form anyway, dev-only path hint and all,
+   * straight into a request the server was always going to refuse.
+   */
+  describe('library step visibility (#579)', () => {
+    // Real (non-`true`-stubbed) component so `.props('steps')` reflects what
+    // the page actually computed, rather than an unresolved-tag auto-stub
+    // that can't tell attrs from declared props.
+    const StepperProbe = {
+      name: 'StepperProbe',
+      props: ['steps', 'current'],
+      template: '<div />',
+    };
+
+    async function mountPageWithStepperProbe(): Promise<VueWrapper> {
+      const mod = await import('../sign-up.vue');
+      return mount(mod.default, {
+        global: { stubs: { ...globalStubs, AuthStepper: StepperProbe } },
+      });
+    }
+
+    function stepIds(wrapper: VueWrapper): string[] {
+      const steps = wrapper.findComponent(StepperProbe).props('steps') as { id: string }[];
+      return steps.map((s) => s.id);
+    }
+
+    it('is not offered to a returning (non-first) account', async () => {
+      selfRegistration.value = true;
+      hasUsers.value = true;
+      const wrapper = await mountPageWithStepperProbe();
+
+      expect(stepIds(wrapper)).not.toContain('library');
+    });
+
+    it('still offers it to the first admin', async () => {
+      hasUsers.value = false;
+      const wrapper = await mountPageWithStepperProbe();
+
+      expect(stepIds(wrapper)).toContain('library');
+    });
+
+    it('sends a returning account straight to / after step 1, skipping the library form', async () => {
+      selfRegistration.value = true;
+      hasUsers.value = true;
+      const wrapper = await mountPage();
+
+      await wrapper.find('form').trigger('submit');
+      await flush();
+
+      expect(navigateTo).toHaveBeenCalledWith('/');
+      // Never reached the library step's own heading.
+      expect(wrapper.text()).not.toContain('pages.signUp.libraryTitle');
+    });
   });
 
   /**

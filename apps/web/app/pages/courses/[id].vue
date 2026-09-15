@@ -8,6 +8,7 @@
   import { problemDetail } from '~/utils/library-register';
   import { useCourseOutline } from '~/composables/useCourseOutline';
   import { useMaterialDownload } from '~/composables/useMaterialDownload';
+  import { useContinueWatching } from '~/composables/useHome';
   import { useAuthStore } from '~/stores/auth';
 
   import CourseHero from '~/components/course-detail/CourseHero.vue';
@@ -30,6 +31,13 @@
   const courseId = route.params.id as string;
   const { data, status, errorStatus, refetch, markComplete, resetProgress, mutating } =
     useCourseOutline(courseId);
+
+  // Same source the home page's "Continue watching" row uses (#573) — refetched
+  // on mount rather than trusting whatever `useAsyncData` still has cached from
+  // an earlier visit to `/`, since the whole point is that this page must agree
+  // with the freshest server-recorded position, not a stale one.
+  const continueWatching = useContinueWatching();
+  void continueWatching.refetch();
 
   const accent = computed(() => accentFromId(courseId));
 
@@ -115,14 +123,29 @@
   });
 
   /**
-   * The lesson to resume:
-   * - the furthest-along in-progress lesson (last by position), since the
-   *   backend returns lessons sorted by position and we lack a watched-at
-   *   timestamp; otherwise
-   * - the first not-started lesson.
+   * The lesson to resume — sourced from the same `lastSeenLessonId` the home
+   * page's "Continue watching" row is built from (`GET
+   * /home/continue-watching`), so the two screens can never disagree about
+   * where the learner left off (#573: watch lesson 40, glance at lesson 5,
+   * and this page used to send "Resume" back to 40 while home sent it to 5).
+   *
+   * Falls back to a position-based heuristic (furthest-along in-progress
+   * lesson, else first not-started) only while that fetch is in flight, or
+   * when this course isn't in the requester's continue-watching list yet —
+   * the outline itself carries per-lesson `state` but no watched-at
+   * timestamp to derive "most recent" from directly.
    */
   const resumeLesson = computed<LessonOutlineItem | null>(() => {
     const lessons = allLessons.value;
+
+    const seenId = continueWatching.data.value?.items.find(
+      (item) => item.courseId === courseId,
+    )?.lastSeenLessonId;
+    if (seenId) {
+      const seen = lessons.find((l) => l.id === seenId);
+      if (seen) return seen;
+    }
+
     // Last in-progress (furthest along in the course)
     const inProgress = lessons.filter((l) => l.state === 'in-progress');
     if (inProgress.length > 0) return inProgress.at(-1) ?? null;

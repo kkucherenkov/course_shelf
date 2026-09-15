@@ -30,8 +30,13 @@ function hasStorage(): boolean {
  * Kept as its own function so the store can type `_authClient` off *this*
  * call's inferred return type: the plugin methods (`emailOtp.*`) exist only
  * there, and the bare `ReturnType<typeof createAuthClient>` erases them.
+ *
+ * `getToken` is read on every request (via `fetchOptions.auth`, a
+ * @better-fetch/fetch feature Better Auth's client passes through), not
+ * captured once — the store's `token` ref changes after sign-in/sign-out and
+ * this client is memoized for the store's lifetime.
  */
-function createClient() {
+function createClient(getToken: () => string | null) {
   const { public: pub } = useRuntimeConfig();
   return createAuthClient({
     baseURL: `${pub.authBaseUrl}/api/v1/auth`,
@@ -41,9 +46,18 @@ function createClient() {
     // the client has no `emailOtp.*` methods to call it with.
     plugins: [emailOTPClient()],
     fetchOptions: {
-      // Keep credentials for same-origin dev; bearer token is sent via the
-      // Authorization header by the api.client plugin, not cookies.
+      // `credentials: 'include'` keeps the session cookie flowing for
+      // same-origin dev — the backend still sets one — but it is no longer
+      // what authenticates `getSession()`/`signOut()`/etc: `auth` below
+      // attaches the bearer token to every request this client makes, the
+      // same way `api.client.ts`'s interceptor does for the generated SDK.
+      // A cleared cookie with a valid token in `localStorage` must still
+      // restore the session.
       credentials: 'include',
+      auth: {
+        type: 'Bearer',
+        token: () => getToken() ?? undefined,
+      },
     },
   });
 }
@@ -54,7 +68,7 @@ export const useAuthStore = defineStore('auth', () => {
   let _authClient: ReturnType<typeof createClient> | null = null;
 
   function getAuthClient(): ReturnType<typeof createClient> {
-    _authClient ??= createClient();
+    _authClient ??= createClient(() => token.value);
     return _authClient;
   }
 
@@ -173,6 +187,12 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Re-fetch the current session from the auth server.
    * Returns `true` when a valid session was found.
+   *
+   * A confirmed "no session" response (no error, no user — the server
+   * answered and said the token doesn't hold a session) drops the stored
+   * token: otherwise every future navigation keeps retrying the same doomed
+   * round-trip through `auth.global.ts`. A network/server error leaves the
+   * token in place — a backend hiccup should not sign a valid session out.
    */
   async function refresh(): Promise<boolean> {
     const auth = getAuthClient();
@@ -183,6 +203,12 @@ export const useAuthStore = defineStore('auth', () => {
       return true;
     }
     user.value = null;
+    if (!result.error) {
+      token.value = null;
+      if (hasStorage()) {
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+      }
+    }
     return false;
   }
 

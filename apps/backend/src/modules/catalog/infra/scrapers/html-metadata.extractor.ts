@@ -11,6 +11,11 @@ import type { ScrapedCourseFragment } from '../../domain/scraper/scraper.types';
 
 type JsonLdNode = Record<string, unknown>;
 
+// schema.org types a course landing page's JSON-LD block may declare itself
+// as. `Product` covers platforms (e.g. Stepik) that model a paid course as a
+// purchasable product rather than a `Course`/`VideoObject`.
+const ACCEPTED_JSONLD_TYPES = new Set(['Course', 'VideoObject', 'Product']);
+
 function asArray<T>(v: T | T[] | undefined): T[] {
   if (v === undefined) return [];
   return Array.isArray(v) ? v : [v];
@@ -57,10 +62,11 @@ export class HtmlMetadataExtractor {
 
   private fromJsonLd($: cheerio.CheerioAPI): ScrapedCourseFragment {
     const nodes = this.collectJsonLdNodes($);
-    const course = nodes.find((n) => {
-      const t = n['@type'];
-      return t === 'Course' || t === 'VideoObject' || (Array.isArray(t) && t.includes('Course'));
-    });
+    const course = nodes.find((n) =>
+      asArray(n['@type'] as string | string[] | undefined).some((t) =>
+        ACCEPTED_JSONLD_TYPES.has(t),
+      ),
+    );
     if (!course) return {};
 
     const fragment: Record<string, unknown> = {};

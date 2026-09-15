@@ -28,6 +28,11 @@ vi.mock('~/composables/useCourseScrapePreview', () => ({
   }),
 }));
 
+const mockQueueIdentifyTask = vi.fn();
+vi.mock('~/composables/useIdentifyTasks', () => ({
+  queueIdentifyTask: (...args: unknown[]) => mockQueueIdentifyTask(...args),
+}));
+
 vi.mock('@app/ui', () => ({
   AppField: { name: 'AppField', props: ['label'], template: '<div><slot v-bind="{}" /></div>' },
   AppTextField: {
@@ -113,6 +118,50 @@ describe('CourseScrapePreviewPanel', () => {
     expect(setField).toHaveBeenCalledTimes(1);
     expect(setField).toHaveBeenCalledWith('title', 'Candidate Title');
     expect(setRating).not.toHaveBeenCalled();
+  });
+
+  it('queues the candidate for review and shows a link to the created task', async () => {
+    candidatesRef.value = [
+      { source: 'coursera', sourceUrl: 'https://coursera.org/x', fragment: { title: 'Candidate' } },
+    ];
+    statusRef.value = 'success';
+    mockQueueIdentifyTask.mockResolvedValueOnce({ id: 'task-1' });
+
+    const wrapper = mount(CourseScrapePreviewPanel, {
+      props: { courseId: 'course-1', form: makeForm(), setField: vi.fn(), setRating: vi.fn() },
+    });
+
+    const queueButton = wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'pages.courseEdit.scrapePreview.queueForReview');
+    await queueButton!.trigger('click');
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(mockQueueIdentifyTask).toHaveBeenCalledWith('course-1', {
+      fragment: { title: 'Candidate' },
+      source: 'coursera',
+      sourceUrl: 'https://coursera.org/x',
+    });
+    expect(wrapper.text()).toContain('pages.courseEdit.scrapePreview.viewQueuedTask');
+  });
+
+  it('shows an error and leaves the button enabled when queuing fails', async () => {
+    candidatesRef.value = [{ source: 'coursera', fragment: { title: 'Candidate' } }];
+    statusRef.value = 'success';
+    mockQueueIdentifyTask.mockRejectedValueOnce(new Error('boom'));
+
+    const wrapper = mount(CourseScrapePreviewPanel, {
+      props: { courseId: 'course-1', form: makeForm(), setField: vi.fn(), setRating: vi.fn() },
+    });
+
+    const queueButton = wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'pages.courseEdit.scrapePreview.queueForReview');
+    await queueButton!.trigger('click');
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(wrapper.text()).toContain('pages.courseEdit.scrapePreview.queueError');
+    expect(queueButton!.attributes('disabled')).toBeUndefined();
   });
 
   it('disables Apply for a field the candidate did not provide', () => {

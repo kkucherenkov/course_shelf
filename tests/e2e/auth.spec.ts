@@ -227,7 +227,6 @@ test('second-user signup shows the standard wizard without first-run framing', a
   await mockInstance(page, adminInstance);
   await mockAuthEndpoints(page);
   await mockSignUpSuccess(page);
-  await mockLibrarySuccess(page);
 
   await gotoAuthPage(page, '/sign-up');
   await expect(page.locator('[data-testid="page-sign-up"]')).toBeVisible({ timeout: 10_000 });
@@ -242,10 +241,11 @@ test('second-user signup shows the standard wizard without first-run framing', a
 
   await page.locator('button[type="submit"]').first().click();
 
-  // emailVerificationRequired=false → the wizard advances to the library step.
-  await expect(
-    page.locator('.page-sign-up__title').filter({ hasText: /courses|library/i }),
-  ).toBeVisible({ timeout: 8000 });
+  // #579: the library step is bootstrap-only — POST /libraries 403s anyone
+  // but the first admin, so a second account never sees it and lands on /
+  // straight from step 1 instead.
+  await expect(page).toHaveURL('/');
+  await expect(page.locator('[data-testid="page-sign-up"]')).not.toBeVisible();
 });
 
 // ── Test 3: Sign-in error → error banner ──────────────────────────────────────

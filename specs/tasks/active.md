@@ -21,9 +21,10 @@
         array-form Product, Course-scalar regression)
   - [x] unify accepted-type check via existing `asArray` helper
   - [x] lint/format/typecheck/test gates
-  - [ ] open PR with `Closes #505`
+  - [x] open PR with `Closes #505` —
+        [#549](https://github.com/kkucherenkov/course_shelf/pull/549)
 - Status: in-progress
-- Blockers: —
+- Blockers: — (awaiting CI)
 
 ## T-2026-09-14-contract-gate-determinism — `negative_data_rejection` coin flip on numeric query params
 

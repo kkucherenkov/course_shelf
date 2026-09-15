@@ -10,6 +10,11 @@
  *   - null: clear all associations (equivalent to passing []).
  *   - string[]: set-replace with the given ids.
  *
+ * Null semantics for ratingAverage/ratingCount (#512):
+ *   - both undefined (both keys absent): leave the rating unchanged.
+ *   - both null: clear the rating.
+ *   - one null, the other a number: the null side reads as 0.
+ *
  * Date fields (releaseDate, sourceUpdatedAt) arrive as Date objects — the
  * controller is responsible for parsing ISO strings before constructing this
  * command.

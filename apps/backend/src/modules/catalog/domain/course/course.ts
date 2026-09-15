@@ -318,7 +318,13 @@ export class Course {
 
   /**
    * Set or clear the rating. Pass both arguments as undefined to clear.
+   * avg and count must be provided together — a lone value has no
+   * interpretation, so callers translating a nullable wire payload resolve
+   * a lone `null` to 0 before calling this method rather than passing one
+   * side as undefined (see UpdateCourseMetadataHandler, #512); `undefined`
+   * here always means "not supplied".
    * Throws CourseRatingInvalidError when:
+   *   - avg is defined and count is undefined, or vice versa
    *   - avg is defined and outside [0, 5]
    *   - count is defined and is not a non-negative integer
    */

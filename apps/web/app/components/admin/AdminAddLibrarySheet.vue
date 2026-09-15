@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref } from 'vue';
-  import { AppBanner, AppField, AppInput, AppButton } from '@app/ui';
+  import { AppBanner, AppField, AppInput, AppButton, IconCS } from '@app/ui';
 
   import { isAbsoluteRootPath, normalizeRootPath } from '~/utils/library-register';
   import { registerLibraryRequest, RegisterLibraryError } from '~/composables/useLibraries';
@@ -92,7 +92,7 @@
         :aria-label="props.cancelLabel"
         @click="onCancel"
       >
-        <span class="i-heroicons-x-mark" aria-hidden="true" />
+        <IconCS name="x" />
       </button>
     </div>
 

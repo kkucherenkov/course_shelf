@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue';
+  import { IconCS } from '@app/ui';
   import type {
     AdminUserListItem,
     AdminUpdateUserRequest,
@@ -94,7 +95,7 @@
         :aria-label="editAriaLabel"
         @click="emit('edit')"
       >
-        <span class="i-heroicons-pencil-square" aria-hidden="true" />
+        <IconCS name="edit" :size="16" />
       </button>
       <button
         type="button"
@@ -102,7 +103,7 @@
         :aria-label="moreAriaLabel"
         @click="emit('more')"
       >
-        <span class="i-heroicons-ellipsis-horizontal" aria-hidden="true" />
+        <IconCS name="more-h" :size="16" />
       </button>
     </div>
   </div>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, provide, ref } from 'vue';
-  import { AppBanner, AppScanProgress } from '@app/ui';
+  import { AppBanner, AppScanProgress, AppSpinner, IconCS } from '@app/ui';
   import type { LibraryDto } from '@app/api-client-ts';
   import { runLibraryScan, client } from '@app/api-client-ts';
 
@@ -220,10 +220,7 @@
         <div>
           <!-- Breadcrumb -->
           <div class="adm-lib-detail__crumb">
-            <span
-              class="i-heroicons-building-library adm-lib-detail__crumb-icon"
-              aria-hidden="true"
-            />
+            <IconCS name="library" class="adm-lib-detail__crumb-icon" />
             <NuxtLink to="/admin/libraries" class="adm-lib-detail__crumb-link">
               {{ t('pages.admin.libraryDetail.crumbLibraries') }}
             </NuxtLink>
@@ -244,28 +241,40 @@
         <div class="adm-lib-detail__actions">
           <UButton
             variant="ghost"
-            icon="i-heroicons-pencil-square"
             size="sm"
             :label="t('pages.admin.libraryDetail.editCta')"
             @click="onEditClick"
-          />
+          >
+            <template #leading><IconCS name="edit" :size="16" /></template>
+          </UButton>
           <UButton
             v-if="showScanProgress"
             variant="outline"
-            icon="i-heroicons-arrow-path"
             size="sm"
             :label="t('pages.admin.libraryDetail.scanningCta')"
             loading
             disabled
-          />
+          >
+            <template #leading>
+              <AppSpinner size="sm" :label="t('pages.admin.libraryDetail.scanningCta')" />
+            </template>
+          </UButton>
           <UButton
             v-else
-            icon="i-heroicons-arrow-path"
             size="sm"
             :label="t('pages.admin.libraryDetail.scanNowCta')"
             :loading="isScanning"
             @click="triggerScan"
-          />
+          >
+            <template #leading>
+              <AppSpinner
+                v-if="isScanning"
+                size="sm"
+                :label="t('pages.admin.libraryDetail.scanNowCta')"
+              />
+              <IconCS v-else name="refresh" :size="16" />
+            </template>
+          </UButton>
         </div>
       </div>
 
@@ -431,12 +440,13 @@
             <UButton
               variant="outline"
               color="error"
-              icon="i-heroicons-trash"
               size="sm"
               :label="t('pages.admin.libraryDetail.dangerRemove')"
               class="adm-lib-detail__danger-btn"
               @click="onRemoveClick"
-            />
+            >
+              <template #leading><IconCS name="trash" :size="16" /></template>
+            </UButton>
             <p class="adm-lib-detail__danger-body">
               {{ t('pages.admin.libraryDetail.dangerRemoveBody') }}
             </p>

@@ -151,7 +151,7 @@
     <div class="adm-dashboard__grid">
       <!-- Libraries -->
       <AdminStatCard
-        icon="i-heroicons-building-library"
+        icon="library"
         :label="t('pages.admin.dashboard.statLibraries')"
         :value="statLibrariesValue"
         :meta="statLibrariesMeta"
@@ -159,14 +159,14 @@
       />
       <!-- Users -->
       <AdminStatCard
-        icon="i-heroicons-users"
+        icon="users"
         :label="t('pages.admin.dashboard.statUsers')"
         :value="statUsersValue"
         :loading="isLoading"
       />
       <!-- Last scan -->
       <AdminStatCard
-        icon="i-heroicons-arrow-path"
+        icon="refresh"
         :label="t('pages.admin.dashboard.statLastScan')"
         :value="statLastScanValue"
         :meta="statLastScanMeta"
@@ -174,7 +174,7 @@
       />
       <!-- Errors 24h -->
       <AdminStatCard
-        icon="i-heroicons-exclamation-triangle"
+        icon="alert"
         :label="t('pages.admin.dashboard.statErrors24h')"
         :value="statErrors24hValue"
         :error="statErrors24hIsError"

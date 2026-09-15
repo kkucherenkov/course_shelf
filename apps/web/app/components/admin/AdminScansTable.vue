@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { IconCS } from '@app/ui';
   import type { AdminScanListItem, ScanStatus } from '@app/api-client-ts';
 
   interface Props {
@@ -136,7 +137,7 @@
           </td>
           <!-- Chevron -->
           <td class="adm-scans-tbl__chevron-cell">
-            <span class="i-heroicons-chevron-right adm-scans-tbl__chevron" aria-hidden="true" />
+            <IconCS name="chevron-right" :size="14" class="adm-scans-tbl__chevron" />
           </td>
         </tr>
       </tbody>

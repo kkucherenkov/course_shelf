@@ -4,7 +4,7 @@
   // expressions during `nuxt typecheck`, and `navigateTo` is called from the
   // template below. Same `#imports` idiom as `stores/auth.ts`.
   import { navigateTo } from '#imports';
-  import { AppBanner, AppEmptyState } from '@app/ui';
+  import { AppBanner, AppEmptyState, IconCS } from '@app/ui';
   import AdminUserRow from '~/components/admin/AdminUserRow.vue';
   import { useAdminUsers } from '~/composables/useAdminUsers';
 
@@ -54,10 +54,7 @@
     <!-- Search -->
     <div class="adm-perm-picker__search-row">
       <div class="adm-perm-picker__search-wrap">
-        <span
-          class="i-heroicons-magnifying-glass adm-perm-picker__search-icon"
-          aria-hidden="true"
-        />
+        <IconCS name="search" class="adm-perm-picker__search-icon" />
         <input
           v-model="searchInput"
           type="search"

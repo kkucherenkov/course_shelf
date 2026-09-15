@@ -2,10 +2,18 @@
  * Spec for AdminScansTable component.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import type { AdminScanListItem } from '@app/api-client-ts';
 import AdminScansTable from '../AdminScansTable.vue';
+
+vi.mock('@app/ui', () => ({
+  IconCS: {
+    name: 'IconCS',
+    props: ['name', 'size'],
+    template: '<svg class="stub-icon" :data-name="name" />',
+  },
+}));
 
 const baseProps = {
   items: [] as AdminScanListItem[],

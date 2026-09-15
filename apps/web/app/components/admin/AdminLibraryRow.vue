@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { IconCS } from '@app/ui';
   import type { AdminLibraryListItem } from '@app/api-client-ts';
   import AdminCopyablePath from './AdminCopyablePath.vue';
 
@@ -76,7 +77,7 @@
   >
     <!-- Icon -->
     <div class="adm-lib-row__icon" aria-hidden="true">
-      <span class="i-heroicons-building-library" />
+      <IconCS name="library" :size="14" />
     </div>
 
     <!-- Name + sub-line -->
@@ -124,11 +125,11 @@
         class="adm-lib-row__btn adm-lib-row__btn--icon adm-lib-row__btn--xs"
         :aria-label="props.moreCtaLabel"
       >
-        <span class="i-heroicons-ellipsis-horizontal" aria-hidden="true" />
+        <IconCS name="more-h" :size="16" />
       </button>
       <!-- md+: scan + more -->
       <button type="button" class="adm-lib-row__btn adm-lib-row__btn--md-up" @click="onScanClick">
-        <span class="i-heroicons-arrow-path" aria-hidden="true" />
+        <IconCS name="refresh" :size="16" />
         {{ props.scanCtaLabel }}
       </button>
       <button
@@ -136,7 +137,7 @@
         class="adm-lib-row__btn adm-lib-row__btn--icon adm-lib-row__btn--md-up"
         :aria-label="props.moreCtaLabel"
       >
-        <span class="i-heroicons-ellipsis-horizontal" aria-hidden="true" />
+        <IconCS name="more-h" :size="16" />
       </button>
     </div>
   </div>

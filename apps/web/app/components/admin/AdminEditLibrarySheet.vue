@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { AppBanner, AppField, AppInput, AppButton } from '@app/ui';
+  import { AppBanner, AppField, AppInput, AppButton, IconCS } from '@app/ui';
   import { updateLibrary, client } from '@app/api-client-ts';
   import type { LibraryDto } from '@app/api-client-ts';
 
@@ -127,7 +127,7 @@
           :aria-label="props.cancelLabel"
           @click="onCancel"
         >
-          <span class="i-heroicons-x-mark" aria-hidden="true" />
+          <IconCS name="x" />
         </button>
       </div>
 

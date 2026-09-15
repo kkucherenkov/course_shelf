@@ -644,6 +644,12 @@ export default {
         statusProposed: 'Предложено',
         statusApplied: 'Применено',
         statusDiscarded: 'Отклонено',
+        filterLabel: 'Статус',
+        filterAll: 'Все статусы',
+        timeAgoSeconds: '{n} с назад',
+        timeAgoMinutes: '{n} мин назад',
+        timeAgoHours: '{n} ч назад',
+        timeAgoDays: '{n} дн назад',
       },
       identifyTaskDetail: {
         title: 'Ревью задачи идентификации',

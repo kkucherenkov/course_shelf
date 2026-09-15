@@ -75,6 +75,8 @@ const ALL_NAMES = [
   'hard-drive',
   'github',
   'banner',
+  'circle-stack',
+  'academic-cap',
 ] as const;
 
 describe('IconCS', () => {

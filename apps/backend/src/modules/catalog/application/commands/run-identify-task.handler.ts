@@ -48,6 +48,6 @@ export class RunIdentifyTaskHandler implements ICommandHandler<
     this.eventBus.publish(
       new IdentifyTaskProposed(task.id, task.courseId, task.source, task.createdAt),
     );
-    return toIdentifyTaskDto(task);
+    return toIdentifyTaskDto(task, course.title);
   }
 }

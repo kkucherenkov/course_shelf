@@ -98,25 +98,31 @@ export interface UseIdentifyTasksListReturn {
   refetch: () => Promise<void>;
 }
 
-/** Lists identify tasks, optionally filtered by status. */
-export function useIdentifyTasksList(status?: IdentifyTaskStatus): UseIdentifyTasksListReturn {
+/**
+ * Lists identify tasks, optionally filtered by status. `statusFilter` is
+ * reactive — changing it (e.g. from a `<select>`) refetches, same pattern as
+ * `useAdminUsers(search)`.
+ */
+export function useIdentifyTasksList(
+  statusFilter: Ref<IdentifyTaskStatus | undefined>,
+): UseIdentifyTasksListReturn {
   const {
     data,
     status: fetchStatus,
     error,
     refresh,
   } = useAsyncData<IdentifyTaskListDto>(
-    `identify-tasks:${status ?? 'all'}`,
+    () => `identify-tasks:${statusFilter.value ?? 'all'}`,
     async () => {
       const res = await listIdentifyTasks({
         client,
         throwOnError: false,
-        query: status ? { status } : undefined,
+        query: statusFilter.value ? { status: statusFilter.value } : undefined,
       });
       if (res.error) throw toError(res.error, res.response.status);
       return res.data;
     },
-    { lazy: true },
+    { lazy: true, watch: [statusFilter] },
   );
 
   return {

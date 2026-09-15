@@ -126,6 +126,7 @@ describe('ApplyIdentifyResultHandler', () => {
     expect(d.eventBus.publish).toHaveBeenCalledWith(expect.any(IdentifyTaskApplied));
     expect(d.taskRepo.save).toHaveBeenCalledOnce();
     expect(dto.status).toBe('applied');
+    expect(dto.courseTitle).toBe('Existing');
   });
 
   // ── Rating split-policy tests ────────────────────────────────────────────────

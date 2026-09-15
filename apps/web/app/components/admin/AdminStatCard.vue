@@ -1,6 +1,8 @@
 <script setup lang="ts">
+  import { IconCS, type IconName } from '@app/ui';
+
   interface Props {
-    icon: string;
+    icon: IconName;
     label: string;
     value: string;
     meta?: string;
@@ -31,7 +33,7 @@
     <template v-else>
       <div class="admin-stat-card__header">
         <span class="admin-stat-card__icon-wrap" aria-hidden="true">
-          <span :class="icon" class="admin-stat-card__icon" />
+          <IconCS :name="icon" class="admin-stat-card__icon" />
         </span>
         <span class="admin-stat-card__label">{{ props.label }}</span>
       </div>

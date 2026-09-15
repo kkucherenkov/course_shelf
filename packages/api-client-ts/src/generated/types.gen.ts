@@ -253,6 +253,10 @@ export type IdentifyTaskStatus = 'proposed' | 'applied' | 'discarded';
 export type IdentifyTaskDto = {
     id: string;
     courseId: string;
+    /**
+     * Title of the course this task targets, denormalized so the admin queue can identify the row without a follow-up fetch.
+     */
+    courseTitle: string;
     status: IdentifyTaskStatus;
     /**
      * Label of the scraper/source that produced the fragment.

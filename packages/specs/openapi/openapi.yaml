@@ -1593,6 +1593,7 @@ paths:
                   value:
                     id: clx123
                     courseId: clc456
+                    courseTitle: Rust Course
                     status: proposed
                     source: youtube
                     sourceUrl: "https://www.youtube.com/playlist?list=PL123"
@@ -1686,6 +1687,7 @@ paths:
                     tasks:
                       - id: clx123
                         courseId: clc456
+                        courseTitle: Rust Course
                         status: proposed
                         source: youtube
                         scrapedFragment:
@@ -1755,6 +1757,7 @@ paths:
                   value:
                     id: clx123
                     courseId: clc456
+                    courseTitle: Rust Course
                     status: proposed
                     source: youtube
                     scrapedFragment:
@@ -1849,6 +1852,7 @@ paths:
                   value:
                     id: clx123
                     courseId: clc456
+                    courseTitle: Rust Course
                     status: applied
                     source: youtube
                     scrapedFragment:
@@ -1951,6 +1955,7 @@ paths:
                   value:
                     id: clx123
                     courseId: clc456
+                    courseTitle: Rust Course
                     status: discarded
                     source: youtube
                     scrapedFragment:
@@ -7031,11 +7036,17 @@ components:
 
     IdentifyTaskDto:
       type: object
-      required: [id, courseId, status, source, scrapedFragment, mergePolicy, createdAt]
+      required: [id, courseId, courseTitle, status, source, scrapedFragment, mergePolicy, createdAt]
       description: An admin-reviewed metadata enrichment proposal for a course.
       properties:
         id: { type: string, example: "clx123" }
         courseId: { type: string, example: "clc456" }
+        courseTitle:
+          type: string
+          description: >-
+            Title of the course this task targets, denormalized so the admin
+            queue can identify the row without a follow-up fetch.
+          example: Rust Course
         status: { $ref: "#/components/schemas/IdentifyTaskStatus" }
         source:
           type: string

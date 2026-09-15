@@ -110,6 +110,8 @@ export class ApplyIdentifyResultHandler implements ICommandHandler<
     await this.taskRepo.save(task);
     this.eventBus.publish(new IdentifyTaskApplied(task.id, task.courseId, command.actor.id, now));
 
-    return toIdentifyTaskDto(task);
+    // `patch.title` — when the merge just wrote a new title — is fresher than
+    // the pre-apply `course.title` this handler loaded above.
+    return toIdentifyTaskDto(task, patch.title ?? course.title);
   }
 }

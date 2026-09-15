@@ -12,6 +12,8 @@ class _$IdentifyTaskDto extends IdentifyTaskDto {
   @override
   final String courseId;
   @override
+  final String courseTitle;
+  @override
   final IdentifyTaskStatus status;
   @override
   final String source_;
@@ -32,6 +34,7 @@ class _$IdentifyTaskDto extends IdentifyTaskDto {
   _$IdentifyTaskDto._({
     required this.id,
     required this.courseId,
+    required this.courseTitle,
     required this.status,
     required this.source_,
     this.sourceUrl,
@@ -53,6 +56,7 @@ class _$IdentifyTaskDto extends IdentifyTaskDto {
     return other is IdentifyTaskDto &&
         id == other.id &&
         courseId == other.courseId &&
+        courseTitle == other.courseTitle &&
         status == other.status &&
         source_ == other.source_ &&
         sourceUrl == other.sourceUrl &&
@@ -67,6 +71,7 @@ class _$IdentifyTaskDto extends IdentifyTaskDto {
     var _$hash = 0;
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, courseId.hashCode);
+    _$hash = $jc(_$hash, courseTitle.hashCode);
     _$hash = $jc(_$hash, status.hashCode);
     _$hash = $jc(_$hash, source_.hashCode);
     _$hash = $jc(_$hash, sourceUrl.hashCode);
@@ -83,6 +88,7 @@ class _$IdentifyTaskDto extends IdentifyTaskDto {
     return (newBuiltValueToStringHelper(r'IdentifyTaskDto')
           ..add('id', id)
           ..add('courseId', courseId)
+          ..add('courseTitle', courseTitle)
           ..add('status', status)
           ..add('source_', source_)
           ..add('sourceUrl', sourceUrl)
@@ -105,6 +111,10 @@ class IdentifyTaskDtoBuilder
   String? _courseId;
   String? get courseId => _$this._courseId;
   set courseId(String? courseId) => _$this._courseId = courseId;
+
+  String? _courseTitle;
+  String? get courseTitle => _$this._courseTitle;
+  set courseTitle(String? courseTitle) => _$this._courseTitle = courseTitle;
 
   IdentifyTaskStatus? _status;
   IdentifyTaskStatus? get status => _$this._status;
@@ -147,6 +157,7 @@ class IdentifyTaskDtoBuilder
     if ($v != null) {
       _id = $v.id;
       _courseId = $v.courseId;
+      _courseTitle = $v.courseTitle;
       _status = $v.status;
       _source_ = $v.source_;
       _sourceUrl = $v.sourceUrl;
@@ -187,6 +198,11 @@ class IdentifyTaskDtoBuilder
               courseId,
               r'IdentifyTaskDto',
               'courseId',
+            ),
+            courseTitle: BuiltValueNullFieldError.checkNotNull(
+              courseTitle,
+              r'IdentifyTaskDto',
+              'courseTitle',
             ),
             status: BuiltValueNullFieldError.checkNotNull(
               status,

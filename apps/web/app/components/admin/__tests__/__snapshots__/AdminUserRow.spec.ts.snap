@@ -10,6 +10,6 @@ exports[`AdminUserRow > matches snapshot 1`] = `
   </div><!-- Role chip (md+) -->
   <div data-v-222c1c3d="" class="adm-user-row__role"><span data-v-222c1c3d="" class="stub-role-chip" tooltip-self="You can't change your own role.">user</span></div><!-- Joined date (md+) -->
   <div data-v-222c1c3d="" class="adm-user-row__joined">Jan 15</div><!-- Actions -->
-  <div data-v-222c1c3d="" class="adm-user-row__actions"><button data-v-222c1c3d="" type="button" class="adm-user-row__btn adm-user-row__btn--icon" aria-label="Edit user — coming soon"><span data-v-222c1c3d="" class="i-heroicons-pencil-square" aria-hidden="true"></span></button><button data-v-222c1c3d="" type="button" class="adm-user-row__btn adm-user-row__btn--icon" aria-label="More options — coming soon"><span data-v-222c1c3d="" class="i-heroicons-ellipsis-horizontal" aria-hidden="true"></span></button></div>
+  <div data-v-222c1c3d="" class="adm-user-row__actions"><button data-v-222c1c3d="" type="button" class="adm-user-row__btn adm-user-row__btn--icon" aria-label="Edit user — coming soon"><svg data-v-222c1c3d="" class="stub-icon" data-name="edit"></svg></button><button data-v-222c1c3d="" type="button" class="adm-user-row__btn adm-user-row__btn--icon" aria-label="More options — coming soon"><svg data-v-222c1c3d="" class="stub-icon" data-name="more-h"></svg></button></div>
 </div>"
 `;

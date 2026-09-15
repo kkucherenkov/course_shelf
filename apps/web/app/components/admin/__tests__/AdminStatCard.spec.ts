@@ -5,14 +5,22 @@
  * so snapshot correctness is the main gate.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import AdminStatCard from '../AdminStatCard.vue';
+
+vi.mock('@app/ui', () => ({
+  IconCS: {
+    name: 'IconCS',
+    props: ['name', 'size'],
+    template: '<svg class="stub-icon" :data-name="name" />',
+  },
+}));
 
 describe('AdminStatCard', () => {
   it('renders label and value', () => {
     const wrapper = mount(AdminStatCard, {
-      props: { icon: 'i-heroicons-users', label: 'Users', value: '42' },
+      props: { icon: 'users', label: 'Users', value: '42' },
     });
     expect(wrapper.text()).toContain('Users');
     expect(wrapper.text()).toContain('42');
@@ -21,7 +29,7 @@ describe('AdminStatCard', () => {
   it('renders optional meta text', () => {
     const wrapper = mount(AdminStatCard, {
       props: {
-        icon: 'i-heroicons-building-library',
+        icon: 'library',
         label: 'Libraries',
         value: '6',
         meta: '1.32 TB total',
@@ -32,14 +40,14 @@ describe('AdminStatCard', () => {
 
   it('adds error modifier class when error=true', () => {
     const wrapper = mount(AdminStatCard, {
-      props: { icon: 'i-heroicons-exclamation-triangle', label: 'Errors', value: '9', error: true },
+      props: { icon: 'alert', label: 'Errors', value: '9', error: true },
     });
     expect(wrapper.find('.admin-stat-card').classes()).toContain('admin-stat-card--error');
   });
 
   it('renders skeleton when loading=true', () => {
     const wrapper = mount(AdminStatCard, {
-      props: { icon: 'i-heroicons-users', label: 'Users', value: '—', loading: true },
+      props: { icon: 'users', label: 'Users', value: '—', loading: true },
     });
     expect(wrapper.find('.admin-stat-card__skeleton').exists()).toBe(true);
     // Value and meta are not rendered during loading
@@ -48,7 +56,7 @@ describe('AdminStatCard', () => {
 
   it('matches snapshot (default state)', () => {
     const wrapper = mount(AdminStatCard, {
-      props: { icon: 'i-heroicons-home', label: 'Libraries', value: '6', meta: '10 courses' },
+      props: { icon: 'home', label: 'Libraries', value: '6', meta: '10 courses' },
     });
     expect(wrapper.html()).toMatchSnapshot();
   });

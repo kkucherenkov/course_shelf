@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { ref, computed, watch } from 'vue';
+  import { IconCS } from '@app/ui';
   import { removeLibrary, client } from '@app/api-client-ts';
 
   interface LibraryLike {
@@ -123,7 +124,7 @@
           :aria-label="props.cancelCta"
           @click="close"
         >
-          <span class="i-heroicons-x-mark" aria-hidden="true" />
+          <IconCS name="x" />
         </button>
       </div>
 

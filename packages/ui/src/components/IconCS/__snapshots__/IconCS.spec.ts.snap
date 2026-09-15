@@ -1,5 +1,17 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`IconCS > renders academic-cap with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- academic-cap -->
+  <path data-v-6f4b1ecb="" d="M12 4L2 9l10 5 10-5-10-5z"></path>
+  <path data-v-6f4b1ecb="" d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"></path>
+  <path data-v-6f4b1ecb="" d="M21 9v5"></path>
+  <circle data-v-6f4b1ecb="" cx="21" cy="16" r="0.6" fill="currentColor"></circle>
+</svg>"
+`;
+
 exports[`IconCS > renders alert with valid SVG 1`] = `
 "<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
   <!--v-if-->
@@ -128,6 +140,17 @@ exports[`IconCS > renders circle with valid SVG 1`] = `
   <!-- play -->
   <!-- circle -->
   <circle data-v-6f4b1ecb="" cx="12" cy="12" r="9"></circle>
+</svg>"
+`;
+
+exports[`IconCS > renders circle-stack with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- circle-stack -->
+  <ellipse data-v-6f4b1ecb="" cx="12" cy="5" rx="8" ry="3"></ellipse>
+  <ellipse data-v-6f4b1ecb="" cx="12" cy="12" rx="8" ry="3"></ellipse>
+  <ellipse data-v-6f4b1ecb="" cx="12" cy="19" rx="8" ry="3"></ellipse>
 </svg>"
 `;
 

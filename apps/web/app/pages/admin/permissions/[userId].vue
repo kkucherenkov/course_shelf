@@ -1,12 +1,12 @@
 <script setup lang="ts">
-  import { computed, provide, ref, toRef } from 'vue';
+  import { computed, provide, ref, toRef, watch } from 'vue';
   // Explicit: Nuxt 4.5 no longer surfaces auto-imports to template
   // expressions during `nuxt typecheck`, and `navigateTo` is called from the
   // template below. Same `#imports` idiom as `stores/auth.ts`.
   import { navigateTo } from '#imports';
-  import { AppBanner } from '@app/ui';
+  import { AppBanner, IconCS } from '@app/ui';
   import type { CourseDto, AccessGrantDto } from '@app/api-client-ts';
-  import { listCourses, client } from '@app/api-client-ts';
+  import { getCourse, listCourses, client } from '@app/api-client-ts';
   import AdminRoleChip from '~/components/admin/AdminRoleChip.vue';
   import AdminPermissionRow from '~/components/admin/AdminPermissionRow.vue';
   import { useAdminUser } from '~/composables/useAdminUser';
@@ -81,21 +81,52 @@
     expandedLibraries.value = next;
   }
 
+  // ── Resolve courseId → libraryId for every course-scope grant ────────────────
+  // `coursesByLibrary` only knows about a library's courses once that library's
+  // row has been expanded — a course-level grant inside a still-collapsed
+  // library was invisible (and its library's overrides badge undercounted) until
+  // the admin happened to open it (#576). Resolved independently of expansion,
+  // one `getCourse` per granted course — bounded by how many course-scope
+  // grants this one user has, not by how many courses exist.
+  const courseLibraryMap = ref(new Map<string, string>());
+  const courseLibraryFetching = ref(new Set<string>());
+
+  async function ensureCourseLibraryResolved(courseId: string): Promise<void> {
+    if (courseLibraryMap.value.has(courseId)) return;
+    if (courseLibraryFetching.value.has(courseId)) return;
+    courseLibraryFetching.value.add(courseId);
+    try {
+      const res = await getCourse({ client, throwOnError: false, path: { id: courseId } });
+      if (!res.error) {
+        const next = new Map(courseLibraryMap.value);
+        next.set(courseId, res.data.libraryId);
+        courseLibraryMap.value = next;
+      }
+    } finally {
+      courseLibraryFetching.value.delete(courseId);
+    }
+  }
+
+  watch(
+    grants.grantedCourses,
+    (courseGrants) => {
+      for (const courseId of courseGrants.keys()) {
+        void ensureCourseLibraryResolved(courseId);
+      }
+    },
+    { immediate: true },
+  );
+
   // ── Build overridesByLibrary ─────────────────────────────────────────────────
-  // We resolve courseId → libraryId using the already-loaded coursesByLibrary map.
   const overridesByLibrary = computed<Map<string, AccessGrantDto[]>>(() => {
     const result = new Map<string, AccessGrantDto[]>();
     const courseGrants = grants.grantedCourses.value;
     for (const [courseId, grant] of courseGrants) {
-      // Find which library this course belongs to via our loaded courses.
-      for (const [libraryId, courses] of coursesByLibrary.value) {
-        if (courses.some((c) => c.id === courseId)) {
-          const existing = result.get(libraryId) ?? [];
-          existing.push(grant);
-          result.set(libraryId, existing);
-          break;
-        }
-      }
+      const libraryId = courseLibraryMap.value.get(courseId);
+      if (libraryId === undefined) continue; // resolution still in flight
+      const existing = result.get(libraryId) ?? [];
+      existing.push(grant);
+      result.set(libraryId, existing);
     }
     return result;
   });
@@ -273,7 +304,7 @@
 
         <!-- Empty state -->
         <div v-else-if="libraryItems.length === 0" class="adm-perms__empty">
-          <span class="i-heroicons-key adm-perms__empty-icon" aria-hidden="true" />
+          <IconCS name="key" class="adm-perms__empty-icon" />
           <p>{{ t('pages.admin.permissions.noLibraries') }}</p>
         </div>
 

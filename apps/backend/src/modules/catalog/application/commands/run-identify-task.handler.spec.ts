@@ -43,7 +43,7 @@ describe('RunIdentifyTaskHandler', () => {
 
   it('persists a proposed task and publishes IdentifyTaskProposed', async () => {
     const { courseRepo, taskRepo, eventBus } = makeDeps();
-    vi.mocked(courseRepo.findById).mockResolvedValue({ id: 'c1' } as never);
+    vi.mocked(courseRepo.findById).mockResolvedValue({ id: 'c1', title: 'Rust Course' } as never);
     const handler = new RunIdentifyTaskHandler(courseRepo, taskRepo, eventBus);
 
     const dto = await handler.execute(
@@ -60,5 +60,6 @@ describe('RunIdentifyTaskHandler', () => {
     expect(eventBus.publish).toHaveBeenCalledWith(expect.any(IdentifyTaskProposed));
     expect(dto.status).toBe('proposed');
     expect(dto.courseId).toBe('c1');
+    expect(dto.courseTitle).toBe('Rust Course');
   });
 });

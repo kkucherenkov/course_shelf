@@ -2131,6 +2131,11 @@ export interface components {
       id: string;
       /** @example clc456 */
       courseId: string;
+      /**
+       * @description Title of the course this task targets, denormalized so the admin queue can identify the row without a follow-up fetch.
+       * @example Rust Course
+       */
+      courseTitle: string;
       status: components['schemas']['IdentifyTaskStatus'];
       /**
        * @description Label of the scraper/source that produced the fragment.

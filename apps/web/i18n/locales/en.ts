@@ -369,7 +369,10 @@ export default {
     },
     search: {
       title: 'Search',
-      headerCount: '{n} result | {n} results for "{q}"',
+      // `"{q}"` must repeat in every alternative — a pipe-message resolves to
+      // exactly one alternative, so content placed in only one form vanishes
+      // whenever a different form is chosen.
+      headerCount: '{n} result for "{q}" | {n} results for "{q}"',
       headerCountZero: 'No results for "{q}"',
       groupCourses: 'Courses',
       groupLessons: 'Lessons',
@@ -472,9 +475,15 @@ export default {
         statUsers: 'Users',
         statLastScan: 'Last scan',
         statErrors24h: 'Errors · 24h',
-        statLibrariesMeta: '{n} course | {n} courses · {l} lesson | {l} lessons',
+        // vue-i18n resolves a `|`-message to ONE plural index for the whole
+        // string, so `{n}` and `{l}` can't share a message — split in two.
+        statLibrariesMetaCourses: '{n} course | {n} courses',
+        statLibrariesMetaLessons: '{n} lesson | {n} lessons',
         statLastScanNever: 'Never',
-        statLastScanMeta: 'Library {libraryId} · {n} file | {n} files',
+        // The `{libraryId}` prefix must repeat in every alternative — a
+        // pipe-message resolves to exactly one alternative, so content placed
+        // in only one form vanishes whenever a different form is chosen.
+        statLastScanMeta: 'Library {libraryId} · {n} file | Library {libraryId} · {n} files',
         recentScansHeading: 'Recent scans',
         tableLibrary: 'Library',
         tableStatus: 'Status',

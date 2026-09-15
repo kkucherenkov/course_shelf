@@ -1,5 +1,6 @@
 import en from './locales/en';
 import ru from './locales/ru';
+import { ruPluralRule } from './plural-rules';
 
 // Plain TS modules (not JSON) — `@intlify/unplugin-vue-i18n` only claims
 // `.json`/`.yaml` resource files, and `vite:json` only matches `.json`.
@@ -10,4 +11,5 @@ export default defineI18nConfig(() => ({
   locale: 'en',
   fallbackLocale: 'en',
   messages: { en, ru },
+  pluralRules: { ru: ruPluralRule },
 }));

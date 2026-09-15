@@ -371,7 +371,11 @@ export default {
     },
     search: {
       title: 'Поиск',
-      headerCount: '{n} результат | {n} результата | {n} результатов по запросу «{q}»',
+      // `«{q}»` must repeat in every alternative — a pipe-message resolves to
+      // exactly one alternative, so content placed in only one form vanishes
+      // whenever a different form is chosen.
+      headerCount:
+        '{n} результат по запросу «{q}» | {n} результата по запросу «{q}» | {n} результатов по запросу «{q}»',
       headerCountZero: 'Ничего не найдено по запросу «{q}»',
       groupCourses: 'Курсы',
       groupLessons: 'Уроки',
@@ -474,9 +478,16 @@ export default {
         statUsers: 'Пользователи',
         statLastScan: 'Последнее сканирование',
         statErrors24h: 'Ошибки · 24ч',
-        statLibrariesMeta: '{n} курс | {n} курса | {n} курсов · {l} урок | {l} урока | {l} уроков',
+        // vue-i18n resolves a `|`-message to ONE plural index for the whole
+        // string, so `{n}` and `{l}` can't share a message — split in two.
+        statLibrariesMetaCourses: '{n} курс | {n} курса | {n} курсов',
+        statLibrariesMetaLessons: '{n} урок | {n} урока | {n} уроков',
         statLastScanNever: 'Никогда',
-        statLastScanMeta: 'Библиотека {libraryId} · {n} файл | {n} файла | {n} файлов',
+        // The `{libraryId}` prefix must repeat in every alternative — a
+        // pipe-message resolves to exactly one alternative, so content placed
+        // in only one form vanishes whenever a different form is chosen.
+        statLastScanMeta:
+          'Библиотека {libraryId} · {n} файл | Библиотека {libraryId} · {n} файла | Библиотека {libraryId} · {n} файлов',
         recentScansHeading: 'Недавние сканирования',
         tableLibrary: 'Библиотека',
         tableStatus: 'Статус',

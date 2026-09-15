@@ -2028,9 +2028,12 @@ export type UpdateBookmarkRequest = {
  * `releaseDate`, `sourceUpdatedAt`, `ratingAverage`, `ratingCount`, or
  * `externalIds` must be present.
  *
- * `ratingAverage` and `ratingCount` are supplied together or not at all —
- * a rating average without its sample size is not a number anyone can
- * interpret. Passing one alone is a 400.
+ * `ratingAverage` and `ratingCount` are supplied together or not at
+ * all — passing one key without the other is a 400. Within a
+ * supplied pair, `null` on both sides clears the rating; `null` on
+ * just one side reads as 0 (a rating with a known-empty sample, or a
+ * sample count with no computed average, is still a complete fact —
+ * it's the missing pairing that would be ambiguous, not the zero).
  *
  * **Set-replace semantics for relation arrays:** `null` means "leave the
  * existing set alone"; `[]` (empty array) means "remove all links";
@@ -2070,11 +2073,11 @@ export type UpdateCourseRequest = {
      */
     posterUrl?: string | null;
     /**
-     * Average rating 0–5. Pass `null` to clear.
+     * Average rating 0–5. `null` on both rating fields clears the rating; `null` here alone, with `ratingCount` set, is read as 0.
      */
     ratingAverage?: number | null;
     /**
-     * Number of ratings. Pass `null` to clear.
+     * Number of ratings. `null` on both rating fields clears the rating; `null` here alone, with `ratingAverage` set, is read as 0.
      */
     ratingCount?: number | null;
     /**

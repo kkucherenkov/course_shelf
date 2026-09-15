@@ -500,10 +500,11 @@ export const getCourse = <ThrowOnError extends boolean = false>(options: Options
 /**
  * Update course metadata
  *
- * Admin-only. Updates any combination of title / description / slug.
- * Slug must be unique within the same library.
- * At least one of `title`, `description`, or `slug` must be present
- * (server-side validation rule — OpenAPI cannot express "at-least-one" natively).
+ * Admin-only. Updates any combination of the fields on
+ * UpdateCourseRequest — scalar metadata, the rating pair, and the
+ * relation arrays alike. Slug must be unique within the same library
+ * (409 on conflict). At least one field must be present, enforced by
+ * the request schema's `minProperties: 1` — not a hand-rolled check.
  *
  */
 export const updateCourse = <ThrowOnError extends boolean = false>(options: Options<UpdateCourseData, ThrowOnError>) => (options.client ?? client).patch<UpdateCourseResponses, UpdateCourseErrors, ThrowOnError>({

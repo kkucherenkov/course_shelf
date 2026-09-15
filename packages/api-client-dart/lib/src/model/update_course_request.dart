@@ -12,7 +12,7 @@ import 'package:built_value/serializer.dart';
 
 part 'update_course_request.g.dart';
 
-/// Payload for updating course metadata. All fields are optional, but at least one of `title`, `description`, `slug`, `instructorIds`, `studioIds`, `tagIds`, `posterUrl`, `level`, `language`, `releaseDate`, `sourceUpdatedAt`, `ratingAverage`, `ratingCount`, or `externalIds` must be present.  `ratingAverage` and `ratingCount` are supplied together or not at all — a rating average without its sample size is not a number anyone can interpret. Passing one alone is a 400.  **Set-replace semantics for relation arrays:** `null` means \"leave the existing set alone\"; `[]` (empty array) means \"remove all links\"; a non-empty array replaces the full set with exactly the listed ids. 
+/// Payload for updating course metadata. All fields are optional, but at least one of `title`, `description`, `slug`, `instructorIds`, `studioIds`, `tagIds`, `posterUrl`, `level`, `language`, `releaseDate`, `sourceUpdatedAt`, `ratingAverage`, `ratingCount`, or `externalIds` must be present.  `ratingAverage` and `ratingCount` are supplied together or not at all — passing one key without the other is a 400. Within a supplied pair, `null` on both sides clears the rating; `null` on just one side reads as 0 (a rating with a known-empty sample, or a sample count with no computed average, is still a complete fact — it's the missing pairing that would be ambiguous, not the zero).  **Set-replace semantics for relation arrays:** `null` means \"leave the existing set alone\"; `[]` (empty array) means \"remove all links\"; a non-empty array replaces the full set with exactly the listed ids. 
 ///
 /// Properties:
 /// * [title] 

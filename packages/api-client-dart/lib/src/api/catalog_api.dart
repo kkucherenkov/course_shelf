@@ -1979,7 +1979,7 @@ class CatalogApi {
   }
 
   /// Update course metadata
-  /// Admin-only. Updates any combination of title / description / slug. Slug must be unique within the same library. At least one of &#x60;title&#x60;, &#x60;description&#x60;, or &#x60;slug&#x60; must be present (server-side validation rule — OpenAPI cannot express \&quot;at-least-one\&quot; natively). 
+  /// Admin-only. Updates any combination of the fields on UpdateCourseRequest — scalar metadata, the rating pair, and the relation arrays alike. Slug must be unique within the same library (409 on conflict). At least one field must be present, enforced by the request schema&#39;s &#x60;minProperties: 1&#x60; — not a hand-rolled check. 
   ///
   /// Parameters:
   /// * [id] - Server-generated cuid identifying the course to update.

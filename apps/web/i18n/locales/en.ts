@@ -552,6 +552,7 @@ export default {
         title: 'Permissions',
         subtitle: 'Grant library and course access for a specific user.',
         addGrantCta: 'Add grant',
+        backToUsersCta: 'Back to users',
         roleChipReadOnlyTooltip: 'Change roles on the Users page.',
         infoBannerBody:
           'Library grants set the baseline. Per-course overrides take precedence and are evaluated last.',
@@ -567,6 +568,10 @@ export default {
         toastGrantCreated: 'Access granted.',
         toastGrantRevoked: 'Access removed.',
         toastGrantFailed: 'Could not update access. Please try again.',
+        revokeDialogTitle: 'Revoke {library} access from {user}?',
+        revokeDialogBody: 'Takes effect immediately. They will need to be re-granted access.',
+        revokeDialogConfirm: 'Revoke access',
+        revokeDialogCancel: 'Cancel',
         courseToggleHint:
           '"None" removes the per-course grant. The library grant still applies unless it is also removed.',
         pickerTitle: 'Permissions',
@@ -637,6 +642,9 @@ export default {
         emptyTitle: 'No identify tasks yet',
         emptyBody:
           'Queue a scraped candidate for review from a course’s "Fill from source" panel to see it here.',
+        emptyFilteredTitle: 'No tasks match this status',
+        emptyFilteredBody: 'Switch the status filter to see the rest of the queue.',
+        emptyShowAll: 'Show all statuses',
         errorTitle: "Couldn't load identify tasks",
         errorRetry: 'Retry',
         statusProposed: 'Proposed',
@@ -661,6 +669,11 @@ export default {
         unavailable: 'Not provided by this candidate.',
         applyCta: 'Apply',
         discardCta: 'Discard',
+        applyDialogTitle: 'Apply scraped data to this course?',
+        applyDialogBody:
+          'This overwrites {n} field with data from the scraper. There is no bulk undo — reverting means restoring each field by hand. | This overwrites {n} fields with data from the scraper. There is no bulk undo — reverting means restoring each field by hand.',
+        applyDialogConfirm: 'Apply',
+        applyDialogCancel: 'Cancel',
         applySuccess: 'Identify task applied.',
         applyError: 'Could not apply this task. Please try again.',
         discardSuccess: 'Identify task discarded.',

@@ -14,7 +14,13 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import type { AccessGrantDto, AdminLibraryListDto, AdminUserListItem } from '@app/api-client-ts';
 
 vi.stubGlobal('definePageMeta', () => undefined);
-vi.stubGlobal('useI18n', () => ({ t: (key: string) => key }));
+// `t` echoes the key, plus any interpolation values appended, so a test can
+// assert both "the right key was used" and "the right value was passed" —
+// e.g. the revoke dialog's `{ library, user }`.
+vi.stubGlobal('useI18n', () => ({
+  t: (key: string, params?: Record<string, unknown>) =>
+    params ? [key, ...Object.values(params)].join(' ') : key,
+}));
 vi.stubGlobal('useRoute', () => ({ params: { userId: 'user-1' } }));
 vi.stubGlobal('useToast', () => ({ add: vi.fn() }));
 vi.mock('#imports', () => ({ navigateTo: vi.fn() }));
@@ -64,15 +70,30 @@ const courseGrant: AccessGrantDto = {
   createdAt: '2026-01-01T00:00:00Z',
 } as AccessGrantDto;
 
+const libraryGrant: AccessGrantDto = {
+  id: 'grant-lib-a',
+  userId: 'user-1',
+  target: { kind: 'library', libraryId: 'lib-a' },
+  level: 'READ',
+  createdAt: '2026-01-01T00:00:00Z',
+} as AccessGrantDto;
+
+// Mutable per-test fixtures — reset in `beforeEach` below.
+let grantsData: AccessGrantDto[] = [courseGrant];
+let grantedLibraries = new Set<string>();
+const grantMock = vi.fn().mockResolvedValue(null);
+const revokeMock = vi.fn().mockResolvedValue(null);
+const refetchGrantsMock = vi.fn();
+
 vi.mock('~/composables/useAccessGrants', () => ({
   useAccessGrants: () => ({
-    data: ref([courseGrant]),
+    data: ref(grantsData),
     status: ref('success'),
-    grantedLibraries: ref(new Set<string>()),
+    grantedLibraries: ref(grantedLibraries),
     grantedCourses: ref(new Map([['course-1', courseGrant]])),
-    refetch: vi.fn(),
-    grant: vi.fn(),
-    revoke: vi.fn(),
+    refetch: refetchGrantsMock,
+    grant: grantMock,
+    revoke: revokeMock,
   }),
 }));
 
@@ -87,6 +108,12 @@ vi.mock('@app/api-client-ts', () => ({
 // ── @app/ui + row stubs ──────────────────────────────────────────────────────
 vi.mock('@app/ui', () => ({
   AppBanner: { name: 'AppBanner', props: ['variant', 'body'], template: '<div />' },
+  AppDialog: {
+    name: 'AppDialog',
+    props: ['open', 'size', 'title', 'description'],
+    template:
+      '<div v-if="open" class="stub-dialog">{{ title }} — {{ description }}<slot /><slot name="footer" /></div>',
+  },
 }));
 
 vi.mock('~/components/admin/AdminRoleChip.vue', () => ({
@@ -100,9 +127,15 @@ vi.mock('~/components/admin/AdminPermissionRow.vue', () => ({
   },
 }));
 
+const UButtonStub = {
+  name: 'UButton',
+  emits: ['click'],
+  template: '<button class="stub-ubutton" @click="$emit(\'click\')"><slot /></button>',
+};
+
 async function mountPage(): Promise<VueWrapper> {
   const mod = await import('../admin/permissions/[userId].vue');
-  const wrapper = mount(mod.default, { global: { stubs: { UButton: true } } });
+  const wrapper = mount(mod.default, { global: { stubs: { UButton: UButtonStub } } });
   await flushPromises();
   return wrapper;
 }
@@ -116,6 +149,11 @@ describe('admin permissions user page', () => {
       error: null,
       response: { status: 200 },
     });
+    grantsData = [courseGrant];
+    grantedLibraries = new Set<string>();
+    grantMock.mockClear().mockResolvedValue(null);
+    revokeMock.mockClear().mockResolvedValue(null);
+    refetchGrantsMock.mockClear();
   });
 
   it('counts a course-scope grant toward its library without expanding that library row', async () => {
@@ -133,5 +171,73 @@ describe('admin permissions user page', () => {
     const libBRow = rows.find((r) => (r.props('library') as { id: string }).id === 'lib-b');
     expect(libARow?.props('overrides')).toHaveLength(1);
     expect(libBRow?.props('overrides')).toHaveLength(0);
+  });
+
+  // #599: both buttons only ever navigate back to the user picker — neither
+  // retries a request nor adds a grant — so their label must name that
+  // transition instead of reusing `errorRetry` / `addGrantCta`.
+  it('labels the not-found and header buttons for the navigation they perform', async () => {
+    const wrapper = await mountPage();
+
+    const buttons = wrapper.findAll('.stub-ubutton');
+    const backButton = buttons.find((b) => b.text() === 'pages.admin.permissions.backToUsersCta');
+    expect(backButton).toBeTruthy();
+    expect(buttons.some((b) => b.text() === 'pages.admin.permissions.addGrantCta')).toBe(false);
+  });
+
+  // #599: a granted course whose library lookup hasn't resolved yet must not
+  // let the overrides badge silently render an undercount — the table stays
+  // in its loading skeleton until every grant is resolved.
+  it('keeps the table skeleton up while a granted course’s library is still resolving', async () => {
+    mockGetCourse.mockImplementation(() => new Promise(() => undefined)); // never resolves
+    const wrapper = await mountPage();
+
+    expect(wrapper.find('.adm-perms__tbl-skel-row').exists()).toBe(true);
+    expect(wrapper.findAllComponents({ name: 'AdminPermissionRow' })).toHaveLength(0);
+  });
+
+  // #606: revoking a library grant takes access away from someone else with
+  // no undo — it must not fire on the toggle click alone.
+  it('confirms before revoking a library grant, naming the library and the user', async () => {
+    grantedLibraries = new Set(['lib-a']);
+    grantsData = [courseGrant, libraryGrant];
+    const wrapper = await mountPage();
+
+    const libARow = wrapper
+      .findAllComponents({ name: 'AdminPermissionRow' })
+      .find((r) => (r.props('library') as { id: string }).id === 'lib-a');
+    await libARow!.vm.$emit('set-library', { granted: false });
+
+    expect(revokeMock).not.toHaveBeenCalled();
+    const dialog = wrapper.find('.stub-dialog');
+    expect(dialog.exists()).toBe(true);
+    expect(dialog.text()).toContain('Library A');
+    expect(dialog.text()).toContain('Jane Doe');
+
+    const confirmButton = wrapper
+      .findAll('.stub-dialog button')
+      .find((b) => b.text() === 'pages.admin.permissions.revokeDialogConfirm');
+    await confirmButton!.trigger('click');
+
+    expect(revokeMock).toHaveBeenCalledWith('grant-lib-a');
+  });
+
+  it('cancelling the revoke dialog leaves the grant untouched', async () => {
+    grantedLibraries = new Set(['lib-a']);
+    grantsData = [courseGrant, libraryGrant];
+    const wrapper = await mountPage();
+
+    const libARow = wrapper
+      .findAllComponents({ name: 'AdminPermissionRow' })
+      .find((r) => (r.props('library') as { id: string }).id === 'lib-a');
+    await libARow!.vm.$emit('set-library', { granted: false });
+
+    const cancelButton = wrapper
+      .findAll('.stub-dialog button')
+      .find((b) => b.text() === 'pages.admin.permissions.revokeDialogCancel');
+    await cancelButton!.trigger('click');
+
+    expect(revokeMock).not.toHaveBeenCalled();
+    expect(wrapper.find('.stub-dialog').exists()).toBe(false);
   });
 });

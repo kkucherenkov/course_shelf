@@ -8,8 +8,8 @@
    * `CourseMetadataForm`/`CourseScrapePreviewPanel`, the two components with
    * a comparably large internal string surface.
    */
-  import { computed, reactive } from 'vue';
-  import { AppBadge, AppButton, AppSegmented, AppSegmentedItem } from '@app/ui';
+  import { computed, reactive, ref } from 'vue';
+  import { AppBadge, AppButton, AppDialog, AppSegmented, AppSegmentedItem } from '@app/ui';
   import type {
     CourseLevel,
     IdentifyTaskDto,
@@ -171,7 +171,22 @@
     return props.task.mergePolicy[field] ?? 'merge';
   }
 
-  function onApply(): void {
+  // ── Apply confirmation ───────────────────────────────────────────────────
+  // Applying overwrites the course from the scraper; there is no bulk undo,
+  // only restoring each field by hand (#606). A count of fields actually
+  // affected — `mode` is not `ignore` and the candidate has data to write —
+  // gives the admin something concrete to weigh before committing.
+  const applyDialogOpen = ref(false);
+  const changedFieldsCount = computed(
+    () => rows.value.filter((row) => modes[row.key] !== 'ignore' && row.candidate !== null).length,
+  );
+
+  function openApplyDialog(): void {
+    applyDialogOpen.value = true;
+  }
+
+  function confirmApply(): void {
+    applyDialogOpen.value = false;
     emit('apply', buildMergePolicy(modes));
   }
 </script>
@@ -234,9 +249,32 @@
         :label="t('pages.admin.identifyTaskDetail.applyCta')"
         :loading="props.applying"
         :disabled="props.discarding"
-        @click="onApply"
+        @click="openApplyDialog"
       />
     </div>
+
+    <AppDialog
+      :open="applyDialogOpen"
+      size="sm"
+      :title="t('pages.admin.identifyTaskDetail.applyDialogTitle')"
+      :description="t('pages.admin.identifyTaskDetail.applyDialogBody', { n: changedFieldsCount })"
+      @update:open="applyDialogOpen = $event"
+    >
+      <template #footer>
+        <AppButton
+          type="button"
+          variant="ghost"
+          :label="t('pages.admin.identifyTaskDetail.applyDialogCancel')"
+          @click="applyDialogOpen = false"
+        />
+        <AppButton
+          type="button"
+          variant="primary"
+          :label="t('pages.admin.identifyTaskDetail.applyDialogConfirm')"
+          @click="confirmApply"
+        />
+      </template>
+    </AppDialog>
   </section>
 </template>
 

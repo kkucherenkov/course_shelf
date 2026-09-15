@@ -4,7 +4,7 @@
   // expressions during `nuxt typecheck`, and `navigateTo` is called from the
   // template below. Same `#imports` idiom as `stores/auth.ts`.
   import { navigateTo } from '#imports';
-  import { AppBanner, IconCS } from '@app/ui';
+  import { AppBanner, AppDialog, IconCS } from '@app/ui';
   import type { CourseDto, AccessGrantDto } from '@app/api-client-ts';
   import { getCourse, listCourses, client } from '@app/api-client-ts';
   import AdminRoleChip from '~/components/admin/AdminRoleChip.vue';
@@ -131,6 +131,17 @@
     return result;
   });
 
+  // A granted course whose `getCourse` lookup hasn't resolved yet is invisible
+  // to `overridesByLibrary` above (the `continue` skips it) — so the table's
+  // skeleton stays up until every grant is resolved, rather than letting the
+  // overrides badge silently creep up count-by-count with no loading signal
+  // (#599).
+  const isResolvingOverrides = computed(() =>
+    [...grants.grantedCourses.value.keys()].some(
+      (courseId) => !courseLibraryMap.value.has(courseId),
+    ),
+  );
+
   // ── In-flight toggle guard — prevents double-click races ────────────────────
   const toggling = ref(new Set<string>());
 
@@ -164,6 +175,42 @@
     } finally {
       toggling.value.delete(key);
     }
+  }
+
+  // ── Revoke-library confirmation (#606) ───────────────────────────────────────
+  // A library grant is someone else's access, not the admin's own — revoking
+  // it has no undo (the person has to be re-granted, and any in-progress work
+  // they lose track of in the meantime is on them to resume). Granting stays
+  // one click; only the revoke path routes through a dialog naming who and
+  // what is being taken away.
+  const pendingRevokeLibraryId = ref<string | null>(null);
+  const revokeDialogOpen = ref(false);
+  const pendingRevokeLibraryName = computed(
+    () => libraryItems.value.find((l) => l.id === pendingRevokeLibraryId.value)?.name ?? '',
+  );
+  const userDisplayName = computed(() =>
+    user.value ? (user.value.displayName ?? user.value.name) : '',
+  );
+
+  function requestSetLibrary(libraryId: string, granted: boolean): void {
+    if (!granted) {
+      pendingRevokeLibraryId.value = libraryId;
+      revokeDialogOpen.value = true;
+      return;
+    }
+    void handleSetLibrary(libraryId, true);
+  }
+
+  function cancelRevoke(): void {
+    revokeDialogOpen.value = false;
+    pendingRevokeLibraryId.value = null;
+  }
+
+  function confirmRevoke(): void {
+    const libraryId = pendingRevokeLibraryId.value;
+    revokeDialogOpen.value = false;
+    pendingRevokeLibraryId.value = null;
+    if (libraryId) void handleSetLibrary(libraryId, false);
   }
 
   // ── Course toggle ────────────────────────────────────────────────────────────
@@ -218,7 +265,7 @@
     <div v-if="userNotFound" class="adm-perms__not-found">
       <p>{{ t('pages.admin.permissions.notFound') }}</p>
       <UButton variant="outline" size="sm" @click="navigateTo('/admin/permissions')">
-        {{ t('pages.admin.permissions.errorRetry') }}
+        {{ t('pages.admin.permissions.backToUsersCta') }}
       </UButton>
     </div>
 
@@ -251,8 +298,13 @@
           :label-disabled="t('pages.admin.users.roleDisabled')"
           :tooltip-self="t('pages.admin.permissions.roleChipReadOnlyTooltip')"
         />
-        <UButton size="sm" class="adm-perms__add-btn" @click="navigateTo('/admin/permissions')">
-          {{ t('pages.admin.permissions.addGrantCta') }}
+        <UButton
+          variant="outline"
+          size="sm"
+          class="adm-perms__add-btn"
+          @click="navigateTo('/admin/permissions')"
+        >
+          {{ t('pages.admin.permissions.backToUsersCta') }}
         </UButton>
       </div>
 
@@ -291,7 +343,7 @@
       <!-- Permission table -->
       <div v-if="!hasLibsError && !hasGrantsError" class="adm-perms__tbl">
         <!-- Loading skeleton -->
-        <template v-if="isLibsLoading || isGrantsLoading">
+        <template v-if="isLibsLoading || isGrantsLoading || isResolvingOverrides">
           <div v-for="i in 4" :key="i" class="adm-perms__tbl-skel-row">
             <div class="adm-perms__skel adm-perms__skel--lib-icon" />
             <div class="adm-perms__skel-col">
@@ -333,13 +385,36 @@
             "
             :label-courses-loading="t('pages.admin.permissions.coursesLoading')"
             :label-course-toggle-hint="t('pages.admin.permissions.courseToggleHint')"
-            @set-library="({ granted }) => handleSetLibrary(library.id, granted)"
+            @set-library="({ granted }) => requestSetLibrary(library.id, granted)"
             @set-course="({ courseId, granted }) => handleSetCourse(courseId, granted)"
             @update:expanded="(val) => toggleExpanded(library.id, val)"
           />
         </template>
       </div>
     </template>
+
+    <!-- Revoke-library confirmation (#606) -->
+    <AppDialog
+      :open="revokeDialogOpen"
+      size="sm"
+      :title="
+        t('pages.admin.permissions.revokeDialogTitle', {
+          library: pendingRevokeLibraryName,
+          user: userDisplayName,
+        })
+      "
+      :description="t('pages.admin.permissions.revokeDialogBody')"
+      @update:open="revokeDialogOpen = $event"
+    >
+      <template #footer>
+        <UButton variant="ghost" size="sm" @click="cancelRevoke">
+          {{ t('pages.admin.permissions.revokeDialogCancel') }}
+        </UButton>
+        <UButton variant="solid" color="error" size="sm" @click="confirmRevoke">
+          {{ t('pages.admin.permissions.revokeDialogConfirm') }}
+        </UButton>
+      </template>
+    </AppDialog>
   </div>
 </template>
 

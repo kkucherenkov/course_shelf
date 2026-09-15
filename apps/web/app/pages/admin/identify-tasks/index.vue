@@ -42,6 +42,16 @@
   const items = computed(() => data.value?.tasks ?? []);
   const isEmpty = computed(() => !isLoading.value && !hasError.value && items.value.length === 0);
 
+  // The default `status=proposed` filter is itself a filter — an empty queue
+  // under it (or any non-'all' choice) doesn't mean the queue is empty, only
+  // that nothing matches the current status. Mirrors `browse.vue`'s
+  // 'filtered' empty-kind so the copy names the real cause (#600).
+  const isFiltered = computed(() => statusFilterValue.value !== 'all');
+
+  function showAllStatuses(): void {
+    statusFilterValue.value = 'all';
+  }
+
   const subtitle = computed(() => {
     if (isLoading.value) return '';
     return t('pages.admin.identifyTasks.subtitle', { n: items.value.length });
@@ -95,6 +105,24 @@
         </div>
       </div>
     </div>
+
+    <AppEmptyState
+      v-else-if="isEmpty && isFiltered"
+      icon="list"
+      :title="t('pages.admin.identifyTasks.emptyFilteredTitle')"
+      :body="t('pages.admin.identifyTasks.emptyFilteredBody')"
+    >
+      <template #action>
+        <AppButton
+          variant="secondary"
+          size="sm"
+          data-testid="identify-tasks-empty-show-all"
+          @click="showAllStatuses"
+        >
+          {{ t('pages.admin.identifyTasks.emptyShowAll') }}
+        </AppButton>
+      </template>
+    </AppEmptyState>
 
     <AppEmptyState
       v-else-if="isEmpty"

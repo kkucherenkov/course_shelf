@@ -3,7 +3,8 @@
   import { useI18n } from 'vue-i18n';
   import { AppSectionHeader, AppLessonRow } from '@app/ui';
   import { useSectionHeaderLabels } from '~/composables/useSectionHeaderLabels';
-  import type { SectionOutline } from '@app/api-client-ts';
+  import { usePreferencesStore, effectiveLessonState } from '~/stores/preferences';
+  import type { SectionOutline, LessonOutlineItem } from '@app/api-client-ts';
 
   const props = defineProps<{
     sections: SectionOutline[];
@@ -13,6 +14,11 @@
 
   const { t } = useI18n();
   const { sectionLabel, formatLessons, formatDuration } = useSectionHeaderLabels();
+  const preferencesStore = usePreferencesStore();
+
+  function displayState(lesson: LessonOutlineItem): LessonOutlineItem['state'] {
+    return effectiveLessonState(lesson, preferencesStore.completionThreshold);
+  }
 
   function formatWatched(percent: number): string {
     return t('ui.lessonRow.watched', { n: percent });
@@ -62,7 +68,7 @@
             :num="lesson.position"
             :title="lesson.title"
             :duration="lesson.durationSeconds"
-            :state="lesson.state"
+            :state="displayState(lesson)"
             :materials="lesson.hasMaterials"
             :transcript="lesson.hasTranscript"
             :current="lesson.id === props.currentLessonId"

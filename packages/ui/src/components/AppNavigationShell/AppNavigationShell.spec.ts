@@ -1,9 +1,22 @@
 import { mount, flushPromises } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import AppNavigationShell from './AppNavigationShell.vue';
 import shellSource from './AppNavigationShell.vue?raw';
 import type { NavItem, ShellUser } from './AppNavigationShell.vue';
+
+// The real AppDialog wraps a native <dialog>, which jsdom doesn't implement
+// (no showModal()/close()) — AppDialog's own spec covers that plumbing.
+// Here we only care that AppNavigationShell wires `mobileNavOpen` to `open`
+// and slots the full nav (incl. admin) into it, so a bare stub is enough.
+vi.mock('../AppDialog/AppDialog.vue', () => ({
+  default: {
+    name: 'AppDialog',
+    props: ['open', 'size', 'title', 'dismissLabel'],
+    emits: ['update:open'],
+    template: '<div v-if="open" data-testid="mobile-nav-dialog" :aria-label="title"><slot /></div>',
+  },
+}));
 
 // Shared z-index scale (docs/design/shared/tokens.json → --z-*). Kept here to
 // assert relative layering: the account menu is anchored in the fixed bottom-tab
@@ -42,11 +55,13 @@ const adminNav: NavItem[] = [
 const defaultUser: ShellUser = {
   name: 'Elena Lin',
   role: 'USER',
+  roleLabel: 'User',
 };
 
 const adminUser: ShellUser = {
   name: 'Admin User',
   role: 'ADMIN',
+  roleLabel: 'Administrator',
   initials: 'AU',
 };
 
@@ -193,30 +208,40 @@ describe('AppNavigationShell', () => {
   });
 
   // ── Theme toggle ─────────────────────────────────────────────────────────
+  // A binary toggle can only write an explicit light/dark preference — one
+  // click from "System" and it's gone, with no control anywhere that can
+  // set it again. The toggle now cycles light → dark → system → light.
 
-  it('emits update:colorMode with "light" when colorMode is "dark"', async () => {
+  it('emits update:colorMode advancing "dark" to "system"', async () => {
     const w = factory({ props: { colorMode: 'dark' } });
+    await w.find('.app-navigation-shell__theme-toggle').trigger('click');
+    expect(w.emitted('update:colorMode')).toEqual([['system']]);
+  });
+
+  it('emits update:colorMode advancing "system" to "light"', async () => {
+    const w = factory({ props: { colorMode: 'system' } });
     await w.find('.app-navigation-shell__theme-toggle').trigger('click');
     expect(w.emitted('update:colorMode')).toEqual([['light']]);
   });
 
-  it('emits update:colorMode with "dark" when colorMode is "light"', async () => {
+  it('emits update:colorMode advancing "light" to "dark"', async () => {
     const w = factory({ props: { colorMode: 'light' } });
     await w.find('.app-navigation-shell__theme-toggle').trigger('click');
     expect(w.emitted('update:colorMode')).toEqual([['dark']]);
   });
 
-  it('has correct aria-label on theme toggle for dark mode', () => {
-    const w = factory({ props: { colorMode: 'dark' } });
-    expect(w.find('.app-navigation-shell__theme-toggle').attributes('aria-label')).toBe(
-      'Switch to light mode',
-    );
+  it('theme toggle aria-label is static — it does not depend on colorMode', () => {
+    const dark = factory({ props: { colorMode: 'dark' } });
+    const light = factory({ props: { colorMode: 'light' } });
+    const label = dark.find('.app-navigation-shell__theme-toggle').attributes('aria-label');
+    expect(label).toBe('Toggle color theme');
+    expect(light.find('.app-navigation-shell__theme-toggle').attributes('aria-label')).toBe(label);
   });
 
-  it('has correct aria-label on theme toggle for light mode', () => {
-    const w = factory({ props: { colorMode: 'light' } });
+  it('theme toggle aria-label is overridable via the themeToggleLabel prop', () => {
+    const w = factory({ props: { themeToggleLabel: 'Переключить тему' } });
     expect(w.find('.app-navigation-shell__theme-toggle').attributes('aria-label')).toBe(
-      'Switch to dark mode',
+      'Переключить тему',
     );
   });
 
@@ -292,21 +317,23 @@ describe('AppNavigationShell', () => {
     expect(w.find('.app-navigation-shell__menu').exists()).toBe(false);
   });
 
-  it('emits update:colorMode and closes menu when theme menu item is clicked (dark→light)', async () => {
+  it('theme menu item shows the state a click switches to, and emits it (dark→system)', async () => {
     const w = factory({ props: { colorMode: 'dark' } });
     await w.find('.app-navigation-shell__avatar-trigger').trigger('click');
     const items = w.findAll('[role="menuitem"]');
-    const themeItem = items.find((el) => el.text().includes('Light mode'));
+    const themeItem = items.find((el) => el.text().includes('System'));
+    expect(themeItem).toBeDefined();
     await themeItem?.trigger('click');
-    expect(w.emitted('update:colorMode')).toEqual([['light']]);
+    expect(w.emitted('update:colorMode')).toEqual([['system']]);
     expect(w.find('.app-navigation-shell__menu').exists()).toBe(false);
   });
 
-  it('emits update:colorMode and closes menu when theme menu item is clicked (light→dark)', async () => {
+  it('theme menu item shows the state a click switches to, and emits it (light→dark)', async () => {
     const w = factory({ props: { colorMode: 'light' } });
     await w.find('.app-navigation-shell__avatar-trigger').trigger('click');
     const items = w.findAll('[role="menuitem"]');
-    const themeItem = items.find((el) => el.text().includes('Dark mode'));
+    const themeItem = items.find((el) => el.text().includes('Dark'));
+    expect(themeItem).toBeDefined();
     await themeItem?.trigger('click');
     expect(w.emitted('update:colorMode')).toEqual([['dark']]);
     expect(w.find('.app-navigation-shell__menu').exists()).toBe(false);
@@ -424,9 +451,11 @@ describe('AppNavigationShell', () => {
     expect(w.find('.app-navigation-shell__user-block').text()).toContain('Elena Lin');
   });
 
-  it('renders the user role in the sidebar user block', () => {
+  it('renders the translated roleLabel, not the raw role enum, in the sidebar user block', () => {
     const w = factory({ props: { user: adminUser } });
-    expect(w.find('.app-navigation-shell__user-block').text()).toContain('ADMIN');
+    const text = w.find('.app-navigation-shell__user-block').text();
+    expect(text).toContain('Administrator');
+    expect(text).not.toContain('ADMIN');
   });
 
   // ── Actions slot ─────────────────────────────────────────────────────────
@@ -477,6 +506,95 @@ describe('AppNavigationShell', () => {
       expect(menuZ).toBeTypeOf('number');
       expect(barZ).toBeTypeOf('number');
       expect(menuZ as number).toBeGreaterThan(barZ as number);
+    });
+  });
+
+  // ── Mobile nav overflow (#568) ───────────────────────────────────────────
+  // Below 600px the sidebar is CSS-hidden and the bottom-tab bar only fits a
+  // handful of items — admin nav used to have no way in at all. The "More"
+  // tab now opens a dialog with the full nav, admin section included.
+
+  describe('mobile nav overflow (#568)', () => {
+    it('does not show a "More" tab when the primary nav fits and there is no admin nav', () => {
+      const w = factory();
+      const tabs = w.findAll('.app-navigation-shell__tab-item');
+      expect(tabs).toHaveLength(defaultNav.length);
+      expect(tabs.some((t) => t.text().includes('More'))).toBe(false);
+    });
+
+    it('shows a "More" tab once adminNav has items, even though primary nav alone still fits', () => {
+      const w = factory({ props: { adminNav } });
+      const tabs = w.findAll('.app-navigation-shell__tab-item');
+      expect(tabs.some((t) => t.text().includes('More'))).toBe(true);
+    });
+
+    it('shows a "More" tab when primary nav alone overflows 5 items, even with no admin nav', () => {
+      const bigNav: NavItem[] = Array.from({ length: 6 }, (_, i) => ({
+        key: `item-${i}`,
+        label: `Item ${i}`,
+        icon: 'home',
+      }));
+      const w = factory({ props: { nav: bigNav } });
+      const tabs = w.findAll('.app-navigation-shell__tab-item');
+      expect(tabs.some((t) => t.text().includes('More'))).toBe(true);
+    });
+
+    it('the overflow dialog is not in the DOM until the "More" tab is clicked', () => {
+      const w = factory({ props: { adminNav } });
+      expect(w.find('[data-testid="mobile-nav-dialog"]').exists()).toBe(false);
+    });
+
+    it('opens the overflow dialog and exposes every admin nav item when "More" is clicked', async () => {
+      const w = factory({ props: { adminNav } });
+      const moreTab = w
+        .findAll('.app-navigation-shell__tab-item')
+        .find((t) => t.text().includes('More'));
+      await moreTab?.trigger('click');
+
+      const dialog = w.find('[data-testid="mobile-nav-dialog"]');
+      expect(dialog.exists()).toBe(true);
+      expect(dialog.text()).toContain('Dashboard');
+      expect(dialog.text()).toContain('Libraries');
+      expect(dialog.text()).toContain('Users');
+    });
+
+    it('the overflow dialog also carries the primary nav', async () => {
+      const w = factory({ props: { adminNav } });
+      const moreTab = w
+        .findAll('.app-navigation-shell__tab-item')
+        .find((t) => t.text().includes('More'));
+      await moreTab?.trigger('click');
+
+      const dialog = w.find('[data-testid="mobile-nav-dialog"]');
+      expect(dialog.text()).toContain('Home');
+      expect(dialog.text()).toContain('Browse');
+    });
+
+    it('clicking a nav item inside the overflow dialog emits "nav" with its key and closes the dialog', async () => {
+      const w = factory({ props: { adminNav } });
+      const moreTab = w
+        .findAll('.app-navigation-shell__tab-item')
+        .find((t) => t.text().includes('More'));
+      await moreTab?.trigger('click');
+
+      const dialog = w.find('[data-testid="mobile-nav-dialog"]');
+      const dashboardRow = dialog.findAll('.app-row').find((el) => el.text().includes('Dashboard'));
+      await dashboardRow?.trigger('click');
+
+      expect(w.emitted('nav')).toEqual([['dashboard']]);
+      expect(w.find('[data-testid="mobile-nav-dialog"]').exists()).toBe(false);
+    });
+
+    it('sets aria-current="page" on the active item inside the overflow dialog', async () => {
+      const w = factory({ props: { activeRoute: 'dashboard', adminNav } });
+      const moreTab = w
+        .findAll('.app-navigation-shell__tab-item')
+        .find((t) => t.text().includes('More'));
+      await moreTab?.trigger('click');
+
+      const dialog = w.find('[data-testid="mobile-nav-dialog"]');
+      const dashboardRow = dialog.findAll('.app-row').find((el) => el.text().includes('Dashboard'));
+      expect(dashboardRow?.attributes('aria-current')).toBe('page');
     });
   });
 });

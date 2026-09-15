@@ -14,7 +14,7 @@
    * auth middleware redirects), the layout falls back to a plain `<slot/>`
    * to avoid flashing the shell with an empty avatar.
    */
-  import { computed, watch } from 'vue';
+  import { computed, ref, watch } from 'vue';
   import { AppNavigationShell } from '@app/ui';
   import type { IconName } from '@app/ui';
 
@@ -37,9 +37,11 @@
   interface ShellUser {
     name: string;
     role?: 'USER' | 'ADMIN' | 'GUEST';
+    roleLabel?: string;
     avatarUrl?: string;
     initials?: string;
   }
+  type ColorMode = 'light' | 'dark' | 'system';
 
   const { t } = useI18n();
   const route = useRoute();
@@ -114,6 +116,11 @@
     if (p.startsWith('/search')) return 'browse'; // search is scoped under browse conceptually
     if (p.startsWith('/browse')) return 'browse';
     if (p.startsWith('/courses')) return 'browse'; // course pages live under /browse conceptually
+    // No nav item is keyed 'settings' (it's reachable only via the avatar
+    // menu / user-block gear icon) — matching nothing here is the point: it
+    // stops /settings from falling through to the 'home' default below and
+    // lighting up "Home" while looking at Settings.
+    if (p.startsWith('/settings')) return 'settings';
     return 'home';
   });
 
@@ -130,16 +137,27 @@
     const role = u?.role?.toUpperCase();
     const normalisedRole: 'USER' | 'ADMIN' | 'GUEST' =
       role === 'ADMIN' ? 'ADMIN' : role === 'GUEST' ? 'GUEST' : 'USER';
-    return { name, initials, role: normalisedRole };
+    const roleLabel =
+      normalisedRole === 'ADMIN'
+        ? t('ui.nav.roleAdmin')
+        : normalisedRole === 'GUEST'
+          ? t('ui.nav.roleGuest')
+          : t('ui.nav.roleUser');
+    return { name, initials, role: normalisedRole, roleLabel };
   });
 
   // ── Color mode (bound to @nuxtjs/color-mode) ─────────────────────────────
+  // `colorMode.value` is the *resolved* light/dark — it can never read
+  // "system" back out, even when that's the stored preference. Reading
+  // `preference` instead is what lets the topbar toggle show/cycle through
+  // "System" rather than silently overwriting it on the first click.
 
-  const shellColorMode = computed<'light' | 'dark'>(() =>
-    colorMode.value === 'light' ? 'light' : 'dark',
-  );
+  const shellColorMode = computed<ColorMode>(() => {
+    const pref = colorMode.preference;
+    return pref === 'light' || pref === 'system' ? pref : 'dark';
+  });
 
-  function onColorMode(mode: 'light' | 'dark'): void {
+  function onColorMode(mode: ColorMode): void {
     colorMode.preference = mode;
   }
 
@@ -204,6 +222,15 @@
     :admin-nav-label="t('ui.nav.adminNav')"
     :user-menu-label="t('ui.nav.userMenu')"
     :bottom-nav-label="t('ui.nav.bottom')"
+    :more-label="t('ui.nav.more')"
+    :close-label="t('ui.nav.close')"
+    :profile-label="t('ui.nav.profile')"
+    :settings-label="t('ui.nav.settings')"
+    :sign-out-label="t('ui.nav.signOut')"
+    :theme-light-label="t('ui.nav.themeLight')"
+    :theme-dark-label="t('ui.nav.themeDark')"
+    :theme-system-label="t('ui.nav.themeSystem')"
+    :theme-toggle-label="t('ui.nav.themeToggle')"
     @nav="onNav"
     @update:color-mode="onColorMode"
     @search-submit="onSearchSubmit"

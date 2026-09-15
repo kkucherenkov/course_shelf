@@ -12,6 +12,19 @@
 import { ref } from 'vue';
 import type { Ref } from 'vue';
 
+/**
+ * The one speed ladder for the lesson player — the in-player cycle button
+ * (`chromeSpeed`) and the settings page's default-speed picker both read
+ * this instead of keeping their own list. They drifted once already: the
+ * player omitted 0.75×, settings omitted 0.5×.
+ */
+export const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
+
+export interface UseLessonPlayerOptions {
+  /** Initial playback rate — `preferences.defaultSpeed`. Defaults to 1. */
+  initialSpeed?: number;
+}
+
 export interface UseLessonPlayerReturn {
   // Reactive state (passed as props to AppPlayerChrome)
   position: Ref<number>;
@@ -39,17 +52,20 @@ export interface UseLessonPlayerReturn {
   // Called once after mount to wire the <video> element
   attach: (el: HTMLVideoElement) => void;
   detach: () => void;
+  /** Wires the chrome's own root element — fullscreen targets this, not the `<video>`. */
+  attachChromeRoot: (el: HTMLElement) => void;
 }
 
-export function useLessonPlayer(): UseLessonPlayerReturn {
+export function useLessonPlayer(options: UseLessonPlayerOptions = {}): UseLessonPlayerReturn {
   let videoEl: HTMLVideoElement | null = null;
+  let chromeRootEl: HTMLElement | null = null;
 
   const position = ref(0);
   const duration = ref(0);
   const buffered = ref(0);
   const playing = ref(false);
   const muted = ref(false);
-  const speed = ref(1);
+  const speed = ref(options.initialSpeed ?? 1);
   const fullscreen = ref(false);
   const subtitlesOn = ref(false);
   const ended = ref(false);
@@ -164,6 +180,9 @@ export function useLessonPlayer(): UseLessonPlayerReturn {
   function attach(el: HTMLVideoElement): void {
     detach();
     videoEl = el;
+    // The element defaults to 1× regardless of what `speed` was seeded
+    // with — apply the stored preference to the real playback rate too.
+    el.playbackRate = speed.value;
 
     el.addEventListener('timeupdate', onTimeUpdate);
     el.addEventListener('durationchange', onDurationChange);
@@ -210,6 +229,10 @@ export function useLessonPlayer(): UseLessonPlayerReturn {
     videoEl = null;
   }
 
+  function attachChromeRoot(el: HTMLElement): void {
+    chromeRootEl = el;
+  }
+
   // ── Chrome event handlers (called from the template) ──────────────────────
 
   function chromePlay(): void {
@@ -229,14 +252,13 @@ export function useLessonPlayer(): UseLessonPlayerReturn {
   function chromeSpeed(rate: number): void {
     if (!videoEl) return;
     // Cycle through preset speeds when the same speed is clicked, or set directly
-    const SPEEDS = [0.5, 1, 1.25, 1.5, 1.75, 2];
     let next: number;
     if (rate === speed.value) {
       // cycle to next
-      const idx = SPEEDS.indexOf(rate);
-      next = SPEEDS[(idx + 1) % SPEEDS.length] ?? 1;
+      const idx = PLAYBACK_SPEEDS.indexOf(rate as (typeof PLAYBACK_SPEEDS)[number]);
+      next = PLAYBACK_SPEEDS[(idx + 1) % PLAYBACK_SPEEDS.length] ?? 1;
     } else {
-      next = SPEEDS.includes(rate) ? rate : 1;
+      next = (PLAYBACK_SPEEDS as readonly number[]).includes(rate) ? rate : 1;
     }
     videoEl.playbackRate = next;
     speed.value = next;
@@ -272,8 +294,12 @@ export function useLessonPlayer(): UseLessonPlayerReturn {
   }
 
   function chromeToggleFullscreen(): void {
+    // Fullscreens the chrome's own root, not the `<video>` — the overlay
+    // (scrubber, play/pause, next lesson, bookmarks, subtitles) is a sibling
+    // of the frame slot, not a descendant of the video element, so
+    // fullscreening the video alone would hide every one of those controls.
     if (!document.fullscreenElement) {
-      if (videoEl) void videoEl.requestFullscreen();
+      if (chromeRootEl) void chromeRootEl.requestFullscreen();
     } else {
       void document.exitFullscreen();
     }
@@ -301,5 +327,6 @@ export function useLessonPlayer(): UseLessonPlayerReturn {
     onToggleFullscreen: chromeToggleFullscreen,
     attach,
     detach,
+    attachChromeRoot,
   };
 }

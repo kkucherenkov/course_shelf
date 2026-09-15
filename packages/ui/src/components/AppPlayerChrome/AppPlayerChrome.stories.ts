@@ -35,6 +35,16 @@ const base = {
   lessonSubtitle: 'SECTION 04 · CONSENSUS',
   chapters: [0.18, 0.45, 0.72],
   bookmarks: [{ time: 640, label: 'Recap' }],
+  shortcutsTitle: 'Keyboard shortcuts',
+  shortcuts: [
+    'Space or K — Play / pause',
+    'Left / Right arrow — Seek 5 seconds',
+    'J / L — Seek 10 seconds',
+    ', / . — Step one frame',
+    'F — Toggle fullscreen',
+    'M — Toggle mute',
+    '0–9 — Jump to 0–90% of the lesson',
+  ],
 };
 
 export const Playing: Story = { args: { ...base, state: 'playing' } };
@@ -77,6 +87,18 @@ export const Muted: Story = { args: { ...base, state: 'playing', muted: true } }
 
 export const NoChaptersOrBookmarks: Story = {
   args: { ...base, chapters: [], bookmarks: [] },
+};
+
+export const SubtitlesUnavailable: Story = {
+  args: { ...base, state: 'playing', subtitlesAvailable: false },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'No transcript track for this lesson — the CC button is disabled rather than silently reverting itself.',
+      },
+    },
+  },
 };
 
 export const Interactive: Story = {

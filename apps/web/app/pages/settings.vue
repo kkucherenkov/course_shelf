@@ -29,6 +29,7 @@
 
   import { useAuthStore } from '~/stores/auth';
   import { usePreferencesStore } from '~/stores/preferences';
+  import { PLAYBACK_SPEEDS } from '~/composables/useLessonPlayer';
   import { AUTH_ERROR_CODES } from '~/constants/authErrorCodes';
   import SettingSyncIndicator from '~/components/SettingSyncIndicator.vue';
 
@@ -178,18 +179,18 @@
 
   // ── Appearance — density ──────────────────────────────────────────────────
 
-  type DensityOption = 'comfortable' | 'cozy' | 'compact';
-  const densityOptions: DensityOption[] = ['comfortable', 'cozy', 'compact'];
+  type DensityOption = 'comfortable' | 'compact';
+  const densityOptions: DensityOption[] = ['comfortable', 'compact'];
 
   function densityLabel(v: DensityOption): string {
-    if (v === 'comfortable') return t('pages.settings.densityComfortable');
-    if (v === 'cozy') return t('pages.settings.densityCozy');
-    return t('pages.settings.densityCompact');
+    return v === 'comfortable'
+      ? t('pages.settings.densityComfortable')
+      : t('pages.settings.densityCompact');
   }
 
   // ── Playback — speed ──────────────────────────────────────────────────────
 
-  const speedOptions = [0.75, 1, 1.25, 1.5, 1.75, 2];
+  const speedOptions = PLAYBACK_SPEEDS;
 
   // ── Account — sign out ────────────────────────────────────────────────────
 

@@ -63,6 +63,7 @@ vi.stubGlobal('import', { meta: { client: true, env: { PROD: false } } });
 // ---------------------------------------------------------------------------
 // Import the store AFTER mocks are in place.
 // ---------------------------------------------------------------------------
+import { createAuthClient } from 'better-auth/vue';
 import { useAuthStore } from './auth';
 
 // ---------------------------------------------------------------------------
@@ -275,7 +276,7 @@ describe('useAuthStore', () => {
     expect(store.user).toMatchObject({ id: 'u2', email: 'b@c.com' });
   });
 
-  it('refresh() returns false and clears user when no session exists', async () => {
+  it('refresh() returns false, clears user and drops the stale token when the server confirms no session', async () => {
     // Seed a user first
     setupSignInSuccess('tok-r');
     const store = useAuthStore();
@@ -287,6 +288,46 @@ describe('useAuthStore', () => {
 
     expect(ok).toBe(false);
     expect(store.user).toBeNull();
+    // A confirmed "no session" response means the token is dead — keeping it
+    // around would make every future navigation retry the same doomed
+    // round-trip (see auth.global.ts).
+    expect(store.token).toBeNull();
+    expect(localStorageMock.getItem('cs.web.bearer')).toBeNull();
+  });
+
+  it('refresh() keeps the token on a network/server error — an outage should not sign a valid session out', async () => {
+    setupSignInSuccess('tok-outage');
+    const store = useAuthStore();
+    await store.signIn('a@b.com', 'pw');
+
+    mockGetSession.mockResolvedValueOnce({
+      data: null,
+      error: { status: 503, message: 'Service unavailable' },
+    });
+
+    const ok = await store.refresh();
+
+    expect(ok).toBe(false);
+    expect(store.user).toBeNull();
+    expect(store.token).toBe('tok-outage');
+    expect(localStorageMock.getItem('cs.web.bearer')).toBe('tok-outage');
+  });
+
+  it('authenticates getSession with the bearer token, not the session cookie', async () => {
+    // This is the #577 regression: Better Auth's own client must carry the
+    // token via `fetchOptions.auth`, independently of whether the session
+    // cookie survived. Assert on the config handed to `createAuthClient`
+    // rather than on network headers — `better-auth/vue` itself is mocked.
+    setupSignInSuccess('tok-bearer');
+    const store = useAuthStore();
+    await store.signIn('a@b.com', 'pw');
+
+    const config = vi.mocked(createAuthClient).mock.calls[0]?.[0] as {
+      fetchOptions?: { auth?: { type: string; token: () => string | undefined } };
+    };
+
+    expect(config.fetchOptions?.auth?.type).toBe('Bearer');
+    expect(config.fetchOptions?.auth?.token()).toBe('tok-bearer');
   });
 
   // -------------------------------------------------------------------------

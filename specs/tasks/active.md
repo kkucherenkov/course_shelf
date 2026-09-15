@@ -77,8 +77,10 @@
   - [x] lint/stylelint/format/typecheck gates green
   - [x] PR `Closes #546` — [#552](https://github.com/kkucherenkov/course_shelf/pull/552)
   - [ ] CI green on #552
-  - [ ] once #548 (card) is merged: tick `E30-F03-S02` sub-steps, flip
-        `docs/roadmap/TODO.md` row, mark card done
+  - [x] #548 merged (landed on `main` ahead of this branch, picked up via
+        rebase) — ticked `E30-F03-S02` sub-steps, card `Status` → In progress
+        with a note pointing at #552. Left `docs/roadmap/TODO.md`'s row and
+        the card's `Status: Done` for the actual merge of #552.
 - Status: in-progress
 - Blockers: — (not verified against a running Docker stack — this host's
   `course_shelf` compose stack was not up and default ports 3000/5432/8080

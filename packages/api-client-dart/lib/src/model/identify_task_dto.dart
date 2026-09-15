@@ -16,6 +16,7 @@ part 'identify_task_dto.g.dart';
 /// Properties:
 /// * [id] 
 /// * [courseId] 
+/// * [courseTitle] - Title of the course this task targets, denormalized so the admin queue can identify the row without a follow-up fetch.
 /// * [status] 
 /// * [source_] - Label of the scraper/source that produced the fragment.
 /// * [sourceUrl] - URL the fragment was scraped from, if any.
@@ -30,6 +31,10 @@ abstract class IdentifyTaskDto implements Built<IdentifyTaskDto, IdentifyTaskDto
 
   @BuiltValueField(wireName: r'courseId')
   String get courseId;
+
+  /// Title of the course this task targets, denormalized so the admin queue can identify the row without a follow-up fetch.
+  @BuiltValueField(wireName: r'courseTitle')
+  String get courseTitle;
 
   @BuiltValueField(wireName: r'status')
   IdentifyTaskStatus get status;
@@ -86,6 +91,11 @@ class _$IdentifyTaskDtoSerializer implements PrimitiveSerializer<IdentifyTaskDto
     yield r'courseId';
     yield serializers.serialize(
       object.courseId,
+      specifiedType: const FullType(String),
+    );
+    yield r'courseTitle';
+    yield serializers.serialize(
+      object.courseTitle,
       specifiedType: const FullType(String),
     );
     yield r'status';
@@ -163,6 +173,13 @@ class _$IdentifyTaskDtoSerializer implements PrimitiveSerializer<IdentifyTaskDto
             specifiedType: const FullType(String),
           ) as String;
           result.courseId = valueDes;
+          break;
+        case r'courseTitle':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.courseTitle = valueDes;
           break;
         case r'status':
           final valueDes = serializers.deserialize(

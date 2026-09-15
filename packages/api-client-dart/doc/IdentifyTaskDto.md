@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **String** |  | 
 **courseId** | **String** |  | 
+**courseTitle** | **String** | Title of the course this task targets, denormalized so the admin queue can identify the row without a follow-up fetch. | 
 **status** | [**IdentifyTaskStatus**](IdentifyTaskStatus.md) |  | 
 **source_** | **String** | Label of the scraper/source that produced the fragment. | 
 **sourceUrl** | **String** | URL the fragment was scraped from, if any. | [optional] 

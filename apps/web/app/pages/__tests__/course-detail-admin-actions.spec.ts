@@ -48,6 +48,17 @@ vi.mock('~/composables/useCourseOutline', () => ({
 vi.mock('~/composables/useMaterialDownload', () => ({
   useMaterialDownload: () => ({ download: vi.fn() }),
 }));
+// Resume-lesson sourcing from continue-watching is covered by
+// course-detail-resume-lesson.spec.ts — this file only needs it not to hit
+// the real `useAsyncData` (a Nuxt auto-import unavailable in this harness).
+vi.mock('~/composables/useHome', () => ({
+  useContinueWatching: () => ({
+    data: ref(undefined),
+    status: ref('success'),
+    error: ref(null),
+    refetch: vi.fn(),
+  }),
+}));
 
 // ── Auth store ─────────────────────────────────────────────────────────────
 const authUser = ref<{ role?: string } | null>(null);

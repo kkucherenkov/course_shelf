@@ -75,6 +75,11 @@
     emit('submit', buildUpdatePayload(form, touched));
   }
 
+  // Read by the page's `onBeforeRouteLeave` guard (#570) — a plain template
+  // ref into this component, rather than lifting `touched` state up, since
+  // the guard only ever needs a live read, never a reactive subscription.
+  defineExpose({ hasChanges });
+
   // ── Level ─────────────────────────────────────────────────────────────────────
 
   const levelOptions = computed<AppSelectOption[]>(() => [

@@ -85,14 +85,18 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - [x] docs: none of `docs/` asserted the old (absolute) convention — no
         stale claim to fix
   - [x] lint/format/typecheck/test gates — `turbo run lint test typecheck
-    --filter=@app/backend` green, `pnpm --filter @app/backend build` green,
+--filter=@app/backend` green, `pnpm --filter @app/backend build` green,
         2143 backend tests passing
   - [x] open PR with `Closes #554`, `Closes #555`
 - Status: done
-- Result: [#560](https://github.com/kkucherenkov/course_shelf/pull/560) — not
-  yet merged; migration and the real ~1945-row backfill remain unverified
-  against a live DB (no `course_shelf` compose stack on this machine, said so
-  plainly in the PR)
+- Result: [#560](https://github.com/kkucherenkov/course_shelf/pull/560) — CI and
+  E2E smoke both green (not yet merged). The E2E smoke workflow's real Postgres
+  proved the migration applies cleanly via the backend image's own
+  `migrate deploy` entrypoint, but on a freshly-seeded DB with no pre-existing
+  absolute `videoPath` rows to actually rewrite — the maintainer's production
+  data still needs a real `migrate deploy` to confirm the `UPDATE` itself. The
+  real ~1945-row #555 backfill was not executed anywhere (no `course_shelf`
+  compose stack on this machine to hold that data).
 
 ## T-2026-09-15-scraper-product-type — JSON-LD extractor drops the whole block for `Product`-typed pages
 

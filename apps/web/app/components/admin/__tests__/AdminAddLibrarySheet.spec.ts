@@ -6,10 +6,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import AdminAddLibrarySheet from '../AdminAddLibrarySheet.vue';
 
-// Mock @app/api-client-ts so no real HTTP occurs
+// Mock @app/api-client-ts so no real HTTP occurs. `useLibraries.ts`'s
+// `registerLibraryRequest` — which the component now calls instead of
+// `registerLibrary` directly — imports both of these itself.
 const mockRegisterLibrary = vi.fn();
+const mockListLibraries = vi.fn();
 vi.mock('@app/api-client-ts', () => ({
   registerLibrary: (...args: unknown[]) => mockRegisterLibrary(...args),
+  listLibraries: (...args: unknown[]) => mockListLibraries(...args),
   client: {},
 }));
 

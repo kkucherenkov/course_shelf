@@ -1,9 +1,9 @@
 <script setup lang="ts">
   import { ref } from 'vue';
   import { AppBanner, AppField, AppInput, AppButton } from '@app/ui';
-  import { registerLibrary, client } from '@app/api-client-ts';
 
-  import { isAbsoluteRootPath, normalizeRootPath, problemDetail } from '~/utils/library-register';
+  import { isAbsoluteRootPath, normalizeRootPath } from '~/utils/library-register';
+  import { registerLibraryRequest, RegisterLibraryError } from '~/composables/useLibraries';
 
   interface Props {
     /** Sheet title — provided as translated string by the consumer. */
@@ -66,17 +66,16 @@
     submitting.value = true;
     formError.value = '';
     try {
-      const res = await registerLibrary({ client, throwOnError: false, body: { name, rootPath } });
-      if (res.error && res.response.status !== 409) {
-        // Quote the server's problem document; the fallback is for a response
-        // that carried no explanation.
-        formError.value = problemDetail(res.error) ?? props.errorRegister;
-        return;
-      }
+      await registerLibraryRequest({ name, rootPath });
       reset();
       emit('registered');
-    } catch {
-      formError.value = props.errorRegister;
+    } catch (error) {
+      // `registerLibraryRequest` already resolves a defensive 409 to the
+      // existing row — anything that reaches here is a real failure. Quote
+      // the server's own problem document; the fallback is for a response
+      // that carried no explanation, or one that never arrived at all.
+      formError.value =
+        error instanceof RegisterLibraryError && error.detail ? error.detail : props.errorRegister;
     } finally {
       submitting.value = false;
     }

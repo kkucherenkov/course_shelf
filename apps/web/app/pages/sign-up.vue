@@ -11,14 +11,12 @@
   import type { AppSelectOption } from '@app/ui';
   import { ref, computed, watch } from 'vue';
 
-  import { registerLibrary } from '@app/api-client-ts';
-  import { client } from '@app/api-client-ts';
-
   import { useAuthStore } from '~/stores/auth';
   import { useInstanceConfig } from '~/composables/useInstanceConfig';
   import { useFirstRun } from '~/composables/useFirstRun';
   import { useOtpInput } from '~/composables/useOtpInput';
-  import { isAbsoluteRootPath, normalizeRootPath, problemDetail } from '~/utils/library-register';
+  import { registerLibraryRequest, RegisterLibraryError } from '~/composables/useLibraries';
+  import { isAbsoluteRootPath, normalizeRootPath } from '~/utils/library-register';
   import { AUTH_ERROR_CODES } from '~/constants/authErrorCodes';
   import type { StepDef } from '~/components/auth/AuthStepper.vue';
 
@@ -216,22 +214,17 @@
     }
 
     try {
-      const res = await registerLibrary({
-        client,
-        throwOnError: false,
-        body: { name: libraryName.value, rootPath },
-      });
-
-      if (res.error) {
-        // The endpoint is idempotent on rootPath now (auto-grants the
-        // user on existing libraries) so 409 isn't a code path anymore.
-        // Anything else here is a real failure the server described — quote it.
-        step3Error.value = problemDetail(res.error) ?? t('pages.signUp.errorLibraryFailed');
-        return;
-      }
-    } catch {
-      // No problem document to quote: the request never got an answer.
-      step3Error.value = t('pages.signUp.errorLibraryFailed');
+      await registerLibraryRequest({ name: libraryName.value, rootPath });
+    } catch (error) {
+      // The endpoint is idempotent on rootPath (auto-grants the user on an
+      // existing library) — `registerLibraryRequest` already resolves that
+      // case, so anything caught here is a real failure. Quote the server's
+      // own explanation when it sent one; otherwise the request never got an
+      // answer at all.
+      step3Error.value =
+        error instanceof RegisterLibraryError && error.detail
+          ? error.detail
+          : t('pages.signUp.errorLibraryFailed');
       return;
     }
 

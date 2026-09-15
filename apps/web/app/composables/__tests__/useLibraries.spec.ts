@@ -80,8 +80,15 @@ describe('useLibraries().register', () => {
       error: { title: 'Conflict', status: 409, detail: 'A library at this path already exists.' },
       response: { status: 409 },
     });
+    // `registerLibraryRequest`'s 409 branch looks the row up with its own
+    // fresh `listLibraries` call, independent of the composable's cache.
+    mockListLibraries.mockResolvedValueOnce({
+      data: { items: [existing] },
+      error: null,
+      response: { status: 200 },
+    });
 
-    const { register, refresh } = await loadComposable({ items: [existing] });
+    const { register, refresh } = await loadComposable();
 
     await expect(register({ name: 'CS', rootPath: '/srv/cs' })).resolves.toEqual(existing);
     expect(refresh).toHaveBeenCalled();
@@ -133,5 +140,41 @@ describe('useLibraries().register', () => {
     await register({ name: 'CS', rootPath: '/srv/cs' });
 
     expect(registerErrorDetail.value).toBeNull();
+  });
+});
+
+describe('registerLibraryRequest', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+  });
+
+  it('resolves without ever touching listLibraries on a clean create', async () => {
+    const created = { id: 'lib-1', name: 'CS', rootPath: '/srv/cs', createdAt: '', updatedAt: '' };
+    mockRegisterLibrary.mockResolvedValueOnce({
+      data: created,
+      error: null,
+      response: { status: 201 },
+    });
+
+    const { registerLibraryRequest } = await import('../useLibraries');
+    await expect(registerLibraryRequest({ name: 'CS', rootPath: '/srv/cs' })).resolves.toEqual(
+      created,
+    );
+    expect(mockListLibraries).not.toHaveBeenCalled();
+  });
+
+  it('throws RegisterLibraryError carrying the server detail on failure', async () => {
+    mockRegisterLibrary.mockResolvedValueOnce({
+      data: undefined,
+      error: { detail: 'rootPath must be absolute' },
+      response: { status: 400 },
+    });
+
+    const { registerLibraryRequest, RegisterLibraryError } = await import('../useLibraries');
+    const promise = registerLibraryRequest({ name: 'CS', rootPath: 'cs' });
+
+    await expect(promise).rejects.toBeInstanceOf(RegisterLibraryError);
+    await expect(promise).rejects.toThrow('rootPath must be absolute');
   });
 });

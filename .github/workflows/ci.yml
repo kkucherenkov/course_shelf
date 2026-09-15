@@ -52,6 +52,33 @@ jobs:
               - 'packages/specs/**'
               - 'pnpm-lock.yaml'
 
+  # ── PR title is a Conventional Commit ─────────────────────────────────────
+  # A squash merge takes the PR TITLE as the commit subject on main, and
+  # `commitlint` only ever saw local commits through the husky commit-msg
+  # hook. So a PR whose commits were all conventional could still land an
+  # unconventional subject — #560 did, and `cliff.toml` drops what it cannot
+  # parse, which would have left the largest change of that release out of
+  # the notes entirely.
+  #
+  # The title is author-controlled text. It reaches the shell through `env:`,
+  # never through `${{ }}` interpolation inside `run:`, which would let a
+  # title containing shell metacharacters execute as code.
+  pr-title:
+    name: PR title (conventional commit)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-cs
+
+      - name: Lint the PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: printf '%s\n' "$PR_TITLE" | npx --no-install commitlint
+
   # ── Checks (consolidated lint · typecheck · test · specs · ui audit) ──────
   # One job sharing one pnpm install + one design:build + one prisma generate.
   checks:

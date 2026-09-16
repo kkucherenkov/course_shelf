@@ -82,7 +82,7 @@ export const InFormContext: Story = {
         <input
           type="email"
           placeholder="you@example.com"
-          style="padding:6px 10px; border:1px solid var(--error); border-radius:var(--radius-sm); font-size:var(--text-sm);"
+          style="padding:6px 10px; border:1px solid var(--status-error-fg); border-radius:var(--radius-sm); font-size:var(--text-sm);"
         />
         <AppAlert v-bind="args" variant="error" message="Please enter a valid email address." />
       </div>

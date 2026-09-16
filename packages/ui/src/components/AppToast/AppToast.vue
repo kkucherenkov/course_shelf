@@ -60,15 +60,15 @@
     }
 
     &__dot--success {
-      background: var(--success);
+      background: var(--status-success-fg);
     }
 
     &__dot--info {
-      background: var(--info);
+      background: var(--status-info-fg);
     }
 
     &__dot--error {
-      background: var(--error);
+      background: var(--status-error-fg);
     }
 
     &__message {

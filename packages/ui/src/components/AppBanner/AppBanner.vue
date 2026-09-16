@@ -115,27 +115,27 @@
     }
 
     &--info {
-      background: var(--info-soft);
+      background: var(--status-info-soft);
       border-color: transparent;
-      color: var(--info);
+      color: var(--status-info-fg);
     }
 
     &--success {
-      background: var(--success-soft);
+      background: var(--status-success-soft);
       border-color: transparent;
-      color: var(--success);
+      color: var(--status-success-fg);
     }
 
     &--warning {
-      background: var(--warning-soft);
+      background: var(--status-warning-soft);
       border-color: transparent;
-      color: var(--warning);
+      color: var(--status-warning-fg);
     }
 
     &--error {
-      background: var(--error-soft);
+      background: var(--status-error-soft);
       border-color: transparent;
-      color: var(--error);
+      color: var(--status-error-fg);
     }
   }
 </style>

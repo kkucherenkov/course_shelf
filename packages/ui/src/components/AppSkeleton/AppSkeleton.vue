@@ -22,11 +22,9 @@
 
 <style scoped lang="scss">
   // Bundle .skel contract parity.
-  // Token substitutions:
-  //   --skeleton-base   → --skeleton-base   (ships as alias for --surface-skeleton-base)
-  //   --skeleton-shine  → --skeleton-shine  (ships as alias for --surface-skeleton-shine)
-  //   CSS fallback: var(--skeleton-base, var(--surface-overlay)) in case alias not resolved.
-  //   --e-io            → ease-in-out       (bundle uses ease-in-out; --ease-default is cubic-bezier)
+  // CSS fallback: var(--surface-skeleton-base, var(--surface-overlay)) covers browsers/tests
+  // that don't resolve the custom property.
+  //   --e-io → ease-in-out (bundle uses ease-in-out; --ease-default is cubic-bezier)
 
   // Ambient shimmer loop — not an interaction transition, so it sits outside
   // the --dur-* scale (which tops out at 400ms).
@@ -36,9 +34,9 @@
     display: inline-block;
     background: linear-gradient(
       90deg,
-      var(--skeleton-base, var(--surface-overlay)),
-      var(--skeleton-shine, var(--surface-raised)),
-      var(--skeleton-base, var(--surface-overlay))
+      var(--surface-skeleton-base, var(--surface-overlay)),
+      var(--surface-skeleton-shine, var(--surface-raised)),
+      var(--surface-skeleton-base, var(--surface-overlay))
     );
     background-size: 200% 100%;
     animation: app-skeleton-pulse $shimmer-duration ease-in-out infinite; // bundle skel-pulse

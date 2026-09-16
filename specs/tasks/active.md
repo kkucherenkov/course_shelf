@@ -1,5 +1,44 @@
 # Active tasks
 
+## T-2026-09-16-token-vocabulary — stop consuming short design-token aliases; clamp CourseDescription
+
+- Created: 2026-09-16
+- Owner: claude
+- Spec: —
+- Goal: `packages/ui/src` and `apps/web/app` outside `admin/` stop consuming
+  `emit-scss.ts`'s short-name token aliases (`--primary`, `--error`, ...) and
+  reference the canonical DTCG long names directly, so the alias layer can
+  eventually be deleted without redoing this work file-by-file (#654). Second,
+  unrelated fix in the same PR: `CourseDescription.vue` gets a readable
+  measure + line-clamp, and literal `line-height` values in this lane's scope
+  move to `--leading-*` tokens.
+- Spec diff: none (no API/contract change)
+- Codegen impact: no
+- Sub-steps:
+  - [x] Measured real `var(--alias)` consumption in scope (not comments, not
+        BEM modifiers that happen to share a token's English word) — 7 files,
+        25 occurrences, not the ~99 raw-grep figure quoted in the brief (that
+        count included BEM modifier classes like `&--primary`/`&--error` and
+        historical "ships as alias" doc comments, neither of which are actual
+        token consumption)
+  - [x] Replaced all 25 with canonical names: `AppAlert.vue`, `AppBanner.vue`,
+        `AppSkeleton.vue`, `AppToast.vue`, `AppAlert.stories.ts`,
+        `HomeRow.vue`, `forgot.vue`; cleaned the one now-stale alias-mapping
+        comment (`AppSkeleton.vue`)
+  - [x] Left `emit-scss.ts`'s `themedAliasLines()` untouched — admin-dialect
+        lane still depends on it; final removal deferred to maintainer go-ahead
+  - [ ] Clamp + measure `CourseDescription.vue`, replace literal `line-height`
+        with `--leading-*` tokens (this lane's 6+6 occurrences)
+  - [x] `pnpm design:build`, `turbo run lint test typecheck` (18/18 green)
+  - [x] Storybook visual regression, full suite, in the pinned
+        `mcr.microsoft.com/playwright:v1.59.1-jammy` container: 51/51 suites,
+        305/305 snapshots — 0 drift, confirms the swap is pixel-identical
+  - [ ] Measure paragraph width with `measure-type.mjs` methodology pre/post
+  - [ ] Verify clamp on course `IUJgcSn2VoE9cPFTG63Lw` (long description)
+  - [ ] Gates + PR
+- Status: in-progress
+- Blockers: —
+
 ## T-2026-09-16-entity-combobox
 
 **Issue**: Closes #646 — no async multi-select combobox in `@app/ui`; `CourseMetadataForm.vue` uses three raw `USelectMenu` for instructors/studios/tags.

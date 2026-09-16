@@ -86,7 +86,7 @@
     padding: var(--space-3) var(--space-4); // 10px 14px ≈ 12px 16px (closest shipped)
     color: var(--text-secondary); // bundle --text-muted
     font-weight: var(--fw-medium);
-    font-size: var(--text-sm); // 12px — closest to bundle's 14px; text-md=14px
+    font-size: var(--text-md); // 14px, matching the bundle exactly (#696)
     font-family: var(--font-sans);
     background: transparent;
     border: none;

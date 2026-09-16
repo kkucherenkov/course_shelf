@@ -110,15 +110,13 @@
 
     &__tabs {
       flex-shrink: 0;
-      // Tabs row wraps on narrow screens
-      overflow-x: auto;
-      flex-wrap: nowrap;
-      white-space: nowrap;
-      scrollbar-width: none;
-
-      &::-webkit-scrollbar {
-        display: none;
-      }
+      // #696: five tabs (448px) never fit the sidebar at any desktop width
+      // (359px, 279px at 1024px), and a horizontally-scrolling strip with no
+      // affordance hid Transcript entirely — 1952 transcripts, unreachable.
+      // Wrap onto a second row instead: every tab stays visible and directly
+      // clickable at every width, no JS, no overflow menu needed for five
+      // items.
+      flex-wrap: wrap;
     }
 
     &__body {

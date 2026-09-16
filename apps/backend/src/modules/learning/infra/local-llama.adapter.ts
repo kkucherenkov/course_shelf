@@ -25,12 +25,11 @@
  * system prompt, schema and max tokens.
  */
 import { execFile } from 'node:child_process';
-import { unlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
 import { Injectable } from '@nestjs/common';
-import { nanoid } from 'nanoid';
 
 import { AppConfig } from '../../../common/config/app-config';
 import { QuizGenerationFailedError } from '../domain/quiz/quiz.errors';
@@ -212,7 +211,13 @@ export class LocalLlamaAdapter implements LlamaAdapter {
     maxTokens: number,
   ): Promise<string> {
     const cfg = this.appConfig.quizGeneration;
-    const promptFile = path.join(os.tmpdir(), `cs-llama-${nanoid()}.txt`);
+    // mkdtemp, not a computed name under os.tmpdir(): a predictable path
+    // written directly by fs.writeFile is a symlink-race target in a
+    // world-writable directory (flagged by CodeQL). mkdtemp creates the
+    // directory atomically and exclusively, so nothing could have pre-placed
+    // a symlink inside it before this process owns it.
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'cs-llama-'));
+    const promptFile = path.join(dir, 'prompt.txt');
     await writeFile(promptFile, prompt, 'utf8');
 
     const args = [
@@ -244,10 +249,10 @@ export class LocalLlamaAdapter implements LlamaAdapter {
         `llama-completion on "${modelAbsolutePath}" failed: ${detail}`,
       );
     } finally {
-      await unlink(promptFile).catch(() => {
+      await rm(dir, { recursive: true, force: true }).catch(() => {
         // Best-effort — the file lives in the container's temp directory, not
-        // a mounted volume, but a long walk leaking one file per call would
-        // still fill it.
+        // a mounted volume, but a long walk leaking one directory per call
+        // would still fill it.
       });
     }
   }

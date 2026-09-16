@@ -93,7 +93,12 @@ FROM node:24-alpine AS llama
 
 ARG LLAMA_CPP_VERSION=v0.4.1
 
-RUN apk add --no-cache build-base cmake git binutils \
+# linux-headers: llama.cpp's common/arg.cpp includes <linux/limits.h> directly
+# (whisper.cpp's own arg-parsing code never does, which is why stage W never
+# needed this). musl's build-base does not pull in Linux UAPI headers the way
+# glibc-based images do; without it the build fails at that #include, not at
+# runtime — caught by CI the first time this stage actually ran end to end.
+RUN apk add --no-cache build-base cmake git binutils linux-headers \
     && git clone --depth 1 --branch "${LLAMA_CPP_VERSION}" \
         https://github.com/ggml-org/llama.cpp /usr/src/llama.cpp \
     && cmake -S /usr/src/llama.cpp -B /usr/src/llama.cpp/build \

@@ -28,8 +28,9 @@ vi.mock('node:child_process', () => ({
   execFile: vi.fn(),
 }));
 vi.mock('node:fs/promises', () => ({
+  mkdtemp: vi.fn().mockResolvedValue('/tmp/cs-llama-XXXXXX'),
   writeFile: vi.fn().mockResolvedValue(undefined),
-  unlink: vi.fn().mockResolvedValue(undefined),
+  rm: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Imported AFTER the mock declarations so the bindings resolve to the mocks.

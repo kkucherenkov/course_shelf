@@ -14,9 +14,18 @@ describe('AppEmptyState', () => {
     expect(wrapper.find('.app-empty-state__title').text()).toBe('No courses yet');
   });
 
-  it('renders title in an <h3>', () => {
+  it('renders title in an <h2> by default (#631 — no more hardcoded h3)', () => {
     const wrapper = mount(AppEmptyState, { props: { title: 'Empty library' } });
-    expect(wrapper.find('h3').exists()).toBe(true);
+    expect(wrapper.find('h2').exists()).toBe(true);
+    expect(wrapper.find('h3').exists()).toBe(false);
+  });
+
+  it('renders title at a caller-supplied headingLevel', () => {
+    const wrapper = mount(AppEmptyState, {
+      props: { title: 'Empty library', headingLevel: 4 },
+    });
+    expect(wrapper.find('h4').exists()).toBe(true);
+    expect(wrapper.find('h2').exists()).toBe(false);
   });
 
   it('renders body text when body prop is provided', () => {

@@ -53,6 +53,7 @@ const meta: Meta<typeof AppNavigationShell> = {
     searchPlaceholder: 'Search courses, lessons…',
     sidebarLabel: 'Sidebar',
     rightRailLabel: 'Secondary content',
+    userMenuLabel: 'User menu',
   },
 };
 

@@ -37,6 +37,13 @@ export const WithLoginAction: Story = {
   }),
 };
 
+export const NestedHeadingLevel: Story = {
+  args: {
+    title: 'This section is restricted',
+    headingLevel: 3,
+  },
+};
+
 export const ShieldVariant: Story = {
   args: {
     icon: 'shield',

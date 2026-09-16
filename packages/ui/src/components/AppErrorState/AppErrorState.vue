@@ -6,8 +6,11 @@
       icon?: IconName;
       title: string;
       body?: string;
+      /** Heading level for `title` (#631) — see AppEmptyState for why this
+       * isn't hardcoded. */
+      headingLevel?: 2 | 3 | 4 | 5 | 6;
     }>(),
-    { icon: 'alert', body: undefined },
+    { icon: 'alert', body: undefined, headingLevel: 2 },
   );
 </script>
 
@@ -16,9 +19,9 @@
     <slot name="illustration">
       <IconCS :name="icon" :size="40" class="app-error-state__icon" aria-hidden="true" />
     </slot>
-    <h3 class="app-error-state__title">
+    <component :is="`h${headingLevel}`" class="app-error-state__title">
       {{ title }}
-    </h3>
+    </component>
     <p v-if="body || $slots['body']" class="app-error-state__body">
       <slot name="body">
         {{ body }}

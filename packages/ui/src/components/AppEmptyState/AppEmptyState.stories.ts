@@ -44,6 +44,13 @@ export const NoBody: Story = {
   },
 };
 
+export const NestedHeadingLevel: Story = {
+  args: {
+    title: 'No results in this section',
+    headingLevel: 3,
+  },
+};
+
 export const CustomIllustration: Story = {
   render: (args) => ({
     components: { AppEmptyState },

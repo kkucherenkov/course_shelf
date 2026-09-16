@@ -37,6 +37,13 @@ export const WithRetryAction: Story = {
   }),
 };
 
+export const NestedHeadingLevel: Story = {
+  args: {
+    title: 'Failed to load this section',
+    headingLevel: 3,
+  },
+};
+
 export const NetworkError: Story = {
   args: {
     icon: 'wifi-off',

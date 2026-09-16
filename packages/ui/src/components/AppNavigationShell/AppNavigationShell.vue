@@ -56,7 +56,16 @@
       /** Landmark and menu names; override to translate. */
       primaryNavLabel?: string;
       adminNavLabel?: string;
-      userMenuLabel?: string;
+      /**
+       * Accessible name for the avatar-menu `role="menu"` popover, also used
+       * as the desktop avatar-trigger button's `aria-label` (#630): the
+       * button renders only an avatar image/initials, with no text a screen
+       * reader can read as its name. Required, not defaulted, for the same
+       * reason as `sidebarLabel`/`rightRailLabel` above — an English default
+       * would let a forgotten translation ship silently instead of failing
+       * at the type/prop-validation level.
+       */
+      userMenuLabel: string;
       bottomNavLabel?: string;
       /**
        * The shell renders two <aside> landmarks (the sidebar and the optional
@@ -114,7 +123,6 @@
       brandMark: 'CS',
       primaryNavLabel: 'Primary navigation',
       adminNavLabel: 'Admin navigation',
-      userMenuLabel: 'User menu',
       bottomNavLabel: 'Bottom navigation',
       adminLabel: 'Admin',
       moreLabel: 'More',
@@ -419,6 +427,7 @@
             class="app-navigation-shell__avatar-trigger"
             aria-haspopup="menu"
             :aria-expanded="menuOpen ? 'true' : 'false'"
+            :aria-label="userMenuLabel"
             @click="toggleMenu"
           >
             <AppAvatar

@@ -6,8 +6,16 @@
       icon?: IconName;
       title: string;
       body?: string;
+      /**
+       * Heading level for `title` (#631). This component has no idea where
+       * it's mounted, so it cannot know what level follows the page's own
+       * `h1` — a hardcoded `h3` produced an `h1 → h3` skip on every page
+       * that renders this state directly under its heading. `2` matches
+       * that common case; a page nesting this deeper passes the real level.
+       */
+      headingLevel?: 2 | 3 | 4 | 5 | 6;
     }>(),
-    { icon: 'folder', body: undefined },
+    { icon: 'folder', body: undefined, headingLevel: 2 },
   );
 </script>
 
@@ -16,9 +24,9 @@
     <slot name="illustration">
       <IconCS :name="icon" :size="40" class="app-empty-state__icon" aria-hidden="true" />
     </slot>
-    <h3 class="app-empty-state__title">
+    <component :is="`h${headingLevel}`" class="app-empty-state__title">
       {{ title }}
-    </h3>
+    </component>
     <p v-if="body || $slots['body']" class="app-empty-state__body">
       <slot name="body">
         {{ body }}

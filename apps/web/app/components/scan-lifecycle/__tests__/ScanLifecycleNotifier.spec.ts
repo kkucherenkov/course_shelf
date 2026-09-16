@@ -72,6 +72,27 @@ vi.mock('#imports', () => ({
 import ScanLifecycleNotifier from '../../ScanLifecycleNotifier.vue';
 import { useScanLifecycleStore } from '~/stores/scanLifecycle';
 
+// Starts MAX_VISIBLE (3) more-recent scans so a scan under test gets pushed
+// off the panel — used by the two toast-plural tests below, which need a
+// finished scan the panel does NOT show, since a visible one is never
+// toasted (see "does not toast a finished scan the panel already shows").
+function startOverflowScans(store: ReturnType<typeof useScanLifecycleStore>): void {
+  const base = Date.now();
+  for (const [id, offset] of [
+    ['scan-newer-1', 3000],
+    ['scan-newer-2', 2000],
+    ['scan-newer-3', 1000],
+  ] as const) {
+    store.applyEvent({
+      kind: 'started',
+      scanId: id,
+      libraryId: 'lib-other',
+      libraryName: 'Other Library',
+      at: new Date(base + offset).toISOString(),
+    });
+  }
+}
+
 describe('ScanLifecycleNotifier', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -242,7 +263,7 @@ describe('ScanLifecycleNotifier', () => {
     expect(card.attributes('data-status')).toBe('success');
   });
 
-  it('passes the real error count as the plural index on the failed toast (#621)', async () => {
+  it('does not toast a finished scan the panel already shows (#667)', async () => {
     const store = useScanLifecycleStore();
 
     // The toast-on-finish watcher only fires on a *change* to `store.active`
@@ -258,6 +279,39 @@ describe('ScanLifecycleNotifier', () => {
       libraryName: 'CS Library',
       at: new Date().toISOString(),
     });
+    await wrapper.vm.$nextTick();
+    store.applyEvent({
+      kind: 'finished',
+      scanId: 'scan-1',
+      libraryId: 'lib-1',
+      libraryName: 'CS Library',
+      at: new Date().toISOString(),
+      status: 'succeeded',
+      filesScanned: 100,
+      filesAdded: 20,
+      coursesDiscovered: 5,
+      errorsCount: 0,
+    });
+    await wrapper.vm.$nextTick();
+
+    // The panel already renders this card's outcome inline — the finish
+    // toast would just say the same thing again in the same corner.
+    expect(wrapper.find('.stub-app-scan-progress').exists()).toBe(true);
+    expect(toastAddSpy).not.toHaveBeenCalled();
+  });
+
+  it('passes the real error count as the plural index on the failed toast (#621)', async () => {
+    const store = useScanLifecycleStore();
+
+    const wrapper = mount(ScanLifecycleNotifier);
+    store.applyEvent({
+      kind: 'started',
+      scanId: 'scan-1',
+      libraryId: 'lib-1',
+      libraryName: 'CS Library',
+      at: new Date(Date.now() - 4000).toISOString(),
+    });
+    startOverflowScans(store);
     await wrapper.vm.$nextTick();
     store.applyEvent({
       kind: 'finished',
@@ -287,8 +341,9 @@ describe('ScanLifecycleNotifier', () => {
       scanId: 'scan-1',
       libraryId: 'lib-1',
       libraryName: 'CS Library',
-      at: new Date().toISOString(),
+      at: new Date(Date.now() - 4000).toISOString(),
     });
+    startOverflowScans(store);
     await wrapper.vm.$nextTick();
     store.applyEvent({
       kind: 'finished',

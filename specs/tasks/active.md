@@ -46,7 +46,20 @@
         lane's file) — screens don't contradict. `audit-admin@example.com`:
         unaffected, still 3 rows + rail + posters. Reverted the stand's
         `web` image back to `audit6` for the other lanes
-- Status: in-progress (PR not yet opened)
+  - [x] PR #670 opened; CI Playwright caught a real gap —
+        `tests/e2e/home.spec.ts` never mocked `/api/v1/libraries`, so a
+        non-admin fell through to `hasLibraryAccess === false` against a
+        fixture that also mocked non-empty content rows — a persona that
+        can't exist for real (content with zero grants). Added a
+        one-library fixture (existing tests keep the "has access" persona
+        they were written for, renamed the 1440px test to say so) and a
+        second, genuinely new test for the zero-grants case, confirmed to
+        fail against `main`'s `index.vue` before checking it back to this
+        branch's. Ran the full local `pnpm e2e` (backend not started — all
+        calls in scope are route-mocked): 34/34 relevant tests green, the
+        one `smoke.spec.ts` backend-health failure is the missing backend,
+        not this change
+- Status: in-progress — PR #670 open, pushing the e2e fixture fix
 - Blockers: —
 
 ## T-2026-09-16-token-vocabulary — stop consuming short design-token aliases; clamp CourseDescription

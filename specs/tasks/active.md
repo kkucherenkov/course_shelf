@@ -41,7 +41,7 @@
         Libraries trap), admin dashboard's Libraries card reads
         "0 courses · 0 lessons" (not the raw key), admin sidebar has exactly
         one library-management entry
-- Status: in-progress — opening PR
+- Status: in-progress — PR #625 open
 - Blockers: —
 
 Reported to maintainer, not fixed here (owned by other lanes / not mine):

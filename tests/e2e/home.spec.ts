@@ -258,4 +258,21 @@ test.describe('home page — 375x800', () => {
       await expect(bottomTabs).toBeVisible();
     }
   });
+
+  // #616: AppNavigationShell's mobile single-column grid track was sized to
+  // the topbar's un-shrunk min-content instead of the viewport, pushing the
+  // whole document 4px wider than 375px and letting it drift sideways on
+  // scroll. Every page rendered through the shell inherited this.
+  test('document never scrolls horizontally', async ({ page }) => {
+    await gotoHome(page);
+
+    await expect(page.locator('.page-home')).toBeVisible({ timeout: 10_000 });
+
+    const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+  });
 });

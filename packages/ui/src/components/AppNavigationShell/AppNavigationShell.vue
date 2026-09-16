@@ -709,6 +709,19 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
+      // A grid item's automatic min-width defaults to its content's
+      // min-content size (here: the topbar's fixed-width controls plus the
+      // search field's floor) rather than 0. At the single-column mobile
+      // breakpoint that min-content (~385px) is wider than a 375px phone,
+      // so the "1fr" track grew to fit it and blew the whole document out
+      // to the right by the difference (#616) — inner overflow:auto on
+      // `&__main`/`&__main-body` never gets a say, because this item sits
+      // one level higher, still `overflow: visible`. `min-width: 0` opts
+      // this item out of that automatic minimum, letting the track (and
+      // everything in it) clamp to the real available width; the topbar's
+      // own flex children still shrink to fit inside it (search flows down
+      // to its own min-content) rather than being clipped.
+      min-width: 0;
     }
 
     // ── Top bar ───────────────────────────────────────────────────────────

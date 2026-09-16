@@ -253,6 +253,11 @@ export default {
         posterUrl: 'https://…',
         entitySearch: 'Поиск…',
       },
+      entitySearch: {
+        loading: 'Загрузка…',
+        noResults: 'Ничего не найдено',
+        remove: 'Убрать {name}',
+      },
       help: {
         slug: 'Только строчные латинские буквы, цифры и дефисы.',
         language: 'Тег BCP-47, например en или en-US.',

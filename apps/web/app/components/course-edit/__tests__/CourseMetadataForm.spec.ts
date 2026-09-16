@@ -16,8 +16,14 @@ import CourseMetadataForm from '../CourseMetadataForm.vue';
 vi.stubGlobal('useI18n', () => ({ t: (key: string) => key }));
 
 // ── Child composables the form pulls in ───────────────────────────────────
+// One fixture entity per picker — enough for the AppComboBox stub below to
+// render a clickable option without wiring a real search.
 vi.mock('~/composables/useEntitySearch', () => ({
-  useEntitySearch: () => ({ searchTerm: ref(''), items: ref([]), loading: ref(false) }),
+  useEntitySearch: () => ({
+    searchTerm: ref(''),
+    items: ref([{ id: 'ent-1', displayName: 'Ada Lovelace' }]),
+    loading: ref(false),
+  }),
   fetchInstructorOptions: vi.fn(),
   fetchStudioOptions: vi.fn(),
   fetchTagOptions: vi.fn(),
@@ -53,6 +59,14 @@ vi.mock('@app/ui', () => ({
     emits: ['update:modelValue'],
     template:
       '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="o in options" :key="o.id" :value="o.id">{{ o.label }}</option></select>',
+  },
+  AppComboBox: {
+    name: 'AppComboBox',
+    props: ['modelValue', 'items', 'searchTerm', 'loading', 'disabled', 'placeholder'],
+    emits: ['update:modelValue', 'update:searchTerm'],
+    // Minimal stand-in: one button per item toggles it in/out of modelValue.
+    template:
+      '<div><input :placeholder="placeholder" @input="$emit(\'update:searchTerm\', $event.target.value)" /><button v-for="i in items" :key="i.id" type="button" @click="$emit(\'update:modelValue\', modelValue.includes(i.id) ? modelValue.filter((x) => x !== i.id) : [...modelValue, i.id])">{{ i.label }}</button></div>',
   },
   AppNumberField: {
     name: 'AppNumberField',
@@ -125,6 +139,17 @@ describe('CourseMetadataForm', () => {
     const submitted = wrapper.emitted('submit');
     expect(submitted).toHaveLength(1);
     expect(submitted?.[0]?.[0]).toEqual({ title: 'New Title' });
+  });
+
+  it('sends a picked instructor id, mapped from the entity search result', async () => {
+    const wrapper = mountForm();
+
+    const instructorPicker = wrapper.findAllComponents({ name: 'AppComboBox' })[0]!;
+    await instructorPicker.find('button').trigger('click');
+    await wrapper.find('form').trigger('submit');
+
+    const submitted = wrapper.emitted('submit');
+    expect(submitted?.[0]?.[0]).toEqual({ instructorIds: ['ent-1'] });
   });
 
   it('emits cancel when the Cancel button is clicked', async () => {

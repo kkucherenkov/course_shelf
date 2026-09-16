@@ -127,6 +127,7 @@ export class FlashcardsController {
 
   /** POST /api/v1/flashcards/:id/grade */
   @Post('flashcards/:id/grade')
+  @HttpCode(HttpStatus.OK)
   async gradeFlashcard(
     @Param('id') id: string,
     @Body() body: GradeFlashcardRequest,

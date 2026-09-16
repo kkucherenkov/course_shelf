@@ -4,7 +4,7 @@
   // expressions during `nuxt typecheck`, and `navigateTo` is called from the
   // template below. Same `#imports` idiom as `stores/auth.ts`.
   import { navigateTo } from '#imports';
-  import { AppBanner, AppEmptyState, IconCS } from '@app/ui';
+  import { AppBanner, AppButton, AppEmptyState, IconCS } from '@app/ui';
   import AdminUserRow from '~/components/admin/AdminUserRow.vue';
   import { useAdminUsers } from '~/composables/useAdminUsers';
 
@@ -79,9 +79,12 @@
       class="adm-perm-picker__error-banner"
     >
       <template #actions>
-        <UButton size="sm" variant="outline" color="error" @click="refetch()">
-          {{ t('pages.admin.permissions.errorRetry') }}
-        </UButton>
+        <AppButton
+          size="sm"
+          variant="secondary"
+          :label="t('pages.admin.permissions.errorRetry')"
+          @click="refetch()"
+        />
       </template>
     </AppBanner>
 
@@ -104,9 +107,12 @@
       :title="t('pages.admin.users.emptyNoMatch')"
     >
       <template #action>
-        <UButton variant="outline" size="sm" @click="clearSearch">
-          {{ t('pages.admin.users.emptyClearSearch') }}
-        </UButton>
+        <AppButton
+          variant="secondary"
+          size="sm"
+          :label="t('pages.admin.users.emptyClearSearch')"
+          @click="clearSearch"
+        />
       </template>
     </AppEmptyState>
 

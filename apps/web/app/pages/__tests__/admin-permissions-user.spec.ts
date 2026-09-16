@@ -108,6 +108,13 @@ vi.mock('@app/api-client-ts', () => ({
 // ── @app/ui + row stubs ──────────────────────────────────────────────────────
 vi.mock('@app/ui', () => ({
   AppBanner: { name: 'AppBanner', props: ['variant', 'body'], template: '<div />' },
+  AppButton: {
+    name: 'AppButton',
+    props: ['label', 'variant', 'size'],
+    emits: ['click'],
+    template:
+      '<button class="stub-appbutton" @click="$emit(\'click\')">{{ label }}<slot /></button>',
+  },
   AppDialog: {
     name: 'AppDialog',
     props: ['open', 'size', 'title', 'description'],
@@ -127,15 +134,9 @@ vi.mock('~/components/admin/AdminPermissionRow.vue', () => ({
   },
 }));
 
-const UButtonStub = {
-  name: 'UButton',
-  emits: ['click'],
-  template: '<button class="stub-ubutton" @click="$emit(\'click\')"><slot /></button>',
-};
-
 async function mountPage(): Promise<VueWrapper> {
   const mod = await import('../admin/permissions/[userId].vue');
-  const wrapper = mount(mod.default, { global: { stubs: { UButton: UButtonStub } } });
+  const wrapper = mount(mod.default);
   await flushPromises();
   return wrapper;
 }
@@ -179,7 +180,7 @@ describe('admin permissions user page', () => {
   it('labels the not-found and header buttons for the navigation they perform', async () => {
     const wrapper = await mountPage();
 
-    const buttons = wrapper.findAll('.stub-ubutton');
+    const buttons = wrapper.findAll('.stub-appbutton');
     const backButton = buttons.find((b) => b.text() === 'pages.admin.permissions.backToUsersCta');
     expect(backButton).toBeTruthy();
     expect(buttons.some((b) => b.text() === 'pages.admin.permissions.addGrantCta')).toBe(false);

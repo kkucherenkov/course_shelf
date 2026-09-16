@@ -58,21 +58,20 @@ vi.mock('~/composables/useAdminScans', () => ({
   }),
 }));
 
-// ── @app/ui + Nuxt UI + child component stubs ───────────────────────────────
+// ── @app/ui + child component stubs ─────────────────────────────────────────
 vi.mock('@app/ui', () => ({
   AppBanner: {
     name: 'AppBanner',
     props: ['variant', 'title', 'body'],
     template: '<div class="stub-banner">{{ title }} {{ body }}<slot name="actions" /></div>',
   },
+  AppButton: {
+    name: 'AppButton',
+    props: ['label', 'variant', 'size'],
+    emits: ['click'],
+    template: '<button @click="$emit(\'click\')">{{ label }}<slot /></button>',
+  },
 }));
-
-const UButtonStub = {
-  name: 'UButton',
-  props: ['size', 'variant', 'color'],
-  emits: ['click'],
-  template: '<button @click="$emit(\'click\')"><slot /></button>',
-};
 
 // Neither child is this page's logic under test (AdminStatCard is a plain
 // presenter; AdminScansTable belongs to the scan-surface lane) — thin stubs
@@ -95,7 +94,7 @@ vi.mock('~/components/admin/AdminScansTable.vue', () => ({
 
 async function mountPage(): Promise<VueWrapper> {
   const mod = await import('../admin/index.vue');
-  return mount(mod.default, { global: { stubs: { UButton: UButtonStub } } });
+  return mount(mod.default);
 }
 
 const DASH: AdminDashboardDto = {

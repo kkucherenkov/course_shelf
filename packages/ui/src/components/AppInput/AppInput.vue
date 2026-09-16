@@ -143,10 +143,14 @@
   }
 
   // Compact density — bundle spec ([data-density="compact"] .input) drops md to 30px.
-  // The selector must pierce the scoped boundary so we address the host element
-  // via :deep() — but since this is a single native <input> root there is no
-  // child pierce needed; we address our own scoped class via a global ancestor.
-  :global([data-density='compact']) .app-input--md {
+  // `data-density` lives on <html>, outside this component's scope, so the
+  // selector needs :global(). #622: it must wrap the *whole* selector,
+  // ancestor and descendant together — `:global(sel) .foo` (global ancestor,
+  // scoped descendant) compiles, but the SFC scoped-CSS transform drops
+  // everything after `:global(...)` from the emitted rule, collapsing this
+  // to a bare `[data-density=compact]{...}` that lands on <html> instead of
+  // the input. Verified via `pnpm --filter @app/ui build` + dist/index.css.
+  :global([data-density='compact'] .app-input--md) {
     height: $input-height-md-compact;
     min-height: $input-height-md-compact;
   }

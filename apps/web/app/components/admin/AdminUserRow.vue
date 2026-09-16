@@ -9,7 +9,10 @@
   import AdminRoleChip from './AdminRoleChip.vue';
   import { avatarBgFromId } from '~/utils/avatar-color';
 
-  const props = defineProps<Props>();
+  const props = withDefaults(defineProps<Props>(), {
+    rolesEditable: true,
+    roleReadOnlyTooltip: undefined,
+  });
 
   const emit = defineEmits<{
     /** Fired when the role/banned state should be changed. */
@@ -20,15 +23,23 @@
     more: [];
   }>();
 
+  const { locale } = useI18n();
+
   interface Props {
     user: AdminUserListItem;
     isSelf: boolean;
+    // When false, the role chip never opens a menu regardless of `isSelf`
+    // (e.g. the permissions picker, where roles are changed on /admin/users).
+    rolesEditable?: boolean;
     // Pre-translated strings
     labelAdmin: string;
     labelUser: string;
     labelGuest: string;
     labelDisabled: string;
     roleChangeYourselfTooltip: string;
+    // Shown instead of `roleChangeYourselfTooltip` when the chip is
+    // read-only because of `rolesEditable`, not because of `isSelf`.
+    roleReadOnlyTooltip?: string;
     editAriaLabel: string;
     moreAriaLabel: string;
   }
@@ -46,9 +57,16 @@
 
   const avatarBg = computed<string>(() => avatarBgFromId(props.user.id));
 
+  const chipEditable = computed<boolean>(() => !props.isSelf && props.rolesEditable);
+
+  const chipTooltip = computed<string | undefined>(() => {
+    if (props.isSelf) return props.roleChangeYourselfTooltip;
+    return props.rolesEditable ? undefined : props.roleReadOnlyTooltip;
+  });
+
   function formatJoined(isoString: string): string {
     const d = new Date(isoString);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return d.toLocaleDateString(locale.value, { month: 'short', day: 'numeric' });
   }
 
   function onRoleChange(patch: AdminUpdateUserRequest): void {
@@ -76,12 +94,12 @@
       <AdminRoleChip
         :role="user.role"
         :banned="user.banned"
-        :editable="!isSelf"
+        :editable="chipEditable"
         :label-admin="labelAdmin"
         :label-user="labelUser"
         :label-guest="labelGuest"
         :label-disabled="labelDisabled"
-        :tooltip-self="roleChangeYourselfTooltip"
+        :tooltip-self="chipTooltip"
         @change="onRoleChange"
       />
     </div>

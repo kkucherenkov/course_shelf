@@ -11,6 +11,7 @@
   definePageMeta({ middleware: 'admin' });
 
   const { t } = useI18n();
+  const toast = useToast();
 
   const pageTitle = computed(() => t('pages.admin.permissions.pickerTitle'));
   provide('adminPageTitle', pageTitle);
@@ -30,6 +31,10 @@
   function clearSearch(): void {
     searchInput.value = '';
     search.value = '';
+  }
+
+  function handleMoreClick(): void {
+    toast.add({ title: t('pages.admin.users.moreComingSoon') });
   }
 
   // ── Data ───────────────────────────────────────────────────────────────────
@@ -124,11 +129,12 @@
         :label-guest="t('pages.admin.users.roleGuest')"
         :label-disabled="t('pages.admin.users.roleDisabled')"
         :role-change-yourself-tooltip="t('pages.admin.users.roleChangeYourselfTooltip')"
-        :edit-aria-label="t('pages.admin.permissions.addGrantCta')"
+        :roles-editable="false"
+        :role-read-only-tooltip="t('pages.admin.permissions.roleChipReadOnlyTooltip')"
+        :edit-aria-label="t('pages.admin.users.editPermissions')"
         :more-aria-label="t('pages.admin.users.moreComingSoon')"
         @edit="navigateTo(`/admin/permissions/${user.id}`)"
-        @more="() => {}"
-        @role-change="() => {}"
+        @more="handleMoreClick"
       />
     </div>
   </div>

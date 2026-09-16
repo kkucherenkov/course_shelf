@@ -63,8 +63,9 @@
         (`clientHeight: 117px` = 6 × 19.5px), toggle appears
         ("Показать полностью"), click removes the clamp and shows all 4734
         characters, label flips to "Свернуть" — screenshotted both states
-  - [ ] Gates + PR
-- Status: in-progress
+  - [x] Gates + PR
+- Status: in-progress (PR open, awaiting review/merge; final
+  `themedAliasLines()` removal deferred to maintainer go-ahead)
 - Blockers: —
 
 ## T-2026-09-16-entity-combobox

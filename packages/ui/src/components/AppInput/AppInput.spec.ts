@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import { h, type Component } from 'vue';
@@ -138,5 +140,28 @@ describe('AppInput', () => {
   it('has a focus-visible class that resolves to the app-input block', () => {
     const wrapper = mount(AppInput, { props: { modelValue: '' } });
     expect(wrapper.classes()).toContain('app-input');
+  });
+
+  // Regression guard for #622: `:global(sel)` followed by a descendant
+  // combinator to a scoped class (`:global([data-density='compact']) .foo`)
+  // compiles, but the Vue SFC compiler drops everything after `:global(...)`
+  // from the emitted rule — verified by building the package and inspecting
+  // dist/index.css, which showed a bare `[data-density=compact]{height:30px}`
+  // landing on `<html>` instead of `.app-input--md`. Wrapping the *whole*
+  // selector in `:global(...)` keeps the descendant.
+  // ponytail: source-pattern guard, not a compiled-CSS check — pulling in
+  // `@vue/compiler-sfc` (indirect via @vitejs/plugin-vue, not a direct
+  // dependency here) to compile SCSS→CSS→scoped-CSS just for this one rule
+  // isn't worth a new dependency. Re-verify with
+  // `pnpm --filter @app/ui build && grep data-density dist/index.css` if
+  // this selector ever moves again.
+  it('keeps the compact-density selector fully inside :global(), not split by a combinator', () => {
+    const source = readFileSync(path.join(import.meta.dirname, 'AppInput.vue'), 'utf8');
+    const style = source.slice(source.indexOf('<style'), source.lastIndexOf('</style>'));
+    // Strip `//` comments first — the rule's own doc comment describes the
+    // broken pattern in prose, which would otherwise trip this guard too.
+    const rules = style.replaceAll(/\/\/.*$/gm, '');
+    expect(rules).toContain(":global([data-density='compact'] .app-input--md)");
+    expect(rules).not.toMatch(/:global\([^)]*\)\s+\./);
   });
 });

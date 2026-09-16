@@ -158,7 +158,7 @@
       font-weight: var(--fw-bold);
       color: var(--media-fg-secondary);
       letter-spacing: var(--tracking-wide);
-      line-height: 1;
+      line-height: var(--leading-none);
       pointer-events: none;
       user-select: none;
     }

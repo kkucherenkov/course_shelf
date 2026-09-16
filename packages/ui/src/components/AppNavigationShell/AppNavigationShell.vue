@@ -1002,7 +1002,9 @@
 
     &__tab-label {
       font-size: $tab-label-size;
-      line-height: 1.2;
+      // Nearest token to the bundle's 1.2 — 0.05 off at this font size is
+      // sub-pixel.
+      line-height: var(--leading-tight);
     }
   }
 

@@ -214,7 +214,7 @@
       border-radius: var(--radius-sm);
       color: var(--text-secondary);
       font-size: var(--text-base);
-      line-height: 1;
+      line-height: var(--leading-none);
       cursor: pointer;
       transition: background var(--dur-fast);
 

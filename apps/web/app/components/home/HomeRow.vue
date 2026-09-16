@@ -191,7 +191,7 @@
       display: inline-block;
       transition: transform var(--dur-fast) var(--ease-default);
       font-size: var(--text-sm);
-      line-height: 1;
+      line-height: var(--leading-none);
 
       &--open {
         transform: rotate(180deg);

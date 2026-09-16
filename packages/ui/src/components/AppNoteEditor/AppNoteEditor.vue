@@ -478,6 +478,11 @@
       padding: var(--space-3);
       min-height: $body-min-height;
       font-size: var(--text-sm);
+      // Deliberately NOT --leading-relaxed: this is a fixed-height preview
+      // box, not flowing body copy. Swapping to the 1.625 token (19.5px)
+      // measurably reflows multi-line notes — visual-regression caught a
+      // 10px height change and clipped content in the AppNoteEditor
+      // stories. Stays a literal pixel value tied to $body-min-height.
       line-height: 20px;
       color: var(--text-fg);
 

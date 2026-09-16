@@ -45,7 +45,7 @@
     padding: var(--space-3);
 
     &__empty {
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
       padding: var(--space-4) 0;
       text-align: center;
@@ -90,7 +90,7 @@
     &__kind {
       flex-shrink: 0;
       font-family: var(--font-mono);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
       background: var(--surface-raised);
       border-radius: var(--radius-sm);
@@ -112,7 +112,7 @@
     &__label {
       flex: 1 1 auto;
       min-width: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       color: var(--text-fg);
       overflow: hidden;
       text-overflow: ellipsis;
@@ -122,7 +122,7 @@
     &__size {
       flex-shrink: 0;
       font-family: var(--font-mono);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-tertiary);
     }
   }

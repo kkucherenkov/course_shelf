@@ -71,7 +71,7 @@
 
     &__title {
       margin: 0;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       font-weight: var(--fw-semibold);
       color: var(--text-secondary);
       text-transform: uppercase;
@@ -79,7 +79,7 @@
     }
 
     &__count {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
       font-variant-numeric: tabular-nums;
     }
@@ -130,7 +130,7 @@
 
     &__breadcrumb {
       margin: 0;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
       white-space: nowrap;
       overflow: hidden;
@@ -139,7 +139,7 @@
 
     &__text {
       margin: var(--space-1) 0 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       font-style: italic;
       color: var(--text-fg);
       white-space: nowrap;

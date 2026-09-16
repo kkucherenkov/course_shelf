@@ -129,7 +129,7 @@
 
     &__empty {
       margin: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
     }
 
@@ -148,7 +148,7 @@
     &__caption {
       margin: 0;
       padding: 0 var(--space-2);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       font-weight: var(--fw-semibold);
       color: var(--text-secondary);
       text-transform: uppercase;
@@ -194,7 +194,7 @@
     }
 
     &__item-label {
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       color: var(--text-fg);
       overflow: hidden;
       text-overflow: ellipsis;
@@ -202,7 +202,7 @@
     }
 
     &__item-size {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
       font-variant-numeric: tabular-nums;
     }

@@ -73,7 +73,7 @@
 
     &__empty,
     &__no-match {
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
       padding: var(--space-4) 0;
       text-align: center;
@@ -147,7 +147,7 @@
 
     &__text {
       flex: 1 1 auto;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-fg);
     }
   }

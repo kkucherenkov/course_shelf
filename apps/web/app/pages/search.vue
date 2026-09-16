@@ -270,7 +270,7 @@
 
     &__group-title {
       margin: 0;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       font-weight: var(--fw-semibold);
       color: var(--text-secondary);
       text-transform: uppercase;
@@ -278,7 +278,7 @@
     }
 
     &__group-count {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
       font-variant-numeric: tabular-nums;
     }
@@ -353,7 +353,7 @@
 
     &__item-breadcrumb {
       margin: 0;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
       white-space: nowrap;
       overflow: hidden;
@@ -362,7 +362,7 @@
 
     &__item-title {
       margin: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       font-weight: var(--fw-medium);
       color: var(--text-fg);
       white-space: nowrap;
@@ -372,7 +372,7 @@
 
     &__item-context {
       margin: 0;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
     }
 

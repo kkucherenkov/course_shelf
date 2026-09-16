@@ -22,6 +22,7 @@
 </script>
 
 <template>
-  <!-- Redirect in watchEffect; nothing to render. -->
-  <div />
+  <!-- Redirect in watchEffect; nothing to render. `<main>` for the one frame
+       this is on screen before navigateTo() lands (#590). -->
+  <main />
 </template>

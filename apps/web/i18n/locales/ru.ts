@@ -450,6 +450,7 @@ export default {
     admin: {
       navDashboard: 'Дашборд',
       navLibraries: 'Библиотеки',
+      navLibrariesManage: 'Управление библиотеками',
       navUsers: 'Пользователи',
       navPermissions: 'Права доступа',
       navIdentifyTasks: 'Задачи идентификации',
@@ -893,6 +894,11 @@ export default {
       roleUser: 'Пользователь',
       roleAdmin: 'Администратор',
       roleGuest: 'Гость',
+    },
+    commandPalette: {
+      title: 'Палитра команд',
+      placeholder: 'Введите команду…',
+      empty: 'Нет подходящих команд.',
     },
     noteEditor: {
       syncing: 'Синхронизация…',

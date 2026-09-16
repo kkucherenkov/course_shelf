@@ -74,6 +74,17 @@ describe('AppCommandPalette', () => {
     expect(wrapper.find('.app-command-palette__empty').text()).toBe('No commands match.');
   });
 
+  it('uses the caller-supplied `emptyLabel` over the English default', async () => {
+    const wrapper = mount(AppCommandPalette, {
+      global,
+      props: { open: true, commands: COMMANDS, emptyLabel: 'Нет подходящих команд.' },
+    });
+
+    await wrapper.find('.app-command-palette__input').setValue('zzzznotfound');
+
+    expect(wrapper.find('.app-command-palette__empty').text()).toBe('Нет подходящих команд.');
+  });
+
   it('ArrowDown advances activeIndex — next item gets --active class', async () => {
     const wrapper = mount(AppCommandPalette, {
       global,

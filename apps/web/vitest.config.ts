@@ -23,6 +23,7 @@ export default defineConfig({
     globals: true,
     include: [
       'tests/unit/**/*.spec.ts',
+      'app/__tests__/**/*.spec.ts',
       'app/pages/__tests__/**/*.spec.ts',
       'app/layouts/__tests__/**/*.spec.ts',
       'app/stores/**/*.spec.ts',

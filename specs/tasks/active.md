@@ -18,7 +18,7 @@
         read path, one coherent model
   - [x] #698 — 404 for a missing subtitle file, both `.vtt` and `.srt` forms,
         fixed in `lesson-file-locator.ts`
-  - [ ] #699 — spec-first: new scan status for "completed with errors"
+  - [x] #699 — spec-first: new scan status for "completed with errors"
 - Status: in-progress
 - Blockers: —
 

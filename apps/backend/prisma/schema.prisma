@@ -98,6 +98,7 @@ model Library {
 enum ScanStatus {
   running
   succeeded
+  partial
   failed
   cancelled
 }

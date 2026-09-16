@@ -19,6 +19,12 @@ vi.mock('@app/api-client-ts', () => ({
 
 // Stub @app/ui components to keep tests simple
 vi.mock('@app/ui', () => ({
+  AppDialog: {
+    name: 'AppDialog',
+    props: ['open', 'size', 'title', 'description', 'dismissible', 'dismissLabel'],
+    emits: ['update:open'],
+    template: '<div class="stub-dialog"><h3>{{ title }}</h3><slot /></div>',
+  },
   AppBanner: {
     name: 'AppBanner',
     props: ['variant', 'body'],
@@ -40,11 +46,6 @@ vi.mock('@app/ui', () => ({
     name: 'AppButton',
     props: ['type', 'variant', 'label', 'disabled', 'loading'],
     template: '<button :type="type || \'button\'">{{ label }}</button>',
-  },
-  IconCS: {
-    name: 'IconCS',
-    props: ['name', 'size'],
-    template: '<svg class="stub-icon" :data-name="name" />',
   },
 }));
 
@@ -88,9 +89,9 @@ describe('AdminAddLibrarySheet', () => {
     expect(wrapper.text()).toContain('Add library');
   });
 
-  it('emits cancel when close button is clicked', async () => {
+  it('emits cancel when the dialog is dismissed (ESC / backdrop / close button)', async () => {
     const wrapper = mount(AdminAddLibrarySheet, { props: baseProps });
-    await wrapper.find('.adm-add-library-sheet__close').trigger('click');
+    await wrapper.findComponent({ name: 'AppDialog' }).vm.$emit('update:open', false);
     expect(wrapper.emitted('cancel')).toBeTruthy();
   });
 

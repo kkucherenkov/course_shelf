@@ -602,6 +602,7 @@ export default {
         toastGrantRevoked: 'Доступ отозван.',
         toastGrantFailed: 'Не удалось изменить права доступа. Попробуйте ещё раз.',
         revokeDialogTitle: 'Отозвать доступ к библиотеке «{library}» у {user}?',
+        revokeDialogTitleCourse: 'Отозвать доступ к курсу «{course}» у {user}?',
         revokeDialogBody: 'Действие применится сразу. Доступ придётся выдавать заново.',
         revokeDialogConfirm: 'Отозвать доступ',
         revokeDialogCancel: 'Отмена',

@@ -11,6 +11,13 @@
  * misleading advice `browse.vue` already stopped giving. Both rows now
  * reuse `browse.vue`'s own no-access copy once `useLibraries` resolves to
  * zero items for a non-admin.
+ *
+ * #633: "recently added" got the same access check #623 gave its two
+ * siblings — a member with zero library grants used to see the "ask an
+ * admin to add courses" copy (false: there's no library to add them to),
+ * one row below the honest no-access message on continue-watching. Access
+ * is now checked before the role split, so the role split only applies once
+ * there's a real (possibly empty) library to be a member or admin of.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -48,6 +55,8 @@ vi.mock('~/composables/useLibraries', () => ({
 }));
 
 const recentlyAddedData = ref<RecentlyAddedDto | undefined>({ items: [] });
+const recentlyCompletedData = ref<RecentlyCompletedDto | undefined>({ items: [] });
+const recentlyCompletedStatus = ref<'idle' | 'pending' | 'success' | 'error'>('success');
 vi.mock('~/composables/useHome', () => ({
   useContinueWatching: () => ({
     data: ref<ContinueWatchingDto | undefined>({ items: [] }),
@@ -62,8 +71,8 @@ vi.mock('~/composables/useHome', () => ({
     refetch: vi.fn(),
   }),
   useRecentlyCompleted: () => ({
-    data: ref<RecentlyCompletedDto | undefined>({ items: [] }),
-    status: ref('success'),
+    data: recentlyCompletedData,
+    status: recentlyCompletedStatus,
     error: ref(null),
     refetch: vi.fn(),
   }),
@@ -86,7 +95,16 @@ vi.mock('@app/ui', () => ({
 
 const HomeRowProbe = {
   name: 'HomeRowProbe',
-  props: ['heading', 'status', 'empty', 'emptyTitle', 'emptyBody', 'errorTitle', 'errorBody'],
+  props: [
+    'heading',
+    'status',
+    'empty',
+    'emptyTitle',
+    'emptyBody',
+    'errorTitle',
+    'errorBody',
+    'collapsibleMeta',
+  ],
   template: '<div><slot /></div>',
 };
 
@@ -123,8 +141,12 @@ describe('pages/index.vue — recently added empty row (#579)', () => {
     expect(recentlyAdded?.props('emptyBody')).toBe('pages.home.recentlyAdded.emptyBody');
   });
 
-  it('tells a member courses will show up once an admin adds them', async () => {
+  it('tells a member with library access courses will show up once an admin adds them', async () => {
     authUser.value = { role: 'USER' };
+    // Has a real (empty) library — distinct from the zero-grants case below.
+    librariesData.value = {
+      items: [{ id: 'lib-1', name: 'CS' } as LibraryListDto['items'][number]],
+    };
     const wrapper = await mountPage();
 
     const rows = wrapper.findAllComponents(HomeRowProbe);
@@ -132,7 +154,41 @@ describe('pages/index.vue — recently added empty row (#579)', () => {
       (r) => r.props('heading') === 'pages.home.recentlyAdded.heading',
     );
 
+    expect(recentlyAdded?.props('emptyTitle')).toBe('pages.home.recentlyAdded.empty');
     expect(recentlyAdded?.props('emptyBody')).toBe('pages.home.recentlyAdded.emptyBodyMember');
+  });
+
+  // #633: this used to fall through to the "ask an admin" copy above —
+  // wrong, since a member with zero grants has no library to point an admin
+  // at either.
+  it('tells a member with zero library grants the honest no-access copy, not "ask an admin"', async () => {
+    authUser.value = { role: 'USER' };
+    librariesData.value = { items: [] };
+    librariesStatus.value = 'success';
+    const wrapper = await mountPage();
+
+    const rows = wrapper.findAllComponents(HomeRowProbe);
+    const recentlyAdded = rows.find(
+      (r) => r.props('heading') === 'pages.home.recentlyAdded.heading',
+    );
+
+    expect(recentlyAdded?.props('emptyTitle')).toBe('pages.browse.emptyNoAccessTitle');
+    expect(recentlyAdded?.props('emptyBody')).toBe('pages.browse.emptyNoAccessBody');
+  });
+
+  it('an admin with zero libraries still sees the "add courses" copy, not no-access', async () => {
+    authUser.value = { role: 'ADMIN' };
+    librariesData.value = { items: [] };
+    librariesStatus.value = 'success';
+    const wrapper = await mountPage();
+
+    const rows = wrapper.findAllComponents(HomeRowProbe);
+    const recentlyAdded = rows.find(
+      (r) => r.props('heading') === 'pages.home.recentlyAdded.heading',
+    );
+
+    expect(recentlyAdded?.props('emptyTitle')).toBe('pages.home.recentlyAdded.empty');
+    expect(recentlyAdded?.props('emptyBody')).toBe('pages.home.recentlyAdded.emptyBody');
   });
 });
 
@@ -144,6 +200,8 @@ describe('pages/index.vue — no-access copy on continue watching / recently com
   beforeEach(() => {
     vi.clearAllMocks();
     recentlyAddedData.value = { items: [] };
+    recentlyCompletedData.value = { items: [] };
+    recentlyCompletedStatus.value = 'success';
   });
 
   it('a member with zero library grants sees the no-access copy, not "start a course"', async () => {
@@ -194,5 +252,36 @@ describe('pages/index.vue — no-access copy on continue watching / recently com
 
     const continueWatching = findRow(wrapper, 'pages.home.continueWatching.heading');
     expect(continueWatching?.props('emptyTitle')).toBe('pages.home.continueWatching.empty');
+  });
+});
+
+// `HomeRow` renders `collapsibleMeta` in its header, outside the row's own
+// loading gate (`!collapsible || expanded`) — so an unguarded label is the
+// only thing standing between a `pending` fetch and a flashed "0 courses".
+describe('pages/index.vue — recently-completed count label respects loading state', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    recentlyAddedData.value = { items: [] };
+    recentlyCompletedData.value = { items: [] };
+    recentlyCompletedStatus.value = 'success';
+  });
+
+  it('shows no count while the request is still pending', async () => {
+    recentlyCompletedStatus.value = 'pending';
+    const wrapper = await mountPage();
+
+    const recentlyCompleted = findRow(wrapper, 'pages.home.recentlyCompleted.heading');
+    expect(recentlyCompleted?.props('collapsibleMeta')).toBe('');
+  });
+
+  it('shows the real count once loaded', async () => {
+    recentlyCompletedStatus.value = 'success';
+    recentlyCompletedData.value = {
+      items: [{ courseId: 'c-1' } as RecentlyCompletedDto['items'][number]],
+    };
+    const wrapper = await mountPage();
+
+    const recentlyCompleted = findRow(wrapper, 'pages.home.recentlyCompleted.heading');
+    expect(recentlyCompleted?.props('collapsibleMeta')).toBe('pages.home.recentlyCompleted.count');
   });
 });

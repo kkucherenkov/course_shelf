@@ -598,6 +598,7 @@ export default {
         toastGrantRevoked: 'Access removed.',
         toastGrantFailed: 'Could not update access. Please try again.',
         revokeDialogTitle: 'Revoke {library} access from {user}?',
+        revokeDialogTitleCourse: 'Revoke access to "{course}" from {user}?',
         revokeDialogBody: 'Takes effect immediately. They will need to be re-granted access.',
         revokeDialogConfirm: 'Revoke access',
         revokeDialogCancel: 'Cancel',

@@ -140,20 +140,33 @@
   });
 
   // ── Recently completed meta label ───────────────────────────────────────────
-
+  //
+  // Guarded by fetch status so the collapsed row's meta span (rendered
+  // outside HomeRow's loading gate) doesn't flash "0 courses" while the
+  // request is still in flight.
   const completedCountLabel = computed(() => {
+    if (recentlyCompleted.status.value !== 'success') return '';
     const n = recentlyCompleted.data.value?.items.length ?? 0;
     return t('pages.home.recentlyCompleted.count', n, { named: { n } });
   });
 
-  // "Add courses to a library" is an admin-only action (#579) — a member
-  // reading it has nothing to act on, so the empty row tells them what's
-  // actually true for their account instead.
-  const recentlyAddedEmptyBody = computed(() =>
-    userRole.value === 'ADMIN'
-      ? t('pages.home.recentlyAdded.emptyBody')
-      : t('pages.home.recentlyAdded.emptyBodyMember'),
+  // Three states, not two (#633): a member with zero library grants gets the
+  // same honest no-access copy as continue-watching/recently-completed above
+  // (reused verbatim from `browse.vue`) — "add courses to a library" is an
+  // admin-only action (#579) and false advice besides when there's no library
+  // to add them to. Only once access is confirmed does the admin/member split
+  // apply, since that split is about who can act on a *real* empty library.
+  const recentlyAddedEmptyTitle = computed(() =>
+    hasLibraryAccess.value
+      ? t('pages.home.recentlyAdded.empty')
+      : t('pages.browse.emptyNoAccessTitle'),
   );
+  const recentlyAddedEmptyBody = computed(() => {
+    if (!hasLibraryAccess.value) return t('pages.browse.emptyNoAccessBody');
+    return userRole.value === 'ADMIN'
+      ? t('pages.home.recentlyAdded.emptyBody')
+      : t('pages.home.recentlyAdded.emptyBodyMember');
+  });
 
   // No-access copy is `browse.vue`'s own — reused verbatim rather than
   // rewritten a second time (#623).
@@ -227,7 +240,7 @@
           :heading="t('pages.home.recentlyAdded.heading')"
           :status="recentlyAdded.status.value"
           :empty="(recentlyAdded.data.value?.items.length ?? 0) === 0"
-          :empty-title="t('pages.home.recentlyAdded.empty')"
+          :empty-title="recentlyAddedEmptyTitle"
           :empty-body="recentlyAddedEmptyBody"
           :error-title="t('pages.home.recentlyAdded.error')"
           :error-body="t('pages.home.recentlyAdded.errorBody')"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref, computed, watch } from 'vue';
-  import { IconCS } from '@app/ui';
+  import { AppDialog, AppField, AppInput, AppButton } from '@app/ui';
   import { removeLibrary, client } from '@app/api-client-ts';
 
   interface LibraryLike {
@@ -25,6 +25,13 @@
     'update:open': [value: boolean];
     removed: [];
   }>();
+
+  // Composables need an active component instance — call them once here, in
+  // setup, and close over the results. Calling `useToast()`/`useI18n()`
+  // themselves inside `onConfirm` after an `await` used to fail silently,
+  // because `getCurrentInstance()` is already null by then (see #639).
+  const toast = useToast();
+  const { t } = useI18n();
 
   const typedName = ref('');
   const submitting = ref(false);
@@ -61,34 +68,22 @@
       if (res.error) {
         const status = res.response.status;
         if (status === 403) {
-          useToast().add({
-            title: useI18n().t('pages.admin.libraryDetail.editToast403'),
-            color: 'error',
-          });
+          toast.add({ title: t('pages.admin.libraryDetail.editToast403'), color: 'error' });
           close();
           return;
         }
         if (status === 404) {
-          useToast().add({
-            title: useI18n().t('pages.admin.libraryDetail.editToastGone'),
-            color: 'warning',
-          });
+          toast.add({ title: t('pages.admin.libraryDetail.editToastGone'), color: 'warning' });
           close();
           await navigateTo('/admin/libraries');
           return;
         }
-        useToast().add({
-          title: useI18n().t('pages.admin.libraryDetail.editToastGone'),
-          color: 'error',
-        });
+        toast.add({ title: t('pages.admin.libraryDetail.editToastGone'), color: 'error' });
         close();
         return;
       }
 
-      useToast().add({
-        title: useI18n().t('pages.admin.libraryDetail.removeToastDone'),
-        color: 'success',
-      });
+      toast.add({ title: t('pages.admin.libraryDetail.removeToastDone'), color: 'success' });
       emit('removed');
       close();
       await navigateTo('/admin/libraries');
@@ -96,244 +91,45 @@
       submitting.value = false;
     }
   }
-
-  function onKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') close();
-  }
 </script>
 
 <template>
-  <template v-if="props.open">
-    <!-- Backdrop -->
-    <div class="adm-remove-lib-dialog__backdrop" aria-hidden="true" @click="close" />
-
-    <!-- Dialog -->
-    <div
-      class="adm-remove-lib-dialog"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="props.dialogTitle"
-      tabindex="-1"
-      @keydown="onKeydown"
-    >
-      <div class="adm-remove-lib-dialog__header">
-        <h3 class="adm-remove-lib-dialog__title">{{ props.dialogTitle }}</h3>
-        <button
-          type="button"
-          class="adm-remove-lib-dialog__close"
-          :aria-label="props.cancelCta"
-          @click="close"
-        >
-          <IconCS name="x" />
-        </button>
-      </div>
-
-      <div class="adm-remove-lib-dialog__body">
-        <p class="adm-remove-lib-dialog__desc">{{ props.dialogBody }}</p>
-
-        <label class="adm-remove-lib-dialog__confirm-label" for="adm-remove-confirm-input">
-          {{ props.confirmPrompt }}
-        </label>
-        <input
-          id="adm-remove-confirm-input"
+  <AppDialog
+    :open="props.open"
+    size="sm"
+    :title="props.dialogTitle"
+    :description="props.dialogBody"
+    :dismiss-label="props.cancelCta"
+    @update:open="close"
+  >
+    <AppField :label="props.confirmPrompt" required>
+      <template #default="slotAttrs">
+        <AppInput
+          v-bind="slotAttrs"
           v-model="typedName"
-          type="text"
-          class="adm-remove-lib-dialog__confirm-input"
           :placeholder="props.library.name"
           autocomplete="off"
           :disabled="submitting"
         />
-      </div>
+      </template>
+    </AppField>
 
-      <div class="adm-remove-lib-dialog__foot">
-        <button
-          type="button"
-          class="adm-remove-lib-dialog__btn adm-remove-lib-dialog__btn--ghost"
-          :disabled="submitting"
-          @click="close"
-        >
-          {{ props.cancelCta }}
-        </button>
-        <button
-          type="button"
-          class="adm-remove-lib-dialog__btn adm-remove-lib-dialog__btn--danger"
-          :disabled="!confirmEnabled"
-          @click="onConfirm"
-        >
-          {{ props.confirmCta }}
-        </button>
-      </div>
-    </div>
-  </template>
+    <template #footer>
+      <AppButton
+        type="button"
+        variant="ghost"
+        :label="props.cancelCta"
+        :disabled="submitting"
+        @click="close"
+      />
+      <AppButton
+        type="button"
+        variant="destructive"
+        :label="props.confirmCta"
+        :disabled="!confirmEnabled"
+        :loading="submitting"
+        @click="onConfirm"
+      />
+    </template>
+  </AppDialog>
 </template>
-
-<style lang="scss" scoped>
-  $dialog-width: 440px;
-  $close-btn-size: 28px;
-
-  .adm-remove-lib-dialog__backdrop {
-    position: fixed;
-    inset: 0;
-    background: color-mix(in srgb, transparent, var(--surface-overlay) 50%);
-    z-index: var(--z-modal);
-  }
-
-  .adm-remove-lib-dialog {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: min($dialog-width, calc(100vw - var(--space-6)));
-    background: var(--surface-surface);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    z-index: calc(var(--z-modal) + 1);
-    display: flex;
-    flex-direction: column;
-
-    &__header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: var(--space-4) var(--space-4) var(--space-3);
-    }
-
-    &__title {
-      margin: 0;
-      font-size: var(--text-base);
-      font-weight: 600;
-      color: var(--text-loud);
-    }
-
-    &__close {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: $close-btn-size;
-      height: $close-btn-size;
-      border: none;
-      background: none;
-      border-radius: var(--radius-md);
-      color: var(--text-muted);
-      cursor: pointer;
-      flex-shrink: 0;
-
-      &:hover {
-        background: var(--surface-raised);
-        color: var(--text-loud);
-      }
-
-      &:focus-visible {
-        outline: 2px solid var(--brand-accent);
-        outline-offset: 2px;
-      }
-    }
-
-    &__body {
-      padding: 0 var(--space-4) var(--space-4);
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-3);
-    }
-
-    &__desc {
-      margin: 0;
-      font-size: var(--text-sm);
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
-
-    &__confirm-label {
-      font-size: var(--text-xs);
-      font-weight: 600;
-      color: var(--text-loud);
-    }
-
-    &__confirm-input {
-      width: 100%;
-      padding: var(--space-2) var(--space-3);
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-md);
-      background: var(--surface-raised);
-      color: var(--text-loud);
-      font-size: var(--text-sm);
-      font-family: inherit;
-      outline: none;
-      box-sizing: border-box;
-
-      &::placeholder {
-        color: var(--text-subtle);
-      }
-
-      &:focus {
-        border-color: var(--brand-accent);
-        box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-accent) 20%, transparent);
-      }
-
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-    }
-
-    &__foot {
-      display: flex;
-      gap: var(--space-2);
-      justify-content: flex-end;
-      padding: var(--space-3) var(--space-4) var(--space-4);
-      border-top: 1px solid var(--border-default);
-    }
-
-    &__btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: var(--space-2) var(--space-4);
-      border-radius: var(--radius-md);
-      font-size: var(--text-sm);
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition:
-        background var(--dur-fast),
-        color var(--dur-fast),
-        border-color var(--dur-fast);
-
-      &:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-      }
-
-      &--ghost {
-        background: none;
-        color: var(--text-muted);
-        border-color: var(--border-default);
-
-        &:not(:disabled):hover {
-          background: var(--surface-raised);
-          color: var(--text-loud);
-        }
-      }
-
-      &--danger {
-        background: var(--status-error-soft);
-        color: var(--status-error-fg);
-        border-color: transparent;
-
-        &:not(:disabled):hover {
-          // Resting state is the soft tint; hover promotes to the solid fill,
-          // so the label flips to the contrasting (theme-aware) foreground.
-          background: var(--status-error-fg);
-          color: var(--text-inverse);
-        }
-
-        &:focus-visible {
-          outline: 2px solid var(--status-error-fg);
-          outline-offset: 2px;
-        }
-      }
-    }
-  }
-</style>

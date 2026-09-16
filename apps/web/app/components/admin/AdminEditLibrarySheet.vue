@@ -28,6 +28,13 @@
     saved: [library: LibraryDto];
   }>();
 
+  // Composables need an active component instance — call them once here, in
+  // setup, and close over the results. Calling `useToast()`/`useI18n()`
+  // themselves inside `onSubmit` after an `await` used to fail silently,
+  // because `getCurrentInstance()` is already null by then (see #639).
+  const toast = useToast();
+  const { t } = useI18n();
+
   const nameValue = ref(props.library.name);
   const submitting = ref(false);
   const inlineError = ref('');
@@ -80,18 +87,12 @@
       if (res.error) {
         const status = res.response.status;
         if (status === 403) {
-          useToast().add({
-            title: useI18n().t('pages.admin.libraryDetail.editToast403'),
-            color: 'error',
-          });
+          toast.add({ title: t('pages.admin.libraryDetail.editToast403'), color: 'error' });
           close();
           return;
         }
         if (status === 404) {
-          useToast().add({
-            title: useI18n().t('pages.admin.libraryDetail.editToastGone'),
-            color: 'warning',
-          });
+          toast.add({ title: t('pages.admin.libraryDetail.editToastGone'), color: 'warning' });
           close();
           await navigateTo('/admin/libraries');
           return;
@@ -104,10 +105,7 @@
         return;
       }
 
-      useToast().add({
-        title: useI18n().t('pages.admin.libraryDetail.editToastSaved'),
-        color: 'success',
-      });
+      toast.add({ title: t('pages.admin.libraryDetail.editToastSaved'), color: 'success' });
       emit('saved', res.data as LibraryDto);
       close();
     } finally {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, provide, ref } from 'vue';
-  import { AppBanner, AppEmptyState, IconCS } from '@app/ui';
+  import { AppBanner, AppButton, AppEmptyState } from '@app/ui';
   import { runLibraryScan, client } from '@app/api-client-ts';
 
   import AdminLibraryRow from '~/components/admin/AdminLibraryRow.vue';
@@ -71,9 +71,11 @@
         <p v-if="subtitle" class="adm-libraries__sub">{{ subtitle }}</p>
       </div>
       <div class="adm-libraries__page-actions">
-        <UButton :label="t('pages.admin.libraries.addCta')" @click="openSheet">
-          <template #leading><IconCS name="plus" :size="20" /></template>
-        </UButton>
+        <AppButton
+          icon-leading="plus"
+          :label="t('pages.admin.libraries.addCta')"
+          @click="openSheet"
+        />
       </div>
     </div>
 
@@ -86,9 +88,12 @@
       class="adm-libraries__error-banner"
     >
       <template #actions>
-        <UButton size="sm" variant="outline" color="error" @click="refetch()">
-          {{ t('pages.admin.libraries.errorRetry') }}
-        </UButton>
+        <AppButton
+          size="sm"
+          variant="secondary"
+          :label="t('pages.admin.libraries.errorRetry')"
+          @click="refetch()"
+        />
       </template>
     </AppBanner>
 
@@ -113,9 +118,11 @@
       :body="t('pages.admin.libraries.emptyBody')"
     >
       <template #actions>
-        <UButton :label="t('pages.admin.libraries.emptyAction')" @click="openSheet">
-          <template #leading><IconCS name="plus" :size="20" /></template>
-        </UButton>
+        <AppButton
+          icon-leading="plus"
+          :label="t('pages.admin.libraries.emptyAction')"
+          @click="openSheet"
+        />
       </template>
     </AppEmptyState>
 

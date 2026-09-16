@@ -34,13 +34,6 @@ vi.stubGlobal('watch', watch);
 
 vi.mock('@app/api-client-ts', () => ({ runLibraryScan: vi.fn(), client: {} }));
 
-const UButtonStub = {
-  name: 'UButton',
-  props: ['label', 'loading', 'disabled', 'size', 'variant', 'color'],
-  emits: ['click'],
-  template: '<button :disabled="disabled" @click="$emit(\'click\')">{{ label }}<slot /></button>',
-};
-
 // ── Composables ─────────────────────────────────────────────────────────────
 
 const librariesRef = ref({
@@ -101,7 +94,13 @@ vi.mock('~/composables/useTranscriptionProgress', () => ({
 
 vi.mock('@app/ui', () => ({
   AppBanner: { name: 'AppBanner', props: ['variant', 'title', 'body'], template: '<div />' },
-  AppSpinner: { name: 'AppSpinner', props: ['size', 'label'], template: '<span />' },
+  AppButton: {
+    name: 'AppButton',
+    props: ['label', 'loading', 'disabled', 'size', 'variant', 'iconLeading'],
+    emits: ['click'],
+    template:
+      '<button :disabled="loading || disabled" @click="$emit(\'click\')">{{ label }}<slot /></button>',
+  },
   IconCS: { name: 'IconCS', props: ['name', 'size'], template: '<i />' },
   AppScanProgress: {
     name: 'AppScanProgress',
@@ -139,7 +138,6 @@ async function mountPage() {
         AdminEditLibrarySheet: true,
         AdminRemoveLibraryDialog: true,
         AdminTranscriptionCard: true,
-        UButton: UButtonStub,
         NuxtLink: true,
       },
     },

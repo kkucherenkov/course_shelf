@@ -7,7 +7,7 @@
    * archive, or the server's problem detail.
    */
   import { computed, onBeforeUnmount, provide, ref } from 'vue';
-  import { AppBanner, AppCard, AppSpinner, IconCS } from '@app/ui';
+  import { AppBanner, AppButton, AppCard, AppSpinner } from '@app/ui';
 
   import { useAdminBackup } from '~/composables/useAdminBackup';
 
@@ -70,22 +70,13 @@
     />
 
     <div class="adm-backups__actions">
-      <UButton
+      <AppButton
         :loading="status === 'pending'"
-        :disabled="status === 'pending'"
         :label="t('pages.admin.backups.createCta')"
+        icon-leading="circle-stack"
         data-testid="backup-create"
         @click="create"
-      >
-        <template #leading>
-          <AppSpinner
-            v-if="status === 'pending'"
-            size="sm"
-            :label="t('pages.admin.backups.pendingTitle')"
-          />
-          <IconCS v-else name="circle-stack" :size="20" />
-        </template>
-      </UButton>
+      />
     </div>
 
     <!-- In progress -->
@@ -113,15 +104,13 @@
       data-testid="backup-error"
     >
       <template #actions>
-        <UButton
+        <AppButton
           size="sm"
-          variant="outline"
-          color="error"
+          variant="secondary"
+          :label="t('pages.admin.backups.retry')"
           data-testid="backup-retry"
           @click="create"
-        >
-          {{ t('pages.admin.backups.retry') }}
-        </UButton>
+        />
       </template>
     </AppBanner>
 

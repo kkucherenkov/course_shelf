@@ -37,14 +37,14 @@ vi.mock('@app/ui', () => ({
   },
   AppCard: { name: 'AppCard', props: ['size'], template: '<div><slot /></div>' },
   AppSpinner: { name: 'AppSpinner', props: ['size', 'label'], template: '<span role="status" />' },
+  AppButton: {
+    name: 'AppButton',
+    props: ['label', 'variant', 'size', 'loading', 'disabled', 'iconLeading'],
+    emits: ['click'],
+    template:
+      '<button :disabled="loading || disabled" @click="$emit(\'click\')">{{ label }}<slot /></button>',
+  },
 }));
-
-const UButtonStub = {
-  name: 'UButton',
-  props: ['icon', 'label', 'loading', 'disabled', 'size', 'variant', 'color'],
-  emits: ['click'],
-  template: '<button :disabled="disabled" @click="$emit(\'click\')">{{ label }}<slot /></button>',
-};
 
 const DTO: BackupCreatedDto = {
   id: '20260830T120000-abc',
@@ -57,7 +57,7 @@ const DTO: BackupCreatedDto = {
 
 async function mountPage(): Promise<VueWrapper> {
   const mod = await import('../admin/backups.vue');
-  return mount(mod.default, { global: { stubs: { UButton: UButtonStub } } });
+  return mount(mod.default);
 }
 
 describe('admin backups page', () => {

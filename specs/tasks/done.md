@@ -37,6 +37,25 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   `done.md` only (each branched from `main` independently) — resolve as a
   union on merge, oldest (T1) first.
 
+## T-2026-09-16-kkucherenkov-flashcards-domain — flashcard + SM-2 domain and API
+
+- Created: 2026-09-16
+- Owner: claude
+- Spec: [docs/roadmap/tasks/E29-F01-S01.md](../../docs/roadmap/tasks/E29-F01-S01.md), [docs/roadmap/tasks/E29-F01-S02.md](../../docs/roadmap/tasks/E29-F01-S02.md)
+- Goal: Flashcard aggregate with a pure SM-2 scheduler and review-queue query (S01), then CRUD + due-queue + grade endpoints over it (S02). Issues #232, #233, umbrella #250.
+- Spec diff: openapi.yaml — flashcard routes (create/list per lesson, due queue, update, delete, grade)
+- Codegen impact: yes
+- Sub-steps:
+  - [x] Prisma schema + migration for `Flashcard`
+  - [x] `ReviewSchedule` pure SM-2 function + table-driven tests
+  - [x] `Flashcard` aggregate + repository port + Prisma adapter
+  - [x] Migration verified against real Postgres
+  - [x] OpenAPI routes + codegen (own commit)
+  - [x] Commands/queries + controller + handler specs
+- Status: done
+- Completed: 2026-09-16
+- Result: [PR #684](https://github.com/kkucherenkov/course_shelf/pull/684) (domain, S01), [PR #686](https://github.com/kkucherenkov/course_shelf/pull/686) (API, S02, stacked on #684) — both green
+
 ## T-2026-09-16-style-gates-2 — extend dialect gates to apps/web, drop the packages/ui-only override
 
 - Created: 2026-09-16
@@ -3684,39 +3703,33 @@ backend` and that Admin → Backups reaches its success state.
   - [x] Locale keys (`admin.transcription.*`) in `en` and `ru`
 - Status: done
 
-## T-2026-08-30-001 — scan sidecars: subtitle ingest + thumbnail derived-path + orphan cleanup
+## T-2026-08-30-001 — E25-F03-S01/F02-S01 transcription contract and schema
 
 - Created: 2026-08-30
 - Completed: 2026-08-30
-- Owner: claude (lane, worktree `e27-scan-sidecars`)
-- Branch: `kkucherenkov/e27-scan-sidecars`
-- Result: https://github.com/kkucherenkov/course_shelf/pull/315
-- Spec: [docs/roadmap/tasks/E27-F01-S01.md](../../docs/roadmap/tasks/E27-F01-S01.md) (#227), [docs/roadmap/tasks/E25-F04-S01.md](../../docs/roadmap/tasks/E25-F04-S01.md) (#220, duplicate report #282)
-- Goal: scan parses `.srt`/`.vtt` sidecars into `Transcript(origin: sidecar)` + cues (re-parse only on
-  changed signature); scan thumbnails move under `<derivedPath>/<libraryId>/…` instead of next to the
-  video (COURSES_PATH is `:ro` in prod); a lesson that vanishes from a scan gets its Transcript rows
-  deleted and the generated file best-effort unlinked.
-- Spec diff: none
-- Codegen impact: no
+- Owner: claude (lane L1, worktree `e25-contract-schema`)
+- Branch: `kkucherenkov/e25-contract-schema`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/256
+- Cards: [E25-F03-S01](../../docs/roadmap/tasks/E25-F03-S01.md), [E25-F02-S01](../../docs/roadmap/tasks/E25-F02-S01.md) · GitHub #217, #214
+- Spec diff: 5 transcription routes, 7 schemas, `SubtitleDto.generated`
+- Codegen impact: yes — landed in its own commits
 - Sub-steps:
-  - [x] `domain/scan/scan.ts` — widen `ScannedSubtitle` with `mtime`/`size`
-  - [x] `domain/transcription/transcript.repository.ts` — add `findExisting`, `replaceSidecar`, `deleteForLesson`
-  - [x] `domain/transcription/derived-path.ts` — add `derivedThumbnailPath`
-  - [x] `infra/prisma-transcript.repository.ts` — implement the three new methods
-  - [x] `application/scan/sidecar-transcript-ingester.ts` — new pure ingest function
-  - [x] `run-scan.handler.ts` — wire sidecar ingest (existing + newly-created lessons), thumbnail
-        derived-path, orphan cleanup
-  - [x] specs for all of the above
+  - [x] Routes and schemas mirroring the scan surface
+  - [x] `spec:validate && spec:bundle && spec:codegen`, artefacts in separate commits
+  - [x] Prisma models and enums; migration SQL reviewed for an accidental FK
+  - [x] `AdminTranscriptionListDto` / `AdminTranscriptionListItem` for the cross-library list
 - Notes:
-  - Sidecar ingest for a lesson whose _course_ already existed before this scan required loading that
-    library's existing lessons up front (`lessonRepo.findByCourse` per existing course) keyed by
-    `videoPath`, since v1's "skip on duplicate slug" otherwise makes existing lessons unreachable on a
-    repeat scan — that same map also drives orphan detection (a known videoPath the walk didn't see this
-    pass has vanished).
-  - `run-scan.handler.ts` gained a real `mkdir` call for the thumbnail's parent dir (mirroring
-    `run-transcription.handler.ts`'s existing pattern) — its spec now needs
-    `vi.mock('node:fs/promises', ...)` or every thumbnail-writing test hangs on real disk I/O.
-  - Closed tuxedo #35 (duplicate of #220/#282).
+  - Contract only. Handlers, the whisper adapter and run logic are E25-F01-\* and E25-F03-S02.
+  - The migration creates exactly two foreign keys, both internal. Nothing references
+    `lesson` or `subtitle`: `prisma-lesson.repository.ts` recreates every subtitle row on
+    each save, so a cascade would erase transcripts on the next ordinary scan.
+  - Review found the admin list reusing the plain `TranscriptionDto` while all three other
+    cross-library admin listings have a denormalised pair carrying `libraryName` and an
+    error count. Fixed before merge, while the generated clients were still cheap to change.
+  - The migration was produced with `prisma migrate diff`, not `migrate dev` — no database
+    was reachable from the worktree — and the SQL was reviewed by hand.
+  - `pnpm spec:contract-test` was not run: it needs Docker and a live backend, and it is
+    wired into no GitHub workflow. It belongs with E25-F03-S02.
 
 ## T-2026-08-30-012 — run whisper transcription over a library
 

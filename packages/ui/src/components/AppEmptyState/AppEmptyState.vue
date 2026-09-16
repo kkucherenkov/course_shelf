@@ -71,7 +71,7 @@
 
     &__body {
       margin: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary); // bundle --text-muted
       max-width: 32rem;
     }

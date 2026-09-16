@@ -267,13 +267,13 @@
     &__meter-label,
     &__hint {
       margin: 0;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
     }
 
     &__error {
       margin: 0;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       font-weight: var(--fw-medium);
       color: var(--status-error-fg);
     }

@@ -115,7 +115,7 @@
     }
 
     &__ring-pct {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       font-weight: var(--fw-medium);
       font-variant-numeric: tabular-nums;
       color: var(--text-fg);
@@ -160,7 +160,7 @@
 
     &__bar-pct {
       font-family: var(--font-mono);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       font-variant-numeric: tabular-nums;
       color: var(--text-secondary);
       min-width: 3em;
@@ -175,7 +175,7 @@
       padding: 0 var(--space-2);
       height: $pill-height;
       border-radius: var(--radius-pill);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       font-weight: var(--fw-medium);
       background: var(--surface-overlay);
       color: var(--text-fg);

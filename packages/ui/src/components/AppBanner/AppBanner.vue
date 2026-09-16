@@ -97,7 +97,7 @@
     }
 
     &__body {
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       line-height: var(--leading-snug);
       color: var(--text-fg);
     }

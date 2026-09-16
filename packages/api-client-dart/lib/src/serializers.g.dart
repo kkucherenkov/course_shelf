@@ -53,9 +53,13 @@ Serializers _$serializers =
           ..add(CourseTarget.serializer)
           ..add(CourseTargetKindEnum.serializer)
           ..add(CreateBookmarkRequest.serializer)
+          ..add(CreateFlashcardRequest.serializer)
           ..add(DateRange.serializer)
           ..add(DependencyStatus.serializer)
           ..add(ExternalIdRef.serializer)
+          ..add(FlashcardDto.serializer)
+          ..add(FlashcardListDto.serializer)
+          ..add(GradeFlashcardRequest.serializer)
           ..add(GrantLevel.serializer)
           ..add(GrantTarget.serializer)
           ..add(HasUsersResponse.serializer)
@@ -134,6 +138,7 @@ Serializers _$serializers =
           ..add(TranscriptionStatus.serializer)
           ..add(UpdateBookmarkRequest.serializer)
           ..add(UpdateCourseRequest.serializer)
+          ..add(UpdateFlashcardRequest.serializer)
           ..add(UpdateLibraryRequest.serializer)
           ..add(UpdateMeRequest.serializer)
           ..add(UpsertInstructorRequest.serializer)
@@ -224,6 +229,10 @@ Serializers _$serializers =
           ..addBuilderFactory(
             const FullType(BuiltList, const [const FullType(ExternalIdRef)]),
             () => ListBuilder<ExternalIdRef>(),
+          )
+          ..addBuilderFactory(
+            const FullType(BuiltList, const [const FullType(FlashcardDto)]),
+            () => ListBuilder<FlashcardDto>(),
           )
           ..addBuilderFactory(
             const FullType(BuiltList, const [const FullType(IdentifyTaskDto)]),

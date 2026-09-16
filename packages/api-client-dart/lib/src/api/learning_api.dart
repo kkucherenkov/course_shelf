@@ -14,10 +14,15 @@ import 'package:app_api_client/src/model/bookmark_dto.dart';
 import 'package:app_api_client/src/model/bookmark_list_dto.dart';
 import 'package:app_api_client/src/model/course_outline_dto.dart';
 import 'package:app_api_client/src/model/create_bookmark_request.dart';
+import 'package:app_api_client/src/model/create_flashcard_request.dart';
+import 'package:app_api_client/src/model/flashcard_dto.dart';
+import 'package:app_api_client/src/model/flashcard_list_dto.dart';
+import 'package:app_api_client/src/model/grade_flashcard_request.dart';
 import 'package:app_api_client/src/model/lesson_progress_dto.dart';
 import 'package:app_api_client/src/model/note_dto.dart';
 import 'package:app_api_client/src/model/record_progress_request.dart';
 import 'package:app_api_client/src/model/update_bookmark_request.dart';
+import 'package:app_api_client/src/model/update_flashcard_request.dart';
 import 'package:app_api_client/src/model/upsert_note_request.dart';
 
 class LearningApi {
@@ -131,6 +136,109 @@ class LearningApi {
     );
   }
 
+  /// Create a flashcard on a lesson
+  /// Flashcards are personal — even your own admin role does not surface them in listings for other users. The three ways a card comes into being (typed by hand, promoted from a note, pulled from a transcript line) are a client concern: this is the one endpoint all of them call. Pass &#x60;sourceCueId&#x60; when the card is made from a transcript line; omit it otherwise. A fresh card is due for review immediately. 
+  ///
+  /// Parameters:
+  /// * [lessonId] - Server-generated cuid identifying the lesson.
+  /// * [createFlashcardRequest] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [FlashcardDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<FlashcardDto>> createFlashcard({ 
+    required String lessonId,
+    required CreateFlashcardRequest createFlashcardRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/lessons/{lessonId}/flashcards'.replaceAll('{' r'lessonId' '}', encodeQueryParameter(_serializers, lessonId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(CreateFlashcardRequest);
+      _bodyData = _serializers.serialize(createFlashcardRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    FlashcardDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(FlashcardDto),
+      ) as FlashcardDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<FlashcardDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
   /// Delete a bookmark
   /// Owner-only. Admins may delete any bookmark for moderation.
   ///
@@ -155,6 +263,59 @@ class LearningApi {
     ProgressCallback? onReceiveProgress,
   }) async {
     final _path = r'/api/v1/bookmarks/{id}'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'DELETE',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    return _response;
+  }
+
+  /// Delete a flashcard
+  /// Owner-only. Admins may delete any flashcard for moderation.
+  ///
+  /// Parameters:
+  /// * [id] - Server-generated cuid identifying the flashcard to delete.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future]
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<void>> deleteFlashcard({ 
+    required String id,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/flashcards/{id}'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
     final _options = Options(
       method: r'DELETE',
       headers: <String, dynamic>{
@@ -399,6 +560,195 @@ class LearningApi {
     );
   }
 
+  /// Grade a flashcard review, advancing its SM-2 schedule
+  /// Owner-only. &#x60;grade&#x60; is the SM-2 0..5 quality-of-response scale: 0-2 is a lapse (the card resets to a 1-day interval and its repetition streak resets to 0); 3-5 advances the streak and walks the SM-2 interval (1 day, then 6 days, then &#x60;previousInterval * easeFactor&#x60;). Returns the card with its updated schedule. 
+  ///
+  /// Parameters:
+  /// * [id] - Server-generated cuid identifying the flashcard to grade.
+  /// * [gradeFlashcardRequest] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [FlashcardDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<FlashcardDto>> gradeFlashcard({ 
+    required String id,
+    required GradeFlashcardRequest gradeFlashcardRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/flashcards/{id}/grade'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(GradeFlashcardRequest);
+      _bodyData = _serializers.serialize(gradeFlashcardRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    FlashcardDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(FlashcardDto),
+      ) as FlashcardDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<FlashcardDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// List the requester&#39;s due flashcards (the review queue)
+  /// Returns up to &#x60;limit&#x60; of the authenticated user&#39;s flashcards, across every lesson, whose &#x60;dueAt&#x60; has passed — a plain read, not a background job. Sorted by &#x60;dueAt&#x60; ascending, most overdue first.
+  ///
+  /// Parameters:
+  /// * [limit] - Maximum number of due cards to return.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [FlashcardListDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<FlashcardListDto>> listDueFlashcards({ 
+    int? limit = 20,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/flashcards/due';
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      if (limit != null) r'limit': encodeQueryParameter(_serializers, limit, const FullType(int)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    FlashcardListDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(FlashcardListDto),
+      ) as FlashcardListDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<FlashcardListDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
   /// List the requester&#39;s bookmarks for a lesson
   /// Returns all bookmarks the authenticated user has created for the given lesson, sorted ascending by &#x60;positionSeconds&#x60;. An empty &#x60;items&#x60; array is returned when no bookmarks exist yet.
   ///
@@ -469,6 +819,87 @@ class LearningApi {
     }
 
     return Response<BookmarkListDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// List the requester&#39;s flashcards for a lesson
+  /// Returns all flashcards the authenticated user has created for the given lesson, ordered by creation time ascending. An empty &#x60;items&#x60; array is returned when no flashcards exist yet.
+  ///
+  /// Parameters:
+  /// * [lessonId] - Server-generated cuid identifying the lesson.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [FlashcardListDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<FlashcardListDto>> listLessonFlashcards({ 
+    required String lessonId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/lessons/{lessonId}/flashcards'.replaceAll('{' r'lessonId' '}', encodeQueryParameter(_serializers, lessonId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    FlashcardListDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(FlashcardListDto),
+      ) as FlashcardListDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<FlashcardListDto>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,
@@ -936,6 +1367,109 @@ class LearningApi {
     }
 
     return Response<BookmarkDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Update a flashcard&#39;s front or back
+  /// Owner-only. At least one of &#x60;front&#x60; / &#x60;back&#x60; must be present. The server returns 400 on empty patches. Does not touch the review schedule — grade the card via &#x60;POST /flashcards/{id}/grade&#x60; instead. 
+  ///
+  /// Parameters:
+  /// * [id] - Server-generated cuid identifying the flashcard to update.
+  /// * [updateFlashcardRequest] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [FlashcardDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<FlashcardDto>> updateFlashcard({ 
+    required String id,
+    required UpdateFlashcardRequest updateFlashcardRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/flashcards/{id}'.replaceAll('{' r'id' '}', encodeQueryParameter(_serializers, id, const FullType(String)).toString());
+    final _options = Options(
+      method: r'PATCH',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(UpdateFlashcardRequest);
+      _bodyData = _serializers.serialize(updateFlashcardRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    FlashcardDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(FlashcardDto),
+      ) as FlashcardDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<FlashcardDto>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

@@ -370,19 +370,19 @@
 
     // ── Responsive column visibility ─────────────────────────────────────────
     &__col--lg {
-      @media (max-width: 1023px) {
+      @media (width <= 1023px) {
         display: none;
       }
     }
 
     &__col--md-up {
-      @media (max-width: 767px) {
+      @media (width <= 767px) {
         display: none;
       }
     }
 
     &__col--md-combined {
-      @media (max-width: 767px) {
+      @media (width <= 767px) {
         display: none;
       }
 

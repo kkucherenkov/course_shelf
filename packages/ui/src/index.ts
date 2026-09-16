@@ -26,7 +26,6 @@ export { AppNumberField } from './components/AppNumberField';
 export { AppSearchField } from './components/AppSearchField';
 export { AppBanner } from './components/AppBanner';
 export { AppToast } from './components/AppToast';
-export { AppAlert } from './components/AppAlert';
 export { AppRow } from './components/AppRow';
 export { AppTabs } from './components/AppTabs';
 export { AppTab } from './components/AppTab';

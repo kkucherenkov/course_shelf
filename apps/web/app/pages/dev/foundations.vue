@@ -23,7 +23,6 @@
   import AppSegmentedItem from '@app/ui/components/AppSegmentedItem/AppSegmentedItem.vue';
   import AppBanner from '@app/ui/components/AppBanner/AppBanner.vue';
   import AppToast from '@app/ui/components/AppToast/AppToast.vue';
-  import AppAlert from '@app/ui/components/AppAlert/AppAlert.vue';
   import AppDialog from '@app/ui/components/AppDialog/AppDialog.vue';
   import AppCommandPalette from '@app/ui/components/AppCommandPalette/AppCommandPalette.vue';
   import type { Command } from '@app/ui/components/AppCommandPalette/AppCommandPalette.vue';
@@ -773,14 +772,6 @@
           <AppToast variant="success" message="Bookmark saved at 04:21" />
           <AppToast variant="info" message="Synced to all devices" />
           <AppToast variant="error" message="Couldn't save note — retrying" dismissible />
-        </div>
-
-        <h3 class="page-foundations__color-group-title">Inline alerts</h3>
-        <div class="page-foundations__row-flex page-foundations__row-flex--wrap">
-          <AppAlert variant="info" message="Save pending…" />
-          <AppAlert variant="success" message="Saved · 2s ago" />
-          <AppAlert variant="warning" message="Outdated version" />
-          <AppAlert variant="error" message="Failed to sync" />
         </div>
       </section>
 

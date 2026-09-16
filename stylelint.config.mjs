@@ -11,6 +11,42 @@
  * Design-token generated files are excluded.
  */
 
+// Short design-token aliases the JSX prototype under docs/design/ uses
+// (--bg, --primary, --text-muted, …), re-exported as var() indirection by
+// packages/design-tokens/src/emit-scss.ts:themedAliasLines(). Code should
+// consume the canonical DTCG long name directly (--surface-page,
+// --brand-accent, --text-secondary, …) so the alias layer can eventually be
+// deleted without a repo-wide hunt. Keep this list in sync with that file's
+// `pairs` array.
+const TOKEN_ALIASES = [
+  'bg',
+  'surface',
+  'surface-2',
+  'surface-3',
+  'border',
+  'focus-ring',
+  'text',
+  'text-muted',
+  'text-subtle',
+  'primary',
+  'primary-hover',
+  'primary-soft',
+  'primary-text',
+  'success',
+  'warning',
+  'error',
+  'info',
+  'success-soft',
+  'warning-soft',
+  'error-soft',
+  'info-soft',
+  'skeleton-base',
+  'skeleton-shine',
+  'shadow-1',
+  'shadow-2',
+  'shadow-3',
+];
+
 /** @type {import('stylelint').Config} */
 export default {
   extends: ['stylelint-config-recommended-scss', 'stylelint-config-recommended-vue/scss'],
@@ -34,6 +70,31 @@ export default {
               'Use BEM with an `app-`/`health-`/`brand-` prefix: .app-button, .app-button__icon, .app-button--block.',
             resolveNestedSelectors: true,
           },
+        ],
+
+        // #664: dialect gates. Scoped to packages/ui for now — apps/web
+        // still carries pre-existing violations (17 literal font-weight
+        // outside admin, 4 legacy media queries + 54 alias reads inside
+        // admin) that belong to other in-flight lanes or are queued behind
+        // a maintainer go-ahead (T-2026-09-16-style-gates). Fold into the
+        // top-level `rules` once that cleanup lands, and drop this block.
+        'declaration-property-value-disallowed-list': [
+          {
+            'font-weight': [String.raw`/^\d+$/`],
+            'line-height': [String.raw`/^[\d.]+$/`],
+            '/.*/': [String.raw`/var\(--(${TOKEN_ALIASES.join('|')})\)/`],
+          },
+          {
+            message:
+              'Use a design token: var(--fw-*) for font-weight, var(--leading-*) for ' +
+              'line-height. No short alias (var(--text-muted), var(--primary), …) — ' +
+              'reference the canonical long name directly (see ' +
+              'packages/design-tokens/src/emit-scss.ts:themedAliasLines).',
+          },
+        ],
+        'media-feature-name-disallowed-list': [
+          ['min-width', 'max-width'],
+          { message: 'Use range syntax: @media (width >= 768px), not @media (min-width: …).' },
         ],
       },
     },

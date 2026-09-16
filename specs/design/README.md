@@ -105,7 +105,7 @@ component names.
 | Catalog    | `CoursePosterCard`    | —               | ✓                  |
 | Catalog    | `CourseProgressStrip` | —               | ✓                  |
 | Catalog    | `CourseWideCard`      | —               | ✓                  |
-| Feedback   | `AppAlert`            | ✓               | ✓                  |
+| Feedback   | `AppAlert`            | —               | ✓                  |
 | Feedback   | `AppBadge`            | ✓               | ✓                  |
 | Feedback   | `AppBanner`           | ✓               | ✓                  |
 | Feedback   | `AppChip`             | ✓               | ✓                  |

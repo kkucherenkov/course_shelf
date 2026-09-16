@@ -503,7 +503,7 @@
         :deep(h1),
         :deep(h2),
         :deep(h3) {
-          font-weight: 600;
+          font-weight: var(--fw-semibold);
           margin: 0 0 var(--space-2);
         }
 
@@ -572,7 +572,7 @@
       color: var(--brand-accent);
       cursor: pointer;
       font-size: var(--text-xs);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
 
       &:hover {
         background: var(--brand-accent-soft);

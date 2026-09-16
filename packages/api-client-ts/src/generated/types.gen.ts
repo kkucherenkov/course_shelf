@@ -3434,6 +3434,13 @@ export type DeleteModelWeightData = {
 
 export type DeleteModelWeightErrors = {
     /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
+     */
+    400: Problem;
+    /**
      * Missing or invalid bearer token
      */
     401: Problem;

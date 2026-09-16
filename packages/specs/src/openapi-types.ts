@@ -5816,6 +5816,7 @@ export interface operations {
         };
         content?: never;
       };
+      400: components['responses']['BadRequest'];
       /** @description Missing or invalid bearer token */
       401: {
         headers: {

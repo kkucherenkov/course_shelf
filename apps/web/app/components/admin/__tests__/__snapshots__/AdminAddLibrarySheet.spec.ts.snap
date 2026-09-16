@@ -1,21 +1,18 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`AdminAddLibrarySheet > matches snapshot 1`] = `
-"<div data-v-ad7033c1="" class="adm-add-library-sheet">
-  <div data-v-ad7033c1="" class="adm-add-library-sheet__header">
-    <h3 data-v-ad7033c1="" class="adm-add-library-sheet__title">Add library</h3><button data-v-ad7033c1="" type="button" class="adm-add-library-sheet__close" aria-label="Cancel"><svg data-v-ad7033c1="" class="stub-icon" data-name="x"></svg></button>
-  </div>
-  <div data-v-ad7033c1="" class="adm-add-library-sheet__body">
-    <!--v-if-->
-    <form data-v-ad7033c1="" novalidate="">
-      <div data-v-ad7033c1="" class="adm-add-library-sheet__fields">
-        <div data-v-ad7033c1=""><input data-v-ad7033c1="" value=""></div>
-        <div data-v-ad7033c1=""><input data-v-ad7033c1="" value=""></div>
-      </div>
-      <div data-v-ad7033c1="" class="adm-add-library-sheet__foot"><button data-v-ad7033c1="" type="button">Cancel</button><button data-v-ad7033c1="" type="submit">Register</button></div>
-    </form>
-  </div>
-</div>
-<!-- Backdrop -->
-<div data-v-ad7033c1="" class="adm-add-library-sheet__backdrop" aria-hidden="true"></div>"
+"<!-- The parent only mounts this component while the sheet should be open
+       (\`v-if="showSheet"\`), so the dialog is always \`open\` for as long as it
+       exists; ESC / backdrop dismissal routes back through \`onCancel\`. -->
+<div data-v-ad7033c1="" class="stub-dialog">
+  <h3>Add library</h3>
+  <!--v-if-->
+  <form data-v-ad7033c1="" novalidate="">
+    <div data-v-ad7033c1="" class="adm-add-library-sheet__fields">
+      <div data-v-ad7033c1=""><input data-v-ad7033c1="" value=""></div>
+      <div data-v-ad7033c1=""><input data-v-ad7033c1="" value=""></div>
+    </div>
+    <div data-v-ad7033c1="" class="adm-add-library-sheet__foot"><button data-v-ad7033c1="" type="button">Cancel</button><button data-v-ad7033c1="" type="submit">Register</button></div>
+  </form>
+</div>"
 `;

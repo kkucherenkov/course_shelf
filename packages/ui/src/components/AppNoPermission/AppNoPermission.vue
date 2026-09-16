@@ -64,7 +64,7 @@
 
     &__body {
       margin: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
       max-width: 32rem;
     }

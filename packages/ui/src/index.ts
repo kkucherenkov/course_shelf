@@ -7,6 +7,8 @@ export { AppInput } from './components/AppInput';
 export { AppTextarea } from './components/AppTextarea';
 export { AppSelect } from './components/AppSelect';
 export type { AppSelectOption } from './components/AppSelect/AppSelect.vue';
+export { AppComboBox } from './components/AppComboBox';
+export type { ComboBoxOption } from './components/AppComboBox/AppComboBox.vue';
 export { AppCard } from './components/AppCard';
 export { AppBadge } from './components/AppBadge';
 export { AppChip } from './components/AppChip';

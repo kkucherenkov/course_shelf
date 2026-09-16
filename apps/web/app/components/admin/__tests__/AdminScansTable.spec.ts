@@ -39,6 +39,7 @@ const baseProps = {
   colErrors: 'Errors',
   labelRunning: 'Running',
   labelSucceeded: 'Succeeded',
+  labelPartial: 'Partial',
   labelFailed: 'Failed',
   labelCancelled: 'Cancelled',
 };

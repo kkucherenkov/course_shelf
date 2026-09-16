@@ -31,7 +31,7 @@ abstract class AdminDashboardLatestScan implements Built<AdminDashboardLatestSca
 
   @BuiltValueField(wireName: r'status')
   ScanStatus get status;
-  // enum statusEnum {  running,  succeeded,  failed,  cancelled,  };
+  // enum statusEnum {  running,  succeeded,  partial,  failed,  cancelled,  };
 
   @BuiltValueField(wireName: r'startedAt')
   DateTime get startedAt;

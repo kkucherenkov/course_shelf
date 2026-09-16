@@ -8,6 +8,7 @@ part of 'scan_status.dart';
 
 const ScanStatus _$running = const ScanStatus._('running');
 const ScanStatus _$succeeded = const ScanStatus._('succeeded');
+const ScanStatus _$partial = const ScanStatus._('partial');
 const ScanStatus _$failed = const ScanStatus._('failed');
 const ScanStatus _$cancelled = const ScanStatus._('cancelled');
 
@@ -17,6 +18,8 @@ ScanStatus _$valueOf(String name) {
       return _$running;
     case 'succeeded':
       return _$succeeded;
+    case 'partial':
+      return _$partial;
     case 'failed':
       return _$failed;
     case 'cancelled':
@@ -29,6 +32,7 @@ ScanStatus _$valueOf(String name) {
 final BuiltSet<ScanStatus> _$values = BuiltSet<ScanStatus>(const <ScanStatus>[
   _$running,
   _$succeeded,
+  _$partial,
   _$failed,
   _$cancelled,
 ]);
@@ -37,6 +41,7 @@ class _$ScanStatusMeta {
   const _$ScanStatusMeta();
   ScanStatus get running => _$running;
   ScanStatus get succeeded => _$succeeded;
+  ScanStatus get partial => _$partial;
   ScanStatus get failed => _$failed;
   ScanStatus get cancelled => _$cancelled;
   ScanStatus valueOf(String name) => _$valueOf(name);
@@ -54,12 +59,14 @@ class _$ScanStatusSerializer implements PrimitiveSerializer<ScanStatus> {
   static const Map<String, Object> _toWire = const <String, Object>{
     'running': 'running',
     'succeeded': 'succeeded',
+    'partial': 'partial',
     'failed': 'failed',
     'cancelled': 'cancelled',
   };
   static const Map<Object, String> _fromWire = const <Object, String>{
     'running': 'running',
     'succeeded': 'succeeded',
+    'partial': 'partial',
     'failed': 'failed',
     'cancelled': 'cancelled',
   };

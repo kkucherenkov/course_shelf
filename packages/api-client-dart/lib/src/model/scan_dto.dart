@@ -18,7 +18,7 @@ part 'scan_dto.g.dart';
 /// * [libraryId] - cuid of the library that was scanned.
 /// * [status] 
 /// * [startedAt] - ISO-8601 instant when the scan was started.
-/// * [finishedAt] - Set on terminal status (`succeeded` / `failed` / `cancelled`). Absent while `status: running`.
+/// * [finishedAt] - Set on terminal status (`succeeded` / `partial` / `failed` / `cancelled`). Absent while `status: running`.
 /// * [filesScanned] - Total number of filesystem entries inspected.
 /// * [filesAdded] - Files that did not exist in the catalog before this scan.
 /// * [filesUpdated] - Files whose metadata changed since the last scan.
@@ -38,13 +38,13 @@ abstract class ScanDto implements Built<ScanDto, ScanDtoBuilder> {
 
   @BuiltValueField(wireName: r'status')
   ScanStatus get status;
-  // enum statusEnum {  running,  succeeded,  failed,  cancelled,  };
+  // enum statusEnum {  running,  succeeded,  partial,  failed,  cancelled,  };
 
   /// ISO-8601 instant when the scan was started.
   @BuiltValueField(wireName: r'startedAt')
   DateTime get startedAt;
 
-  /// Set on terminal status (`succeeded` / `failed` / `cancelled`). Absent while `status: running`.
+  /// Set on terminal status (`succeeded` / `partial` / `failed` / `cancelled`). Absent while `status: running`.
   @BuiltValueField(wireName: r'finishedAt')
   DateTime? get finishedAt;
 

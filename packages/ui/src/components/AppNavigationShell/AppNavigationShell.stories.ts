@@ -63,6 +63,12 @@ export const Default: Story = {
   parameters: {
     viewport: { defaultViewport: 'desktop' },
   },
+  // Only this story demonstrates the language toggle (#607) — adding it to
+  // the shared meta `args` would touch every story's committed visual
+  // snapshot instead of just this one's.
+  args: {
+    otherLocale: { code: 'ru', name: 'Русский' },
+  },
   render: (args) => ({
     components: { AppNavigationShell },
     setup() {

@@ -207,6 +207,13 @@ describe('AppNavigationShell', () => {
     expect(w.emitted('searchSubmit')).toBeUndefined();
   });
 
+  it('search input is type="search" with an aria-label (#597 — it had neither)', () => {
+    const w = factory({ props: { searchPlaceholder: 'Find something…' } });
+    const input = w.find('.app-navigation-shell__search-input');
+    expect(input.attributes('type')).toBe('search');
+    expect(input.attributes('aria-label')).toBe('Find something…');
+  });
+
   // ── Theme toggle ─────────────────────────────────────────────────────────
   // A binary toggle can only write an explicit light/dark preference — one
   // click from "System" and it's gone, with no control anywhere that can
@@ -243,6 +250,24 @@ describe('AppNavigationShell', () => {
     expect(w.find('.app-navigation-shell__theme-toggle').attributes('aria-label')).toBe(
       'Переключить тему',
     );
+  });
+
+  // ── Language toggle (#607) ──────────────────────────────────────────────────
+
+  it('does not render the language toggle when otherLocale is absent (default)', () => {
+    const w = factory();
+    expect(w.find('.app-navigation-shell__locale-toggle').exists()).toBe(false);
+  });
+
+  it('renders the target locale’s own name as the toggle text', () => {
+    const w = factory({ props: { otherLocale: { code: 'ru', name: 'Русский' } } });
+    expect(w.find('.app-navigation-shell__locale-toggle').text()).toBe('Русский');
+  });
+
+  it('emits update:locale with otherLocale.code on click', async () => {
+    const w = factory({ props: { otherLocale: { code: 'ru', name: 'Русский' } } });
+    await w.find('.app-navigation-shell__locale-toggle').trigger('click');
+    expect(w.emitted('update:locale')).toEqual([['ru']]);
   });
 
   // ── Avatar menu — open / close ─────────────────────────────────────────────
@@ -456,6 +481,14 @@ describe('AppNavigationShell', () => {
     const text = w.find('.app-navigation-shell__user-block').text();
     expect(text).toContain('Administrator');
     expect(text).not.toContain('ADMIN');
+  });
+
+  it('forwards user.roleLabel to the AppAvatar role badge (#597 — it used to be hardcoded English)', () => {
+    const w = factory({
+      props: { user: { ...adminUser, role: 'ADMIN', roleLabel: 'Администратор' } },
+    });
+    const badge = w.find('.app-avatar__role');
+    expect(badge.attributes('aria-label')).toBe('Администратор');
   });
 
   // ── Actions slot ─────────────────────────────────────────────────────────

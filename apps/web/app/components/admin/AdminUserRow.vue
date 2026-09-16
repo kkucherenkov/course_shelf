@@ -57,7 +57,9 @@
 </script>
 
 <template>
-  <div class="adm-user-row" role="row">
+  <!-- No `role="row"` (#591): neither caller wraps this in a table/grid, so
+       it's a styled list row, not an ARIA table row. -->
+  <div class="adm-user-row">
     <!-- Avatar -->
     <div class="adm-user-row__avatar" aria-hidden="true" :style="{ background: avatarBg }">
       {{ initials }}

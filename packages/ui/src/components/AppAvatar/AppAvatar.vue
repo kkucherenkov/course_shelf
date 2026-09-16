@@ -11,8 +11,22 @@
       name?: string;
       size?: Size;
       role?: Role;
+      /**
+       * Accessible name for the role badge (`role="img"`'s `aria-label`).
+       * The caller owns translation — this component has no locale. Falls
+       * back to an English default so uncalled sites (Storybook, dev
+       * foundations) still render a sane label.
+       */
+      roleLabel?: string;
     }>(),
-    { image: undefined, initials: undefined, name: undefined, size: 'md', role: undefined },
+    {
+      image: undefined,
+      initials: undefined,
+      name: undefined,
+      size: 'md',
+      role: undefined,
+      roleLabel: undefined,
+    },
   );
 
   // Derive initials when not explicitly provided. First letter of each word, max 2.
@@ -26,9 +40,10 @@
       .join('');
   });
 
-  const roleLabel = computed<string | undefined>(() =>
-    props.role === 'admin' ? 'Administrator' : props.role === 'guest' ? 'Guest' : undefined,
-  );
+  const resolvedRoleLabel = computed<string | undefined>(() => {
+    if (props.roleLabel) return props.roleLabel;
+    return props.role === 'admin' ? 'Administrator' : props.role === 'guest' ? 'Guest' : undefined;
+  });
 
   const roleLetter = computed<string | undefined>(() =>
     props.role === 'admin' ? 'A' : props.role === 'guest' ? 'G' : undefined,
@@ -43,7 +58,7 @@
       v-if="role"
       :class="['app-avatar__role', `app-avatar__role--${role}`]"
       role="img"
-      :aria-label="roleLabel"
+      :aria-label="resolvedRoleLabel"
     >
       {{ roleLetter }}
     </span>

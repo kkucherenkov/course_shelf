@@ -57,6 +57,9 @@ export default defineNuxtConfig({
   // dev it's a 404 (the plugin defaults silently).
   app: {
     head: {
+      // Baseline before hydration — `app.vue`'s `useHead` takes over and
+      // keeps this in sync with the active locale once the SPA mounts (#589).
+      htmlAttrs: { lang: 'en' },
       script: [{ src: '/_app-config.js' }],
     },
   },

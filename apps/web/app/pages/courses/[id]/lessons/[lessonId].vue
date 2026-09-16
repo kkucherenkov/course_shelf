@@ -483,6 +483,7 @@
           :current-time="position"
           :transcript-cues="transcriptCues"
           :transcript-active-index="transcriptActiveIndex"
+          :tabs-label="t('pages.lessonPlayer.sidebarTabsLabel')"
           :tab-sections="t('pages.lessonPlayer.tabSections')"
           :tab-notes="t('pages.lessonPlayer.tabNotes')"
           :tab-bookmarks="t('pages.lessonPlayer.tabBookmarks')"

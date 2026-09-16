@@ -104,7 +104,7 @@
       align-items: center;
       justify-content: center;
       font-size: var(--text-xs);
-      font-weight: 700;
+      font-weight: var(--fw-bold);
       border-radius: 50%;
       flex-shrink: 0;
 

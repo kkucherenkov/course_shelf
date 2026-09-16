@@ -195,7 +195,7 @@
 
     &__email {
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -215,7 +215,7 @@
     &__joined {
       display: none;
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       font-family: var(--font-mono);
 
       @media (width >= 768px) {

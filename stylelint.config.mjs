@@ -71,31 +71,6 @@ export default {
             resolveNestedSelectors: true,
           },
         ],
-
-        // #664: dialect gates. Scoped to packages/ui for now — apps/web
-        // still carries pre-existing violations (17 literal font-weight
-        // outside admin, 4 legacy media queries + 54 alias reads inside
-        // admin) that belong to other in-flight lanes or are queued behind
-        // a maintainer go-ahead (T-2026-09-16-style-gates). Fold into the
-        // top-level `rules` once that cleanup lands, and drop this block.
-        'declaration-property-value-disallowed-list': [
-          {
-            'font-weight': [String.raw`/^\d+$/`],
-            'line-height': [String.raw`/^[\d.]+$/`],
-            '/.*/': [String.raw`/var\(--(${TOKEN_ALIASES.join('|')})\)/`],
-          },
-          {
-            message:
-              'Use a design token: var(--fw-*) for font-weight, var(--leading-*) for ' +
-              'line-height. No short alias (var(--text-muted), var(--primary), …) — ' +
-              'reference the canonical long name directly (see ' +
-              'packages/design-tokens/src/emit-scss.ts:themedAliasLines).',
-          },
-        ],
-        'media-feature-name-disallowed-list': [
-          ['min-width', 'max-width'],
-          { message: 'Use range syntax: @media (width >= 768px), not @media (min-width: …).' },
-        ],
       },
     },
     {
@@ -158,9 +133,15 @@ export default {
     ],
 
     // CLAUDE.md: color/background/border-color must use var(--*) tokens.
+    // #664/#676: also gates literal font-weight/line-height and the short
+    // design-token aliases (see TOKEN_ALIASES above) — repo-wide, not just
+    // packages/ui, now that apps/web's pre-existing violations are cleaned
+    // (T-2026-09-16-style-gates, T-2026-09-16-style-gates-2).
     'declaration-property-value-disallowed-list': [
       {
-        '/.*/': [String.raw`/var\(--ui-/`],
+        '/.*/': [String.raw`/var\(--ui-/`, String.raw`/var\(--(${TOKEN_ALIASES.join('|')})\)/`],
+        'font-weight': [String.raw`/^\d+$/`],
+        'line-height': [String.raw`/^[\d.]+$/`],
         'z-index': [String.raw`/^-?\d+$/`],
         'transition-duration': [String.raw`/\b\d+m?s\b/`],
         'animation-duration': [String.raw`/\b\d+m?s\b/`],
@@ -184,8 +165,16 @@ export default {
         message:
           'Use a design token: var(--surface-*)/var(--text-*)/var(--border-*)/var(--status-*) ' +
           'instead of var(--ui-*). Also: var(--z-*) for z-index, var(--dur-*) for durations, ' +
-          'var(--space-*) or a named SCSS variable for layout dimensions (0/1px/2px are exempt).',
+          'var(--space-*) or a named SCSS variable for layout dimensions (0/1px/2px are exempt), ' +
+          'var(--fw-*) for font-weight, var(--leading-*) for line-height. No short alias ' +
+          '(var(--text-muted), var(--primary), …) — reference the canonical long name directly ' +
+          '(see packages/design-tokens/src/emit-scss.ts:themedAliasLines).',
       },
+    ],
+
+    'media-feature-name-disallowed-list': [
+      ['min-width', 'max-width'],
+      { message: 'Use range syntax: @media (width >= 768px), not @media (min-width: …).' },
     ],
 
     'selector-class-pattern': [

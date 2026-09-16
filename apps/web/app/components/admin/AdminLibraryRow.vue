@@ -193,7 +193,7 @@
       background: var(--surface-raised);
       display: grid;
       place-items: center;
-      color: var(--text-muted);
+      color: var(--text-secondary);
       font-size: $icon-inner-font;
       flex-shrink: 0;
     }
@@ -214,7 +214,7 @@
 
     &__sub {
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       margin-top: var(--space-1);
       display: flex;
       gap: var(--space-2);
@@ -235,7 +235,7 @@
     }
 
     &__sep {
-      color: var(--text-subtle);
+      color: var(--text-tertiary);
     }
 
     // ── Copyable path ────────────────────────────────────────────────────────
@@ -253,7 +253,7 @@
     &__courses {
       display: none;
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
 
       @media (width >= 1024px) {
         display: block;
@@ -309,10 +309,10 @@
 
       &[data-status='cancelled'] {
         background: var(--surface-raised);
-        color: var(--text-muted);
+        color: var(--text-secondary);
 
         .adm-lib-row__status-dot {
-          background: var(--text-muted);
+          background: var(--text-secondary);
         }
       }
 
@@ -345,7 +345,7 @@
       background: none;
       font-size: var(--text-xs);
       font-weight: var(--fw-medium);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       cursor: pointer;
 
       &:hover {

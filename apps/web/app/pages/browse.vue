@@ -349,7 +349,7 @@
     &__title {
       margin: 0;
       font-size: var(--text-2xl);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-fg);
     }
 

@@ -231,7 +231,7 @@
     &__sub {
       margin: var(--space-1) 0 0;
       font-size: var(--text-sm);
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
 
     &__error-banner {
@@ -271,7 +271,7 @@
         font-weight: var(--fw-semibold);
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        color: var(--text-muted);
+        color: var(--text-secondary);
       }
 
       @media (width >= 1024px) {

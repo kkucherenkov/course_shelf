@@ -288,7 +288,7 @@
       background: var(--surface-overlay);
       color: var(--text-fg);
       font-size: var(--text-sm);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
       text-decoration: none;
       transition:
         background var(--dur-fast) var(--ease-default),

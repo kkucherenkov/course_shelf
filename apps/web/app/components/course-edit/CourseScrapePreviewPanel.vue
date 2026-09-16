@@ -373,7 +373,7 @@
     &__heading {
       margin: 0;
       font-size: var(--text-base);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-loud);
     }
 
@@ -425,7 +425,7 @@
 
     &__candidate-source {
       font-size: var(--text-xs);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       text-transform: uppercase;
       letter-spacing: 0.04em;
       color: var(--text-secondary);
@@ -445,11 +445,11 @@
 
       thead th {
         color: var(--text-secondary);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
       }
 
       tbody th {
-        font-weight: 500;
+        font-weight: var(--fw-medium);
         color: var(--text-fg);
       }
     }

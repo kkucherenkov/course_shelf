@@ -87,7 +87,7 @@
       margin: 0;
       padding: var(--space-4);
       font-size: var(--text-sm);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       background: var(--surface-surface);
       border: 1px solid var(--border-default);
       border-radius: var(--radius-md);
@@ -133,7 +133,7 @@
     &__lessons {
       flex-shrink: 0;
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       font-variant-numeric: tabular-nums;
     }
 
@@ -141,7 +141,7 @@
       flex-shrink: 0;
       width: $chevron-size;
       height: $chevron-size;
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
   }
 </style>

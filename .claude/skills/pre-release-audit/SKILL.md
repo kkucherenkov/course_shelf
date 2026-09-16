@@ -79,6 +79,37 @@ screenshot per combination.
 Then dispatch Assessment A. Then synthesize: where A and B agree, where B caught
 what A missed, and which of B's findings are false positives.
 
+## Pass C — interaction and performance, when a question needs it
+
+A and B answer "what is broken on a page the harness can reach". Neither
+clicks, submits, or measures cost. `chrome-devtools-mcp` covers that gap:
+CPU and network throttling, performance traces, Core Web Vitals, and driving
+a real Chrome conversationally instead of extending the driver first.
+
+Run it **as a third pass, against a question**, not as a matrix. It produces
+no comparable numbers, so it never replaces B — the audit's value is that run
+N and run N-1 walk the same 128 combinations.
+
+Worth its cost on:
+
+- **Long operations.** A scan is never triggered by the harness and takes
+  minutes on real data. Its progress surface is the product's strongest, and
+  nothing automated has ever watched it run.
+- **Cost claims we have asserted but never measured.** The course page mounts
+  540 lesson rows with no virtualisation. That has been in three reports as a
+  defect and zero times as a number.
+- **Keyboard-only paths.** Two admin dialogs moved to a native `<dialog>` on
+  the strength of the platform giving focus trapping for free. No check drives
+  them by keyboard.
+
+**It does not see the player's native chrome.** The CC menu and fullscreen are
+drawn by the browser, not the page, and CDP does not expose them either.
+`computer-use` remains the only thing that reaches them; do not let the MCP's
+presence imply otherwise.
+
+Not configured in this repository yet: add the server to `.mcp.json` before
+the first use.
+
 ## Traps that cost hours
 
 Every one of these produced a wrong answer that looked like a right answer.
@@ -111,6 +142,18 @@ parent. Walk up the tree.
 only substitutes on `false` and `null`, so `.conclusion // "PENDING"` returns
 `""` and every "is it still running?" test silently passes. Gate on
 `.status != "COMPLETED"`.
+
+**A baseline regeneration does not re-run the checks.** The regen workflow
+pushes as `github-actions[bot]` with `GITHUB_TOKEN`, and GitHub deliberately
+does not trigger workflows on such a push — otherwise a regeneration would
+retrigger itself. The pull request keeps showing the previous run, so a stale
+red looks like a slow queue. Push something of your own, or update the branch,
+to get the verdict on the new baselines.
+
+**Regeneration rewrites every baseline whose bytes differ**, including
+sub-threshold drift the visual check deliberately ignores. Twice this pulled an
+unrelated component's image into a pull request that never touched it. Read the
+regen commit's file list before accepting it.
 
 **Bash and Monitor commands run under zsh**, which does not word-split unquoted
 parameters: `for x in $LIST` iterates once with the whole string. It produced a

@@ -23,6 +23,11 @@
       "command": "npx",
       "args": ["-y", "@playwright/mcp@latest"]
     },
+    "chrome-devtools": {
+      "$why": "Pass C of the pre-release audit: performance traces, CPU/network throttling and Core Web Vitals, plus driving Chrome conversationally instead of extending the audit driver first. Does NOT see the player's native CC menu or fullscreen \u2014 those are browser chrome, not page DOM.",
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"]
+    },
     "filesystem-repo": {
       "$why": "Read-only filesystem access scoped to this repo. Useful when the agent client lacks native file tools.",
       "command": "npx",

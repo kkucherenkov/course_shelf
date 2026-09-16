@@ -1,11 +1,11 @@
-# Mark the design bundle as vendored so GitHub stops counting JSX / HTML / CSS
-# prototype files toward language statistics, and collapses their diffs by
-# default in PR review (these are visual references, not first-class source).
-docs/design/**/*.html linguist-vendored=true
-docs/design/**/*.jsx linguist-vendored=true
-docs/design/**/*.css linguist-vendored=true
-docs/design/**/*.json linguist-vendored=true
-docs/design/**/*.png binary
-
-# Generated artefacts that live in-tree but are reproducible from inputs.
-packages/ui_flutter/lib/src/theme/tokens.g.dart linguist-generated=true
+# The task stack is an append-at-the-top list of `## T-<date>-<slug>` entries,
+# so every parallel lane writes at the same place and every lane after the
+# first conflicts there. A line-level merge interleaves two entries into
+# nonsense; this driver merges whole entries and, because git hands it the
+# ancestor, tells "new on one side" apart from "the other side deliberately
+# moved it to done.md" — the case a blind union resurrects.
+#
+# The driver command is per-clone git config, which a repository cannot ship.
+# `pnpm prepare` runs scripts/setup-merge-driver.sh, which sets it.
+specs/tasks/active.md merge=taskstack
+specs/tasks/done.md   merge=taskstack

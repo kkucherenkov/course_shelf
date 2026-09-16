@@ -236,7 +236,9 @@
   }
 
   // Compact density — mirrors [data-density="compact"] .input → 30px height.
-  :global([data-density='compact']) .app-select--md .app-select__control {
+  // See AppInput.vue for why the whole selector, not just the ancestor, has
+  // to sit inside :global() (#622).
+  :global([data-density='compact'] .app-select--md .app-select__control) {
     height: $control-height-compact;
   }
 </style>

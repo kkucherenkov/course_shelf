@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import { defineComponent, h, ref, type PropType } from 'vue';
@@ -195,5 +197,20 @@ describe('AppSelect', () => {
     await select.setValue('apple');
     expect(wrapper.vm.$refs).toBeDefined();
     expect((select.element as HTMLSelectElement).value).toBe('apple');
+  });
+
+  // Regression guard for #622 — see AppInput.spec.ts for the full writeup.
+  // Same broken pattern (`:global(sel) .foo`), same fix (wrap the whole
+  // selector), same manual verification via a package build.
+  it('keeps the compact-density selector fully inside :global(), not split by a combinator', () => {
+    const source = readFileSync(path.join(import.meta.dirname, 'AppSelect.vue'), 'utf8');
+    const style = source.slice(source.indexOf('<style'), source.lastIndexOf('</style>'));
+    // Strip `//` comments first — a doc comment describing the broken
+    // pattern in prose would otherwise trip this guard too.
+    const rules = style.replaceAll(/\/\/.*$/gm, '');
+    expect(rules).toContain(
+      ":global([data-density='compact'] .app-select--md .app-select__control)",
+    );
+    expect(rules).not.toMatch(/:global\([^)]*\)\s+\./);
   });
 });

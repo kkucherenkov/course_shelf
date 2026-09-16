@@ -531,6 +531,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/model-weights': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List model weight files on the shared weights volume
+     * @description Every file under the weights directory — whisper's ggml `.bin` AND llama's `.gguf`, side by side, since both live on the same volume. `usableForQuizGeneration` is what a quiz-generation model picker would filter on. Requires admin role.
+     */
+    get: operations['listModelWeights'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/model-weights/{filename}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete one model weight file
+     * @description Removes a file from the weights volume. Refuses to delete a file that is currently the deployment's configured active model (whisper's `WHISPER_MODEL_PATH`, or quiz generation's `LLAMA_DEFAULT_MODEL`) — change the config first. Requires admin role.
+     */
+    delete: operations['deleteModelWeight'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/studios': {
     parameters: {
       query?: never;
@@ -893,6 +933,126 @@ export interface paths {
      *     than implying a whole-library run.
      */
     post: operations['startCourseTranscription'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/lessons/{id}/quizzes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generate a quiz proposal for one lesson
+     * @description Explicit, on-demand generation from this lesson's transcript cues — never triggered automatically by a scan or import. Returns 202 immediately; the run happens in the background (a local llama.cpp model, chosen by `modelId` or the deployment default, runs once per transcript window). Poll `GET /quizzes?lessonId=...&status=proposed` to see the result once it lands — there is no separate run record.
+     */
+    post: operations['generateLessonQuiz'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/courses/{id}/quizzes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generate quiz proposals for every lesson in a course
+     * @description Same generation as `POST /lessons/{id}/quizzes`, walked over every lesson in this course. No library-wide form exists — unlike transcription, a whole-library quiz-generation run buys questions nobody is likely to open at a compute cost this project is not willing to spend.
+     */
+    post: operations['generateCourseQuiz'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/quizzes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List quiz proposals
+     * @description Returns quizzes ordered newest-first. Optionally filtered by status, lessonId and/or courseId — this is how a course-scoped generation run's progress is observed, since no separate run record exists. Requires admin role.
+     */
+    get: operations['listQuizzes'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/quizzes/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get one quiz proposal
+     * @description Returns a single quiz by id. Requires admin role.
+     */
+    get: operations['getQuiz'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/quizzes/{id}/apply': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Apply a proposed quiz
+     * @description Marks the quiz applied — the proposal itself is the real artifact once applied, there is nothing further to merge into. Requires admin role.
+     */
+    post: operations['applyQuiz'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/quizzes/{id}/discard': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Discard a proposed quiz
+     * @description Marks the quiz as discarded; nothing else is written. Requires admin role.
+     */
+    post: operations['discardQuiz'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2181,6 +2341,80 @@ export interface components {
     ApplyIdentifyRequest: {
       /** @description Overrides the policy stored on the task when present. */
       mergePolicy?: components['schemas']['MergePolicyDto'];
+    };
+    /**
+     * @description Lifecycle state of a generated quiz proposal.
+     * @example proposed
+     * @enum {string}
+     */
+    QuizStatus: 'proposed' | 'applied' | 'discarded';
+    /** @description One multiple-choice question generated from a transcript window. */
+    QuizQuestionDto: {
+      /** @description The question text. */
+      prompt: string;
+      /** @description Exactly four answer options. */
+      options: string[];
+      /** @description Index into `options` of the correct answer. */
+      correctOptionIndex: number;
+      /** @description Start timestamp (ms) of the transcript window this question was generated from — assigned by the window, not the model, so it cannot be hallucinated. */
+      cueStartMs: number;
+    };
+    /** @description A reviewable quiz-generation proposal for one lesson — reviewed by an admin (apply/discard) before it counts as real, the same lifecycle as an identify task. */
+    QuizDto: {
+      /** @example clxvquz0000000000000000001 */
+      id: string;
+      /** @example clxvles0000000000000000001 */
+      lessonId: string;
+      /** @example clxvcrs0000000000000000001 */
+      courseId: string;
+      status: components['schemas']['QuizStatus'];
+      /**
+       * @description Filename of the .gguf weight this proposal was generated with — what lets an admin compare a 4B run against a 9B run of the same lesson.
+       * @example Qwen3.5-4B-Q4_K_M.gguf
+       */
+      modelFilename: string;
+      questions: components['schemas']['QuizQuestionDto'][];
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      completedAt?: string;
+    };
+    /** @description Quizzes, newest first. */
+    QuizListDto: {
+      quizzes: components['schemas']['QuizDto'][];
+    };
+    /** @description Payload for starting a quiz-generation run. Body may be omitted entirely. */
+    GenerateQuizRequest: {
+      /**
+       * @description Filename of the .gguf weight to use (see `GET /admin/model-weights`). Omitted uses the deployment's configured default.
+       * @example Qwen3.5-4B-Q4_K_M.gguf
+       */
+      modelId?: string;
+      /**
+       * @description Runs an ASR-typo cleanup pass on each transcript window before generating questions from it. The cleaned text is never written back to the transcript — only used for this run. Turning it off roughly halves generation time and is reasonable for already-clean author-provided subtitles.
+       * @default true
+       */
+      cleanupEnabled: boolean;
+    };
+    /** @description Acknowledges a quiz-generation run. Generation happens in the background; poll `GET /quizzes?courseId=...&status=proposed` to see proposals as they land — there is no separate run record to poll. */
+    QuizGenerationAcceptedDto: {
+      /** @description The course the run is scoped to (the lesson's own course for a lesson-scoped request). */
+      courseId: string;
+      /** @description Number of lessons this run will attempt. */
+      lessonsQueued: number;
+    };
+    /** @description One model weight file on the shared weights volume (whisper's ggml AND llama's gguf). */
+    ModelWeightDto: {
+      /** @example Qwen3.5-4B-Q4_K_M.gguf */
+      filename: string;
+      /** @description File size in bytes, as reported by the filesystem. */
+      sizeBytes: number;
+      /** @description True for a `.gguf` file (a llama.cpp weight, selectable as `GenerateQuizRequest.modelId`); false for whisper's `.bin`. */
+      usableForQuizGeneration: boolean;
+    };
+    /** @description Every file in the weights directory, unsorted. */
+    ModelWeightListDto: {
+      weights: components['schemas']['ModelWeightDto'][];
     };
     /**
      * @description Full instructor view including their associated courses (paginated, up to 20).
@@ -5309,6 +5543,103 @@ export interface operations {
       429: components['responses']['TooManyRequests'];
     };
   };
+  listModelWeights: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Every weight file found */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ModelWeightListDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+    };
+  };
+  deleteModelWeight: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Bare filename, no path separators (rejected as invalid otherwise). */
+        filename: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Deleted */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description No file with that name in the weights directory */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description The file is the deployment's currently configured active model */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+    };
+  };
   upsertStudio: {
     parameters: {
       query?: never;
@@ -6123,6 +6454,367 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
+    };
+  };
+  generateLessonQuiz: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the lesson to generate a quiz for. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['GenerateQuizRequest'];
+      };
+    };
+    responses: {
+      /** @description Quiz generation accepted and running */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['QuizGenerationAcceptedDto'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Lesson not found, or the named model does not exist in the weights directory */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Quiz generation is already running for this lesson's course. llama.cpp saturates every core it is given, same as whisper. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+      /** @description No model is configured (LLAMA_DEFAULT_MODEL is unset) and none was named. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  generateCourseQuiz: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the course to generate quizzes for. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['GenerateQuizRequest'];
+      };
+    };
+    responses: {
+      /** @description Quiz generation accepted and running */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['QuizGenerationAcceptedDto'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Course not found, or the named model does not exist in the weights directory */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Quiz generation is already running for this course. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+      /** @description No model is configured (LLAMA_DEFAULT_MODEL is unset) and none was named. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listQuizzes: {
+    parameters: {
+      query?: {
+        status?: components['schemas']['QuizStatus'];
+        lessonId?: string;
+        courseId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Matching quizzes */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['QuizListDto'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+    };
+  };
+  getQuiz: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The quiz */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['QuizDto'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Quiz not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+    };
+  };
+  applyQuiz: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The applied quiz */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['QuizDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Quiz not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Quiz is not in the proposed state */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+    };
+  };
+  discardQuiz: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The discarded quiz */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['QuizDto'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have the admin role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Quiz not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Quiz is not in the proposed state */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
     };
   };
   listInstructors: {

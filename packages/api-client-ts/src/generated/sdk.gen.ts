@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApplyIdentifyResultData, ApplyIdentifyResultErrors, ApplyIdentifyResultResponses, CancelTranscriptionData, CancelTranscriptionErrors, CancelTranscriptionResponses, CreateBackupData, CreateBackupErrors, CreateBackupResponses, CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, DiscardIdentifyTaskData, DiscardIdentifyTaskErrors, DiscardIdentifyTaskResponses, DownloadBackupData, DownloadBackupErrors, DownloadBackupResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersErrors, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceErrors, GetAdminInstanceResponses, GetAdminUserData, GetAdminUserErrors, GetAdminUserResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseDownloadEstimateData, GetCourseDownloadEstimateErrors, GetCourseDownloadEstimateResponses, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCoursePosterData, GetCoursePosterErrors, GetCoursePosterResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetIdentifyTaskData, GetIdentifyTaskErrors, GetIdentifyTaskResponses, GetInstructorData, GetInstructorErrors, GetInstructorResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLatestTranscriptionData, GetLatestTranscriptionErrors, GetLatestTranscriptionResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetStudioData, GetStudioErrors, GetStudioResponses, GetTagData, GetTagErrors, GetTagResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueMaterialDownloadUrlData, IssueMaterialDownloadUrlErrors, IssueMaterialDownloadUrlResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListAdminLibrariesData, ListAdminLibrariesErrors, ListAdminLibrariesResponses, ListAdminScansData, ListAdminScansErrors, ListAdminScansResponses, ListAdminTranscriptionsData, ListAdminTranscriptionsErrors, ListAdminTranscriptionsResponses, ListAdminUsersData, ListAdminUsersErrors, ListAdminUsersResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListIdentifyTasksData, ListIdentifyTasksErrors, ListIdentifyTasksResponses, ListInstructorsData, ListInstructorsErrors, ListInstructorsResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, ListLibraryTranscriptionsData, ListLibraryTranscriptionsErrors, ListLibraryTranscriptionsResponses, ListScrapersData, ListScrapersErrors, ListScrapersResponses, ListStudiosData, ListStudiosErrors, ListStudiosResponses, ListTagsData, ListTagsErrors, ListTagsResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RemoveLibraryData, RemoveLibraryErrors, RemoveLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunCourseRescanData, RunCourseRescanErrors, RunCourseRescanResponses, RunIdentifyTaskData, RunIdentifyTaskErrors, RunIdentifyTaskResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, ScrapeCoursePreviewData, ScrapeCoursePreviewErrors, ScrapeCoursePreviewResponses, SearchCatalogueData, SearchCatalogueErrors, SearchCatalogueResponses, SignOutOtherSessionsData, SignOutOtherSessionsErrors, SignOutOtherSessionsResponses, StartBackfillMetadataData, StartBackfillMetadataErrors, StartBackfillMetadataResponses, StartCourseTranscriptionData, StartCourseTranscriptionErrors, StartCourseTranscriptionResponses, StartTranscriptionData, StartTranscriptionErrors, StartTranscriptionResponses, StreamLessonSubtitleData, StreamLessonSubtitleErrors, StreamLessonSubtitleResponses, StreamLessonVideoData, StreamLessonVideoErrors, StreamLessonVideoResponses, StreamMaterialData, StreamMaterialErrors, StreamMaterialResponses, UpdateAdminUserData, UpdateAdminUserErrors, UpdateAdminUserResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpdateLibraryData, UpdateLibraryErrors, UpdateLibraryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpsertInstructorData, UpsertInstructorErrors, UpsertInstructorResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses, UpsertStudioData, UpsertStudioErrors, UpsertStudioResponses, UpsertTagData, UpsertTagErrors, UpsertTagResponses } from './types.gen';
+import type { ApplyIdentifyResultData, ApplyIdentifyResultErrors, ApplyIdentifyResultResponses, ApplyQuizData, ApplyQuizErrors, ApplyQuizResponses, CancelTranscriptionData, CancelTranscriptionErrors, CancelTranscriptionResponses, CreateBackupData, CreateBackupErrors, CreateBackupResponses, CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteModelWeightData, DeleteModelWeightErrors, DeleteModelWeightResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, DiscardIdentifyTaskData, DiscardIdentifyTaskErrors, DiscardIdentifyTaskResponses, DiscardQuizData, DiscardQuizErrors, DiscardQuizResponses, DownloadBackupData, DownloadBackupErrors, DownloadBackupResponses, GenerateCourseQuizData, GenerateCourseQuizErrors, GenerateCourseQuizResponses, GenerateLessonQuizData, GenerateLessonQuizErrors, GenerateLessonQuizResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersErrors, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceErrors, GetAdminInstanceResponses, GetAdminUserData, GetAdminUserErrors, GetAdminUserResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseDownloadEstimateData, GetCourseDownloadEstimateErrors, GetCourseDownloadEstimateResponses, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCoursePosterData, GetCoursePosterErrors, GetCoursePosterResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetIdentifyTaskData, GetIdentifyTaskErrors, GetIdentifyTaskResponses, GetInstructorData, GetInstructorErrors, GetInstructorResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLatestTranscriptionData, GetLatestTranscriptionErrors, GetLatestTranscriptionResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetQuizData, GetQuizErrors, GetQuizResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetStudioData, GetStudioErrors, GetStudioResponses, GetTagData, GetTagErrors, GetTagResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueMaterialDownloadUrlData, IssueMaterialDownloadUrlErrors, IssueMaterialDownloadUrlResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListAdminLibrariesData, ListAdminLibrariesErrors, ListAdminLibrariesResponses, ListAdminScansData, ListAdminScansErrors, ListAdminScansResponses, ListAdminTranscriptionsData, ListAdminTranscriptionsErrors, ListAdminTranscriptionsResponses, ListAdminUsersData, ListAdminUsersErrors, ListAdminUsersResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListIdentifyTasksData, ListIdentifyTasksErrors, ListIdentifyTasksResponses, ListInstructorsData, ListInstructorsErrors, ListInstructorsResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, ListLibraryTranscriptionsData, ListLibraryTranscriptionsErrors, ListLibraryTranscriptionsResponses, ListModelWeightsData, ListModelWeightsErrors, ListModelWeightsResponses, ListQuizzesData, ListQuizzesErrors, ListQuizzesResponses, ListScrapersData, ListScrapersErrors, ListScrapersResponses, ListStudiosData, ListStudiosErrors, ListStudiosResponses, ListTagsData, ListTagsErrors, ListTagsResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RemoveLibraryData, RemoveLibraryErrors, RemoveLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunCourseRescanData, RunCourseRescanErrors, RunCourseRescanResponses, RunIdentifyTaskData, RunIdentifyTaskErrors, RunIdentifyTaskResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, ScrapeCoursePreviewData, ScrapeCoursePreviewErrors, ScrapeCoursePreviewResponses, SearchCatalogueData, SearchCatalogueErrors, SearchCatalogueResponses, SignOutOtherSessionsData, SignOutOtherSessionsErrors, SignOutOtherSessionsResponses, StartBackfillMetadataData, StartBackfillMetadataErrors, StartBackfillMetadataResponses, StartCourseTranscriptionData, StartCourseTranscriptionErrors, StartCourseTranscriptionResponses, StartTranscriptionData, StartTranscriptionErrors, StartTranscriptionResponses, StreamLessonSubtitleData, StreamLessonSubtitleErrors, StreamLessonSubtitleResponses, StreamLessonVideoData, StreamLessonVideoErrors, StreamLessonVideoResponses, StreamMaterialData, StreamMaterialErrors, StreamMaterialResponses, UpdateAdminUserData, UpdateAdminUserErrors, UpdateAdminUserResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpdateLibraryData, UpdateLibraryErrors, UpdateLibraryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpsertInstructorData, UpsertInstructorErrors, UpsertInstructorResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses, UpsertStudioData, UpsertStudioErrors, UpsertStudioResponses, UpsertTagData, UpsertTagErrors, UpsertTagResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -402,6 +402,28 @@ export const discardIdentifyTask = <ThrowOnError extends boolean = false>(option
 });
 
 /**
+ * List model weight files on the shared weights volume
+ *
+ * Every file under the weights directory — whisper's ggml `.bin` AND llama's `.gguf`, side by side, since both live on the same volume. `usableForQuizGeneration` is what a quiz-generation model picker would filter on. Requires admin role.
+ */
+export const listModelWeights = <ThrowOnError extends boolean = false>(options?: Options<ListModelWeightsData, ThrowOnError>) => (options?.client ?? client).get<ListModelWeightsResponses, ListModelWeightsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/model-weights',
+    ...options
+});
+
+/**
+ * Delete one model weight file
+ *
+ * Removes a file from the weights volume. Refuses to delete a file that is currently the deployment's configured active model (whisper's `WHISPER_MODEL_PATH`, or quiz generation's `LLAMA_DEFAULT_MODEL`) — change the config first. Requires admin role.
+ */
+export const deleteModelWeight = <ThrowOnError extends boolean = false>(options: Options<DeleteModelWeightData, ThrowOnError>) => (options.client ?? client).delete<DeleteModelWeightResponses, DeleteModelWeightErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/model-weights/{filename}',
+    ...options
+});
+
+/**
  * Create or update a studio
  *
  * Creates a new studio record or updates an existing one (matched by slug
@@ -701,6 +723,80 @@ export const startCourseTranscription = <ThrowOnError extends boolean = false>(o
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Generate a quiz proposal for one lesson
+ *
+ * Explicit, on-demand generation from this lesson's transcript cues — never triggered automatically by a scan or import. Returns 202 immediately; the run happens in the background (a local llama.cpp model, chosen by `modelId` or the deployment default, runs once per transcript window). Poll `GET /quizzes?lessonId=...&status=proposed` to see the result once it lands — there is no separate run record.
+ */
+export const generateLessonQuiz = <ThrowOnError extends boolean = false>(options: Options<GenerateLessonQuizData, ThrowOnError>) => (options.client ?? client).post<GenerateLessonQuizResponses, GenerateLessonQuizErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/lessons/{id}/quizzes',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Generate quiz proposals for every lesson in a course
+ *
+ * Same generation as `POST /lessons/{id}/quizzes`, walked over every lesson in this course. No library-wide form exists — unlike transcription, a whole-library quiz-generation run buys questions nobody is likely to open at a compute cost this project is not willing to spend.
+ */
+export const generateCourseQuiz = <ThrowOnError extends boolean = false>(options: Options<GenerateCourseQuizData, ThrowOnError>) => (options.client ?? client).post<GenerateCourseQuizResponses, GenerateCourseQuizErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/courses/{id}/quizzes',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List quiz proposals
+ *
+ * Returns quizzes ordered newest-first. Optionally filtered by status, lessonId and/or courseId — this is how a course-scoped generation run's progress is observed, since no separate run record exists. Requires admin role.
+ */
+export const listQuizzes = <ThrowOnError extends boolean = false>(options?: Options<ListQuizzesData, ThrowOnError>) => (options?.client ?? client).get<ListQuizzesResponses, ListQuizzesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/quizzes',
+    ...options
+});
+
+/**
+ * Get one quiz proposal
+ *
+ * Returns a single quiz by id. Requires admin role.
+ */
+export const getQuiz = <ThrowOnError extends boolean = false>(options: Options<GetQuizData, ThrowOnError>) => (options.client ?? client).get<GetQuizResponses, GetQuizErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/quizzes/{id}',
+    ...options
+});
+
+/**
+ * Apply a proposed quiz
+ *
+ * Marks the quiz applied — the proposal itself is the real artifact once applied, there is nothing further to merge into. Requires admin role.
+ */
+export const applyQuiz = <ThrowOnError extends boolean = false>(options: Options<ApplyQuizData, ThrowOnError>) => (options.client ?? client).post<ApplyQuizResponses, ApplyQuizErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/quizzes/{id}/apply',
+    ...options
+});
+
+/**
+ * Discard a proposed quiz
+ *
+ * Marks the quiz as discarded; nothing else is written. Requires admin role.
+ */
+export const discardQuiz = <ThrowOnError extends boolean = false>(options: Options<DiscardQuizData, ThrowOnError>) => (options.client ?? client).post<DiscardQuizResponses, DiscardQuizErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/quizzes/{id}/discard',
+    ...options
 });
 
 /**

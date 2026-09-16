@@ -9,12 +9,18 @@ All URIs are relative to *http://localhost:3000*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**applyQuiz**](LearningApi.md#applyquiz) | **POST** /api/v1/quizzes/{id}/apply | Apply a proposed quiz
 [**createBookmark**](LearningApi.md#createbookmark) | **POST** /api/v1/lessons/{lessonId}/bookmarks | Create a bookmark on a lesson
 [**deleteBookmark**](LearningApi.md#deletebookmark) | **DELETE** /api/v1/bookmarks/{id} | Delete a bookmark
 [**deleteNote**](LearningApi.md#deletenote) | **DELETE** /api/v1/notes/{lessonId} | Clear the requester&#39;s note for a lesson
+[**discardQuiz**](LearningApi.md#discardquiz) | **POST** /api/v1/quizzes/{id}/discard | Discard a proposed quiz
+[**generateCourseQuiz**](LearningApi.md#generatecoursequiz) | **POST** /api/v1/courses/{id}/quizzes | Generate quiz proposals for every lesson in a course
+[**generateLessonQuiz**](LearningApi.md#generatelessonquiz) | **POST** /api/v1/lessons/{id}/quizzes | Generate a quiz proposal for one lesson
 [**getLessonProgress**](LearningApi.md#getlessonprogress) | **GET** /api/v1/progress/{lessonId} | Get the requester&#39;s progress on a lesson
 [**getNote**](LearningApi.md#getnote) | **GET** /api/v1/notes/{lessonId} | Get the requester&#39;s note for a lesson
+[**getQuiz**](LearningApi.md#getquiz) | **GET** /api/v1/quizzes/{id} | Get one quiz proposal
 [**listLessonBookmarks**](LearningApi.md#listlessonbookmarks) | **GET** /api/v1/lessons/{lessonId}/bookmarks | List the requester&#39;s bookmarks for a lesson
+[**listQuizzes**](LearningApi.md#listquizzes) | **GET** /api/v1/quizzes | List quiz proposals
 [**markCourseComplete**](LearningApi.md#markcoursecomplete) | **POST** /api/v1/courses/{id}/mark-complete | Mark every lesson in the course as completed for the requester
 [**recordLessonProgress**](LearningApi.md#recordlessonprogress) | **POST** /api/v1/progress | Record (upsert) the requester&#39;s progress on a lesson
 [**recordLessonProgressBatch**](LearningApi.md#recordlessonprogressbatch) | **POST** /api/v1/progress/batch | Record up to 200 progress updates in a single call
@@ -22,6 +28,49 @@ Method | HTTP request | Description
 [**updateBookmark**](LearningApi.md#updatebookmark) | **PATCH** /api/v1/bookmarks/{id} | Update a bookmark&#39;s position or label
 [**upsertNote**](LearningApi.md#upsertnote) | **PUT** /api/v1/notes | Upsert the requester&#39;s note for a lesson
 
+
+# **applyQuiz**
+> QuizDto applyQuiz(id)
+
+Apply a proposed quiz
+
+Marks the quiz applied — the proposal itself is the real artifact once applied, there is nothing further to merge into. Requires admin role.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String id = id_example; // String | 
+
+try {
+    final response = api.applyQuiz(id);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->applyQuiz: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**|  | 
+
+### Return type
+
+[**QuizDto**](QuizDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **createBookmark**
 > BookmarkDto createBookmark(lessonId, createBookmarkRequest)
@@ -152,6 +201,139 @@ void (empty response body)
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **discardQuiz**
+> QuizDto discardQuiz(id)
+
+Discard a proposed quiz
+
+Marks the quiz as discarded; nothing else is written. Requires admin role.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String id = id_example; // String | 
+
+try {
+    final response = api.discardQuiz(id);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->discardQuiz: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**|  | 
+
+### Return type
+
+[**QuizDto**](QuizDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **generateCourseQuiz**
+> QuizGenerationAcceptedDto generateCourseQuiz(id, generateQuizRequest)
+
+Generate quiz proposals for every lesson in a course
+
+Same generation as `POST /lessons/{id}/quizzes`, walked over every lesson in this course. No library-wide form exists — unlike transcription, a whole-library quiz-generation run buys questions nobody is likely to open at a compute cost this project is not willing to spend.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String id = id_example; // String | Server-generated cuid identifying the course to generate quizzes for.
+final GenerateQuizRequest generateQuizRequest = {}; // GenerateQuizRequest | 
+
+try {
+    final response = api.generateCourseQuiz(id, generateQuizRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->generateCourseQuiz: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the course to generate quizzes for. | 
+ **generateQuizRequest** | [**GenerateQuizRequest**](GenerateQuizRequest.md)|  | [optional] 
+
+### Return type
+
+[**QuizGenerationAcceptedDto**](QuizGenerationAcceptedDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **generateLessonQuiz**
+> QuizGenerationAcceptedDto generateLessonQuiz(id, generateQuizRequest)
+
+Generate a quiz proposal for one lesson
+
+Explicit, on-demand generation from this lesson's transcript cues — never triggered automatically by a scan or import. Returns 202 immediately; the run happens in the background (a local llama.cpp model, chosen by `modelId` or the deployment default, runs once per transcript window). Poll `GET /quizzes?lessonId=...&status=proposed` to see the result once it lands — there is no separate run record.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String id = id_example; // String | Server-generated cuid identifying the lesson to generate a quiz for.
+final GenerateQuizRequest generateQuizRequest = {}; // GenerateQuizRequest | 
+
+try {
+    final response = api.generateLessonQuiz(id, generateQuizRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->generateLessonQuiz: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the lesson to generate a quiz for. | 
+ **generateQuizRequest** | [**GenerateQuizRequest**](GenerateQuizRequest.md)|  | [optional] 
+
+### Return type
+
+[**QuizGenerationAcceptedDto**](QuizGenerationAcceptedDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **getLessonProgress**
 > LessonProgressDto getLessonProgress(lessonId)
 
@@ -238,6 +420,49 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **getQuiz**
+> QuizDto getQuiz(id)
+
+Get one quiz proposal
+
+Returns a single quiz by id. Requires admin role.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String id = id_example; // String | 
+
+try {
+    final response = api.getQuiz(id);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->getQuiz: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**|  | 
+
+### Return type
+
+[**QuizDto**](QuizDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **listLessonBookmarks**
 > BookmarkListDto listLessonBookmarks(lessonId)
 
@@ -269,6 +494,53 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**BookmarkListDto**](BookmarkListDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **listQuizzes**
+> QuizListDto listQuizzes(status, lessonId, courseId)
+
+List quiz proposals
+
+Returns quizzes ordered newest-first. Optionally filtered by status, lessonId and/or courseId — this is how a course-scoped generation run's progress is observed, since no separate run record exists. Requires admin role.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final QuizStatus status = ; // QuizStatus | 
+final String lessonId = lessonId_example; // String | 
+final String courseId = courseId_example; // String | 
+
+try {
+    final response = api.listQuizzes(status, lessonId, courseId);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->listQuizzes: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **status** | [**QuizStatus**](.md)|  | [optional] 
+ **lessonId** | **String**|  | [optional] 
+ **courseId** | **String**|  | [optional] 
+
+### Return type
+
+[**QuizListDto**](QuizListDto.md)
 
 ### Authorization
 

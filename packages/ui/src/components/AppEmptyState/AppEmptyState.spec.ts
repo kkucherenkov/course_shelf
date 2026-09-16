@@ -55,6 +55,15 @@ describe('AppEmptyState', () => {
     expect(wrapper.find('.app-empty-state__action').exists()).toBe(false);
   });
 
+  it('renders the actions slot (plural alias) when action is not provided', () => {
+    const wrapper = mount(AppEmptyState, {
+      props: { title: 'Empty' },
+      slots: { actions: '<button>Add library</button>' },
+    });
+    expect(wrapper.find('.app-empty-state__action').exists()).toBe(true);
+    expect(wrapper.find('.app-empty-state__action').html()).toContain('Add library');
+  });
+
   it('renders the illustration slot over the default icon when provided', () => {
     const wrapper = mount(AppEmptyState, {
       props: { title: 'Empty' },

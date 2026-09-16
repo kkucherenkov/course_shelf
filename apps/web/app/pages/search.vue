@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { AppButton, AppEmptyState, AppSkeleton, COVER, initials } from '@app/ui';
+  import { AppButton, AppEmptyState, AppErrorState, AppSkeleton, COVER, initials } from '@app/ui';
   import type {
     SearchCourseHit,
     SearchLessonHit,
@@ -114,16 +114,20 @@
     </template>
 
     <!-- ── Error ──────────────────────────────────────────────────────────── -->
-    <div v-else-if="status === 'error'" class="page-search__error" role="alert">
-      <p class="page-search__error-title">{{ t('pages.search.errorTitle') }}</p>
-      <p class="page-search__error-body">{{ errorBody }}</p>
-      <AppButton
-        variant="secondary"
-        size="sm"
-        :label="t('pages.search.errorRetry')"
-        @click="retry"
-      />
-    </div>
+    <AppErrorState
+      v-else-if="status === 'error'"
+      :title="t('pages.search.errorTitle')"
+      :body="errorBody"
+    >
+      <template #action>
+        <AppButton
+          variant="secondary"
+          size="sm"
+          :label="t('pages.search.errorRetry')"
+          @click="retry"
+        />
+      </template>
+    </AppErrorState>
 
     <!-- ── No results ─────────────────────────────────────────────────────── -->
     <AppEmptyState
@@ -395,25 +399,6 @@
       display: flex;
       flex-direction: column;
       gap: var(--space-2);
-    }
-
-    // ── Error ────────────────────────────────────────────────────────────────
-    &__error {
-      padding: var(--space-8) var(--space-4);
-      text-align: center;
-      color: var(--text-secondary);
-    }
-
-    &__error-title {
-      margin: 0 0 var(--space-1);
-      font-size: var(--text-sm);
-      color: var(--status-error-fg);
-    }
-
-    &__error-body {
-      margin: 0 0 var(--space-3);
-      font-size: var(--text-sm);
-      color: var(--text-secondary);
     }
   }
 </style>

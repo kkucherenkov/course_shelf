@@ -101,6 +101,7 @@
   // nothing to fetch; just reveal what's already in hand (#593).
   const scanErrorsOpen = ref(false);
   const scanErrors = computed(() => liveScan.value?.errors ?? []);
+  const hasScanErrors = computed(() => scanErrors.value.length > 0);
 
   // Live transcription progress
   const {
@@ -135,18 +136,19 @@
     () => latestScanStatus.value === 'failed' && !scanIsRunning.value,
   );
 
-  // Derived relative time helper
+  // Derived relative time helper — routed through i18n (was hardcoded
+  // English "Nd ago" regardless of locale).
   function formatRelative(isoString: string): string {
     const now = Date.now();
     const then = new Date(isoString).getTime();
     const diffSec = Math.floor((now - then) / 1000);
-    if (diffSec < 60) return `${String(diffSec)}s ago`;
+    if (diffSec < 60) return t('ui.noteEditor.agoSeconds', diffSec, { named: { n: diffSec } });
     const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${String(diffMin)}m ago`;
+    if (diffMin < 60) return t('ui.noteEditor.agoMinutes', diffMin, { named: { n: diffMin } });
     const diffH = Math.floor(diffMin / 60);
-    if (diffH < 24) return `${String(diffH)}h ago`;
+    if (diffH < 24) return t('ui.noteEditor.agoHours', diffH, { named: { n: diffH } });
     const diffD = Math.floor(diffH / 24);
-    return `${String(diffD)}d ago`;
+    return t('ui.noteEditor.agoDays', diffD, { named: { n: diffD } });
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -158,11 +160,19 @@
     isScanning.value = true;
     scanErrorsOpen.value = false;
     try {
-      await runLibraryScan({ client, throwOnError: false, path: { id: libraryId.value } });
+      const res = await runLibraryScan({
+        client,
+        throwOnError: false,
+        path: { id: libraryId.value },
+      });
+      if (res.error) {
+        toast.add({ title: t('pages.admin.libraryDetail.scanStartError'), color: 'error' });
+        return;
+      }
       await startPolling();
       await Promise.all([refetchLibraries(), refetchScans()]);
     } catch {
-      toast.add({ title: t('pages.admin.libraryDetail.scanNowCta'), color: 'error' });
+      toast.add({ title: t('pages.admin.libraryDetail.scanStartError'), color: 'error' });
     } finally {
       isScanning.value = false;
     }
@@ -312,22 +322,6 @@
               :stat-errors-label="t('pages.admin.libraryDetail.scanProgressErrorsStat')"
               @errors-clicked="scanErrorsOpen = !scanErrorsOpen"
             />
-
-            <ul
-              v-if="scanErrorsOpen && scanErrors.length > 0"
-              class="adm-lib-detail__scan-errors"
-              role="list"
-              :aria-label="t('pages.admin.libraryDetail.scanProgressErrorsStat')"
-            >
-              <li
-                v-for="scanError in scanErrors"
-                :key="scanError.path"
-                class="adm-lib-detail__scan-errors-item"
-              >
-                <span class="adm-lib-detail__scan-errors-path">{{ scanError.path }}</span>
-                <span class="adm-lib-detail__scan-errors-msg">{{ scanError.message }}</span>
-              </li>
-            </ul>
           </div>
 
           <!-- Last-scan-failed banner -->
@@ -344,6 +338,26 @@
               </UButton>
             </template>
           </AppBanner>
+
+          <!-- Scan errors: lives outside the `showScanProgress` card so the
+               list stays reachable once the scan terminates (#620) — opened
+               either from the card's errors button while running, or from
+               AdminScansTable's errorsCount button below for the same scan. -->
+          <ul
+            v-if="scanErrorsOpen && hasScanErrors"
+            class="adm-lib-detail__scan-errors"
+            role="list"
+            :aria-label="t('pages.admin.libraryDetail.scanProgressErrorsStat')"
+          >
+            <li
+              v-for="scanError in scanErrors"
+              :key="scanError.path"
+              class="adm-lib-detail__scan-errors-item"
+            >
+              <span class="adm-lib-detail__scan-errors-path">{{ scanError.path }}</span>
+              <span class="adm-lib-detail__scan-errors-msg">{{ scanError.message }}</span>
+            </li>
+          </ul>
 
           <!-- Courses in this library (#510) -->
           <div class="adm-lib-detail__tbl-h">
@@ -380,6 +394,9 @@
             :label-failed="t('pages.libraries.statusFailed')"
             :label-cancelled="t('pages.libraries.statusCancelled')"
             :show-library="false"
+            :expandable-scan-id="liveScan?.id ?? null"
+            :expanded-scan-id="scanErrorsOpen ? (liveScan?.id ?? null) : null"
+            @toggle-errors="scanErrorsOpen = !scanErrorsOpen"
           />
 
           <!-- Transcription -->

@@ -18,6 +18,7 @@
     useRecentlyCompleted,
     useYourWeek,
   } from '~/composables/useHome';
+  import { useLibraries } from '~/composables/useLibraries';
 
   import { useAuthStore } from '~/stores/auth';
   import { accentFromId } from '~/utils/course-accent';
@@ -56,6 +57,23 @@
   const recentlyAdded = useRecentlyAdded();
   const recentlyCompleted = useRecentlyCompleted();
   const yourWeek = useYourWeek();
+
+  // ── Library access (#623) ───────────────────────────────────────────────────
+  //
+  // Same signal `browse.vue` uses to tell "nothing was ever granted to this
+  // account" apart from "granted, but genuinely nothing to see" — reused here
+  // so a user with zero library grants reads the same honest answer on both
+  // screens, instead of "start a course"/"finish a course" advice they have
+  // no course to act on.
+  const { data: librariesData, status: librariesStatus } = useLibraries();
+
+  const hasLibraryAccess = computed(() => {
+    if (userRole.value === 'ADMIN') return true;
+    // Default to the safe, always-true state while libraries haven't
+    // resolved yet, rather than briefly asserting "no access".
+    if (librariesStatus.value === 'pending' || librariesStatus.value === 'idle') return true;
+    return (librariesData.value?.items.length ?? 0) > 0;
+  });
 
   // ── Recently completed — collapsible state ─────────────────────────────────
 
@@ -136,6 +154,29 @@
       ? t('pages.home.recentlyAdded.emptyBody')
       : t('pages.home.recentlyAdded.emptyBodyMember'),
   );
+
+  // No-access copy is `browse.vue`'s own — reused verbatim rather than
+  // rewritten a second time (#623).
+  const continueWatchingEmptyTitle = computed(() =>
+    hasLibraryAccess.value
+      ? t('pages.home.continueWatching.empty')
+      : t('pages.browse.emptyNoAccessTitle'),
+  );
+  const continueWatchingEmptyBody = computed(() =>
+    hasLibraryAccess.value
+      ? t('pages.home.continueWatching.emptyBody')
+      : t('pages.browse.emptyNoAccessBody'),
+  );
+  const recentlyCompletedEmptyTitle = computed(() =>
+    hasLibraryAccess.value
+      ? t('pages.home.recentlyCompleted.empty')
+      : t('pages.browse.emptyNoAccessTitle'),
+  );
+  const recentlyCompletedEmptyBody = computed(() =>
+    hasLibraryAccess.value
+      ? t('pages.home.recentlyCompleted.emptyBody')
+      : t('pages.browse.emptyNoAccessBody'),
+  );
 </script>
 
 <template>
@@ -158,9 +199,10 @@
           :heading="t('pages.home.continueWatching.heading')"
           :status="continueWatching.status.value"
           :empty="(continueWatching.data.value?.items.length ?? 0) === 0"
-          :empty-title="t('pages.home.continueWatching.empty')"
-          :empty-body="t('pages.home.continueWatching.emptyBody')"
+          :empty-title="continueWatchingEmptyTitle"
+          :empty-body="continueWatchingEmptyBody"
           :error-title="t('pages.home.continueWatching.error')"
+          :error-body="t('pages.home.continueWatching.errorBody')"
           :retry-label="t('pages.home.continueWatching.retry')"
           :skeleton-count="5"
           class="page-home__row page-home__row--continue"
@@ -188,6 +230,7 @@
           :empty-title="t('pages.home.recentlyAdded.empty')"
           :empty-body="recentlyAddedEmptyBody"
           :error-title="t('pages.home.recentlyAdded.error')"
+          :error-body="t('pages.home.recentlyAdded.errorBody')"
           :retry-label="t('pages.home.recentlyAdded.retry')"
           :skeleton-count="6"
           class="page-home__row page-home__row--recently-added"
@@ -212,9 +255,10 @@
           :heading="t('pages.home.recentlyCompleted.heading')"
           :status="recentlyCompleted.status.value"
           :empty="(recentlyCompleted.data.value?.items.length ?? 0) === 0"
-          :empty-title="t('pages.home.recentlyCompleted.empty')"
-          :empty-body="t('pages.home.recentlyCompleted.emptyBody')"
+          :empty-title="recentlyCompletedEmptyTitle"
+          :empty-body="recentlyCompletedEmptyBody"
           :error-title="t('pages.home.recentlyCompleted.error')"
+          :error-body="t('pages.home.recentlyCompleted.errorBody')"
           :retry-label="t('pages.home.recentlyCompleted.retry')"
           :skeleton-count="4"
           collapsible
@@ -252,6 +296,7 @@
           :lessons-label="yourWeekLessonsLabel"
           :range-label="yourWeekRangeLabel"
           :error-title="t('pages.home.yourWeek.error')"
+          :error-body="t('pages.home.yourWeek.errorBody')"
           :retry-label="t('pages.home.yourWeek.retry')"
           @retry="yourWeek.refetch()"
         />

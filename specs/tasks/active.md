@@ -70,6 +70,236 @@
   desktop-width Storybook viewport gap flagged above, not fixed — out of
   this ticket's stated criterion)
 
+## T-2026-09-16-silent-failures — error/empty states that go silent (#624), home/browse persona mismatch + reset-progress confirm (#623 partial)
+
+- Created: 2026-09-16
+- Owner: claude
+- Goal: heuristic 1 (visibility of system status) — close #624 within this
+  lane's file ownership (`AppEmptyState/AppErrorState/AppNoPermission/AppBanner`,
+  `search.vue`, `index.vue`, `CourseActions.vue`), and this lane's slice of
+  #623 (not closeable — other lanes own the rest).
+- Sub-steps:
+  - [x] slot-name grep across `@app/ui` + consumers: only one mismatch found
+        (`admin/libraries/index.vue:115` uses `#actions`, the 3 state
+        components gate on `action`) — that file is `scan-surface`'s, so fix
+        it in the shared components instead: `action`/`actions` both work
+        (fallback-slot alias), zero cross-lane file edits needed
+  - [x] `index.vue`: 4 home rows show an error title with no body
+        (`continueWatching`/`recentlyAdded`/`recentlyCompleted`/`yourWeek`) —
+        wire `errorBody` through `HomeRow.vue`/`HomeYourWeek.vue`, add
+        matching en/ru keys
+  - [x] `index.vue` vs `browse.vue` persona mismatch (#623): a user with zero
+        library grants sees "start a course"/"finish a course" copy on
+        `continueWatching`/`recentlyCompleted` instead of the honest
+        no-access message `browse.vue` already has — branch those two rows
+        on the same no-access signal `browse.vue` uses (`useLibraries`),
+        reusing `pages.browse.emptyNoAccessTitle/Body` verbatim (no new copy)
+  - [x] `search.vue:117`: hand-rolled `role="alert"` div replaced with
+        `AppErrorState` (third bespoke error-rendering form in the app)
+  - [x] verified, NOT a bug: the "4 identical `errorGeneric` strings" finding
+        (sign-in/sign-up/forgot) — each already buckets known causes
+        (wrong credentials, rate limit, taken email, bad/expired token, OTP
+        errors) before falling back to the shared generic string; the
+        fallback string being reused across pages is not the defect. Not
+        touched (also outside this lane's file list).
+  - [x] `CourseActions.vue`: fix the comment's false "fully reversible by
+        rewatching" claim (largest course in the audit DB is 540 lessons,
+        no undo) — confirm dialog restored via `courses/[id].vue`'s existing
+        shared rescan/transcribe `AppDialog`, extended with a third `reset`
+        branch (page-level gate; `CourseActions` itself keeps emitting
+        directly, unchanged)
+  - [x] found while verifying the above live (not in either issue):
+        `AppDialog` never actually showed for **any** consumer mounted via
+        `v-if` with `open` already `true` on creation — the exact pattern
+        every confirm dialog on `courses/[id].vue` uses (rescan, transcribe,
+        now reset). A non-immediate `watch` only fires on a later _change_,
+        so `.showModal()` never ran on that first render: the native
+        `<dialog>` stayed closed and invisible in a real browser. jsdom
+        component tests never caught it — `.exists()` is true either way,
+        `showModal()` is a no-op there without the element ever needing to
+        actually paint. `immediate: true` on the watch does not fix it
+        either (its first call runs synchronously in `setup()`, before the
+        template ref binds) — moved the "already open at mount" case to
+        `onMounted`. Also found and fixed while it was open in a real
+        browser for the first time: the dialog rendered visible but pinned
+        to the page's top-left instead of centered (Tailwind's preflight
+        strips the margin the native centering relies on, plus a
+        `position`-ed ancestor gives the UA's `position: absolute` the
+        wrong containing block) — explicit `position: fixed; inset: 0;
+margin: auto`. `AppDialog` isn't in this wave's ownership table;
+        fixed directly since it silently broke this lane's own restored
+        confirm dialog and every existing rescan/transcribe one. New spec
+        case (mount-already-open); full `@app/ui`/`@app/web` suites still
+        green (933/933, 533/533).
+  - [x] confirmed against `tests/e2e/course-detail.spec.ts:336` (pre-existing,
+        not written by this lane) — red on `main` since a5ef065c/#611
+        (`.app-dialog` locator never found: the wave that dropped the
+        confirm never updated this test, and Playwright isn't a required
+        branch-protection context, so it merged red). Reverted
+        `courses/[id].vue` + `AppDialog.vue` to `HEAD` and reran: red,
+        `.app-dialog` not found, matching CI exactly. Restored the fix: full
+        `course-detail.spec.ts` green (8/8); full `pnpm e2e` green except
+        one pre-existing, unrelated failure (`smoke.spec.ts`'s real-backend
+        health check — no backend was running for this manual pass; every
+        other spec is route-mocked and hermetic).
+  - [x] gates: lint, stylelint, format, `pnpm check:i18n`,
+        `turbo run lint test typecheck` (@app/web 533/533, @app/ui 933/933)
+- Status: ready for PR
+- Not closing #623 (other lanes own the rest); not touching
+  `admin/libraries/[id].vue` (scan-surface) or `layouts/default.vue`'s
+  discarded `useScanLifecycle` status (nav-and-keys) — flagged, not fixed.
+
+## T-2026-09-16-admin-controls — dead role selector on /admin/permissions, inert density control
+
+- Created: 2026-09-16
+- Owner: claude
+- Goal: two controls that look interactive but aren't, both eroding trust in
+  the rest of the admin UI (heuristic 1 — visibility of system status /
+  heuristic 9 — honest affordances). Third audit pass: 25/40, target 32+.
+- Sub-steps:
+  - [x] #619 — `admin/permissions/index.vue`'s role chip opened a real
+        listbox but `@role-change="() => {}"` silently dropped every
+        selection. Added `rolesEditable`/`roleReadOnlyTooltip` props to
+        `AdminUserRow` (orthogonal to the existing `isSelf` self-protect
+        axis) so the chip renders genuinely read-only here — roles are
+        changed on `/admin/users`, reusing the already-written
+        `roleChipReadOnlyTooltip` key. Also fixed the dead `@more="() => {}"`
+        (now shows the same "coming soon" toast `/admin/users` already
+        gives) and the dishonest `edit-aria-label` (`addGrantCta` → "Add
+        grant" → reused `editPermissions`, matching what the button
+        actually does: navigate to the user's permissions page). Zero new
+        i18n keys — every string reused from `/admin/users`' existing wiring.
+  - [x] #622 — `[data-density='compact']` never shrank `AppInput`/`AppSelect`
+        (density has been inert since #585 removed the third `cozy` option);
+        instead it applied `height:30px` to `<html>`. Root cause confirmed by
+        building `@app/ui` and reading `dist/index.css`: the Vue SFC scoped-
+        CSS compiler drops everything after `:global(sel)` when a descendant
+        combinator follows outside the parens, collapsing
+        `:global([data-density='compact']) .app-input--md` to a bare
+        `[data-density=compact]{...}`. Fixed by wrapping the _whole_ selector
+        in `:global(...)`, verified against the compiled CSS and a headless
+        screenshot (icon fields don't clip at the 30px compact height).
+        AppSelect had the identical bug, fixed the same way.
+  - [x] also: `AdminUserRow.vue`'s joined-date formatter was hardcoded to
+        `'en-US'`, showing an English date under the Russian locale — now
+        uses `useI18n().locale`.
+  - [x] tests: `AdminUserRow.spec.ts` (+6), new
+        `pages/__tests__/admin-permissions-index.spec.ts` (4), `AppInput`/
+        `AppSelect` `.spec.ts` source-pattern guards against the `:global()`
+        regression (documented as a deliberate lighter-weight check than a
+        full compiled-CSS test — see the `ponytail:` comment in
+        `AppInput.spec.ts`). Every new assertion confirmed red against the
+        pre-fix source before restoring the fix.
+  - [x] gates: `@app/web` lint/stylelint/format clean, 531/531 tests;
+        `@app/ui` lint clean, 931/931 tests; both typecheck clean (after
+        `pnpm design:build` — the generated tokens file is gitignored and
+        was simply missing in this fresh worktree, not a real defect).
+- Status: ready for PR
+- Blockers: —
+
+## T-2026-09-16-scan-surface — errors survive scan completion, honest toast, visible start failure
+
+- Created: 2026-09-16
+- Owner: claude
+- Goal: `#620` the real per-file `ScanError[]` (fetched by `useScanProgress` via
+  `GET /libraries/{id}/scans/latest`, which returns the latest scan's full
+  detail regardless of terminal status) is only ever rendered inside
+  `v-if="showScanProgress"` — the moment a scan finishes, `showScanProgress`
+  goes false and the 106-error list becomes unreachable even though the data
+  is still in memory. `#621` the completion toast is wrong three ways:
+  `toastFailedSummary` is called with `{ errors: n }` but vue-i18n only reads
+  a plural index off `named.n`/`named.count`, so it always renders the first
+  form; `toastDoneSummary` is one non-pluralizable string
+  (`'{courses} courses · {lessons} lessons'`), not two pipe-messages like the
+  `statLibrariesMeta*` split; and the "lessons" number is actually
+  `card.filesAdded` (TODO(E13) — no lesson count on the wire), so it lies
+  after any rescan. `#624` (partial — only the one line in this lane's file;
+  rest belongs to `silent-failures`): `admin/libraries/[id].vue:161` calls
+  `runLibraryScan({ throwOnError: false })` and never checks `res.error`, so
+  a 403/500 start failure is silent, and the dead `catch` path's toast title
+  is the CTA label (`scanNowCta`), not an error message.
+- Sub-steps:
+  - [x] #620 — moved the error list out from under `showScanProgress`, gated
+        only on `scanErrorsOpen && hasScanErrors`; `AdminScansTable`'s
+        `errorsCount` cell becomes a button (new `expandableScanId`/
+        `expandedScanId` props + `toggle-errors` emit) for the one row that
+        actually has detail data — the library's latest scan, same id
+        `useScanProgress` already holds. Historical rows have no per-scan
+        detail endpoint on the wire (`AdminScanListItem` only carries
+        `errorsCount`), so their cells stay static, unchanged from before.
+  - [x] #621 — `toastFailedSummary` call switched to the 3-arg
+        `t(key, count, { named: { n: count } })` form already used by
+        `errorsButton` in the same file; `toastDoneSummary` split into
+        `toastDoneSummaryCourses`/`toastDoneSummaryFiles` (renamed from
+        "lessons" — honest about what `filesAdded` counts — closes the
+        TODO(E13) by relabeling rather than a spec change), joined with `·`
+  - [x] #624 (this lane's line only) — `triggerScan` checks `res.error`,
+        shows a real error toast (`scanStartError`, mirrors
+        `toastRescanError`'s wording) on both the checked-error and thrown
+        paths; rest of #624 stays with `silent-failures`
+  - [x] i18n: `pages.admin.libraryDetail.scanStartError`,
+        `notifiers.scan.toastDoneSummaryCourses`,
+        `notifiers.scan.toastDoneSummaryFiles`; `toastFailedSummary`
+        placeholder renamed `{errors}` → `{n}`; both locales
+  - [x] regression tests: scan-progress page spec (error list survives the
+        running→terminal transition), notifier spec (plural index + split
+        toast), page spec (silent start failure), AdminScansTable spec
+        (button only on the matching row). Confirmed red before fix.
+  - [x] gates: lint, stylelint, format, `check:i18n`,
+        `turbo run lint test typecheck` — all green
+- Status: ready for PR
+
+## T-2026-09-16-nav-and-keys — dead-end nav link, raw locale key on admin dashboard
+
+- Created: 2026-09-16
+- Owner: claude
+- Goal: #618 non-admins see "Libraries" in primary nav and get silently
+  bounced by `middleware/admin.ts`; #617 `/admin` prints the literal key
+  `pages.admin.dashboard.statLibrariesMeta` (deleted from both locales when
+  a prior wave split it into two plural-safe keys, call site never updated).
+  Structural: add a literal-`t()`-key-resolves-in-locale-tree check so this
+  class of regression fails CI instead of shipping.
+- Sub-steps:
+  - [x] #618 — drop `libraries` from `layouts/default.vue`'s primary `nav`
+        (decision: not gated-for-admin-only like `adminNav`, but removed
+        outright — it duplicated `admin-libraries`; `/libraries` has been
+        admin-only since #595 and that page's own comment already calls
+        `/admin/libraries` "the equivalent surface"). Removed the now-false
+        "member-facing /libraries link" comment and the two now-dead
+        `navLibraries` locale keys (en+ru, both namespaces).
+  - [x] #617 — `admin/index.vue`'s `statLibrariesMeta` now composes the two
+        split keys (`statLibrariesMetaCourses`/`...Lessons`) with the
+        existing `·` separator convention instead of calling the deleted
+        combined key. Also fixed `formatRelative`'s hardcoded English
+        `"Xs ago"` literals (an i18n-mandatory violation) to reuse
+        `ui.noteEditor.ago*`, and deleted the dead `statusLabel` function +
+        its false "referenced indirectly" comment + now-unused `ScanStatus`
+        import.
+  - [x] add `apps/web/app/pages/__tests__/admin-dashboard.spec.ts` (page had
+        none)
+  - [x] `scripts/check-i18n-parity.ts`: walks `apps/web/app` for literal
+        `t('…')` calls and flags any that resolve in neither locale; proved
+        it against the pre-fix `admin/index.vue` (caught the exact #617
+        key), skips `t(someVar)` (one real case, `app.vue:60`, untouched)
+  - [x] gates: lint, stylelint, format, `turbo run lint test typecheck` — all
+        green (530 web tests, 929 ui tests, 18/18 turbo tasks)
+  - [x] live-stand check: built this worktree's own docker/compose.yml stack
+        on isolated ports (`csh-navkeys-verify-*`, torn down after) since the
+        shared :8090 audit stand runs a frozen pre-fix image. Confirmed both
+        fixes by eye: non-admin sidebar shows only Home/Browse (no
+        Libraries trap), admin dashboard's Libraries card reads
+        "0 courses · 0 lessons" (not the raw key), admin sidebar has exactly
+        one library-management entry
+- Status: in-progress — PR #625 open
+- Blockers: —
+
+Reported to maintainer, not fixed here (owned by other lanes / not mine):
+`nuxt.config.ts:30` claims locale messages live in `.json` (they're `.ts`);
+three more `formatRelative` English-literal copies at
+`admin/libraries/[id].vue:143`, `AdminScansTable.vue:44`,
+`AdminLibraryRow.vue:35` (scan-surface lane) — same `ui.noteEditor.ago*` fix
+applied here to `admin/index.vue`'s copy.
+
 ## T-2026-09-16-admin-polish — mislabeled navigation, filter-blind empty state, missing confirmations
 
 - Created: 2026-09-16

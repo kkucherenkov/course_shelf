@@ -4,15 +4,32 @@
  * Mocks AdminRoleChip to keep focus on the row layout.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import type { AdminUserListItem } from '@app/api-client-ts';
 import AdminUserRow from '../AdminUserRow.vue';
 
+function stubLocale(locale: string): void {
+  vi.stubGlobal('useI18n', () => ({ locale: { value: locale } }));
+}
+
+beforeEach(() => {
+  stubLocale('en');
+});
+
 vi.mock('../AdminRoleChip.vue', () => ({
   default: {
     name: 'AdminRoleChip',
-    props: ['role', 'banned', 'editable', 'labelAdmin', 'labelUser', 'labelGuest', 'labelDisabled'],
+    props: [
+      'role',
+      'banned',
+      'editable',
+      'labelAdmin',
+      'labelUser',
+      'labelGuest',
+      'labelDisabled',
+      'tooltipSelf',
+    ],
     emits: ['change'],
     template: '<span class="stub-role-chip">{{ role }}</span>',
   },
@@ -65,6 +82,15 @@ describe('AdminUserRow', () => {
     expect(w.text()).toContain('Jan 15');
   });
 
+  // Regression guard: the joined date used to be hardcoded to 'en-US',
+  // showing an English date on the Russian locale.
+  it('renders the joined date in the active locale, not hardcoded en-US', () => {
+    stubLocale('ru');
+    const w = mount(AdminUserRow, { props: baseProps });
+    expect(w.text()).toContain('янв');
+    expect(w.text()).not.toContain('Jan');
+  });
+
   it('renders fallback to name when displayName is null', () => {
     const w = mount(AdminUserRow, {
       props: { ...baseProps, user: { ...baseUser, displayName: null } },
@@ -84,6 +110,32 @@ describe('AdminUserRow', () => {
     const w = mount(AdminUserRow, { props: baseProps });
     const chipComponent = w.findComponent({ name: 'AdminRoleChip' });
     expect(chipComponent.props('editable')).toBe(true);
+  });
+
+  // Regression guard for #619: the permissions picker page passes
+  // `rolesEditable=false` because roles are changed on /admin/users, not
+  // here. The chip must stay read-only regardless of `isSelf`, and show the
+  // read-only tooltip rather than the self-protect one.
+  it('passes editable=false to chip when rolesEditable is false, even for another user', () => {
+    const w = mount(AdminUserRow, {
+      props: { ...baseProps, isSelf: false, rolesEditable: false, roleReadOnlyTooltip: 'ro-tip' },
+    });
+    const chipComponent = w.findComponent({ name: 'AdminRoleChip' });
+    expect(chipComponent.props('editable')).toBe(false);
+    expect(chipComponent.props('tooltipSelf')).toBe('ro-tip');
+  });
+
+  it('prefers the self tooltip over the read-only tooltip when both apply', () => {
+    const w = mount(AdminUserRow, {
+      props: {
+        ...baseProps,
+        isSelf: true,
+        rolesEditable: false,
+        roleReadOnlyTooltip: 'ro-tip',
+      },
+    });
+    const chipComponent = w.findComponent({ name: 'AdminRoleChip' });
+    expect(chipComponent.props('tooltipSelf')).toBe(baseProps.roleChangeYourselfTooltip);
   });
 
   it('emits edit when Edit button is clicked', async () => {

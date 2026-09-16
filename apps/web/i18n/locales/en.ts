@@ -251,6 +251,11 @@ export default {
         posterUrl: 'https://…',
         entitySearch: 'Search…',
       },
+      entitySearch: {
+        loading: 'Loading…',
+        noResults: 'No results',
+        remove: 'Remove {name}',
+      },
       help: {
         slug: 'Lowercase letters, digits and hyphens only.',
         language: 'BCP-47 tag, e.g. en or en-US.',

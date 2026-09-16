@@ -24,11 +24,14 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
  */
 export function configureApp(
   app: NestExpressApplication,
-  runtime: Pick<AppRuntimeConfig, 'nodeEnv' | 'corsOrigins'>,
+  runtime: Pick<AppRuntimeConfig, 'nodeEnv' | 'corsOrigins' | 'trustProxy'>,
 ): void {
-  const { nodeEnv, corsOrigins } = runtime;
+  const { nodeEnv, corsOrigins, trustProxy } = runtime;
 
-  app.set('trust proxy', 'loopback');
+  // Address/CIDR-based, sourced from AppConfig — see the doc comment on
+  // `AppRuntimeConfig.trustProxy` for why this is not `true` and not a hop
+  // count (#693).
+  app.set('trust proxy', trustProxy);
 
   // Helmet — secure-headers tuned for an SPA that talks bearer to /api/v1/* and
   // a Centrifugo WebSocket on the same origin (in prod, all folded behind one

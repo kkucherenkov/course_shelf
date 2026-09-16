@@ -21,11 +21,11 @@ async function bootstrap(): Promise<void> {
   });
 
   const config = app.get(AppConfig);
-  const { port, nodeEnv, corsOrigins } = config.runtime;
+  const { port, nodeEnv, corsOrigins, trustProxy } = config.runtime;
 
   // Helmet, prefix, versioning, CORS, pipes, filters, interceptors and the
   // OpenAPI validator — shared verbatim with the e2e suite (`src/bootstrap.ts`).
-  configureApp(app, { nodeEnv, corsOrigins });
+  configureApp(app, { nodeEnv, corsOrigins, trustProxy });
 
   app.enableShutdownHooks();
 

@@ -1,5 +1,27 @@
 # Active tasks
 
+## T-2026-09-17-kkucherenkov-audit-backend — 1.8.0 pre-release audit: backend fixes
+
+- Created: 2026-09-17
+- Owner: claude
+- Spec: #693, #694, #698, #699
+- Goal: fix four defects the 1.8.0 pre-release audit found — instance-wide rate
+  limiting (`trust proxy` misconfigured), course-level access grants ignored by
+  four read handlers, a missing subtitle file answering 500 instead of the
+  documented 404, and a scan with thousands of errors reporting `succeeded`.
+- Spec diff: openapi.yaml — new scan status value for #699 (partial success)
+- Codegen impact: yes (own commit)
+- Sub-steps:
+  - [ ] #693 — pin the docker network subnet, trust it by CIDR (not a hop
+        count — unsafe with :3000 published), fix the two lying comments/text
+  - [ ] #694 — course grants: make `evaluate()` honour them on every course
+        read path, one coherent model
+  - [ ] #698 — 404 for a missing subtitle file, both `.vtt` and `.srt` forms,
+        fixed in `lesson-file-locator.ts`
+  - [ ] #699 — spec-first: new scan status for "completed with errors"
+- Status: in-progress
+- Blockers: —
+
 ## T-2026-09-16-typography-roles — raise text roles one step (#658)
 
 - Created: 2026-09-16

@@ -28,6 +28,31 @@ export interface AppRuntimeConfig {
   readonly version: string;
   readonly sentryDsn: string | null;
   readonly otelEndpoint: string | null;
+  /**
+   * Express `trust proxy` value — who this instance believes about
+   * `X-Forwarded-For`. A comma-separated list of IPs/CIDRs/presets
+   * (`loopback`, `linklocal`, `uniquelocal`) or one of those, exactly as
+   * https://expressjs.com/en/guide/behind-proxies.html documents.
+   *
+   * Default `loopback`: correct only when the reverse proxy runs in the same
+   * network namespace as the backend (e.g. a plain `nginx -g daemon off`
+   * next to the process). Every compose file here runs nginx as its own
+   * container, so each sets this to that stack's pinned docker-network
+   * subnet instead (`docker/compose*.yml`, `TRUST_PROXY`) — see #693.
+   *
+   * Deliberately NOT a hop count (`app.set('trust proxy', 1)`): Express
+   * compiles a number into `(addr, i) => i < n`, which trusts the Nth entry
+   * in `X-Forwarded-For` by position alone, regardless of who is actually
+   * connected. A client that reaches this backend directly (its port is
+   * published, e.g. compose.yml's :3000) could send its own
+   * `X-Forwarded-For` and be believed. An address/CIDR list only trusts the
+   * header when the immediate TCP peer is actually inside it — a direct
+   * external connection's peer address is never inside the docker-only
+   * subnet named here, so it cannot forge its way into a fresh rate-limit
+   * bucket.
+   * Env: TRUST_PROXY.
+   */
+  readonly trustProxy: string;
 }
 
 export interface CatalogConfig {
@@ -281,6 +306,7 @@ export class AppConfig {
       version: this.stringOrDefault('APP_VERSION', '0.0.0-dev'),
       sentryDsn: sentryDsn.length > 0 ? sentryDsn : null,
       otelEndpoint: otelEndpoint.length > 0 ? otelEndpoint : null,
+      trustProxy: this.stringOrDefault('TRUST_PROXY', 'loopback'),
     };
   }
 

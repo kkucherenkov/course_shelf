@@ -44,9 +44,12 @@ export class SignInRateLimitMiddleware implements NestMiddleware {
         type: 'about:blank',
         title: 'Too Many Requests',
         status: HttpStatus.TOO_MANY_REQUESTS,
-        detail: `Too many sign-in attempts from this IP. Try again in ${String(retryAfterSeconds)} seconds.`,
+        detail: `Too many sign-in attempts. Try again in ${String(retryAfterSeconds)} seconds.`,
       });
-      // Persist the pruned bucket — blocked attempts still consume budget.
+      // Persist the pruned bucket. A blocked attempt does not itself consume
+      // a slot — it is not pushed below — so retrying immediately after the
+      // window opens up (rather than exactly at the 15-minute mark) does not
+      // push Retry-After back out.
       this.attempts.set(ip, fresh);
       return;
     }
@@ -58,9 +61,9 @@ export class SignInRateLimitMiddleware implements NestMiddleware {
   }
 
   /**
-   * Express resolves req.ip honoring `trust proxy`. Fallback to socket address
-   * if Express somehow returns undefined (defensive — should not happen with
-   * the current trust-proxy config set to 'loopback' in main.ts).
+   * Express resolves req.ip honoring `trust proxy` (`AppConfig.runtime.trustProxy`,
+   * applied in `bootstrap.ts` — see #693). Fallback to socket address if
+   * Express somehow returns undefined (defensive — should not happen).
    */
   private resolveIp(req: Request): string {
     return req.ip ?? req.socket.remoteAddress ?? 'unknown';

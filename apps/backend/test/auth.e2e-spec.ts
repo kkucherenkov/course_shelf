@@ -51,10 +51,11 @@ async function signUp(): Promise<request.Response> {
   return request(ctx.server).post('/api/v1/auth/sign-up/email').send(CREDENTIALS);
 }
 
-async function signInWithWrongPassword(): Promise<request.Response> {
-  return request(ctx.server)
+async function signInWithWrongPassword(forwardedFor?: string): Promise<request.Response> {
+  const req = request(ctx.server)
     .post('/api/v1/auth/sign-in/email')
     .send({ email: CREDENTIALS.email, password: 'wrong-password' });
+  return forwardedFor === undefined ? req : req.set('X-Forwarded-For', forwardedFor);
 }
 
 describe('Better Auth round trip', () => {
@@ -194,5 +195,47 @@ describe('AuthModule middlewares', () => {
     const blocked = await signInWithWrongPassword();
     expect(blocked.status).toBe(429);
     expect(blocked.headers['retry-after']).toBeTruthy();
+  });
+
+  // #693 — trust proxy is address/CIDR-based, not a hop count. supertest's
+  // peer is always loopback, so these two tests configure TRUST_PROXY on
+  // either side of that address to exercise both halves of the fix.
+  it('a forwarded header is a genuinely different bucket when the peer is trusted', async () => {
+    await ctx.close();
+    ctx = await createE2eApp({ env: { TRUST_PROXY: 'loopback' } });
+    await signUp();
+
+    for (let i = 0; i < 5; i++) {
+      const res = await signInWithWrongPassword('9.9.9.9');
+      expect(res.status).not.toBe(429);
+    }
+    const blocked = await signInWithWrongPassword('9.9.9.9');
+    expect(blocked.status).toBe(429);
+
+    // A different claimed client behind the same trusted proxy gets its own
+    // budget — this is the fix: nginx's real X-Forwarded-For now decides the
+    // bucket instead of the proxy container's own address for every user.
+    const otherClient = await signInWithWrongPassword('8.8.8.8');
+    expect(otherClient.status).not.toBe(429);
+  });
+
+  it('a forwarded header cannot buy a fresh bucket when the peer is not trusted', async () => {
+    await ctx.close();
+    // Excludes loopback — mirrors a client that reaches the backend's
+    // published port directly, bypassing the reverse proxy entirely.
+    ctx = await createE2eApp({ env: { TRUST_PROXY: '10.0.0.0/8' } });
+    await signUp();
+
+    for (let i = 0; i < 5; i++) {
+      const res = await signInWithWrongPassword('9.9.9.9');
+      expect(res.status).not.toBe(429);
+    }
+    const blocked = await signInWithWrongPassword('9.9.9.9');
+    expect(blocked.status).toBe(429);
+
+    // Same untrusted socket, a freshly-claimed X-Forwarded-For — still
+    // blocked, because the header is never consulted for an untrusted peer.
+    const stillBlocked = await signInWithWrongPassword('8.8.8.8');
+    expect(stillBlocked.status).toBe(429);
   });
 });

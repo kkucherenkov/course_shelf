@@ -70,13 +70,27 @@
   - [x] Surfaced to maintainer (not acted unprompted): the 5 zero-consumer
         `@app/ui` components (delete vs `@deprecated`), 2 raw
         `<input type="search">` in `packages/ui` found on the way
-        (AppCommandPalette, AppNavigationShell)
+        (AppCommandPalette, AppNavigationShell). Maintainer resolution:
+        neither is style-gates' call — both filed as maintainer-owned
+        issues instead. 5 components: `AppToast` is dead _by decision_
+        (toast layer deliberately stays on Nuxt UI), the other 4 need a
+        "built-ahead vs abandoned" call the lane has no data for, plus a
+        `specs/design/README.md` parity-inventory update — churn on
+        release day for no user-facing win. 2 search inputs: the
+        borderless command-palette input is correct as-is, not a defect;
+        the real question (should `AppSearchField` grow a variant to cover
+        it, or are these legitimately different) is a design-system
+        decision, not a cleanup
   - [x] Open PR, note the apps/web deferral explicitly in the body —
         https://github.com/kkucherenkov/course_shelf/pull/668
 - Status: in-progress (PR open, awaiting review/merge)
-- Blockers: waiting on maintainer signal before taking apps/web cleanup;
-  waiting on maintainer decision for the 5 dead components and the 2 raw
-  search inputs
+- Blockers: waiting on `dead-surfaces`' PR to land before starting
+  apps/web cleanup — it's deleting `apps/web/app/pages/libraries.vue`
+  outright, which carries a font-weight literal (line 210) and a
+  duplicate `@keyframes` (line 277) this lane would otherwise redo work
+  on; maintainer will give the signal + an up-to-date marker list once it
+  merges. The 5 dead components and the 2 raw search inputs are no longer
+  this lane's call — maintainer is filing issues for both.
 
 ## T-2026-09-16-token-vocabulary — stop consuming short design-token aliases; clamp CourseDescription
 

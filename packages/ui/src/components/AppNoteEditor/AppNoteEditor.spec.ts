@@ -171,12 +171,14 @@ describe('AppNoteEditor', () => {
       expect(wrapper.emitted('save')).toEqual([['ab']]);
     });
 
-    it('does not fire save after unmount', async () => {
+    it('flushes a pending save immediately on unmount instead of dropping it', async () => {
       const wrapper = makeWrapper({ modelValue: '', debounceMs: 600 });
       await wrapper.setProps({ modelValue: 'pending' });
       wrapper.unmount();
-      vi.advanceTimersByTime(1000);
-      expect(wrapper.emitted('save')).toBeUndefined();
+      // No `advanceTimersByTime`: the flush must happen synchronously in
+      // `onBeforeUnmount`, before the debounce window would have elapsed —
+      // tab switches and route changes don't wait around for a timer.
+      expect(wrapper.emitted('save')).toEqual([['pending']]);
     });
   });
 

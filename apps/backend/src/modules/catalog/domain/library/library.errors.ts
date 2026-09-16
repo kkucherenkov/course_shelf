@@ -5,10 +5,12 @@
  * HttpExceptionFilter can translate them to RFC 9457 problem+json responses
  * without any HTTP logic leaking into domain or application layers.
  *
- * Three failure cases:
- *   - LibraryNameRequiredError   — name was blank (422)
+ * Failure cases:
+ *   - LibraryNameRequiredError    — name was blank (422)
  *   - LibraryPathNotAbsoluteError — rootPath is not an absolute filesystem path (422)
- *   - LibraryAlreadyExistsError  — rootPath is already taken (409); surfaced by
+ *   - LibraryPathNotAllowedError  — rootPath falls outside the configured
+ *     allowlist (422); see `AppConfig.catalog.rootAllowlist`.
+ *   - LibraryAlreadyExistsError   — rootPath is already taken (409); surfaced by
  *     the infra adapter when Prisma raises a P2002 unique-constraint error.
  */
 import { DomainError, InvariantViolation } from '../../../../shared/domain-error';
@@ -34,6 +36,22 @@ export class LibraryPathNotAbsoluteError extends InvariantViolation {
       'library-path-not-absolute',
     );
     this.name = 'LibraryPathNotAbsoluteError';
+  }
+}
+
+/**
+ * WHY: the admin role gates who can *call* register-library, but not which
+ * directory they point it at — a fat-fingered `/` still walks the whole
+ * filesystem. Deployments that set `LIBRARY_ROOT_ALLOWLIST` get a second,
+ * narrower fence around the one directory they actually chose to share.
+ */
+export class LibraryPathNotAllowedError extends InvariantViolation {
+  constructor(path: string) {
+    super(
+      `Library rootPath "${path}" is outside the configured allowlist.`,
+      'library-path-not-allowed',
+    );
+    this.name = 'LibraryPathNotAllowedError';
   }
 }
 

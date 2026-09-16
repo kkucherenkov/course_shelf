@@ -189,7 +189,13 @@ export function useLatestScan(libraryId: Ref<string>): {
       path: { id: libraryId.value },
     });
     if (res.error) {
-      throw new Error('Failed to start scan');
+      // Same convention as `refresh()`: set `error` before throwing, so a
+      // caller that renders the ref (or just checks it in a catch) sees why
+      // — a rescan that 403s for a non-admin used to leave no trace at all.
+      const failure = new Error('Failed to start scan');
+      error.value = failure;
+      status.value = 'error';
+      throw failure;
     }
     data.value = res.data;
     status.value = 'success';

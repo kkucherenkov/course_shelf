@@ -2,11 +2,15 @@
  * Spec for the two admin buttons on pages/courses/[id].vue: rescan
  * (E32-F01-S02) and transcribe (E32-F02-S01).
  *
- * Scope: only those affordances — admin-only visibility, that each calls its
- * own endpoint with the page's courseId, and that the transcribe failure path
- * shows the server's own `detail` rather than a canned sentence (the 409 names
- * the run already in flight and how to cancel it). The rest of the page (hero,
- * sections, materials) is stubbed out; it is not these cards' concern.
+ * Scope: only those affordances — admin-only visibility, that each opens a
+ * confirm dialog and only calls its endpoint once that's confirmed (#606:
+ * rescan rewrites the course's section/lesson list, transcribe can occupy
+ * a GPU for hours — the two most consequential admin actions on this page
+ * had no confirmation while a fully reversible "Reset progress" did), and
+ * that the transcribe failure path shows the server's own `detail` rather
+ * than a canned sentence (the 409 names the run already in flight and how
+ * to cancel it). The rest of the page (hero, sections, materials) is
+ * stubbed out; it is not these cards' concern.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -74,6 +78,12 @@ vi.mock('@app/ui', () => ({
     emits: ['click'],
     template: '<button @click="$emit(\'click\')">{{ label }}</button>',
   },
+  AppDialog: {
+    name: 'AppDialog',
+    props: ['open', 'title', 'description'],
+    emits: ['update:open'],
+    template: '<dialog v-if="open" open><slot /><slot name="footer" /></dialog>',
+  },
   AppNoPermission: { name: 'AppNoPermission', template: '<div />' },
   AppSkeleton: { name: 'AppSkeleton', template: '<div />' },
 }));
@@ -97,6 +107,15 @@ function makeOutline(): CourseOutlineDto {
 /** Let the click handler's promise chain settle. */
 async function flush(): Promise<void> {
   for (let i = 0; i < 4; i++) await Promise.resolve();
+}
+
+/** Open the transcribe confirm dialog and click its confirm button. */
+async function confirmTranscribe(wrapper: Awaited<ReturnType<typeof mountPage>>): Promise<void> {
+  await wrapper.find('.page-course-detail__transcribe-cta').trigger('click');
+  const confirm = wrapper
+    .findAll('button')
+    .find((b) => b.text() === 'pages.courseDetail.transcribeDialogConfirm');
+  await confirm!.trigger('click');
 }
 
 async function mountPage() {
@@ -130,7 +149,7 @@ describe('pages/courses/[id].vue — rescan button (E32-F01-S02)', () => {
     expect(wrapper.find('.page-course-detail__rescan-cta').exists()).toBe(false);
   });
 
-  it('is present for an admin and calls POST /courses/{id}/rescan on click', async () => {
+  it('opens a confirm dialog on click and does not call the endpoint yet', async () => {
     authUser.value = { role: 'admin' };
     const wrapper = await mountPage();
 
@@ -138,6 +157,22 @@ describe('pages/courses/[id].vue — rescan button (E32-F01-S02)', () => {
     expect(button.exists()).toBe(true);
 
     await button.trigger('click');
+
+    expect(mockRunCourseRescan).not.toHaveBeenCalled();
+    expect(wrapper.find('dialog').exists()).toBe(true);
+  });
+
+  it('calls POST /courses/{id}/rescan only once the dialog is confirmed', async () => {
+    authUser.value = { role: 'admin' };
+    const wrapper = await mountPage();
+
+    await wrapper.find('.page-course-detail__rescan-cta').trigger('click');
+    const confirm = wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'pages.courseDetail.rescanDialogConfirm');
+    expect(confirm).toBeDefined();
+
+    await confirm!.trigger('click');
     await Promise.resolve();
 
     expect(mockRunCourseRescan).toHaveBeenCalledWith(
@@ -161,11 +196,21 @@ describe('pages/courses/[id].vue — transcribe button (E32-F02-S01)', () => {
     expect(wrapper.find('.page-course-detail__transcribe-cta').exists()).toBe(false);
   });
 
-  it('calls POST /courses/{id}/transcription and reports success', async () => {
+  it('opens a confirm dialog on click and does not call the endpoint yet', async () => {
     authUser.value = { role: 'admin' };
     const wrapper = await mountPage();
 
     await wrapper.find('.page-course-detail__transcribe-cta').trigger('click');
+
+    expect(mockStartCourseTranscription).not.toHaveBeenCalled();
+    expect(wrapper.find('dialog').exists()).toBe(true);
+  });
+
+  it('calls POST /courses/{id}/transcription and reports success once confirmed', async () => {
+    authUser.value = { role: 'admin' };
+    const wrapper = await mountPage();
+
+    await confirmTranscribe(wrapper);
     await flush();
 
     expect(mockStartCourseTranscription).toHaveBeenCalledWith(
@@ -192,7 +237,7 @@ describe('pages/courses/[id].vue — transcribe button (E32-F02-S01)', () => {
     });
 
     const wrapper = await mountPage();
-    await wrapper.find('.page-course-detail__transcribe-cta').trigger('click');
+    await confirmTranscribe(wrapper);
     await flush();
 
     expect(toastAdd).toHaveBeenCalledWith(

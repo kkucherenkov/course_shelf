@@ -13,12 +13,18 @@
    * gets a notification even if the panel is hidden.
    */
 
-  import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
-  import { useI18n, useToast } from '#imports';
+  import { computed, onMounted, onUnmounted, watch } from 'vue';
+  import { navigateTo, useI18n, useToast } from '#imports';
   import { AppScanProgress } from '@app/ui';
   import type { ScanStatus } from '@app/ui';
   import { useScanLifecycleStore } from '~/stores/scanLifecycle';
   import type { ActiveScan } from '~/stores/scanLifecycle';
+  import {
+    subscribeElapsedClock,
+    unsubscribeElapsedClock,
+    formatElapsed,
+    elapsedClockNow,
+  } from '~/composables/useElapsedTime';
 
   const MAX_VISIBLE = 3;
 
@@ -44,29 +50,16 @@
 
   const hasCards = computed(() => visibleCards.value.length > 0);
 
-  // ── Elapsed time ticker ───────────────────────────────────────────────────
-
-  const now = ref(Date.now());
-  let ticker: ReturnType<typeof setInterval> | null = null;
+  // ── Elapsed time ─────────────────────────────────────────────────────────
+  // Shared with `useScanProgress` so two on-screen elapsed-time displays for
+  // the same scan never drift apart (#603).
 
   onMounted(() => {
-    ticker = setInterval(() => {
-      now.value = Date.now();
-    }, 1000);
+    subscribeElapsedClock();
   });
-
   onUnmounted(() => {
-    if (ticker !== null) clearInterval(ticker);
+    unsubscribeElapsedClock();
   });
-
-  function formatElapsed(startedAt: string): string {
-    const ms = Math.max(0, now.value - new Date(startedAt).getTime());
-    const totalSec = Math.floor(ms / 1000);
-    const h = Math.floor(totalSec / 3600);
-    const m = Math.floor((totalSec % 3600) / 60);
-    const s = totalSec % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  }
 
   // ── Status mapping ────────────────────────────────────────────────────────
 
@@ -79,6 +72,14 @@
   // notifier reads "rescanning <course>" rather than implying a full scan.
   function displayName(card: ActiveScan): string {
     return card.scopeCourseName ?? card.libraryName;
+  }
+
+  // The notifier only carries `errorsCount` from the Centrifugo event, not
+  // the per-file `ScanError[]` detail — that lives on `ScanDto`, fetched by
+  // the admin library page. So "errors" here means "go look", not "show
+  // inline": send the admin to the page that already renders the real list.
+  function onErrorsClicked(card: ActiveScan): void {
+    void navigateTo(`/admin/libraries/${card.libraryId}`);
   }
 
   // ── Toast on finish ───────────────────────────────────────────────────────
@@ -141,8 +142,7 @@
         <AppScanProgress
           :status="toScanStatus(card)"
           :course-name="displayName(card)"
-          :percent="0"
-          :elapsed-time="formatElapsed(card.startedAt)"
+          :elapsed-time="formatElapsed(card.startedAt, elapsedClockNow)"
           :scanned="card.filesScanned"
           :added="card.filesAdded"
           :updated="0"
@@ -154,7 +154,6 @@
               : t('notifiers.scan.statusComplete')
           "
           :failed-label="t('notifiers.scan.statusFailed')"
-          :cancel-label="t('notifiers.scan.cancel')"
           :errors-label="
             t('notifiers.scan.errorsButton', card.errorsCount, { named: { n: card.errorsCount } })
           "
@@ -162,6 +161,7 @@
           :stat-added-label="t('notifiers.scan.statAdded')"
           :stat-updated-label="t('notifiers.scan.statUpdated')"
           :stat-errors-label="t('notifiers.scan.statErrors')"
+          @errors-clicked="onErrorsClicked(card)"
         />
       </div>
     </div>

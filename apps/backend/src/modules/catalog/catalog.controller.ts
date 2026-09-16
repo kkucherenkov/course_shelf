@@ -67,7 +67,7 @@ export class CatalogController {
   }
 
   /**
-   * POST /api/v1/libraries
+   * POST /api/v1/libraries — admin only
    *
    * Idempotent on `rootPath`. The handler upserts the library; the
    * controller then chains:
@@ -85,6 +85,7 @@ export class CatalogController {
    * registration), the grant unique constraint trips and we don't want
    * that to surface as a 409 to the SPA.
    */
+  @UseGuards(AdminGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async registerLibrary(

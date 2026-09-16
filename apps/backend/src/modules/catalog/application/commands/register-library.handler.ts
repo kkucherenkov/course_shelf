@@ -8,8 +8,16 @@
  *      with a couple of co-admins doesn't want a 409 just because two
  *      people pointed at the same folder; the controller chains a grant
  *      so the second registrant actually sees the library on their list).
- *   2. Otherwise: generate a server-side id, run domain invariants via
- *      Library.register(), persist via the port, return `{ id, alreadyExisted: false }`.
+ *   2. Otherwise: check the configured root allowlist (skipped when it's
+ *      empty — see `AppConfig.catalog.rootAllowlist`), then generate a
+ *      server-side id, run domain invariants via Library.register(), persist
+ *      via the port, return `{ id, alreadyExisted: false }`.
+ *
+ * The allowlist check only runs on the fresh-registration branch: an
+ * already-registered path was already judged safe (or grandfathered in
+ * before the allowlist existed), and re-validating it here would let a
+ * config change retroactively break idempotent re-registration of a library
+ * that is already on disk and already scanned.
  *
  * No NestJS HTTP exceptions here — boundaries/element-types enforces that
  * at lint time. The Prisma adapter still translates P2002 → 409, but the
@@ -20,7 +28,9 @@ import { Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { nanoid } from 'nanoid';
 
+import { AppConfig } from '../../../../common/config/app-config';
 import { Library } from '../../domain/library/library';
+import { LibraryPathNotAllowedError } from '../../domain/library/library.errors';
 import { LIBRARY_REPOSITORY } from '../../domain/library/library.repository';
 
 import { RegisterLibraryCommand } from './register-library.command';
@@ -37,12 +47,23 @@ export class RegisterLibraryHandler implements ICommandHandler<
   RegisterLibraryCommand,
   RegisterLibraryResult
 > {
-  constructor(@Inject(LIBRARY_REPOSITORY) private readonly repo: LibraryRepository) {}
+  constructor(
+    @Inject(LIBRARY_REPOSITORY) private readonly repo: LibraryRepository,
+    private readonly appConfig: AppConfig,
+  ) {}
 
   async execute(command: RegisterLibraryCommand): Promise<RegisterLibraryResult> {
     const existing = await this.repo.findByRootPath(command.rootPath);
     if (existing) {
       return { id: existing.id, alreadyExisted: true };
+    }
+
+    const { rootAllowlist } = this.appConfig.catalog;
+    if (
+      rootAllowlist.length > 0 &&
+      !rootAllowlist.some((root) => command.rootPath.startsWith(root))
+    ) {
+      throw new LibraryPathNotAllowedError(command.rootPath);
     }
 
     const library = Library.register({

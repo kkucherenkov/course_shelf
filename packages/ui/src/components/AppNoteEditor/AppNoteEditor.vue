@@ -106,7 +106,16 @@
   );
 
   onBeforeUnmount(() => {
-    if (debounceHandle !== null) clearTimeout(debounceHandle);
+    // A pending debounce means the last keystroke never reached `save` — the
+    // consumer's fetch, not the timer, is the source of truth for the
+    // "Saved" label. Unmounting (tab switch, autoplay-next, navigation) must
+    // flush it rather than drop it, or the label lies about data that was
+    // silently discarded.
+    if (debounceHandle !== null) {
+      clearTimeout(debounceHandle);
+      debounceHandle = null;
+      emit('save', props.modelValue);
+    }
     if (tickHandle !== null) clearInterval(tickHandle);
   });
 

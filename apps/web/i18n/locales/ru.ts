@@ -4,7 +4,6 @@ export default {
       appName: 'Course Shelf',
       navHome: 'Главная',
       navBrowse: 'Каталог',
-      navLibraries: 'Библиотеки',
       navSignIn: 'Войти',
       navSignOut: 'Выйти',
       searchPlaceholder: 'Поиск курсов и уроков…',
@@ -453,7 +452,6 @@ export default {
     },
     admin: {
       navDashboard: 'Дашборд',
-      navLibraries: 'Библиотеки',
       navLibrariesManage: 'Управление библиотеками',
       navUsers: 'Пользователи',
       navPermissions: 'Права доступа',

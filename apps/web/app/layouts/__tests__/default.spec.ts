@@ -14,6 +14,9 @@
  *    the shell, or a transient 429/5xx on get-session makes the whole nav
  *    vanish even though `auth.global.ts` deliberately keeps the user signed
  *    in through it (#581).
+ *  - The primary `nav` never offers a 'libraries' entry (#618) — `/libraries`
+ *    has been admin-only since #595, so the item used to dead-end every
+ *    non-admin at `middleware/admin.ts`'s silent `navigateTo('/')`.
  */
 
 import { describe, it, expect, vi } from 'vitest';
@@ -179,6 +182,19 @@ describe('layouts/default.vue', () => {
     await w.vm.$nextTick();
 
     expect(w.getComponent({ name: 'AppCommandPalette' }).props('open')).toBe(true);
+  });
+
+  it('never offers a "libraries" entry in the primary nav (#618)', async () => {
+    routePath = '/';
+    authUser = { displayName: 'Learner', role: 'user' };
+    authToken = 'token-123';
+    const w = await mountDefaultLayout();
+    const shell = w.getComponent({ name: 'AppNavigationShell' });
+    const nav = shell.props('nav') as { key: string }[];
+    // `/libraries` has been admin-only since #595 — a primary-nav entry to
+    // it dead-ends every non-admin at `middleware/admin.ts`'s silent
+    // `navigateTo('/')`, and for an admin it only duplicates `admin-libraries`.
+    expect(nav.some((item) => item.key === 'libraries')).toBe(false);
   });
 
   it('selecting a nav command navigates to its route', async () => {

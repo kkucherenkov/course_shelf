@@ -112,6 +112,18 @@ only substitutes on `false` and `null`, so `.conclusion // "PENDING"` returns
 `""` and every "is it still running?" test silently passes. Gate on
 `.status != "COMPLETED"`.
 
+**A baseline regeneration does not re-run the checks.** The regen workflow
+pushes as `github-actions[bot]` with `GITHUB_TOKEN`, and GitHub deliberately
+does not trigger workflows on such a push — otherwise a regeneration would
+retrigger itself. The pull request keeps showing the previous run, so a stale
+red looks like a slow queue. Push something of your own, or update the branch,
+to get the verdict on the new baselines.
+
+**Regeneration rewrites every baseline whose bytes differ**, including
+sub-threshold drift the visual check deliberately ignores. Twice this pulled an
+unrelated component's image into a pull request that never touched it. Read the
+regen commit's file list before accepting it.
+
 **Bash and Monitor commands run under zsh**, which does not word-split unquoted
 parameters: `for x in $LIST` iterates once with the whole string. It produced a
 monitor event claiming four lanes had finished while two were 90 seconds old.

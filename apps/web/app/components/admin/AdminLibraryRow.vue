@@ -28,17 +28,19 @@
     scan: [];
   }>();
 
+  const { t } = useI18n();
+
   function formatRelative(isoString: string): string {
     const now = Date.now();
     const then = new Date(isoString).getTime();
     const diffSec = Math.floor((now - then) / 1000);
-    if (diffSec < 60) return `${String(diffSec)}s ago`;
+    if (diffSec < 60) return t('ui.noteEditor.agoSeconds', diffSec, { named: { n: diffSec } });
     const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${String(diffMin)}m ago`;
+    if (diffMin < 60) return t('ui.noteEditor.agoMinutes', diffMin, { named: { n: diffMin } });
     const diffH = Math.floor(diffMin / 60);
-    if (diffH < 24) return `${String(diffH)}h ago`;
+    if (diffH < 24) return t('ui.noteEditor.agoHours', diffH, { named: { n: diffH } });
     const diffD = Math.floor(diffH / 24);
-    return `${String(diffD)}d ago`;
+    return t('ui.noteEditor.agoDays', diffD, { named: { n: diffD } });
   }
 
   function lastScanText(): string {

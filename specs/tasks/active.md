@@ -64,9 +64,9 @@
         documented pre-existing flake, one `course-detail-admin-actions`
         test timeout under concurrency contention; passed standalone and
         on the serial re-run: 18/18 tasks, 567/567 web tests), `pnpm
-    check:i18n` clean (758/758 en=ru, unchanged — no strings touched)
-  - [ ] Open PR, `Closes #676`
-- Status: in-progress
+check:i18n` clean (758/758 en=ru, unchanged — no strings touched)
+  - [x] Open PR, `Closes #676` — https://github.com/kkucherenkov/course_shelf/pull/677
+- Status: in-progress (PR open, awaiting review/merge)
 - Blockers: —
 
 ## T-2026-09-16-style-gates — stylelint gates for font-weight/line-height literals, legacy media syntax, token aliases

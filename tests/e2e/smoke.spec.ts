@@ -12,6 +12,10 @@ test('backend health endpoint responds', async ({ request }) => {
 test('web app renders', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('body')).toBeVisible();
-  // Nuxt renders the __nuxt root — if it's there, the SPA mounted.
-  await expect(page.locator('#__nuxt, #app, main')).toBeVisible();
+  // Every page — authenticated (AppNavigationShell) or not (sign-in via
+  // AuthLayout) — has exactly one <main> landmark now (#590). Used to check
+  // '#__nuxt, #app, main' as a "did the SPA mount at all" proxy; now that
+  // <main> is guaranteed, that combined selector matches both the Nuxt root
+  // and <main> at once and fails Playwright's strict mode.
+  await expect(page.locator('main')).toBeVisible();
 });

@@ -93,9 +93,14 @@
     scan: liveScan,
     isRunning: scanIsRunning,
     elapsedTime,
-    percent,
     start: startPolling,
   } = useScanProgress(libraryId);
+
+  // Toggled by AppScanProgress's errors button — `liveScan.errors` already
+  // carries the real per-file `ScanError[]` from the poll, so there's
+  // nothing to fetch; just reveal what's already in hand (#593).
+  const scanErrorsOpen = ref(false);
+  const scanErrors = computed(() => liveScan.value?.errors ?? []);
 
   // Live transcription progress
   const {
@@ -151,6 +156,7 @@
   async function triggerScan(): Promise<void> {
     if (!library.value) return;
     isScanning.value = true;
+    scanErrorsOpen.value = false;
     try {
       await runLibraryScan({ client, throwOnError: false, path: { id: libraryId.value } });
       await startPolling();
@@ -287,22 +293,41 @@
             <AppScanProgress
               status="running"
               :course-name="library.name"
-              :percent="percent"
               :elapsed-time="elapsedTime"
               :scanned="liveScan?.filesScanned ?? 0"
-              :added="0"
-              :updated="0"
-              :errors="0"
+              :added="liveScan?.filesAdded ?? 0"
+              :updated="liveScan?.filesUpdated ?? 0"
+              :errors="scanErrors.length"
               :scanning-label="t('pages.admin.libraryDetail.scanProgressScanning')"
               :success-label="t('pages.admin.libraryDetail.scanProgressComplete')"
               :failed-label="t('pages.admin.libraryDetail.scanProgressFailed')"
-              :cancel-label="t('pages.admin.libraryDetail.scanProgressCancel')"
-              :errors-label="t('pages.admin.libraryDetail.scanProgressErrors', { n: 0 })"
+              :errors-label="
+                t('pages.admin.libraryDetail.scanProgressErrors', scanErrors.length, {
+                  named: { n: scanErrors.length },
+                })
+              "
               :stat-scanned-label="t('pages.admin.libraryDetail.scanProgressScanned')"
               :stat-added-label="t('pages.admin.libraryDetail.scanProgressAdded')"
               :stat-updated-label="t('pages.admin.libraryDetail.scanProgressUpdated')"
               :stat-errors-label="t('pages.admin.libraryDetail.scanProgressErrorsStat')"
+              @errors-clicked="scanErrorsOpen = !scanErrorsOpen"
             />
+
+            <ul
+              v-if="scanErrorsOpen && scanErrors.length > 0"
+              class="adm-lib-detail__scan-errors"
+              role="list"
+              :aria-label="t('pages.admin.libraryDetail.scanProgressErrorsStat')"
+            >
+              <li
+                v-for="scanError in scanErrors"
+                :key="scanError.path"
+                class="adm-lib-detail__scan-errors-item"
+              >
+                <span class="adm-lib-detail__scan-errors-path">{{ scanError.path }}</span>
+                <span class="adm-lib-detail__scan-errors-msg">{{ scanError.message }}</span>
+              </li>
+            </ul>
           </div>
 
           <!-- Last-scan-failed banner -->
@@ -491,6 +516,7 @@
   $skel-path-h: 12px;
   $skel-path-w: 300px;
   $dur-skel: var(--dur-slow, 1400ms);
+  $scan-errors-max-h: 220px;
 
   .adm-lib-detail {
     &__page-h {
@@ -605,6 +631,43 @@
     // ── Scan progress + failed banner ─────────────────────────────────────────
     &__scan-progress {
       margin-bottom: var(--space-4);
+    }
+
+    &__scan-errors {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      margin: var(--space-2) 0 0;
+      padding: var(--space-3);
+      list-style: none;
+      background: var(--surface-raised);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      max-height: $scan-errors-max-h;
+      overflow-y: auto;
+    }
+
+    &__scan-errors-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: var(--space-1) 0;
+
+      & + & {
+        border-top: 1px solid var(--border-default);
+      }
+    }
+
+    &__scan-errors-path {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--text-loud);
+      word-break: break-all;
+    }
+
+    &__scan-errors-msg {
+      font-size: var(--text-xs);
+      color: var(--status-error-fg);
     }
 
     &__failed-banner {

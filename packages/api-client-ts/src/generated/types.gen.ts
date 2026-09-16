@@ -4848,9 +4848,13 @@ export type RegisterLibraryErrors = {
      */
     401: Problem;
     /**
-     * Caller does not have the Owner-Admin role
+     * Caller is authenticated but not an administrator
      */
     403: Problem;
+    /**
+     * rootPath is well-formed but outside the server's configured root allowlist (`LIBRARY_ROOT_ALLOWLIST`). Only reachable when that allowlist is non-empty; unset, every absolute path is accepted.
+     */
+    422: Problem;
     /**
      * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
      *

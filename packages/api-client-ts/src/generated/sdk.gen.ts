@@ -994,7 +994,8 @@ export const listLibraries = <ThrowOnError extends boolean = false>(options?: Op
 /**
  * Register a new library (or share an existing path)
  *
- * Persists a library pointing at an absolute filesystem path.
+ * Admin-only mutation. Persists a library pointing at an absolute
+ * filesystem path.
  *
  * **Idempotent on `rootPath`.** When a library with the same path
  * already exists, the call returns the existing library and grants
@@ -1007,6 +1008,11 @@ export const listLibraries = <ThrowOnError extends boolean = false>(options?: Op
  * `runLibraryScan` so courses become visible shortly after the
  * response. No initial scan is fired when the path already existed
  * (the existing library is presumed already scanned).
+ *
+ * A fresh `rootPath` is also checked against the server's configured
+ * root allowlist, when one is set (`LIBRARY_ROOT_ALLOWLIST`) — the
+ * admin role gates who can call this endpoint, not which directory
+ * they point it at.
  *
  */
 export const registerLibrary = <ThrowOnError extends boolean = false>(options: Options<RegisterLibraryData, ThrowOnError>) => (options.client ?? client).post<RegisterLibraryResponses, RegisterLibraryErrors, ThrowOnError>({

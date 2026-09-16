@@ -72,6 +72,9 @@ call, owned by `token-vocabulary`).
 lane `edit-sheet`, #653). Short token aliases (`--text-muted` etc.) are lane
 `token-vocabulary`'s (#654) — leave them as-is.
 
+- Status: in-progress (PR open, awaiting review/merge) — https://github.com/kkucherenkov/course_shelf/pull/660
+- Blockers: —
+
 ## T-2026-09-16-entity-combobox
 
 **Issue**: Closes #646 — no async multi-select combobox in `@app/ui`; `CourseMetadataForm.vue` uses three raw `USelectMenu` for instructors/studios/tags.

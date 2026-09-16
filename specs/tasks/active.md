@@ -9,11 +9,11 @@
 - Spec diff: openapi.yaml — flashcard routes (create/list per lesson, due queue, update, delete, grade)
 - Codegen impact: yes
 - Sub-steps:
-  - [ ] Prisma schema + migration for `Flashcard`
-  - [ ] `ReviewSchedule` pure SM-2 function + table-driven tests
-  - [ ] `Flashcard` aggregate + repository port + Prisma adapter
+  - [x] Prisma schema + migration for `Flashcard`
+  - [x] `ReviewSchedule` pure SM-2 function + table-driven tests
+  - [x] `Flashcard` aggregate + repository port + Prisma adapter
+  - [x] Migration verified against real Postgres — [PR #684](https://github.com/kkucherenkov/course_shelf/pull/684)
   - [ ] OpenAPI routes + codegen (own commit)
   - [ ] Commands/queries + controller + handler specs
-  - [ ] Migration verified against real Postgres
 - Status: in-progress
 - Blockers: —

@@ -468,7 +468,7 @@
     &__not-found {
       text-align: center;
       padding: var(--space-8) var(--space-4);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -532,7 +532,7 @@
 
     &__header-email {
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       margin-top: var(--space-1);
       overflow: hidden;
       text-overflow: ellipsis;
@@ -572,7 +572,7 @@
     &__empty {
       padding: var(--space-8) var(--space-4);
       text-align: center;
-      color: var(--text-muted);
+      color: var(--text-secondary);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -583,7 +583,7 @@
     &__empty-icon {
       width: $empty-icon-size;
       height: $empty-icon-size;
-      color: var(--text-subtle);
+      color: var(--text-tertiary);
     }
 
     &__skel-col {

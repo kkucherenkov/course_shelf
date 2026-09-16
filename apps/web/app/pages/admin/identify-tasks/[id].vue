@@ -103,7 +103,7 @@
     }
 
     &__crumb-link {
-      color: var(--text-muted);
+      color: var(--text-secondary);
       text-decoration: none;
 
       &:hover {

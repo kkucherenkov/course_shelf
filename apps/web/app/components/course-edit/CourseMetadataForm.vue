@@ -432,7 +432,7 @@
     &__section-title {
       padding: 0;
       font-size: var(--text-sm);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-loud);
       text-transform: uppercase;
       letter-spacing: 0.02em;

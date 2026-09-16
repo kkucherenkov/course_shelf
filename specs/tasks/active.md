@@ -1,5 +1,47 @@
 # Active tasks
 
+## T-2026-09-16-style-gates-2 — extend dialect gates to apps/web, drop the packages/ui-only override
+
+- Created: 2026-09-16
+- Owner: claude
+- Spec: —
+- Goal: Closes #676. The three lanes that held back the `apps/web` cleanup
+  (`dead-surfaces`, `no-grants-home`, `scan-panel`) have merged. Clean the
+  remaining marker violations in `apps/web` (short token aliases, literal
+  `font-weight`), fix the 4 legacy `max-width` media queries with a live
+  breakpoint check, then remove the `packages/ui`-only scoping on the three
+  stylelint gates so they apply repo-wide and can't regress silently again.
+- Spec diff: none (no API/contract change)
+- Codegen impact: no
+- Sub-steps:
+  - [x] Re-measured markers repo-wide on current `main` (75f93fee) instead of
+        trusting the brief: alias `var(--text-muted|text-subtle)` 54/18
+        files, `font-weight:` literal 14/8 files, `@media (...max-width` 4/2
+        files, `line-height:` literal 0 — all four match the brief exactly
+  - [ ] Commit 1: 54 alias reads → canonical long token name (1:1 value
+        substitution, `--text-muted`→`--text-secondary`,
+        `--text-subtle`→`--text-tertiary`)
+  - [ ] Commit 1: 14 `font-weight:` literals → `var(--fw-medium|semibold|bold)`
+  - [ ] Commit 1 gates + `grep` both markers → 0 in `apps/web`
+  - [ ] Commit 2: fix the 4 legacy `max-width` media queries (range syntax),
+        live-check at 359/360, 767/768, 1023/1024px — both sides of every
+        breakpoint, screenshot or note any reflow
+  - [ ] Commit 3: `stylelint.config.mjs` — remove the `packages/ui`-only
+        scoping on the three gates (declaration-property-value-disallowed-list
+        font-weight/line-height/alias regex + media-feature-name-disallowed-list),
+        fold into top-level `rules` (merge with the existing top-level
+        `declaration-property-value-disallowed-list` `/.*/` pattern rather
+        than shadow it); keep the BEM `selector-class-pattern` override
+        `packages/ui`-only, that one is unrelated to #676
+  - [ ] Prove the gate fails on an injected violation in `apps/web` (not
+        `packages/ui` this time), then revert
+  - [ ] `grep` all four markers repo-wide → 0
+  - [ ] Gates: `pnpm --filter @app/web lint --fix`, `pnpm stylelint:fix`,
+        `pnpm format`, `pnpm turbo run lint test typecheck`, `pnpm check:i18n`
+  - [ ] Open PR, `Closes #676`
+- Status: in-progress
+- Blockers: —
+
 ## T-2026-09-16-style-gates — stylelint gates for font-weight/line-height literals, legacy media syntax, token aliases
 
 - Created: 2026-09-16

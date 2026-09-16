@@ -583,7 +583,7 @@
 
     &__title {
       font-size: var(--text-2xl);
-      font-weight: 700;
+      font-weight: var(--fw-bold);
       color: var(--text-fg);
       margin: 0;
     }
@@ -606,7 +606,7 @@
 
     &__title {
       font-size: var(--text-xs);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: var(--text-secondary);
@@ -667,7 +667,7 @@
 
     &__label {
       font-size: var(--text-sm);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
       color: var(--text-fg);
     }
 
@@ -701,7 +701,7 @@
       &--mono {
         font-family: var(--font-mono);
         font-variant-numeric: tabular-nums;
-        font-weight: 600;
+        font-weight: var(--fw-semibold);
         min-width: 3ch;
         text-align: right;
       }

@@ -540,7 +540,7 @@
       align-items: center;
       gap: var(--space-1);
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       margin-bottom: var(--space-1);
     }
 
@@ -550,7 +550,7 @@
     }
 
     &__crumb-link {
-      color: var(--text-muted);
+      color: var(--text-secondary);
       text-decoration: none;
 
       &:hover {
@@ -560,7 +560,7 @@
     }
 
     &__crumb-sep {
-      color: var(--text-subtle);
+      color: var(--text-tertiary);
     }
 
     &__crumb-active {
@@ -702,7 +702,7 @@
       font-weight: var(--fw-semibold);
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: var(--text-muted);
+      color: var(--text-secondary);
       margin-bottom: var(--space-3);
     }
 
@@ -723,7 +723,7 @@
 
     &__detail-label {
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
 
     &__detail-val {
@@ -745,7 +745,7 @@
     &__danger-body {
       margin: 0;
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       line-height: var(--leading-normal);
     }
   }

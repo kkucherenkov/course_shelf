@@ -118,18 +118,18 @@
       display: flex;
       gap: var(--space-2);
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       margin-top: var(--space-1);
     }
 
     &__sep {
-      color: var(--text-subtle);
+      color: var(--text-tertiary);
     }
 
     &__chevron {
       width: $chevron-size;
       height: $chevron-size;
-      color: var(--text-muted);
+      color: var(--text-secondary);
       flex-shrink: 0;
     }
   }

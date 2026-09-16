@@ -190,7 +190,7 @@
     &__body {
       margin: 0;
       font-size: var(--text-sm);
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
 
     &__bar {
@@ -245,10 +245,10 @@
       &[data-status='cancelled'],
       &[data-status='interrupted'] {
         background: var(--surface-raised);
-        color: var(--text-muted);
+        color: var(--text-secondary);
 
         .adm-transcription-card__status-dot {
-          background: var(--text-muted);
+          background: var(--text-secondary);
         }
       }
     }
@@ -295,7 +295,7 @@
 
     &__stat-label {
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
 
     // ── Errors ─────────────────────────────────────────────────────────────
@@ -310,7 +310,7 @@
       font-weight: var(--fw-semibold);
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
 
     &__errors-list {
@@ -334,7 +334,7 @@
 
     &__error-lesson {
       font-family: var(--font-mono);
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
 
     &__error-message {

@@ -61,7 +61,7 @@
       display: flex;
       align-items: center;
       gap: var(--space-2);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       font-size: var(--text-xs);
       text-transform: uppercase;
       letter-spacing: 0.04em;
@@ -74,7 +74,7 @@
       background: var(--surface-raised);
       display: grid;
       place-items: center;
-      color: var(--text-muted);
+      color: var(--text-secondary);
       flex-shrink: 0;
     }
 
@@ -98,7 +98,7 @@
 
     &__meta {
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
 
     // Error variant: value turns error colour

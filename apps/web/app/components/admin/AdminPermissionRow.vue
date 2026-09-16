@@ -190,7 +190,7 @@
       background: var(--surface-raised);
       display: grid;
       place-items: center;
-      color: var(--text-muted);
+      color: var(--text-secondary);
       font-size: var(--text-sm);
     }
 
@@ -227,7 +227,7 @@
 
     &__sub {
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       margin-top: var(--space-1);
     }
 
@@ -241,7 +241,7 @@
       border: none;
       background: none;
       border-radius: var(--radius-md);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       cursor: pointer;
 
       &:hover {
@@ -294,7 +294,7 @@
       align-items: center;
       justify-content: center;
       padding: var(--space-4);
-      color: var(--text-subtle);
+      color: var(--text-tertiary);
     }
 
     &__empty-icon {

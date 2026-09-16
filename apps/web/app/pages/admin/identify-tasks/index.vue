@@ -164,7 +164,7 @@
     &__sub {
       margin: var(--space-1) 0 0;
       font-size: var(--text-sm);
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
 
     &__filter {

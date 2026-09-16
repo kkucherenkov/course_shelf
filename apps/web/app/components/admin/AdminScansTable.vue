@@ -217,7 +217,7 @@
       text-align: left;
       font-size: var(--text-xs);
       font-weight: var(--fw-semibold);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.04em;
       padding: var(--space-3);
@@ -258,12 +258,12 @@
 
     &__lib-sub {
       font-size: var(--text-xs);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       margin-top: var(--space-1);
     }
 
     &__mute {
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
 
     &__num-cell {
@@ -310,7 +310,7 @@
     &__chevron {
       width: $chevron-size;
       height: $chevron-size;
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
 
     // ── Status pill ────────────────────────────────────────────────────────────
@@ -353,10 +353,10 @@
 
       &[data-status='cancelled'] {
         background: var(--surface-raised);
-        color: var(--text-muted);
+        color: var(--text-secondary);
 
         .adm-scans-tbl__status-dot {
-          background: var(--text-muted);
+          background: var(--text-secondary);
         }
       }
     }

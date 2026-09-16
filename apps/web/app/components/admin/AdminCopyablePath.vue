@@ -52,7 +52,7 @@
     gap: var(--space-1);
     font-family: var(--font-mono);
     font-size: var(--text-xs);
-    color: var(--text-muted);
+    color: var(--text-secondary);
     background: none;
     border: none;
     cursor: pointer;
@@ -84,7 +84,7 @@
       flex-shrink: 0;
       width: $icon-size;
       height: $icon-size;
-      color: var(--text-subtle);
+      color: var(--text-tertiary);
       transition: color $dur-nav ease;
     }
 

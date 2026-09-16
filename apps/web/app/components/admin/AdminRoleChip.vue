@@ -194,7 +194,7 @@
 
       &--disabled {
         background: var(--surface-raised);
-        color: var(--text-subtle);
+        color: var(--text-tertiary);
         border-color: var(--border-default);
         text-decoration: line-through;
       }

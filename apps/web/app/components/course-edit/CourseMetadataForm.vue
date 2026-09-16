@@ -19,10 +19,12 @@
     AppTextarea,
     AppInput,
     AppSelect,
+    AppComboBox,
     AppNumberField,
     AppButton,
     AppIconButton,
     type AppSelectOption,
+    type ComboBoxOption,
   } from '@app/ui';
   import type {
     CourseDto,
@@ -99,6 +101,13 @@
 
   function toOptions(refs: { id: string; displayName: string }[] | undefined): EntityOption[] {
     return (refs ?? []).map((r) => ({ id: r.id, displayName: r.displayName }));
+  }
+
+  // AppComboBox is domain-agnostic (`id`/`label`); useEntitySearch's results
+  // carry `displayName` (the api-client-ts shape). This is the one place the
+  // two vocabularies meet.
+  function toComboOptions(options: EntityOption[]): ComboBoxOption[] {
+    return options.map((o) => ({ id: o.id, label: o.displayName }));
   }
 
   const instructorSearch = useEntitySearch(
@@ -249,52 +258,55 @@
 
       <AppField :label="t('pages.courseEdit.fields.instructors')">
         <template #default="slotAttrs">
-          <USelectMenu
+          <AppComboBox
             v-bind="slotAttrs"
             v-model:search-term="instructorSearch.searchTerm.value"
             :model-value="form.instructorIds"
-            :items="instructorSearch.items.value"
-            value-key="id"
-            label-key="displayName"
-            multiple
-            ignore-filter
+            :items="toComboOptions(instructorSearch.items.value)"
+            :loading="instructorSearch.loading.value"
+            :listbox-label="t('pages.courseEdit.fields.instructors')"
             :placeholder="t('pages.courseEdit.placeholders.entitySearch')"
+            :loading-label="t('pages.courseEdit.entitySearch.loading')"
+            :no-results-label="t('pages.courseEdit.entitySearch.noResults')"
+            :remove-label="t('pages.courseEdit.entitySearch.remove')"
             :disabled="saving"
-            @update:model-value="setField('instructorIds', $event as string[])"
+            @update:model-value="setField('instructorIds', $event)"
           />
         </template>
       </AppField>
       <AppField :label="t('pages.courseEdit.fields.studios')">
         <template #default="slotAttrs">
-          <USelectMenu
+          <AppComboBox
             v-bind="slotAttrs"
             v-model:search-term="studioSearch.searchTerm.value"
             :model-value="form.studioIds"
-            :items="studioSearch.items.value"
-            value-key="id"
-            label-key="displayName"
-            multiple
-            ignore-filter
+            :items="toComboOptions(studioSearch.items.value)"
+            :loading="studioSearch.loading.value"
+            :listbox-label="t('pages.courseEdit.fields.studios')"
             :placeholder="t('pages.courseEdit.placeholders.entitySearch')"
+            :loading-label="t('pages.courseEdit.entitySearch.loading')"
+            :no-results-label="t('pages.courseEdit.entitySearch.noResults')"
+            :remove-label="t('pages.courseEdit.entitySearch.remove')"
             :disabled="saving"
-            @update:model-value="setField('studioIds', $event as string[])"
+            @update:model-value="setField('studioIds', $event)"
           />
         </template>
       </AppField>
       <AppField :label="t('pages.courseEdit.fields.tags')">
         <template #default="slotAttrs">
-          <USelectMenu
+          <AppComboBox
             v-bind="slotAttrs"
             v-model:search-term="tagSearch.searchTerm.value"
             :model-value="form.tagIds"
-            :items="tagSearch.items.value"
-            value-key="id"
-            label-key="displayName"
-            multiple
-            ignore-filter
+            :items="toComboOptions(tagSearch.items.value)"
+            :loading="tagSearch.loading.value"
+            :listbox-label="t('pages.courseEdit.fields.tags')"
             :placeholder="t('pages.courseEdit.placeholders.entitySearch')"
+            :loading-label="t('pages.courseEdit.entitySearch.loading')"
+            :no-results-label="t('pages.courseEdit.entitySearch.noResults')"
+            :remove-label="t('pages.courseEdit.entitySearch.remove')"
             :disabled="saving"
-            @update:model-value="setField('tagIds', $event as string[])"
+            @update:model-value="setField('tagIds', $event)"
           />
         </template>
       </AppField>

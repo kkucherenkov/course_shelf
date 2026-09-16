@@ -122,6 +122,7 @@ component names.
 | Forms      | `AppButton`           | ✓               | ✓                  |
 | Forms      | `AppButtonSpinner`    | —               | ✓                  |
 | Forms      | `AppCheckbox`         | ✓               | ✓                  |
+| Forms      | `AppComboBox`         | ✓               | —                  |
 | Forms      | `AppField`            | ✓               | —                  |
 | Forms      | `AppFieldBox`         | —               | ✓                  |
 | Forms      | `AppFieldFrame`       | —               | ✓                  |

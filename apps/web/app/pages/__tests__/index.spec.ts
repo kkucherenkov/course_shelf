@@ -18,6 +18,12 @@
  * one row below the honest no-access message on continue-watching. Access
  * is now checked before the role split, so the role split only applies once
  * there's a real (possibly empty) library to be a member or admin of.
+ *
+ * #666: the three per-row no-access messages (#623/#633 above) plus a
+ * "0 min watched" scoreboard in the rail added up to the same explanation
+ * repeated three times over a table of zeros. Zero library grants now gates
+ * the whole three-row block (and the rail) behind one `AppNoPermission`
+ * instead — see the "no library access" describe block below.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -91,6 +97,11 @@ vi.mock('@app/ui', () => ({
     props: ['course', 'interactive', 'state'],
     template: '<div />',
   },
+  AppNoPermission: {
+    name: 'AppNoPermission',
+    props: ['title', 'body'],
+    template: '<div class="no-permission-probe">{{ title }}::{{ body }}</div>',
+  },
 }));
 
 const HomeRowProbe = {
@@ -158,24 +169,6 @@ describe('pages/index.vue — recently added empty row (#579)', () => {
     expect(recentlyAdded?.props('emptyBody')).toBe('pages.home.recentlyAdded.emptyBodyMember');
   });
 
-  // #633: this used to fall through to the "ask an admin" copy above —
-  // wrong, since a member with zero grants has no library to point an admin
-  // at either.
-  it('tells a member with zero library grants the honest no-access copy, not "ask an admin"', async () => {
-    authUser.value = { role: 'USER' };
-    librariesData.value = { items: [] };
-    librariesStatus.value = 'success';
-    const wrapper = await mountPage();
-
-    const rows = wrapper.findAllComponents(HomeRowProbe);
-    const recentlyAdded = rows.find(
-      (r) => r.props('heading') === 'pages.home.recentlyAdded.heading',
-    );
-
-    expect(recentlyAdded?.props('emptyTitle')).toBe('pages.browse.emptyNoAccessTitle');
-    expect(recentlyAdded?.props('emptyBody')).toBe('pages.browse.emptyNoAccessBody');
-  });
-
   it('an admin with zero libraries still sees the "add courses" copy, not no-access', async () => {
     authUser.value = { role: 'ADMIN' };
     librariesData.value = { items: [] };
@@ -202,21 +195,6 @@ describe('pages/index.vue — no-access copy on continue watching / recently com
     recentlyAddedData.value = { items: [] };
     recentlyCompletedData.value = { items: [] };
     recentlyCompletedStatus.value = 'success';
-  });
-
-  it('a member with zero library grants sees the no-access copy, not "start a course"', async () => {
-    authUser.value = { role: 'USER' };
-    librariesData.value = { items: [] };
-    librariesStatus.value = 'success';
-    const wrapper = await mountPage();
-
-    const continueWatching = findRow(wrapper, 'pages.home.continueWatching.heading');
-    expect(continueWatching?.props('emptyTitle')).toBe('pages.browse.emptyNoAccessTitle');
-    expect(continueWatching?.props('emptyBody')).toBe('pages.browse.emptyNoAccessBody');
-
-    const recentlyCompleted = findRow(wrapper, 'pages.home.recentlyCompleted.heading');
-    expect(recentlyCompleted?.props('emptyTitle')).toBe('pages.browse.emptyNoAccessTitle');
-    expect(recentlyCompleted?.props('emptyBody')).toBe('pages.browse.emptyNoAccessBody');
   });
 
   it('a member with a library grant keeps the normal "nothing yet" copy', async () => {
@@ -252,6 +230,43 @@ describe('pages/index.vue — no-access copy on continue watching / recently com
 
     const continueWatching = findRow(wrapper, 'pages.home.continueWatching.heading');
     expect(continueWatching?.props('emptyTitle')).toBe('pages.home.continueWatching.empty');
+  });
+});
+
+// #666: zero library grants used to produce the same no-access message once
+// per row (continue-watching, recently-added, recently-completed) plus a
+// "0 min watched" scoreboard in the rail. Now it gates the entire three-row
+// block (and the rail) behind a single `AppNoPermission`.
+describe('pages/index.vue — no library access renders one explanation (#666)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    recentlyAddedData.value = { items: [] };
+    recentlyCompletedData.value = { items: [] };
+    recentlyCompletedStatus.value = 'success';
+  });
+
+  it('shows a single no-access block instead of the three rows', async () => {
+    authUser.value = { role: 'USER' };
+    librariesData.value = { items: [] };
+    librariesStatus.value = 'success';
+    const wrapper = await mountPage();
+
+    const noAccess = wrapper.find('.no-permission-probe');
+    expect(noAccess.exists()).toBe(true);
+    expect(noAccess.text()).toBe('pages.browse.emptyNoAccessTitle::pages.browse.emptyNoAccessBody');
+    expect(wrapper.findAllComponents(HomeRowProbe)).toHaveLength(0);
+  });
+
+  it('renders the normal three-row layout once access is confirmed', async () => {
+    authUser.value = { role: 'USER' };
+    librariesData.value = {
+      items: [{ id: 'lib-1', name: 'CS' } as LibraryListDto['items'][number]],
+    };
+    librariesStatus.value = 'success';
+    const wrapper = await mountPage();
+
+    expect(wrapper.find('.no-permission-probe').exists()).toBe(false);
+    expect(wrapper.findAllComponents(HomeRowProbe)).toHaveLength(3);
   });
 });
 

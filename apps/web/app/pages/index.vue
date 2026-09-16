@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
-  import { CourseWideCard, CoursePosterCard } from '@app/ui';
+  import { AppNoPermission, CourseWideCard, CoursePosterCard } from '@app/ui';
   import type { Course } from '@app/ui';
   import type {
     ContinueWatchingItem,
@@ -150,45 +150,14 @@
     return t('pages.home.recentlyCompleted.count', n, { named: { n } });
   });
 
-  // Three states, not two (#633): a member with zero library grants gets the
-  // same honest no-access copy as continue-watching/recently-completed above
-  // (reused verbatim from `browse.vue`) — "add courses to a library" is an
-  // admin-only action (#579) and false advice besides when there's no library
-  // to add them to. Only once access is confirmed does the admin/member split
-  // apply, since that split is about who can act on a *real* empty library.
-  const recentlyAddedEmptyTitle = computed(() =>
-    hasLibraryAccess.value
-      ? t('pages.home.recentlyAdded.empty')
-      : t('pages.browse.emptyNoAccessTitle'),
-  );
-  const recentlyAddedEmptyBody = computed(() => {
-    if (!hasLibraryAccess.value) return t('pages.browse.emptyNoAccessBody');
-    return userRole.value === 'ADMIN'
+  // Member vs. admin split for a *genuinely* empty library — reachable only
+  // when `hasLibraryAccess` is true, since the whole three-row block is
+  // gated on it below (#666: the no-access explanation now renders once,
+  // not once per row).
+  const recentlyAddedEmptyBody = computed(() =>
+    userRole.value === 'ADMIN'
       ? t('pages.home.recentlyAdded.emptyBody')
-      : t('pages.home.recentlyAdded.emptyBodyMember');
-  });
-
-  // No-access copy is `browse.vue`'s own — reused verbatim rather than
-  // rewritten a second time (#623).
-  const continueWatchingEmptyTitle = computed(() =>
-    hasLibraryAccess.value
-      ? t('pages.home.continueWatching.empty')
-      : t('pages.browse.emptyNoAccessTitle'),
-  );
-  const continueWatchingEmptyBody = computed(() =>
-    hasLibraryAccess.value
-      ? t('pages.home.continueWatching.emptyBody')
-      : t('pages.browse.emptyNoAccessBody'),
-  );
-  const recentlyCompletedEmptyTitle = computed(() =>
-    hasLibraryAccess.value
-      ? t('pages.home.recentlyCompleted.empty')
-      : t('pages.browse.emptyNoAccessTitle'),
-  );
-  const recentlyCompletedEmptyBody = computed(() =>
-    hasLibraryAccess.value
-      ? t('pages.home.recentlyCompleted.emptyBody')
-      : t('pages.browse.emptyNoAccessBody'),
+      : t('pages.home.recentlyAdded.emptyBodyMember'),
   );
 </script>
 
@@ -203,8 +172,25 @@
       class="page-home__greeting"
     />
 
+    <!--
+      ── No library access: one explanation, not one per row (#666) ──────
+      No #action slot on purpose: the honest next step here is "ask an
+      administrator" (already said in the body), not a button. A "check
+      again" retry would just replay the same denial — nothing on this
+      screen made the grant stale, so refetching resolves nothing. A real
+      next action (request access, contact an admin) needs a contract
+      change (an endpoint that exposes admin contact, or a request-access
+      flow) — out of scope for this fix, tracked separately.
+    -->
+    <AppNoPermission
+      v-if="!hasLibraryAccess"
+      :title="t('pages.browse.emptyNoAccessTitle')"
+      :body="t('pages.browse.emptyNoAccessBody')"
+      class="page-home__no-access"
+    />
+
     <!-- ── Two-column layout at lg+ ──────────────────────────────────────── -->
-    <div class="page-home__layout">
+    <div v-else class="page-home__layout">
       <!-- ── Main content ──────────────────────────────────────────────────── -->
       <div class="page-home__main">
         <!-- Continue watching -->
@@ -212,8 +198,8 @@
           :heading="t('pages.home.continueWatching.heading')"
           :status="continueWatching.status.value"
           :empty="(continueWatching.data.value?.items.length ?? 0) === 0"
-          :empty-title="continueWatchingEmptyTitle"
-          :empty-body="continueWatchingEmptyBody"
+          :empty-title="t('pages.home.continueWatching.empty')"
+          :empty-body="t('pages.home.continueWatching.emptyBody')"
           :error-title="t('pages.home.continueWatching.error')"
           :error-body="t('pages.home.continueWatching.errorBody')"
           :retry-label="t('pages.home.continueWatching.retry')"
@@ -240,7 +226,7 @@
           :heading="t('pages.home.recentlyAdded.heading')"
           :status="recentlyAdded.status.value"
           :empty="(recentlyAdded.data.value?.items.length ?? 0) === 0"
-          :empty-title="recentlyAddedEmptyTitle"
+          :empty-title="t('pages.home.recentlyAdded.empty')"
           :empty-body="recentlyAddedEmptyBody"
           :error-title="t('pages.home.recentlyAdded.error')"
           :error-body="t('pages.home.recentlyAdded.errorBody')"
@@ -268,8 +254,8 @@
           :heading="t('pages.home.recentlyCompleted.heading')"
           :status="recentlyCompleted.status.value"
           :empty="(recentlyCompleted.data.value?.items.length ?? 0) === 0"
-          :empty-title="recentlyCompletedEmptyTitle"
-          :empty-body="recentlyCompletedEmptyBody"
+          :empty-title="t('pages.home.recentlyCompleted.empty')"
+          :empty-body="t('pages.home.recentlyCompleted.emptyBody')"
           :error-title="t('pages.home.recentlyCompleted.error')"
           :error-body="t('pages.home.recentlyCompleted.errorBody')"
           :retry-label="t('pages.home.recentlyCompleted.retry')"
@@ -342,6 +328,10 @@
 
     &__greeting {
       margin-bottom: var(--space-6);
+    }
+
+    &__no-access {
+      margin-top: var(--space-4);
     }
 
     // ── Two-column layout ──────────────────────────────────────────────────

@@ -9,8 +9,11 @@
    * Each card has a close button (enabled only on finished scans — active scans
    * cannot be dismissed by the user).
    *
-   * When a scan finishes a `useToast().add()` summary is pushed so the user
-   * gets a notification even if the panel is hidden.
+   * When a scan finishes a `useToast().add()` summary is pushed, but only for
+   * a card the panel isn't already showing (i.e. one pushed out past
+   * `MAX_VISIBLE` by more concurrent scans) — a card the panel renders
+   * already tells the same story inline, and toasting it too just doubles
+   * the same notification in the same corner (#667).
    */
 
   import { computed, onMounted, onUnmounted, watch } from 'vue';
@@ -94,6 +97,10 @@
         if (!card.finished) continue;
         if (_toasted.has(card.scanId)) continue;
         _toasted.add(card.scanId);
+
+        // Already on screen in the panel — toasting it too would just repeat
+        // the same summary in the same bottom-right corner (#667).
+        if (visibleCards.value.some((visible) => visible.scanId === card.scanId)) continue;
 
         if (card.finished.status === 'failed') {
           toast.add({
@@ -226,6 +233,17 @@
         outline: 2px solid var(--brand-accent);
         outline-offset: 2px;
       }
+    }
+  }
+
+  // Below 600px `AppNavigationShell` switches to a fixed bottom-tab bar
+  // (`--space-8` tall, see its own `&__bottom-tabs`) docked at `bottom: 0`.
+  // The panel outranks it on `z-index` (`--z-toast` > `--z-sticky`), so
+  // without this it draws over the bar instead of beside it, leaving the
+  // active scan's nav unreachable until the card is dismissed (#667).
+  @media (width < 600px) {
+    .scan-lifecycle-notifier {
+      bottom: calc(var(--space-8) + var(--space-4));
     }
   }
 

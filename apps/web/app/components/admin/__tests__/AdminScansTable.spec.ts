@@ -7,6 +7,18 @@ import { mount } from '@vue/test-utils';
 import type { AdminScanListItem } from '@app/api-client-ts';
 import AdminScansTable from '../AdminScansTable.vue';
 
+// Mirrors the real `t(key, count, { named: { n: count } })` plural call
+// shape, so a fall-back to hardcoded English (the pre-#620 `formatRelative`)
+// is visible as a raw locale key instead of "d ago".
+vi.stubGlobal('useI18n', () => ({
+  t: (key: string, ...args: unknown[]) => {
+    const opts = args.find((a) => typeof a === 'object' && a !== null) as
+      | { named?: { n?: unknown } }
+      | undefined;
+    return opts?.named?.n === undefined ? key : `${key}:${String(opts.named.n)}`;
+  },
+}));
+
 vi.mock('@app/ui', () => ({
   IconCS: {
     name: 'IconCS',
@@ -87,6 +99,14 @@ describe('AdminScansTable', () => {
     expect(wrapper.text()).toContain('Failed');
   });
 
+  it('formats "started" through i18n, not hardcoded English "ago"', () => {
+    const wrapper = mount(AdminScansTable, {
+      props: { ...baseProps, items: sampleItems },
+    });
+    expect(wrapper.text()).toContain('ui.noteEditor.agoHours:1');
+    expect(wrapper.text()).not.toMatch(/\d+[smhd] ago/);
+  });
+
   it('shows column headers', () => {
     const wrapper = mount(AdminScansTable, {
       props: { ...baseProps, items: sampleItems },
@@ -106,6 +126,50 @@ describe('AdminScansTable', () => {
     });
     expect(wrapper.text()).toContain('Library');
     expect(wrapper.text()).toContain('Computer Science');
+  });
+
+  it('renders errorsCount as a plain number when no scan is expandable (#620)', () => {
+    const wrapper = mount(AdminScansTable, {
+      props: { ...baseProps, items: sampleItems },
+    });
+    expect(wrapper.find('.adm-scans-tbl__errors-btn').exists()).toBe(false);
+    expect(wrapper.text()).toContain('3');
+  });
+
+  it('renders errorsCount as a button only for the row matching expandableScanId (#620)', () => {
+    const wrapper = mount(AdminScansTable, {
+      props: { ...baseProps, items: sampleItems, expandableScanId: 'scan-2' },
+    });
+    const buttons = wrapper.findAll('.adm-scans-tbl__errors-btn');
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]!.text()).toBe('3');
+  });
+
+  it('does not turn a zero-error row into a button even if it is the expandable scan', () => {
+    const wrapper = mount(AdminScansTable, {
+      props: { ...baseProps, items: sampleItems, expandableScanId: 'scan-1' },
+    });
+    expect(wrapper.find('.adm-scans-tbl__errors-btn').exists()).toBe(false);
+  });
+
+  it('emits toggle-errors with the scanId when the errors button is clicked', async () => {
+    const wrapper = mount(AdminScansTable, {
+      props: { ...baseProps, items: sampleItems, expandableScanId: 'scan-2' },
+    });
+    await wrapper.find('.adm-scans-tbl__errors-btn').trigger('click');
+    expect(wrapper.emitted('toggle-errors')).toEqual([['scan-2']]);
+  });
+
+  it('reflects expandedScanId as aria-expanded on the errors button', () => {
+    const wrapper = mount(AdminScansTable, {
+      props: {
+        ...baseProps,
+        items: sampleItems,
+        expandableScanId: 'scan-2',
+        expandedScanId: 'scan-2',
+      },
+    });
+    expect(wrapper.find('.adm-scans-tbl__errors-btn').attributes('aria-expanded')).toBe('true');
   });
 
   it('matches snapshot (empty state)', () => {

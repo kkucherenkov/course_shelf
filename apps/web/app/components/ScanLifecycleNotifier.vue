@@ -98,19 +98,29 @@
         if (card.finished.status === 'failed') {
           toast.add({
             title: t('notifiers.scan.toastFailedTitle', { name: displayName(card) }),
-            description: t('notifiers.scan.toastFailedSummary', {
-              errors: card.errorsCount,
+            // 3-arg form so vue-i18n picks up the real plural index — a
+            // 2-arg `{ errors: n }` call has no `named.n`/`named.count` for
+            // it to read and always rendered the first plural form (#621).
+            description: t('notifiers.scan.toastFailedSummary', card.errorsCount, {
+              named: { n: card.errorsCount },
             }),
             color: 'error',
           });
         } else {
+          // Two independently-pluralized messages, not one string with two
+          // counts baked in — same split as `statLibrariesMeta*` (#621).
+          // "Files", not "lessons": the wire only carries `filesAdded`, no
+          // lesson count (TODO(E13)); this labels what's actually counted
+          // instead of leaving the mismatch as an open TODO.
+          const coursesLabel = t('notifiers.scan.toastDoneSummaryCourses', card.coursesDiscovered, {
+            named: { n: card.coursesDiscovered },
+          });
+          const filesLabel = t('notifiers.scan.toastDoneSummaryFiles', card.filesAdded, {
+            named: { n: card.filesAdded },
+          });
           toast.add({
             title: t('notifiers.scan.toastDoneTitle', { name: displayName(card) }),
-            description: t('notifiers.scan.toastDoneSummary', {
-              courses: card.coursesDiscovered,
-              // TODO(E13): backend doesn't expose total lesson count in scan events yet
-              lessons: card.filesAdded,
-            }),
+            description: `${coursesLabel} · ${filesLabel}`,
             color: 'success',
           });
         }

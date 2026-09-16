@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, provide, ref, toRef, watch } from 'vue';
+  import { computed, ref, toRef, watch } from 'vue';
   // Explicit: Nuxt 4.5 no longer surfaces auto-imports to template
   // expressions during `nuxt typecheck`, and `navigateTo` is called from the
   // template below. Same `#imports` idiom as `stores/auth.ts`.
@@ -27,12 +27,6 @@
   const { data: user, status: userStatus, errorStatus: userErrorStatus } = useAdminUser(userIdRef);
   const { data: libraries, status: libStatus, refetch: refetchLibs } = useAdminLibraries();
   const grants = useAccessGrants(userIdRef);
-
-  // ── Page title ──────────────────────────────────────────────────────────────
-  const pageTitle = computed(() =>
-    user.value ? (user.value.displayName ?? user.value.name) : t('pages.admin.permissions.title'),
-  );
-  provide('adminPageTitle', pageTitle);
 
   // ── Derived states ──────────────────────────────────────────────────────────
   const isUserLoading = computed(() => userStatus.value === 'pending');

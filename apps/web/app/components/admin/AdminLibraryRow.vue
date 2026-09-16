@@ -71,6 +71,7 @@
 <template>
   <div
     class="adm-lib-row"
+    data-testid="library-row"
     role="button"
     tabindex="0"
     @click="emit('click')"

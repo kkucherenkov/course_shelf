@@ -6,7 +6,7 @@
    * middleware is the real guard (redirects non-admins before this component
    * ever runs) — same pattern as `pages/courses/[id]/edit.vue`.
    */
-  import { computed, provide, ref } from 'vue';
+  import { computed, ref } from 'vue';
   import { AppBanner, AppButton, AppEmptyState, AppSelect, AppSkeleton } from '@app/ui';
   import type { IdentifyTaskStatus } from '@app/api-client-ts';
   import AdminIdentifyTaskRow from '~/components/admin/AdminIdentifyTaskRow.vue';
@@ -16,9 +16,6 @@
 
   const { t } = useI18n();
   const router = useRouter();
-
-  const pageTitle = computed(() => t('pages.admin.identifyTasks.title'));
-  provide('adminPageTitle', pageTitle);
 
   // Status filter — defaults to `proposed`, the only status that actually
   // needs an admin's attention. 'all' is the AppSelect sentinel for "no

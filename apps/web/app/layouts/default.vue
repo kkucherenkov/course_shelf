@@ -9,7 +9,7 @@
    * when the signed-in user has the admin role.
    *
    * Pages that should render WITHOUT the shell (sign-in, sign-up, forgot,
-   * reset, setup) opt out via `definePageMeta({ layout: false })`. When
+   * reset) opt out via `definePageMeta({ layout: false })`. When
    * there is no bearer token at all (transient state before the global
    * auth middleware redirects to /sign-in), the layout falls back to a
    * plain `<slot/>` to avoid flashing the shell with an empty avatar.
@@ -67,13 +67,9 @@
 
   // ── Nav items ───────────────────────────────────────────────────────────
 
-  // No 'libraries' entry here (#618): `/libraries` has been admin-gated
-  // since #595 (`pages/libraries.vue`'s own doc comment: "`/admin/libraries`
-  // is the equivalent surface in the admin nav"), so a primary-nav link to
-  // it either 404s a non-admin against `middleware/admin.ts`'s silent
-  // `navigateTo('/')`, or, for an admin, duplicates `admin-libraries` below
-  // with the same register/rescan flow. One entry point is enough; admins
-  // reach it through the admin block.
+  // No 'libraries' entry here: register/rescan lives under the admin block
+  // (`admin-libraries` below) only — there is no separate `/libraries` route
+  // (#665).
   const nav = computed<NavItem[]>(() => [
     { key: 'home', label: t('layouts.default.navHome'), icon: 'home', to: '/' },
     { key: 'browse', label: t('layouts.default.navBrowse'), icon: 'search', to: '/browse' },
@@ -124,10 +120,6 @@
     if (p.startsWith('/admin/users')) return 'admin-users';
     if (p.startsWith('/admin/libraries')) return 'admin-libraries';
     if (p.startsWith('/admin')) return 'admin-dashboard';
-    // No nav item is keyed 'libraries' any more (#618) — this only stops a
-    // direct visit to the legacy admin-only `/libraries` route from lighting
-    // up "Home" below.
-    if (p.startsWith('/libraries')) return 'libraries';
     if (p.startsWith('/search')) return 'browse'; // search is scoped under browse conceptually
     if (p.startsWith('/browse')) return 'browse';
     if (p.startsWith('/courses')) return 'browse'; // course pages live under /browse conceptually
@@ -254,11 +246,12 @@
     await navigateTo('/sign-in');
   }
 
-  // ── Command palette (#607) ──────────────────────────────────────────────
-  // Built, storied, spec'd — mounted nowhere. Commands reuse the same
-  // translated labels the sidebar/topbar already compute; no new copy for
-  // the entries themselves, only for the palette chrome (title/placeholder/
-  // empty state — genuinely new surface, see `ui.commandPalette.*`).
+  // ── Command palette (#607) ────────────────────────────────────────────────
+  // Mounted below, lazily — see `paletteMounted`'s comment. Commands reuse
+  // the same translated labels the sidebar/topbar already compute; no new
+  // copy for the entries themselves, only for the palette chrome
+  // (title/placeholder/empty state — genuinely new surface, see
+  // `ui.commandPalette.*`).
 
   interface PaletteCommand extends Command {
     to?: string;

@@ -1,7 +1,14 @@
 import { test, expect, type Page } from '@playwright/test';
 
 /**
- * E2E for /libraries — register-and-scan flow.
+ * E2E for /admin/libraries — register-and-scan flow.
+ *
+ * Ported from the standalone `/libraries` page (#665). That page had no nav
+ * link since #618 and every branch of `auth.global.ts` routed around it —
+ * this test used to cover code nobody could reach. `/admin/libraries` is the
+ * live surface for the same register+rescan flow, and the same
+ * accessible-name locators (`getByLabel('Path on this server')`,
+ * `getByRole('button', { name: 'Register' })`) resolve unchanged there.
  *
  * Hermetic: every backend call is mocked via `route()`. The auth bypass
  * primes localStorage so the page-level `useAuthStore` thinks the user
@@ -34,33 +41,45 @@ async function mockAuthenticated(page: Page): Promise<void> {
   );
 }
 
-test('libraries page lists, registers, and triggers scans', async ({ page }) => {
+test('admin libraries page lists, registers, and triggers scans', async ({ page }) => {
   await mockAuthenticated(page);
 
-  // First load: no libraries.
+  // Admin list endpoint — distinct from the register endpoint below.
+  // Empty on first load, the registered row after the sheet submits, a
+  // running scan on it after the Scan button is clicked.
   let listCallCount = 0;
+  await page.route('**/api/v1/admin/libraries', (route) => {
+    listCallCount += 1;
+    const items =
+      listCallCount === 1
+        ? []
+        : [
+            {
+              id: 'lib-1',
+              name: 'Course Shelf samples',
+              rootPath: '/workspace/docs/data/courses',
+              coursesCount: 0,
+              lessonsCount: 0,
+              lastScan:
+                listCallCount >= 3
+                  ? {
+                      status: 'running',
+                      startedAt: '2026-04-28T00:01:00Z',
+                      finishedAt: null,
+                      errorsCount: 0,
+                    }
+                  : null,
+            },
+          ];
+    void route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items }),
+    });
+  });
+
+  // Register — same underlying endpoint the standalone page used.
   await page.route('**/api/v1/libraries', (route) => {
-    if (route.request().method() === 'GET') {
-      listCallCount += 1;
-      const items =
-        listCallCount === 1
-          ? []
-          : [
-              {
-                id: 'lib-1',
-                name: 'Course Shelf samples',
-                rootPath: '/workspace/docs/data/courses',
-                createdAt: '2026-04-28T00:00:00Z',
-                updatedAt: '2026-04-28T00:00:00Z',
-              },
-            ];
-      void route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ items }),
-      });
-      return;
-    }
     if (route.request().method() === 'POST') {
       void route.fulfill({
         status: 201,
@@ -78,14 +97,7 @@ test('libraries page lists, registers, and triggers scans', async ({ page }) => 
     void route.continue();
   });
 
-  // No scans yet for the empty library — return 404.
-  let scansPolled = 0;
-  await page.route('**/api/v1/libraries/lib-1/scans/latest', (route) => {
-    scansPolled += 1;
-    void route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
-  });
-
-  // Trigger-scan POST returns a running scan.
+  // Trigger-scan POST.
   let scansTriggered = 0;
   await page.route('**/api/v1/libraries/lib-1/scans', (route) => {
     if (route.request().method() === 'POST') {
@@ -110,16 +122,18 @@ test('libraries page lists, registers, and triggers scans', async ({ page }) => 
     void route.continue();
   });
 
-  await page.goto('/libraries');
+  await page.goto('/admin/libraries');
 
   // Page renders with empty state.
-  await expect(page.locator('[data-testid="page-libraries"]')).toBeVisible({
+  await expect(page.locator('[data-testid="page-admin-libraries"]')).toBeVisible({
     timeout: 10_000,
   });
   await expect(page.locator('.app-empty-state')).toBeVisible();
 
-  // Open the form, fill it in, submit.
-  await page.getByRole('button', { name: 'Add library' }).click();
+  // Open the add-library sheet, fill it in, submit. Two buttons share the
+  // "Add library" name while the list is empty (header CTA + empty-state
+  // action) — either opens the same sheet, so take the first.
+  await page.getByRole('button', { name: 'Add library' }).first().click();
   await page.getByLabel('Name').fill('Course Shelf samples');
   await page.getByLabel('Path on this server').fill('/workspace/docs/data/courses');
   await page.getByRole('button', { name: 'Register' }).click();
@@ -131,9 +145,13 @@ test('libraries page lists, registers, and triggers scans', async ({ page }) => 
   await expect(page.getByText('Course Shelf samples')).toBeVisible();
   await expect(page.getByText('/workspace/docs/data/courses')).toBeVisible();
 
-  // Click rescan and verify the POST was made.
-  await page.getByRole('button', { name: 'Rescan' }).click();
+  // Click Scan and verify the POST was made. Scoped to the row: the row
+  // itself is also `role="button"` (opens the detail page) and its computed
+  // accessible name is every descendant's text concatenated, which includes
+  // "Scan" — an unscoped locator matches both.
+  await page.getByTestId('library-row').getByRole('button', { name: 'Scan' }).click();
   await expect.poll(() => scansTriggered, { timeout: 5000 }).toBe(1);
-  // The polling kicked in at least once.
-  expect(scansPolled).toBeGreaterThan(0);
+
+  // List re-fetched again, the status pill reflects the running scan.
+  await expect(page.getByText('Running')).toBeVisible();
 });

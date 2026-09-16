@@ -211,7 +211,7 @@ Then open the app:
 
 ### 4 — First sign-in
 
-The first user to call `POST /api/v1/setup/owner` becomes the owner; subsequent attempts return 409. The SPA routes a fresh install through `/setup` automatically — visit `http://localhost:8080`, fill in email + password, and the wizard hands off to the dashboard.
+The first user to call `POST /api/v1/setup/owner` becomes the owner; subsequent attempts return 409. The SPA routes a fresh install through `/sign-up`'s 3-step wizard automatically — visit `http://localhost:8080`, fill in email + password, and step 1 promotes that account to admin and hands off to the dashboard.
 
 ### 5 — Mobile (optional)
 

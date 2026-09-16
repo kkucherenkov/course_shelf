@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`AdminLibraryRow > matches snapshot 1`] = `
-"<div data-v-9ac31328="" class="adm-lib-row" role="button" tabindex="0">
+"<div data-v-9ac31328="" class="adm-lib-row" data-testid="library-row" role="button" tabindex="0">
   <!-- Icon -->
   <div data-v-9ac31328="" class="adm-lib-row__icon" aria-hidden="true"><svg data-v-9ac31328="" class="stub-icon" data-name="library"></svg></div><!-- Name + sub-line -->
   <div data-v-9ac31328="" class="adm-lib-row__name-col">

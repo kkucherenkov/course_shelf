@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, provide, ref, watch } from 'vue';
+  import { computed, ref, watch } from 'vue';
   // Explicit: Nuxt 4.5 no longer surfaces auto-imports to template
   // expressions during `nuxt typecheck`, and `navigateTo` is called from the
   // template below. Same `#imports` idiom as `stores/auth.ts`.
@@ -12,9 +12,6 @@
 
   const { t } = useI18n();
   const toast = useToast();
-
-  const pageTitle = computed(() => t('pages.admin.permissions.pickerTitle'));
-  provide('adminPageTitle', pageTitle);
 
   // ── Search ─────────────────────────────────────────────────────────────────
   const searchInput = ref('');

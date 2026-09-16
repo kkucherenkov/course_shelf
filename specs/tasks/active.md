@@ -150,6 +150,7 @@ three more `formatRelative` English-literal copies at
 `admin/libraries/[id].vue:143`, `AdminScansTable.vue:44`,
 `AdminLibraryRow.vue:35` (scan-surface lane) — same `ui.noteEditor.ago*` fix
 applied here to `admin/index.vue`'s copy.
+
 ## T-2026-09-16-admin-polish — mislabeled navigation, filter-blind empty state, missing confirmations
 
 - Created: 2026-09-16

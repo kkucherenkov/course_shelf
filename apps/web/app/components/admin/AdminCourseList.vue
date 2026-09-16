@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { IconCS } from '@app/ui';
+  import { AppSkeleton, IconCS } from '@app/ui';
 
   /**
    * A course's admin entry point (#510). Reaching a single course was
@@ -30,8 +30,8 @@
   <!-- Skeleton -->
   <div v-if="loading" class="adm-course-list__skeleton-wrap">
     <div v-for="i in 3" :key="i" class="adm-course-list__skel-row">
-      <div class="adm-course-list__skel adm-course-list__skel--title" />
-      <div class="adm-course-list__skel adm-course-list__skel--pill" />
+      <AppSkeleton width="220px" height="14px" />
+      <AppSkeleton width="64px" height="14px" />
     </div>
   </div>
 
@@ -53,11 +53,7 @@
 </template>
 
 <style lang="scss" scoped>
-  $skel-title-w: 220px;
-  $skel-pill-w: 64px;
-  $skel-h: 14px;
   $chevron-size: 14px;
-  $dur-skel: var(--dur-slow, 1400ms);
 
   .adm-course-list {
     list-style: none;
@@ -84,22 +80,6 @@
 
       & + & {
         border-top: 1px solid var(--border-default);
-      }
-    }
-
-    &__skel {
-      background: var(--surface-skeleton-base);
-      border-radius: var(--radius-sm);
-      height: $skel-h;
-      animation: adm-course-list-skel-pulse $dur-skel ease-in-out infinite;
-
-      &--title {
-        width: $skel-title-w;
-      }
-
-      &--pill {
-        width: $skel-pill-w;
-        flex-shrink: 0;
       }
     }
 
@@ -143,7 +123,7 @@
       flex: 1;
       min-width: 0;
       font-size: var(--text-sm);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
       color: var(--text-loud);
       white-space: nowrap;
       overflow: hidden;
@@ -162,17 +142,6 @@
       width: $chevron-size;
       height: $chevron-size;
       color: var(--text-muted);
-    }
-  }
-
-  @keyframes adm-course-list-skel-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-
-    50% {
-      opacity: 0.4;
     }
   }
 </style>

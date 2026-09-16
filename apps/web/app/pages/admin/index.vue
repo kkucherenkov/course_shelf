@@ -204,9 +204,6 @@
 </template>
 
 <style lang="scss" scoped>
-  // Named SCSS variables for fixed UI chrome dimensions
-  $dur-skel: var(--dur-slow, 1400ms);
-
   .adm-dashboard {
     // ── Page header ─────────────────────────────────────────────────────────
     &__page-h {
@@ -221,7 +218,7 @@
     &__title {
       margin: 0;
       font-size: var(--text-2xl);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-loud);
       letter-spacing: -0.01em;
     }
@@ -243,11 +240,11 @@
       margin-bottom: var(--space-6);
       grid-template-columns: 1fr; // xs: 1 col
 
-      @media (min-width: 768px) {
+      @media (width >= 768px) {
         grid-template-columns: repeat(2, 1fr); // md: 2 col
       }
 
-      @media (min-width: 1024px) {
+      @media (width >= 1024px) {
         grid-template-columns: repeat(4, 1fr); // lg: 4 col
       }
     }
@@ -263,19 +260,8 @@
     &__tbl-title {
       margin: 0;
       font-size: var(--text-sm);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-loud);
-    }
-  }
-
-  @keyframes adm-skel-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-
-    50% {
-      opacity: 0.4;
     }
   }
 </style>

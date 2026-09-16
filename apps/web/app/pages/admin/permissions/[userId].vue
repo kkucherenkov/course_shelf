@@ -4,7 +4,7 @@
   // expressions during `nuxt typecheck`, and `navigateTo` is called from the
   // template below. Same `#imports` idiom as `stores/auth.ts`.
   import { navigateTo } from '#imports';
-  import { AppBanner, AppButton, AppDialog, IconCS } from '@app/ui';
+  import { AppBanner, AppButton, AppDialog, AppSkeleton, IconCS } from '@app/ui';
   import type { CourseDto, AccessGrantDto } from '@app/api-client-ts';
   import { getCourse, listCourses, client } from '@app/api-client-ts';
   import AdminRoleChip from '~/components/admin/AdminRoleChip.vue';
@@ -320,10 +320,10 @@
     <template v-else>
       <!-- User header card skeleton -->
       <div v-if="isUserLoading" class="adm-perms__header-skel" aria-hidden="true">
-        <div class="adm-perms__skel adm-perms__skel--avatar" />
+        <AppSkeleton width="48px" height="48px" radius="pill" />
         <div class="adm-perms__skel-col">
-          <div class="adm-perms__skel adm-perms__skel--name" />
-          <div class="adm-perms__skel adm-perms__skel--email" />
+          <AppSkeleton width="60%" height="16px" />
+          <AppSkeleton width="45%" height="12px" />
         </div>
       </div>
 
@@ -390,12 +390,12 @@
         <!-- Loading skeleton -->
         <template v-if="isLibsLoading || isGrantsLoading || isResolvingOverrides">
           <div v-for="i in 4" :key="i" class="adm-perms__tbl-skel-row">
-            <div class="adm-perms__skel adm-perms__skel--lib-icon" />
+            <AppSkeleton width="28px" height="28px" />
             <div class="adm-perms__skel-col">
-              <div class="adm-perms__skel adm-perms__skel--lib-name" />
-              <div class="adm-perms__skel adm-perms__skel--lib-meta" />
+              <AppSkeleton width="70%" height="14px" />
+              <AppSkeleton width="45%" height="11px" />
             </div>
-            <div class="adm-perms__skel adm-perms__skel--toggle" />
+            <AppSkeleton width="120px" height="28px" radius="md" />
           </div>
         </template>
 
@@ -467,16 +467,8 @@
 <style lang="scss" scoped>
   $avatar-lg: 48px;
   $avatar-font: 16px;
-  $skel-dur: var(--dur-slow, 1400ms);
-  $skel-avatar: 48px;
-  $skel-name-h: 16px;
-  $skel-email-h: 12px;
   $skel-lib-icon: 28px;
-  $skel-lib-name-h: 14px;
-  $skel-lib-meta-h: 11px;
-  $skel-toggle-w: 120px;
   $empty-icon-size: 32px;
-  $skel-toggle-h: 28px;
 
   .adm-perms {
     &__not-found {
@@ -521,7 +513,7 @@
       display: grid;
       place-items: center;
       font-size: $avatar-font;
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       font-family: var(--font-mono);
       // Theme-independent: --avatar-* backgrounds don't flip with the page
       // theme (hashed from the user id), so a theme-flipped foreground like
@@ -537,7 +529,7 @@
 
     &__header-name {
       font-size: var(--text-base);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-loud);
       overflow: hidden;
       text-overflow: ellipsis;
@@ -600,67 +592,10 @@
       color: var(--text-subtle);
     }
 
-    // ── Skeletons ──────────────────────────────────────────────────────────────
-    &__skel {
-      background: var(--surface-skeleton-base);
-      border-radius: var(--radius-sm);
-      animation: adm-perms-skel-pulse $skel-dur ease-in-out infinite;
-
-      &--avatar {
-        width: $skel-avatar;
-        height: $skel-avatar;
-        border-radius: 50%;
-        flex-shrink: 0;
-      }
-
-      &--name {
-        width: 60%;
-        height: $skel-name-h;
-      }
-
-      &--email {
-        width: 45%;
-        height: $skel-email-h;
-      }
-
-      &--lib-icon {
-        width: $skel-lib-icon;
-        height: $skel-lib-icon;
-        border-radius: var(--radius-sm);
-      }
-
-      &--lib-name {
-        width: 70%;
-        height: $skel-lib-name-h;
-      }
-
-      &--lib-meta {
-        width: 45%;
-        height: $skel-lib-meta-h;
-      }
-
-      &--toggle {
-        width: $skel-toggle-w;
-        height: $skel-toggle-h;
-        border-radius: var(--radius-md);
-      }
-    }
-
     &__skel-col {
       display: flex;
       flex-direction: column;
       gap: var(--space-2);
-    }
-  }
-
-  @keyframes adm-perms-skel-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-
-    50% {
-      opacity: 0.4;
     }
   }
 </style>

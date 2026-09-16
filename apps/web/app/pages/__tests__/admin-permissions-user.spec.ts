@@ -121,6 +121,7 @@ vi.mock('@app/ui', () => ({
     template:
       '<div v-if="open" class="stub-dialog">{{ title }} — {{ description }}<slot /><slot name="footer" /></div>',
   },
+  AppSkeleton: { name: 'AppSkeleton', props: ['width', 'height', 'radius'], template: '<span />' },
 }));
 
 vi.mock('~/components/admin/AdminRoleChip.vue', () => ({

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { IconCS, type IconName } from '@app/ui';
+  import { AppSkeleton, IconCS, type IconName } from '@app/ui';
 
   interface Props {
     icon: IconName;
@@ -26,9 +26,9 @@
     }"
   >
     <div v-if="props.loading" class="admin-stat-card__skeleton">
-      <div class="admin-stat-card__skel-header" />
-      <div class="admin-stat-card__skel-value" />
-      <div class="admin-stat-card__skel-meta" />
+      <AppSkeleton width="60%" height="var(--text-xs)" />
+      <AppSkeleton width="40%" height="28px" />
+      <AppSkeleton width="75%" height="var(--text-xs)" />
     </div>
     <template v-else>
       <div class="admin-stat-card__header">
@@ -47,8 +47,6 @@
   // Named SCSS vars for fixed UI chrome dimensions
   $icon-wrap-size: 24px;
   $icon-size: 14px;
-  $skel-value-h: 28px;
-  $dur-skel: var(--dur-slow, 1400ms);
 
   .admin-stat-card {
     padding: var(--space-4);
@@ -86,12 +84,12 @@
     }
 
     &__label {
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
     }
 
     &__value {
       font-size: var(--text-3xl);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-loud);
       font-family: var(--font-mono);
       font-variant-numeric: tabular-nums;
@@ -115,40 +113,6 @@
       display: flex;
       flex-direction: column;
       gap: var(--space-2);
-    }
-
-    &__skel-header,
-    &__skel-value,
-    &__skel-meta {
-      background: var(--surface-skeleton-base);
-      border-radius: var(--radius-sm);
-      animation: adm-skel-pulse $dur-skel ease-in-out infinite;
-    }
-
-    &__skel-header {
-      height: var(--text-xs);
-      width: 60%;
-    }
-
-    &__skel-value {
-      height: $skel-value-h;
-      width: 40%;
-    }
-
-    &__skel-meta {
-      height: var(--text-xs);
-      width: 75%;
-    }
-  }
-
-  @keyframes adm-skel-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-
-    50% {
-      opacity: 0.4;
     }
   }
 </style>

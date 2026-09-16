@@ -34,6 +34,14 @@ vi.mock('@app/ui', () => ({
     template: '<button @click="$emit(\'click\')">{{ label }}<slot /></button>',
   },
   AppEmptyState: { name: 'AppEmptyState', props: ['icon', 'title'], template: '<div />' },
+  AppSearchField: {
+    name: 'AppSearchField',
+    props: ['modelValue', 'label', 'placeholder'],
+    emits: ['update:modelValue'],
+    template:
+      '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+  },
+  AppSkeleton: { name: 'AppSkeleton', props: ['width', 'height', 'radius'], template: '<span />' },
   IconCS: { name: 'IconCS', props: ['name'], template: '<svg />' },
 }));
 

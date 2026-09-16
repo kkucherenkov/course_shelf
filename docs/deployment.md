@@ -160,10 +160,17 @@ Optional toggles (sensible defaults shipped):
   instance is exempt, so first-run setup works with the toggle off.
 - `CENTRIFUGO_TOKEN_TTL_SECONDS=300`
 - `POSTGRES_DB=courseshelf` / `POSTGRES_USER=courseshelf`
-- `WHISPER_MODEL_DIR=../models` — host directory of ggml models, mounted RO.
+- `WHISPER_MODEL_DIR=../models` — host directory of model weights: whisper's
+  ggml files AND llama's gguf files, side by side (mounted read-write — see
+  [Quiz generation](#quiz-generation-local-llamacpp) for why it is no longer
+  read-only).
 - `WHISPER_MODEL_PATH=` (empty) — set to switch transcription on. See
   [Derived artefacts and transcription](#derived-artefacts-and-transcription).
 - `WHISPER_THREADS=4`, `WHISPER_LANGUAGE=auto`, `WHISPER_TIMEOUT_MS=21600000`
+- `LLAMA_DEFAULT_MODEL=` (empty) — set to a `.gguf` filename in
+  `WHISPER_MODEL_DIR` to switch quiz generation on. See
+  [Quiz generation](#quiz-generation-local-llamacpp).
+- `LLAMA_THREADS=4`, `LLAMA_TIMEOUT_MS=600000`, `LLAMA_CONTEXT_SIZE=4096`
 
 ## Course data layout
 
@@ -243,6 +250,84 @@ whisper invocation, not overall concurrency. This is CPU inference, not GPU —
 on modest hardware a lesson can take well over its own runtime to transcribe;
 see [`deploy-ugreen-nas-dockge.md`](./deploy-ugreen-nas-dockge.md#transcription-optional)
 for the NAS-specific throughput expectations.
+
+## Quiz generation (local llama.cpp)
+
+Quiz generation is **on-demand only** — `POST /lessons/{id}/quizzes` or
+`POST /courses/{id}/quizzes`, never triggered by a scan or an import. Nothing
+leaves the machine: a local llama.cpp build (`llama-completion`, spawned as
+its own process per call, exactly like `whisper-cli` — no resident model, no
+server) reads a lesson's transcript cues and proposes questions for a human
+to review before they count as real (`GET /quizzes`, `POST
+/quizzes/{id}/apply|discard`). See
+[ADR 0011](./adr/0011-local-llm-quiz-generation.md) for the full decision.
+
+Weights live in the **same** `$WHISPER_MODEL_DIR` directory whisper's ggml
+files already use — not a second volume. Create that host directory yourself
+before the first `up` (`mkdir -p` it, owned by your own user): if Docker
+creates it for you on first mount, it comes out `root`-owned, and the admin
+delete endpoint (below) then fails with `EACCES` the first time anyone tries
+to use it.
+
+Drop a `.gguf` file into `$WHISPER_MODEL_DIR` and name it in
+`LLAMA_DEFAULT_MODEL` to switch the feature on — left empty, every generation
+request answers 503 `quiz-generation-not-configured`, the same "refuse rather
+than start something that can only fail" posture as transcription. A request
+can also name a different model for that one call
+(`GenerateQuizRequest.modelId`) — several `.gguf` files can sit in the
+directory at once; `GET /api/v1/admin/model-weights` lists every weight on
+the volume (both engines, with size) and is what a model picker would read
+from, and `DELETE /api/v1/admin/model-weights/{filename}` removes one (it
+refuses to remove whichever file is currently the active default for either
+engine).
+
+| Model | Size | Source | Use it when |
+| --- | --- | --- | --- |
+| `Qwen3.5-4B-Q4_K_M.gguf` | 2,740,937,888 B (~2.74 GB) | `unsloth/Qwen3.5-4B-GGUF` | Default. |
+| `Qwen3.5-9B-Q4_K_M.gguf` | 5,680,522,464 B (~5.68 GB) | `unsloth/Qwen3.5-9B-GGUF` | Noticeably better questions, ~3x slower per the maintainer's own NAS benchmark — opt in per request via `modelId`, don't make it the default on modest hardware. |
+
+**Do not go below Q4** (no `Q3_K_M`/`Q2_K` variant of either size). At 4B–9B
+parameters a lower quant drops output quality far more than the disk/RAM it
+saves — a full model already fits comfortably in 16 GB RAM at Q4, so there is
+nothing to gain by quantizing further.
+
+Weights are **never fetched by any script or workflow** — `pnpm whisper:model`
+has no llama equivalent. Download the `.gguf` yourself from the HuggingFace
+repo above and place it in `$WHISPER_MODEL_DIR`; nothing here automates that,
+by design (E29-F02-S01 clarification #5 — no CI job, no image, no test ever
+touches a real weight file).
+
+A lesson's transcript is never sent to the model in one shot — it is windowed
+into bounded chunks first, so a hard-cap context stays small (bounds
+KV-cache; a full hour-long transcript's ~8-10k tokens would cost an extra
+~1-1.5 GB of KV-cache on top of the model's own weights). Each window also
+gets an ASR-typo cleanup pass through the same model before questions are
+generated from it — whisper's Russian output in particular carries
+recognition errors that otherwise turn into garbled questions. The cleanup
+pass is **ephemeral**: it never writes back to `TranscriptCue` (the
+transcript also backs player subtitles, trigram search and `?t=` deep
+links), and it roughly **doubles** generation time. `GenerateQuizRequest.
+cleanupEnabled` (default `true`) turns it off per request — reasonable for
+already-clean, English, author-provided subtitles, where there is nothing to
+clean and the extra pass buys nothing.
+
+**Benchmark on one lesson before running a whole course.** Published tok/s
+figures for these models are almost always measured on a desktop with
+dual-channel DDR5 (e.g. a Ryzen 7 8845HS) — this workload is memory-bandwidth
+bound, and a NAS-class CPU (the maintainer's own Pentium Gold 8505) will be
+noticeably slower than any number you find online. `POST
+/lessons/{id}/quizzes` on a single lesson is cheap insurance before pointing
+`POST /courses/{id}/quizzes` at a 30-lesson course.
+
+If you build the image yourself (Path 2 below) rather than pulling the
+published one, the ggml build flags matter as much here as they do for
+whisper — see `apps/backend/Dockerfile`'s stage L comment. A build with only
+`-DCMAKE_BUILD_TYPE=Release` and no explicit `GGML_AVX*` flags does not fail
+or crash; it just measured **0.91 tokens/sec** on generation (vs. 49 tok/s
+prompt processing) on a 16-thread, AVX-512-capable machine, because this
+version of ggml defaults every SIMD flag to `OFF`. Twenty times slower,
+silently — the Dockerfile's build stage now proves AVX2 landed in the binary
+before the image is considered built.
 
 ## Per-deployment URL
 

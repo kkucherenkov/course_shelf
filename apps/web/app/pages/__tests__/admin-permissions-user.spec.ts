@@ -145,7 +145,7 @@ describe('admin permissions user page', () => {
     mockGetCourse.mockReset();
     mockListCourses.mockReset();
     mockGetCourse.mockResolvedValue({
-      data: { id: 'course-1', libraryId: 'lib-a' },
+      data: { id: 'course-1', libraryId: 'lib-a', title: 'Intro to Widgets' },
       error: null,
       response: { status: 200 },
     });
@@ -231,6 +231,48 @@ describe('admin permissions user page', () => {
       .findAllComponents({ name: 'AdminPermissionRow' })
       .find((r) => (r.props('library') as { id: string }).id === 'lib-a');
     await libARow!.vm.$emit('set-library', { granted: false });
+
+    const cancelButton = wrapper
+      .findAll('.stub-dialog button')
+      .find((b) => b.text() === 'pages.admin.permissions.revokeDialogCancel');
+    await cancelButton!.trigger('click');
+
+    expect(revokeMock).not.toHaveBeenCalled();
+    expect(wrapper.find('.stub-dialog').exists()).toBe(false);
+  });
+
+  // #633: course-scope revoke used to fire straight through — the same
+  // "someone else's access, no undo" reasoning #606 gave the library row
+  // applies unchanged to a course row; both must route through one dialog.
+  it('confirms before revoking a course grant, naming the course and the user', async () => {
+    const wrapper = await mountPage();
+
+    const libARow = wrapper
+      .findAllComponents({ name: 'AdminPermissionRow' })
+      .find((r) => (r.props('library') as { id: string }).id === 'lib-a');
+    await libARow!.vm.$emit('set-course', { courseId: 'course-1', granted: false });
+
+    expect(revokeMock).not.toHaveBeenCalled();
+    const dialog = wrapper.find('.stub-dialog');
+    expect(dialog.exists()).toBe(true);
+    expect(dialog.text()).toContain('Intro to Widgets');
+    expect(dialog.text()).toContain('Jane Doe');
+
+    const confirmButton = wrapper
+      .findAll('.stub-dialog button')
+      .find((b) => b.text() === 'pages.admin.permissions.revokeDialogConfirm');
+    await confirmButton!.trigger('click');
+
+    expect(revokeMock).toHaveBeenCalledWith('grant-1');
+  });
+
+  it('cancelling a course revoke dialog leaves the grant untouched', async () => {
+    const wrapper = await mountPage();
+
+    const libARow = wrapper
+      .findAllComponents({ name: 'AdminPermissionRow' })
+      .find((r) => (r.props('library') as { id: string }).id === 'lib-a');
+    await libARow!.vm.$emit('set-course', { courseId: 'course-1', granted: false });
 
     const cancelButton = wrapper
       .findAll('.stub-dialog button')

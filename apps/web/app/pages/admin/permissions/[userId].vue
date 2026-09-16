@@ -89,6 +89,10 @@
   // one `getCourse` per granted course — bounded by how many course-scope
   // grants this one user has, not by how many courses exist.
   const courseLibraryMap = ref(new Map<string, string>());
+  // Course title, captured off the same `getCourse` response — the revoke
+  // confirmation dialog names the course, and this is a free byproduct of a
+  // lookup already made for `overridesByLibrary`, not a second fetch.
+  const courseTitleMap = ref(new Map<string, string>());
   const courseLibraryFetching = ref(new Set<string>());
 
   async function ensureCourseLibraryResolved(courseId: string): Promise<void> {
@@ -101,6 +105,9 @@
         const next = new Map(courseLibraryMap.value);
         next.set(courseId, res.data.libraryId);
         courseLibraryMap.value = next;
+        const nextTitles = new Map(courseTitleMap.value);
+        nextTitles.set(courseId, res.data.title);
+        courseTitleMap.value = nextTitles;
       }
     } finally {
       courseLibraryFetching.value.delete(courseId);
@@ -177,40 +184,78 @@
     }
   }
 
-  // ── Revoke-library confirmation (#606) ───────────────────────────────────────
-  // A library grant is someone else's access, not the admin's own — revoking
-  // it has no undo (the person has to be re-granted, and any in-progress work
-  // they lose track of in the meantime is on them to resume). Granting stays
-  // one click; only the revoke path routes through a dialog naming who and
-  // what is being taken away.
-  const pendingRevokeLibraryId = ref<string | null>(null);
+  // ── Revoke confirmation (#606, #633) ─────────────────────────────────────────
+  // A grant — library or course — is someone else's access, not the admin's
+  // own — revoking it has no undo (the person has to be re-granted, and any
+  // in-progress work they lose track of in the meantime is on them to
+  // resume). Granting stays one click; only the revoke path routes through a
+  // dialog naming who and what is being taken away. One dialog, one pending-
+  // state, two callers (library row / course row) — a course grant used to
+  // revoke straight through, inconsistent with the library row one click away.
+  interface PendingRevoke {
+    kind: 'library' | 'course';
+    id: string;
+  }
+  const pendingRevoke = ref<PendingRevoke | null>(null);
   const revokeDialogOpen = ref(false);
-  const pendingRevokeLibraryName = computed(
-    () => libraryItems.value.find((l) => l.id === pendingRevokeLibraryId.value)?.name ?? '',
-  );
+  const pendingRevokeName = computed(() => {
+    const pending = pendingRevoke.value;
+    if (!pending) return '';
+    if (pending.kind === 'library') {
+      return libraryItems.value.find((l) => l.id === pending.id)?.name ?? '';
+    }
+    return courseTitleMap.value.get(pending.id) ?? '';
+  });
   const userDisplayName = computed(() =>
     user.value ? (user.value.displayName ?? user.value.name) : '',
   );
+  const revokeDialogTitle = computed(() => {
+    const pending = pendingRevoke.value;
+    if (!pending) return '';
+    return pending.kind === 'library'
+      ? t('pages.admin.permissions.revokeDialogTitle', {
+          library: pendingRevokeName.value,
+          user: userDisplayName.value,
+        })
+      : t('pages.admin.permissions.revokeDialogTitleCourse', {
+          course: pendingRevokeName.value,
+          user: userDisplayName.value,
+        });
+  });
+
+  function requestRevoke(kind: PendingRevoke['kind'], id: string): void {
+    pendingRevoke.value = { kind, id };
+    revokeDialogOpen.value = true;
+  }
 
   function requestSetLibrary(libraryId: string, granted: boolean): void {
     if (!granted) {
-      pendingRevokeLibraryId.value = libraryId;
-      revokeDialogOpen.value = true;
+      requestRevoke('library', libraryId);
       return;
     }
     void handleSetLibrary(libraryId, true);
   }
 
+  function requestSetCourse(courseId: string, granted: boolean): void {
+    if (!granted) {
+      requestRevoke('course', courseId);
+      return;
+    }
+    void handleSetCourse(courseId, true);
+  }
+
   function cancelRevoke(): void {
     revokeDialogOpen.value = false;
-    pendingRevokeLibraryId.value = null;
+    pendingRevoke.value = null;
   }
 
   function confirmRevoke(): void {
-    const libraryId = pendingRevokeLibraryId.value;
+    const pending = pendingRevoke.value;
     revokeDialogOpen.value = false;
-    pendingRevokeLibraryId.value = null;
-    if (libraryId) void handleSetLibrary(libraryId, false);
+    pendingRevoke.value = null;
+    if (!pending) return;
+    if (pending.kind === 'library') void handleSetLibrary(pending.id, false);
+    else void handleSetCourse(pending.id, false);
   }
 
   // ── Course toggle ────────────────────────────────────────────────────────────
@@ -386,23 +431,18 @@
             :label-courses-loading="t('pages.admin.permissions.coursesLoading')"
             :label-course-toggle-hint="t('pages.admin.permissions.courseToggleHint')"
             @set-library="({ granted }) => requestSetLibrary(library.id, granted)"
-            @set-course="({ courseId, granted }) => handleSetCourse(courseId, granted)"
+            @set-course="({ courseId, granted }) => requestSetCourse(courseId, granted)"
             @update:expanded="(val) => toggleExpanded(library.id, val)"
           />
         </template>
       </div>
     </template>
 
-    <!-- Revoke-library confirmation (#606) -->
+    <!-- Revoke confirmation (#606, #633) — shared by library and course rows -->
     <AppDialog
       :open="revokeDialogOpen"
       size="sm"
-      :title="
-        t('pages.admin.permissions.revokeDialogTitle', {
-          library: pendingRevokeLibraryName,
-          user: userDisplayName,
-        })
-      "
+      :title="revokeDialogTitle"
       :description="t('pages.admin.permissions.revokeDialogBody')"
       @update:open="revokeDialogOpen = $event"
     >

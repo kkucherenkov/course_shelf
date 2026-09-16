@@ -6,7 +6,6 @@ const i18nProps = {
   scanningLabel: 'Scanning',
   successLabel: 'Scan complete',
   failedLabel: 'Scan failed',
-  cancelLabel: 'Cancel',
   errorsLabel: '2 errors',
   statScannedLabel: 'Scanned',
   statAddedLabel: 'Added',
@@ -23,16 +22,11 @@ const meta: Meta<typeof AppScanProgress> = {
       control: { type: 'select' },
       options: ['running', 'success', 'failed'],
     },
-    percent: {
-      control: { type: 'range', min: 0, max: 100, step: 1 },
-    },
-    onCancel: { action: 'cancel' },
     'onErrors-clicked': { action: 'errors-clicked' },
   },
   args: {
     status: 'running',
     courseName: 'Computer Science',
-    percent: 59,
     elapsedTime: '00:04:18',
     scanned: 1247,
     added: 38,
@@ -54,10 +48,10 @@ export default meta;
 
 type Story = StoryObj<typeof AppScanProgress>;
 
-/** Running scan with current file path and 2 errors. */
+/** Running scan with current file path and 2 errors — bar is an indeterminate sliding stripe. */
 export const Running: Story = {};
 
-/** Running scan with current file path and no errors — only Cancel button is shown. */
+/** Running scan with current file path and no errors — no buttons shown. */
 export const RunningNoErrors: Story = {
   args: {
     errors: 0,
@@ -65,11 +59,10 @@ export const RunningNoErrors: Story = {
   },
 };
 
-/** Completed scan, no errors. */
+/** Completed scan, no errors — bar is full and determinate. */
 export const Success: Story = {
   args: {
     status: 'success',
-    percent: 100,
     elapsedTime: '00:08:42',
     scanned: 2104,
     added: 45,
@@ -84,7 +77,6 @@ export const Success: Story = {
 export const SuccessWithErrors: Story = {
   args: {
     status: 'success',
-    percent: 100,
     elapsedTime: '00:08:42',
     scanned: 2104,
     added: 45,
@@ -99,7 +91,6 @@ export const SuccessWithErrors: Story = {
 export const Failed: Story = {
   args: {
     status: 'failed',
-    percent: 37,
     elapsedTime: '00:03:11',
     scanned: 780,
     added: 20,
@@ -118,7 +109,6 @@ export const AllStates: Story = {
       const running = {
         status: 'running' as const,
         courseName: 'Computer Science',
-        percent: 59,
         elapsedTime: '00:04:18',
         scanned: 1247,
         added: 38,
@@ -132,7 +122,6 @@ export const AllStates: Story = {
       const success = {
         status: 'success' as const,
         courseName: 'Computer Science',
-        percent: 100,
         elapsedTime: '00:08:42',
         scanned: 2104,
         added: 45,
@@ -145,7 +134,6 @@ export const AllStates: Story = {
       const failed = {
         status: 'failed' as const,
         courseName: 'Computer Science',
-        percent: 37,
         elapsedTime: '00:03:11',
         scanned: 780,
         added: 20,

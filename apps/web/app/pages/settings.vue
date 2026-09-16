@@ -9,7 +9,7 @@
    *
    * Sections:
    *  1. Profile  — display name, email (read-only), password
-   *  2. Appearance — theme (3-up picker), density (3-up picker)
+   *  2. Appearance — theme (3-up picker), density (2-up picker)
    *  3. Playback — default speed, autoplay, resume, completion threshold
    *  4. Account  — sign out, sign out other devices
    */

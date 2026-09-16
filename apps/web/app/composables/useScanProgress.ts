@@ -4,12 +4,23 @@
  * Takes a `libraryId` ref, polls `getLatestLibraryScan` every 2s while the
  * scan status is `running`, and stops on unmount or when the scan terminates.
  *
- * Returns `{ scan, isRunning, elapsedTime, percent, start, stop, error }`.
+ * Returns `{ scan, isRunning, elapsedTime, start, stop, error }`. There is
+ * deliberately no `percent`: `ScanDto` has no `totalFiles` field, because the
+ * total is genuinely unknown until the filesystem walk finishes — a fake
+ * percentage would just be a different lie than the hardcoded 0% it replaces
+ * (#593). `AppScanProgress` renders an indeterminate bar plus the live
+ * `filesScanned` counter instead.
  */
 
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { getLatestLibraryScan, client } from '@app/api-client-ts';
 import type { ScanDto } from '@app/api-client-ts';
+import {
+  subscribeElapsedClock,
+  unsubscribeElapsedClock,
+  formatElapsed,
+  elapsedClockNow,
+} from './useElapsedTime';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -17,23 +28,9 @@ export interface UseScanProgressReturn {
   scan: Ref<ScanDto | null>;
   isRunning: Ref<boolean>;
   elapsedTime: Ref<string>;
-  percent: Ref<number>;
   error: Ref<Error | null>;
   start: () => Promise<void>;
   stop: () => void;
-}
-
-function padTwo(n: number): string {
-  return String(n).padStart(2, '0');
-}
-
-function formatElapsed(startedAt: string): string {
-  const ms = Date.now() - new Date(startedAt).getTime();
-  const totalSec = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  return `${padTwo(h)}:${padTwo(m)}:${padTwo(s)}`;
 }
 
 export function useScanProgress(libraryId: Ref<string>): UseScanProgressReturn {
@@ -43,14 +40,14 @@ export function useScanProgress(libraryId: Ref<string>): UseScanProgressReturn {
 
   const isRunning = computed(() => scan.value?.status === 'running');
 
+  // Ticks off the shared clock (see useElapsedTime) rather than only
+  // recomputing on each 2s poll — otherwise this display and any other
+  // concurrent elapsed-time display for the same scan visibly disagree.
+  subscribeElapsedClock();
+
   const elapsedTime = computed(() => {
     if (!scan.value?.startedAt) return '00:00:00';
-    return formatElapsed(scan.value.startedAt);
-  });
-
-  const percent = computed<number>(() => {
-    // ScanDto does not expose a totalFiles field — keep at 0 while running.
-    return 0;
+    return formatElapsed(scan.value.startedAt, elapsedClockNow.value);
   });
 
   async function fetchScan(): Promise<void> {
@@ -113,13 +110,13 @@ export function useScanProgress(libraryId: Ref<string>): UseScanProgressReturn {
 
   onBeforeUnmount(() => {
     stop();
+    unsubscribeElapsedClock();
   });
 
   return {
     scan,
     isRunning,
     elapsedTime,
-    percent,
     error,
     start,
     stop,

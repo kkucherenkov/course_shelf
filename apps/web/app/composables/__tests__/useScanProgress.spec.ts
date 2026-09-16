@@ -41,6 +41,12 @@ describe('useScanProgress', () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     onBeforeUnmountCb.fn = null;
+    // useScanProgress subscribes to the shared elapsed-time clock
+    // (useElapsedTime.ts) as a module-level singleton — reset the module
+    // registry so each test starts with its own clock instance instead of
+    // inheriting refcount/interval state a prior test's mocked (never
+    // invoked) onBeforeUnmount left dangling.
+    vi.resetModules();
   });
 
   afterEach(() => {
@@ -145,6 +151,39 @@ describe('useScanProgress', () => {
     const callCountAfterFailed = mockGetLatestLibraryScan.mock.calls.length;
     await vi.advanceTimersByTimeAsync(6000);
     expect(mockGetLatestLibraryScan).toHaveBeenCalledTimes(callCountAfterFailed);
+  });
+
+  it('elapsedTime ticks off the shared clock, not just on each poll (#603)', async () => {
+    const startedAt = new Date(Date.now() - 5000).toISOString();
+    const runningScan: ScanDto = {
+      id: 'scan-4',
+      libraryId: 'lib-1',
+      status: 'running',
+      startedAt,
+      filesScanned: 10,
+      filesAdded: 0,
+      filesUpdated: 0,
+      coursesDiscovered: 0,
+      errors: [],
+    };
+    mockGetLatestLibraryScan.mockResolvedValue({
+      data: runningScan,
+      error: null,
+      response: { status: 200 },
+    });
+
+    const { useScanProgress } = await import('../useScanProgress');
+    const libraryId = ref('lib-1');
+    const { elapsedTime, start } = useScanProgress(libraryId);
+
+    await start();
+    const first = elapsedTime.value;
+
+    // No new poll response here — only the shared 1s clock ticking. A
+    // computed keyed off `scan.value.startedAt` alone (the pre-#603 shape)
+    // would not budge until the next poll landed a new `scan` object.
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(elapsedTime.value).not.toBe(first);
   });
 
   it('treats 404 as null scan (no error)', async () => {

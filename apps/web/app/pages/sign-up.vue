@@ -5,10 +5,8 @@
     AppButton,
     AppBanner,
     AppPasswordField,
-    AppSelect,
     AppNoPermission,
   } from '@app/ui';
-  import type { AppSelectOption } from '@app/ui';
   import { ref, computed, watch } from 'vue';
 
   import { useAuthStore } from '~/stores/auth';
@@ -47,11 +45,12 @@
   const currentStep = ref<StepId>('account');
 
   // Visible steps depend on emailVerificationRequired — and the library step
-  // only ever applies to the first admin, bootstrapping the instance. A
-  // later self-registered account (`config.selfRegistration` on) is never an
-  // Owner-Admin, and `POST /libraries` 403s a non-Owner-Admin's attempt to
-  // register one, so walking that account through the form would only end
-  // in a request the server was always going to refuse.
+  // only ever applies to the first admin, bootstrapping the instance. Only
+  // the very first account created on a fresh instance is auto-promoted to
+  // ADMIN (see `onAccountSubmit` below); a later self-registered account
+  // (`config.selfRegistration` on) is always a plain user, and `POST
+  // /libraries` requires the ADMIN role (#592), so walking that account
+  // through the form would only end in a 403 it was always going to get.
   const visibleSteps = computed<StepDef[]>(() => [
     { id: 'account', label: t('pages.signUp.stepAccount') },
     ...(config.value.emailVerificationRequired
@@ -92,14 +91,7 @@
   // Step 3 — Library
   const libraryName = ref('');
   const libraryPath = ref('');
-  const scanStrategy = ref<string | null>('auto');
   const step3Error = ref('');
-
-  const scanStrategyOptions = computed<AppSelectOption[]>(() => [
-    { id: 'auto', label: t('pages.signUp.libraryScanStrategyAuto') },
-    { id: 'frame', label: t('pages.signUp.libraryScanStrategyFrame') },
-    { id: 'skip', label: t('pages.signUp.libraryScanStrategySkip') },
-  ]);
 
   // ── Step 1 submit ─────────────────────────────────────────────────────────────
 
@@ -471,12 +463,6 @@
                 :placeholder="t('pages.signUp.libraryPathPlaceholder')"
                 class="page-sign-up__path-input"
               />
-            </template>
-          </AppField>
-
-          <AppField :label="t('pages.signUp.libraryScanStrategyLabel')">
-            <template #default="slotAttrs">
-              <AppSelect v-bind="slotAttrs" v-model="scanStrategy" :options="scanStrategyOptions" />
             </template>
           </AppField>
 

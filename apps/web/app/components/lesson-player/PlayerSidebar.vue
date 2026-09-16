@@ -21,6 +21,11 @@
     transcriptActiveIndex: number;
 
     // i18n strings
+    /** aria-label for the tablist itself — must differ from any one tab's own
+     * label (#597: reusing `tabSections` here duplicated the first tab's name
+     * as the tablist's name, so a screen reader announced "Sections, tablist,
+     * Sections, tab 1 of 5"). */
+    tabsLabel: string;
     tabSections: string;
     tabNotes: string;
     tabBookmarks: string;
@@ -48,7 +53,7 @@
 
 <template>
   <aside class="player-sidebar">
-    <AppTabs v-model="activeTab" :label="props.tabSections" class="player-sidebar__tabs">
+    <AppTabs v-model="activeTab" :label="props.tabsLabel" class="player-sidebar__tabs">
       <AppTab value="sections" :label="props.tabSections" />
       <AppTab value="notes" :label="props.tabNotes" />
       <AppTab value="bookmarks" :label="props.tabBookmarks" />

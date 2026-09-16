@@ -7,7 +7,13 @@
   import { isAbsoluteRootPath, normalizeRootPath } from '~/utils/library-register';
   import LibraryRow from '~/components/libraries/LibraryRow.vue';
 
-  definePageMeta({ layout: 'default' });
+  // Admin-only (#595): the row below shows the server's filesystem rootPath
+  // and a rescan trigger, and `POST /libraries` itself is admin-gated
+  // (#592) — a granted-but-non-admin learner could reach this page but
+  // every action on it would 403. Gating the route removes that dead end
+  // instead of teaching each control to explain a permission it doesn't
+  // have. `/admin/libraries` is the equivalent surface in the admin nav.
+  definePageMeta({ layout: 'default', middleware: 'admin' });
 
   const { t } = useI18n();
   const { data, status, error, register, registerErrorDetail } = useLibraries();

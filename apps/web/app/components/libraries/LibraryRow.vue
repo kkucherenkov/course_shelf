@@ -10,6 +10,7 @@
   const emit = defineEmits<{ scanFinished: [] }>();
 
   const { t } = useI18n();
+  const toast = useToast();
   const libraryId = toRef(props.library, 'id');
   const { data: scan, status, triggerScan } = useLatestScan(libraryId);
 
@@ -57,7 +58,10 @@
     try {
       await triggerScan();
     } catch {
-      // Error surfaced via the composable's `error` ref; ignore here.
+      // Same toast the admin library list uses for the identical action
+      // (`pages/admin/libraries/index.vue`'s `scanLibrary`) — a click that
+      // 403s or 500s must say so, not just sit there.
+      toast.add({ title: t('notifiers.scan.statusFailed'), color: 'error' });
     }
   }
 </script>

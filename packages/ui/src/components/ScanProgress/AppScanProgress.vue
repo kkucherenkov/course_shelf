@@ -8,8 +8,6 @@
     status: ScanStatus;
     /** Course name shown after the status word in the header. */
     courseName: string;
-    /** 0–100; shown as `{n}%` in mono next to elapsed time. */
-    percent: number;
     /** Pre-formatted elapsed time string, e.g. `'00:04:18'`. */
     elapsedTime: string;
     /** Total files scanned. */
@@ -30,8 +28,6 @@
     successLabel: string;
     /** e.g. "Scan failed" */
     failedLabel: string;
-    /** e.g. "Cancel" */
-    cancelLabel: string;
     /** e.g. "2 errors" — count already interpolated by consumer */
     errorsLabel: string;
     /** e.g. "Scanned" */
@@ -45,7 +41,6 @@
   }>();
 
   const emit = defineEmits<{
-    cancel: [];
     'errors-clicked': [];
   }>();
 
@@ -55,7 +50,12 @@
     return props.failedLabel;
   });
 
-  const clampedPercent = computed(() => Math.max(0, Math.min(100, Math.round(props.percent))));
+  // Total file count is unknown until a scan finishes walking the library
+  // filesystem, so there is no honest percentage to show while running — a
+  // computed "N%" here was always a fabrication (#593). The bar is
+  // indeterminate for the duration of the scan; the `scanned` stat tile is
+  // the live counter that actually reflects progress.
+  const isIndeterminate = computed(() => props.status === 'running');
 
   // Accessible name for the progress bar, mirroring the header text. A
   // `role="progressbar"` with no accessible name is an axe
@@ -66,7 +66,6 @@
 
   const showCurrentFile = computed(() => props.status === 'running' && Boolean(props.currentFile));
 
-  const showCancelButton = computed(() => props.status === 'running');
   const showErrorsButton = computed(() => props.errors > 0);
 </script>
 
@@ -91,18 +90,7 @@
 
       <span class="app-scan-progress__spacer" aria-hidden="true" />
 
-      <span class="app-scan-progress__meta">
-        {{ clampedPercent }}%&nbsp;&middot;&nbsp;{{ elapsedTime }}
-      </span>
-
-      <button
-        v-if="showCancelButton"
-        type="button"
-        class="app-scan-progress__btn app-scan-progress__btn--ghost"
-        @click="emit('cancel')"
-      >
-        {{ cancelLabel }}
-      </button>
+      <span class="app-scan-progress__meta">{{ elapsedTime }}</span>
 
       <button
         v-if="showErrorsButton"
@@ -114,19 +102,23 @@
       </button>
     </div>
 
-    <!-- Progress bar -->
+    <!-- Progress bar: indeterminate while running (no known total to divide
+         by), full and determinate the moment the scan has a terminal status. -->
     <div
       class="app-scan-progress__bar"
       role="progressbar"
       :aria-label="progressLabel"
-      :aria-valuenow="clampedPercent"
+      :aria-valuenow="isIndeterminate ? undefined : 100"
       aria-valuemin="0"
       aria-valuemax="100"
     >
       <div
         class="app-scan-progress__bar-fill"
-        :class="{ 'app-scan-progress__bar-fill--failed': status === 'failed' }"
-        :style="{ width: `${status === 'failed' ? 100 : clampedPercent}%` }"
+        :class="{
+          'app-scan-progress__bar-fill--indeterminate': isIndeterminate,
+          'app-scan-progress__bar-fill--failed': status === 'failed',
+        }"
+        :style="isIndeterminate ? undefined : { width: '100%' }"
       />
     </div>
 
@@ -168,6 +160,7 @@
   // Ambient status loop — not an interaction transition, so it sits outside
   // the --dur-* scale (which tops out at 400ms).
   $pulse-duration: 2s;
+  $slide-duration: 1.4s;
 
   .app-scan-progress {
     display: flex;
@@ -249,20 +242,6 @@
         background var(--dur-fast),
         border-color var(--dur-fast);
 
-      &--ghost {
-        color: var(--text-secondary);
-        border-color: var(--border-default);
-
-        &:hover {
-          background: var(--surface-overlay);
-        }
-
-        &:focus-visible {
-          outline: 2px solid var(--brand-accent);
-          outline-offset: 2px;
-        }
-      }
-
       &--errors {
         color: var(--status-error-fg);
         border-color: var(--border-default);
@@ -294,6 +273,17 @@
 
       &--failed {
         background: var(--status-error-fg);
+      }
+
+      // Indeterminate: sliding stripe, no fixed width — there is nothing to
+      // measure a percentage against until the scan finishes.
+      &--indeterminate {
+        width: 35%;
+        animation: app-scan-progress-slide $slide-duration var(--ease-default) infinite;
+
+        @media (prefers-reduced-motion: reduce) {
+          animation: none;
+        }
       }
     }
 
@@ -355,6 +345,16 @@
 
     50% {
       opacity: 0.35;
+    }
+  }
+
+  @keyframes app-scan-progress-slide {
+    0% {
+      transform: translateX(-100%);
+    }
+
+    100% {
+      transform: translateX(300%);
     }
   }
 </style>

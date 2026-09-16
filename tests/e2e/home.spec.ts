@@ -97,6 +97,23 @@ const yourWeekFixture = {
   },
 };
 
+// One granted library — the persona every test in this file except the
+// no-access one below is about: a member who has somewhere to watch these
+// courses from. Without this, `useLibraries()` resolves to zero items for a
+// non-admin and the page reads as "no access", which is a real state (#666)
+// but not the one most of these tests exist to check.
+const oneLibraryFixture = {
+  items: [
+    {
+      id: 'lib-1',
+      name: 'Backend',
+      rootPath: '/srv/backend',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+    },
+  ],
+};
+
 // Fake session returned by better-auth `getSession` mock.
 const fakeSession = {
   session: { id: 'sess-1', userId: 'user-1', expiresAt: '2099-01-01T00:00:00Z' },
@@ -105,7 +122,10 @@ const fakeSession = {
 
 // ── Route mock setup ──────────────────────────────────────────────────────────
 
-async function mockAllEndpoints(page: Page): Promise<void> {
+async function mockAllEndpoints(
+  page: Page,
+  options: { libraries?: typeof oneLibraryFixture } = {},
+): Promise<void> {
   // Auth: has-users probe (global middleware gate).
   await page.route('**/api/v1/admin/has-users**', (route) => {
     void route.fulfill({
@@ -122,6 +142,15 @@ async function mockAllEndpoints(page: Page): Promise<void> {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(fakeSession),
+    });
+  });
+
+  // Library grants — drives `hasLibraryAccess` (#666).
+  await page.route('**/api/v1/libraries', (route) => {
+    void route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(options.libraries ?? oneLibraryFixture),
     });
   });
 
@@ -167,14 +196,17 @@ async function mockAllEndpoints(page: Page): Promise<void> {
  *     `auth.refresh()` which hits the mocked session endpoint, hydrates
  *     `auth.user`, and the isAuthenticated check passes.
  */
-async function gotoHome(page: Page): Promise<void> {
+async function gotoHome(
+  page: Page,
+  options: { libraries?: typeof oneLibraryFixture } = {},
+): Promise<void> {
   // addInitScript runs in every page context before any scripts — localStorage
   // is available because the origin is already known from the baseURL config.
   await page.addInitScript(() => {
     localStorage.setItem('cs.web.bearer', 'fake-e2e-token');
   });
 
-  await mockAllEndpoints(page);
+  await mockAllEndpoints(page, options);
   await page.goto('/');
 }
 
@@ -183,7 +215,7 @@ async function gotoHome(page: Page): Promise<void> {
 test.describe('home page — 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('shows all four sections and right rail; recently-completed is collapsed by default', async ({
+  test('a member with library access sees all four sections and right rail; recently-completed is collapsed by default', async ({
     page,
   }) => {
     await gotoHome(page);
@@ -212,6 +244,29 @@ test.describe('home page — 1440x900', () => {
     await expect(completedSection.locator('.home-row__toggle')).toBeVisible();
     // Card container should NOT be visible (collapsed — body is not rendered)
     await expect(completedSection.locator('.home-row__scroll')).not.toBeVisible();
+  });
+
+  // #666: zero library grants used to repeat the same no-access message once
+  // per row plus a "0 min watched" scoreboard in the rail. This asserts the
+  // collapsed replacement directly — it fails on the pre-#666 page (three
+  // `.home-row`s always render, access or not).
+  test('a member with zero library grants sees one no-access explanation, not four empty rows', async ({
+    page,
+  }) => {
+    await gotoHome(page, { libraries: { items: [] } });
+
+    await expect(page.locator('.page-home')).toBeVisible({ timeout: 10_000 });
+
+    // The one explanation — same copy/component `/browse` uses for the same state.
+    await expect(page.getByText('No courses available to you yet')).toBeVisible();
+    await expect(
+      page.getByText('You have not been granted access to a course library.', { exact: false }),
+    ).toBeVisible();
+
+    // None of the three rows, and no rail — not three empty rows plus a
+    // "0 min watched" scoreboard next to them.
+    await expect(page.locator('.home-row')).toHaveCount(0);
+    await expect(page.locator('.page-home__rail')).toHaveCount(0);
   });
 });
 

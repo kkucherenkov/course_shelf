@@ -271,6 +271,31 @@ test.describe('lesson player — auto-advance banner', () => {
   });
 });
 
+// ── Tests: document heading (#623) ────────────────────────────────────────────
+//
+// The route has no static title (it's named from data) and rendered no
+// heading element at all — the lesson name only ever appeared inside
+// AppPlayerChrome's own visible chrome, which isn't an `h1`/`<title>`. A
+// screen reader's document outline started blank and a bookmarked tab was
+// unidentifiable.
+test.describe('lesson player — document heading', () => {
+  test('tab title and hidden h1 carry the real lesson title', async ({ page }) => {
+    await mockLesson(page, makeLesson(0));
+    await mockOutline(page);
+    await mockStreamUrl(page);
+    await mockBookmarks(page);
+    await mockProgress(page);
+    await gotoLessonPlayer(page);
+
+    await expect(page.locator('.app-player-chrome')).toBeVisible({ timeout: 15_000 });
+
+    await expect(page).toHaveTitle(/Introduction to TypeScript/);
+    await expect(page.locator('h1.page-lesson-player__sr-title')).toHaveText(
+      'Introduction to TypeScript',
+    );
+  });
+});
+
 // ── Tests: viewport overflow (tuxedo 114) ────────────────────────────────────
 //
 // The page used to derive its own `height: calc(100vh - 56px)`, double-counting

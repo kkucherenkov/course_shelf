@@ -67,7 +67,7 @@
     <!-- Page header -->
     <div class="adm-libraries__page-h">
       <div>
-        <h2 class="adm-libraries__title">{{ t('pages.admin.libraries.title') }}</h2>
+        <h1 class="adm-libraries__title">{{ t('pages.admin.libraries.title') }}</h1>
         <p v-if="subtitle" class="adm-libraries__sub">{{ subtitle }}</p>
       </div>
       <div class="adm-libraries__page-actions">

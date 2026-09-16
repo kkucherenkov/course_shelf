@@ -234,7 +234,7 @@
             <span class="adm-lib-detail__crumb-active">{{ library.name }}</span>
           </div>
 
-          <h2 class="adm-lib-detail__title">{{ library.name }}</h2>
+          <h1 class="adm-lib-detail__title">{{ library.name }}</h1>
 
           <AdminCopyablePath
             class="adm-lib-detail__path"
@@ -347,9 +347,9 @@
 
           <!-- Courses in this library (#510) -->
           <div class="adm-lib-detail__tbl-h">
-            <h3 class="adm-lib-detail__tbl-title">
+            <h2 class="adm-lib-detail__tbl-title">
               {{ t('pages.admin.libraryDetail.coursesHeading') }}
-            </h3>
+            </h2>
           </div>
 
           <AdminCourseList
@@ -361,9 +361,9 @@
 
           <!-- Scan history table -->
           <div class="adm-lib-detail__tbl-h">
-            <h3 class="adm-lib-detail__tbl-title">
+            <h2 class="adm-lib-detail__tbl-title">
               {{ t('pages.admin.libraryDetail.scanHistoryHeading') }}
-            </h3>
+            </h2>
           </div>
 
           <AdminScansTable

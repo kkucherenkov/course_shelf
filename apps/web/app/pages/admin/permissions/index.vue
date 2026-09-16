@@ -46,7 +46,7 @@
     <!-- Page header -->
     <div class="adm-perm-picker__page-h">
       <div>
-        <h2 class="adm-perm-picker__title">{{ t('pages.admin.permissions.pickerTitle') }}</h2>
+        <h1 class="adm-perm-picker__title">{{ t('pages.admin.permissions.pickerTitle') }}</h1>
         <p class="adm-perm-picker__sub">{{ t('pages.admin.permissions.pickerSubtitle') }}</p>
       </div>
     </div>

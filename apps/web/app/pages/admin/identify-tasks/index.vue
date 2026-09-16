@@ -66,7 +66,7 @@
   <div class="adm-identify-tasks">
     <div class="adm-identify-tasks__page-h">
       <div>
-        <h2 class="adm-identify-tasks__title">{{ t('pages.admin.identifyTasks.title') }}</h2>
+        <h1 class="adm-identify-tasks__title">{{ t('pages.admin.identifyTasks.title') }}</h1>
         <p v-if="subtitle" class="adm-identify-tasks__sub">{{ subtitle }}</p>
       </div>
       <label class="adm-identify-tasks__filter">

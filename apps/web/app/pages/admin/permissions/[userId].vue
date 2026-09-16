@@ -285,7 +285,7 @@
           {{ userInitials }}
         </div>
         <div class="adm-perms__header-text">
-          <div class="adm-perms__header-name">{{ user.displayName ?? user.name }}</div>
+          <h1 class="adm-perms__header-name">{{ user.displayName ?? user.name }}</h1>
           <div class="adm-perms__header-email">{{ user.email }}</div>
         </div>
         <AdminRoleChip

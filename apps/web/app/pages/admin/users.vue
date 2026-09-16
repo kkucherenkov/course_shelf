@@ -94,7 +94,7 @@
     <!-- Page header -->
     <div class="adm-users__page-h">
       <div>
-        <h2 class="adm-users__title">{{ t('pages.admin.users.title') }}</h2>
+        <h1 class="adm-users__title">{{ t('pages.admin.users.title') }}</h1>
         <p v-if="subtitle" class="adm-users__sub">{{ subtitle }}</p>
       </div>
     </div>

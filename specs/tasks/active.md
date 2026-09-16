@@ -1,5 +1,42 @@
 # Active tasks
 
+## T-2026-09-16-i18n-plurals — Russian pluralization audit (#582, #594)
+
+- Created: 2026-09-16
+- Owner: claude
+- Goal: `apps/web/i18n/i18n.config.ts` never configured `pluralRules`, so
+  vue-i18n applied English's two-form rule to every three-form pipe-plural
+  Russian message — wrong noun form on every screen that shows a count. Also
+  audited every pipe-form message in both locales for structural bugs
+  (content confined to one plural alternative, ru/en cross-contamination).
+- Sub-steps:
+  - [x] #594 — add `pluralRules.ru` (CLDR one/few/many by last 1-2 digits) in
+        `apps/web/i18n/plural-rules.ts`, wired from `i18n.config.ts`
+  - [x] #594 — split `statLibrariesMeta` (courses + lessons in one message,
+        can't carry two independent plural indices) into
+        `statLibrariesMetaCourses` / `statLibrariesMetaLessons`, both locales
+  - [x] #582 — same root cause fixes "0 курс" → "0 курсов" on `/browse` and
+        the home dashboard
+  - [x] found in audit (not named in either issue): `statLastScanMeta` and
+        `pages.search.headerCount` each confined static content
+        (`{libraryId}`, `{q}`) to one plural alternative, so it vanished for
+        every count except the one that alternative belongs to — fixed by
+        repeating the content in every alternative, both locales
+  - [x] audited full `ru.ts`/`en.ts` for remaining pipe-strings (18/18 in each
+        file, all now correct) and ru/en cross-contamination (none found)
+  - [x] regression test `apps/web/tests/unit/i18n-plural.spec.ts`, confirmed
+        red pre-fix on the three structural bugs
+  - [x] gates: lint, format, typecheck, `pnpm check:i18n`, `turbo run lint test typecheck --filter=@app/web` (486/486)
+  - [ ] flagged to maintainer, not fixed (outside `apps/web/i18n/**`):
+        `apps/web/app/pages/admin/index.vue:54-58` still calls the removed
+        `statLibrariesMeta` key — needs to call both new keys and join with
+        `·`; `apps/web/app/pages/index.vue:126-129`
+        (`completedCountLabel`) shows "0 courses" during loading, unguarded
+        by fetch status (unlike `browse.vue`, which already guards this)
+- Status: in-progress
+- Blockers: two follow-up edits identified outside owned file scope — see
+  sub-steps above; not touched, pending maintainer call
+
 ## T-2026-09-16-a11y-document — document-level a11y: lang/title, landmarks, role=row, focus/labels, degraded-auth state, accelerators
 
 - Created: 2026-09-16

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, provide } from 'vue';
+  import { computed } from 'vue';
   import { AppBanner, AppButton } from '@app/ui';
 
   import AdminStatCard from '~/components/admin/AdminStatCard.vue';
@@ -10,10 +10,6 @@
   definePageMeta({ middleware: 'admin' });
 
   const { t } = useI18n();
-
-  // Provide page title to the admin layout's breadcrumb
-  const pageTitle = computed(() => t('pages.admin.dashboard.title'));
-  provide('adminPageTitle', pageTitle);
 
   const {
     data: dashData,

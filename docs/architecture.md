@@ -551,11 +551,13 @@ execution context.
 - Runtime config is served as a separate same-origin file (`_app-config.js`) so
   the CSP can forbid inline scripts.
 - Route guarding is one global middleware (`app/middleware/auth.global.ts`)
-  that also owns the first-run `hasUsers` probe and the `/setup` lock.
+  that also owns the first-run `hasUsers` probe: no users yet routes every
+  auth entry point to `/sign-up`'s 3-step wizard, whose step 1 promotes the
+  new account to admin — there is no separate `/setup` route.
 
-20 pages: home, browse, search, libraries, course detail, lesson player,
-settings, the auth set (sign-in / sign-up / forgot / reset / setup), and the
-admin section (dashboard, libraries + detail, users, permissions + detail).
+19 pages: home, browse, search, libraries, course detail, lesson player,
+settings, the auth set (sign-in / sign-up / forgot / reset), and the admin
+section (dashboard, libraries + detail, users, permissions + detail).
 
 ---
 

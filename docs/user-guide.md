@@ -71,11 +71,12 @@ A fresh instance has no users. The web app detects this and turns the sign-up
 wizard into the setup flow:
 
 1. Open the instance in a browser (by default `http://localhost:8080`).
-2. Because no account exists yet, every route redirects to **`/setup`** — a
-   three-step wizard.
+2. Because no account exists yet, every route redirects to **`/sign-up`** —
+   its three-step wizard.
 3. The account you create there becomes the first **ADMIN**.
-4. Once that account exists, `/setup` locks itself and redirects to `/sign-in`.
-   It can never be used again to mint a second owner.
+4. Once that account exists, first-run is over: `/sign-up` behaves like an
+   ordinary self-registration form, and further visits to the app redirect
+   to `/sign-in` instead.
 
 After this, additional people are created by an admin under
 **Admin → Users**, or they self-register at `/sign-up` if the instance allows

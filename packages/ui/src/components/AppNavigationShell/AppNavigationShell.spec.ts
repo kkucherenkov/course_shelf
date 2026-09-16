@@ -78,6 +78,7 @@ function factory(
       user: defaultUser,
       sidebarLabel: 'Sidebar',
       rightRailLabel: 'Secondary content',
+      userMenuLabel: 'User menu',
       ...overrides.props,
     },
     slots: overrides.slots,
@@ -277,6 +278,20 @@ describe('AppNavigationShell', () => {
   it('menu is closed by default', () => {
     const w = factory();
     expect(w.find('.app-navigation-shell__menu').exists()).toBe(false);
+  });
+
+  it('desktop avatar trigger has an accessible name via aria-label (#630)', () => {
+    const w = factory();
+    expect(w.find('.app-navigation-shell__avatar-trigger').attributes('aria-label')).toBe(
+      'User menu',
+    );
+  });
+
+  it('desktop avatar trigger aria-label is overridable via userMenuLabel', () => {
+    const w = factory({ props: { userMenuLabel: 'Меню пользователя' } });
+    expect(w.find('.app-navigation-shell__avatar-trigger').attributes('aria-label')).toBe(
+      'Меню пользователя',
+    );
   });
 
   it('opens the menu when avatar trigger is clicked', async () => {

@@ -48,6 +48,13 @@ writable root of their own.
 | `DERIVED_PATH`      | `../derived`  | `/data/derived` | rw   | Whisper transcripts, later scan thumbnails       |
 | `WHISPER_MODEL_DIR` | `../models`   | `/models`       | ro   | ggml whisper models — never baked into the image |
 
+`LIBRARY_ROOT_ALLOWLIST` (comma-separated absolute path prefixes) restricts
+which `rootPath` an admin can register a library under — `POST /libraries`
+422s a path outside it. `compose.prod.yml` / `compose.release.yml` default it
+to `/data/courses`, the same directory `COURSES_PATH` is mounted at. Unset
+(the default here in dev), every absolute path is accepted, since dev has no
+single fixed course mount to anchor the check to.
+
 `DERIVED_PATH` is required in `compose.prod.yml` / `compose.release.yml` and
 defaults to `<repo>/derived` in dev (gitignored). Docker creates a missing
 host directory for either bind, so the model mount is inert until you use it.

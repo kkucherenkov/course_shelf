@@ -1330,7 +1330,8 @@ export interface paths {
     put?: never;
     /**
      * Register a new library (or share an existing path)
-     * @description Persists a library pointing at an absolute filesystem path.
+     * @description Admin-only mutation. Persists a library pointing at an absolute
+     *     filesystem path.
      *
      *     **Idempotent on `rootPath`.** When a library with the same path
      *     already exists, the call returns the existing library and grants
@@ -1343,6 +1344,11 @@ export interface paths {
      *     `runLibraryScan` so courses become visible shortly after the
      *     response. No initial scan is fired when the path already existed
      *     (the existing library is presumed already scanned).
+     *
+     *     A fresh `rootPath` is also checked against the server's configured
+     *     root allowlist, when one is set (`LIBRARY_ROOT_ALLOWLIST`) — the
+     *     admin role gates who can call this endpoint, not which directory
+     *     they point it at.
      */
     post: operations['registerLibrary'];
     delete?: never;
@@ -7019,8 +7025,17 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Caller does not have the Owner-Admin role */
+      /** @description Caller is authenticated but not an administrator */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description rootPath is well-formed but outside the server's configured root allowlist (`LIBRARY_ROOT_ALLOWLIST`). Only reachable when that allowlist is non-empty; unset, every absolute path is accepted. */
+      422: {
         headers: {
           [name: string]: unknown;
         };

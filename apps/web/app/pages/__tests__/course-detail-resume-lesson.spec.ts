@@ -1,13 +1,19 @@
 /**
- * Spec for pages/courses/[id].vue's "resume lesson" pick (#573).
+ * Spec for pages/courses/[id].vue's "resume lesson" pick (#573, #596).
  *
- * Before this fix, the course page derived "resume" from a purely local
+ * Before the #573 fix, the course page derived "resume" from a purely local
  * heuristic (the furthest-along in-progress lesson by position) while the
  * home page's "Continue watching" row used the server's own
  * `lastSeenLessonId`. Watch lesson 40, then glance at lesson 5, and the two
  * "Resume" buttons pointed at different lessons. This covers that the course
  * page now prefers the same server field, falling back to the old heuristic
  * only when the course isn't in that list.
+ *
+ * #596: that fix over-applied. `GET /home/continue-watching` isn't filtered
+ * by completion — a fully finished course stays in the list as long as
+ * `lastSeenAt` is recent — so a completed course's "Rewatch" button followed
+ * the stale `lastSeenLessonId` back into the middle of the course instead of
+ * opening lesson 1.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -111,6 +117,52 @@ function makeOutline(): CourseOutlineDto {
   };
 }
 
+/** A course where every lesson is `completed` — courseState === 'completed'. */
+function makeCompletedOutline(): CourseOutlineDto {
+  return {
+    course: {
+      id: 'course-1',
+      title: 'Course One',
+      lessonsTotal: 2,
+      totalDurationSeconds: 0,
+      progress: { percent: 100, lessonsCompleted: 2, lessonsTotal: 2 },
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+    },
+    sections: [
+      {
+        id: 's1',
+        position: 1,
+        title: 'Section 1',
+        totalDurationSeconds: 0,
+        lessons: [
+          {
+            id: 'lesson-1',
+            position: 1,
+            title: 'Lesson 1',
+            durationSeconds: 0,
+            hasMaterials: false,
+            hasTranscript: false,
+            state: 'completed',
+            progressPercent: 100,
+          },
+          {
+            id: 'lesson-2',
+            position: 2,
+            title: 'Lesson 2',
+            durationSeconds: 0,
+            hasMaterials: false,
+            hasTranscript: false,
+            state: 'completed',
+            progressPercent: 100,
+          },
+        ],
+      },
+    ],
+    materials: [],
+  };
+}
+
 async function mountPage() {
   const mod = await import('../courses/[id].vue');
   return mount(mod.default, {
@@ -169,5 +221,26 @@ describe('pages/courses/[id].vue — resume lesson (#573)', () => {
     const wrapper = await mountPage();
 
     expect(primaryHref(wrapper)).toBe('/courses/course-1/lessons/lesson-40');
+  });
+
+  it('sends a completed course to lesson 1, ignoring a stale continue-watching entry (#596)', async () => {
+    outlineData.value = makeCompletedOutline();
+    continueWatchingData.value = {
+      items: [
+        {
+          courseId: 'course-1',
+          courseTitle: 'Course One',
+          percent: 100,
+          lessonsCompleted: 2,
+          lessonsTotal: 2,
+          lastSeenAt: '2024-02-01T00:00:00Z',
+          lastSeenLessonId: 'lesson-2',
+        },
+      ],
+    };
+
+    const wrapper = await mountPage();
+
+    expect(primaryHref(wrapper)).toBe('/courses/course-1/lessons/lesson-1');
   });
 });

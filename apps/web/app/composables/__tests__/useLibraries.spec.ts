@@ -8,17 +8,19 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ref } from 'vue';
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import type { LibraryListDto } from '@app/api-client-ts';
 
 const mockListLibraries = vi.fn();
 const mockRegisterLibrary = vi.fn();
+const mockGetLatestLibraryScan = vi.fn();
+const mockRunLibraryScan = vi.fn();
 
 vi.mock('@app/api-client-ts', () => ({
   listLibraries: (...args: unknown[]) => mockListLibraries(...args),
   registerLibrary: (...args: unknown[]) => mockRegisterLibrary(...args),
-  getLatestLibraryScan: vi.fn(),
-  runLibraryScan: vi.fn(),
+  getLatestLibraryScan: (...args: unknown[]) => mockGetLatestLibraryScan(...args),
+  runLibraryScan: (...args: unknown[]) => mockRunLibraryScan(...args),
   client: {},
 }));
 
@@ -140,6 +142,40 @@ describe('useLibraries().register', () => {
     await register({ name: 'CS', rootPath: '/srv/cs' });
 
     expect(registerErrorDetail.value).toBeNull();
+  });
+});
+
+describe('useLatestScan().triggerScan', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+    vi.stubGlobal('ref', ref);
+    vi.stubGlobal('watch', watch);
+    vi.stubGlobal('onBeforeUnmount', onBeforeUnmount);
+  });
+
+  // #595: `LibraryRow.vue`'s catch comment claims "surfaced via the
+  // composable's `error` ref" — but the ref was never actually set on this
+  // path, so a real rescan failure (a non-admin's 403, or anything else)
+  // reached the user as nothing at all.
+  it('sets error.value on a failed trigger, matching refresh()', async () => {
+    mockGetLatestLibraryScan.mockResolvedValue({
+      data: undefined,
+      error: {},
+      response: { status: 404 },
+    });
+    mockRunLibraryScan.mockResolvedValueOnce({
+      data: undefined,
+      error: {},
+      response: { status: 403 },
+    });
+
+    const { useLatestScan } = await import('../useLibraries');
+    const { triggerScan, error } = useLatestScan(ref('lib-1'));
+    await nextTick();
+
+    await expect(triggerScan()).rejects.toThrow('Failed to start scan');
+    expect(error.value).toBeInstanceOf(Error);
   });
 });
 

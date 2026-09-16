@@ -174,11 +174,6 @@ export default {
       ctaResume: 'Resume — Section {section} · L{lesson}',
       ctaMarkComplete: 'Mark complete',
       ctaResetProgress: 'Reset progress',
-      resetDialogTitle: 'Reset progress',
-      resetDialogDescription:
-        'Reset progress for this course? Every lesson will return to not-started.',
-      resetDialogConfirm: 'Reset',
-      resetDialogCancel: 'Cancel',
       completedBanner: 'All lessons completed · {hours}h watched',
       toastMarkCompleteSuccess: 'Course marked as complete.',
       toastMarkCompleteError: 'Could not mark course complete. Please try again.',
@@ -190,11 +185,21 @@ export default {
       materialsEmpty: 'No materials for this course.',
       editCta: 'Edit metadata',
       rescanCta: 'Rescan',
+      rescanDialogTitle: 'Rescan this course?',
+      rescanDialogDescription:
+        "Rescans the library folder and rebuilds this course's sections and lessons from what's on disk.",
+      rescanDialogConfirm: 'Rescan',
       toastRescanStarted: 'Rescan started.',
       toastRescanError: 'Could not start the rescan. Please try again.',
       transcribeCta: 'Transcribe',
+      transcribeDialogTitle: 'Transcribe this course?',
+      transcribeDialogDescription:
+        'Runs speech-to-text on every lesson. Can take hours on a large course and uses GPU time.',
+      transcribeDialogConfirm: 'Transcribe',
       toastTranscribeStarted: 'Transcription started. It runs in the background.',
       toastTranscribeError: 'Could not start the transcription. Please try again.',
+      // Shared by the rescan/transcribe confirm dialogs above.
+      adminActionDialogCancel: 'Cancel',
     },
     courseEdit: {
       title: 'Edit course metadata',
@@ -316,6 +321,10 @@ export default {
       noAccess: 'No access',
       noAccessBody: 'You do not have permission to view this lesson.',
       streamError: 'Could not load video stream. Please try again.',
+      // aria-label for the sidebar's tablist — must differ from the
+      // "Sections" tab's own label, or a screen reader announces the
+      // tablist and its first tab with the same name (#597).
+      sidebarTabsLabel: 'Lesson sidebar',
       tabSections: 'Sections',
       tabNotes: 'Notes',
       tabBookmarks: 'Bookmarks',
@@ -738,7 +747,7 @@ export default {
       playbackResumeHelp: 'Jump to the last watched position when reopening a lesson.',
       playbackThresholdLabel: 'Mark-as-complete threshold',
       playbackThresholdHelp:
-        'Show the "completed" badge when you have watched this percentage of a lesson. The backend marks a lesson as fully complete at 90 % regardless of this setting.',
+        'Relabels a lesson row "completed" once you clear this percentage — display only. Course completion and "Your week" always go by the backend\'s own 90 % threshold, not this setting.',
       accountSignOutLabel: 'Sign out',
       accountSignOutHelp: 'Sign out from this device.',
       accountSignOutCta: 'Sign out',

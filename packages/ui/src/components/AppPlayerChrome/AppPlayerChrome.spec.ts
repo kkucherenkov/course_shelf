@@ -475,6 +475,48 @@ describe('AppPlayerChrome', () => {
     });
   });
 
+  describe('frame tap (#596)', () => {
+    // Before this fix the root had no click/pointerdown listener at all — a
+    // motionless tap (the only gesture a touchscreen sends before scrubbing)
+    // could neither bring the overlay back nor toggle playback.
+    it('re-shows an idle-hidden overlay on tap, without toggling playback', async () => {
+      vi.useFakeTimers();
+      const wrapper = makeWrapper({ state: 'playing' });
+      vi.advanceTimersByTime(3000);
+      await nextTick();
+      expect(wrapper.classes()).toContain('app-player-chrome--idle-hidden');
+
+      await wrapper.find('.app-player-chrome').trigger('click');
+      expect(wrapper.classes()).not.toContain('app-player-chrome--idle-hidden');
+      expect(wrapper.emitted('pause')).toBeUndefined();
+      vi.useRealTimers();
+    });
+
+    it('toggles play/pause on a frame tap once the overlay is already visible', async () => {
+      const wrapper = makeWrapper({ state: 'paused' });
+      await wrapper.find('.app-player-chrome__frame').trigger('click');
+      expect(wrapper.emitted('play')).toEqual([[]]);
+    });
+
+    it('does not double-fire when the tap lands on a control button', async () => {
+      const wrapper = makeWrapper({ state: 'paused' });
+      await wrapper.find('button[aria-label="Play"]').trigger('click');
+      expect(wrapper.emitted('play')).toEqual([[]]);
+    });
+
+    it('does not double-fire when the tap lands on the scrubber', async () => {
+      const wrapper = makeWrapper({ position: 0, duration: 600 });
+      const slider = wrapper.find('[role="slider"]');
+      const el = slider.element as HTMLElement;
+      el.getBoundingClientRect = (): DOMRect =>
+        ({ left: 0, top: 0, right: 200, bottom: 16, width: 200, height: 16 }) as DOMRect;
+      await slider.trigger('click', { clientX: 50 });
+      expect(wrapper.emitted('seek')).toHaveLength(1);
+      expect(wrapper.emitted('play')).toBeUndefined();
+      expect(wrapper.emitted('pause')).toBeUndefined();
+    });
+  });
+
   describe('scrubber click', () => {
     it('emits seek with the clicked fraction × duration', async () => {
       const wrapper = makeWrapper({ position: 0, duration: 600 });

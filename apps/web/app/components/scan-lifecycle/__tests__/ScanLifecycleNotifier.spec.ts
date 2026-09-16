@@ -20,7 +20,6 @@ vi.mock('@app/ui', () => ({
     props: [
       'status',
       'courseName',
-      'percent',
       'elapsedTime',
       'scanned',
       'added',
@@ -29,18 +28,21 @@ vi.mock('@app/ui', () => ({
       'scanningLabel',
       'successLabel',
       'failedLabel',
-      'cancelLabel',
       'errorsLabel',
       'statScannedLabel',
       'statAddedLabel',
       'statUpdatedLabel',
       'statErrorsLabel',
     ],
-    template: '<div class="stub-app-scan-progress" :data-status="status">{{ courseName }}</div>',
+    emits: ['errors-clicked'],
+    template:
+      '<div class="stub-app-scan-progress" :data-status="status"><button type="button" class="stub-errors-btn" @click="$emit(\'errors-clicked\')">{{ courseName }}</button></div>',
   },
 }));
 
-// ── Stub i18n and toast from #imports ─────────────────────────────────────────
+// ── Stub i18n, toast and navigation from #imports ─────────────────────────────
+
+const navigateToMock = vi.fn();
 
 vi.mock('#imports', () => ({
   ref,
@@ -48,6 +50,7 @@ vi.mock('#imports', () => ({
   watch,
   onMounted,
   onUnmounted,
+  navigateTo: (...args: unknown[]) => navigateToMock(...args),
   useI18n: () => ({
     t: (key: string) => key,
     n: String,
@@ -167,6 +170,36 @@ describe('ScanLifecycleNotifier', () => {
     await wrapper.find('.scan-lifecycle-notifier__close').trigger('click');
 
     expect(dismissSpy).toHaveBeenCalledWith('scan-1');
+  });
+
+  it('navigates to the library admin page when the errors button is clicked (#593)', async () => {
+    const store = useScanLifecycleStore();
+
+    store.applyEvent({
+      kind: 'started',
+      scanId: 'scan-1',
+      libraryId: 'lib-1',
+      libraryName: 'CS Library',
+      at: new Date().toISOString(),
+    });
+    store.applyEvent({
+      kind: 'progress',
+      scanId: 'scan-1',
+      libraryId: 'lib-1',
+      libraryName: 'CS Library',
+      at: new Date().toISOString(),
+      filesScanned: 40,
+      filesAdded: 5,
+      coursesDiscovered: 1,
+      errorsCount: 2,
+    });
+
+    const wrapper = mount(ScanLifecycleNotifier);
+    await wrapper.vm.$nextTick();
+
+    await wrapper.find('.stub-errors-btn').trigger('click');
+
+    expect(navigateToMock).toHaveBeenCalledWith('/admin/libraries/lib-1');
   });
 
   it('maps finished/succeeded status to "success" for AppScanProgress', async () => {

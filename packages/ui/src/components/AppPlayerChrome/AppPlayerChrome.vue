@@ -257,6 +257,25 @@
     else emit('play');
   }
 
+  // ── Frame tap ────────────────────────────────────────────────────────────
+  // The root previously only tracked keyboard/pointer-move/focus — a
+  // motionless tap on a touchscreen fires none of those, so once the overlay
+  // idle-hid there was no way back to it without a mouse. One handler covers
+  // both the return-from-idle-hide case and the play/pause-by-tapping-the-
+  // picture affordance every video player has: overlay hidden → reveal it;
+  // overlay visible → toggle play, same as the play button. Interactive
+  // descendants (buttons, the scrubber, the shortcuts dialog) opt out via
+  // `closest` so a tap on them isn't also handled here and double-fired.
+  function onFrameTap(event: MouseEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('button, [role="slider"], a, dialog')) return;
+    if (controlsHidden.value) {
+      showControls();
+      return;
+    }
+    togglePlay();
+  }
+
   function seekBy(deltaSec: number): void {
     if (isInert.value) return;
     const next = Math.max(0, Math.min(props.duration, props.position + deltaSec));
@@ -384,6 +403,7 @@
     @pointermove="showControls"
     @focusin="showControls"
     @focusout="scheduleIdleHide"
+    @click="onFrameTap"
   >
     <div class="app-player-chrome__frame" aria-hidden="true">
       <slot name="frame"> video frame · placeholder </slot>

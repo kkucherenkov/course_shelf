@@ -3,7 +3,8 @@
   import { useI18n } from 'vue-i18n';
   import { AppSectionHeader, AppLessonRow } from '@app/ui';
   import { useSectionHeaderLabels } from '~/composables/useSectionHeaderLabels';
-  import type { SectionOutline } from '@app/api-client-ts';
+  import { usePreferencesStore, effectiveLessonState } from '~/stores/preferences';
+  import type { SectionOutline, LessonOutlineItem } from '@app/api-client-ts';
 
   const props = defineProps<{
     sections: SectionOutline[];
@@ -18,6 +19,17 @@
 
   const { t } = useI18n();
   const { sectionLabel, formatLessons, formatDuration } = useSectionHeaderLabels();
+  const preferencesStore = usePreferencesStore();
+
+  // Same threshold override PlayerSectionsTab.vue applies in the player
+  // sidebar (#565) — kept in sync so the two lesson-badge displays never
+  // disagree with each other (#596). Course-level aggregates (`courseState`
+  // on the page, "Your week") stay on the server's own state on purpose:
+  // this threshold is a display nicety for a single row, not a second source
+  // of truth for whether the course is done.
+  function displayState(lesson: LessonOutlineItem): LessonOutlineItem['state'] {
+    return effectiveLessonState(lesson, preferencesStore.completionThreshold);
+  }
 
   function formatWatched(percent: number): string {
     return t('ui.lessonRow.watched', { n: percent });
@@ -64,7 +76,7 @@
           :num="lesson.position"
           :title="lesson.title"
           :duration="lesson.durationSeconds"
-          :state="lesson.state"
+          :state="displayState(lesson)"
           :materials="lesson.hasMaterials"
           :transcript="lesson.hasTranscript"
           :current="lesson.id === currentLessonId"

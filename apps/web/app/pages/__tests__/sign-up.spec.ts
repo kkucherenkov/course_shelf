@@ -88,12 +88,6 @@ vi.mock('@app/ui', () => ({
     emits: ['update:modelValue'],
     template: '<input type="password" />',
   },
-  AppSelect: {
-    name: 'AppSelect',
-    props: ['modelValue', 'options'],
-    emits: ['update:modelValue'],
-    template: '<select />',
-  },
   AppNoPermission: {
     name: 'AppNoPermission',
     props: ['title', 'body', 'icon'],
@@ -244,6 +238,18 @@ describe('pages/sign-up.vue', () => {
    * path here has nothing else to go on, so what it says has to be true.
    */
   describe('step 3 — library', () => {
+    // #598: the control offered a "first frame of intro" cover strategy the
+    // backend has no way to act on — `RegisterLibraryRequest` only carries
+    // `name`/`rootPath` (`additionalProperties: false`), so the choice was
+    // silently discarded. Promising an unimplemented option to a brand-new
+    // operator is worse than not asking.
+    it('does not offer a cover-art strategy the server cannot act on', async () => {
+      const wrapper = await reachLibraryStep();
+
+      expect(wrapper.find('select').exists()).toBe(false);
+      expect(wrapper.text()).not.toContain('pages.signUp.libraryScanStrategyLabel');
+    });
+
     it('rejects a relative path without issuing a request', async () => {
       const wrapper = await reachLibraryStep();
 

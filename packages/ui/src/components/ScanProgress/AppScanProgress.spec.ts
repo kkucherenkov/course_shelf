@@ -7,7 +7,6 @@ const i18nProps = {
   scanningLabel: 'Scanning',
   successLabel: 'Scan complete',
   failedLabel: 'Scan failed',
-  cancelLabel: 'Cancel',
   errorsLabel: '2 errors',
   statScannedLabel: 'Scanned',
   statAddedLabel: 'Added',
@@ -18,7 +17,6 @@ const i18nProps = {
 const baseRunning = {
   status: 'running' as const,
   courseName: 'Computer Science',
-  percent: 59,
   elapsedTime: '00:04:18',
   scanned: 1247,
   added: 38,
@@ -38,7 +36,6 @@ const baseSuccess = {
   ...i18nProps,
   status: 'success' as const,
   courseName: 'Computer Science',
-  percent: 100,
   elapsedTime: '00:08:42',
   scanned: 2104,
   added: 45,
@@ -57,7 +54,6 @@ const baseFailed = {
   ...i18nProps,
   status: 'failed' as const,
   courseName: 'Computer Science',
-  percent: 37,
   elapsedTime: '00:03:11',
   scanned: 780,
   added: 20,
@@ -98,14 +94,6 @@ describe('AppScanProgress snapshots', () => {
 // ---- Event tests ----
 
 describe('AppScanProgress events', () => {
-  it('emits cancel once when cancel button is clicked', async () => {
-    const wrapper = mount(AppScanProgress, { props: baseRunning });
-    const btn = wrapper.findAll('button').find((b) => b.text() === 'Cancel');
-    expect(btn).toBeDefined();
-    await btn!.trigger('click');
-    expect(wrapper.emitted('cancel')).toHaveLength(1);
-  });
-
   it('emits errors-clicked once when errors button is clicked', async () => {
     const wrapper = mount(AppScanProgress, { props: baseRunning });
     const btn = wrapper.findAll('button').find((b) => b.text() === '2 errors');
@@ -118,14 +106,15 @@ describe('AppScanProgress events', () => {
 // ---- Conditional rendering ----
 
 describe('AppScanProgress conditional rendering', () => {
-  it('cancel button is NOT rendered when status !== running', () => {
-    const successWrapper = mount(AppScanProgress, { props: baseSuccess });
-    const cancelBtnSuccess = successWrapper.findAll('button').find((b) => b.text() === 'Cancel');
-    expect(cancelBtnSuccess).toBeUndefined();
+  it('never renders a cancel button — no v1 admin-cancel endpoint exists', () => {
+    const running = mount(AppScanProgress, { props: baseRunning });
+    expect(running.findAll('button').find((b) => b.text() === 'Cancel')).toBeUndefined();
 
-    const failedWrapper = mount(AppScanProgress, { props: baseFailed });
-    const cancelBtnFailed = failedWrapper.findAll('button').find((b) => b.text() === 'Cancel');
-    expect(cancelBtnFailed).toBeUndefined();
+    const success = mount(AppScanProgress, { props: baseSuccess });
+    expect(success.findAll('button').find((b) => b.text() === 'Cancel')).toBeUndefined();
+
+    const failed = mount(AppScanProgress, { props: baseFailed });
+    expect(failed.findAll('button').find((b) => b.text() === 'Cancel')).toBeUndefined();
   });
 
   it('errors button is NOT rendered when errors === 0', () => {
@@ -220,11 +209,11 @@ describe('AppScanProgress status classes', () => {
     expect(wrapper.find('.app-scan-progress__title').text()).toContain('Scan failed');
   });
 
-  it('meta shows percent and elapsed time', () => {
+  it('meta shows only elapsed time — no fabricated percent (total files is unknown mid-scan)', () => {
     const wrapper = mount(AppScanProgress, { props: baseRunning });
     const meta = wrapper.find('.app-scan-progress__meta').text();
-    expect(meta).toContain('59%');
-    expect(meta).toContain('00:04:18');
+    expect(meta).toBe('00:04:18');
+    expect(meta).not.toContain('%');
   });
 
   it('four stat tiles are always rendered', () => {
@@ -232,13 +221,25 @@ describe('AppScanProgress status classes', () => {
     expect(wrapper.findAll('.app-scan-progress__stat')).toHaveLength(4);
   });
 
-  it('progress bar fills to percent value on running', () => {
+  it('bar is indeterminate (no aria-valuenow, animated fill) while running', () => {
     const wrapper = mount(AppScanProgress, { props: baseRunning });
-    expect(wrapper.find('.app-scan-progress__bar-fill').attributes('style')).toContain('59%');
+    const bar = wrapper.find('.app-scan-progress__bar');
+    expect(bar.attributes('aria-valuenow')).toBeUndefined();
+    expect(wrapper.find('.app-scan-progress__bar-fill--indeterminate').exists()).toBe(true);
   });
 
-  it('progress bar fills to 100% on failed (full-error fill)', () => {
+  it('bar is determinate and full once a scan terminates (success)', () => {
+    const wrapper = mount(AppScanProgress, { props: baseSuccess });
+    const bar = wrapper.find('.app-scan-progress__bar');
+    expect(bar.attributes('aria-valuenow')).toBe('100');
+    expect(wrapper.find('.app-scan-progress__bar-fill').attributes('style')).toContain('100%');
+    expect(wrapper.find('.app-scan-progress__bar-fill--indeterminate').exists()).toBe(false);
+  });
+
+  it('bar fills to 100% on failed (full-error fill), not indeterminate', () => {
     const wrapper = mount(AppScanProgress, { props: baseFailed });
+    const bar = wrapper.find('.app-scan-progress__bar');
+    expect(bar.attributes('aria-valuenow')).toBe('100');
     expect(wrapper.find('.app-scan-progress__bar-fill').attributes('style')).toContain('100%');
   });
 });

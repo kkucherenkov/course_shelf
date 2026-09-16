@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
-  import { AppButton, AppNoPermission, AppSkeleton } from '@app/ui';
+  import { AppButton, AppDialog, AppNoPermission, AppSkeleton } from '@app/ui';
   import { runCourseRescan, startCourseTranscription, client } from '@app/api-client-ts';
   import type { CourseMaterialItem, LessonOutlineItem } from '@app/api-client-ts';
 
@@ -51,7 +51,7 @@
   // the same scans:user:{userId} realtime channel a library scan uses.
   const isRescanning = ref(false);
 
-  async function onRescan(): Promise<void> {
+  async function doRescan(): Promise<void> {
     isRescanning.value = true;
     try {
       const { error } = await runCourseRescan({
@@ -75,7 +75,7 @@
   // would leave the operator with "could not start" and nothing to act on.
   const isTranscribing = ref(false);
 
-  async function onTranscribe(): Promise<void> {
+  async function doTranscribe(): Promise<void> {
     isTranscribing.value = true;
     try {
       const { error } = await startCourseTranscription({
@@ -97,6 +97,39 @@
     } finally {
       isTranscribing.value = false;
     }
+  }
+
+  // ── Rescan/transcribe confirm dialog (#606) ──────────────────────────────────
+  // Both rewrite consequential state without a manual-recovery path — rescan
+  // replaces the course's section/lesson list, transcription can occupy a GPU
+  // for hours — so both get a confirm step, unlike the reversible, own-data-only
+  // "Reset progress" action (which deliberately has none). One dialog shared by
+  // both actions rather than two near-identical copies.
+  const pendingAdminAction = ref<'rescan' | 'transcribe' | null>(null);
+
+  const adminActionDialog = computed(() => {
+    if (pendingAdminAction.value === 'rescan') {
+      return {
+        title: t('pages.courseDetail.rescanDialogTitle'),
+        description: t('pages.courseDetail.rescanDialogDescription'),
+        confirmLabel: t('pages.courseDetail.rescanDialogConfirm'),
+      };
+    }
+    if (pendingAdminAction.value === 'transcribe') {
+      return {
+        title: t('pages.courseDetail.transcribeDialogTitle'),
+        description: t('pages.courseDetail.transcribeDialogDescription'),
+        confirmLabel: t('pages.courseDetail.transcribeDialogConfirm'),
+      };
+    }
+    return null;
+  });
+
+  function confirmAdminAction(): void {
+    const action = pendingAdminAction.value;
+    pendingAdminAction.value = null;
+    if (action === 'rescan') void doRescan();
+    else if (action === 'transcribe') void doTranscribe();
   }
 
   // ── Derived course state ─────────────────────────────────────────────────────
@@ -138,12 +171,19 @@
   const resumeLesson = computed<LessonOutlineItem | null>(() => {
     const lessons = allLessons.value;
 
-    const seenId = continueWatching.data.value?.items.find(
-      (item) => item.courseId === courseId,
-    )?.lastSeenLessonId;
-    if (seenId) {
-      const seen = lessons.find((l) => l.id === seenId);
-      if (seen) return seen;
+    // A fully completed course has nothing to "resume" — send the CTA back
+    // to lesson 1 instead of wherever continue-watching last parked. That
+    // read model isn't filtered by completion (#596): it still lists a
+    // finished course as long as `lastSeenAt` is recent, which used to make
+    // "Rewatch" open the last-watched lesson instead of the first.
+    if (courseState.value !== 'completed') {
+      const seenId = continueWatching.data.value?.items.find(
+        (item) => item.courseId === courseId,
+      )?.lastSeenLessonId;
+      if (seenId) {
+        const seen = lessons.find((l) => l.id === seenId);
+        if (seen) return seen;
+      }
     }
 
     // Last in-progress (furthest along in the course)
@@ -312,10 +352,6 @@
         :primary-href="primaryCTAHref"
         :mark-complete-label="t('pages.courseDetail.ctaMarkComplete')"
         :reset-progress-label="t('pages.courseDetail.ctaResetProgress')"
-        :reset-dialog-title="t('pages.courseDetail.resetDialogTitle')"
-        :reset-dialog-description="t('pages.courseDetail.resetDialogDescription')"
-        :reset-dialog-confirm-label="t('pages.courseDetail.resetDialogConfirm')"
-        :reset-dialog-cancel-label="t('pages.courseDetail.resetDialogCancel')"
         :mutating="mutating"
         class="page-course-detail__actions"
         @mark-complete="onMarkComplete"
@@ -339,7 +375,7 @@
           :label="t('pages.courseDetail.rescanCta')"
           :loading="isRescanning"
           class="page-course-detail__rescan-cta"
-          @click="onRescan"
+          @click="pendingAdminAction = 'rescan'"
         />
         <AppButton
           variant="ghost"
@@ -348,9 +384,34 @@
           :label="t('pages.courseDetail.transcribeCta')"
           :loading="isTranscribing"
           class="page-course-detail__transcribe-cta"
-          @click="onTranscribe"
+          @click="pendingAdminAction = 'transcribe'"
         />
       </div>
+
+      <!-- Rescan / transcribe confirm dialog (#606) -->
+      <AppDialog
+        v-if="adminActionDialog"
+        :open="pendingAdminAction !== null"
+        size="sm"
+        :title="adminActionDialog.title"
+        :description="adminActionDialog.description"
+        @update:open="pendingAdminAction = null"
+      >
+        <template #footer>
+          <AppButton
+            :label="t('pages.courseDetail.adminActionDialogCancel')"
+            variant="ghost"
+            size="md"
+            @click="pendingAdminAction = null"
+          />
+          <AppButton
+            :label="adminActionDialog.confirmLabel"
+            variant="destructive"
+            size="md"
+            @click="confirmAdminAction"
+          />
+        </template>
+      </AppDialog>
 
       <!-- Two-column layout: sections + rail -->
       <div class="page-course-detail__layout">

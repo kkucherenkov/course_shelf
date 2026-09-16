@@ -32,7 +32,7 @@ import pathlib
 import re
 import sys
 
-ENTRY = re.compile(r"^## (T-[0-9a-z][0-9a-z-]*) ", re.M)
+ENTRY = re.compile(r"^## (T-[0-9a-z][0-9a-z-]*)(?=[ \t]|$)", re.M)
 
 
 def split(text):

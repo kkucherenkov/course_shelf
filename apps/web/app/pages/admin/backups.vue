@@ -168,7 +168,7 @@
     &__title {
       margin: 0;
       font-size: var(--text-xl);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-fg);
     }
 
@@ -187,7 +187,7 @@
     &__progress-title {
       margin: 0;
       font-size: var(--text-sm);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-fg);
     }
 
@@ -200,7 +200,7 @@
     &__result-title {
       margin: 0 0 var(--space-3);
       font-size: var(--text-base);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-fg);
     }
 
@@ -235,7 +235,7 @@
       background-color: var(--brand-accent);
       color: var(--brand-accent-fg);
       font-size: var(--text-sm);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       text-decoration: none;
 
       &:focus-visible {

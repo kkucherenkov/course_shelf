@@ -25,6 +25,7 @@ vi.mock('@app/ui', () => ({
     props: ['name', 'size'],
     template: '<svg class="stub-icon" :data-name="name" />',
   },
+  AppSkeleton: { name: 'AppSkeleton', props: ['width', 'height', 'radius'], template: '<span />' },
 }));
 
 const baseProps = {

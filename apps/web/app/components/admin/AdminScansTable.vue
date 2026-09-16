@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { IconCS } from '@app/ui';
+  import { AppSkeleton, IconCS } from '@app/ui';
   import type { AdminScanListItem, ScanStatus } from '@app/api-client-ts';
 
   interface Props {
@@ -85,9 +85,9 @@
   <!-- Skeleton -->
   <div v-if="props.loading" class="adm-scans-tbl__skeleton-wrap">
     <div v-for="i in 3" :key="i" class="adm-scans-tbl__skel-row">
-      <div class="adm-scans-tbl__skel adm-scans-tbl__skel--circle" />
-      <div class="adm-scans-tbl__skel adm-scans-tbl__skel--flex" />
-      <div class="adm-scans-tbl__skel adm-scans-tbl__skel--pill" />
+      <AppSkeleton width="24px" height="24px" radius="pill" />
+      <AppSkeleton class="adm-scans-tbl__skel--flex" height="var(--text-xs)" />
+      <AppSkeleton width="80px" height="18px" radius="pill" />
     </div>
   </div>
 
@@ -172,12 +172,8 @@
 </template>
 
 <style lang="scss" scoped>
-  $skel-circle: 24px;
-  $skel-pill-w: 80px;
-  $skel-pill-h: 18px;
   $dot-size: 6px;
   $chevron-size: 14px;
-  $dur-skel: var(--dur-slow, 1400ms);
   $dur-dot: var(--dur-slower, 1600ms);
 
   .adm-scans-tbl {
@@ -199,29 +195,8 @@
       }
     }
 
-    &__skel {
-      background: var(--surface-skeleton-base);
-      border-radius: var(--radius-sm);
-      animation: adm-scans-skel-pulse $dur-skel ease-in-out infinite;
-
-      &--circle {
-        width: $skel-circle;
-        height: $skel-circle;
-        border-radius: 50%;
-        flex-shrink: 0;
-      }
-
-      &--flex {
-        flex: 1;
-        height: var(--text-xs);
-      }
-
-      &--pill {
-        width: $skel-pill-w;
-        height: $skel-pill-h;
-        border-radius: var(--radius-pill);
-        flex-shrink: 0;
-      }
+    &__skel--flex {
+      flex: 1;
     }
 
     &__wrap {
@@ -241,7 +216,7 @@
     thead th {
       text-align: left;
       font-size: var(--text-xs);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.04em;
@@ -277,7 +252,7 @@
     }
 
     &__lib-name {
-      font-weight: 500;
+      font-weight: var(--fw-medium);
       color: var(--text-loud);
     }
 
@@ -346,7 +321,7 @@
       padding: var(--space-1) var(--space-2);
       border-radius: var(--radius-pill);
       font-size: var(--text-xs);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
 
       &[data-status='running'] {
         background: var(--status-info-soft);
@@ -411,26 +386,15 @@
         display: none;
       }
 
-      @media (min-width: 1024px) {
+      @media (width >= 1024px) {
         display: none;
       }
     }
 
     &__col--xs-only {
-      @media (min-width: 768px) {
+      @media (width >= 768px) {
         display: none;
       }
-    }
-  }
-
-  @keyframes adm-scans-skel-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-
-    50% {
-      opacity: 0.4;
     }
   }
 

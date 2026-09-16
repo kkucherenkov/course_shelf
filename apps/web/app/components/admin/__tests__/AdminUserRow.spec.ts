@@ -41,6 +41,12 @@ vi.mock('@app/ui', () => ({
     props: ['name', 'size'],
     template: '<svg class="stub-icon" :data-name="name" />',
   },
+  AppIconButton: {
+    name: 'AppIconButton',
+    props: ['name', 'ariaLabel', 'variant', 'size', 'disabled'],
+    emits: ['click'],
+    template: '<button :aria-label="ariaLabel" @click="$emit(\'click\')" />',
+  },
 }));
 
 const baseUser: AdminUserListItem = {
@@ -140,15 +146,13 @@ describe('AdminUserRow', () => {
 
   it('emits edit when Edit button is clicked', async () => {
     const w = mount(AdminUserRow, { props: baseProps });
-    const buttons = w.findAll('.adm-user-row__btn--icon');
-    await buttons[0]!.trigger('click');
+    await w.find(`[aria-label="${baseProps.editAriaLabel}"]`).trigger('click');
     expect(w.emitted('edit')).toBeTruthy();
   });
 
   it('emits more when More button is clicked', async () => {
     const w = mount(AdminUserRow, { props: baseProps });
-    const buttons = w.findAll('.adm-user-row__btn--icon');
-    await buttons[1]!.trigger('click');
+    await w.find(`[aria-label="${baseProps.moreAriaLabel}"]`).trigger('click');
     expect(w.emitted('more')).toBeTruthy();
   });
 

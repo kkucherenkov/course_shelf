@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, provide, ref, watch } from 'vue';
-  import { AppBanner, AppButton, AppEmptyState, IconCS } from '@app/ui';
+  import { AppBanner, AppButton, AppEmptyState, AppSearchField, AppSkeleton } from '@app/ui';
   import type { AdminUpdateUserRequest, AdminUserRole } from '@app/api-client-ts';
 
   import AdminUserRow from '~/components/admin/AdminUserRow.vue';
@@ -101,16 +101,12 @@
 
     <!-- Search -->
     <div class="adm-users__search-row">
-      <div class="adm-users__search-wrap">
-        <IconCS name="search" class="adm-users__search-icon" />
-        <input
-          v-model="searchInput"
-          type="search"
-          class="adm-users__search"
-          :placeholder="t('pages.admin.users.searchPlaceholder')"
-          :aria-label="t('pages.admin.users.searchPlaceholder')"
-        />
-      </div>
+      <AppSearchField
+        v-model="searchInput"
+        class="adm-users__search"
+        :label="t('pages.admin.users.searchPlaceholder')"
+        :placeholder="t('pages.admin.users.searchPlaceholder')"
+      />
     </div>
 
     <!-- Error state -->
@@ -142,14 +138,14 @@
         <span />
       </div>
       <div v-for="i in 5" :key="i" class="adm-users__skel-row">
-        <div class="adm-users__skel adm-users__skel--avatar" />
+        <AppSkeleton width="36px" height="36px" radius="pill" />
         <div class="adm-users__skel-col">
-          <div class="adm-users__skel adm-users__skel--name" />
-          <div class="adm-users__skel adm-users__skel--email" />
+          <AppSkeleton width="70%" height="14px" />
+          <AppSkeleton width="55%" height="11px" />
         </div>
-        <div class="adm-users__skel adm-users__skel--pill adm-users__col--md" />
-        <div class="adm-users__skel adm-users__skel--date adm-users__col--md" />
-        <div class="adm-users__skel adm-users__skel--btn" />
+        <AppSkeleton class="adm-users__col--md" width="60px" height="20px" radius="pill" />
+        <AppSkeleton class="adm-users__col--md" width="80px" height="11px" />
+        <AppSkeleton width="48px" height="24px" />
       </div>
     </div>
 
@@ -209,17 +205,7 @@
 
 <style lang="scss" scoped>
   $avatar-skel: 36px;
-  $skel-name-h: 14px;
-  $skel-email-h: 11px;
-  $skel-pill-w: 60px;
-  $skel-pill-h: 20px;
-  $skel-date-w: 80px;
-  $skel-btn-w: 48px;
-  $skel-btn-h: 24px;
-  $dur-skel: var(--dur-slow, 1400ms);
-  $search-h: 36px;
   $search-max-w: 360px;
-  $search-icon-size: 16px;
   $header-avatar-col: 32px;
   $header-avatar-col-lg: 36px;
   $header-pad-v: 10px;
@@ -241,7 +227,7 @@
     &__title {
       margin: 0;
       font-size: var(--text-2xl);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-loud);
       letter-spacing: -0.01em;
     }
@@ -261,44 +247,8 @@
       margin-bottom: var(--space-4);
     }
 
-    &__search-wrap {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      width: 100%;
-      max-width: $search-max-w;
-    }
-
-    &__search-icon {
-      position: absolute;
-      left: var(--space-2);
-      color: var(--text-muted);
-      width: $search-icon-size;
-      height: $search-icon-size;
-      flex-shrink: 0;
-      pointer-events: none;
-    }
-
     &__search {
-      width: 100%;
-      height: $search-h;
-      padding: var(--space-2) var(--space-3) var(--space-2) var(--space-7);
-      background: var(--surface-surface);
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-md);
-      font-size: var(--text-sm);
-      color: var(--text-fg);
-      outline: none;
-      appearance: none;
-
-      &::placeholder {
-        color: var(--text-subtle);
-      }
-
-      &:focus {
-        border-color: var(--brand-accent);
-        box-shadow: 0 0 0 2px var(--brand-accent-soft);
-      }
+      max-width: $search-max-w;
     }
 
     // ── User list container ─────────────────────────────────────────────────
@@ -313,7 +263,7 @@
     &__header-row {
       display: none;
 
-      @media (min-width: 768px) {
+      @media (width >= 768px) {
         display: grid;
         gap: var(--space-3);
         align-items: center;
@@ -322,13 +272,13 @@
         border-bottom: 1px solid var(--border-default);
         grid-template-columns: $header-avatar-col 1.4fr 0.9fr 0.7fr auto;
         font-size: var(--text-xs);
-        font-weight: 600;
+        font-weight: var(--fw-semibold);
         text-transform: uppercase;
         letter-spacing: 0.04em;
         color: var(--text-muted);
       }
 
-      @media (min-width: 1024px) {
+      @media (width >= 1024px) {
         grid-template-columns: $header-avatar-col-lg 1.5fr 1.2fr 0.9fr auto;
       }
     }
@@ -336,7 +286,7 @@
     &__col--md {
       display: none;
 
-      @media (min-width: 768px) {
+      @media (width >= 768px) {
         display: block;
       }
     }
@@ -350,11 +300,11 @@
       border-bottom: 1px solid var(--border-default);
       grid-template-columns: #{$avatar-skel} 1fr auto;
 
-      @media (min-width: 768px) {
+      @media (width >= 768px) {
         grid-template-columns: $header-avatar-col 1.4fr 0.9fr 0.7fr auto;
       }
 
-      @media (min-width: 1024px) {
+      @media (width >= 1024px) {
         grid-template-columns: #{$avatar-skel} 1.5fr 1.2fr 0.9fr auto;
       }
 
@@ -367,57 +317,6 @@
       display: flex;
       flex-direction: column;
       gap: var(--space-2);
-    }
-
-    &__skel {
-      background: var(--surface-skeleton-base);
-      border-radius: var(--radius-sm);
-      animation: adm-users-skel-pulse $dur-skel ease-in-out infinite;
-
-      &--avatar {
-        width: $avatar-skel;
-        height: $avatar-skel;
-        border-radius: 50%;
-        flex-shrink: 0;
-      }
-
-      &--name {
-        height: $skel-name-h;
-        width: 70%;
-      }
-
-      &--email {
-        height: $skel-email-h;
-        width: 55%;
-      }
-
-      &--pill {
-        width: $skel-pill-w;
-        height: $skel-pill-h;
-        border-radius: var(--radius-pill);
-      }
-
-      &--date {
-        width: $skel-date-w;
-        height: $skel-email-h;
-      }
-
-      &--btn {
-        width: $skel-btn-w;
-        height: $skel-btn-h;
-        border-radius: var(--radius-md);
-      }
-    }
-  }
-
-  @keyframes adm-users-skel-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-
-    50% {
-      opacity: 0.4;
     }
   }
 </style>

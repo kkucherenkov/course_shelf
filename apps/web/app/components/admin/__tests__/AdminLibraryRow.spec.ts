@@ -34,6 +34,12 @@ vi.mock('@app/ui', () => ({
     props: ['name', 'size'],
     template: '<svg class="stub-icon" :data-name="name" />',
   },
+  AppIconButton: {
+    name: 'AppIconButton',
+    props: ['name', 'ariaLabel', 'variant', 'size', 'disabled'],
+    emits: ['click'],
+    template: '<button :aria-label="ariaLabel" @click="$emit(\'click\')" />',
+  },
 }));
 
 const baseLibrary: AdminLibraryListItem = {

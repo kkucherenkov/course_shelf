@@ -106,7 +106,7 @@
     }
 
     &__title {
-      font-weight: 500;
+      font-weight: var(--fw-medium);
       color: var(--text-loud);
       font-size: var(--text-sm);
       overflow: hidden;

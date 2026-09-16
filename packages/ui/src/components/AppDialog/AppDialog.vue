@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, watch, useId, onUnmounted } from 'vue';
+  import { ref, watch, useId, onMounted, onUnmounted } from 'vue';
   import AppIconButton from '../AppIconButton/AppIconButton.vue';
 
   type Size = 'sm' | 'md';
@@ -40,6 +40,20 @@
     },
     { flush: 'post' },
   );
+
+  // Every consumer that gates this component behind a `v-if` (e.g. a confirm
+  // dialog only mounted once an action is pending) creates it with `open`
+  // already `true`. The watch above only fires on a *change*, so it never
+  // ran `.showModal()` for that case — the native <dialog> stayed closed and
+  // invisible in a real browser (jsdom's `.exists()` assertions don't catch
+  // this: the element is there, just never shown). Confirmed live against
+  // the rescan/transcribe/reset-progress confirm dialogs. `watch(...,
+  // {immediate:true})` does not fix it either — its first call runs
+  // synchronously during setup(), before the template ref is bound, so
+  // `dialogRef.value` is still null; `onMounted` runs after that binding.
+  onMounted(() => {
+    if (props.open) dialogRef.value?.showModal();
+  });
 
   function onClose() {
     // Native dialog `close` event fires on ESC and on .close() — ensure our
@@ -104,6 +118,19 @@
   $panel-max-width-md: 640px;
 
   .app-dialog {
+    // A native <dialog>'s UA stylesheet centers it (`position: absolute` +
+    // `inset: 0` + `margin: auto`, relative to the viewport) only when
+    // nothing else establishes a containing block first. Tailwind's
+    // preflight resets margin globally, and the app's own layout puts a
+    // `position`-ed ancestor between this element and the viewport, so
+    // without an explicit position here the dialog centered inside that
+    // ancestor instead of the screen — pinned near the top-left, visible
+    // but not where a modal is supposed to land. `fixed` anchors it to the
+    // viewport regardless of ancestors; `margin: auto` still centers it
+    // within that box.
+    position: fixed;
+    inset: 0;
+    margin: auto;
     padding: 0;
     border: none;
     border-radius: var(--radius-lg);

@@ -22,6 +22,7 @@ export default {
         empty: 'Nothing in progress yet',
         emptyBody: 'Start a course and your progress will appear here.',
         error: 'Could not load your progress',
+        errorBody: 'Check your connection, then try again.',
         retry: 'Retry',
       },
       recentlyAdded: {
@@ -30,6 +31,7 @@ export default {
         emptyBody: 'Add courses to a library and they will appear here.',
         emptyBodyMember: 'New courses will show up here once an administrator adds them.',
         error: 'Could not load recently added courses',
+        errorBody: 'Check your connection, then try again.',
         retry: 'Retry',
       },
       recentlyCompleted: {
@@ -40,6 +42,7 @@ export default {
         empty: 'No completed courses yet',
         emptyBody: 'Finish a course and it will appear here.',
         error: 'Could not load completed courses',
+        errorBody: 'Check your connection, then try again.',
         retry: 'Retry',
       },
       yourWeek: {
@@ -48,6 +51,7 @@ export default {
         lessonsCompleted: '{n} lesson completed | {n} lessons completed',
         range: '{from} – {to}',
         error: 'Could not load your week stats',
+        errorBody: 'Check your connection, then try again.',
         retry: 'Retry',
       },
     },
@@ -174,6 +178,10 @@ export default {
       ctaResume: 'Resume — Section {section} · L{lesson}',
       ctaMarkComplete: 'Mark complete',
       ctaResetProgress: 'Reset progress',
+      resetDialogTitle: 'Reset your progress?',
+      resetDialogDescription:
+        "Clears this course's lesson-by-lesson progress. There's no undo; rewatching is the only way to rebuild it.",
+      resetDialogConfirm: 'Reset progress',
       completedBanner: 'All lessons completed · {hours}h watched',
       toastMarkCompleteSuccess: 'Course marked as complete.',
       toastMarkCompleteError: 'Could not mark course complete. Please try again.',

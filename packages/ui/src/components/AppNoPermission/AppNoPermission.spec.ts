@@ -48,6 +48,14 @@ describe('AppNoPermission', () => {
     expect(wrapper.find('.app-no-permission__action').exists()).toBe(false);
   });
 
+  it('renders the actions slot (plural alias) when action is not provided', () => {
+    const wrapper = mount(AppNoPermission, {
+      props: { title: 'No access' },
+      slots: { actions: '<a href="/login">Log in</a>' },
+    });
+    expect(wrapper.find('.app-no-permission__action').html()).toContain('Log in');
+  });
+
   it('renders the illustration slot when provided', () => {
     const wrapper = mount(AppNoPermission, {
       props: { title: 'No access' },

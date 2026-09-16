@@ -16,6 +16,8 @@
     rangeLabel?: string;
     /** Error heading — already translated. */
     errorTitle?: string;
+    /** Error body — already translated. */
+    errorBody?: string;
     /** Retry button label — already translated. */
     retryLabel?: string;
   }>();
@@ -44,6 +46,7 @@
     <AppErrorState
       v-else-if="status === 'error'"
       :title="errorTitle ?? ''"
+      :body="errorBody"
       class="home-your-week__error"
     >
       <template #action>

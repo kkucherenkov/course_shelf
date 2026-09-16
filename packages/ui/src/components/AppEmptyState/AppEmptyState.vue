@@ -24,8 +24,13 @@
         {{ body }}
       </slot>
     </p>
-    <div v-if="$slots['action']" class="app-empty-state__action">
-      <slot name="action" />
+    <!-- `actions` is a fallback alias for `action` — one consumer
+         (admin/libraries) used the plural name that AppBanner uses, and the
+         slot silently dropped its content instead of erroring. -->
+    <div v-if="$slots['action'] || $slots['actions']" class="app-empty-state__action">
+      <slot name="action">
+        <slot name="actions" />
+      </slot>
     </div>
   </div>
 </template>

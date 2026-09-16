@@ -18,26 +18,53 @@
         trusting the brief: alias `var(--text-muted|text-subtle)` 54/18
         files, `font-weight:` literal 14/8 files, `@media (...max-width` 4/2
         files, `line-height:` literal 0 — all four match the brief exactly
-  - [ ] Commit 1: 54 alias reads → canonical long token name (1:1 value
+  - [x] Commit 1: 54 alias reads → canonical long token name (1:1 value
         substitution, `--text-muted`→`--text-secondary`,
-        `--text-subtle`→`--text-tertiary`)
-  - [ ] Commit 1: 14 `font-weight:` literals → `var(--fw-medium|semibold|bold)`
-  - [ ] Commit 1 gates + `grep` both markers → 0 in `apps/web`
-  - [ ] Commit 2: fix the 4 legacy `max-width` media queries (range syntax),
-        live-check at 359/360, 767/768, 1023/1024px — both sides of every
-        breakpoint, screenshot or note any reflow
-  - [ ] Commit 3: `stylelint.config.mjs` — remove the `packages/ui`-only
-        scoping on the three gates (declaration-property-value-disallowed-list
-        font-weight/line-height/alias regex + media-feature-name-disallowed-list),
-        fold into top-level `rules` (merge with the existing top-level
-        `declaration-property-value-disallowed-list` `/.*/` pattern rather
-        than shadow it); keep the BEM `selector-class-pattern` override
-        `packages/ui`-only, that one is unrelated to #676
-  - [ ] Prove the gate fails on an injected violation in `apps/web` (not
-        `packages/ui` this time), then revert
-  - [ ] `grep` all four markers repo-wide → 0
-  - [ ] Gates: `pnpm --filter @app/web lint --fix`, `pnpm stylelint:fix`,
-        `pnpm format`, `pnpm turbo run lint test typecheck`, `pnpm check:i18n`
+        `--text-subtle`→`--text-tertiary`, confirmed against
+        `emit-scss.ts`'s own `pairs` mapping) + 14 `font-weight:` literals →
+        `var(--fw-medium|semibold|bold)`, 18 files, `grep` both markers → 0
+        in `apps/web`. Fresh worktree needed `pnpm install` first (missing
+        `node_modules`); the first `lint --fix` run's 27 `foundations.vue`
+        type-aware ESLint errors were a red herring — pre-existing,
+        unrelated, cleared once `@app/design-tokens#build` (a turbo
+        dependency of `lint`) regenerated `design-tokens.generated.ts` in
+        this fresh worktree
+  - [x] Commit 2: 4 legacy `max-width` media queries → range syntax
+        (`max-width: Npx` → `width <= Npx`, same pattern PR #668 used for
+        `AppScanProgress.vue` — spec-equivalent, not `width < (N+1)px`).
+        Live-verified on the audit stand (`:8090`): built this branch's
+        `web` image, hot-swapped `csh-audit-web-1` (backed up as
+        `courseshelf-web:audit6-backup`, confirmed same image id as
+        `audit6` before touching it), drove `/admin/libraries/lzyU_CiSqwfcmL4LucR4F`
+        (real scan + transcription history) with Playwright at 359/360,
+        767/768, 1023/1024px. `AdminScansTable`'s three responsive columns
+        (`--lg`, `--md-up`, `--md-combined`) and `AdminTranscriptionCard`'s
+        stats grid (2-col ≤359, 4-col ≥360) all flip at the exact same
+        width as the legacy syntax, zero reflow. Reverted the container to
+        the original image afterward, confirmed healthy
+  - [x] Commit 3: `stylelint.config.mjs` — removed the `packages/ui`-only
+        scoping on the three gates, folded `font-weight`/`line-height`/
+        alias-regex into the existing top-level
+        `declaration-property-value-disallowed-list` (merged into its
+        `/.*/` pattern array rather than shadowing it) and added
+        `media-feature-name-disallowed-list` at top level too; kept the BEM
+        `selector-class-pattern` override `packages/ui`-only (unrelated to
+        #676 — would've wrongly forced `app-`/`health-`/`brand-` prefixes
+        onto every `apps/web` class name)
+  - [x] Proved the gate fails on an injected violation in `apps/web` this
+        time (not `packages/ui`): reverted two `font-weight: var(--fw-semibold)`
+        lines in `settings.vue` back to the literal `600` — stylelint
+        failed at the exact two lines (609, 704), reverted, confirmed clean
+        again
+  - [x] `grep` all four markers repo-wide → 0
+  - [x] Gates: `pnpm --filter @app/web lint --fix`, `pnpm stylelint:fix`
+        (0 changes outside the config edit), `pnpm format` (0 changes),
+        `pnpm turbo run lint test typecheck --force --concurrency=1`
+        (serial, uncached — the first `--force` parallel run hit the
+        documented pre-existing flake, one `course-detail-admin-actions`
+        test timeout under concurrency contention; passed standalone and
+        on the serial re-run: 18/18 tasks, 567/567 web tests), `pnpm
+    check:i18n` clean (758/758 en=ru, unchanged — no strings touched)
   - [ ] Open PR, `Closes #676`
 - Status: in-progress
 - Blockers: —

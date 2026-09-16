@@ -21,6 +21,10 @@ export type { LessonRepository } from '../../modules/catalog/domain/lesson/lesso
 export { COURSE_REPOSITORY } from '../../modules/catalog/domain/course/course.repository';
 export type { CourseRepository } from '../../modules/catalog/domain/course/course.repository';
 export { LessonNotFoundError } from '../../modules/catalog/domain/lesson/lesson.errors';
+// Added for E29-F02-S01: GenerateQuizHandler resolves a course-scoped
+// generation request's lesson list and needs the same not-found shape
+// RunIdentifyTaskHandler already throws inside catalog itself.
+export { CourseNotFoundError } from '../../modules/catalog/domain/course/course.errors';
 // Added for E08-F02-S01: LessonFileLocator needs Library.rootPath to compute
 // the video file's absolute path for range-based streaming.
 export { LIBRARY_REPOSITORY } from '../../modules/catalog/domain/library/library.repository';
@@ -32,6 +36,12 @@ export type { MaterialKindValue } from '../../modules/catalog/domain/lesson/mate
 // generated Transcript when no sidecar matches the requested language.
 // derivedTranscriptPath is a pure function (no DI token) — re-exported as-is.
 export { TRANSCRIPT_REPOSITORY } from '../../modules/catalog/domain/transcription/transcript.repository';
-export type { TranscriptRepository } from '../../modules/catalog/domain/transcription/transcript.repository';
+export type {
+  TranscriptRepository,
+  LessonCues,
+} from '../../modules/catalog/domain/transcription/transcript.repository';
+// Added for E29-F02-S01: GenerateQuizHandler reads a lesson's cues through
+// TRANSCRIPT_REPOSITORY.findCuesForLesson — never writes them back (the
+// cleanup pass is ephemeral, see quiz-cleanup.ts).
 export { derivedTranscriptPath } from '../../modules/catalog/domain/transcription/derived-path';
 export { DerivedPathEscapedError } from '../../modules/catalog/domain/transcription/transcription.errors';

@@ -82,6 +82,7 @@ Class | Method | HTTP request | Description
 [*AccountApi*](doc/AccountApi.md) | [**updateMe**](doc/AccountApi.md#updateme) | **PATCH** /api/v1/me | Patch the calling user&#39;s own profile
 [*AdminApi*](doc/AdminApi.md) | [**applyIdentifyResult**](doc/AdminApi.md#applyidentifyresult) | **POST** /api/v1/admin/identify-tasks/{id}/apply | Apply a proposed identify task to its course
 [*AdminApi*](doc/AdminApi.md) | [**createBackup**](doc/AdminApi.md#createbackup) | **POST** /api/v1/admin/backups | Create a metadata database snapshot and return a signed download URL
+[*AdminApi*](doc/AdminApi.md) | [**deleteModelWeight**](doc/AdminApi.md#deletemodelweight) | **DELETE** /api/v1/admin/model-weights/{filename} | Delete one model weight file
 [*AdminApi*](doc/AdminApi.md) | [**discardIdentifyTask**](doc/AdminApi.md#discardidentifytask) | **POST** /api/v1/admin/identify-tasks/{id}/discard | Discard a proposed identify task
 [*AdminApi*](doc/AdminApi.md) | [**downloadBackup**](doc/AdminApi.md#downloadbackup) | **GET** /api/v1/admin/backups/{id}/download | Download a backup archive with a signed link
 [*AdminApi*](doc/AdminApi.md) | [**getAdminDashboard**](doc/AdminApi.md#getadmindashboard) | **GET** /api/v1/admin/dashboard | Operational snapshot for the admin dashboard
@@ -94,6 +95,7 @@ Class | Method | HTTP request | Description
 [*AdminApi*](doc/AdminApi.md) | [**listAdminTranscriptions**](doc/AdminApi.md#listadmintranscriptions) | **GET** /api/v1/admin/transcriptions | List recent transcription runs across every library
 [*AdminApi*](doc/AdminApi.md) | [**listAdminUsers**](doc/AdminApi.md#listadminusers) | **GET** /api/v1/admin/users | List every user in the platform
 [*AdminApi*](doc/AdminApi.md) | [**listIdentifyTasks**](doc/AdminApi.md#listidentifytasks) | **GET** /api/v1/admin/identify-tasks | List identify tasks
+[*AdminApi*](doc/AdminApi.md) | [**listModelWeights**](doc/AdminApi.md#listmodelweights) | **GET** /api/v1/admin/model-weights | List model weight files on the shared weights volume
 [*AdminApi*](doc/AdminApi.md) | [**listScrapers**](doc/AdminApi.md#listscrapers) | **GET** /api/v1/admin/scrapers | List available metadata scrapers
 [*AdminApi*](doc/AdminApi.md) | [**runIdentifyTask**](doc/AdminApi.md#runidentifytask) | **POST** /api/v1/admin/courses/{id}/identify | Create an identify proposal for a course
 [*AdminApi*](doc/AdminApi.md) | [**scrapeCoursePreview**](doc/AdminApi.md#scrapecoursepreview) | **POST** /api/v1/admin/courses/{id}/scrape-preview | Preview scraped metadata for a course
@@ -141,17 +143,23 @@ Class | Method | HTTP request | Description
 [*IdentifyApi*](doc/IdentifyApi.md) | [**getIdentifyTask**](doc/IdentifyApi.md#getidentifytask) | **GET** /api/v1/admin/identify-tasks/{id} | Get one identify task
 [*IdentifyApi*](doc/IdentifyApi.md) | [**listIdentifyTasks**](doc/IdentifyApi.md#listidentifytasks) | **GET** /api/v1/admin/identify-tasks | List identify tasks
 [*IdentifyApi*](doc/IdentifyApi.md) | [**runIdentifyTask**](doc/IdentifyApi.md#runidentifytask) | **POST** /api/v1/admin/courses/{id}/identify | Create an identify proposal for a course
+[*LearningApi*](doc/LearningApi.md) | [**applyQuiz**](doc/LearningApi.md#applyquiz) | **POST** /api/v1/quizzes/{id}/apply | Apply a proposed quiz
 [*LearningApi*](doc/LearningApi.md) | [**createBookmark**](doc/LearningApi.md#createbookmark) | **POST** /api/v1/lessons/{lessonId}/bookmarks | Create a bookmark on a lesson
 [*LearningApi*](doc/LearningApi.md) | [**createFlashcard**](doc/LearningApi.md#createflashcard) | **POST** /api/v1/lessons/{lessonId}/flashcards | Create a flashcard on a lesson
 [*LearningApi*](doc/LearningApi.md) | [**deleteBookmark**](doc/LearningApi.md#deletebookmark) | **DELETE** /api/v1/bookmarks/{id} | Delete a bookmark
 [*LearningApi*](doc/LearningApi.md) | [**deleteFlashcard**](doc/LearningApi.md#deleteflashcard) | **DELETE** /api/v1/flashcards/{id} | Delete a flashcard
 [*LearningApi*](doc/LearningApi.md) | [**deleteNote**](doc/LearningApi.md#deletenote) | **DELETE** /api/v1/notes/{lessonId} | Clear the requester&#39;s note for a lesson
+[*LearningApi*](doc/LearningApi.md) | [**discardQuiz**](doc/LearningApi.md#discardquiz) | **POST** /api/v1/quizzes/{id}/discard | Discard a proposed quiz
+[*LearningApi*](doc/LearningApi.md) | [**generateCourseQuiz**](doc/LearningApi.md#generatecoursequiz) | **POST** /api/v1/courses/{id}/quizzes | Generate quiz proposals for every lesson in a course
+[*LearningApi*](doc/LearningApi.md) | [**generateLessonQuiz**](doc/LearningApi.md#generatelessonquiz) | **POST** /api/v1/lessons/{id}/quizzes | Generate a quiz proposal for one lesson
 [*LearningApi*](doc/LearningApi.md) | [**getLessonProgress**](doc/LearningApi.md#getlessonprogress) | **GET** /api/v1/progress/{lessonId} | Get the requester&#39;s progress on a lesson
 [*LearningApi*](doc/LearningApi.md) | [**getNote**](doc/LearningApi.md#getnote) | **GET** /api/v1/notes/{lessonId} | Get the requester&#39;s note for a lesson
+[*LearningApi*](doc/LearningApi.md) | [**getQuiz**](doc/LearningApi.md#getquiz) | **GET** /api/v1/quizzes/{id} | Get one quiz proposal
 [*LearningApi*](doc/LearningApi.md) | [**gradeFlashcard**](doc/LearningApi.md#gradeflashcard) | **POST** /api/v1/flashcards/{id}/grade | Grade a flashcard review, advancing its SM-2 schedule
 [*LearningApi*](doc/LearningApi.md) | [**listDueFlashcards**](doc/LearningApi.md#listdueflashcards) | **GET** /api/v1/flashcards/due | List the requester&#39;s due flashcards (the review queue)
 [*LearningApi*](doc/LearningApi.md) | [**listLessonBookmarks**](doc/LearningApi.md#listlessonbookmarks) | **GET** /api/v1/lessons/{lessonId}/bookmarks | List the requester&#39;s bookmarks for a lesson
 [*LearningApi*](doc/LearningApi.md) | [**listLessonFlashcards**](doc/LearningApi.md#listlessonflashcards) | **GET** /api/v1/lessons/{lessonId}/flashcards | List the requester&#39;s flashcards for a lesson
+[*LearningApi*](doc/LearningApi.md) | [**listQuizzes**](doc/LearningApi.md#listquizzes) | **GET** /api/v1/quizzes | List quiz proposals
 [*LearningApi*](doc/LearningApi.md) | [**markCourseComplete**](doc/LearningApi.md#markcoursecomplete) | **POST** /api/v1/courses/{id}/mark-complete | Mark every lesson in the course as completed for the requester
 [*LearningApi*](doc/LearningApi.md) | [**recordLessonProgress**](doc/LearningApi.md#recordlessonprogress) | **POST** /api/v1/progress | Record (upsert) the requester&#39;s progress on a lesson
 [*LearningApi*](doc/LearningApi.md) | [**recordLessonProgressBatch**](doc/LearningApi.md#recordlessonprogressbatch) | **POST** /api/v1/progress/batch | Record up to 200 progress updates in a single call
@@ -221,6 +229,7 @@ Class | Method | HTTP request | Description
  - [ExternalIdRef](doc/ExternalIdRef.md)
  - [FlashcardDto](doc/FlashcardDto.md)
  - [FlashcardListDto](doc/FlashcardListDto.md)
+ - [GenerateQuizRequest](doc/GenerateQuizRequest.md)
  - [GradeFlashcardRequest](doc/GradeFlashcardRequest.md)
  - [GrantLevel](doc/GrantLevel.md)
  - [GrantTarget](doc/GrantTarget.md)
@@ -250,9 +259,16 @@ Class | Method | HTTP request | Description
  - [MergePolicyDto](doc/MergePolicyDto.md)
  - [Model0](doc/Model0.md)
  - [Model1](doc/Model1.md)
+ - [ModelWeightDto](doc/ModelWeightDto.md)
+ - [ModelWeightListDto](doc/ModelWeightListDto.md)
  - [NoteDto](doc/NoteDto.md)
  - [PingResponse](doc/PingResponse.md)
  - [Problem](doc/Problem.md)
+ - [QuizDto](doc/QuizDto.md)
+ - [QuizGenerationAcceptedDto](doc/QuizGenerationAcceptedDto.md)
+ - [QuizListDto](doc/QuizListDto.md)
+ - [QuizQuestionDto](doc/QuizQuestionDto.md)
+ - [QuizStatus](doc/QuizStatus.md)
  - [RealtimeToken](doc/RealtimeToken.md)
  - [RecentlyAddedDto](doc/RecentlyAddedDto.md)
  - [RecentlyAddedItem](doc/RecentlyAddedItem.md)

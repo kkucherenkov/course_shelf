@@ -591,6 +591,42 @@ model Flashcard {
   @@map("flashcard")
 }
 
+// ----- Quiz -----
+//
+// A generation proposal — same propose/apply/discard lifecycle as
+// IdentifyTask (catalog), reused here rather than duplicated because a
+// generated quiz is reviewed before it counts as real, exactly like a scraped
+// metadata fragment. `questions` is jsonb (mirrors `scrapedFragment`): each
+// entry carries `cueStartMs`, the timestamp of the transcript window it was
+// generated from — the card's acceptance criterion. No relation to Lesson —
+// same reasoning as Flashcard.lessonId: learning does not declare a
+// cross-context FK, it checks existence through LESSON_REPOSITORY instead.
+// `courseId` is denormalized (not derivable without a join) so a course-scoped
+// review list is one indexed query, not a lessonId IN (...) round trip first.
+
+model Quiz {
+  id            String     @id @default(cuid())
+  lessonId      String
+  courseId      String
+  status        QuizStatus @default(proposed)
+  /// Filename of the .gguf weight this proposal was generated with (E29-F02-S01 §4) —
+  /// what later lets an admin compare a 4B run against a 9B run of the same lesson.
+  modelFilename String
+  questions     Json
+  createdAt     DateTime   @default(now())
+  completedAt   DateTime?
+
+  @@index([lessonId, status])
+  @@index([courseId, status])
+  @@map("quiz")
+}
+
+enum QuizStatus {
+  proposed
+  applied
+  discarded
+}
+
 // ----- Access -----
 
 enum GrantTargetKind {

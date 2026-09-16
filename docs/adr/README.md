@@ -18,10 +18,13 @@ get closed. An ADR survives both.
 | [0008](0008-postgres-only.md) | Postgres only — the SQLite default was dropped | persistence |
 | [0009](0009-progressive-streaming-no-hls.md) | Progressive streaming with Range; HLS deferred | streaming |
 | [0010](0010-design-bundle-tokens-source-of-truth.md) | `tokens.json` generates all three platforms | design-system |
+| [0011](0011-local-llm-quiz-generation.md) | Local llama.cpp for quiz generation; on-demand, nothing leaves the machine | backend, privacy, ml |
 
-All ten were written together on 2026-08-29 and are **retroactive**: they record
-decisions already load-bearing in the codebase, not new proposals. Each says so,
-and points at the card or commit where the decision was actually made.
+The first ten were written together on 2026-08-29 and are **retroactive**: they
+record decisions already load-bearing in the codebase, not new proposals. Each
+says so, and points at the card or commit where the decision was actually made.
+0011 is a genuinely new decision, made and recorded in the same PR that
+implements it.
 
 ## When to write one
 

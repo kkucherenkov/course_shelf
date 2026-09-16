@@ -128,6 +128,11 @@ services:
       # writes a fixed SRT straight through, so the contract run exercises the
       # full 202 + walk + transcript-row path instead of a permanent 503.
       WHISPER_MODE: mock
+      # Same reasoning as WHISPER_MODE — no .gguf on this stack either
+      # (E29-F02-S01 clarification #5: no workflow downloads model weights,
+      # no image contains them, no test calls a live model). MockLlamaAdapter
+      # answers deterministically without touching a model file.
+      LLAMA_MODE: mock
     # CMD inherits from the prod Dockerfile:
     #   prisma migrate deploy && node dist/main.js
 

@@ -112,15 +112,27 @@ services:
       WHISPER_MODEL_PATH: "${WHISPER_MODEL_PATH:-}"
       WHISPER_THREADS: "${WHISPER_THREADS:-4}"
       WHISPER_LANGUAGE: "${WHISPER_LANGUAGE:-auto}"
+      # Quiz generation (E29-F02-S01) is off until a .gguf filename is named,
+      # same convention as WHISPER_MODEL_PATH above — nothing is assumed
+      # present on a prod host. Shares the weights volume below, not a
+      # second bind mount.
+      LLAMA_DEFAULT_MODEL: "${LLAMA_DEFAULT_MODEL:-}"
+      LLAMA_THREADS: "${LLAMA_THREADS:-4}"
     volumes:
       # Course content lives on the host. Mount read-only — the backend
       # only ever reads files from libraries; writes go to the DB.
       - "${COURSES_PATH:?COURSES_PATH is required (host directory holding your courses)}:/data/courses:ro"
       # Writable, deliberately: everything generated goes here.
       - "${DERIVED_PATH:?DERIVED_PATH is required (writable host directory for generated transcripts and thumbnails)}:/data/derived"
-      # ggml models, read-only. Docker creates the directory if absent, so this
-      # stays inert until a model is dropped in and WHISPER_MODEL_PATH is set.
-      - "${WHISPER_MODEL_DIR:-../models}:/models:ro"
+      # Model weights: whisper's ggml `.bin` AND llama's `.gguf`, side by side.
+      # Docker creates the directory if absent, so this stays inert until a
+      # model is dropped in and the matching *_MODEL env var is set.
+      #
+      # Writable, not read-only (changed from `:ro` for this feature): the
+      # admin model-weights DELETE endpoint needs to remove files here — a
+      # conscious trade, not an oversight. See docker/compose.yml's volumes
+      # comment for the full reasoning.
+      - "${WHISPER_MODEL_DIR:-../models}:/models"
     healthcheck:
       test:
         - CMD-SHELL

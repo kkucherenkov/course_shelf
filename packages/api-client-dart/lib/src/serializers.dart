@@ -60,6 +60,7 @@ import 'package:app_api_client/src/model/dependency_status.dart';
 import 'package:app_api_client/src/model/external_id_ref.dart';
 import 'package:app_api_client/src/model/flashcard_dto.dart';
 import 'package:app_api_client/src/model/flashcard_list_dto.dart';
+import 'package:app_api_client/src/model/generate_quiz_request.dart';
 import 'package:app_api_client/src/model/grade_flashcard_request.dart';
 import 'package:app_api_client/src/model/grant_level.dart';
 import 'package:app_api_client/src/model/grant_target.dart';
@@ -89,9 +90,16 @@ import 'package:app_api_client/src/model/merge_mode.dart';
 import 'package:app_api_client/src/model/merge_policy_dto.dart';
 import 'package:app_api_client/src/model/model0.dart';
 import 'package:app_api_client/src/model/model1.dart';
+import 'package:app_api_client/src/model/model_weight_dto.dart';
+import 'package:app_api_client/src/model/model_weight_list_dto.dart';
 import 'package:app_api_client/src/model/note_dto.dart';
 import 'package:app_api_client/src/model/ping_response.dart';
 import 'package:app_api_client/src/model/problem.dart';
+import 'package:app_api_client/src/model/quiz_dto.dart';
+import 'package:app_api_client/src/model/quiz_generation_accepted_dto.dart';
+import 'package:app_api_client/src/model/quiz_list_dto.dart';
+import 'package:app_api_client/src/model/quiz_question_dto.dart';
+import 'package:app_api_client/src/model/quiz_status.dart';
 import 'package:app_api_client/src/model/realtime_token.dart';
 import 'package:app_api_client/src/model/recently_added_dto.dart';
 import 'package:app_api_client/src/model/recently_added_item.dart';
@@ -193,6 +201,7 @@ part 'serializers.g.dart';
   ExternalIdRef,
   FlashcardDto,
   FlashcardListDto,
+  GenerateQuizRequest,
   GradeFlashcardRequest,
   GrantLevel,
   GrantTarget,
@@ -222,9 +231,16 @@ part 'serializers.g.dart';
   MergePolicyDto,
   Model0,
   Model1,
+  ModelWeightDto,
+  ModelWeightListDto,
   NoteDto,
   PingResponse,
   Problem,
+  QuizDto,
+  QuizGenerationAcceptedDto,
+  QuizListDto,
+  QuizQuestionDto,
+  QuizStatus,
   RealtimeToken,
   RecentlyAddedDto,
   RecentlyAddedItem,

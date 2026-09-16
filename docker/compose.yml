@@ -104,6 +104,12 @@ services:
       WHISPER_MODEL_PATH: "${WHISPER_MODEL_PATH:-/models/ggml-base.bin}"
       WHISPER_THREADS: "${WHISPER_THREADS:-4}"
       WHISPER_LANGUAGE: "${WHISPER_LANGUAGE:-auto}"
+      # Quiz generation (E29-F02-S01) shares whisper's weights volume — no
+      # second bind mount. Empty LLAMA_DEFAULT_MODEL disables the feature the
+      # same way an empty WHISPER_MODEL_PATH disables transcription; the
+      # default below assumes the maintainer's own 4B weight is present.
+      LLAMA_DEFAULT_MODEL: "${LLAMA_DEFAULT_MODEL:-Qwen3.5-4B-Q4_K_M.gguf}"
+      LLAMA_THREADS: "${LLAMA_THREADS:-4}"
     working_dir: /workspace
     # Anonymous volumes mask host node_modules at every package boundary.
     # Without this, host's macOS-pathed pnpm symlinks shadow the container's
@@ -123,9 +129,22 @@ services:
       # read-only course mount — see docs/superpowers/specs/
       # 2026-08-29-b4-transcription-design.md §4.
       - "${DERIVED_PATH:-../derived}:/data/derived"
-      # ggml models, read-only. Docker creates the host directory if it is
-      # missing, so this is inert until a model is dropped in.
-      - "${WHISPER_MODEL_DIR:-../models}:/models:ro"
+      # Model weights: whisper's ggml `.bin` AND llama's `.gguf`, side by
+      # side (E29-F02-S01 clarification #6 — one volume, not one per engine).
+      # Docker creates the host directory if it is missing, so this is inert
+      # until a model is dropped in.
+      #
+      # Writable, not read-only (changed from `:ro` for this feature): the
+      # admin model-weights DELETE endpoint needs to remove files here. This
+      # is a conscious trade, not an oversight — weights are re-fetchable
+      # content, not the user's only copy of anything (unlike COURSES_PATH,
+      # which stays read-only). Delete is admin-guarded, resolves the target
+      # path and rejects anything outside this directory (path traversal),
+      # and refuses to remove whichever file is the deployment's currently
+      # configured active model. A compromised backend process already has
+      # read/write on Postgres and on DERIVED_PATH; this does not add a new
+      # class of exposure, only a new instance of one already accepted.
+      - "${WHISPER_MODEL_DIR:-../models}:/models"
     ports:
       - "${CS_BACKEND_PORT:-3000}:3000"
     healthcheck:

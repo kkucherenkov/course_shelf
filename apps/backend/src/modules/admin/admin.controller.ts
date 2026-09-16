@@ -1,13 +1,27 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
 import { AdminGuard } from '../../common/auth/admin.guard';
+import { DeleteModelWeightCommand } from './application/commands/delete-model-weight.command';
 import { GetAdminDashboardQuery } from './application/queries/get-admin-dashboard.query';
 import { GetAdminUserQuery } from './application/queries/get-admin-user.query';
 import { ListAdminLibrariesQuery } from './application/queries/list-admin-libraries.query';
 import { ListAdminScansQuery } from './application/queries/list-admin-scans.query';
 import { ListAdminTranscriptionsQuery } from './application/queries/list-admin-transcriptions.query';
 import { ListAdminUsersQuery } from './application/queries/list-admin-users.query';
+import { ListModelWeightsQuery } from './application/queries/list-model-weights.query';
 import { CreateBackupCommand } from './application/commands/create-backup.command';
 import { UpdateAdminUserCommand } from './application/commands/update-admin-user.command';
 import { Session } from '../../common/auth/decorators';
@@ -22,6 +36,7 @@ import type {
   AdminUpdateUserRequest,
   AdminUserListDto,
   AdminUserListItem,
+  ModelWeightListDto,
 } from '@app/api-client-ts';
 
 @Controller({ path: 'admin', version: '1' })
@@ -108,5 +123,20 @@ export class AdminController {
     return this.commandBus.execute<CreateBackupCommand, BackupCreatedDto>(
       new CreateBackupCommand(session.user.id),
     );
+  }
+
+  /** GET /api/v1/admin/model-weights — every file on the shared weights volume, both engines. */
+  @Get('model-weights')
+  listModelWeights(): Promise<ModelWeightListDto> {
+    return this.queryBus.execute<ListModelWeightsQuery, ModelWeightListDto>(
+      new ListModelWeightsQuery(),
+    );
+  }
+
+  /** DELETE /api/v1/admin/model-weights/:filename */
+  @Delete('model-weights/:filename')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteModelWeight(@Param('filename') filename: string): Promise<void> {
+    await this.commandBus.execute(new DeleteModelWeightCommand(filename));
   }
 }

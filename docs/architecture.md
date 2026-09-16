@@ -227,7 +227,7 @@ Prisma 7, Express 5.
 | Module | Bounded context |
 | --- | --- |
 | `catalog` | Libraries, scans, courses, sections, lessons, materials, subtitles, instructors, studios, tags, external ids, identify tasks, search, home rows |
-| `learning` | Lesson progress, notes, bookmarks |
+| `learning` | Lesson progress, notes, bookmarks, flashcards, on-demand quiz generation |
 | `access` | Access grants (user → library \| course) |
 | `streaming` | Signed stream/material tokens, byte-range serving, subtitle conversion |
 | `admin` | Dashboard aggregation, user administration, backups |
@@ -247,7 +247,7 @@ C4Component
 
   Container_Boundary(api, "API — NestJS 11") {
     Component(catalog, "catalog", "CQRS module", "Libraries, scans, courses, lessons, materials, subtitles, search, home rows")
-    Component(learning, "learning", "CQRS module", "Lesson progress, notes, bookmarks")
+    Component(learning, "learning", "CQRS module", "Lesson progress, notes, bookmarks, flashcards, quiz generation")
     Component(access, "access", "CQRS module", "Access grants: user to library or course")
     Component(streaming, "streaming", "Module", "Signed tokens, byte-range serving, SRT to VTT")
     Component(admin, "admin", "Module", "Dashboard aggregation, user administration, backups")
@@ -470,7 +470,7 @@ polling-free-but-stale, not broken.
 
 ## 8 — Data model
 
-30 models. The shape in six groups:
+32 models. The shape in six groups:
 
 **Auth** — `User`, `Session`, `Account`, `Verification` (Better Auth's).
 
@@ -509,18 +509,24 @@ makes a plain re-run cheap.
 **Learning** — `LessonProgress` (per user per lesson; the 90 % completion
 threshold lives in the `LessonProgress` aggregate,
 `learning/domain/progress/lesson-progress.ts:108`, and crosses **at most
-once**), `Bookmark`, `Note` (unique per user+lesson), and
+once**), `Bookmark`, `Note` (unique per user+lesson), `Flashcard` (SM-2
+review schedule on the same row as the card content), `Quiz` (an
+admin-reviewed generation proposal — `proposed → applied | discarded`, same
+lifecycle catalog's `IdentifyTask` uses; `questions` is jsonb, one entry per
+transcript window with its own `cueStartMs`; see
+[ADR-0011](./adr/0011-local-llm-quiz-generation.md)), and
 `CourseProgressReadModel` — the denormalised projection maintained by event
 handlers.
 
-These three also reference `lessonId` as a plain column with no foreign key,
-for the same reason `Transcript` does — which makes **deleting a lesson an
-explicit, ordered operation, never a cascade**. The two places that delete one
-own that order: `PrismaLibraryRepository.removeWithCascade` (dropping a whole
-library) and `PrismaLessonRepository.removeMany` (a course rescan removing a
-lesson whose video is gone). The reverse matters just as much: re-importing a
-lesson must *reuse its id*, because a new id orphans its progress, bookmarks,
-notes and transcripts with nothing left in the schema to collect them.
+These also reference `lessonId` as a plain column with no foreign key, for the
+same reason `Transcript` does — which makes **deleting a lesson an explicit,
+ordered operation, never a cascade**. The two places that delete one own that
+order: `PrismaLibraryRepository.removeWithCascade` (dropping a whole library)
+and `PrismaLessonRepository.removeMany` (a course rescan removing a lesson
+whose video is gone). The reverse matters just as much: re-importing a lesson
+must *reuse its id*, because a new id orphans its progress, bookmarks, notes,
+flashcards, quizzes and transcripts with nothing left in the schema to collect
+them.
 
 **Access** — `AccessGrant`, unique on `(userId, targetKind, libraryId, courseId)`.
 

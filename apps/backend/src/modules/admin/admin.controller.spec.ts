@@ -8,7 +8,9 @@ import { ListAdminScansQuery } from './application/queries/list-admin-scans.quer
 import { ListAdminTranscriptionsQuery } from './application/queries/list-admin-transcriptions.query';
 import { ListAdminUsersQuery } from './application/queries/list-admin-users.query';
 import { CreateBackupCommand } from './application/commands/create-backup.command';
+import { DeleteModelWeightCommand } from './application/commands/delete-model-weight.command';
 import { UpdateAdminUserCommand } from './application/commands/update-admin-user.command';
+import { ListModelWeightsQuery } from './application/queries/list-model-weights.query';
 
 import type { SessionContext } from '../../common/auth/decorators';
 import type { CommandBus, QueryBus } from '@nestjs/cqrs';
@@ -354,6 +356,42 @@ describe('AdminController', () => {
       } as unknown as SessionContext);
 
       expect(result).toBe(dto);
+    });
+  });
+
+  describe('GET /admin/model-weights', () => {
+    it('dispatches ListModelWeightsQuery to the QueryBus', async () => {
+      const queryBus = makeQueryBus();
+      const controller = makeController(queryBus);
+
+      await controller.listModelWeights();
+
+      expect(queryBus.execute).toHaveBeenCalledOnce();
+      expect(queryBus.execute).toHaveBeenCalledWith(expect.any(ListModelWeightsQuery));
+    });
+
+    it('returns the value resolved by the QueryBus', async () => {
+      const expectedDto = { weights: [] };
+      const queryBus = { execute: vi.fn().mockResolvedValue(expectedDto) } as unknown as QueryBus;
+      const controller = makeController(queryBus);
+
+      const result = await controller.listModelWeights();
+
+      expect(result).toBe(expectedDto);
+    });
+  });
+
+  describe('DELETE /admin/model-weights/:filename', () => {
+    it('dispatches DeleteModelWeightCommand with the route filename', async () => {
+      const commandBus = makeCommandBus();
+      const controller = makeController(makeQueryBus(), commandBus);
+
+      await controller.deleteModelWeight('spare.gguf');
+
+      expect(commandBus.execute).toHaveBeenCalledOnce();
+      const command = vi.mocked(commandBus.execute).mock.calls[0]?.[0] as DeleteModelWeightCommand;
+      expect(command).toBeInstanceOf(DeleteModelWeightCommand);
+      expect(command.filename).toBe('spare.gguf');
     });
   });
 });

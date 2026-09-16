@@ -26,6 +26,7 @@ import 'package:app_api_client/src/model/identify_task_list_dto.dart';
 import 'package:app_api_client/src/model/identify_task_status.dart';
 import 'package:app_api_client/src/model/instance_config_dto.dart';
 import 'package:app_api_client/src/model/instructor_dto.dart';
+import 'package:app_api_client/src/model/model_weight_list_dto.dart';
 import 'package:app_api_client/src/model/run_identify_request.dart';
 import 'package:app_api_client/src/model/scrape_preview_request.dart';
 import 'package:app_api_client/src/model/scrape_preview_response.dart';
@@ -224,6 +225,59 @@ class AdminApi {
       statusMessage: _response.statusMessage,
       extra: _response.extra,
     );
+  }
+
+  /// Delete one model weight file
+  /// Removes a file from the weights volume. Refuses to delete a file that is currently the deployment&#39;s configured active model (whisper&#39;s &#x60;WHISPER_MODEL_PATH&#x60;, or quiz generation&#39;s &#x60;LLAMA_DEFAULT_MODEL&#x60;) — change the config first. Requires admin role.
+  ///
+  /// Parameters:
+  /// * [filename] - Bare filename, no path separators (rejected as invalid otherwise).
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future]
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<void>> deleteModelWeight({ 
+    required String filename,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/admin/model-weights/{filename}'.replaceAll('{' r'filename' '}', encodeQueryParameter(_serializers, filename, const FullType(String)).toString());
+    final _options = Options(
+      method: r'DELETE',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    return _response;
   }
 
   /// Discard a proposed identify task
@@ -1198,6 +1252,85 @@ class AdminApi {
     }
 
     return Response<IdentifyTaskListDto>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// List model weight files on the shared weights volume
+  /// Every file under the weights directory — whisper&#39;s ggml &#x60;.bin&#x60; AND llama&#39;s &#x60;.gguf&#x60;, side by side, since both live on the same volume. &#x60;usableForQuizGeneration&#x60; is what a quiz-generation model picker would filter on. Requires admin role.
+  ///
+  /// Parameters:
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [ModelWeightListDto] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<ModelWeightListDto>> listModelWeights({ 
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/admin/model-weights';
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    ModelWeightListDto? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(ModelWeightListDto),
+      ) as ModelWeightListDto;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<ModelWeightListDto>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

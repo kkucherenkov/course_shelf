@@ -509,6 +509,7 @@ function makeTranscriptRepo(): TranscriptRepository & { store: Map<string, FakeT
     // is the only caller.
     findGeneratedByLanguage: vi.fn(async () => []),
     reclassifyGenerated: vi.fn(async () => undefined),
+    findCuesForLesson: vi.fn(async () => null),
   };
 }
 

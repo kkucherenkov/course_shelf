@@ -49,6 +49,7 @@ function makeTranscriptRepo(
     deleteForLesson: vi.fn(),
     findGeneratedByLanguage: vi.fn(async (language: string) => (language === 'und' ? rows : [])),
     reclassifyGenerated: vi.fn(async () => undefined),
+    findCuesForLesson: vi.fn(async () => null),
   };
 }
 

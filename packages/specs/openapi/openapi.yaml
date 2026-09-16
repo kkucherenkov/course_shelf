@@ -2026,6 +2026,131 @@ paths:
                     detail: 'Identify task "clx123" is "applied" and can no longer be applied or discarded.'
         "429":
           $ref: "#/components/responses/TooManyRequests"
+  /api/v1/admin/model-weights:
+    get:
+      operationId: listModelWeights
+      summary: List model weight files on the shared weights volume
+      description: >-
+        Every file under the weights directory — whisper's ggml `.bin` AND
+        llama's `.gguf`, side by side, since both live on the same volume.
+        `usableForQuizGeneration` is what a quiz-generation model picker would
+        filter on. Requires admin role.
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Every weight file found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ModelWeightListDto" }
+              examples:
+                mixed:
+                  value:
+                    weights:
+                      - filename: ggml-base.bin
+                        sizeBytes: 147964211
+                        usableForQuizGeneration: false
+                      - filename: Qwen3.5-4B-Q4_K_M.gguf
+                        sizeBytes: 2740937888
+                        usableForQuizGeneration: true
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /api/v1/admin/model-weights/{filename}:
+    delete:
+      operationId: deleteModelWeight
+      summary: Delete one model weight file
+      description: >-
+        Removes a file from the weights volume. Refuses to delete a file that
+        is currently the deployment's configured active model (whisper's
+        `WHISPER_MODEL_PATH`, or quiz generation's `LLAMA_DEFAULT_MODEL`) —
+        change the config first. Requires admin role.
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          description: Bare filename, no path separators (rejected as invalid otherwise).
+          schema: { type: string, minLength: 1, pattern: "^[^/\\\\]+$" }
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "404":
+          description: No file with that name in the weights directory
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: 'Model weight "does-not-exist.gguf" was not found.'
+        "409":
+          description: The file is the deployment's currently configured active model
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                inUse:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: 'Model weight "ggml-base.bin" is the configured active model — change WHISPER_MODEL_PATH first.'
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/admin/studios:
     post:
       operationId: upsertStudio
@@ -3332,6 +3457,538 @@ paths:
                     title: Service Unavailable
                     status: 503
                     detail: The configured whisper model file was not found.
+  /api/v1/lessons/{id}/quizzes:
+    post:
+      operationId: generateLessonQuiz
+      summary: Generate a quiz proposal for one lesson
+      description: >-
+        Explicit, on-demand generation from this lesson's transcript cues —
+        never triggered automatically by a scan or import. Returns 202
+        immediately; the run happens in the background (a local llama.cpp
+        model, chosen by `modelId` or the deployment default, runs once per
+        transcript window). Poll `GET /quizzes?lessonId=...&status=proposed`
+        to see the result once it lands — there is no separate run record.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the lesson to generate a quiz for.
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GenerateQuizRequest" }
+            examples:
+              default:
+                summary: Use the deployment's default model, cleanup on
+                value: {}
+              namedModel:
+                summary: Use the larger model for this run
+                value:
+                  modelId: Qwen3.5-9B-Q4_K_M.gguf
+      responses:
+        "202":
+          description: Quiz generation accepted and running
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QuizGenerationAcceptedDto" }
+              examples:
+                accepted:
+                  value:
+                    courseId: clxvcrs0000000000000000001
+                    lessonsQueued: 1
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only admins may start quiz generation.
+        "404":
+          description: Lesson not found, or the named model does not exist in the weights directory
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                lessonNotFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No lesson with that id exists.
+                modelNotFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: Quiz-generation model "does-not-exist.gguf" was not found.
+        "409":
+          description: >-
+            Quiz generation is already running for this lesson's course.
+            llama.cpp saturates every core it is given, same as whisper.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                conflict:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: 'Quiz generation is already running for course "clxvcrs0000000000000000001". llama.cpp saturates every core it is given, same as whisper — wait for it to finish before starting another.'
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "503":
+          description: No model is configured (LLAMA_DEFAULT_MODEL is unset) and none was named.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notConfigured:
+                  value:
+                    type: about:blank
+                    title: Service Unavailable
+                    status: 503
+                    detail: LLAMA_DEFAULT_MODEL is unset, so no quiz-generation model is available.
+  /api/v1/courses/{id}/quizzes:
+    post:
+      operationId: generateCourseQuiz
+      summary: Generate quiz proposals for every lesson in a course
+      description: >-
+        Same generation as `POST /lessons/{id}/quizzes`, walked over every
+        lesson in this course. No library-wide form exists — unlike
+        transcription, a whole-library quiz-generation run buys questions
+        nobody is likely to open at a compute cost this project is not
+        willing to spend.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the course to generate quizzes for.
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GenerateQuizRequest" }
+            examples:
+              default:
+                summary: Use the deployment's default model, cleanup on
+                value: {}
+      responses:
+        "202":
+          description: Quiz generation accepted and running
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QuizGenerationAcceptedDto" }
+              examples:
+                accepted:
+                  value:
+                    courseId: clxvcrs0000000000000000001
+                    lessonsQueued: 12
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Only admins may start quiz generation.
+        "404":
+          description: Course not found, or the named model does not exist in the weights directory
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                courseNotFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No course with that id exists.
+                modelNotFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: Quiz-generation model "does-not-exist.gguf" was not found.
+        "409":
+          description: Quiz generation is already running for this course.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                conflict:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: 'Quiz generation is already running for course "clxvcrs0000000000000000001". llama.cpp saturates every core it is given, same as whisper — wait for it to finish before starting another.'
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "503":
+          description: No model is configured (LLAMA_DEFAULT_MODEL is unset) and none was named.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notConfigured:
+                  value:
+                    type: about:blank
+                    title: Service Unavailable
+                    status: 503
+                    detail: LLAMA_DEFAULT_MODEL is unset, so no quiz-generation model is available.
+  /api/v1/quizzes:
+    get:
+      operationId: listQuizzes
+      summary: List quiz proposals
+      description: >-
+        Returns quizzes ordered newest-first. Optionally filtered by status,
+        lessonId and/or courseId — this is how a course-scoped generation
+        run's progress is observed, since no separate run record exists.
+        Requires admin role.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/QuizStatus" }
+        - name: lessonId
+          in: query
+          required: false
+          schema: { type: string, minLength: 1, pattern: "^[A-Za-z0-9_-]+$" }
+        - name: courseId
+          in: query
+          required: false
+          schema: { type: string, minLength: 1, pattern: "^[A-Za-z0-9_-]+$" }
+      responses:
+        "200":
+          description: Matching quizzes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QuizListDto" }
+              examples:
+                list:
+                  value:
+                    quizzes:
+                      - id: clxvquz0000000000000000001
+                        lessonId: clxvles0000000000000000001
+                        courseId: clxvcrs0000000000000000001
+                        status: proposed
+                        modelFilename: Qwen3.5-4B-Q4_K_M.gguf
+                        questions:
+                          - prompt: What does the lesson say architecture decisions should optimize for?
+                            options: [Cost, Maintainability, Speed, Popularity]
+                            correctOptionIndex: 1
+                            cueStartMs: 12000
+                        createdAt: "2026-09-16T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /api/v1/quizzes/{id}:
+    get:
+      operationId: getQuiz
+      summary: Get one quiz proposal
+      description: Returns a single quiz by id. Requires admin role.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: The quiz
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QuizDto" }
+              examples:
+                found:
+                  value:
+                    id: clxvquz0000000000000000001
+                    lessonId: clxvles0000000000000000001
+                    courseId: clxvcrs0000000000000000001
+                    status: proposed
+                    modelFilename: Qwen3.5-4B-Q4_K_M.gguf
+                    questions:
+                      - prompt: What does the lesson say architecture decisions should optimize for?
+                        options: [Cost, Maintainability, Speed, Popularity]
+                        correctOptionIndex: 1
+                        cueStartMs: 12000
+                    createdAt: "2026-09-16T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "404":
+          description: Quiz not found
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: 'Quiz "clxvquz0000000000000000001" does not exist.'
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /api/v1/quizzes/{id}/apply:
+    post:
+      operationId: applyQuiz
+      summary: Apply a proposed quiz
+      description: >-
+        Marks the quiz applied — the proposal itself is the real artifact
+        once applied, there is nothing further to merge into. Requires admin role.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: The applied quiz
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QuizDto" }
+              examples:
+                applied:
+                  value:
+                    id: clxvquz0000000000000000001
+                    lessonId: clxvles0000000000000000001
+                    courseId: clxvcrs0000000000000000001
+                    status: applied
+                    modelFilename: Qwen3.5-4B-Q4_K_M.gguf
+                    questions:
+                      - prompt: What does the lesson say architecture decisions should optimize for?
+                        options: [Cost, Maintainability, Speed, Popularity]
+                        correctOptionIndex: 1
+                        cueStartMs: 12000
+                    createdAt: "2026-09-16T10:00:00Z"
+                    completedAt: "2026-09-16T10:05:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "404":
+          description: Quiz not found
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: 'Quiz "clxvquz0000000000000000001" does not exist.'
+        "409":
+          description: Quiz is not in the proposed state
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notPending:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: 'Quiz "clxvquz0000000000000000001" is "applied" and can no longer be applied or discarded.'
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /api/v1/quizzes/{id}/discard:
+    post:
+      operationId: discardQuiz
+      summary: Discard a proposed quiz
+      description: Marks the quiz as discarded; nothing else is written. Requires admin role.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: The discarded quiz
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QuizDto" }
+              examples:
+                discarded:
+                  value:
+                    id: clxvquz0000000000000000001
+                    lessonId: clxvles0000000000000000001
+                    courseId: clxvcrs0000000000000000001
+                    status: discarded
+                    modelFilename: Qwen3.5-4B-Q4_K_M.gguf
+                    questions: []
+                    createdAt: "2026-09-16T10:00:00Z"
+                    completedAt: "2026-09-16T10:04:00Z"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have the admin role
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: Administrator role required.
+        "404":
+          description: Quiz not found
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: 'Quiz "clxvquz0000000000000000001" does not exist.'
+        "409":
+          description: Quiz is not in the proposed state
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notPending:
+                  value:
+                    type: about:blank
+                    title: Conflict
+                    status: 409
+                    detail: 'Quiz "clxvquz0000000000000000001" is "applied" and can no longer be applied or discarded.'
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/catalog/instructors:
     get:
       operationId: listInstructors
@@ -7661,6 +8318,138 @@ components:
         mergePolicy:
           allOf: [{ $ref: "#/components/schemas/MergePolicyDto" }]
           description: Overrides the policy stored on the task when present.
+
+    QuizStatus:
+      type: string
+      enum: [proposed, applied, discarded]
+      description: Lifecycle state of a generated quiz proposal.
+      example: proposed
+
+    QuizQuestionDto:
+      type: object
+      required: [prompt, options, correctOptionIndex, cueStartMs]
+      description: One multiple-choice question generated from a transcript window.
+      properties:
+        prompt:
+          type: string
+          description: The question text.
+        options:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items: { type: string }
+          description: Exactly four answer options.
+        correctOptionIndex:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: Index into `options` of the correct answer.
+        cueStartMs:
+          type: integer
+          minimum: 0
+          description: >-
+            Start timestamp (ms) of the transcript window this question was
+            generated from — assigned by the window, not the model, so it
+            cannot be hallucinated.
+
+    QuizDto:
+      type: object
+      required: [id, lessonId, courseId, status, modelFilename, questions, createdAt]
+      description: >-
+        A reviewable quiz-generation proposal for one lesson — reviewed by an
+        admin (apply/discard) before it counts as real, the same lifecycle as
+        an identify task.
+      properties:
+        id: { type: string, example: clxvquz0000000000000000001 }
+        lessonId: { type: string, example: clxvles0000000000000000001 }
+        courseId: { type: string, example: clxvcrs0000000000000000001 }
+        status: { $ref: "#/components/schemas/QuizStatus" }
+        modelFilename:
+          type: string
+          description: >-
+            Filename of the .gguf weight this proposal was generated with —
+            what lets an admin compare a 4B run against a 9B run of the same
+            lesson.
+          example: Qwen3.5-4B-Q4_K_M.gguf
+        questions:
+          type: array
+          items: { $ref: "#/components/schemas/QuizQuestionDto" }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time }
+
+    QuizListDto:
+      type: object
+      required: [quizzes]
+      description: Quizzes, newest first.
+      properties:
+        quizzes:
+          type: array
+          items: { $ref: "#/components/schemas/QuizDto" }
+
+    GenerateQuizRequest:
+      type: object
+      additionalProperties: false
+      description: Payload for starting a quiz-generation run. Body may be omitted entirely.
+      properties:
+        modelId:
+          type: string
+          description: >-
+            Filename of the .gguf weight to use (see `GET
+            /admin/model-weights`). Omitted uses the deployment's configured
+            default.
+          example: Qwen3.5-4B-Q4_K_M.gguf
+        cleanupEnabled:
+          type: boolean
+          default: true
+          description: >-
+            Runs an ASR-typo cleanup pass on each transcript window before
+            generating questions from it. The cleaned text is never written
+            back to the transcript — only used for this run. Turning it off
+            roughly halves generation time and is reasonable for
+            already-clean author-provided subtitles.
+
+    QuizGenerationAcceptedDto:
+      type: object
+      required: [courseId, lessonsQueued]
+      description: >-
+        Acknowledges a quiz-generation run. Generation happens in the
+        background; poll `GET /quizzes?courseId=...&status=proposed` to see
+        proposals as they land — there is no separate run record to poll.
+      properties:
+        courseId:
+          type: string
+          description: >-
+            The course the run is scoped to (the lesson's own course for a
+            lesson-scoped request).
+        lessonsQueued:
+          type: integer
+          minimum: 0
+          description: Number of lessons this run will attempt.
+
+    ModelWeightDto:
+      type: object
+      required: [filename, sizeBytes, usableForQuizGeneration]
+      description: One model weight file on the shared weights volume (whisper's ggml AND llama's gguf).
+      properties:
+        filename: { type: string, example: Qwen3.5-4B-Q4_K_M.gguf }
+        sizeBytes:
+          type: integer
+          minimum: 0
+          description: File size in bytes, as reported by the filesystem.
+        usableForQuizGeneration:
+          type: boolean
+          description: >-
+            True for a `.gguf` file (a llama.cpp weight, selectable as
+            `GenerateQuizRequest.modelId`); false for whisper's `.bin`.
+
+    ModelWeightListDto:
+      type: object
+      required: [weights]
+      description: Every file in the weights directory, unsorted.
+      properties:
+        weights:
+          type: array
+          items: { $ref: "#/components/schemas/ModelWeightDto" }
 
     InstructorDetailDto:
       type: object

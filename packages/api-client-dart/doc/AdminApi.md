@@ -11,6 +11,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**applyIdentifyResult**](AdminApi.md#applyidentifyresult) | **POST** /api/v1/admin/identify-tasks/{id}/apply | Apply a proposed identify task to its course
 [**createBackup**](AdminApi.md#createbackup) | **POST** /api/v1/admin/backups | Create a metadata database snapshot and return a signed download URL
+[**deleteModelWeight**](AdminApi.md#deletemodelweight) | **DELETE** /api/v1/admin/model-weights/{filename} | Delete one model weight file
 [**discardIdentifyTask**](AdminApi.md#discardidentifytask) | **POST** /api/v1/admin/identify-tasks/{id}/discard | Discard a proposed identify task
 [**downloadBackup**](AdminApi.md#downloadbackup) | **GET** /api/v1/admin/backups/{id}/download | Download a backup archive with a signed link
 [**getAdminDashboard**](AdminApi.md#getadmindashboard) | **GET** /api/v1/admin/dashboard | Operational snapshot for the admin dashboard
@@ -23,6 +24,7 @@ Method | HTTP request | Description
 [**listAdminTranscriptions**](AdminApi.md#listadmintranscriptions) | **GET** /api/v1/admin/transcriptions | List recent transcription runs across every library
 [**listAdminUsers**](AdminApi.md#listadminusers) | **GET** /api/v1/admin/users | List every user in the platform
 [**listIdentifyTasks**](AdminApi.md#listidentifytasks) | **GET** /api/v1/admin/identify-tasks | List identify tasks
+[**listModelWeights**](AdminApi.md#listmodelweights) | **GET** /api/v1/admin/model-weights | List model weight files on the shared weights volume
 [**listScrapers**](AdminApi.md#listscrapers) | **GET** /api/v1/admin/scrapers | List available metadata scrapers
 [**runIdentifyTask**](AdminApi.md#runidentifytask) | **POST** /api/v1/admin/courses/{id}/identify | Create an identify proposal for a course
 [**scrapeCoursePreview**](AdminApi.md#scrapecoursepreview) | **POST** /api/v1/admin/courses/{id}/scrape-preview | Preview scraped metadata for a course
@@ -114,6 +116,48 @@ This endpoint does not need any parameter.
 
  - **Content-Type**: Not defined
  - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **deleteModelWeight**
+> deleteModelWeight(filename)
+
+Delete one model weight file
+
+Removes a file from the weights volume. Refuses to delete a file that is currently the deployment's configured active model (whisper's `WHISPER_MODEL_PATH`, or quiz generation's `LLAMA_DEFAULT_MODEL`) — change the config first. Requires admin role.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getAdminApi();
+final String filename = filename_example; // String | Bare filename, no path separators (rejected as invalid otherwise).
+
+try {
+    api.deleteModelWeight(filename);
+} on DioException catch (e) {
+    print('Exception when calling AdminApi->deleteModelWeight: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **filename** | **String**| Bare filename, no path separators (rejected as invalid otherwise). | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/problem+json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
@@ -615,6 +659,45 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**IdentifyTaskListDto**](IdentifyTaskListDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **listModelWeights**
+> ModelWeightListDto listModelWeights()
+
+List model weight files on the shared weights volume
+
+Every file under the weights directory — whisper's ggml `.bin` AND llama's `.gguf`, side by side, since both live on the same volume. `usableForQuizGeneration` is what a quiz-generation model picker would filter on. Requires admin role.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getAdminApi();
+
+try {
+    final response = api.listModelWeights();
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling AdminApi->listModelWeights: $e\n');
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**ModelWeightListDto**](ModelWeightListDto.md)
 
 ### Authorization
 

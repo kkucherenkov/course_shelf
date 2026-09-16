@@ -59,6 +59,7 @@ Serializers _$serializers =
           ..add(ExternalIdRef.serializer)
           ..add(FlashcardDto.serializer)
           ..add(FlashcardListDto.serializer)
+          ..add(GenerateQuizRequest.serializer)
           ..add(GradeFlashcardRequest.serializer)
           ..add(GrantLevel.serializer)
           ..add(GrantTarget.serializer)
@@ -92,9 +93,16 @@ Serializers _$serializers =
           ..add(Model0KindEnum.serializer)
           ..add(Model1.serializer)
           ..add(Model1KindEnum.serializer)
+          ..add(ModelWeightDto.serializer)
+          ..add(ModelWeightListDto.serializer)
           ..add(NoteDto.serializer)
           ..add(PingResponse.serializer)
           ..add(Problem.serializer)
+          ..add(QuizDto.serializer)
+          ..add(QuizGenerationAcceptedDto.serializer)
+          ..add(QuizListDto.serializer)
+          ..add(QuizQuestionDto.serializer)
+          ..add(QuizStatus.serializer)
           ..add(RealtimeToken.serializer)
           ..add(RecentlyAddedDto.serializer)
           ..add(RecentlyAddedItem.serializer)
@@ -261,6 +269,18 @@ Serializers _$serializers =
             () => ListBuilder<SubtitleDto>(),
           )
           ..addBuilderFactory(
+            const FullType(BuiltList, const [const FullType(ModelWeightDto)]),
+            () => ListBuilder<ModelWeightDto>(),
+          )
+          ..addBuilderFactory(
+            const FullType(BuiltList, const [const FullType(QuizDto)]),
+            () => ListBuilder<QuizDto>(),
+          )
+          ..addBuilderFactory(
+            const FullType(BuiltList, const [const FullType(QuizQuestionDto)]),
+            () => ListBuilder<QuizQuestionDto>(),
+          )
+          ..addBuilderFactory(
             const FullType(BuiltList, const [
               const FullType(RecentlyAddedItem),
             ]),
@@ -345,6 +365,10 @@ Serializers _$serializers =
               const FullType(SsoProviderConfig),
             ]),
             () => ListBuilder<SsoProviderConfig>(),
+          )
+          ..addBuilderFactory(
+            const FullType(BuiltList, const [const FullType(String)]),
+            () => ListBuilder<String>(),
           )
           ..addBuilderFactory(
             const FullType(BuiltList, const [const FullType(String)]),

@@ -11,7 +11,7 @@ denominator below.
 Progress (update by hand):
 
 - **v1** — `119 / 119` complete. 121 cards, 2 cancelled.
-- **v2** — `41 / 45` complete. 46 cards across E25–E32, 1 cancelled.
+- **v2** — `42 / 45` complete. 46 cards across E25–E32, 1 cancelled.
 
 v1 is the shipped product; v2 is the transcript-first direction and the
 honest-v1.1 cleanup. The two denominators are kept apart on purpose — merging
@@ -249,7 +249,7 @@ them would quietly reopen a milestone that is finished.
 - [x] [E29-F01-S01](./tasks/E29-F01-S01.md) `B` — Flashcard and review schedule domain (SM-2) · ⇐ E09-F02-S02
 - [x] [E29-F01-S02](./tasks/E29-F01-S02.md) `A` — Flashcard API · ⇐ E29-F01-S01
 - [ ] [E29-F01-S03](./tasks/E29-F01-S03.md) `A` — Review UI on web · ⇐ E29-F01-S02
-- [ ] [E29-F02-S01](./tasks/E29-F02-S01.md) `B` — Quizzes generated from a transcript · ⇐ E27-F01-S01
+- [x] [E29-F02-S01](./tasks/E29-F02-S01.md) `B` — Quizzes generated from a transcript · ⇐ E27-F01-S01
 - ❌ [E29-F03-S01](./tasks/E29-F03-S01.md) `B` — Learning paths · ⇐ E06-F03-S01 · **cancelled** — a single-user library already knows the order of its courses
 
 ## E30 — Scraper plugins

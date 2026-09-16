@@ -306,6 +306,112 @@ export type ApplyIdentifyRequest = {
 };
 
 /**
+ * Lifecycle state of a generated quiz proposal.
+ */
+export type QuizStatus = 'proposed' | 'applied' | 'discarded';
+
+/**
+ * One multiple-choice question generated from a transcript window.
+ */
+export type QuizQuestionDto = {
+    /**
+     * The question text.
+     */
+    prompt: string;
+    /**
+     * Exactly four answer options.
+     */
+    options: [
+        string,
+        string,
+        string,
+        string
+    ];
+    /**
+     * Index into `options` of the correct answer.
+     */
+    correctOptionIndex: number;
+    /**
+     * Start timestamp (ms) of the transcript window this question was generated from — assigned by the window, not the model, so it cannot be hallucinated.
+     */
+    cueStartMs: number;
+};
+
+/**
+ * A reviewable quiz-generation proposal for one lesson — reviewed by an admin (apply/discard) before it counts as real, the same lifecycle as an identify task.
+ */
+export type QuizDto = {
+    id: string;
+    lessonId: string;
+    courseId: string;
+    status: QuizStatus;
+    /**
+     * Filename of the .gguf weight this proposal was generated with — what lets an admin compare a 4B run against a 9B run of the same lesson.
+     */
+    modelFilename: string;
+    questions: Array<QuizQuestionDto>;
+    createdAt: string;
+    completedAt?: string;
+};
+
+/**
+ * Quizzes, newest first.
+ */
+export type QuizListDto = {
+    quizzes: Array<QuizDto>;
+};
+
+/**
+ * Payload for starting a quiz-generation run. Body may be omitted entirely.
+ */
+export type GenerateQuizRequest = {
+    /**
+     * Filename of the .gguf weight to use (see `GET /admin/model-weights`). Omitted uses the deployment's configured default.
+     */
+    modelId?: string;
+    /**
+     * Runs an ASR-typo cleanup pass on each transcript window before generating questions from it. The cleaned text is never written back to the transcript — only used for this run. Turning it off roughly halves generation time and is reasonable for already-clean author-provided subtitles.
+     */
+    cleanupEnabled?: boolean;
+};
+
+/**
+ * Acknowledges a quiz-generation run. Generation happens in the background; poll `GET /quizzes?courseId=...&status=proposed` to see proposals as they land — there is no separate run record to poll.
+ */
+export type QuizGenerationAcceptedDto = {
+    /**
+     * The course the run is scoped to (the lesson's own course for a lesson-scoped request).
+     */
+    courseId: string;
+    /**
+     * Number of lessons this run will attempt.
+     */
+    lessonsQueued: number;
+};
+
+/**
+ * One model weight file on the shared weights volume (whisper's ggml AND llama's gguf).
+ */
+export type ModelWeightDto = {
+    filename: string;
+    /**
+     * File size in bytes, as reported by the filesystem.
+     */
+    sizeBytes: number;
+    /**
+     * True for a `.gguf` file (a llama.cpp weight, selectable as `GenerateQuizRequest.modelId`); false for whisper's `.bin`.
+     */
+    usableForQuizGeneration: boolean;
+};
+
+/**
+ * Every file in the weights directory, unsorted.
+ */
+export type ModelWeightListDto = {
+    weights: Array<ModelWeightDto>;
+};
+
+/**
  * Full instructor view including their associated courses (paginated, up to 20).
  */
 export type InstructorDetailDto = {
@@ -3280,6 +3386,94 @@ export type DiscardIdentifyTaskResponses = {
 
 export type DiscardIdentifyTaskResponse = DiscardIdentifyTaskResponses[keyof DiscardIdentifyTaskResponses];
 
+export type ListModelWeightsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/model-weights';
+};
+
+export type ListModelWeightsErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type ListModelWeightsError = ListModelWeightsErrors[keyof ListModelWeightsErrors];
+
+export type ListModelWeightsResponses = {
+    /**
+     * Every weight file found
+     */
+    200: ModelWeightListDto;
+};
+
+export type ListModelWeightsResponse = ListModelWeightsResponses[keyof ListModelWeightsResponses];
+
+export type DeleteModelWeightData = {
+    body?: never;
+    path: {
+        /**
+         * Bare filename, no path separators (rejected as invalid otherwise).
+         */
+        filename: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/model-weights/{filename}';
+};
+
+export type DeleteModelWeightErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * No file with that name in the weights directory
+     */
+    404: Problem;
+    /**
+     * The file is the deployment's currently configured active model
+     */
+    409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type DeleteModelWeightError = DeleteModelWeightErrors[keyof DeleteModelWeightErrors];
+
+export type DeleteModelWeightResponses = {
+    /**
+     * Deleted
+     */
+    204: void;
+};
+
+export type DeleteModelWeightResponse = DeleteModelWeightResponses[keyof DeleteModelWeightResponses];
+
 export type UpsertStudioData = {
     body: UpsertStudioRequest;
     path?: never;
@@ -4019,6 +4213,302 @@ export type StartCourseTranscriptionResponses = {
 };
 
 export type StartCourseTranscriptionResponse = StartCourseTranscriptionResponses[keyof StartCourseTranscriptionResponses];
+
+export type GenerateLessonQuizData = {
+    body?: GenerateQuizRequest;
+    path: {
+        /**
+         * Server-generated cuid identifying the lesson to generate a quiz for.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/lessons/{id}/quizzes';
+};
+
+export type GenerateLessonQuizErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Lesson not found, or the named model does not exist in the weights directory
+     */
+    404: Problem;
+    /**
+     * Quiz generation is already running for this lesson's course. llama.cpp saturates every core it is given, same as whisper.
+     */
+    409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+    /**
+     * No model is configured (LLAMA_DEFAULT_MODEL is unset) and none was named.
+     */
+    503: Problem;
+};
+
+export type GenerateLessonQuizError = GenerateLessonQuizErrors[keyof GenerateLessonQuizErrors];
+
+export type GenerateLessonQuizResponses = {
+    /**
+     * Quiz generation accepted and running
+     */
+    202: QuizGenerationAcceptedDto;
+};
+
+export type GenerateLessonQuizResponse = GenerateLessonQuizResponses[keyof GenerateLessonQuizResponses];
+
+export type GenerateCourseQuizData = {
+    body?: GenerateQuizRequest;
+    path: {
+        /**
+         * Server-generated cuid identifying the course to generate quizzes for.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/courses/{id}/quizzes';
+};
+
+export type GenerateCourseQuizErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Course not found, or the named model does not exist in the weights directory
+     */
+    404: Problem;
+    /**
+     * Quiz generation is already running for this course.
+     */
+    409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+    /**
+     * No model is configured (LLAMA_DEFAULT_MODEL is unset) and none was named.
+     */
+    503: Problem;
+};
+
+export type GenerateCourseQuizError = GenerateCourseQuizErrors[keyof GenerateCourseQuizErrors];
+
+export type GenerateCourseQuizResponses = {
+    /**
+     * Quiz generation accepted and running
+     */
+    202: QuizGenerationAcceptedDto;
+};
+
+export type GenerateCourseQuizResponse = GenerateCourseQuizResponses[keyof GenerateCourseQuizResponses];
+
+export type ListQuizzesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        status?: QuizStatus;
+        lessonId?: string;
+        courseId?: string;
+    };
+    url: '/api/v1/quizzes';
+};
+
+export type ListQuizzesErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type ListQuizzesError = ListQuizzesErrors[keyof ListQuizzesErrors];
+
+export type ListQuizzesResponses = {
+    /**
+     * Matching quizzes
+     */
+    200: QuizListDto;
+};
+
+export type ListQuizzesResponse = ListQuizzesResponses[keyof ListQuizzesResponses];
+
+export type GetQuizData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/quizzes/{id}';
+};
+
+export type GetQuizErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Quiz not found
+     */
+    404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type GetQuizError = GetQuizErrors[keyof GetQuizErrors];
+
+export type GetQuizResponses = {
+    /**
+     * The quiz
+     */
+    200: QuizDto;
+};
+
+export type GetQuizResponse = GetQuizResponses[keyof GetQuizResponses];
+
+export type ApplyQuizData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/quizzes/{id}/apply';
+};
+
+export type ApplyQuizErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Quiz not found
+     */
+    404: Problem;
+    /**
+     * Quiz is not in the proposed state
+     */
+    409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type ApplyQuizError = ApplyQuizErrors[keyof ApplyQuizErrors];
+
+export type ApplyQuizResponses = {
+    /**
+     * The applied quiz
+     */
+    200: QuizDto;
+};
+
+export type ApplyQuizResponse = ApplyQuizResponses[keyof ApplyQuizResponses];
+
+export type DiscardQuizData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/quizzes/{id}/discard';
+};
+
+export type DiscardQuizErrors = {
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have the admin role
+     */
+    403: Problem;
+    /**
+     * Quiz not found
+     */
+    404: Problem;
+    /**
+     * Quiz is not in the proposed state
+     */
+    409: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type DiscardQuizError = DiscardQuizErrors[keyof DiscardQuizErrors];
+
+export type DiscardQuizResponses = {
+    /**
+     * The discarded quiz
+     */
+    200: QuizDto;
+};
+
+export type DiscardQuizResponse = DiscardQuizResponses[keyof DiscardQuizResponses];
 
 export type ListInstructorsData = {
     body?: never;

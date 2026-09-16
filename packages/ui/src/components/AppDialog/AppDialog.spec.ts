@@ -84,6 +84,23 @@ describe('AppDialog', () => {
     wrapper.unmount();
   });
 
+  it('calls showModal on initial mount when `open` starts true (v-if-gated consumer)', async () => {
+    const wrapper = mount(AppDialog, {
+      global,
+      props: { open: true, title: 'Test dialog' },
+      attachTo: document.body,
+    });
+
+    // `onMounted` (unlike the watcher above) runs before `mount()` returns
+    // in Vue Test Utils, so the prototype-level functional stub from
+    // `installPrototypeStubs` — not a per-element spy attached afterward —
+    // is what has to prove the call happened: `.open` flips to `true`.
+    await new Promise((r) => setTimeout(r, 0));
+    expect((wrapper.find('dialog').element as HTMLDialogElement).open).toBe(true);
+
+    wrapper.unmount();
+  });
+
   it('calls close() when `open` becomes false after being open', async () => {
     const wrapper = mount(AppDialog, {
       global,

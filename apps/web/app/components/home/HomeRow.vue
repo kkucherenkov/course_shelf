@@ -27,6 +27,8 @@
       emptyBody?: string;
       /** Error heading — already translated. */
       errorTitle?: string;
+      /** Error body — already translated. */
+      errorBody?: string;
       /** Retry button label — already translated. */
       retryLabel?: string;
       /** Number of visible skeleton cards during loading. Default 5. */
@@ -47,6 +49,7 @@
       emptyTitle: '',
       emptyBody: undefined,
       errorTitle: 'Could not load',
+      errorBody: undefined,
       retryLabel: 'Retry',
       skeletonCount: 5,
       collapsible: false,
@@ -102,7 +105,12 @@
       </div>
 
       <!-- error state -->
-      <AppErrorState v-else-if="status === 'error'" :title="errorTitle" class="home-row__error">
+      <AppErrorState
+        v-else-if="status === 'error'"
+        :title="errorTitle"
+        :body="errorBody"
+        class="home-row__error"
+      >
         <template #action>
           <AppButton :label="retryLabel" size="sm" variant="secondary" @click="onRetry" />
         </template>

@@ -14,11 +14,12 @@
     mutating?: boolean;
   }>();
 
-  // No confirm dialog: resetting progress touches only the actor's own data
-  // and is fully reversible by rewatching, so it doesn't meet this product's
-  // confirm-when bar (someone else's data, irreversible without manual
-  // recovery, or hours of machine time) — same standard "Mark complete"
-  // already gets by firing straight through.
+  // No confirm dialog in this component: `resetProgress` always fires
+  // straight through on click. The gate lives one layer up —
+  // `pages/courses/[id].vue` intercepts this emit and shows a confirm dialog
+  // before calling the mutation (#624). It used to fire with no gate at all,
+  // on the claim that resetting is "fully reversible by rewatching" — false
+  // for a 540-lesson course, which has no restore button, only a rewatch.
   const emit = defineEmits<{
     markComplete: [];
     resetProgress: [];

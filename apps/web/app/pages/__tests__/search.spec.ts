@@ -29,14 +29,16 @@ vi.stubGlobal('useRoute', () => route);
 
 const searchData = ref<SearchResultDto | null>(null) as Ref<SearchResultDto | null>;
 const searchStatus = ref<SearchStatus>('success');
+const searchErrorStatus = ref<number | null>(null);
+const retry = vi.fn();
 
 vi.mock('~/composables/useSearch', () => ({
   useSearch: () => ({
     data: searchData,
     status: searchStatus,
     error: ref(null),
-    errorStatus: ref(null),
-    retry: vi.fn(),
+    errorStatus: searchErrorStatus,
+    retry,
   }),
 }));
 
@@ -59,6 +61,12 @@ vi.mock('@app/ui', async () => {
       name: 'AppEmptyState',
       props: ['icon', 'title', 'body'],
       template: '<div class="empty-state">{{ title }}<slot name="action" /></div>',
+    },
+    AppErrorState: {
+      name: 'AppErrorState',
+      props: ['icon', 'title', 'body'],
+      template:
+        '<div class="error-state" role="alert">{{ title }}<p>{{ body }}</p><slot name="action" /></div>',
     },
     AppSkeleton: {
       name: 'AppSkeleton',
@@ -170,5 +178,36 @@ describe('search page — course/lesson cover identity', () => {
     expect(wrapper.find('.page-search__item-initials').text()).toBe('AV');
     const thumb = wrapper.find('.page-search__item-thumb');
     expect(thumb.attributes('style')).toMatch(/var\(--media-cover-[a-z]+\)/);
+  });
+});
+
+// Regression coverage for #624: the error state used to be a hand-rolled
+// `role="alert"` div — the only bespoke error markup in the app, instead of
+// the shared `AppErrorState` every other error state renders through.
+describe('search page — error state', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    route.query = { q: 'hooks' };
+    searchErrorStatus.value = null;
+  });
+
+  it('renders through AppErrorState with a retry action, not bespoke markup', async () => {
+    searchStatus.value = 'error';
+    const wrapper = await mountSearch();
+
+    expect(wrapper.find('.error-state').exists()).toBe(true);
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+    expect(wrapper.find('.error-state').text()).toContain('pages.search.errorBody');
+
+    await wrapper.find('.error-state button').trigger('click');
+    expect(retry).toHaveBeenCalled();
+  });
+
+  it('shows the rate-limit body on a 429, not the generic one', async () => {
+    searchStatus.value = 'error';
+    searchErrorStatus.value = 429;
+    const wrapper = await mountSearch();
+
+    expect(wrapper.find('.error-state').text()).toContain('pages.search.errorBodyRateLimited');
   });
 });

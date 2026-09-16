@@ -24,8 +24,11 @@
         {{ body }}
       </slot>
     </p>
-    <div v-if="$slots['action']" class="app-no-permission__action">
-      <slot name="action" />
+    <!-- `actions` is a fallback alias for `action` — see AppEmptyState. -->
+    <div v-if="$slots['action'] || $slots['actions']" class="app-no-permission__action">
+      <slot name="action">
+        <slot name="actions" />
+      </slot>
     </div>
   </div>
 </template>

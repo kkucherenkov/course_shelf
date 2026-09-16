@@ -99,37 +99,60 @@
     }
   }
 
-  // ── Rescan/transcribe confirm dialog (#606) ──────────────────────────────────
-  // Both rewrite consequential state without a manual-recovery path — rescan
-  // replaces the course's section/lesson list, transcription can occupy a GPU
-  // for hours — so both get a confirm step, unlike the reversible, own-data-only
-  // "Reset progress" action (which deliberately has none). One dialog shared by
-  // both actions rather than two near-identical copies.
-  const pendingAdminAction = ref<'rescan' | 'transcribe' | null>(null);
+  // ── Rescan/transcribe/reset confirm dialog (#606, #624) ──────────────────────
+  // All three rewrite consequential state with no cheap undo: rescan replaces
+  // the course's section/lesson list, transcription can occupy a GPU for
+  // hours, and reset progress clears every lesson's watched state — on the
+  // largest course in the audit database that's 540 lessons with no restore
+  // button, not "reversible by rewatching" (the claim a previous wave used to
+  // remove this dialog). "Mark complete" is the one action left that still
+  // fires straight through, because it only adds progress and never destroys
+  // it. One dialog shared by all three rather than near-identical copies.
+  const pendingCourseAction = ref<'rescan' | 'transcribe' | 'reset' | null>(null);
 
-  const adminActionDialog = computed(() => {
-    if (pendingAdminAction.value === 'rescan') {
+  const courseActionDialog = computed(() => {
+    if (pendingCourseAction.value === 'rescan') {
       return {
         title: t('pages.courseDetail.rescanDialogTitle'),
         description: t('pages.courseDetail.rescanDialogDescription'),
         confirmLabel: t('pages.courseDetail.rescanDialogConfirm'),
       };
     }
-    if (pendingAdminAction.value === 'transcribe') {
+    if (pendingCourseAction.value === 'transcribe') {
       return {
         title: t('pages.courseDetail.transcribeDialogTitle'),
         description: t('pages.courseDetail.transcribeDialogDescription'),
         confirmLabel: t('pages.courseDetail.transcribeDialogConfirm'),
       };
     }
+    if (pendingCourseAction.value === 'reset') {
+      return {
+        title: t('pages.courseDetail.resetDialogTitle'),
+        description: t('pages.courseDetail.resetDialogDescription'),
+        confirmLabel: t('pages.courseDetail.resetDialogConfirm'),
+      };
+    }
     return null;
   });
 
-  function confirmAdminAction(): void {
-    const action = pendingAdminAction.value;
-    pendingAdminAction.value = null;
-    if (action === 'rescan') void doRescan();
-    else if (action === 'transcribe') void doTranscribe();
+  function confirmCourseAction(): void {
+    const action = pendingCourseAction.value;
+    pendingCourseAction.value = null;
+    switch (action) {
+      case 'rescan': {
+        void doRescan();
+        break;
+      }
+      case 'transcribe': {
+        void doTranscribe();
+        break;
+      }
+      case 'reset': {
+        void onResetProgress();
+        break;
+      }
+      // No default
+    }
   }
 
   // ── Derived course state ─────────────────────────────────────────────────────
@@ -355,7 +378,7 @@
         :mutating="mutating"
         class="page-course-detail__actions"
         @mark-complete="onMarkComplete"
-        @reset-progress="onResetProgress"
+        @reset-progress="pendingCourseAction = 'reset'"
       />
 
       <!-- Admin-only entry point to the metadata editor -->
@@ -375,7 +398,7 @@
           :label="t('pages.courseDetail.rescanCta')"
           :loading="isRescanning"
           class="page-course-detail__rescan-cta"
-          @click="pendingAdminAction = 'rescan'"
+          @click="pendingCourseAction = 'rescan'"
         />
         <AppButton
           variant="ghost"
@@ -384,31 +407,31 @@
           :label="t('pages.courseDetail.transcribeCta')"
           :loading="isTranscribing"
           class="page-course-detail__transcribe-cta"
-          @click="pendingAdminAction = 'transcribe'"
+          @click="pendingCourseAction = 'transcribe'"
         />
       </div>
 
-      <!-- Rescan / transcribe confirm dialog (#606) -->
+      <!-- Rescan / transcribe / reset confirm dialog (#606, #624) -->
       <AppDialog
-        v-if="adminActionDialog"
-        :open="pendingAdminAction !== null"
+        v-if="courseActionDialog"
+        :open="pendingCourseAction !== null"
         size="sm"
-        :title="adminActionDialog.title"
-        :description="adminActionDialog.description"
-        @update:open="pendingAdminAction = null"
+        :title="courseActionDialog.title"
+        :description="courseActionDialog.description"
+        @update:open="pendingCourseAction = null"
       >
         <template #footer>
           <AppButton
             :label="t('pages.courseDetail.adminActionDialogCancel')"
             variant="ghost"
             size="md"
-            @click="pendingAdminAction = null"
+            @click="pendingCourseAction = null"
           />
           <AppButton
-            :label="adminActionDialog.confirmLabel"
+            :label="courseActionDialog.confirmLabel"
             variant="destructive"
             size="md"
-            @click="confirmAdminAction"
+            @click="confirmCourseAction"
           />
         </template>
       </AppDialog>

@@ -44,6 +44,14 @@ describe('AppErrorState', () => {
     expect(wrapper.find('.app-error-state__action').exists()).toBe(false);
   });
 
+  it('renders the actions slot (plural alias) when action is not provided', () => {
+    const wrapper = mount(AppErrorState, {
+      props: { title: 'Error' },
+      slots: { actions: '<button>Retry</button>' },
+    });
+    expect(wrapper.find('.app-error-state__action').html()).toContain('Retry');
+  });
+
   it('renders the illustration slot when provided', () => {
     const wrapper = mount(AppErrorState, {
       props: { title: 'Error' },

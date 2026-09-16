@@ -1,12 +1,13 @@
 /**
- * Spec for CourseActions' confirmation policy (#606, audit-regressions half).
+ * Spec for CourseActions' own confirmation policy (#606, #624).
  *
- * "Reset progress" was the only action in the product gated by a confirm
- * dialog, despite being fully reversible (rewatch undoes it) and touching
- * only the actor's own data. Per the confirm-when rule adopted this wave
- * (data belongs to someone else, is irreversible without manual recovery, or
- * costs machine time) it doesn't qualify — the click fires the mutation
- * directly, the same as "Mark complete" already does.
+ * This component never shows a confirm dialog itself — both "Mark complete"
+ * and "Reset progress" emit straight through on click. `pages/courses/[id]
+ * .vue` is the one that gates `resetProgress` behind a confirm dialog before
+ * calling the mutation (#624 restored it after a previous wave removed it on
+ * the mistaken claim that resetting is "fully reversible by rewatching" —
+ * see that page's spec for the confirm-dialog coverage). This file only
+ * covers CourseActions' own behaviour: it always emits, never blocks.
  */
 
 import { describe, it, expect, vi } from 'vitest';
@@ -38,7 +39,7 @@ const baseProps = {
 };
 
 describe('CourseActions — reset progress', () => {
-  it('fires resetProgress directly on click, with no confirm dialog', async () => {
+  it('fires resetProgress directly on click — no confirm dialog in this component', async () => {
     const wrapper = mount(CourseActions, { props: baseProps });
 
     await wrapper

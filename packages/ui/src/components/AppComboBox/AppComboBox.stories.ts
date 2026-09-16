@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { nextTick, onMounted, ref } from 'vue';
 
 import AppField from '../AppField/AppField.vue';
 
@@ -40,8 +40,15 @@ const meta: Meta<typeof AppComboBox> = {
           "It never fetches — `items`/`loading` come from the consumer's own",
           'search composable, and `search-term` is a plain v-model.',
           '',
-          '`autofocus` is used below purely to force the listbox open for the',
-          'story; a real form leaves that to the user.',
+          'The "open" stories below call `.focus()` on mount rather than the',
+          "HTML `autofocus` attribute — the browser's own autofocus timing",
+          'for a script-inserted element is not guaranteed to land before a',
+          'screenshot fires, and the visual-regression baseline generated in',
+          'CI caught exactly that: `HasResults` came back byte-identical to',
+          '`Empty`, a closed control. An explicit `.focus()` call has no such',
+          'race. The wrapper also reserves height for the popup panel, which',
+          'is `position: absolute` and otherwise falls outside the',
+          'screenshot — without it, every "open" baseline looks closed too.',
         ].join('\n'),
       },
     },
@@ -59,7 +66,14 @@ interface ComboArgs {
   items?: ComboBoxOption[];
   searchTerm?: string;
 }
-function statefulRender(extraAttrs = ''): Story['render'] {
+// Tall enough for the control (~44px) plus the popup panel's full
+// $listbox-max-height (240px, see AppComboBox.vue) — the panel is
+// `position: absolute` so it never grows this wrapper on its own; without
+// an explicit reservation, a screenshot of the wrapper crops the panel out
+// entirely, open or not.
+const OPEN_WRAPPER_STYLE = 'width: 360px; min-height: 320px;';
+
+function statefulRender(startOpen = false): Story['render'] {
   return (rawArgs) => {
     const args = rawArgs as ComboArgs;
     return {
@@ -67,16 +81,24 @@ function statefulRender(extraAttrs = ''): Story['render'] {
       setup() {
         const modelValue = ref<string[]>(args.modelValue ?? []);
         const searchTerm = ref(args.searchTerm ?? '');
-        return { args, modelValue, searchTerm };
+        const rootEl = ref<HTMLElement | null>(null);
+        if (startOpen) {
+          // A script-inserted `autofocus` attribute isn't guaranteed to land
+          // before a screenshot fires (see the component doc comment above)
+          // — an explicit call after mount is deterministic instead.
+          onMounted(() => {
+            void nextTick(() => rootEl.value?.querySelector('input')?.focus());
+          });
+        }
+        return { args, modelValue, searchTerm, rootEl };
       },
       template: `
-        <div style="width: 360px;">
+        <div ref="rootEl" style="${OPEN_WRAPPER_STYLE}">
           <AppComboBox
             v-bind="args"
             v-model="modelValue"
             v-model:search-term="searchTerm"
             aria-label="Instructors"
-            ${extraAttrs}
           />
         </div>
       `,
@@ -91,17 +113,17 @@ export const Empty: Story = {
 
 export const Loading: Story = {
   args: { modelValue: [], items: [], loading: true },
-  render: statefulRender('autofocus'),
+  render: statefulRender(true),
 };
 
 export const HasResults: Story = {
   args: { modelValue: [] },
-  render: statefulRender('autofocus'),
+  render: statefulRender(true),
 };
 
 export const NoResultsFound: Story = {
   args: { modelValue: [], items: [], searchTerm: 'zzzznotfound' },
-  render: statefulRender('autofocus'),
+  render: statefulRender(true),
 };
 
 export const WithSelectedChips: Story = {

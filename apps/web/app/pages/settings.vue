@@ -605,7 +605,7 @@
     overflow: hidden;
 
     &__title {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       font-weight: var(--fw-semibold);
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -666,13 +666,13 @@
     }
 
     &__label {
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       font-weight: var(--fw-medium);
       color: var(--text-fg);
     }
 
     &__help {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
     }
 
@@ -722,7 +722,7 @@
     }
 
     &__error {
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--status-error-fg);
       margin: 0;
     }

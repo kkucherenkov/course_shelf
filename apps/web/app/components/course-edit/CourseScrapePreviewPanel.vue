@@ -397,13 +397,13 @@
 
     &__error {
       margin: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--status-error-fg);
     }
 
     &__empty {
       margin: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
     }
 

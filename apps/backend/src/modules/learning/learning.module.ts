@@ -7,15 +7,23 @@
  *                           PATCH/DELETE bookmarks/:id
  *   - NotesController — PUT /notes, GET /notes/:lessonId,
  *                       DELETE /notes/:lessonId (E09-F02-S02)
+ *   - FlashcardsController — GET/POST lessons/:lessonId/flashcards,
+ *                            GET flashcards/due, PATCH/DELETE flashcards/:id,
+ *                            POST flashcards/:id/grade (E29-F01-S02)
  *   - RecordProgressHandler (application command)
  *   - GetLessonProgressHandler (application query)
  *   - ListBookmarksHandler, CreateBookmarkHandler, UpdateBookmarkHandler,
  *     DeleteBookmarkHandler (E09-F02-S01)
  *   - UpsertNoteHandler, DeleteNoteHandler (application commands, E09-F02-S02)
  *   - GetNoteHandler (application query, E09-F02-S02)
+ *   - ListLessonFlashcardsHandler, ListDueFlashcardsHandler (application
+ *     queries), CreateFlashcardHandler, UpdateFlashcardHandler,
+ *     DeleteFlashcardHandler, GradeFlashcardHandler (application commands,
+ *     E29-F01-S02)
  *   - PrismaLessonProgressRepository bound behind LESSON_PROGRESS_REPOSITORY
  *   - PrismaBookmarkRepository bound behind BOOKMARK_REPOSITORY
  *   - PrismaNoteRepository bound behind NOTE_REPOSITORY
+ *   - PrismaFlashcardRepository bound behind FLASHCARD_REPOSITORY
  *   - CatalogRepositoriesModule — provides LESSON_REPOSITORY + COURSE_REPOSITORY
  *   - CommonAccessModule — provides AUTHORIZATION_SERVICE
  *
@@ -30,28 +38,37 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { CommonAccessModule } from '../../common/access/access.module';
 import { CatalogRepositoriesModule } from '../../common/catalog-tokens/catalog-repositories.module';
 import { CreateBookmarkHandler } from './application/commands/create-bookmark.handler';
+import { CreateFlashcardHandler } from './application/commands/create-flashcard.handler';
 import { DeleteBookmarkHandler } from './application/commands/delete-bookmark.handler';
+import { DeleteFlashcardHandler } from './application/commands/delete-flashcard.handler';
 import { DeleteNoteHandler } from './application/commands/delete-note.handler';
+import { GradeFlashcardHandler } from './application/commands/grade-flashcard.handler';
 import { RecordProgressBatchHandler } from './application/commands/record-progress-batch.handler';
 import { RecordProgressHandler } from './application/commands/record-progress.handler';
 import { UpdateBookmarkHandler } from './application/commands/update-bookmark.handler';
+import { UpdateFlashcardHandler } from './application/commands/update-flashcard.handler';
 import { UpsertNoteHandler } from './application/commands/upsert-note.handler';
 import { GetLessonProgressHandler } from './application/queries/get-lesson-progress.handler';
 import { GetNoteHandler } from './application/queries/get-note.handler';
 import { ListBookmarksHandler } from './application/queries/list-bookmarks.handler';
+import { ListDueFlashcardsHandler } from './application/queries/list-due-flashcards.handler';
+import { ListLessonFlashcardsHandler } from './application/queries/list-lesson-flashcards.handler';
 import { BOOKMARK_REPOSITORY } from './domain/bookmark/bookmark.repository';
+import { FLASHCARD_REPOSITORY } from './domain/flashcard/flashcard.repository';
 import { NOTE_REPOSITORY } from './domain/note/note.repository';
 import { LESSON_PROGRESS_REPOSITORY } from './domain/progress/lesson-progress.repository';
 import { PrismaBookmarkRepository } from './infra/prisma-bookmark.repository';
+import { PrismaFlashcardRepository } from './infra/prisma-flashcard.repository';
 import { PrismaNoteRepository } from './infra/prisma-note.repository';
 import { PrismaLessonProgressRepository } from './infra/prisma-lesson-progress.repository';
 import { BookmarksController } from './bookmarks.controller';
+import { FlashcardsController } from './flashcards.controller';
 import { NotesController } from './notes.controller';
 import { ProgressController } from './progress.controller';
 
 @Module({
   imports: [CqrsModule, CommonAccessModule, CatalogRepositoriesModule],
-  controllers: [ProgressController, BookmarksController, NotesController],
+  controllers: [ProgressController, BookmarksController, NotesController, FlashcardsController],
   providers: [
     RecordProgressHandler,
     RecordProgressBatchHandler,
@@ -63,9 +80,16 @@ import { ProgressController } from './progress.controller';
     UpsertNoteHandler,
     DeleteNoteHandler,
     GetNoteHandler,
+    ListLessonFlashcardsHandler,
+    ListDueFlashcardsHandler,
+    CreateFlashcardHandler,
+    UpdateFlashcardHandler,
+    DeleteFlashcardHandler,
+    GradeFlashcardHandler,
     { provide: LESSON_PROGRESS_REPOSITORY, useClass: PrismaLessonProgressRepository },
     { provide: BOOKMARK_REPOSITORY, useClass: PrismaBookmarkRepository },
     { provide: NOTE_REPOSITORY, useClass: PrismaNoteRepository },
+    { provide: FLASHCARD_REPOSITORY, useClass: PrismaFlashcardRepository },
   ],
 })
 export class LearningModule {}

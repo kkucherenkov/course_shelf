@@ -106,7 +106,7 @@
         the same failure mode the instruction was trying to prevent.
         Flipped the Vue column `✓` → `—` instead. `pnpm design:audit`
         (`--strict` too) clean. Full gate green: `pnpm --filter @app/ui
-    lint --fix`, `pnpm --filter @app/web lint --fix`,
+lint --fix`, `pnpm --filter @app/web lint --fix`,
         `pnpm stylelint:fix`, `pnpm format` (0 extra changes),
         `pnpm turbo run lint test typecheck` (18/18, 569/569 web),
         `pnpm check:i18n` clean, `pnpm --filter @app/ui storybook:build`

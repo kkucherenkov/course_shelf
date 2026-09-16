@@ -22,6 +22,7 @@ import type { CourseOutlineDto } from '@app/api-client-ts';
 vi.stubGlobal('definePageMeta', () => undefined);
 vi.stubGlobal('useI18n', () => ({ t: (key: string) => key }));
 vi.stubGlobal('useRoute', () => ({ params: { id: 'course-1' }, name: 'courses-id' }));
+vi.stubGlobal('useHead', () => undefined);
 const toastAdd = vi.fn();
 vi.stubGlobal('useToast', () => ({ add: toastAdd }));
 

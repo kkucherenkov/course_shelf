@@ -73,9 +73,17 @@
   const statLastScanMeta = computed(() => {
     if (!dashData.value?.latestScan) return '';
     const scan = dashData.value.latestScan;
-    const shortId = `${scan.libraryId.slice(0, 8)}…`;
+    // The dashboard endpoint's `latestScan` only carries `libraryId` (a raw
+    // cuid — meaningless in the UI, and the recent-scans table two rows
+    // below already names the same library correctly). Join on `scanId`
+    // against the recent-scans list, which does carry `libraryName`, rather
+    // than rendering the id (#701). Fall back to the truncated id only if
+    // the two independent requests ever disagree on what the latest scan is.
+    const libraryName =
+      scansData.value?.items.find((row) => row.scanId === scan.scanId)?.libraryName ??
+      `${scan.libraryId.slice(0, 8)}…`;
     return t('pages.admin.dashboard.statLastScanMeta', {
-      libraryId: shortId,
+      libraryName,
       n: scan.filesScanned,
     });
   });

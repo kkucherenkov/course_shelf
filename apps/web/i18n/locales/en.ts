@@ -157,6 +157,10 @@ export default {
       subtitle: 'No users exist yet. The account you create here will be the first administrator.',
     },
     courseDetail: {
+      // Fallback document/tab title before the course has loaded (or when it
+      // never does) — the loaded case always uses the real course title
+      // instead (#701).
+      title: 'Course',
       loadingError: 'Could not load course. Please try again.',
       retry: 'Retry',
       noAccess: 'No access',
@@ -501,10 +505,12 @@ export default {
         statLibrariesMetaCourses: '{n} course | {n} courses',
         statLibrariesMetaLessons: '{n} lesson | {n} lessons',
         statLastScanNever: 'Never',
-        // The `{libraryId}` prefix must repeat in every alternative — a
+        // The `{libraryName}` prefix must repeat in every alternative — a
         // pipe-message resolves to exactly one alternative, so content placed
         // in only one form vanishes whenever a different form is chosen.
-        statLastScanMeta: 'Library {libraryId} · {n} file | Library {libraryId} · {n} files',
+        // #701: was `{libraryId}` — a raw cuid the table two rows down
+        // resolves to a readable name; use that name here too.
+        statLastScanMeta: 'Library {libraryName} · {n} file | Library {libraryName} · {n} files',
         recentScansHeading: 'Recent scans',
         tableLibrary: 'Library',
         tableStatus: 'Status',
@@ -855,6 +861,13 @@ export default {
    */
   ui: {
     chip: { remove: 'Remove' },
+    // Shared across every 429 error surface outside /sign-in (#701) — the
+    // generic "check your connection and try again" body is actively wrong
+    // advice for a rate limit: the connection is fine, and retrying only
+    // extends the block.
+    errors: {
+      rateLimitedBody: 'Too many requests. Wait a moment, then refresh.',
+    },
     lessonRow: {
       loading: 'Loading lesson',
       materials: 'Materials available',

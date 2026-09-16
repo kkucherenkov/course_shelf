@@ -159,6 +159,7 @@ export default {
         'Пользователей пока нет. Учётная запись, которую вы создадите здесь, станет первым администратором.',
     },
     courseDetail: {
+      title: 'Курс',
       loadingError: 'Не удалось загрузить курс. Попробуйте ещё раз.',
       retry: 'Повторить',
       noAccess: 'Нет доступа',
@@ -504,11 +505,13 @@ export default {
         statLibrariesMetaCourses: '{n} курс | {n} курса | {n} курсов',
         statLibrariesMetaLessons: '{n} урок | {n} урока | {n} уроков',
         statLastScanNever: 'Никогда',
-        // The `{libraryId}` prefix must repeat in every alternative — a
+        // The `{libraryName}` prefix must repeat in every alternative — a
         // pipe-message resolves to exactly one alternative, so content placed
         // in only one form vanishes whenever a different form is chosen.
+        // #701: was `{libraryId}` — a raw cuid the table two rows down
+        // resolves to a readable name; use that name here too.
         statLastScanMeta:
-          'Библиотека {libraryId} · {n} файл | Библиотека {libraryId} · {n} файла | Библиотека {libraryId} · {n} файлов',
+          'Библиотека {libraryName} · {n} файл | Библиотека {libraryName} · {n} файла | Библиотека {libraryName} · {n} файлов',
         recentScansHeading: 'Недавние сканирования',
         tableLibrary: 'Библиотека',
         tableStatus: 'Статус',
@@ -861,6 +864,13 @@ export default {
    */
   ui: {
     chip: { remove: 'Удалить' },
+    // Shared across every 429 error surface outside /sign-in (#701) — the
+    // generic "check your connection and try again" body is actively wrong
+    // advice for a rate limit: the connection is fine, and retrying only
+    // extends the block.
+    errors: {
+      rateLimitedBody: 'Слишком много запросов. Подождите немного и обновите страницу.',
+    },
     lessonRow: {
       loading: 'Загрузка урока',
       materials: 'Есть материалы',

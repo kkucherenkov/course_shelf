@@ -283,6 +283,15 @@
 
   const isLocked = computed<boolean>(() => errorStatus.value === 403);
 
+  // The generic loadingError copy says "check your connection and try
+  // again" — wrong advice for a 429, where the connection is fine and
+  // retrying only extends the block (#701).
+  const loadingErrorBody = computed<string>(() =>
+    errorStatus.value === 429
+      ? t('ui.errors.rateLimitedBody')
+      : t('pages.courseDetail.loadingError'),
+  );
+
   // ── Mutations ────────────────────────────────────────────────────────────────
 
   async function onMarkComplete(): Promise<void> {
@@ -319,6 +328,14 @@
   function onSelectLesson(lessonId: string): void {
     void navigateTo(`/courses/${courseId}/lessons/${lessonId}`);
   }
+
+  // Document heading (#701): every one of the 68 courses shared the static
+  // "Course Shelf" tab title — bookmarks, history and tab switching couldn't
+  // tell them apart. Falls back to a generic title before the outline loads
+  // (or when it never does), same pattern as the lesson player (#623).
+  const pageTitle = computed(() => data.value?.course.title ?? t('pages.courseDetail.title'));
+
+  useHead(() => ({ title: pageTitle.value }));
 </script>
 
 <template>
@@ -334,7 +351,7 @@
         :body="t('pages.courseDetail.noAccessBody')"
       />
       <div v-else class="page-course-detail__load-error">
-        <p class="page-course-detail__load-error-msg">{{ t('pages.courseDetail.loadingError') }}</p>
+        <p class="page-course-detail__load-error-msg">{{ loadingErrorBody }}</p>
         <AppButton
           variant="secondary"
           size="md"

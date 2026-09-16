@@ -7,7 +7,7 @@
    * middleware is the real guard — see `pages/courses/[id]/edit.vue`.
    */
   import { computed, provide } from 'vue';
-  import { AppBanner, AppSkeleton } from '@app/ui';
+  import { AppBanner, AppButton, AppSkeleton } from '@app/ui';
   import type { MergePolicyDto } from '@app/api-client-ts';
   import AdminIdentifyTaskReview from '~/components/admin/AdminIdentifyTaskReview.vue';
   import { useIdentifyTask } from '~/composables/useIdentifyTasks';
@@ -58,9 +58,12 @@
 
     <div v-if="status === 'error'" class="page-identify-task__error">
       <AppBanner variant="error" :body="t('pages.admin.identifyTaskDetail.loadingError')" />
-      <UButton size="sm" variant="outline" color="error" @click="refetch()">
-        {{ t('pages.admin.identifyTaskDetail.retry') }}
-      </UButton>
+      <AppButton
+        size="sm"
+        variant="secondary"
+        :label="t('pages.admin.identifyTaskDetail.retry')"
+        @click="refetch()"
+      />
     </div>
 
     <div v-else-if="status === 'pending' || status === 'idle'" class="page-identify-task__skeleton">

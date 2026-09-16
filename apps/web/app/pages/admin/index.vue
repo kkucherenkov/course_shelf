@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, provide } from 'vue';
-  import { AppBanner } from '@app/ui';
+  import { AppBanner, AppButton } from '@app/ui';
 
   import AdminStatCard from '~/components/admin/AdminStatCard.vue';
   import AdminScansTable from '~/components/admin/AdminScansTable.vue';
@@ -133,9 +133,12 @@
       class="adm-dashboard__error-banner"
     >
       <template #actions>
-        <UButton size="sm" variant="outline" color="error" @click="retryAll">
-          {{ t('pages.admin.dashboard.errorRetry') }}
-        </UButton>
+        <AppButton
+          size="sm"
+          variant="secondary"
+          :label="t('pages.admin.dashboard.errorRetry')"
+          @click="retryAll"
+        />
       </template>
     </AppBanner>
 

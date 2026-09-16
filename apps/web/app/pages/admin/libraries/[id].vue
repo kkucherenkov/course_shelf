@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, provide, ref } from 'vue';
-  import { AppBanner, AppScanProgress, AppSpinner, IconCS } from '@app/ui';
+  import { AppBanner, AppButton, AppScanProgress, IconCS } from '@app/ui';
   import type { LibraryDto } from '@app/api-client-ts';
   import { runLibraryScan, client } from '@app/api-client-ts';
 
@@ -224,9 +224,12 @@
       class="adm-lib-detail__error-banner"
     >
       <template #actions>
-        <UButton size="sm" variant="outline" color="error" @click="refetchLibraries()">
-          {{ t('pages.admin.libraryDetail.errorRetry') }}
-        </UButton>
+        <AppButton
+          size="sm"
+          variant="secondary"
+          :label="t('pages.admin.libraryDetail.errorRetry')"
+          @click="refetchLibraries()"
+        />
       </template>
     </AppBanner>
 
@@ -255,42 +258,28 @@
 
         <!-- Page actions -->
         <div class="adm-lib-detail__actions">
-          <UButton
+          <AppButton
             variant="ghost"
             size="sm"
+            icon-leading="edit"
             :label="t('pages.admin.libraryDetail.editCta')"
             @click="onEditClick"
-          >
-            <template #leading><IconCS name="edit" :size="16" /></template>
-          </UButton>
-          <UButton
+          />
+          <AppButton
             v-if="showScanProgress"
-            variant="outline"
+            variant="secondary"
             size="sm"
-            :label="t('pages.admin.libraryDetail.scanningCta')"
             loading
-            disabled
-          >
-            <template #leading>
-              <AppSpinner size="sm" :label="t('pages.admin.libraryDetail.scanningCta')" />
-            </template>
-          </UButton>
-          <UButton
+            :label="t('pages.admin.libraryDetail.scanningCta')"
+          />
+          <AppButton
             v-else
             size="sm"
-            :label="t('pages.admin.libraryDetail.scanNowCta')"
+            icon-leading="refresh"
             :loading="isScanning"
+            :label="t('pages.admin.libraryDetail.scanNowCta')"
             @click="triggerScan"
-          >
-            <template #leading>
-              <AppSpinner
-                v-if="isScanning"
-                size="sm"
-                :label="t('pages.admin.libraryDetail.scanNowCta')"
-              />
-              <IconCS v-else name="refresh" :size="16" />
-            </template>
-          </UButton>
+          />
         </div>
       </div>
 
@@ -333,9 +322,12 @@
             class="adm-lib-detail__failed-banner"
           >
             <template #actions>
-              <UButton size="sm" variant="outline" color="error" @click="onRetryFailedScan">
-                {{ t('pages.admin.libraryDetail.scanFailedRetry') }}
-              </UButton>
+              <AppButton
+                size="sm"
+                variant="secondary"
+                :label="t('pages.admin.libraryDetail.scanFailedRetry')"
+                @click="onRetryFailedScan"
+              />
             </template>
           </AppBanner>
 
@@ -479,16 +471,14 @@
             <div class="adm-lib-detail__card-heading">
               {{ t('pages.admin.libraryDetail.dangerHeading') }}
             </div>
-            <UButton
-              variant="outline"
-              color="error"
+            <AppButton
+              variant="destructive"
               size="sm"
+              icon-leading="trash"
               :label="t('pages.admin.libraryDetail.dangerRemove')"
               class="adm-lib-detail__danger-btn"
               @click="onRemoveClick"
-            >
-              <template #leading><IconCS name="trash" :size="16" /></template>
-            </UButton>
+            />
             <p class="adm-lib-detail__danger-body">
               {{ t('pages.admin.libraryDetail.dangerRemoveBody') }}
             </p>

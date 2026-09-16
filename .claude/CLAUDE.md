@@ -239,6 +239,18 @@ The skill carries the setup procedure and the traps — the sign-in rate limiter
 the hydration that discards a filled form, the run that reports zero findings
 because every page was the sign-in redirect.
 
+## Shipping a release to the NAS
+
+Putting a published release on the NAS runs the **`deploy-nas`** skill. It
+moves two pinned image tags, pulls, restarts two services, and verifies with
+the health endpoint's `version` rather than with "the containers came up".
+
+The skill discovers the stack from the running container rather than naming a
+path, because the path is host configuration and this repository is public.
+It also carries the traps, the first of which cost an afternoon: the image
+tags in the rendered bundle are **literal**, so editing `RELEASE_TAG` in
+`.env` deploys nothing and reports success.
+
 ## Commits
 
 Conventional Commits enforced by `commitlint` (see `commitlint.config.mjs`).

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, provide, ref } from 'vue';
+  import { computed, ref } from 'vue';
   import { AppBanner, AppButton, AppEmptyState, AppSkeleton } from '@app/ui';
   import { runLibraryScan, client } from '@app/api-client-ts';
 
@@ -12,10 +12,6 @@
   const { t } = useI18n();
   const router = useRouter();
   const toast = useToast();
-
-  // Provide page title to the admin layout's breadcrumb
-  const pageTitle = computed(() => t('pages.admin.libraries.title'));
-  provide('adminPageTitle', pageTitle);
 
   const { data, status, error, refetch } = useAdminLibraries();
 
@@ -63,7 +59,7 @@
 </script>
 
 <template>
-  <div class="adm-libraries">
+  <div class="adm-libraries" data-testid="page-admin-libraries">
     <!-- Page header -->
     <div class="adm-libraries__page-h">
       <div>

@@ -6,19 +6,19 @@
  *  1. `hasUsers === false` → first-run, the 3-step sign-up wizard IS the
  *     bootstrap experience (per E14-F02-S01). All auth entry points
  *     funnel into /sign-up; /sign-up itself passes through. Step 1 of
- *     the wizard promotes the new account to ADMIN.
- *  2. `hasUsers === true` + target is /setup → redirect /sign-in (locked).
- *  3. Public routes (/sign-in, /sign-up, /forgot, /reset, /signup, /__tokens) → pass through.
- *  4. Not authenticated, refresh() confirmed the session is gone → redirect
+ *     the wizard promotes the new account to ADMIN. There is no separate
+ *     /setup route (#665).
+ *  2. Public routes (/sign-in, /sign-up, /forgot, /reset, /signup, /__tokens) → pass through.
+ *  3. Not authenticated, refresh() confirmed the session is gone → redirect
  *     /sign-in.
- *  5. Not authenticated, refresh() failed transiently (network/5xx/429) or
+ *  4. Not authenticated, refresh() failed transiently (network/5xx/429) or
  *     is still cooling down from a previous transient failure → pass
  *     through. The token survives (only a confirmed "no session" answer
  *     clears it — see `stores/auth.ts`'s `refresh()`), so redirecting here
  *     would silently sign a live session out over a hiccup (#581). The
  *     destination page's own API calls are the authoritative check from
  *     here — they retry once through `refresh()` on a 401 (`api.client.ts`).
- *  6. Authenticated → pass through.
+ *  5. Authenticated → pass through.
  *
  * The `hasUsers` result is cached for the browser session in
  * `~/composables/useHasUsersCache.ts`; tests can reset it via
@@ -42,7 +42,6 @@ const PUBLIC_ROUTES = new Set([
   '/forgot',
   '/reset',
   '/signup',
-  '/setup',
   '/__tokens',
   '/dev/foundations',
 ]);
@@ -88,9 +87,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
     if (path === '/sign-up') return;
     return navigateTo('/sign-up');
   }
-
-  // Setup is locked once an admin exists.
-  if (path === '/setup') return navigateTo('/sign-in');
 
   // Public routes skip the auth check entirely.
   if (PUBLIC_ROUTES.has(path)) return;

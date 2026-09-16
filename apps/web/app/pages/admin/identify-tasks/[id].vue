@@ -6,7 +6,6 @@
    * per-field `MergeMode` comparison, and wires apply/discard. `admin`
    * middleware is the real guard — see `pages/courses/[id]/edit.vue`.
    */
-  import { computed, provide } from 'vue';
   import { AppBanner, AppButton, AppSkeleton } from '@app/ui';
   import type { MergePolicyDto } from '@app/api-client-ts';
   import AdminIdentifyTaskReview from '~/components/admin/AdminIdentifyTaskReview.vue';
@@ -18,9 +17,6 @@
   const route = useRoute();
   const toast = useToast();
   const taskId = route.params.id as string;
-
-  const pageTitle = computed(() => t('pages.admin.identifyTaskDetail.title'));
-  provide('adminPageTitle', pageTitle);
 
   const { data, status, refetch, applying, apply, discarding, discard } = useIdentifyTask(taskId);
 

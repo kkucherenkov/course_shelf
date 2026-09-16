@@ -33,11 +33,9 @@
     { test: (p) => p === '/sign-up', key: 'pages.signUp.title' },
     { test: (p) => p === '/forgot', key: 'pages.forgot.title' },
     { test: (p) => p === '/reset', key: 'pages.reset.title' },
-    { test: (p) => p === '/setup', key: 'pages.setup.title' },
     { test: (p) => p === '/settings', key: 'pages.settings.title' },
     { test: (p) => p === '/search', key: 'pages.search.title' },
     { test: (p) => p === '/browse', key: 'pages.browse.title' },
-    { test: (p) => p === '/libraries', key: 'pages.libraries.title' },
     {
       test: (p) => p.startsWith('/courses/') && p.endsWith('/edit'),
       key: 'pages.courseEdit.title',

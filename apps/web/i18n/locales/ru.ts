@@ -150,19 +150,13 @@ export default {
     reset: {
       title: 'Установить новый пароль',
     },
+    // Only `title`/`subtitle` remain — reused by `sign-up.vue`'s
+    // `isFirstAdmin` branch. The rest was `pages/setup.vue`'s own copy;
+    // that page was unreachable (#665) and is gone.
     setup: {
       title: 'Создать администратора',
       subtitle:
         'Пользователей пока нет. Учётная запись, которую вы создадите здесь, станет первым администратором.',
-      emailLabel: 'Email',
-      emailHint: 'Используется для входа.',
-      passwordLabel: 'Пароль',
-      passwordHint: 'Не менее 8 символов.',
-      displayNameLabel: 'Отображаемое имя',
-      displayNameHint: "Необязательно — по умолчанию используется часть email до {'@'}.",
-      submitButton: 'Создать администратора',
-      legalFootnote: 'Продолжая, вы соглашаетесь с условиями и политикой конфиденциальности.',
-      errorGeneric: 'Не удалось создать администратора. Попробуйте ещё раз.',
     },
     courseDetail: {
       loadingError: 'Не удалось загрузить курс. Попробуйте ещё раз.',
@@ -803,32 +797,10 @@ export default {
       syncError: 'Не удалось сохранить',
       toastUpdateFailed: 'Не удалось обновить отображаемое имя. Попробуйте ещё раз.',
     },
+    // Самостоятельная страница `/libraries`, которой принадлежали эти ключи,
+    // удалена (#665, без ссылки из навигации с #618) — остались только
+    // статусы сканирования, их переиспользуют `AdminLibraryRow`/`AdminScansTable`.
     libraries: {
-      title: 'Библиотеки',
-      subtitle: 'Папки, которые сканер индексирует в курсы.',
-      addButton: 'Добавить библиотеку',
-      formTitle: 'Зарегистрировать библиотеку',
-      nameLabel: 'Название',
-      namePlaceholder: 'Компьютерные науки',
-      pathLabel: 'Путь на сервере',
-      pathPlaceholder: '/workspace/docs/data/courses',
-      pathHelp:
-        'Абсолютный путь на файловой системе сервера. В dev-среде репозиторий примонтирован в /workspace.',
-      submitButton: 'Зарегистрировать',
-      cancelButton: 'Отмена',
-      rescanButton: 'Пересканировать',
-      scanningButton: 'Сканирование…',
-      emptyTitle: 'Пока нет библиотек',
-      emptyBody: 'Добавьте библиотеку, чтобы начать индексировать курсы.',
-      loadError: 'Не удалось загрузить библиотеки.',
-      errorRequired: 'Оба поля обязательны.',
-      errorPathNotAbsolute:
-        'Укажите абсолютный путь — он должен начинаться с / (например, /data/courses) или с буквы диска в Windows.',
-      errorRegister:
-        'Не удалось зарегистрировать библиотеку. Сервер не объяснил причину — попробуйте ещё раз.',
-      noScansYet: 'Ещё не сканировалась.',
-      scanInFlight: 'Сканирование… осмотрено {files} файлов.',
-      scanSummary: '{added} добавлено · {updated} обновлено · {courses} курсов найдено',
       statusRunning: 'Идёт',
       statusSucceeded: 'Успешно',
       statusFailed: 'Ошибка',

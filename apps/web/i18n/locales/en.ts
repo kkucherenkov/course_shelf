@@ -149,18 +149,12 @@ export default {
     reset: {
       title: 'Set a new password',
     },
+    // Only `title`/`subtitle` remain — reused by `sign-up.vue`'s
+    // `isFirstAdmin` branch. The rest was `pages/setup.vue`'s own copy;
+    // that page was unreachable (#665) and is gone.
     setup: {
       title: 'Create administrator',
       subtitle: 'No users exist yet. The account you create here will be the first administrator.',
-      emailLabel: 'Email',
-      emailHint: 'Used for sign-in.',
-      passwordLabel: 'Password',
-      passwordHint: 'At least 8 characters.',
-      displayNameLabel: 'Display name',
-      displayNameHint: "Optional — defaults to the part of the email before {'@'}.",
-      submitButton: 'Create administrator',
-      legalFootnote: 'By continuing, you agree to our Terms and Privacy Policy.',
-      errorGeneric: 'Could not create the administrator. Please try again.',
     },
     courseDetail: {
       loadingError: 'Could not load course. Please try again.',
@@ -798,30 +792,10 @@ export default {
       syncError: 'Could not save',
       toastUpdateFailed: 'Could not update display name. Please try again.',
     },
+    // The standalone `/libraries` page these once belonged to is gone (#665,
+    // no nav link since #618) — only the scan-status labels survive, reused
+    // by `AdminLibraryRow`/`AdminScansTable` across the admin surface.
     libraries: {
-      title: 'Libraries',
-      subtitle: 'Folders the scanner indexes into courses.',
-      addButton: 'Add library',
-      formTitle: 'Register a library',
-      nameLabel: 'Name',
-      namePlaceholder: 'Computer Science',
-      pathLabel: 'Path on this server',
-      pathPlaceholder: '/workspace/docs/data/courses',
-      pathHelp: 'Absolute path on the server filesystem. In dev the repo is mounted at /workspace.',
-      submitButton: 'Register',
-      cancelButton: 'Cancel',
-      rescanButton: 'Rescan',
-      scanningButton: 'Scanning…',
-      emptyTitle: 'No libraries yet',
-      emptyBody: 'Add a library to start indexing courses.',
-      loadError: 'Could not load libraries.',
-      errorRequired: 'Both fields are required.',
-      errorPathNotAbsolute:
-        'Enter an absolute path — it has to start with / (for example /data/courses), or with a drive letter on Windows.',
-      errorRegister: 'Could not register the library. The server gave no reason — try again.',
-      noScansYet: 'Never scanned.',
-      scanInFlight: 'Scanning… {files} files seen so far.',
-      scanSummary: '{added} added · {updated} updated · {courses} courses discovered',
       statusRunning: 'Running',
       statusSucceeded: 'Succeeded',
       statusFailed: 'Failed',

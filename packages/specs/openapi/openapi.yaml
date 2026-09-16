@@ -26,7 +26,7 @@ tags:
   - name: Catalog
     description: Course library registration and lookup.
   - name: Learning
-    description: Per-user lesson progress, bookmarks, and notes.
+    description: Per-user lesson progress, bookmarks, notes, and flashcards.
   - name: Ops
     description: Operational endpoints for liveness checks and self-tests.
   - name: Streaming
@@ -6649,6 +6649,547 @@ paths:
                     detail: No lesson with that id exists.
         "429":
           $ref: "#/components/responses/TooManyRequests"
+  /api/v1/lessons/{lessonId}/flashcards:
+    get:
+      operationId: listLessonFlashcards
+      summary: List the requester's flashcards for a lesson
+      description: >-
+        Returns all flashcards the authenticated user has created for the
+        given lesson, ordered by creation time ascending. An empty `items`
+        array is returned when no flashcards exist yet.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          description: Server-generated cuid identifying the lesson.
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Flashcard list returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlashcardListDto"
+              examples:
+                twoCards:
+                  summary: Two flashcards for a lesson
+                  value:
+                    items:
+                      - id: clxvfcd0000000000000000001
+                        lessonId: clxvles0000000000000000001
+                        front: What is an aggregate?
+                        back: A cluster of domain objects treated as a unit for data changes.
+                        easeFactor: 2.5
+                        intervalDays: 0
+                        repetitions: 0
+                        dueAt: "2026-04-25T14:00:00Z"
+                        createdAt: "2026-04-25T14:00:00Z"
+                        updatedAt: "2026-04-25T14:00:00Z"
+                      - id: clxvfcd0000000000000000002
+                        lessonId: clxvles0000000000000000001
+                        front: What does SM-2 stand for?
+                        back: SuperMemo-2, a spaced-repetition scheduling algorithm.
+                        sourceCueId: clxvcue0000000000000000042
+                        easeFactor: 2.5
+                        intervalDays: 0
+                        repetitions: 0
+                        dueAt: "2026-04-25T14:12:00Z"
+                        createdAt: "2026-04-25T14:12:00Z"
+                        updatedAt: "2026-04-25T14:12:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: No READ grant on the parent library or course
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not have access to this lesson.
+        "404":
+          description: Lesson not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No lesson with that id exists.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+    post:
+      operationId: createFlashcard
+      summary: Create a flashcard on a lesson
+      description: |
+        Flashcards are personal — even your own admin role does not surface
+        them in listings for other users. The three ways a card comes into
+        being (typed by hand, promoted from a note, pulled from a transcript
+        line) are a client concern: this is the one endpoint all of them call.
+        Pass `sourceCueId` when the card is made from a transcript line;
+        omit it otherwise. A fresh card is due for review immediately.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          description: Server-generated cuid identifying the lesson.
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFlashcardRequest"
+            examples:
+              manual:
+                summary: Hand-typed card
+                value:
+                  front: What is an aggregate?
+                  back: A cluster of domain objects treated as a unit for data changes.
+              fromTranscriptLine:
+                summary: Card made from a transcript line
+                value:
+                  front: What does SM-2 stand for?
+                  back: SuperMemo-2, a spaced-repetition scheduling algorithm.
+                  sourceCueId: clxvcue0000000000000000042
+      responses:
+        "201":
+          description: Flashcard created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlashcardDto"
+              examples:
+                created:
+                  value:
+                    id: clxvfcd0000000000000000001
+                    lessonId: clxvles0000000000000000001
+                    front: What is an aggregate?
+                    back: A cluster of domain objects treated as a unit for data changes.
+                    easeFactor: 2.5
+                    intervalDays: 0
+                    repetitions: 0
+                    dueAt: "2026-04-25T14:00:00Z"
+                    createdAt: "2026-04-25T14:00:00Z"
+                    updatedAt: "2026-04-25T14:00:00Z"
+        "400":
+          description: Validation error — missing or malformed fields
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                badInput:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: "front must not be empty."
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: No READ grant on the parent library or course
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not have access to this lesson.
+        "404":
+          description: Lesson not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No lesson with that id exists.
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /api/v1/flashcards/due:
+    get:
+      operationId: listDueFlashcards
+      summary: List the requester's due flashcards (the review queue)
+      description: >-
+        Returns up to `limit` of the authenticated user's flashcards, across
+        every lesson, whose `dueAt` has passed — a plain read, not a
+        background job. Sorted by `dueAt` ascending, most overdue first.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of due cards to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Due-queue returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlashcardListDto"
+              examples:
+                oneDue:
+                  summary: One overdue card
+                  value:
+                    items:
+                      - id: clxvfcd0000000000000000001
+                        lessonId: clxvles0000000000000000001
+                        front: What is an aggregate?
+                        back: A cluster of domain objects treated as a unit for data changes.
+                        easeFactor: 2.5
+                        intervalDays: 0
+                        repetitions: 0
+                        dueAt: "2026-04-25T14:00:00Z"
+                        createdAt: "2026-04-25T14:00:00Z"
+                        updatedAt: "2026-04-25T14:00:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /api/v1/flashcards/{id}:
+    patch:
+      operationId: updateFlashcard
+      summary: Update a flashcard's front or back
+      description: |
+        Owner-only. At least one of `front` / `back` must be present. The
+        server returns 400 on empty patches. Does not touch the review
+        schedule — grade the card via `POST /flashcards/{id}/grade` instead.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the flashcard to update.
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFlashcardRequest"
+            examples:
+              rewordBack:
+                summary: Tighten the answer side
+                value:
+                  back: A cluster of objects treated as one unit for data changes.
+      responses:
+        "200":
+          description: Flashcard updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlashcardDto"
+              examples:
+                updated:
+                  value:
+                    id: clxvfcd0000000000000000001
+                    lessonId: clxvles0000000000000000001
+                    front: What is an aggregate?
+                    back: A cluster of objects treated as one unit for data changes.
+                    easeFactor: 2.5
+                    intervalDays: 0
+                    repetitions: 0
+                    dueAt: "2026-04-25T14:00:00Z"
+                    createdAt: "2026-04-25T14:00:00Z"
+                    updatedAt: "2026-04-25T14:05:00Z"
+        "400":
+          description: Empty patch — no fields provided
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                emptyPatch:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: At least one of front or back must be present.
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller is not the flashcard owner
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not own this flashcard.
+        "404":
+          description: Flashcard not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No flashcard with that id exists.
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+    delete:
+      operationId: deleteFlashcard
+      summary: Delete a flashcard
+      description: Owner-only. Admins may delete any flashcard for moderation.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the flashcard to delete.
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "204":
+          description: Flashcard deleted — no body
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller is not the flashcard owner (and not an admin)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not own this flashcard.
+        "404":
+          description: Flashcard not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No flashcard with that id exists.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /api/v1/flashcards/{id}/grade:
+    post:
+      operationId: gradeFlashcard
+      summary: Grade a flashcard review, advancing its SM-2 schedule
+      description: |
+        Owner-only. `grade` is the SM-2 0..5 quality-of-response scale: 0-2 is
+        a lapse (the card resets to a 1-day interval and its repetition
+        streak resets to 0); 3-5 advances the streak and walks the SM-2
+        interval (1 day, then 6 days, then `previousInterval * easeFactor`).
+        Returns the card with its updated schedule.
+      tags: [Learning]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Server-generated cuid identifying the flashcard to grade.
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GradeFlashcardRequest"
+            examples:
+              perfectRecall:
+                summary: Perfect recall
+                value:
+                  grade: 5
+              lapse:
+                summary: Forgot it — lapse
+                value:
+                  grade: 1
+      responses:
+        "200":
+          description: Flashcard graded — updated schedule returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlashcardDto"
+              examples:
+                graded:
+                  value:
+                    id: clxvfcd0000000000000000001
+                    lessonId: clxvles0000000000000000001
+                    front: What is an aggregate?
+                    back: A cluster of domain objects treated as a unit for data changes.
+                    easeFactor: 2.6
+                    intervalDays: 1
+                    repetitions: 1
+                    dueAt: "2026-04-26T14:00:00Z"
+                    createdAt: "2026-04-25T14:00:00Z"
+                    updatedAt: "2026-04-25T14:00:00Z"
+        "400":
+          description: Validation error — grade missing or out of the 0..5 range
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                badInput:
+                  value:
+                    type: about:blank
+                    title: Bad Request
+                    status: 400
+                    detail: "grade must be an integer between 0 and 5."
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller is not the flashcard owner
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not own this flashcard.
+        "404":
+          description: Flashcard not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No flashcard with that id exists.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /api/v1/health:
     get:
       operationId: getHealth
@@ -10193,6 +10734,178 @@ components:
         body: "## Aggregates\n\nKey insight: aggregates enforce invariants across their boundary."
         createdAt: "2026-04-25T15:00:00Z"
         updatedAt: "2026-04-25T15:05:00Z"
+
+    FlashcardDto:
+      type: object
+      required:
+        [
+          id,
+          lessonId,
+          front,
+          back,
+          easeFactor,
+          intervalDays,
+          repetitions,
+          dueAt,
+          createdAt,
+          updatedAt,
+        ]
+      description: A single user-owned flashcard with its SM-2 review schedule.
+      properties:
+        id:
+          type: string
+          description: Server-generated cuid identifying this flashcard.
+        lessonId:
+          type: string
+          description: cuid of the lesson this flashcard belongs to.
+        front:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Prompt side. Trimmed server-side.
+        back:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Answer side. Trimmed server-side.
+        sourceCueId:
+          type: string
+          description: >-
+            cuid of the TranscriptCue this card was made from, when created
+            from a transcript line. Absent for manual and note-derived cards.
+        easeFactor:
+          type: number
+          format: double
+          minimum: 1.3
+          description: SM-2 ease factor. Starts at 2.5, floors at 1.3.
+        intervalDays:
+          type: integer
+          minimum: 0
+          description: Days until the next scheduled review. 0 for a never-reviewed card.
+        repetitions:
+          type: integer
+          minimum: 0
+          description: Consecutive passing reviews (grade >= 3) since the last lapse.
+        dueAt:
+          type: string
+          format: date-time
+          description: ISO-8601 instant this card is next due for review.
+        createdAt:
+          type: string
+          format: date-time
+          description: ISO-8601 instant when the flashcard was first created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: ISO-8601 instant when the flashcard was last updated.
+      example:
+        id: clxvfcd0000000000000000001
+        lessonId: clxvles0000000000000000001
+        front: What is an aggregate?
+        back: A cluster of domain objects treated as a unit for data changes.
+        easeFactor: 2.5
+        intervalDays: 0
+        repetitions: 0
+        dueAt: "2026-04-25T14:00:00Z"
+        createdAt: "2026-04-25T14:00:00Z"
+        updatedAt: "2026-04-25T14:00:00Z"
+
+    FlashcardListDto:
+      type: object
+      required: [items]
+      description: A list of the requester's flashcards.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlashcardDto"
+      example:
+        items:
+          - id: clxvfcd0000000000000000001
+            lessonId: clxvles0000000000000000001
+            front: What is an aggregate?
+            back: A cluster of domain objects treated as a unit for data changes.
+            easeFactor: 2.5
+            intervalDays: 0
+            repetitions: 0
+            dueAt: "2026-04-25T14:00:00Z"
+            createdAt: "2026-04-25T14:00:00Z"
+            updatedAt: "2026-04-25T14:00:00Z"
+
+    CreateFlashcardRequest:
+      type: object
+      additionalProperties: false
+      required: [front, back]
+      description: Payload for creating a new flashcard on a lesson.
+      properties:
+        front:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          # The aggregate trims before testing for emptiness, so " " would
+          # satisfy minLength and then be rejected 422 — same trap CreateBookmarkRequest.label
+          # was patched for. Stated here so the validator answers 400 at the edge instead.
+          pattern: "[^\\t\\n\\u000b\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]"
+          description: Prompt side. Trimmed server-side, so it must contain a non-whitespace character.
+        back:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: "[^\\t\\n\\u000b\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]"
+          description: Answer side. Trimmed server-side, so it must contain a non-whitespace character.
+        sourceCueId:
+          type: string
+          minLength: 1
+          description: >-
+            Optional cuid of the TranscriptCue this card is made from — set
+            when the card was created from a transcript line, omitted for
+            manual and note-derived cards.
+      example:
+        front: What is an aggregate?
+        back: A cluster of domain objects treated as a unit for data changes.
+
+    UpdateFlashcardRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      description: >-
+        Payload for updating a flashcard's front/back. At least one of
+        `front` or `back` must be present — the server returns 400 on empty
+        patches. Does not touch the review schedule.
+      properties:
+        front:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: "[^\\t\\n\\u000b\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]"
+          description: New prompt side.
+        back:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: "[^\\t\\n\\u000b\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]"
+          description: New answer side.
+      example:
+        back: A cluster of objects treated as one unit for data changes.
+
+    GradeFlashcardRequest:
+      type: object
+      additionalProperties: false
+      required: [grade]
+      description: SM-2 quality-of-response grade for one review of a flashcard.
+      properties:
+        grade:
+          type: integer
+          minimum: 0
+          maximum: 5
+          description: |
+            0 - complete blackout    3 - correct, serious difficulty
+            1 - incorrect, familiar  4 - correct, some hesitation
+            2 - incorrect, easy      5 - perfect recall
+            Grades below 3 are a lapse: the repetition streak resets and the
+            card is due again in 1 day.
+      example:
+        grade: 4
 
     PingResponse:
       type: object

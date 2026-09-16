@@ -11,7 +11,9 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**applyQuiz**](LearningApi.md#applyquiz) | **POST** /api/v1/quizzes/{id}/apply | Apply a proposed quiz
 [**createBookmark**](LearningApi.md#createbookmark) | **POST** /api/v1/lessons/{lessonId}/bookmarks | Create a bookmark on a lesson
+[**createFlashcard**](LearningApi.md#createflashcard) | **POST** /api/v1/lessons/{lessonId}/flashcards | Create a flashcard on a lesson
 [**deleteBookmark**](LearningApi.md#deletebookmark) | **DELETE** /api/v1/bookmarks/{id} | Delete a bookmark
+[**deleteFlashcard**](LearningApi.md#deleteflashcard) | **DELETE** /api/v1/flashcards/{id} | Delete a flashcard
 [**deleteNote**](LearningApi.md#deletenote) | **DELETE** /api/v1/notes/{lessonId} | Clear the requester&#39;s note for a lesson
 [**discardQuiz**](LearningApi.md#discardquiz) | **POST** /api/v1/quizzes/{id}/discard | Discard a proposed quiz
 [**generateCourseQuiz**](LearningApi.md#generatecoursequiz) | **POST** /api/v1/courses/{id}/quizzes | Generate quiz proposals for every lesson in a course
@@ -19,13 +21,17 @@ Method | HTTP request | Description
 [**getLessonProgress**](LearningApi.md#getlessonprogress) | **GET** /api/v1/progress/{lessonId} | Get the requester&#39;s progress on a lesson
 [**getNote**](LearningApi.md#getnote) | **GET** /api/v1/notes/{lessonId} | Get the requester&#39;s note for a lesson
 [**getQuiz**](LearningApi.md#getquiz) | **GET** /api/v1/quizzes/{id} | Get one quiz proposal
+[**gradeFlashcard**](LearningApi.md#gradeflashcard) | **POST** /api/v1/flashcards/{id}/grade | Grade a flashcard review, advancing its SM-2 schedule
+[**listDueFlashcards**](LearningApi.md#listdueflashcards) | **GET** /api/v1/flashcards/due | List the requester&#39;s due flashcards (the review queue)
 [**listLessonBookmarks**](LearningApi.md#listlessonbookmarks) | **GET** /api/v1/lessons/{lessonId}/bookmarks | List the requester&#39;s bookmarks for a lesson
+[**listLessonFlashcards**](LearningApi.md#listlessonflashcards) | **GET** /api/v1/lessons/{lessonId}/flashcards | List the requester&#39;s flashcards for a lesson
 [**listQuizzes**](LearningApi.md#listquizzes) | **GET** /api/v1/quizzes | List quiz proposals
 [**markCourseComplete**](LearningApi.md#markcoursecomplete) | **POST** /api/v1/courses/{id}/mark-complete | Mark every lesson in the course as completed for the requester
 [**recordLessonProgress**](LearningApi.md#recordlessonprogress) | **POST** /api/v1/progress | Record (upsert) the requester&#39;s progress on a lesson
 [**recordLessonProgressBatch**](LearningApi.md#recordlessonprogressbatch) | **POST** /api/v1/progress/batch | Record up to 200 progress updates in a single call
 [**resetCourseProgress**](LearningApi.md#resetcourseprogress) | **POST** /api/v1/courses/{id}/reset-progress | Clear every progress row in the course for the requester
 [**updateBookmark**](LearningApi.md#updatebookmark) | **PATCH** /api/v1/bookmarks/{id} | Update a bookmark&#39;s position or label
+[**updateFlashcard**](LearningApi.md#updateflashcard) | **PATCH** /api/v1/flashcards/{id} | Update a flashcard&#39;s front or back
 [**upsertNote**](LearningApi.md#upsertnote) | **PUT** /api/v1/notes | Upsert the requester&#39;s note for a lesson
 
 
@@ -117,6 +123,51 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **createFlashcard**
+> FlashcardDto createFlashcard(lessonId, createFlashcardRequest)
+
+Create a flashcard on a lesson
+
+Flashcards are personal — even your own admin role does not surface them in listings for other users. The three ways a card comes into being (typed by hand, promoted from a note, pulled from a transcript line) are a client concern: this is the one endpoint all of them call. Pass `sourceCueId` when the card is made from a transcript line; omit it otherwise. A fresh card is due for review immediately. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String lessonId = lessonId_example; // String | Server-generated cuid identifying the lesson.
+final CreateFlashcardRequest createFlashcardRequest = {"front":"What is an aggregate?","back":"A cluster of domain objects treated as a unit for data changes."}; // CreateFlashcardRequest | 
+
+try {
+    final response = api.createFlashcard(lessonId, createFlashcardRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->createFlashcard: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **lessonId** | **String**| Server-generated cuid identifying the lesson. | 
+ **createFlashcardRequest** | [**CreateFlashcardRequest**](CreateFlashcardRequest.md)|  | 
+
+### Return type
+
+[**FlashcardDto**](FlashcardDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **deleteBookmark**
 > deleteBookmark(id)
 
@@ -143,6 +194,48 @@ try {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **id** | **String**| Server-generated cuid identifying the bookmark to delete. | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **deleteFlashcard**
+> deleteFlashcard(id)
+
+Delete a flashcard
+
+Owner-only. Admins may delete any flashcard for moderation.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String id = id_example; // String | Server-generated cuid identifying the flashcard to delete.
+
+try {
+    api.deleteFlashcard(id);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->deleteFlashcard: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the flashcard to delete. | 
 
 ### Return type
 
@@ -463,6 +556,94 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **gradeFlashcard**
+> FlashcardDto gradeFlashcard(id, gradeFlashcardRequest)
+
+Grade a flashcard review, advancing its SM-2 schedule
+
+Owner-only. `grade` is the SM-2 0..5 quality-of-response scale: 0-2 is a lapse (the card resets to a 1-day interval and its repetition streak resets to 0); 3-5 advances the streak and walks the SM-2 interval (1 day, then 6 days, then `previousInterval * easeFactor`). Returns the card with its updated schedule. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String id = id_example; // String | Server-generated cuid identifying the flashcard to grade.
+final GradeFlashcardRequest gradeFlashcardRequest = {"grade":5}; // GradeFlashcardRequest | 
+
+try {
+    final response = api.gradeFlashcard(id, gradeFlashcardRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->gradeFlashcard: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the flashcard to grade. | 
+ **gradeFlashcardRequest** | [**GradeFlashcardRequest**](GradeFlashcardRequest.md)|  | 
+
+### Return type
+
+[**FlashcardDto**](FlashcardDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **listDueFlashcards**
+> FlashcardListDto listDueFlashcards(limit)
+
+List the requester's due flashcards (the review queue)
+
+Returns up to `limit` of the authenticated user's flashcards, across every lesson, whose `dueAt` has passed — a plain read, not a background job. Sorted by `dueAt` ascending, most overdue first.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final int limit = 56; // int | Maximum number of due cards to return.
+
+try {
+    final response = api.listDueFlashcards(limit);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->listDueFlashcards: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **limit** | **int**| Maximum number of due cards to return. | [optional] [default to 20]
+
+### Return type
+
+[**FlashcardListDto**](FlashcardListDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **listLessonBookmarks**
 > BookmarkListDto listLessonBookmarks(lessonId)
 
@@ -494,6 +675,49 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**BookmarkListDto**](BookmarkListDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **listLessonFlashcards**
+> FlashcardListDto listLessonFlashcards(lessonId)
+
+List the requester's flashcards for a lesson
+
+Returns all flashcards the authenticated user has created for the given lesson, ordered by creation time ascending. An empty `items` array is returned when no flashcards exist yet.
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String lessonId = lessonId_example; // String | Server-generated cuid identifying the lesson.
+
+try {
+    final response = api.listLessonFlashcards(lessonId);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->listLessonFlashcards: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **lessonId** | **String**| Server-generated cuid identifying the lesson. | 
+
+### Return type
+
+[**FlashcardListDto**](FlashcardListDto.md)
 
 ### Authorization
 
@@ -758,6 +982,51 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**BookmarkDto**](BookmarkDto.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **updateFlashcard**
+> FlashcardDto updateFlashcard(id, updateFlashcardRequest)
+
+Update a flashcard's front or back
+
+Owner-only. At least one of `front` / `back` must be present. The server returns 400 on empty patches. Does not touch the review schedule — grade the card via `POST /flashcards/{id}/grade` instead. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getLearningApi();
+final String id = id_example; // String | Server-generated cuid identifying the flashcard to update.
+final UpdateFlashcardRequest updateFlashcardRequest = {"back":"A cluster of objects treated as one unit for data changes."}; // UpdateFlashcardRequest | 
+
+try {
+    final response = api.updateFlashcard(id, updateFlashcardRequest);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling LearningApi->updateFlashcard: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**| Server-generated cuid identifying the flashcard to update. | 
+ **updateFlashcardRequest** | [**UpdateFlashcardRequest**](UpdateFlashcardRequest.md)|  | 
+
+### Return type
+
+[**FlashcardDto**](FlashcardDto.md)
 
 ### Authorization
 

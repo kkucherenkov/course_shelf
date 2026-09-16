@@ -224,7 +224,7 @@
     width: 100%;
 
     &__eyebrow {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       font-weight: var(--fw-medium);
       letter-spacing: var(--tracking-widest);
       color: var(--text-tertiary);

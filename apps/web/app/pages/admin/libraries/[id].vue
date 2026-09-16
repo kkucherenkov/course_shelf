@@ -669,7 +669,7 @@
 
     &__tbl-title {
       margin: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       font-weight: var(--fw-semibold);
       color: var(--text-loud);
     }
@@ -698,7 +698,7 @@
     }
 
     &__card-heading {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       font-weight: var(--fw-semibold);
       text-transform: uppercase;
       letter-spacing: 0.04em;
@@ -722,7 +722,7 @@
     }
 
     &__detail-label {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
     }
 
@@ -744,7 +744,7 @@
 
     &__danger-body {
       margin: 0;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
       line-height: var(--leading-normal);
     }

@@ -96,7 +96,7 @@
     &__body {
       margin: 0;
       max-width: 70ch;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
       line-height: var(--leading-relaxed);
       // Newlines are the only structure a scraped description carries —

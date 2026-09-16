@@ -147,14 +147,14 @@
 
     &__progress-text {
       flex-shrink: 0;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
       font-variant-numeric: tabular-nums;
     }
 
     &__description {
       margin: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
       line-height: var(--leading-relaxed);
 

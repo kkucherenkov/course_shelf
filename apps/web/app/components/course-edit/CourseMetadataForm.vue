@@ -431,7 +431,7 @@
 
     &__section-title {
       padding: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       font-weight: var(--fw-semibold);
       color: var(--text-loud);
       text-transform: uppercase;
@@ -446,7 +446,7 @@
 
     &__empty {
       margin: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
     }
 
@@ -472,7 +472,7 @@
 
     &__unsaved {
       margin-inline-end: auto;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
     }
   }

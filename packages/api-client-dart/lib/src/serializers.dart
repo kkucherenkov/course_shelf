@@ -54,10 +54,14 @@ import 'package:app_api_client/src/model/course_outline_summary.dart';
 import 'package:app_api_client/src/model/course_progress.dart';
 import 'package:app_api_client/src/model/course_target.dart';
 import 'package:app_api_client/src/model/create_bookmark_request.dart';
+import 'package:app_api_client/src/model/create_flashcard_request.dart';
 import 'package:app_api_client/src/model/date_range.dart';
 import 'package:app_api_client/src/model/dependency_status.dart';
 import 'package:app_api_client/src/model/external_id_ref.dart';
+import 'package:app_api_client/src/model/flashcard_dto.dart';
+import 'package:app_api_client/src/model/flashcard_list_dto.dart';
 import 'package:app_api_client/src/model/generate_quiz_request.dart';
+import 'package:app_api_client/src/model/grade_flashcard_request.dart';
 import 'package:app_api_client/src/model/grant_level.dart';
 import 'package:app_api_client/src/model/grant_target.dart';
 import 'package:app_api_client/src/model/has_users_response.dart';
@@ -139,6 +143,7 @@ import 'package:app_api_client/src/model/transcription_list_dto.dart';
 import 'package:app_api_client/src/model/transcription_status.dart';
 import 'package:app_api_client/src/model/update_bookmark_request.dart';
 import 'package:app_api_client/src/model/update_course_request.dart';
+import 'package:app_api_client/src/model/update_flashcard_request.dart';
 import 'package:app_api_client/src/model/update_library_request.dart';
 import 'package:app_api_client/src/model/update_me_request.dart';
 import 'package:app_api_client/src/model/upsert_instructor_request.dart';
@@ -190,10 +195,14 @@ part 'serializers.g.dart';
   CourseProgress,
   CourseTarget,
   CreateBookmarkRequest,
+  CreateFlashcardRequest,
   DateRange,
   DependencyStatus,
   ExternalIdRef,
+  FlashcardDto,
+  FlashcardListDto,
   GenerateQuizRequest,
+  GradeFlashcardRequest,
   GrantLevel,
   GrantTarget,
   HasUsersResponse,
@@ -275,6 +284,7 @@ part 'serializers.g.dart';
   TranscriptionStatus,
   UpdateBookmarkRequest,
   UpdateCourseRequest,
+  UpdateFlashcardRequest,
   UpdateLibraryRequest,
   UpdateMeRequest,
   UpsertInstructorRequest,

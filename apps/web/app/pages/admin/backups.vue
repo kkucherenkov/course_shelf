@@ -183,14 +183,14 @@
 
     &__progress-title {
       margin: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       font-weight: var(--fw-semibold);
       color: var(--text-fg);
     }
 
     &__progress-body {
       margin: var(--space-1) 0 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
     }
 
@@ -203,7 +203,7 @@
 
     &__meta {
       margin: 0 0 var(--space-4);
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
     }
 
     &__meta-row {
@@ -243,7 +243,7 @@
 
     &__expired {
       margin: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
     }
   }

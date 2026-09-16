@@ -1238,7 +1238,7 @@
 
     &__section-sub {
       margin: 0 0 var(--space-5);
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
       max-width: 80ch;
     }
@@ -1479,13 +1479,13 @@
     }
 
     &__row-title {
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       font-weight: var(--fw-medium);
       color: var(--text-fg);
     }
 
     &__row-sub {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
     }
 

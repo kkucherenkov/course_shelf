@@ -1720,6 +1720,105 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/lessons/{lessonId}/flashcards': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the requester's flashcards for a lesson
+     * @description Returns all flashcards the authenticated user has created for the given lesson, ordered by creation time ascending. An empty `items` array is returned when no flashcards exist yet.
+     */
+    get: operations['listLessonFlashcards'];
+    put?: never;
+    /**
+     * Create a flashcard on a lesson
+     * @description Flashcards are personal — even your own admin role does not surface
+     *     them in listings for other users. The three ways a card comes into
+     *     being (typed by hand, promoted from a note, pulled from a transcript
+     *     line) are a client concern: this is the one endpoint all of them call.
+     *     Pass `sourceCueId` when the card is made from a transcript line;
+     *     omit it otherwise. A fresh card is due for review immediately.
+     */
+    post: operations['createFlashcard'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/flashcards/due': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the requester's due flashcards (the review queue)
+     * @description Returns up to `limit` of the authenticated user's flashcards, across every lesson, whose `dueAt` has passed — a plain read, not a background job. Sorted by `dueAt` ascending, most overdue first.
+     */
+    get: operations['listDueFlashcards'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/flashcards/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete a flashcard
+     * @description Owner-only. Admins may delete any flashcard for moderation.
+     */
+    delete: operations['deleteFlashcard'];
+    options?: never;
+    head?: never;
+    /**
+     * Update a flashcard's front or back
+     * @description Owner-only. At least one of `front` / `back` must be present. The
+     *     server returns 400 on empty patches. Does not touch the review
+     *     schedule — grade the card via `POST /flashcards/{id}/grade` instead.
+     */
+    patch: operations['updateFlashcard'];
+    trace?: never;
+  };
+  '/api/v1/flashcards/{id}/grade': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Grade a flashcard review, advancing its SM-2 schedule
+     * @description Owner-only. `grade` is the SM-2 0..5 quality-of-response scale: 0-2 is
+     *     a lapse (the card resets to a 1-day interval and its repetition
+     *     streak resets to 0); 3-5 advances the streak and walks the SM-2
+     *     interval (1 day, then 6 days, then `previousInterval * easeFactor`).
+     *     Returns the card with its updated schedule.
+     */
+    post: operations['gradeFlashcard'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/health': {
     parameters: {
       query?: never;
@@ -3837,6 +3936,122 @@ export interface components {
        * @description ISO-8601 instant when the note body was last replaced.
        */
       updatedAt: string;
+    };
+    /**
+     * @description A single user-owned flashcard with its SM-2 review schedule.
+     * @example {
+     *       "id": "clxvfcd0000000000000000001",
+     *       "lessonId": "clxvles0000000000000000001",
+     *       "front": "What is an aggregate?",
+     *       "back": "A cluster of domain objects treated as a unit for data changes.",
+     *       "easeFactor": 2.5,
+     *       "intervalDays": 0,
+     *       "repetitions": 0,
+     *       "dueAt": "2026-04-25T14:00:00Z",
+     *       "createdAt": "2026-04-25T14:00:00Z",
+     *       "updatedAt": "2026-04-25T14:00:00Z"
+     *     }
+     */
+    FlashcardDto: {
+      /** @description Server-generated cuid identifying this flashcard. */
+      id: string;
+      /** @description cuid of the lesson this flashcard belongs to. */
+      lessonId: string;
+      /** @description Prompt side. Trimmed server-side. */
+      front: string;
+      /** @description Answer side. Trimmed server-side. */
+      back: string;
+      /** @description cuid of the TranscriptCue this card was made from, when created from a transcript line. Absent for manual and note-derived cards. */
+      sourceCueId?: string;
+      /**
+       * Format: double
+       * @description SM-2 ease factor. Starts at 2.5, floors at 1.3.
+       */
+      easeFactor: number;
+      /** @description Days until the next scheduled review. 0 for a never-reviewed card. */
+      intervalDays: number;
+      /** @description Consecutive passing reviews (grade >= 3) since the last lapse. */
+      repetitions: number;
+      /**
+       * Format: date-time
+       * @description ISO-8601 instant this card is next due for review.
+       */
+      dueAt: string;
+      /**
+       * Format: date-time
+       * @description ISO-8601 instant when the flashcard was first created.
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description ISO-8601 instant when the flashcard was last updated.
+       */
+      updatedAt: string;
+    };
+    /**
+     * @description A list of the requester's flashcards.
+     * @example {
+     *       "items": [
+     *         {
+     *           "id": "clxvfcd0000000000000000001",
+     *           "lessonId": "clxvles0000000000000000001",
+     *           "front": "What is an aggregate?",
+     *           "back": "A cluster of domain objects treated as a unit for data changes.",
+     *           "easeFactor": 2.5,
+     *           "intervalDays": 0,
+     *           "repetitions": 0,
+     *           "dueAt": "2026-04-25T14:00:00Z",
+     *           "createdAt": "2026-04-25T14:00:00Z",
+     *           "updatedAt": "2026-04-25T14:00:00Z"
+     *         }
+     *       ]
+     *     }
+     */
+    FlashcardListDto: {
+      items: components['schemas']['FlashcardDto'][];
+    };
+    /**
+     * @description Payload for creating a new flashcard on a lesson.
+     * @example {
+     *       "front": "What is an aggregate?",
+     *       "back": "A cluster of domain objects treated as a unit for data changes."
+     *     }
+     */
+    CreateFlashcardRequest: {
+      /** @description Prompt side. Trimmed server-side, so it must contain a non-whitespace character. */
+      front: string;
+      /** @description Answer side. Trimmed server-side, so it must contain a non-whitespace character. */
+      back: string;
+      /** @description Optional cuid of the TranscriptCue this card is made from — set when the card was created from a transcript line, omitted for manual and note-derived cards. */
+      sourceCueId?: string;
+    };
+    /**
+     * @description Payload for updating a flashcard's front/back. At least one of `front` or `back` must be present — the server returns 400 on empty patches. Does not touch the review schedule.
+     * @example {
+     *       "back": "A cluster of objects treated as one unit for data changes."
+     *     }
+     */
+    UpdateFlashcardRequest: {
+      /** @description New prompt side. */
+      front?: string;
+      /** @description New answer side. */
+      back?: string;
+    };
+    /**
+     * @description SM-2 quality-of-response grade for one review of a flashcard.
+     * @example {
+     *       "grade": 4
+     *     }
+     */
+    GradeFlashcardRequest: {
+      /**
+       * @description 0 - complete blackout    3 - correct, serious difficulty
+       *     1 - incorrect, familiar  4 - correct, some hesitation
+       *     2 - incorrect, easy      5 - perfect recall
+       *     Grades below 3 are a lapse: the repetition streak resets and the
+       *     card is due again in 1 day.
+       */
+      grade: number;
     };
     PingResponse: {
       /**
@@ -8411,6 +8626,336 @@ export interface operations {
         };
       };
       /** @description Lesson not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+    };
+  };
+  listLessonFlashcards: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the lesson. */
+        lessonId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Flashcard list returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FlashcardListDto'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description No READ grant on the parent library or course */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Lesson not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+    };
+  };
+  createFlashcard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the lesson. */
+        lessonId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateFlashcardRequest'];
+      };
+    };
+    responses: {
+      /** @description Flashcard created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FlashcardDto'];
+        };
+      };
+      /** @description Validation error — missing or malformed fields */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description No READ grant on the parent library or course */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Lesson not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      422: components['responses']['UnprocessableEntity'];
+      429: components['responses']['TooManyRequests'];
+    };
+  };
+  listDueFlashcards: {
+    parameters: {
+      query?: {
+        /** @description Maximum number of due cards to return. */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Due-queue returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FlashcardListDto'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+    };
+  };
+  deleteFlashcard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the flashcard to delete. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Flashcard deleted — no body */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller is not the flashcard owner (and not an admin) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Flashcard not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+    };
+  };
+  updateFlashcard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the flashcard to update. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateFlashcardRequest'];
+      };
+    };
+    responses: {
+      /** @description Flashcard updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FlashcardDto'];
+        };
+      };
+      /** @description Empty patch — no fields provided */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller is not the flashcard owner */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Flashcard not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      422: components['responses']['UnprocessableEntity'];
+      429: components['responses']['TooManyRequests'];
+    };
+  };
+  gradeFlashcard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the flashcard to grade. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GradeFlashcardRequest'];
+      };
+    };
+    responses: {
+      /** @description Flashcard graded — updated schedule returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FlashcardDto'];
+        };
+      };
+      /** @description Validation error — grade missing or out of the 0..5 range */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller is not the flashcard owner */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Flashcard not found */
       404: {
         headers: {
           [name: string]: unknown;

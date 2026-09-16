@@ -4,7 +4,7 @@
   // expressions during `nuxt typecheck`, and `navigateTo` is called from the
   // template below. Same `#imports` idiom as `stores/auth.ts`.
   import { navigateTo } from '#imports';
-  import { AppBanner, AppDialog, IconCS } from '@app/ui';
+  import { AppBanner, AppButton, AppDialog, IconCS } from '@app/ui';
   import type { CourseDto, AccessGrantDto } from '@app/api-client-ts';
   import { getCourse, listCourses, client } from '@app/api-client-ts';
   import AdminRoleChip from '~/components/admin/AdminRoleChip.vue';
@@ -309,9 +309,12 @@
     <!-- Not found -->
     <div v-if="userNotFound" class="adm-perms__not-found">
       <p>{{ t('pages.admin.permissions.notFound') }}</p>
-      <UButton variant="outline" size="sm" @click="navigateTo('/admin/permissions')">
-        {{ t('pages.admin.permissions.backToUsersCta') }}
-      </UButton>
+      <AppButton
+        variant="secondary"
+        size="sm"
+        :label="t('pages.admin.permissions.backToUsersCta')"
+        @click="navigateTo('/admin/permissions')"
+      />
     </div>
 
     <template v-else>
@@ -343,14 +346,13 @@
           :label-disabled="t('pages.admin.users.roleDisabled')"
           :tooltip-self="t('pages.admin.permissions.roleChipReadOnlyTooltip')"
         />
-        <UButton
-          variant="outline"
+        <AppButton
+          variant="secondary"
           size="sm"
           class="adm-perms__add-btn"
+          :label="t('pages.admin.permissions.backToUsersCta')"
           @click="navigateTo('/admin/permissions')"
-        >
-          {{ t('pages.admin.permissions.backToUsersCta') }}
-        </UButton>
+        />
       </div>
 
       <!-- Info banner -->
@@ -369,19 +371,17 @@
         class="adm-perms__banner"
       >
         <template #actions>
-          <UButton
+          <AppButton
             size="sm"
-            variant="outline"
-            color="error"
+            variant="secondary"
+            :label="t('pages.admin.permissions.errorRetry')"
             @click="
               () => {
                 void refetchLibs();
                 void grants.refetch();
               }
             "
-          >
-            {{ t('pages.admin.permissions.errorRetry') }}
-          </UButton>
+          />
         </template>
       </AppBanner>
 
@@ -447,12 +447,18 @@
       @update:open="revokeDialogOpen = $event"
     >
       <template #footer>
-        <UButton variant="ghost" size="sm" @click="cancelRevoke">
-          {{ t('pages.admin.permissions.revokeDialogCancel') }}
-        </UButton>
-        <UButton variant="solid" color="error" size="sm" @click="confirmRevoke">
-          {{ t('pages.admin.permissions.revokeDialogConfirm') }}
-        </UButton>
+        <AppButton
+          variant="ghost"
+          size="sm"
+          :label="t('pages.admin.permissions.revokeDialogCancel')"
+          @click="cancelRevoke"
+        />
+        <AppButton
+          variant="destructive"
+          size="sm"
+          :label="t('pages.admin.permissions.revokeDialogConfirm')"
+          @click="confirmRevoke"
+        />
       </template>
     </AppDialog>
   </div>

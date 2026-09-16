@@ -27,6 +27,12 @@ vi.mock('#imports', () => ({ navigateTo: navigateToMock }));
 
 vi.mock('@app/ui', () => ({
   AppBanner: { name: 'AppBanner', props: ['variant', 'title', 'body'], template: '<div />' },
+  AppButton: {
+    name: 'AppButton',
+    props: ['label', 'variant', 'size'],
+    emits: ['click'],
+    template: '<button @click="$emit(\'click\')">{{ label }}<slot /></button>',
+  },
   AppEmptyState: { name: 'AppEmptyState', props: ['icon', 'title'], template: '<div />' },
   IconCS: { name: 'IconCS', props: ['name'], template: '<svg />' },
 }));
@@ -75,11 +81,8 @@ vi.mock('~/composables/useAdminUsers', () => ({
 
 import PermissionsPicker from '../admin/permissions/index.vue';
 
-// `UButton` is a Nuxt-UI global not registered in this isolated test; the
-// error-state slot references it even though the mocked AppBanner never
-// renders that slot, so it needs a stub to silence resolution warnings.
 function mountPage() {
-  return mount(PermissionsPicker, { global: { stubs: { UButton: true } } });
+  return mount(PermissionsPicker);
 }
 
 describe('admin/permissions/index.vue', () => {

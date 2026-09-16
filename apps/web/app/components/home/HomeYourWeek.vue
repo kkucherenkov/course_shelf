@@ -87,7 +87,7 @@
       font-size: var(--text-3xl);
       font-weight: var(--fw-bold);
       color: var(--brand-accent);
-      line-height: 1;
+      line-height: var(--leading-none);
     }
 
     &__lessons {

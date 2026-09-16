@@ -122,7 +122,7 @@
       font-size: var(--text-2xl);
       font-weight: var(--fw-bold);
       color: var(--text-fg);
-      line-height: 1.25;
+      line-height: var(--leading-tight);
 
       @media (width <= 480px) {
         font-size: var(--text-lg);
@@ -156,7 +156,7 @@
       margin: 0;
       font-size: var(--text-sm);
       color: var(--text-secondary);
-      line-height: 1.6;
+      line-height: var(--leading-relaxed);
 
       // Hide description in strip layout (≤480px)
       @media (width <= 480px) {

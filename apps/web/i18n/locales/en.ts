@@ -172,6 +172,8 @@ export default {
       durationValue: '{h}h {m}m',
       progress: 'Progress',
       descriptionHeading: 'About this course',
+      descriptionShowMore: 'Show more',
+      descriptionShowLess: 'Show less',
       ctaStart: 'Start',
       ctaRewatch: 'Rewatch from start',
       ctaResume: 'Resume — Section {section} · L{lesson}',

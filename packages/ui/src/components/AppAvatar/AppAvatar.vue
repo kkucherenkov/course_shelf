@@ -102,7 +102,7 @@
     }
 
     &__initials {
-      line-height: 1;
+      line-height: var(--leading-none);
     }
 
     &--xs {
@@ -148,7 +148,7 @@
       // resolves to #FFFFFF (unchanged), in dark it flips to the dark ink that
       // stays legible on the lighter accent.
       color: var(--brand-accent-fg);
-      line-height: 1;
+      line-height: var(--leading-none);
 
       &--admin {
         background: var(--brand-accent);

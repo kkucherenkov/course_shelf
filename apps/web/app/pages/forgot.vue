@@ -269,8 +269,8 @@
       width: $icon-size;
       height: $icon-size;
       border-radius: 50%;
-      background: var(--success-soft);
-      color: var(--success);
+      background: var(--status-success-soft);
+      color: var(--status-success-fg);
       margin-bottom: var(--space-5);
     }
 

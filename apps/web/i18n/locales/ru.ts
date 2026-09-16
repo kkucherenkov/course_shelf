@@ -174,6 +174,8 @@ export default {
       durationValue: '{h} ч {m} мин',
       progress: 'Прогресс',
       descriptionHeading: 'О курсе',
+      descriptionShowMore: 'Показать полностью',
+      descriptionShowLess: 'Свернуть',
       ctaStart: 'Начать',
       ctaRewatch: 'Пересмотреть сначала',
       ctaResume: 'Продолжить — Раздел {section} · У{lesson}',

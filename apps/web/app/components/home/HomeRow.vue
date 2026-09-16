@@ -191,7 +191,7 @@
       display: inline-block;
       transition: transform var(--dur-fast) var(--ease-default);
       font-size: var(--text-sm);
-      line-height: 1;
+      line-height: var(--leading-none);
 
       &--open {
         transform: rotate(180deg);
@@ -235,9 +235,9 @@
       border-radius: var(--radius-md);
       background: linear-gradient(
         90deg,
-        var(--skeleton-base, var(--surface-overlay)),
-        var(--skeleton-shine, var(--surface-raised)),
-        var(--skeleton-base, var(--surface-overlay))
+        var(--surface-skeleton-base, var(--surface-overlay)),
+        var(--surface-skeleton-shine, var(--surface-raised)),
+        var(--surface-skeleton-base, var(--surface-overlay))
       );
       background-size: 200% 100%;
       animation: home-row-pulse $skel-dur ease-in-out infinite;

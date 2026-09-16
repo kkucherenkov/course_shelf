@@ -52,19 +52,19 @@
     }
 
     &--info {
-      color: var(--info);
+      color: var(--status-info-fg);
     }
 
     &--success {
-      color: var(--success);
+      color: var(--status-success-fg);
     }
 
     &--warning {
-      color: var(--warning);
+      color: var(--status-warning-fg);
     }
 
     &--error {
-      color: var(--error);
+      color: var(--status-error-fg);
     }
   }
 </style>

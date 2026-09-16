@@ -144,7 +144,7 @@
       <IconCS :name="iconName" :size="18" />
     </div>
     <div class="app-lesson-row__body">
-      <div class="app-lesson-row__title">
+      <div class="app-lesson-row__title" :title="title">
         {{ title }}
       </div>
       <div v-if="showProgressBar" class="app-lesson-row__progress" aria-hidden="true">

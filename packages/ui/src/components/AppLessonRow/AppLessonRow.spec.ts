@@ -17,6 +17,13 @@ describe('AppLessonRow', () => {
     expect(wrapper.find('.app-lesson-row__duration').text()).toBe('7:05');
   });
 
+  it('sets a native title attribute so a truncated title is still recoverable (#697)', () => {
+    const wrapper = mount(AppLessonRow, { props: baseProps });
+    expect(wrapper.find('.app-lesson-row__title').attributes('title')).toBe(
+      'Intro to TypeScript generics',
+    );
+  });
+
   it('formats hour-long durations as H:MM:SS', () => {
     const wrapper = mount(AppLessonRow, {
       props: { ...baseProps, duration: 3725 },

@@ -18,8 +18,10 @@
       commands: Command[];
       placeholder?: string;
       title?: string;
+      /** Shown when `commands` is filtered down to nothing. */
+      emptyLabel?: string;
     }>(),
-    { placeholder: 'Type a command…', title: 'Command palette' },
+    { placeholder: 'Type a command…', title: 'Command palette', emptyLabel: 'No commands match.' },
   );
 
   const emit = defineEmits<{
@@ -159,7 +161,7 @@
           </li>
         </template>
         <li v-if="filtered.length === 0" class="app-command-palette__empty" role="presentation">
-          No commands match.
+          {{ emptyLabel }}
         </li>
       </ul>
     </div>

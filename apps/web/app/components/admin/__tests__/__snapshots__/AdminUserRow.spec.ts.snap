@@ -1,7 +1,9 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`AdminUserRow > matches snapshot 1`] = `
-"<div data-v-222c1c3d="" class="adm-user-row" role="row">
+"<!-- No \`role="row"\` (#591): neither caller wraps this in a table/grid, so
+       it's a styled list row, not an ARIA table row. -->
+<div data-v-222c1c3d="" class="adm-user-row">
   <!-- Avatar -->
   <div data-v-222c1c3d="" class="adm-user-row__avatar" aria-hidden="true" style="background: var(--avatar-coral);">A</div><!-- Name + email -->
   <div data-v-222c1c3d="" class="adm-user-row__name-col">

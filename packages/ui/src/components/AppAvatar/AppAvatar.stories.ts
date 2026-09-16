@@ -12,6 +12,7 @@ const meta: Meta<typeof AppAvatar> = {
     name: 'John Doe',
     size: 'md',
     role: undefined,
+    roleLabel: undefined,
     image: undefined,
     initials: undefined,
   },
@@ -21,6 +22,7 @@ const meta: Meta<typeof AppAvatar> = {
     name: { control: 'text' },
     size: { control: 'select', options: SIZES },
     role: { control: 'select', options: [undefined, 'admin', 'guest'] },
+    roleLabel: { control: 'text' },
   },
 };
 

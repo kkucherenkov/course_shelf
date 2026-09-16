@@ -94,4 +94,11 @@ describe('AppAvatar', () => {
     const wrapper = mount(AppAvatar, { props: { role: 'admin' } });
     expect(wrapper.find('.app-avatar__role').attributes('role')).toBe('img');
   });
+
+  it('uses the caller-supplied `roleLabel` over the English default (#597)', () => {
+    const wrapper = mount(AppAvatar, {
+      props: { role: 'admin', roleLabel: 'Администратор' },
+    });
+    expect(wrapper.find('.app-avatar__role').attributes('aria-label')).toBe('Администратор');
+  });
 });

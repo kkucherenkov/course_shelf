@@ -86,6 +86,15 @@
       themeSystemLabel?: string;
       /** Static aria-label for the icon-only topbar theme toggle. */
       themeToggleLabel?: string;
+      /**
+       * The locale a click on the topbar language button switches *to* —
+       * same "shows the target, not the current state" convention as the
+       * theme toggle. `name` is that locale's own name (e.g. "Русский"),
+       * which is never translated — a language's name isn't relative to
+       * whatever language is currently active. `undefined` hides the
+       * control entirely (single-locale deployments).
+       */
+      otherLocale?: { code: string; name: string };
     }>(),
     {
       adminNav: () => [],
@@ -110,12 +119,15 @@
       themeDarkLabel: 'Dark',
       themeSystemLabel: 'System',
       themeToggleLabel: 'Toggle color theme',
+      otherLocale: undefined,
     },
   );
 
   const emit = defineEmits<{
     'update:searchValue': [value: string];
     'update:colorMode': [mode: ColorMode];
+    /** Fired with `otherLocale.code` when the language button is clicked. */
+    'update:locale': [code: string];
     /** Fired on every nav-item click with the item's key. */
     nav: [key: string];
     /** Fired when Enter is pressed in the search input. */
@@ -339,6 +351,7 @@
           :initials="user.initials"
           :name="user.name"
           :role="avatarRole"
+          :role-label="user.roleLabel"
           size="sm"
         />
         <div class="app-navigation-shell__user-info">
@@ -357,7 +370,9 @@
           <IconCS name="search" :size="16" class="app-navigation-shell__search-icon" />
           <input
             class="app-navigation-shell__search-input"
+            type="search"
             :placeholder="searchPlaceholder"
+            :aria-label="searchPlaceholder"
             :value="searchValue"
             @input="emit('update:searchValue', ($event.target as HTMLInputElement).value)"
             @keydown.enter="emit('searchSubmit', ($event.target as HTMLInputElement).value)"
@@ -367,6 +382,19 @@
         <span class="app-navigation-shell__topbar-spacer" />
 
         <slot name="actions" />
+
+        <!-- Shows the locale a click switches *to*, same convention as the
+             theme toggle — its own accessible name IS its visible text
+             (the target language's own name), so no separate aria-label
+             is needed (#607). -->
+        <button
+          v-if="otherLocale"
+          type="button"
+          class="app-navigation-shell__locale-toggle"
+          @click="emit('update:locale', otherLocale.code)"
+        >
+          {{ otherLocale.name }}
+        </button>
 
         <button
           type="button"
@@ -391,6 +419,7 @@
               :initials="user.initials"
               :name="user.name"
               :role="avatarRole"
+              :role-label="user.roleLabel"
               size="sm"
             />
           </button>
@@ -709,6 +738,16 @@
       border: 1px solid var(--border-default);
       border-radius: var(--radius-md);
       padding: var(--space-2) var(--space-3);
+
+      // The input itself sits flush inside this pill with no border of its
+      // own — the ring belongs on the container (`:focus-within`) so the
+      // whole pill highlights, matching the weight of every other topbar
+      // control's `:focus-visible` ring (#597: this was `outline: none`
+      // with nothing to replace it).
+      &:focus-within {
+        outline: 2px solid var(--brand-accent);
+        outline-offset: 1px;
+      }
     }
 
     &__search-icon {
@@ -727,6 +766,34 @@
 
       &::placeholder {
         color: var(--text-secondary);
+      }
+    }
+
+    // ── Language toggle ──────────────────────────────────────────────────
+    &__locale-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: var(--space-6);
+      padding: 0 var(--space-2);
+      border-radius: var(--radius-md);
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: var(--text-xs);
+      font-weight: var(--fw-medium);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background var(--dur-fast) var(--ease-default);
+
+      &:hover {
+        background: var(--surface-raised);
+        color: var(--text-fg);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--brand-accent);
+        outline-offset: -2px;
       }
     }
 
@@ -891,8 +958,11 @@
       border-radius: var(--radius-sm);
       transition: color var(--dur-fast) var(--ease-default);
 
+      // Color alone doesn't survive low-vision/color-blind viewing — the
+      // active tab's label also goes semibold, not just a hue change (#597).
       &[aria-current='page'] {
         color: var(--brand-accent);
+        font-weight: var(--fw-semibold);
       }
 
       &:focus-visible {

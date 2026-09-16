@@ -13,12 +13,17 @@
   <div class="auth-layout">
     <!-- Form pane -->
     <div class="auth-layout__form-pane">
-      <div class="auth-layout__brand">
+      <!-- `<header>` here maps to the `banner` landmark (it's not nested
+           inside `main`/`nav`/`aside` — a plain wrapping `<div>` doesn't
+           count). Paired with `<main>` below, this closes both
+           `landmark-one-main` and `region` for every page that renders
+           through this shell (#590). -->
+      <header class="auth-layout__brand">
         <AuthBrand />
-      </div>
-      <div class="auth-layout__form-content">
+      </header>
+      <main class="auth-layout__form-content">
         <slot />
-      </div>
+      </main>
     </div>
   </div>
 </template>

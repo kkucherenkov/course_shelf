@@ -107,6 +107,12 @@ export interface ReclassifyGeneratedInput {
   readonly newLanguage: string;
 }
 
+/** What `findCuesForLesson` returns — full cues, unlike the signature-only lookups above. */
+export interface LessonCues {
+  readonly language: string;
+  readonly cues: readonly SubtitleCue[];
+}
+
 export interface TranscriptRepository {
   /**
    * Signatures of the generated transcripts these lessons already have in this
@@ -168,4 +174,15 @@ export interface TranscriptRepository {
    * renamed out from under it (#529).
    */
   reclassifyGenerated(input: ReclassifyGeneratedInput): Promise<void>;
+
+  /**
+   * The cues a lesson can be quiz-generated from (E29-F02-S01) — full text
+   * and timestamps, unlike every other method here, which only ever compares
+   * signatures. When a lesson has more than one transcript (different
+   * languages, or both a sidecar and a generated one), the most recently
+   * created row wins — same "no real multi-language scenario yet" call as
+   * `findAnyGeneratedForLessons`. Returns null when the lesson has no
+   * transcript at all.
+   */
+  findCuesForLesson(lessonId: string): Promise<LessonCues | null>;
 }

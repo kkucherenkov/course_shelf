@@ -78,6 +78,7 @@ function makeTranscriptRepo(overrides?: Partial<TranscriptRepository>): Transcri
     deleteForLesson: vi.fn(),
     findGeneratedByLanguage: vi.fn().mockResolvedValue([]),
     reclassifyGenerated: vi.fn(),
+    findCuesForLesson: vi.fn().mockResolvedValue(null),
     ...overrides,
   };
 }

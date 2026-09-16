@@ -194,6 +194,21 @@ export interface TranscriptionConfig {
 
 export type ProviderMode = 'mock' | 'real';
 
+export interface QuizGenerationConfig {
+  /** llama.cpp's one-shot completion CLI. Default: 'llama-completion' (resolved via PATH). */
+  readonly llamaPath: string;
+  /** Filename (not a path — resolved under `modelWeightsDir`) used when a request names no model. */
+  readonly defaultModelFilename: string;
+  /** Wall-clock timeout for one llama-completion invocation, in milliseconds. */
+  readonly timeoutMs: number;
+  /** `-t` passed to llama-completion. */
+  readonly threads: number;
+  /** `-c` passed to llama-completion — bounds KV-cache; windows are sized to fit comfortably under it. */
+  readonly contextSize: number;
+  /** 'mock' swaps the real llama-completion shell-out for a fixture adapter (used in CI). Default 'real'. */
+  readonly mode: ProviderMode;
+}
+
 export interface ScrapersConfig {
   /** 'mock' swaps real adapters for fixture-backed ones (used in e2e/CI). Default 'real'. */
   readonly mode: ProviderMode;
@@ -372,6 +387,48 @@ export class AppConfig {
    */
   get derivedPath(): string {
     return this.stringOrDefault('DERIVED_PATH', '/data/derived');
+  }
+
+  /**
+   * Directory holding every model weight file — whisper's ggml `.bin` and
+   * llama's `.gguf`, side by side. Not a new volume: this repo already binds
+   * one (`WHISPER_MODEL_DIR` → `/models`) for whisper; a second mount for
+   * llama would be the same host directory under a different name
+   * (E29-F02-S01 clarification #6). The admin model-weights endpoint lists
+   * and deletes from here, for both engines.
+   * Default: '/models'. Env: MODEL_WEIGHTS_DIR.
+   */
+  get modelWeightsDir(): string {
+    return this.stringOrDefault('MODEL_WEIGHTS_DIR', '/models');
+  }
+
+  /**
+   * llama.cpp settings for on-demand quiz generation. Unlike `transcription`,
+   * `configured` is deliberately NOT computed here: the weights directory can
+   * hold several `.gguf` files and the one actually used is chosen per
+   * request (E29-F02-S01 clarification #4), so "does this specific file
+   * exist" is checked live, by the command handler, not cached at boot — the
+   * admin delete endpoint can remove a file between two requests, and a
+   * boot-cached boolean would go stale the moment that happens.
+   * Env: LLAMA_MODE, LLAMA_PATH, LLAMA_DEFAULT_MODEL, LLAMA_TIMEOUT_MS,
+   *      LLAMA_THREADS, LLAMA_CONTEXT_SIZE.
+   */
+  get quizGeneration(): QuizGenerationConfig {
+    return {
+      llamaPath: this.stringOrDefault('LLAMA_PATH', 'llama-completion'),
+      // Empty disables the feature explicitly (mirrors WHISPER_MODEL_PATH's
+      // "empty = unavailable"); the maintainer's own default deployment keeps
+      // this the 4B weight — the 9B is an opt-in, named per request.
+      defaultModelFilename: this.stringOrDefault('LLAMA_DEFAULT_MODEL', 'Qwen3.5-4B-Q4_K_M.gguf'),
+      // Generous: a cold model load (up to ~5.7 GB) plus prompt processing on
+      // memory-bandwidth-bound CPU is genuinely slow — measure on one lesson
+      // before trusting any published tok/s figure, which is almost always a
+      // desktop Ryzen number, not this hardware's.
+      timeoutMs: this.numberOrDefault('LLAMA_TIMEOUT_MS', 600_000),
+      threads: this.numberOrDefault('LLAMA_THREADS', 4),
+      contextSize: this.numberOrDefault('LLAMA_CONTEXT_SIZE', 4096),
+      mode: this.stringOrDefault('LLAMA_MODE', 'real') as ProviderMode,
+    };
   }
 
   /**

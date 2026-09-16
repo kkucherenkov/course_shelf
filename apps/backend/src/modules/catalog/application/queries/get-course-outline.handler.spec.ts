@@ -111,6 +111,7 @@ function makeTranscriptRepo(
     deleteForLesson: vi.fn(),
     findGeneratedByLanguage: vi.fn().mockResolvedValue([]),
     reclassifyGenerated: vi.fn(),
+    findCuesForLesson: vi.fn().mockResolvedValue(null),
   };
 }
 

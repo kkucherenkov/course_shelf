@@ -27,6 +27,7 @@ import type {
   ExistingTranscriptSignature,
   GeneratedTranscriptByLanguage,
   GeneratedTranscriptSignature,
+  LessonCues,
   ReclassifyGeneratedInput,
   ReplaceGeneratedInput,
   ReplaceSidecarInput,
@@ -190,6 +191,18 @@ export class PrismaTranscriptRepository implements TranscriptRepository {
       where: { id: input.transcriptId },
       data: { language: input.newLanguage, derivedPath: input.newDerivedPath },
     });
+  }
+
+  async findCuesForLesson(lessonId: string): Promise<LessonCues | null> {
+    const row = await this.prisma.transcript.findFirst({
+      where: { lessonId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        language: true,
+        cues: { select: { startMs: true, endMs: true, text: true }, orderBy: { startMs: 'asc' } },
+      },
+    });
+    return row === null ? null : { language: row.language, cues: row.cues };
   }
 
   private async replace(input: ReplaceRowInput): Promise<void> {

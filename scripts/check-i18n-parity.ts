@@ -2,7 +2,6 @@
 // i18n parity check — asserts that every locale exposes the same key set.
 // Exit 0 on parity, 1 on drift (drift printed to stderr).
 
-import { execSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,6 +15,7 @@ interface Bucket {
 }
 
 const buckets: Bucket[] = [];
+let drifted = false;
 
 function collectKeys(value: unknown, prefix: string, out: Set<string>): void {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
@@ -93,8 +93,70 @@ try {
   }
 }
 
+// ── web: literal t('…') calls resolve somewhere in the locale tree
+//
+// Parity above only compares locales against each other — deleting a key
+// from every locale drifts nothing and passes clean. That's exactly how
+// `pages.admin.dashboard.statLibrariesMeta` shipped as raw key text on the
+// live admin dashboard (#617): a prior wave split it into two plural-safe
+// keys, deleted the combined one from both locales, and never touched the
+// call site. This walks `apps/web/app` for `t('literal.key')` calls and
+// flags any that resolve in neither locale.
+//
+// Only literal string arguments are checked — `t(someVar)` can't be
+// resolved without a type checker, and isn't worth becoming one for this.
+{
+  const webBucket = buckets.find((b) => b.source === 'web');
+  if (webBucket) {
+    const known = new Set<string>();
+    for (const set of webBucket.byLocale.values()) for (const k of set) known.add(k);
+
+    // ponytail: quote-matching only, no template-literal/comment awareness —
+    // upgrade to the TS compiler's tokenizer if a comment or a t(`…`) call
+    // ever produces a false positive (none do today, see the sub-step note
+    // in specs/tasks/active.md).
+    const literalCall = /\bt\(\s*(['"])((?:(?!\1).)*)\1/g;
+    const missing = new Map<string, Set<string>>(); // key -> relative file paths
+
+    function walk(dir: string): void {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (entry.name === 'node_modules' || entry.name === '.nuxt' || entry.name === 'dist') {
+          continue;
+        }
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!entry.name.endsWith('.vue') && !entry.name.endsWith('.ts')) continue;
+        const content = readFileSync(full, 'utf8');
+        for (const m of content.matchAll(literalCall)) {
+          const key = m[2];
+          if (known.has(key)) continue;
+          const rel = path.relative(repo, full);
+          const files = missing.get(key) ?? new Set<string>();
+          files.add(rel);
+          missing.set(key, files);
+        }
+      }
+    }
+    walk(path.join(repo, 'apps/web/app'));
+
+    if (missing.size > 0) {
+      drifted = true;
+      process.stderr.write(
+        `[i18n] web: ${String(missing.size)} literal t() key(s) resolve nowhere:\n`,
+      );
+      for (const [key, files] of missing) {
+        process.stderr.write(`  • '${key}' — ${[...files].join(', ')}\n`);
+      }
+    } else {
+      process.stdout.write('[i18n] web: every literal t() call resolves in the locale tree.\n');
+    }
+  }
+}
+
 // ── report
-let drifted = false;
 for (const bucket of buckets) {
   const locales = [...bucket.byLocale.keys()].sort();
   const union = new Set<string>();

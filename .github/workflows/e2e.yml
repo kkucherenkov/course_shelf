@@ -26,6 +26,7 @@ on:
   # PR built. Without this, main could sit broken with every check green.
   push:
     branches: [main]
+  merge_group:
   pull_request:
     paths-ignore:
       - "**/*.md"

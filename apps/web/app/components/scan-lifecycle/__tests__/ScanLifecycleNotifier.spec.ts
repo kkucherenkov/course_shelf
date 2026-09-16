@@ -43,6 +43,7 @@ vi.mock('@app/ui', () => ({
 // ── Stub i18n, toast and navigation from #imports ─────────────────────────────
 
 const navigateToMock = vi.fn();
+const { toastAddSpy } = vi.hoisted(() => ({ toastAddSpy: vi.fn() }));
 
 vi.mock('#imports', () => ({
   ref,
@@ -52,10 +53,18 @@ vi.mock('#imports', () => ({
   onUnmounted,
   navigateTo: (...args: unknown[]) => navigateToMock(...args),
   useI18n: () => ({
-    t: (key: string) => key,
+    // Mirrors the real `t(key, count, { named: { n: count } })` call shape
+    // used for plurals — same as the page-level specs for this feature, so a
+    // wrong plural index (#621) is visible in the returned string.
+    t: (key: string, ...args: unknown[]) => {
+      const opts = args.find((a) => typeof a === 'object' && a !== null) as
+        | { named?: { n?: unknown } }
+        | undefined;
+      return opts?.named?.n === undefined ? key : `${key}:${String(opts.named.n)}`;
+    },
     n: String,
   }),
-  useToast: () => ({ add: vi.fn() }),
+  useToast: () => ({ add: toastAddSpy }),
 }));
 
 // ── Component under test ───────────────────────────────────────────────────────
@@ -66,6 +75,7 @@ import { useScanLifecycleStore } from '~/stores/scanLifecycle';
 describe('ScanLifecycleNotifier', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+    toastAddSpy.mockClear();
   });
 
   it('renders nothing when there are no scans', () => {
@@ -230,5 +240,75 @@ describe('ScanLifecycleNotifier', () => {
 
     const card = wrapper.find('.stub-app-scan-progress');
     expect(card.attributes('data-status')).toBe('success');
+  });
+
+  it('passes the real error count as the plural index on the failed toast (#621)', async () => {
+    const store = useScanLifecycleStore();
+
+    // The toast-on-finish watcher only fires on a *change* to `store.active`
+    // after the component is mounted — applying both events up front (as
+    // every other test in this file does) means the watcher's initial value
+    // already includes the finished card and it never fires. Mount first,
+    // then finish the scan.
+    const wrapper = mount(ScanLifecycleNotifier);
+    store.applyEvent({
+      kind: 'started',
+      scanId: 'scan-1',
+      libraryId: 'lib-1',
+      libraryName: 'CS Library',
+      at: new Date().toISOString(),
+    });
+    await wrapper.vm.$nextTick();
+    store.applyEvent({
+      kind: 'finished',
+      scanId: 'scan-1',
+      libraryId: 'lib-1',
+      libraryName: 'CS Library',
+      at: new Date().toISOString(),
+      status: 'failed',
+      filesScanned: 133,
+      filesAdded: 0,
+      coursesDiscovered: 0,
+      errorsCount: 106,
+    });
+    await wrapper.vm.$nextTick();
+
+    expect(toastAddSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ description: 'notifiers.scan.toastFailedSummary:106' }),
+    );
+  });
+
+  it('splits the done toast into two independently-pluralized messages naming files, not lessons (#621)', async () => {
+    const store = useScanLifecycleStore();
+
+    const wrapper = mount(ScanLifecycleNotifier);
+    store.applyEvent({
+      kind: 'started',
+      scanId: 'scan-1',
+      libraryId: 'lib-1',
+      libraryName: 'CS Library',
+      at: new Date().toISOString(),
+    });
+    await wrapper.vm.$nextTick();
+    store.applyEvent({
+      kind: 'finished',
+      scanId: 'scan-1',
+      libraryId: 'lib-1',
+      libraryName: 'CS Library',
+      at: new Date().toISOString(),
+      status: 'succeeded',
+      filesScanned: 5973,
+      filesAdded: 68,
+      coursesDiscovered: 3,
+      errorsCount: 0,
+    });
+    await wrapper.vm.$nextTick();
+
+    expect(toastAddSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description:
+          'notifiers.scan.toastDoneSummaryCourses:3 · notifiers.scan.toastDoneSummaryFiles:68',
+      }),
+    );
   });
 });

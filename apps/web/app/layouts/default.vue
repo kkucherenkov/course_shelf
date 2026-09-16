@@ -67,15 +67,16 @@
 
   // ── Nav items ───────────────────────────────────────────────────────────
 
+  // No 'libraries' entry here (#618): `/libraries` has been admin-gated
+  // since #595 (`pages/libraries.vue`'s own doc comment: "`/admin/libraries`
+  // is the equivalent surface in the admin nav"), so a primary-nav link to
+  // it either 404s a non-admin against `middleware/admin.ts`'s silent
+  // `navigateTo('/')`, or, for an admin, duplicates `admin-libraries` below
+  // with the same register/rescan flow. One entry point is enough; admins
+  // reach it through the admin block.
   const nav = computed<NavItem[]>(() => [
     { key: 'home', label: t('layouts.default.navHome'), icon: 'home', to: '/' },
     { key: 'browse', label: t('layouts.default.navBrowse'), icon: 'search', to: '/browse' },
-    {
-      key: 'libraries',
-      label: t('layouts.default.navLibraries'),
-      icon: 'library',
-      to: '/libraries',
-    },
   ]);
 
   const adminNav = computed<NavItem[]>(() => {
@@ -123,6 +124,9 @@
     if (p.startsWith('/admin/users')) return 'admin-users';
     if (p.startsWith('/admin/libraries')) return 'admin-libraries';
     if (p.startsWith('/admin')) return 'admin-dashboard';
+    // No nav item is keyed 'libraries' any more (#618) — this only stops a
+    // direct visit to the legacy admin-only `/libraries` route from lighting
+    // up "Home" below.
     if (p.startsWith('/libraries')) return 'libraries';
     if (p.startsWith('/search')) return 'browse'; // search is scoped under browse conceptually
     if (p.startsWith('/browse')) return 'browse';

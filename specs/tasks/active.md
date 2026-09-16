@@ -79,6 +79,109 @@ margin: auto`. `AppDialog` isn't in this wave's ownership table;
   `admin/libraries/[id].vue` (scan-surface) or `layouts/default.vue`'s
   discarded `useScanLifecycle` status (nav-and-keys) — flagged, not fixed.
 
+## T-2026-09-16-scan-surface — errors survive scan completion, honest toast, visible start failure
+
+- Created: 2026-09-16
+- Owner: claude
+- Goal: `#620` the real per-file `ScanError[]` (fetched by `useScanProgress` via
+  `GET /libraries/{id}/scans/latest`, which returns the latest scan's full
+  detail regardless of terminal status) is only ever rendered inside
+  `v-if="showScanProgress"` — the moment a scan finishes, `showScanProgress`
+  goes false and the 106-error list becomes unreachable even though the data
+  is still in memory. `#621` the completion toast is wrong three ways:
+  `toastFailedSummary` is called with `{ errors: n }` but vue-i18n only reads
+  a plural index off `named.n`/`named.count`, so it always renders the first
+  form; `toastDoneSummary` is one non-pluralizable string
+  (`'{courses} courses · {lessons} lessons'`), not two pipe-messages like the
+  `statLibrariesMeta*` split; and the "lessons" number is actually
+  `card.filesAdded` (TODO(E13) — no lesson count on the wire), so it lies
+  after any rescan. `#624` (partial — only the one line in this lane's file;
+  rest belongs to `silent-failures`): `admin/libraries/[id].vue:161` calls
+  `runLibraryScan({ throwOnError: false })` and never checks `res.error`, so
+  a 403/500 start failure is silent, and the dead `catch` path's toast title
+  is the CTA label (`scanNowCta`), not an error message.
+- Sub-steps:
+  - [x] #620 — moved the error list out from under `showScanProgress`, gated
+        only on `scanErrorsOpen && hasScanErrors`; `AdminScansTable`'s
+        `errorsCount` cell becomes a button (new `expandableScanId`/
+        `expandedScanId` props + `toggle-errors` emit) for the one row that
+        actually has detail data — the library's latest scan, same id
+        `useScanProgress` already holds. Historical rows have no per-scan
+        detail endpoint on the wire (`AdminScanListItem` only carries
+        `errorsCount`), so their cells stay static, unchanged from before.
+  - [x] #621 — `toastFailedSummary` call switched to the 3-arg
+        `t(key, count, { named: { n: count } })` form already used by
+        `errorsButton` in the same file; `toastDoneSummary` split into
+        `toastDoneSummaryCourses`/`toastDoneSummaryFiles` (renamed from
+        "lessons" — honest about what `filesAdded` counts — closes the
+        TODO(E13) by relabeling rather than a spec change), joined with `·`
+  - [x] #624 (this lane's line only) — `triggerScan` checks `res.error`,
+        shows a real error toast (`scanStartError`, mirrors
+        `toastRescanError`'s wording) on both the checked-error and thrown
+        paths; rest of #624 stays with `silent-failures`
+  - [x] i18n: `pages.admin.libraryDetail.scanStartError`,
+        `notifiers.scan.toastDoneSummaryCourses`,
+        `notifiers.scan.toastDoneSummaryFiles`; `toastFailedSummary`
+        placeholder renamed `{errors}` → `{n}`; both locales
+  - [x] regression tests: scan-progress page spec (error list survives the
+        running→terminal transition), notifier spec (plural index + split
+        toast), page spec (silent start failure), AdminScansTable spec
+        (button only on the matching row). Confirmed red before fix.
+  - [x] gates: lint, stylelint, format, `check:i18n`,
+        `turbo run lint test typecheck` — all green
+- Status: ready for PR
+
+## T-2026-09-16-nav-and-keys — dead-end nav link, raw locale key on admin dashboard
+
+- Created: 2026-09-16
+- Owner: claude
+- Goal: #618 non-admins see "Libraries" in primary nav and get silently
+  bounced by `middleware/admin.ts`; #617 `/admin` prints the literal key
+  `pages.admin.dashboard.statLibrariesMeta` (deleted from both locales when
+  a prior wave split it into two plural-safe keys, call site never updated).
+  Structural: add a literal-`t()`-key-resolves-in-locale-tree check so this
+  class of regression fails CI instead of shipping.
+- Sub-steps:
+  - [x] #618 — drop `libraries` from `layouts/default.vue`'s primary `nav`
+        (decision: not gated-for-admin-only like `adminNav`, but removed
+        outright — it duplicated `admin-libraries`; `/libraries` has been
+        admin-only since #595 and that page's own comment already calls
+        `/admin/libraries` "the equivalent surface"). Removed the now-false
+        "member-facing /libraries link" comment and the two now-dead
+        `navLibraries` locale keys (en+ru, both namespaces).
+  - [x] #617 — `admin/index.vue`'s `statLibrariesMeta` now composes the two
+        split keys (`statLibrariesMetaCourses`/`...Lessons`) with the
+        existing `·` separator convention instead of calling the deleted
+        combined key. Also fixed `formatRelative`'s hardcoded English
+        `"Xs ago"` literals (an i18n-mandatory violation) to reuse
+        `ui.noteEditor.ago*`, and deleted the dead `statusLabel` function +
+        its false "referenced indirectly" comment + now-unused `ScanStatus`
+        import.
+  - [x] add `apps/web/app/pages/__tests__/admin-dashboard.spec.ts` (page had
+        none)
+  - [x] `scripts/check-i18n-parity.ts`: walks `apps/web/app` for literal
+        `t('…')` calls and flags any that resolve in neither locale; proved
+        it against the pre-fix `admin/index.vue` (caught the exact #617
+        key), skips `t(someVar)` (one real case, `app.vue:60`, untouched)
+  - [x] gates: lint, stylelint, format, `turbo run lint test typecheck` — all
+        green (530 web tests, 929 ui tests, 18/18 turbo tasks)
+  - [x] live-stand check: built this worktree's own docker/compose.yml stack
+        on isolated ports (`csh-navkeys-verify-*`, torn down after) since the
+        shared :8090 audit stand runs a frozen pre-fix image. Confirmed both
+        fixes by eye: non-admin sidebar shows only Home/Browse (no
+        Libraries trap), admin dashboard's Libraries card reads
+        "0 courses · 0 lessons" (not the raw key), admin sidebar has exactly
+        one library-management entry
+- Status: in-progress — PR #625 open
+- Blockers: —
+
+Reported to maintainer, not fixed here (owned by other lanes / not mine):
+`nuxt.config.ts:30` claims locale messages live in `.json` (they're `.ts`);
+three more `formatRelative` English-literal copies at
+`admin/libraries/[id].vue:143`, `AdminScansTable.vue:44`,
+`AdminLibraryRow.vue:35` (scan-surface lane) — same `ui.noteEditor.ago*` fix
+applied here to `admin/index.vue`'s copy.
+
 ## T-2026-09-16-admin-polish — mislabeled navigation, filter-blind empty state, missing confirmations
 
 - Created: 2026-09-16

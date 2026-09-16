@@ -7,6 +7,18 @@ import { mount } from '@vue/test-utils';
 import type { AdminLibraryListItem } from '@app/api-client-ts';
 import AdminLibraryRow from '../AdminLibraryRow.vue';
 
+// Mirrors the real `t(key, count, { named: { n: count } })` plural call
+// shape, so a fall-back to hardcoded English (the pre-#620 `formatRelative`)
+// is visible as a raw locale key instead of "d ago".
+vi.stubGlobal('useI18n', () => ({
+  t: (key: string, ...args: unknown[]) => {
+    const opts = args.find((a) => typeof a === 'object' && a !== null) as
+      | { named?: { n?: unknown } }
+      | undefined;
+    return opts?.named?.n === undefined ? key : `${key}:${String(opts.named.n)}`;
+  },
+}));
+
 // Stub the AdminCopyablePath child to avoid clipboard API in tests
 vi.mock('../AdminCopyablePath.vue', () => ({
   default: {
@@ -56,6 +68,25 @@ describe('AdminLibraryRow', () => {
   it('shows "never scanned" label when no lastScan', () => {
     const wrapper = mount(AdminLibraryRow, { props: baseProps });
     expect(wrapper.text()).toContain('Never scanned');
+  });
+
+  it('formats last-scan time through i18n, not hardcoded English "ago"', () => {
+    const wrapper = mount(AdminLibraryRow, {
+      props: {
+        ...baseProps,
+        library: {
+          ...baseLibrary,
+          lastScan: {
+            status: 'succeeded',
+            startedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+            finishedAt: new Date().toISOString(),
+            errorsCount: 0,
+          },
+        },
+      },
+    });
+    expect(wrapper.text()).toContain('ui.noteEditor.agoHours:2');
+    expect(wrapper.text()).not.toMatch(/\d+[smhd] ago/);
   });
 
   it('shows status pill with succeeded label when scan succeeded', () => {

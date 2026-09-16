@@ -107,7 +107,7 @@
 
     &__description {
       margin: var(--space-1) 0 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
     }
 

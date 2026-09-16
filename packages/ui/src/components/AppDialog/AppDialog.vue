@@ -189,7 +189,7 @@
     &__description {
       margin: 0;
       padding: var(--space-3) var(--space-5);
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
       border-bottom: 1px solid var(--border-default);
     }

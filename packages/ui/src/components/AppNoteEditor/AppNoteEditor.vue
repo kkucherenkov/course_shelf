@@ -540,7 +540,7 @@
       gap: $sync-gap;
       padding: $sync-pad-block $sync-pad-inline;
       border-top: 1px solid var(--border-default);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
     }
 
@@ -571,7 +571,7 @@
       border: 0;
       color: var(--brand-accent);
       cursor: pointer;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       font-weight: var(--fw-medium);
 
       &:hover {

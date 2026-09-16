@@ -2,8 +2,11 @@
  * Unit test for apps/web/app/middleware/admin.ts
  *
  * Verifies:
- * 1. Non-admin users are redirected to /
+ * 1. Non-admin users (confirmed session, wrong role) are redirected to /
  * 2. Admin users (both 'admin' and 'ADMIN' roles) pass through
+ * 3. Role-unknown (live token, session not yet confirmed — #695) passes
+ *    through rather than being treated as "not an admin"
+ * 4. Confirmed "no session" (no token, no user) still redirects to /
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -19,11 +22,18 @@ vi.stubGlobal('defineNuxtRouteMiddleware', (fn: (...args: unknown[]) => unknown)
 vi.stubGlobal('navigateTo', (...args: unknown[]) => mockNavigateTo(...args));
 
 let mockUser: { role?: string } | null = null;
+let mockToken: string | null = null;
 
 vi.mock('~/stores/auth', () => ({
   useAuthStore: () => ({
     get user() {
       return mockUser;
+    },
+    get token() {
+      return mockToken;
+    },
+    get isAuthenticated() {
+      return mockUser !== null;
     },
   }),
 }));
@@ -43,13 +53,23 @@ describe('admin middleware', () => {
     vi.clearAllMocks();
     vi.resetModules();
     mockUser = null;
+    mockToken = null;
   });
 
-  it('redirects to / when user is null (unauthenticated)', async () => {
+  it('redirects to / on a confirmed "no session" (no user, no token)', async () => {
     mockUser = null;
+    mockToken = null;
     const middleware = await getMiddleware();
     await middleware();
     expect(mockNavigateTo).toHaveBeenCalledWith('/');
+  });
+
+  it('passes through when role is unknown (live token, session not yet confirmed)', async () => {
+    mockUser = null;
+    mockToken = 'stale-but-live-token';
+    const middleware = await getMiddleware();
+    await middleware();
+    expect(mockNavigateTo).not.toHaveBeenCalled();
   });
 
   it('redirects to / when role is "user"', async () => {

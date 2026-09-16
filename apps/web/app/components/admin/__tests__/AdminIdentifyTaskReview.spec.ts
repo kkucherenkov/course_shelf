@@ -44,6 +44,12 @@ vi.mock('@app/ui', () => ({
     props: ['value', 'label'],
     template: '<option :value="value">{{ label }}</option>',
   },
+  AppDialog: {
+    name: 'AppDialog',
+    props: ['open', 'size', 'title', 'description'],
+    template:
+      '<div v-if="open" class="stub-dialog">{{ title }} — {{ description }}<slot /><slot name="footer" /></div>',
+  },
 }));
 
 function makeTask(overrides: Partial<IdentifyTaskDto> = {}): IdentifyTaskDto {
@@ -89,6 +95,13 @@ describe('AdminIdentifyTaskReview', () => {
       .findAll('button')
       .find((b) => b.text() === 'pages.admin.identifyTaskDetail.applyCta');
     await applyButton!.trigger('click');
+    // Apply is gated behind a confirmation dialog (#606) — nothing is
+    // emitted until it's confirmed.
+    expect(wrapper.emitted('apply')).toBeFalsy();
+    const confirmButton = wrapper
+      .findAll('.stub-dialog button')
+      .find((b) => b.text() === 'pages.admin.identifyTaskDetail.applyDialogConfirm');
+    await confirmButton!.trigger('click');
 
     const emitted = wrapper.emitted('apply');
     expect(emitted).toBeTruthy();
@@ -98,6 +111,33 @@ describe('AdminIdentifyTaskReview', () => {
     for (const field of MERGE_POLICY_FIELDS) {
       if (field !== 'title') expect(policy[field]).toBe('merge');
     }
+  });
+
+  it('asks for confirmation before applying, naming how many fields will change', async () => {
+    // Only 'title' has scraped data in `makeTask()`'s fragment — every other
+    // field's candidate is null, so it doesn't count even at the default
+    // 'merge' mode.
+    const wrapper = mount(AdminIdentifyTaskReview, {
+      props: { task: makeTask(), course, applying: false, discarding: false },
+    });
+
+    const applyButton = wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'pages.admin.identifyTaskDetail.applyCta');
+    await applyButton!.trigger('click');
+
+    const dialog = wrapper.find('.stub-dialog');
+    expect(dialog.exists()).toBe(true);
+    expect(dialog.text()).toContain('pages.admin.identifyTaskDetail.applyDialogTitle');
+    expect(dialog.text()).toContain('pages.admin.identifyTaskDetail.applyDialogBody');
+
+    // Cancel leaves the task untouched.
+    const cancelButton = wrapper
+      .findAll('.stub-dialog button')
+      .find((b) => b.text() === 'pages.admin.identifyTaskDetail.applyDialogCancel');
+    await cancelButton!.trigger('click');
+    expect(wrapper.find('.stub-dialog').exists()).toBe(false);
+    expect(wrapper.emitted('apply')).toBeFalsy();
   });
 
   it('discard emits discard and never apply', async () => {

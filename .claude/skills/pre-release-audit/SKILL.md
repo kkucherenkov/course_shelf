@@ -116,6 +116,18 @@ only substitutes on `false` and `null`, so `.conclusion // "PENDING"` returns
 parameters: `for x in $LIST` iterates once with the whole string. It produced a
 monitor event claiming four lanes had finished while two were 90 seconds old.
 
+**The report lands in the output directory, not beside the driver.**
+`driver.mjs` writes `report.json` into `AUDIT_OUT` (`./out2` by default), so a
+`mv report.json` from the driver's directory silently moves nothing and the
+next sweep overwrites the previous run's report. Archive the whole output
+directory, or point `AUDIT_OUT` at a per-run one.
+
+**A clip probe flags the visually-hidden heading pattern.** A `sr-only` `h1`
+(`position:absolute; width:1px; clip-path:inset(50%)`) is indistinguishable
+from a clipped element by geometry alone. Four "clipped" findings in one run
+were all the lesson player's deliberately hidden title. Check the class before
+filing.
+
 **Narrow the state mock.** Faking every `/api/v1/**` response also fakes
 `/admin/has-users` and `/admin/instance`, so the middleware decides the instance
 is uninitialised and funnels every route into the first-run wizard — a different
@@ -124,6 +136,10 @@ screen than the one under audit. Exclude auth and instance-config routes.
 ## Reading the result
 
 Compare against the previous run's `report.json`, kept beside the new one.
+
+**One axe rule is usually one element.** A run reported 98 `button-name`
+violations; they were a single unlabelled avatar button multiplied by 128 matrix
+combinations. Group by rule, then find the element, before sizing the work.
 
 **Normalise before comparing.** Raw counts mislead: a run with a wider matrix
 produces more of everything. Rate-limit noise dominates both numerators — strip

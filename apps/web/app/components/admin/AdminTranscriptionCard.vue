@@ -183,7 +183,7 @@
     &__title {
       margin: 0;
       font-size: var(--text-sm);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-loud);
     }
 
@@ -213,7 +213,7 @@
       padding: var(--space-1) var(--space-2);
       border-radius: var(--radius-pill);
       font-size: var(--text-xs);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
 
       &[data-status='running'] {
         background: var(--status-info-soft);
@@ -284,7 +284,7 @@
     &__stat-num {
       font-family: var(--font-mono);
       font-size: var(--text-base);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-fg);
       font-variant-numeric: tabular-nums;
 
@@ -307,7 +307,7 @@
     &__errors-heading {
       margin: 0 0 var(--space-2);
       font-size: var(--text-xs);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       text-transform: uppercase;
       letter-spacing: 0.04em;
       color: var(--text-muted);

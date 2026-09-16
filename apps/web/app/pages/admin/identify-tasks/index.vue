@@ -7,7 +7,7 @@
    * ever runs) — same pattern as `pages/courses/[id]/edit.vue`.
    */
   import { computed, provide, ref } from 'vue';
-  import { AppBanner, AppButton, AppEmptyState, AppSelect } from '@app/ui';
+  import { AppBanner, AppButton, AppEmptyState, AppSelect, AppSkeleton } from '@app/ui';
   import type { IdentifyTaskStatus } from '@app/api-client-ts';
   import AdminIdentifyTaskRow from '~/components/admin/AdminIdentifyTaskRow.vue';
   import { useIdentifyTasksList } from '~/composables/useIdentifyTasks';
@@ -98,10 +98,10 @@
 
     <div v-if="isLoading" class="adm-identify-tasks__list">
       <div v-for="i in 4" :key="i" class="adm-identify-tasks__skel-row">
-        <div class="adm-identify-tasks__skel adm-identify-tasks__skel--pill" />
+        <AppSkeleton width="90px" height="22px" radius="pill" />
         <div class="adm-identify-tasks__skel-col">
-          <div class="adm-identify-tasks__skel adm-identify-tasks__skel--name" />
-          <div class="adm-identify-tasks__skel adm-identify-tasks__skel--sub" />
+          <AppSkeleton width="40%" height="14px" />
+          <AppSkeleton width="60%" height="11px" />
         </div>
       </div>
     </div>
@@ -146,12 +146,6 @@
 </template>
 
 <style lang="scss" scoped>
-  $skel-pill-w: 90px;
-  $skel-pill-h: 22px;
-  $skel-name-h: 14px;
-  $skel-sub-h: 11px;
-  $dur-skel: var(--dur-slow, 1400ms);
-
   .adm-identify-tasks {
     &__page-h {
       display: flex;
@@ -165,7 +159,7 @@
     &__title {
       margin: 0;
       font-size: var(--text-2xl);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-loud);
       letter-spacing: -0.01em;
     }
@@ -214,40 +208,6 @@
       flex-direction: column;
       gap: var(--space-2);
       flex: 1;
-    }
-
-    &__skel {
-      background: var(--surface-skeleton-base);
-      border-radius: var(--radius-sm);
-      animation: adm-identify-tasks-skel-pulse $dur-skel ease-in-out infinite;
-
-      &--pill {
-        width: $skel-pill-w;
-        height: $skel-pill-h;
-        border-radius: var(--radius-pill);
-        flex-shrink: 0;
-      }
-
-      &--name {
-        height: $skel-name-h;
-        width: 40%;
-      }
-
-      &--sub {
-        height: $skel-sub-h;
-        width: 60%;
-      }
-    }
-  }
-
-  @keyframes adm-identify-tasks-skel-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-
-    50% {
-      opacity: 0.4;
     }
   }
 </style>

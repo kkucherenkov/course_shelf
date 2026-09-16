@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { IconCS } from '@app/ui';
+  import { AppIconButton, IconCS } from '@app/ui';
   import type { AdminLibraryListItem } from '@app/api-client-ts';
   import AdminCopyablePath from './AdminCopyablePath.vue';
 
@@ -122,25 +122,25 @@
     <!-- Actions -->
     <div class="adm-lib-row__actions" @click.stop @keydown.stop>
       <!-- xs: more-only -->
-      <button
-        type="button"
-        class="adm-lib-row__btn adm-lib-row__btn--icon adm-lib-row__btn--xs"
-        :aria-label="props.moreCtaLabel"
-      >
-        <IconCS name="more-h" :size="16" />
-      </button>
+      <AppIconButton
+        name="more-h"
+        variant="ghost"
+        size="sm"
+        class="adm-lib-row__action--xs"
+        :ariaLabel="props.moreCtaLabel"
+      />
       <!-- md+: scan + more -->
       <button type="button" class="adm-lib-row__btn adm-lib-row__btn--md-up" @click="onScanClick">
         <IconCS name="refresh" :size="16" />
         {{ props.scanCtaLabel }}
       </button>
-      <button
-        type="button"
-        class="adm-lib-row__btn adm-lib-row__btn--icon adm-lib-row__btn--md-up"
-        :aria-label="props.moreCtaLabel"
-      >
-        <IconCS name="more-h" :size="16" />
-      </button>
+      <AppIconButton
+        name="more-h"
+        variant="ghost"
+        size="sm"
+        class="adm-lib-row__action--md-up"
+        :ariaLabel="props.moreCtaLabel"
+      />
     </div>
   </div>
 </template>
@@ -150,7 +150,6 @@
   $icon-inner-font: 14px;
   $dot-size: 6px;
   $dur-dot: var(--dur-slower, 1600ms);
-  $btn-icon-size: 28px;
 
   .adm-lib-row {
     display: grid;
@@ -166,12 +165,12 @@
     // xs: icon + name + actions
     grid-template-columns: #{$icon-size} 1fr auto;
 
-    @media (min-width: 768px) {
+    @media (width >= 768px) {
       // md: icon + name + path + status + actions
       grid-template-columns: #{$icon-size} 1.4fr 1.6fr 0.9fr auto;
     }
 
-    @media (min-width: 1024px) {
+    @media (width >= 1024px) {
       // lg: icon + name + path + courses + status + actions
       grid-template-columns: #{$icon-size} 1.4fr 2fr 0.9fr 0.6fr auto;
     }
@@ -204,7 +203,7 @@
     }
 
     &__name {
-      font-weight: 500;
+      font-weight: var(--fw-medium);
       color: var(--text-loud);
       font-size: var(--text-sm);
       overflow: hidden;
@@ -221,7 +220,7 @@
     }
 
     &__sub--xs {
-      @media (min-width: 768px) {
+      @media (width >= 768px) {
         display: none;
       }
     }
@@ -229,7 +228,7 @@
     &__sub--md-up {
       display: none;
 
-      @media (min-width: 768px) {
+      @media (width >= 768px) {
         display: flex;
       }
     }
@@ -242,7 +241,7 @@
     &__path {
       display: none;
 
-      @media (min-width: 768px) {
+      @media (width >= 768px) {
         display: inline-flex;
         min-width: 0;
         max-width: 100%;
@@ -255,7 +254,7 @@
       font-size: var(--text-xs);
       color: var(--text-muted);
 
-      @media (min-width: 1024px) {
+      @media (width >= 1024px) {
         display: block;
       }
     }
@@ -273,9 +272,9 @@
       padding: var(--space-1) var(--space-2);
       border-radius: var(--radius-pill);
       font-size: var(--text-xs);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
 
-      @media (min-width: 768px) {
+      @media (width >= 768px) {
         display: inline-flex;
       }
 
@@ -344,7 +343,7 @@
       border-radius: var(--radius-md);
       background: none;
       font-size: var(--text-xs);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
       color: var(--text-muted);
       cursor: pointer;
 
@@ -358,15 +357,8 @@
         outline-offset: 2px;
       }
 
-      &--icon {
-        padding: var(--space-1);
-        width: $btn-icon-size;
-        height: $btn-icon-size;
-        justify-content: center;
-      }
-
       &--xs {
-        @media (min-width: 768px) {
+        @media (width >= 768px) {
           display: none;
         }
       }
@@ -374,7 +366,23 @@
       &--md-up {
         display: none;
 
-        @media (min-width: 768px) {
+        @media (width >= 768px) {
+          display: inline-flex;
+        }
+      }
+    }
+
+    &__action {
+      &--xs {
+        @media (width >= 768px) {
+          display: none;
+        }
+      }
+
+      &--md-up {
+        display: none;
+
+        @media (width >= 768px) {
           display: inline-flex;
         }
       }

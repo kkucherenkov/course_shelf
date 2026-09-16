@@ -4,7 +4,7 @@
   // expressions during `nuxt typecheck`, and `navigateTo` is called from the
   // template below. Same `#imports` idiom as `stores/auth.ts`.
   import { navigateTo } from '#imports';
-  import { AppBanner, AppButton, AppEmptyState, IconCS } from '@app/ui';
+  import { AppBanner, AppButton, AppEmptyState, AppSearchField, AppSkeleton } from '@app/ui';
   import AdminUserRow from '~/components/admin/AdminUserRow.vue';
   import { useAdminUsers } from '~/composables/useAdminUsers';
 
@@ -58,16 +58,12 @@
 
     <!-- Search -->
     <div class="adm-perm-picker__search-row">
-      <div class="adm-perm-picker__search-wrap">
-        <IconCS name="search" class="adm-perm-picker__search-icon" />
-        <input
-          v-model="searchInput"
-          type="search"
-          class="adm-perm-picker__search"
-          :placeholder="t('pages.admin.permissions.pickerSearchPlaceholder')"
-          :aria-label="t('pages.admin.permissions.pickerSearchPlaceholder')"
-        />
-      </div>
+      <AppSearchField
+        v-model="searchInput"
+        class="adm-perm-picker__search"
+        :label="t('pages.admin.permissions.pickerSearchPlaceholder')"
+        :placeholder="t('pages.admin.permissions.pickerSearchPlaceholder')"
+      />
     </div>
 
     <!-- Error state -->
@@ -91,12 +87,12 @@
     <!-- Loading skeleton (5 rows) -->
     <div v-if="isLoading" class="adm-perm-picker__list">
       <div v-for="i in 5" :key="i" class="adm-perm-picker__skel-row">
-        <div class="adm-perm-picker__skel adm-perm-picker__skel--avatar" />
+        <AppSkeleton width="36px" height="36px" radius="pill" />
         <div class="adm-perm-picker__skel-col">
-          <div class="adm-perm-picker__skel adm-perm-picker__skel--name" />
-          <div class="adm-perm-picker__skel adm-perm-picker__skel--email" />
+          <AppSkeleton width="70%" height="14px" />
+          <AppSkeleton width="55%" height="11px" />
         </div>
-        <div class="adm-perm-picker__skel adm-perm-picker__skel--btn" />
+        <AppSkeleton width="48px" height="24px" />
       </div>
     </div>
 
@@ -148,14 +144,7 @@
 
 <style lang="scss" scoped>
   $avatar-skel: 36px;
-  $skel-name-h: 14px;
-  $skel-email-h: 11px;
-  $skel-btn-w: 48px;
-  $skel-btn-h: 24px;
-  $search-h: 36px;
   $search-max-w: 360px;
-  $search-icon-size: 16px;
-  $dur-skel: var(--dur-slow, 1400ms);
   $skel-row-pad-v: 12px;
   $skel-row-pad-h: 14px;
 
@@ -172,7 +161,7 @@
     &__title {
       margin: 0;
       font-size: var(--text-2xl);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-loud);
       letter-spacing: -0.01em;
     }
@@ -191,44 +180,8 @@
       margin-bottom: var(--space-4);
     }
 
-    &__search-wrap {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      width: 100%;
-      max-width: $search-max-w;
-    }
-
-    &__search-icon {
-      position: absolute;
-      left: var(--space-2);
-      color: var(--text-muted);
-      width: $search-icon-size;
-      height: $search-icon-size;
-      flex-shrink: 0;
-      pointer-events: none;
-    }
-
     &__search {
-      width: 100%;
-      height: $search-h;
-      padding: var(--space-2) var(--space-3) var(--space-2) var(--space-7);
-      background: var(--surface-surface);
-      border: 1px solid var(--border-default);
-      border-radius: var(--radius-md);
-      font-size: var(--text-sm);
-      color: var(--text-fg);
-      outline: none;
-      appearance: none;
-
-      &::placeholder {
-        color: var(--text-subtle);
-      }
-
-      &:focus {
-        border-color: var(--brand-accent);
-        box-shadow: 0 0 0 2px var(--brand-accent-soft);
-      }
+      max-width: $search-max-w;
     }
 
     &__list {
@@ -255,46 +208,6 @@
       display: flex;
       flex-direction: column;
       gap: var(--space-2);
-    }
-
-    &__skel {
-      background: var(--surface-skeleton-base);
-      border-radius: var(--radius-sm);
-      animation: adm-perm-picker-skel $dur-skel ease-in-out infinite;
-
-      &--avatar {
-        width: $avatar-skel;
-        height: $avatar-skel;
-        border-radius: 50%;
-        flex-shrink: 0;
-      }
-
-      &--name {
-        height: $skel-name-h;
-        width: 70%;
-      }
-
-      &--email {
-        height: $skel-email-h;
-        width: 55%;
-      }
-
-      &--btn {
-        width: $skel-btn-w;
-        height: $skel-btn-h;
-        border-radius: var(--radius-md);
-      }
-    }
-  }
-
-  @keyframes adm-perm-picker-skel {
-    0%,
-    100% {
-      opacity: 1;
-    }
-
-    50% {
-      opacity: 0.4;
     }
   }
 </style>

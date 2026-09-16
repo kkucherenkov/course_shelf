@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, provide, ref } from 'vue';
-  import { AppBanner, AppButton, AppEmptyState } from '@app/ui';
+  import { AppBanner, AppButton, AppEmptyState, AppSkeleton } from '@app/ui';
   import { runLibraryScan, client } from '@app/api-client-ts';
 
   import AdminLibraryRow from '~/components/admin/AdminLibraryRow.vue';
@@ -100,13 +100,13 @@
     <!-- Loading skeleton -->
     <div v-if="isLoading" class="adm-libraries__list">
       <div v-for="i in 4" :key="i" class="adm-libraries__skel-row">
-        <div class="adm-libraries__skel adm-libraries__skel--icon" />
+        <AppSkeleton width="28px" height="28px" />
         <div class="adm-libraries__skel-col">
-          <div class="adm-libraries__skel adm-libraries__skel--name" />
-          <div class="adm-libraries__skel adm-libraries__skel--sub" />
+          <AppSkeleton width="80%" height="14px" />
+          <AppSkeleton width="60%" height="11px" />
         </div>
-        <div class="adm-libraries__skel adm-libraries__skel--pill" />
-        <div class="adm-libraries__skel adm-libraries__skel--btn" />
+        <AppSkeleton width="90px" height="18px" radius="pill" />
+        <AppSkeleton width="60px" height="24px" />
       </div>
     </div>
 
@@ -170,12 +170,7 @@
 <style lang="scss" scoped>
   $skel-icon: 28px;
   $skel-btn-w: 60px;
-  $skel-btn-h: 24px;
   $skel-pill-w: 90px;
-  $skel-pill-h: 18px;
-  $skel-name-h: 14px;
-  $skel-sub-h: 11px;
-  $dur-skel: var(--dur-slow, 1400ms);
 
   .adm-libraries {
     &__page-h {
@@ -190,7 +185,7 @@
     &__title {
       margin: 0;
       font-size: var(--text-2xl);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-loud);
       letter-spacing: -0.01em;
     }
@@ -233,52 +228,6 @@
       display: flex;
       flex-direction: column;
       gap: var(--space-2);
-    }
-
-    &__skel {
-      background: var(--surface-skeleton-base);
-      border-radius: var(--radius-sm);
-      animation: adm-libraries-skel-pulse $dur-skel ease-in-out infinite;
-
-      &--icon {
-        width: $skel-icon;
-        height: $skel-icon;
-        border-radius: var(--radius-sm);
-        flex-shrink: 0;
-      }
-
-      &--name {
-        height: $skel-name-h;
-        width: 80%;
-      }
-
-      &--sub {
-        height: $skel-sub-h;
-        width: 60%;
-      }
-
-      &--pill {
-        width: $skel-pill-w;
-        height: $skel-pill-h;
-        border-radius: var(--radius-pill);
-      }
-
-      &--btn {
-        width: $skel-btn-w;
-        height: $skel-btn-h;
-        border-radius: var(--radius-md);
-      }
-    }
-  }
-
-  @keyframes adm-libraries-skel-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-
-    50% {
-      opacity: 0.4;
     }
   }
 </style>

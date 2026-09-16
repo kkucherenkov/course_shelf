@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { IconCS } from '@app/ui';
+  import { AppIconButton } from '@app/ui';
   import type {
     AdminUserListItem,
     AdminUpdateUserRequest,
@@ -109,22 +109,20 @@
 
     <!-- Actions -->
     <div class="adm-user-row__actions" @click.stop @keydown.stop>
-      <button
-        type="button"
-        class="adm-user-row__btn adm-user-row__btn--icon"
-        :aria-label="editAriaLabel"
+      <AppIconButton
+        name="edit"
+        variant="ghost"
+        size="sm"
+        :ariaLabel="editAriaLabel"
         @click="emit('edit')"
-      >
-        <IconCS name="edit" :size="16" />
-      </button>
-      <button
-        type="button"
-        class="adm-user-row__btn adm-user-row__btn--icon"
-        :aria-label="moreAriaLabel"
+      />
+      <AppIconButton
+        name="more-h"
+        variant="ghost"
+        size="sm"
+        :ariaLabel="moreAriaLabel"
         @click="emit('more')"
-      >
-        <IconCS name="more-h" :size="16" />
-      </button>
+      />
     </div>
   </div>
 </template>
@@ -132,7 +130,6 @@
 <style lang="scss" scoped>
   $avatar-size: 36px;
   $avatar-font: 13px;
-  $btn-icon-size: 28px;
   $row-pad-v: 12px;
   $row-pad-h: 14px;
 
@@ -146,12 +143,12 @@
     // xs: avatar + name-col + actions
     grid-template-columns: #{$avatar-size} 1fr auto;
 
-    @media (min-width: 768px) {
+    @media (width >= 768px) {
       // md: avatar + name + role + joined + actions
       grid-template-columns: 32px 1.4fr 0.9fr 0.7fr auto;
     }
 
-    @media (min-width: 1024px) {
+    @media (width >= 1024px) {
       // lg: avatar + name + role + joined + actions (wider name column)
       grid-template-columns: #{$avatar-size} 1.5fr 1.2fr 0.9fr auto;
     }
@@ -172,7 +169,7 @@
       display: grid;
       place-items: center;
       font-size: $avatar-font;
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       font-family: var(--font-mono);
       // Theme-independent: --avatar-* backgrounds don't flip with the page
       // theme (hashed from the user id), so a theme-flipped foreground like
@@ -189,7 +186,7 @@
 
     &__name {
       font-size: var(--text-sm);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
       color: var(--text-loud);
       overflow: hidden;
       text-overflow: ellipsis;
@@ -209,7 +206,7 @@
     &__role {
       display: none;
 
-      @media (min-width: 768px) {
+      @media (width >= 768px) {
         display: block;
       }
     }
@@ -221,7 +218,7 @@
       color: var(--text-muted);
       font-family: var(--font-mono);
 
-      @media (min-width: 768px) {
+      @media (width >= 768px) {
         display: block;
       }
     }
@@ -230,33 +227,6 @@
     &__actions {
       display: flex;
       gap: var(--space-1);
-    }
-
-    &__btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border: none;
-      background: none;
-      border-radius: var(--radius-md);
-      color: var(--text-muted);
-      cursor: pointer;
-
-      &--icon {
-        width: $btn-icon-size;
-        height: $btn-icon-size;
-        padding: var(--space-1);
-      }
-
-      &:hover {
-        background: var(--surface-raised);
-        color: var(--text-loud);
-      }
-
-      &:focus-visible {
-        outline: 2px solid var(--brand-accent);
-        outline-offset: 2px;
-      }
     }
   }
 </style>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, provide, ref } from 'vue';
-  import { AppBanner, AppButton, AppScanProgress, IconCS } from '@app/ui';
+  import { AppBanner, AppButton, AppScanProgress, AppSkeleton, IconCS } from '@app/ui';
   import type { LibraryDto } from '@app/api-client-ts';
   import { runLibraryScan, client } from '@app/api-client-ts';
 
@@ -210,9 +210,9 @@
     <!-- Loading skeleton for the page header -->
     <div v-if="isLoadingLibrary" class="adm-lib-detail__page-h">
       <div class="adm-lib-detail__skel-col">
-        <div class="adm-lib-detail__skel adm-lib-detail__skel--crumb" />
-        <div class="adm-lib-detail__skel adm-lib-detail__skel--title" />
-        <div class="adm-lib-detail__skel adm-lib-detail__skel--path" />
+        <AppSkeleton width="160px" height="12px" />
+        <AppSkeleton width="240px" height="22px" />
+        <AppSkeleton width="300px" height="12px" />
       </div>
     </div>
 
@@ -516,13 +516,6 @@
 <style lang="scss" scoped>
   $rail-width: 280px;
   $crumb-icon-size: 11px;
-  $skel-crumb-h: 12px;
-  $skel-crumb-w: 160px;
-  $skel-title-h: 22px;
-  $skel-title-w: 240px;
-  $skel-path-h: 12px;
-  $skel-path-w: 300px;
-  $dur-skel: var(--dur-slow, 1400ms);
   $scan-errors-max-h: 220px;
 
   .adm-lib-detail {
@@ -539,27 +532,6 @@
       display: flex;
       flex-direction: column;
       gap: var(--space-2);
-    }
-
-    &__skel {
-      background: var(--surface-skeleton-base);
-      border-radius: var(--radius-sm);
-      animation: adm-detail-skel-pulse $dur-skel ease-in-out infinite;
-
-      &--crumb {
-        height: $skel-crumb-h;
-        width: $skel-crumb-w;
-      }
-
-      &--title {
-        height: $skel-title-h;
-        width: $skel-title-w;
-      }
-
-      &--path {
-        height: $skel-path-h;
-        width: $skel-path-w;
-      }
     }
 
     &__error-banner {
@@ -597,13 +569,13 @@
 
     &__crumb-active {
       color: var(--text-loud);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
     }
 
     &__title {
       margin: var(--space-1) 0 0;
       font-size: var(--text-2xl);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-loud);
       letter-spacing: -0.01em;
     }
@@ -626,7 +598,7 @@
       gap: var(--space-4);
       grid-template-columns: 1fr;
 
-      @media (min-width: 1024px) {
+      @media (width >= 1024px) {
         grid-template-columns: 1fr #{$rail-width};
       }
     }
@@ -702,7 +674,7 @@
     &__tbl-title {
       margin: 0;
       font-size: var(--text-sm);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       color: var(--text-loud);
     }
 
@@ -712,7 +684,7 @@
       flex-direction: column;
       gap: var(--space-3);
 
-      @media (min-width: 1024px) {
+      @media (width >= 1024px) {
         display: flex;
       }
     }
@@ -731,7 +703,7 @@
 
     &__card-heading {
       font-size: var(--text-xs);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       text-transform: uppercase;
       letter-spacing: 0.04em;
       color: var(--text-muted);
@@ -778,18 +750,7 @@
       margin: 0;
       font-size: var(--text-xs);
       color: var(--text-muted);
-      line-height: 1.5;
-    }
-  }
-
-  @keyframes adm-detail-skel-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-
-    50% {
-      opacity: 0.4;
+      line-height: var(--leading-normal);
     }
   }
 </style>

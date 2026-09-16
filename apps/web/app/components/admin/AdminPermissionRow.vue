@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { IconCS } from '@app/ui';
+  import { AppSegmented, AppSegmentedItem, AppSkeleton, IconCS } from '@app/ui';
   import type { AdminLibraryListItem, AccessGrantDto, CourseDto } from '@app/api-client-ts';
 
   interface Props {
@@ -71,26 +71,14 @@
       </div>
 
       <!-- Level toggle -->
-      <div class="adm-perm-row__toggle" role="group" :aria-label="library.name">
-        <button
-          type="button"
-          class="adm-perm-row__toggle-btn"
-          :class="{ 'adm-perm-row__toggle-btn--read': libraryGranted }"
-          :aria-pressed="libraryGranted"
-          @click="emit('setLibrary', { granted: true })"
-        >
-          {{ labelRead }}
-        </button>
-        <button
-          type="button"
-          class="adm-perm-row__toggle-btn"
-          :class="{ 'adm-perm-row__toggle-btn--none': !libraryGranted }"
-          :aria-pressed="!libraryGranted"
-          @click="emit('setLibrary', { granted: false })"
-        >
-          {{ labelNone }}
-        </button>
-      </div>
+      <AppSegmented
+        :model-value="libraryGranted ? 'read' : 'none'"
+        :label="library.name"
+        @update:model-value="emit('setLibrary', { granted: $event === 'read' })"
+      >
+        <AppSegmentedItem value="read" :label="labelRead" />
+        <AppSegmentedItem value="none" :label="labelNone" />
+      </AppSegmented>
 
       <!-- Expand/collapse chevron -->
       <button
@@ -114,11 +102,9 @@
       <!-- Loading skeleton -->
       <template v-if="!courses">
         <div class="adm-perm-overrides__loading">
-          <div class="adm-perm-overrides__skel adm-perm-overrides__skel--line" />
-          <div
-            class="adm-perm-overrides__skel adm-perm-overrides__skel--line adm-perm-overrides__skel--short"
-          />
-          <div class="adm-perm-overrides__skel adm-perm-overrides__skel--line" />
+          <AppSkeleton width="80%" height="13px" />
+          <AppSkeleton width="50%" height="13px" />
+          <AppSkeleton width="80%" height="13px" />
         </div>
       </template>
 
@@ -132,29 +118,22 @@
 
           <!-- Course toggle -->
           <div class="adm-perm-override-row__toggle-wrap">
-            <div class="adm-perm-row__toggle" role="group" :aria-label="course.title">
-              <button
-                type="button"
-                class="adm-perm-row__toggle-btn"
-                :class="{ 'adm-perm-row__toggle-btn--read': isCourseGranted(course.id) }"
-                :aria-pressed="isCourseGranted(course.id)"
-                @click="emit('setCourse', { courseId: course.id, granted: true })"
-              >
-                {{ labelRead }}
-              </button>
-              <button
-                type="button"
-                class="adm-perm-row__toggle-btn"
-                :class="{ 'adm-perm-row__toggle-btn--none': !isCourseGranted(course.id) }"
-                :aria-pressed="!isCourseGranted(course.id)"
+            <AppSegmented
+              :model-value="isCourseGranted(course.id) ? 'read' : 'none'"
+              :label="course.title"
+              @update:model-value="
+                emit('setCourse', { courseId: course.id, granted: $event === 'read' })
+              "
+            >
+              <AppSegmentedItem value="read" :label="labelRead" />
+              <AppSegmentedItem
+                value="none"
+                :label="labelNone"
                 :title="
                   !isCourseGranted(course.id) && libraryGranted ? labelCourseToggleHint : undefined
                 "
-                @click="emit('setCourse', { courseId: course.id, granted: false })"
-              >
-                {{ labelNone }}
-              </button>
-            </div>
+              />
+            </AppSegmented>
           </div>
         </div>
 
@@ -170,9 +149,6 @@
   $icon-size: 28px;
   $chevron-size: 28px;
   $chevron-icon-size: 14px;
-  $toggle-radius: var(--radius-md);
-  $skel-h: 13px;
-  $skel-dur: var(--dur-slow, 1400ms);
   $course-dot-size: 18px;
   $course-dot-h: 14px;
   $badge-font: 11px;
@@ -224,7 +200,7 @@
 
     &__name {
       font-size: var(--text-sm);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
       color: var(--text-loud);
       display: flex;
       gap: var(--space-2);
@@ -244,7 +220,7 @@
       height: $badge-h;
       border-radius: var(--radius-pill);
       font-size: $badge-font;
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       background: var(--status-info-soft);
       color: var(--status-info-fg);
     }
@@ -253,44 +229,6 @@
       font-size: var(--text-xs);
       color: var(--text-muted);
       margin-top: var(--space-1);
-    }
-
-    // ── Level toggle ────────────────────────────────────────────────────────
-    &__toggle {
-      display: inline-flex;
-      padding: 2px;
-      background: var(--surface-raised);
-      border: 1px solid var(--border-default);
-      border-radius: $toggle-radius;
-    }
-
-    &__toggle-btn {
-      padding: var(--space-1) var(--space-3);
-      border-radius: var(--radius-sm);
-      font-size: var(--text-xs);
-      font-weight: 500;
-      color: var(--text-muted);
-      background: none;
-      border: none;
-      cursor: pointer;
-      transition:
-        background var(--dur-fast) ease,
-        color var(--dur-fast) ease;
-
-      &:focus-visible {
-        outline: 2px solid var(--brand-accent);
-        outline-offset: 1px;
-      }
-
-      &--read {
-        background: var(--status-success-fg, var(--brand-accent));
-        color: var(--brand-accent-fg);
-      }
-
-      &--none {
-        background: var(--surface-skeleton-base, var(--surface-raised));
-        color: var(--text-loud);
-      }
     }
 
     // ── Chevron ─────────────────────────────────────────────────────────────
@@ -351,21 +289,6 @@
       padding-top: var(--space-3);
     }
 
-    &__skel {
-      height: $skel-h;
-      border-radius: var(--radius-sm);
-      background: var(--surface-skeleton-base);
-      animation: adm-perm-skel-pulse $skel-dur ease-in-out infinite;
-
-      &--line {
-        width: 80%;
-      }
-
-      &--short {
-        width: 50%;
-      }
-    }
-
     &__empty {
       display: flex;
       align-items: center;
@@ -414,17 +337,6 @@
       display: flex;
       gap: var(--space-2);
       align-items: center;
-    }
-  }
-
-  @keyframes adm-perm-skel-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-
-    50% {
-      opacity: 0.4;
     }
   }
 </style>

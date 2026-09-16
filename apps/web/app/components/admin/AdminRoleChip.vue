@@ -137,7 +137,6 @@
 
 <style lang="scss" scoped>
   $chip-font: var(--text-xs);
-  $chip-fw: 500;
   $icon-size: 11px;
   $chip-pad-v: 3px;
   $menu-min-w: 120px;
@@ -156,8 +155,8 @@
       padding: $chip-pad-v var(--space-2) $chip-pad-v var(--space-2);
       border-radius: var(--radius-pill);
       font-size: $chip-font;
-      font-weight: $chip-fw;
-      line-height: 1.4;
+      font-weight: var(--fw-medium);
+      line-height: var(--leading-snug);
       border: 1px solid transparent;
       white-space: nowrap;
       transition: background $dur-chip ease;
@@ -237,7 +236,7 @@
       gap: var(--space-2);
       padding: var(--space-2) var(--space-3);
       font-size: $chip-font;
-      font-weight: $chip-fw;
+      font-weight: var(--fw-medium);
       cursor: pointer;
       color: var(--text-fg);
 

@@ -292,7 +292,7 @@
 
     &__source {
       font-size: var(--text-sm);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
       color: var(--text-loud);
     }
 
@@ -311,14 +311,14 @@
 
       thead th {
         color: var(--text-secondary);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
         font-size: var(--text-xs);
         text-transform: uppercase;
         letter-spacing: 0.04em;
       }
 
       tbody th {
-        font-weight: 500;
+        font-weight: var(--fw-medium);
         color: var(--text-fg);
       }
     }

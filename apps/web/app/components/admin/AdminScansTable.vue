@@ -20,12 +20,28 @@
     // Optional: show library column (dashboard) vs hide (detail page)
     showLibrary?: boolean;
     colLibrary?: string;
+    // scanId of the one row that has real per-file error detail behind it
+    // (only the library's latest scan does — there is no per-scan detail
+    // endpoint for the rest of the history, only `errorsCount`). Turns that
+    // one row's errorsCount cell into a button; every other row stays a
+    // static number, unchanged (#620).
+    expandableScanId?: string | null;
+    // scanId whose detail is currently open, for `aria-expanded`.
+    expandedScanId?: string | null;
   }
 
   const props = withDefaults(defineProps<Props>(), {
     showLibrary: false,
     colLibrary: '',
+    expandableScanId: null,
+    expandedScanId: null,
   });
+
+  const emit = defineEmits<{
+    'toggle-errors': [scanId: string];
+  }>();
+
+  const { t } = useI18n();
 
   function statusLabel(status: ScanStatus): string {
     const map: Record<ScanStatus, string> = {
@@ -41,13 +57,13 @@
     const now = Date.now();
     const then = new Date(isoString).getTime();
     const diffSec = Math.floor((now - then) / 1000);
-    if (diffSec < 60) return `${String(diffSec)}s ago`;
+    if (diffSec < 60) return t('ui.noteEditor.agoSeconds', diffSec, { named: { n: diffSec } });
     const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${String(diffMin)}m ago`;
+    if (diffMin < 60) return t('ui.noteEditor.agoMinutes', diffMin, { named: { n: diffMin } });
     const diffH = Math.floor(diffMin / 60);
-    if (diffH < 24) return `${String(diffH)}h ago`;
+    if (diffH < 24) return t('ui.noteEditor.agoHours', diffH, { named: { n: diffH } });
     const diffD = Math.floor(diffH / 24);
-    return `${String(diffD)}d ago`;
+    return t('ui.noteEditor.agoDays', diffD, { named: { n: diffD } });
   }
 
   function formatDuration(startedAt: string, finishedAt: string | null): string {
@@ -128,7 +144,17 @@
             class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell"
             :class="{ 'adm-scans-tbl__errors--nonzero': row.errorsCount > 0 }"
           >
-            {{ row.errorsCount }}
+            <button
+              v-if="row.errorsCount > 0 && row.scanId === props.expandableScanId"
+              type="button"
+              class="adm-scans-tbl__errors-btn"
+              :aria-expanded="row.scanId === props.expandedScanId"
+              :aria-label="`${props.colErrors}: ${row.errorsCount}`"
+              @click="emit('toggle-errors', row.scanId)"
+            >
+              {{ row.errorsCount }}
+            </button>
+            <template v-else>{{ row.errorsCount }}</template>
           </td>
           <!-- Files+Added combined (md) -->
           <td class="adm-scans-tbl__col--md-combined adm-scans-tbl__num-cell">
@@ -277,6 +303,29 @@
 
     &__errors--nonzero {
       color: var(--status-error-fg);
+    }
+
+    &__errors-btn {
+      font: inherit;
+      font-family: var(--font-mono);
+      color: inherit;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      text-underline-offset: 2px;
+
+      &:hover {
+        color: var(--status-error-fg);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--brand-accent);
+        outline-offset: 2px;
+        border-radius: var(--radius-sm);
+      }
     }
 
     &__chevron-cell {

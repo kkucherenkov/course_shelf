@@ -11,8 +11,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ref, computed, watch } from 'vue';
-import { mount } from '@vue/test-utils';
+import { mount, flushPromises } from '@vue/test-utils';
 import type { ScanDto } from '@app/api-client-ts';
+import { runLibraryScan } from '@app/api-client-ts';
 
 // ── Nuxt auto-imports ──────────────────────────────────────────────────────
 vi.stubGlobal('definePageMeta', vi.fn());
@@ -27,10 +28,18 @@ vi.stubGlobal('useI18n', () => ({
   },
 }));
 vi.stubGlobal('useRoute', () => ({ params: { id: 'lib-1' } }));
-vi.stubGlobal('useToast', () => ({ add: vi.fn() }));
+const toastAddSpy = vi.fn();
+vi.stubGlobal('useToast', () => ({ add: toastAddSpy }));
 vi.stubGlobal('watch', watch);
 
 vi.mock('@app/api-client-ts', () => ({ runLibraryScan: vi.fn(), client: {} }));
+
+const UButtonStub = {
+  name: 'UButton',
+  props: ['label', 'loading', 'disabled', 'size', 'variant', 'color'],
+  emits: ['click'],
+  template: '<button :disabled="disabled" @click="$emit(\'click\')">{{ label }}<slot /></button>',
+};
 
 // ── Composables ─────────────────────────────────────────────────────────────
 
@@ -130,6 +139,8 @@ async function mountPage() {
         AdminEditLibrarySheet: true,
         AdminRemoveLibraryDialog: true,
         AdminTranscriptionCard: true,
+        UButton: UButtonStub,
+        NuxtLink: true,
       },
     },
   });
@@ -156,6 +167,8 @@ function makeRunningScan(overrides: Partial<ScanDto> = {}): ScanDto {
 describe('pages/admin/libraries/[id].vue — live scan progress card', () => {
   beforeEach(() => {
     liveScanRef.value = null;
+    toastAddSpy.mockClear();
+    vi.mocked(runLibraryScan).mockReset();
   });
 
   it('passes the real filesAdded/filesUpdated/errors counts, not hardcoded zeros (#593)', async () => {
@@ -185,5 +198,51 @@ describe('pages/admin/libraries/[id].vue — live scan progress card', () => {
     // Toggles closed again on a second click.
     await wrapper.find('.stub-errors-btn').trigger('click');
     expect(wrapper.find('.adm-lib-detail__scan-errors').exists()).toBe(false);
+  });
+
+  it('keeps the opened error list visible once the scan terminates (#620)', async () => {
+    liveScanRef.value = makeRunningScan();
+    const wrapper = await mountPage();
+
+    await wrapper.find('.stub-errors-btn').trigger('click');
+    expect(wrapper.find('.adm-lib-detail__scan-errors').exists()).toBe(true);
+
+    // The scan finishes — `showScanProgress` (and the card that owns the
+    // stub errors button) goes away, but the already-fetched `errors` array
+    // is still sitting on `liveScan`. Before #620 the list was nested inside
+    // the same `v-if="showScanProgress"` block as the card, so it vanished
+    // here along with the card.
+    liveScanRef.value = {
+      ...liveScanRef.value!,
+      status: 'succeeded',
+      finishedAt: new Date().toISOString(),
+    };
+    await wrapper.vm.$nextTick();
+
+    const list = wrapper.find('.adm-lib-detail__scan-errors');
+    expect(list.exists()).toBe(true);
+    expect(list.text()).toContain('a.mp4');
+  });
+
+  it('surfaces an error toast, not the CTA label, when the scan fails to start (#624)', async () => {
+    vi.mocked(runLibraryScan).mockResolvedValueOnce({
+      error: { message: 'Forbidden' },
+    } as unknown as Awaited<ReturnType<typeof runLibraryScan>>);
+    const wrapper = await mountPage();
+
+    const scanNowBtn = wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'pages.admin.libraryDetail.scanNowCta');
+    expect(scanNowBtn).toBeTruthy();
+
+    await scanNowBtn!.trigger('click');
+    await flushPromises();
+
+    expect(toastAddSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'pages.admin.libraryDetail.scanStartError',
+        color: 'error',
+      }),
+    );
   });
 });

@@ -1,7 +1,6 @@
 <script setup lang="ts">
   import { computed, provide } from 'vue';
   import { AppBanner } from '@app/ui';
-  import type { ScanStatus } from '@app/api-client-ts';
 
   import AdminStatCard from '~/components/admin/AdminStatCard.vue';
   import AdminScansTable from '~/components/admin/AdminScansTable.vue';
@@ -54,7 +53,13 @@
   const statLibrariesMeta = computed(() => {
     if (!dashData.value) return '';
     const { courses, lessons } = dashData.value.counts;
-    return t('pages.admin.dashboard.statLibrariesMeta', { n: courses, l: lessons });
+    // Two independent plural counts can't share one pipe-message (see the
+    // locale file's own comment on `statLibrariesMetaCourses`) — compose the
+    // two translated fragments instead of the single key that used to be
+    // called here and resolved to nothing in either locale.
+    const coursesLabel = t('pages.admin.dashboard.statLibrariesMetaCourses', { n: courses });
+    const lessonsLabel = t('pages.admin.dashboard.statLibrariesMetaLessons', { n: lessons });
+    return `${coursesLabel} · ${lessonsLabel}`;
   });
 
   const statUsersValue = computed(() => {
@@ -93,33 +98,20 @@
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
+  // Reuses `ui.noteEditor.ago*` — same relative-time copy already translated
+  // and used by `PlayerNotesTab.vue`; the hardcoded English `"Xs ago"` this
+  // replaced was a plain string-literal violation, invisible until the app
+  // ran in `ru`.
   function formatRelative(isoString: string): string {
-    const now = Date.now();
-    const then = new Date(isoString).getTime();
-    const diffMs = now - then;
-    const diffSec = Math.floor(diffMs / 1000);
-    if (diffSec < 60) return `${String(diffSec)}s ago`;
-    const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${String(diffMin)}m ago`;
-    const diffH = Math.floor(diffMin / 60);
-    if (diffH < 24) return `${String(diffH)}h ago`;
-    const diffD = Math.floor(diffH / 24);
-    return `${String(diffD)}d ago`;
+    const seconds = Math.max(0, Math.floor((Date.now() - new Date(isoString).getTime()) / 1000));
+    if (seconds < 5) return t('ui.noteEditor.agoJustNow');
+    if (seconds < 60) return t('ui.noteEditor.agoSeconds', { n: seconds });
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return t('ui.noteEditor.agoMinutes', { n: minutes });
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return t('ui.noteEditor.agoHours', { n: hours });
+    return t('ui.noteEditor.agoDays', { n: Math.floor(hours / 24) });
   }
-
-  // statusLabel is no longer needed in the template — AdminScansTable handles it.
-  // Keeping a minimal version for the stat card meta.
-  function statusLabel(status: ScanStatus): string {
-    const map: Record<ScanStatus, string> = {
-      running: t('pages.admin.dashboard.scanRunning'),
-      succeeded: t('pages.libraries.statusSucceeded'),
-      failed: t('pages.libraries.statusFailed'),
-      cancelled: t('pages.libraries.statusCancelled'),
-    };
-    return map[status];
-  }
-
-  void statusLabel; // referenced by statLastScanMeta indirectly; keep for future use
 </script>
 
 <template>

@@ -47,7 +47,7 @@ exports[`AdminScansTable > matches snapshot (with items) 1`] = `
         <!--v-if-->
         <!-- Status pill -->
         <td data-v-164d419a=""><span data-v-164d419a="" class="adm-scans-tbl__status-pill" data-status="succeeded"><span data-v-164d419a="" class="adm-scans-tbl__status-dot" aria-hidden="true"></span> Succeeded</span></td><!-- Started (md+) -->
-        <td data-v-164d419a="" class="adm-scans-tbl__col--md-up adm-scans-tbl__mute">1h ago</td><!-- Duration -->
+        <td data-v-164d419a="" class="adm-scans-tbl__col--md-up adm-scans-tbl__mute">ui.noteEditor.agoHours:1</td><!-- Duration -->
         <td data-v-164d419a="" class="adm-scans-tbl__num-cell">1m</td><!-- Files (lg) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell">200</td><!-- Added (lg) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell adm-scans-tbl__added"> +5</td><!-- Errors (lg) -->
@@ -60,7 +60,7 @@ exports[`AdminScansTable > matches snapshot (with items) 1`] = `
         <!--v-if-->
         <!-- Status pill -->
         <td data-v-164d419a=""><span data-v-164d419a="" class="adm-scans-tbl__status-pill" data-status="failed"><span data-v-164d419a="" class="adm-scans-tbl__status-dot" aria-hidden="true"></span> Failed</span></td><!-- Started (md+) -->
-        <td data-v-164d419a="" class="adm-scans-tbl__col--md-up adm-scans-tbl__mute">2h ago</td><!-- Duration -->
+        <td data-v-164d419a="" class="adm-scans-tbl__col--md-up adm-scans-tbl__mute">ui.noteEditor.agoHours:2</td><!-- Duration -->
         <td data-v-164d419a="" class="adm-scans-tbl__num-cell">1m</td><!-- Files (lg) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell">50</td><!-- Added (lg) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell adm-scans-tbl__added"> +0</td><!-- Errors (lg) -->

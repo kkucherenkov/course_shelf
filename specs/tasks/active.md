@@ -37,6 +37,6 @@
         i18n console errors post-fix; rebuilt pre-fix `AdminEditLibrarySheet`
         against the same stack and reproduced the live crash verbatim
         (`pageerror: Must be called at the top of a \`setup\` function`)
-  - [x] Open PR, `Closes #645` + `Closes #639`
-- Status: in-progress
+  - [x] Open PR, `Closes #645` + `Closes #639` — https://github.com/kkucherenkov/course_shelf/pull/647
+- Status: in-progress (PR open, awaiting review/merge)
 - Blockers: —

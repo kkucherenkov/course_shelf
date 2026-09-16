@@ -16,7 +16,7 @@
         count — unsafe with :3000 published), fix the two lying comments/text
   - [x] #694 — course grants: make `evaluate()` honour them on every course
         read path, one coherent model
-  - [ ] #698 — 404 for a missing subtitle file, both `.vtt` and `.srt` forms,
+  - [x] #698 — 404 for a missing subtitle file, both `.vtt` and `.srt` forms,
         fixed in `lesson-file-locator.ts`
   - [ ] #699 — spec-first: new scan status for "completed with errors"
 - Status: in-progress

@@ -168,7 +168,7 @@
     &__label {
       flex: 1 1 auto;
       min-width: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       color: var(--text-fg);
       overflow: hidden;
       text-overflow: ellipsis;

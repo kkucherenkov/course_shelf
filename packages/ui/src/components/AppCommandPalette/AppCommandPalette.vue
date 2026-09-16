@@ -203,7 +203,7 @@
 
     &__group {
       padding: var(--space-2) var(--space-3) var(--space-1);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       font-weight: var(--fw-medium);
       color: var(--text-secondary);
       text-transform: uppercase;
@@ -231,11 +231,11 @@
 
     &__label {
       flex: 1 1 auto;
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
     }
 
     &__description {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
     }
 

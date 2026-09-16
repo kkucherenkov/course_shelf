@@ -655,7 +655,7 @@
     // ── Admin section label ────────────────────────────────────────────────
     &__admin-section {
       padding: var(--space-3) var(--space-3) var(--space-1);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       font-weight: var(--fw-medium);
       color: var(--text-secondary);
       text-transform: uppercase;
@@ -700,7 +700,7 @@
     }
 
     &__user-name {
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       color: var(--text-fg);
       font-weight: var(--fw-medium);
       white-space: nowrap;
@@ -709,7 +709,7 @@
     }
 
     &__user-role {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
     }
 

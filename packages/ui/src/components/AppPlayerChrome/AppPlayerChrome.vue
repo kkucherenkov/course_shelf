@@ -768,13 +768,13 @@
     }
 
     &__lesson-sub {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--media-fg-tertiary);
       letter-spacing: 0.05em;
     }
 
     &__lesson-title {
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       font-weight: var(--fw-medium);
       color: var(--media-fg);
     }
@@ -1056,7 +1056,7 @@
     }
 
     &__shortcuts-item {
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-fg);
     }
   }

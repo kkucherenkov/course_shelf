@@ -53,7 +53,7 @@
   .app-segmented-item {
     padding: var(--space-2) var(--space-3); // 6px 12px ≈ 8px 12px (--space-2=8px)
     border-radius: 6px; // bundle spec: exactly 6px
-    font-size: var(--text-xs); // 11px — closest to bundle's 13px; text-sm=12px is nearer
+    font-size: var(--text-sm); // 12px — meta/caption role, one step up from 11px
     font-weight: var(--fw-medium);
     color: var(--text-secondary); // bundle --text-muted
     background: transparent;

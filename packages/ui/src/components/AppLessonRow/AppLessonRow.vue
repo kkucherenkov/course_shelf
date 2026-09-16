@@ -250,7 +250,7 @@
     }
 
     &__title {
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       color: var(--text-fg);
       overflow: hidden;
       text-overflow: ellipsis;
@@ -279,7 +279,7 @@
       display: flex;
       gap: var(--space-2);
       align-items: center;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
     }
 
@@ -289,7 +289,7 @@
       gap: var(--space-2);
       flex-shrink: 0;
       color: var(--text-secondary);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
     }
 
     &__materials,

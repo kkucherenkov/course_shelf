@@ -35,6 +35,12 @@ vi.mock('@app/api-client-ts', () => ({
 
 // ── @app/ui stubs ──────────────────────────────────────────────────────────
 vi.mock('@app/ui', () => ({
+  AppDialog: {
+    name: 'AppDialog',
+    props: ['open', 'size', 'title', 'description', 'dismissible', 'dismissLabel'],
+    emits: ['update:open'],
+    template: '<div class="stub-dialog" :data-open="open"><h2>{{ title }}</h2><slot /></div>',
+  },
   AppBanner: {
     name: 'AppBanner',
     props: ['variant', 'body'],
@@ -56,11 +62,6 @@ vi.mock('@app/ui', () => ({
     name: 'AppButton',
     props: ['type', 'variant', 'label', 'disabled', 'loading'],
     template: '<button :type="type || \'button\'">{{ label }}</button>',
-  },
-  IconCS: {
-    name: 'IconCS',
-    props: ['name', 'size'],
-    template: '<svg class="stub-icon" :data-name="name" />',
   },
 }));
 
@@ -86,6 +87,14 @@ describe('AdminEditLibrarySheet', () => {
     const wrapper = mount(AdminEditLibrarySheet, { props: baseProps });
     const input = wrapper.find('input');
     expect(input.element.value).toBe('Computer Science');
+  });
+
+  it('renders on AppDialog and passes the open prop through', () => {
+    const wrapper = mount(AdminEditLibrarySheet, { props: baseProps });
+    expect(wrapper.find('.stub-dialog').attributes('data-open')).toBe('true');
+
+    const closed = mount(AdminEditLibrarySheet, { props: { ...baseProps, open: false } });
+    expect(closed.find('.stub-dialog').attributes('data-open')).toBe('false');
   });
 
   it('shows inline error when submitting an empty (trimmed) name', async () => {

@@ -59,7 +59,8 @@
         calls in scope are route-mocked): 34/34 relevant tests green, the
         one `smoke.spec.ts` backend-health failure is the missing backend,
         not this change
-- Status: in-progress — PR #670 open, pushing the e2e fixture fix
+  - [x] CI green on #670 after the fixture fix (all checks passed)
+- Status: in-progress — PR #670 open and green, awaiting merge
 - Blockers: —
 
 ## T-2026-09-16-scan-panel — scan panel covers bottom nav; duplicate finish toast

@@ -28,7 +28,7 @@
     background: var(--status-success-soft);
     border: 1px solid var(--status-success-subtle);
     border-radius: var(--radius-md);
-    font-size: var(--text-sm);
+    font-size: var(--text-base);
     color: var(--text-fg);
 
     &__icon {

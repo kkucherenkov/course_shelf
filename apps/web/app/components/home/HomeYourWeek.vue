@@ -79,7 +79,7 @@
       color: var(--text-fg);
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
     }
 
     &__minutes {
@@ -92,13 +92,13 @@
 
     &__lessons {
       margin: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       color: var(--text-secondary);
     }
 
     &__range {
       margin: 0;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
       opacity: 0.7;
     }

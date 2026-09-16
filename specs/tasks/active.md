@@ -13,7 +13,7 @@
   - [x] `ReviewSchedule` pure SM-2 function + table-driven tests
   - [x] `Flashcard` aggregate + repository port + Prisma adapter
   - [x] Migration verified against real Postgres — [PR #684](https://github.com/kkucherenkov/course_shelf/pull/684)
-  - [ ] OpenAPI routes + codegen (own commit)
-  - [ ] Commands/queries + controller + handler specs
+  - [x] OpenAPI routes + codegen (own commit)
+  - [x] Commands/queries + controller + handler specs — [PR #686](https://github.com/kkucherenkov/course_shelf/pull/686) (stacked on #684)
 - Status: in-progress
 - Blockers: —

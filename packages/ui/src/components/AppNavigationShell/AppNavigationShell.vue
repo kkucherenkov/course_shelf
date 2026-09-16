@@ -63,9 +63,18 @@
        * right rail). Two unnamed landmarks of the same role are an axe
        * `landmark-unique` failure and are indistinguishable in a screen
        * reader's landmark list, so each carries its own name.
+       *
+       * Required, not defaulted (#623): every other label on this component
+       * has an English fallback a caller can silently skip, which is fine
+       * for cosmetic copy but wrong here — a landmark name a caller forgot
+       * to translate is a broken screen-reader landmark list, not a stray
+       * English word, and it went unnoticed through two prior audits
+       * specifically because the fallback made the gap invisible. Skipping
+       * either prop is now a Vue prop-validation warning and a type error
+       * at every call site, not a silent English default.
        */
-      sidebarLabel?: string;
-      rightRailLabel?: string;
+      sidebarLabel: string;
+      rightRailLabel: string;
       /** Visible heading over the admin section; override to translate. */
       adminLabel?: string;
       /** Overflow bottom-tab label + title of the nav dialog it opens. */
@@ -107,8 +116,6 @@
       adminNavLabel: 'Admin navigation',
       userMenuLabel: 'User menu',
       bottomNavLabel: 'Bottom navigation',
-      sidebarLabel: 'Sidebar',
-      rightRailLabel: 'Secondary content',
       adminLabel: 'Admin',
       moreLabel: 'More',
       closeLabel: 'Close',
@@ -709,6 +716,19 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
+      // A grid item's automatic min-width defaults to its content's
+      // min-content size (here: the topbar's fixed-width controls plus the
+      // search field's floor) rather than 0. At the single-column mobile
+      // breakpoint that min-content (~385px) is wider than a 375px phone,
+      // so the "1fr" track grew to fit it and blew the whole document out
+      // to the right by the difference (#616) — inner overflow:auto on
+      // `&__main`/`&__main-body` never gets a say, because this item sits
+      // one level higher, still `overflow: visible`. `min-width: 0` opts
+      // this item out of that automatic minimum, letting the track (and
+      // everything in it) clamp to the real available width; the topbar's
+      // own flex children still shrink to fit inside it (search flows down
+      // to its own min-content) rather than being clipped.
+      min-width: 0;
     }
 
     // ── Top bar ───────────────────────────────────────────────────────────

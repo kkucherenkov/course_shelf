@@ -323,6 +323,10 @@ export default {
       },
     },
     lessonPlayer: {
+      // Fallback document heading/tab title before the lesson has loaded (or
+      // when it never does) — the loaded case always uses the real lesson
+      // title instead (#623).
+      title: 'Lesson',
       loadingError: 'Could not load lesson. Please try again.',
       retry: 'Retry',
       noAccess: 'No access',
@@ -902,6 +906,8 @@ export default {
     },
     nav: {
       primary: 'Primary navigation',
+      sidebar: 'Sidebar',
+      rightRail: 'Secondary content',
       admin: 'Admin',
       adminNav: 'Admin navigation',
       userMenu: 'User menu',

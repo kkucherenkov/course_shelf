@@ -58,7 +58,7 @@
 <template>
   <div class="adm-backups" data-testid="page-admin-backups">
     <div class="adm-backups__header">
-      <h2 class="adm-backups__title">{{ t('pages.admin.backups.title') }}</h2>
+      <h1 class="adm-backups__title">{{ t('pages.admin.backups.title') }}</h1>
       <p class="adm-backups__sub">{{ t('pages.admin.backups.subtitle') }}</p>
     </div>
 
@@ -132,7 +132,7 @@
       class="adm-backups__result"
       data-testid="backup-result"
     >
-      <h3 class="adm-backups__result-title">{{ t('pages.admin.backups.readyTitle') }}</h3>
+      <h2 class="adm-backups__result-title">{{ t('pages.admin.backups.readyTitle') }}</h2>
 
       <dl class="adm-backups__meta">
         <div class="adm-backups__meta-row">

@@ -379,10 +379,28 @@
   function onRetry(): void {
     void fetchStream(lessonId);
   }
+
+  // ── Document heading (#623) ──────────────────────────────────────────────────
+  // This route has no natural static title (app.vue's route→key map explicitly
+  // skips it — it's named from data, not a string) and rendered no heading at
+  // all: the visible lesson name lives inside AppPlayerChrome's own chrome,
+  // which isn't a heading element. Once the lesson has loaded, both the tab
+  // title and the (visually hidden — the chrome already shows this name) `h1`
+  // carry the actual lesson title rather than a generic placeholder, so a
+  // screen reader announces which lesson this is and a bookmarked tab is
+  // identifiable at a glance.
+  const pageHeading = computed(() => lessonData.value?.title ?? t('pages.lessonPlayer.title'));
+
+  useHead(() => ({ title: pageHeading.value }));
 </script>
 
 <template>
   <div class="page-lesson-player">
+    <!-- Visually hidden: AppPlayerChrome already renders this name in its
+         own visible chrome; this exists purely so the document has an
+         outline heading a screen reader can land on (#623). -->
+    <h1 class="page-lesson-player__sr-title">{{ pageHeading }}</h1>
+
     <!-- No permission -->
     <div v-if="isNoPermission" class="page-lesson-player__no-permission">
       <AppNoPermission
@@ -522,6 +540,18 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+
+    &__sr-title {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
 
     &__no-permission {
       display: flex;

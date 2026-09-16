@@ -119,7 +119,7 @@
     <!-- Page header -->
     <div class="adm-dashboard__page-h">
       <div>
-        <h2 class="adm-dashboard__title">{{ t('pages.admin.dashboard.title') }}</h2>
+        <h1 class="adm-dashboard__title">{{ t('pages.admin.dashboard.title') }}</h1>
         <p class="adm-dashboard__sub">{{ t('pages.admin.dashboard.subtitle') }}</p>
       </div>
     </div>
@@ -176,7 +176,7 @@
 
     <!-- Recent scans table -->
     <div class="adm-dashboard__tbl-h">
-      <h3 class="adm-dashboard__tbl-title">{{ t('pages.admin.dashboard.recentScansHeading') }}</h3>
+      <h2 class="adm-dashboard__tbl-title">{{ t('pages.admin.dashboard.recentScansHeading') }}</h2>
     </div>
 
     <!-- Scans table (uses shared AdminScansTable) -->

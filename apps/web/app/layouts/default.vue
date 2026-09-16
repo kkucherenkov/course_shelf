@@ -343,6 +343,8 @@
     :search-placeholder="t('layouts.default.searchPlaceholder')"
     :brand-name="t('layouts.default.appName')"
     :primary-nav-label="t('ui.nav.primary')"
+    :sidebar-label="t('ui.nav.sidebar')"
+    :right-rail-label="t('ui.nav.rightRail')"
     :admin-label="t('ui.nav.admin')"
     :admin-nav-label="t('ui.nav.adminNav')"
     :user-menu-label="t('ui.nav.userMenu')"

@@ -44,14 +44,14 @@
         `var(--fw-medium)`/`var(--fw-semibold)`, 1× legacy
         `@media (max-width: 359px)` → `@media (width <= 359px)`
         (`AppScanProgress.vue`). Left `AppNoteEditor.vue`'s `line-height:
-    20px` literal untouched — the line-height regex is unitless-only
+20px` literal untouched — the line-height regex is unitless-only
         (`/^[\d.]+$/`, matches the brief), so it doesn't even fire there;
         that literal already carries its own documented rationale from
         `T-2026-09-16-token-vocabulary`
   - [x] Proved the gate fails on an injected violation
         (`AppSectionHeader.vue`: `font-weight: 600` → red, 1 error at the
         exact line), then reverted — confirmed clean again, `git diff
-    --stat` showed exactly one line changed (the real fix), no residue
+--stat` showed exactly one line changed (the real fix), no residue
   - [x] `grep` each marker in `packages/ui` → 0 (all three)
   - [x] Gates: `pnpm --filter @app/ui lint --fix` (0 changes),
         `pnpm stylelint:fix` (0 changes outside packages/ui — confirms the
@@ -71,8 +71,9 @@
         `@app/ui` components (delete vs `@deprecated`), 2 raw
         `<input type="search">` in `packages/ui` found on the way
         (AppCommandPalette, AppNavigationShell)
-  - [ ] Open PR, note the apps/web deferral explicitly in the body
-- Status: in-progress (gates + packages/ui cleanup done, opening PR)
+  - [x] Open PR, note the apps/web deferral explicitly in the body —
+        https://github.com/kkucherenkov/course_shelf/pull/668
+- Status: in-progress (PR open, awaiting review/merge)
 - Blockers: waiting on maintainer signal before taking apps/web cleanup;
   waiting on maintainer decision for the 5 dead components and the 2 raw
   search inputs

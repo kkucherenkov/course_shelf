@@ -26,7 +26,14 @@ on:
   # PR built. Without this, main could sit broken with every check green.
   push:
     branches: [main]
+  merge_group:
   pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - ".claude/**"
+      - "specs/tasks/**"
+      - "LICENSE"
   workflow_dispatch:
   schedule:
     # Kept: catches drift that isn't ours (base image, upstream deps).

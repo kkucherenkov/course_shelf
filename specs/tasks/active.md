@@ -12,9 +12,9 @@
 - Spec diff: openapi.yaml — new scan status value for #699 (partial success)
 - Codegen impact: yes (own commit)
 - Sub-steps:
-  - [ ] #693 — pin the docker network subnet, trust it by CIDR (not a hop
+  - [x] #693 — pin the docker network subnet, trust it by CIDR (not a hop
         count — unsafe with :3000 published), fix the two lying comments/text
-  - [ ] #694 — course grants: make `evaluate()` honour them on every course
+  - [x] #694 — course grants: make `evaluate()` honour them on every course
         read path, one coherent model
   - [ ] #698 — 404 for a missing subtitle file, both `.vtt` and `.srt` forms,
         fixed in `lesson-file-locator.ts`

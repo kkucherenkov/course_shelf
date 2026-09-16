@@ -27,6 +27,12 @@ on:
   push:
     branches: [main]
   pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - ".claude/**"
+      - "specs/tasks/**"
+      - "LICENSE"
   workflow_dispatch:
   schedule:
     # Kept: catches drift that isn't ours (base image, upstream deps).

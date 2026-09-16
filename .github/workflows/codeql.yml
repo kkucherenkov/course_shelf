@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - ".claude/**"
+      - "specs/tasks/**"
+      - "LICENSE"
   schedule:
     # Mondays 06:00 UTC — catches advisories that landed on shipped code.
     - cron: "0 6 * * 1"

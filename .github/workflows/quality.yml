@@ -26,6 +26,12 @@ on:
     branches: [main]
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - ".claude/**"
+      - "specs/tasks/**"
+      - "LICENSE"
   workflow_dispatch:
   schedule:
     # Keep the nightly: it also catches drift from the base image, not just our diffs.

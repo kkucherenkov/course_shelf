@@ -57,7 +57,6 @@
 <style lang="scss" scoped>
   $spinner-size: 12px;
   $icon-size: 14px;
-  $icon-font-size: 9px;
   $dur-spin: var(--dur-slow);
   $dur-fade: var(--dur-fast);
 
@@ -111,13 +110,11 @@
       &--check {
         background: var(--status-success-fg);
         color: var(--text-inverse);
-        font-size: $icon-font-size;
       }
 
       &--error {
         background: var(--status-error-fg);
         color: var(--text-inverse);
-        font-size: $icon-font-size;
       }
     }
 

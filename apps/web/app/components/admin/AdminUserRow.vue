@@ -129,7 +129,6 @@
 
 <style lang="scss" scoped>
   $avatar-size: 36px;
-  $avatar-font: 13px;
   $row-pad-v: 12px;
   $row-pad-h: 14px;
 
@@ -168,7 +167,8 @@
       border-radius: 50%;
       display: grid;
       place-items: center;
-      font-size: $avatar-font;
+      // #700: was a raw 13px SCSS var, off-scale and invisible to the literal gate.
+      font-size: var(--text-md);
       font-weight: var(--fw-semibold);
       font-family: var(--font-mono);
       // Theme-independent: --avatar-* backgrounds don't flip with the page

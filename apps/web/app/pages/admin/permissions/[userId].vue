@@ -460,7 +460,6 @@
 
 <style lang="scss" scoped>
   $avatar-lg: 48px;
-  $avatar-font: 16px;
   $skel-lib-icon: 28px;
   $empty-icon-size: 32px;
 
@@ -506,7 +505,7 @@
       border-radius: 50%;
       display: grid;
       place-items: center;
-      font-size: $avatar-font;
+      font-size: var(--text-base); // #700: was a raw 16px SCSS var, invisible to the literal gate
       font-weight: var(--fw-semibold);
       font-family: var(--font-mono);
       // Theme-independent: --avatar-* backgrounds don't flip with the page

@@ -590,7 +590,6 @@
   $topbar-height: 56px;
   $search-max-width: 420px;
   $menu-min-width: 180px;
-  $tab-label-size: 10px;
 
   // ── Shell root ─────────────────────────────────────────────────────────────
   .app-navigation-shell {
@@ -1001,7 +1000,7 @@
     }
 
     &__tab-label {
-      font-size: $tab-label-size;
+      font-size: var(--text-xs); // scale floor — was a hand-picked 10px (#700)
       // Nearest token to the bundle's 1.2 — 0.05 off at this font size is
       // sub-pixel.
       line-height: var(--leading-tight);

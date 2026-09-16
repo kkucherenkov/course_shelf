@@ -6,7 +6,7 @@
    * without curl. One action, three visible outcomes: running, a downloadable
    * archive, or the server's problem detail.
    */
-  import { computed, onBeforeUnmount, provide, ref } from 'vue';
+  import { computed, onBeforeUnmount, ref } from 'vue';
   import { AppBanner, AppButton, AppCard, AppSpinner } from '@app/ui';
 
   import { useAdminBackup } from '~/composables/useAdminBackup';
@@ -14,9 +14,6 @@
   definePageMeta({ middleware: 'admin' });
 
   const { t, locale } = useI18n();
-
-  const pageTitle = computed(() => t('pages.admin.backups.title'));
-  provide('adminPageTitle', pageTitle);
 
   const { status, backup, errorDetail, create } = useAdminBackup();
 

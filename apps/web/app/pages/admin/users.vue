@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, provide, ref, watch } from 'vue';
+  import { computed, ref, watch } from 'vue';
   import { AppBanner, AppButton, AppEmptyState, AppSearchField, AppSkeleton } from '@app/ui';
   import type { AdminUpdateUserRequest, AdminUserRole } from '@app/api-client-ts';
 
@@ -13,10 +13,6 @@
   const { t } = useI18n();
   const toast = useToast();
   const authStore = useAuthStore();
-
-  // Provide page title to the admin layout's breadcrumb.
-  const pageTitle = computed(() => t('pages.admin.users.title'));
-  provide('adminPageTitle', pageTitle);
 
   // ── Search ────────────────────────────────────────────────────────────────────
   const searchInput = ref('');

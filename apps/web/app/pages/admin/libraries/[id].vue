@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, provide, ref } from 'vue';
+  import { computed, ref } from 'vue';
   import { AppBanner, AppButton, AppScanProgress, AppSkeleton, IconCS } from '@app/ui';
   import type { LibraryDto } from '@app/api-client-ts';
   import { runLibraryScan, client } from '@app/api-client-ts';
@@ -57,10 +57,6 @@
       librariesStatus.value === 'error' ||
       (librariesStatus.value === 'success' && library.value === null),
   );
-
-  // Provide page title to layout breadcrumb
-  const pageTitle = computed(() => library.value?.name ?? t('pages.admin.libraries.title'));
-  provide('adminPageTitle', pageTitle);
 
   // Scan history for this library
   const {

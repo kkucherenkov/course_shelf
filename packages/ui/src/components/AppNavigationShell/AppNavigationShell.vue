@@ -63,9 +63,18 @@
        * right rail). Two unnamed landmarks of the same role are an axe
        * `landmark-unique` failure and are indistinguishable in a screen
        * reader's landmark list, so each carries its own name.
+       *
+       * Required, not defaulted (#623): every other label on this component
+       * has an English fallback a caller can silently skip, which is fine
+       * for cosmetic copy but wrong here — a landmark name a caller forgot
+       * to translate is a broken screen-reader landmark list, not a stray
+       * English word, and it went unnoticed through two prior audits
+       * specifically because the fallback made the gap invisible. Skipping
+       * either prop is now a Vue prop-validation warning and a type error
+       * at every call site, not a silent English default.
        */
-      sidebarLabel?: string;
-      rightRailLabel?: string;
+      sidebarLabel: string;
+      rightRailLabel: string;
       /** Visible heading over the admin section; override to translate. */
       adminLabel?: string;
       /** Overflow bottom-tab label + title of the nav dialog it opens. */
@@ -107,8 +116,6 @@
       adminNavLabel: 'Admin navigation',
       userMenuLabel: 'User menu',
       bottomNavLabel: 'Bottom navigation',
-      sidebarLabel: 'Sidebar',
-      rightRailLabel: 'Secondary content',
       adminLabel: 'Admin',
       moreLabel: 'More',
       closeLabel: 'Close',

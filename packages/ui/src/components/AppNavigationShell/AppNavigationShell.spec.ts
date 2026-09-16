@@ -76,6 +76,8 @@ function factory(
       activeRoute: 'home',
       nav: defaultNav,
       user: defaultUser,
+      sidebarLabel: 'Sidebar',
+      rightRailLabel: 'Secondary content',
       ...overrides.props,
     },
     slots: overrides.slots,

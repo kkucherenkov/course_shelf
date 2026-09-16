@@ -51,6 +51,8 @@ const meta: Meta<typeof AppNavigationShell> = {
     brandMark: 'CS',
     searchValue: '',
     searchPlaceholder: 'Search courses, lessons…',
+    sidebarLabel: 'Sidebar',
+    rightRailLabel: 'Secondary content',
   },
 };
 

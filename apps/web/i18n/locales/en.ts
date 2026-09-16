@@ -901,6 +901,8 @@ export default {
     },
     nav: {
       primary: 'Primary navigation',
+      sidebar: 'Sidebar',
+      rightRail: 'Secondary content',
       admin: 'Admin',
       adminNav: 'Admin navigation',
       userMenu: 'User menu',

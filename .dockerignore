@@ -47,3 +47,11 @@ test-results
 # deployments mount their own course directory via $COURSES_PATH.
 docs/data
 
+# Model weights bound at dev/prod time via $WHISPER_MODEL_DIR (whisper's
+# ggml .bin AND llama's gguf, gigabytes each) — never baked into the image,
+# see apps/backend/Dockerfile's stage W/L comments. Same directory
+# `.gitignore` already excludes; excluded here too since a local checkout
+# can have weights sitting right next to the repo root that `docker build`
+# would otherwise happily copy into the build context.
+/models
+

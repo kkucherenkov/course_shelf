@@ -13,9 +13,16 @@
 #   the single `whisper-cli` binary. It has no dependency on the app build,
 #   so it caches independently and only rebuilds when the pin moves.
 #
+#   Stage L (llama) compiles llama.cpp from a pinned tag and contributes the
+#   single `llama-completion` binary quiz generation shells out to
+#   (E29-F02-S01). Same independence and same ggml flags as stage W — see
+#   that stage's comment for why they are not optional. No model weight is
+#   baked in here either: the maintainer drops a `.gguf` onto the same
+#   `WHISPER_MODEL_DIR`-backed volume whisper's `.bin` already lives on.
+#
 #   Stage 3 (runtime) is a slim alpine with node + ffmpeg + whisper-cli +
-#   pg_dump + the deployed tree. Entrypoint runs `prisma migrate deploy` then
-#   `node dist/main.js`.
+#   llama-completion + pg_dump + the deployed tree. Entrypoint runs
+#   `prisma migrate deploy` then `node dist/main.js`.
 #
 # Build:    docker build -f apps/backend/Dockerfile -t courseshelf/backend:latest .
 # (build context = repo root so the Dockerfile can see every workspace package)
@@ -58,6 +65,55 @@ RUN apk add --no-cache build-base cmake git \
         -DGGML_F16C=ON \
     && cmake --build /usr/src/whisper.cpp/build --config Release \
         -j "$(nproc)" --target whisper-cli
+
+# ─── Stage L — llama.cpp ───────────────────────────────────────────────────
+# The BINARY only — same reasoning as stage W. `LLAMA_DEFAULT_MODEL` in
+# docker/compose*.yml names which `.gguf` on that same volume to load; the
+# file itself is fetched by the maintainer, never by this build.
+#
+# Target is `llama-completion`, NOT `llama-cli`: upstream renamed the
+# single-shot CLI mid-refactor (`llama-cli` → `llama-app`, which does not
+# currently link) after this pin was last verified. Pin-then-verify against
+# the ACTUAL tag below before trusting any target name from memory, an
+# example, or an older doc — this repo already got burned once by exactly
+# that shortcut on stage W's ggml flags.
+#
+# The ggml flags are copied from stage W WHOLESALE, not reasoned about
+# independently: llama.cpp vends the same ggml as whisper.cpp, and a build
+# with only `-DCMAKE_BUILD_TYPE=Release` (no explicit SIMD flags) measured
+# 0.91 tokens/sec on generation on a 16-thread, AVX-512-capable Ryzen 7
+# 8845HS — GGML_AVX/AVX2/AVX512 default OFF in this ggml version. Prompt
+# processing on the same run was 49 tok/s, confirming the bottleneck is
+# exactly the missing vector instructions in the generation path, not the
+# model or the hardware. This does not fail a build or a test — it just
+# makes every quiz generation call roughly twenty times slower, silently.
+# Hence the objdump check below: prove AVX2 landed in the binary rather than
+# trusting the flags were honoured.
+FROM node:24-alpine AS llama
+
+ARG LLAMA_CPP_VERSION=v0.4.1
+
+RUN apk add --no-cache build-base cmake git binutils \
+    && git clone --depth 1 --branch "${LLAMA_CPP_VERSION}" \
+        https://github.com/ggml-org/llama.cpp /usr/src/llama.cpp \
+    && cmake -S /usr/src/llama.cpp -B /usr/src/llama.cpp/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DLLAMA_BUILD_TESTS=OFF \
+        -DLLAMA_BUILD_EXAMPLES=OFF \
+        -DLLAMA_BUILD_SERVER=OFF \
+        -DLLAMA_BUILD_APP=OFF \
+        -DLLAMA_BUILD_TOOLS=ON \
+        -DLLAMA_OPENSSL=OFF \
+        -DGGML_NATIVE=OFF \
+        -DGGML_AVX=ON \
+        -DGGML_AVX2=ON \
+        -DGGML_FMA=ON \
+        -DGGML_F16C=ON \
+    && cmake --build /usr/src/llama.cpp/build --config Release \
+        -j "$(nproc)" --target llama-completion \
+    && objdump -d /usr/src/llama.cpp/build/bin/llama-completion | grep -q '%ymm' \
+        || (echo "llama-completion has no ymm (AVX2) instructions — GGML_AVX2 was not honoured" >&2 && exit 1)
 
 # ─── Stage 1 — install + build ────────────────────────────────────────────
 FROM node:24-alpine AS build
@@ -140,14 +196,19 @@ FROM node:24-alpine AS runtime
 # request time and answers 503 rather than writing a partial archive, so a
 # mismatch is loud — but the pin is what stops it happening.
 #
-# libgomp is whisper-cli's only runtime dependency beyond what node already
-# pulls in (`ldd whisper-cli` → libgomp, libstdc++, libgcc_s, musl). Dropping
-# it would make the binary fail to start, not fail to build.
+# libgomp is whisper-cli's (and llama-completion's — same ggml, same
+# dependency) only runtime dependency beyond what node already pulls in
+# (`ldd whisper-cli` → libgomp, libstdc++, libgcc_s, musl). Dropping it would
+# make the binaries fail to start, not fail to build.
 RUN apk add --no-cache ffmpeg openssl libc6-compat tini postgresql18-client libgomp
 
 # whisper.cpp CLI, built in stage W. AppConfig's WHISPER_PATH default is the
 # bare name, resolved via PATH.
 COPY --from=whisper /usr/src/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
+
+# llama.cpp's one-shot completion CLI, built in stage L. AppConfig's
+# LLAMA_PATH default is the bare name, resolved via PATH.
+COPY --from=llama /usr/src/llama.cpp/build/bin/llama-completion /usr/local/bin/llama-completion
 
 WORKDIR /app
 

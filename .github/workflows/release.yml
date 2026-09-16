@@ -14,6 +14,15 @@ name: Release (ghcr)
 # target machine because every gate that ran it used WHISPER_MODE=mock. A
 # failure there stops the job before anything is pushed or released.
 #
+# llama-completion (E29-F02-S01, quiz generation) gets no equivalent smoke
+# test here — deliberate, not an oversight: there is no whisper-tiny-sized
+# gguf to fetch per run (the smallest realistic weight is ~2.6 GB, against
+# whisper-tiny's ~75 MB), and the maintainer was explicit that no workflow
+# ever downloads a model weight. The `-march=native` class of bug is still
+# structurally prevented (GGML_NATIVE=OFF, same as whisper's stage), and the
+# Dockerfile's llama stage proves AVX2 actually landed via `objdump` on the
+# built binary — no model, no run, no network fetch required for that check.
+#
 # A `workflow_dispatch` run is a dry run: it renders and validates the release
 # compose against HEAD and stops there — no login, no image build, no smoke
 # test, no release. It exists because the tag-only trigger meant this file was
@@ -203,8 +212,10 @@ jobs:
       # runner — the 1.3.0 defect was a build that only failed on the
       # target CPU (implicit `-march=native`), so a runner-side check
       # would not have caught it. Backend unit tests run WHISPER_MODE=mock
-      # and even the e2e job's production-shaped image sets the same, so
-      # this is the only place in the whole pipeline the real binary runs.
+      # (and LLAMA_MODE=mock) and even the e2e job's production-shaped image
+      # sets the same, so this is the only place in the whole pipeline a
+      # real whisper binary runs — llama-completion never gets a real run at
+      # all in CI, see the top-of-file comment for why.
       #
       # Deliberately before "Push release images" below: a step with a
       # plain `if:` (no always()/failure()) implicitly requires success(),

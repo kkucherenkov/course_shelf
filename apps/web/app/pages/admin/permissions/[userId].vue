@@ -531,7 +531,7 @@
     }
 
     &__header-email {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
       margin-top: var(--space-1);
       overflow: hidden;
@@ -577,7 +577,7 @@
       flex-direction: column;
       align-items: center;
       gap: var(--space-3);
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
     }
 
     &__empty-icon {

@@ -255,7 +255,7 @@
 
     &__tbl-title {
       margin: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       font-weight: var(--fw-semibold);
       color: var(--text-loud);
     }

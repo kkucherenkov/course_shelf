@@ -223,6 +223,22 @@ reconciling a card marked ✅ Done, closing an epic umbrella — live in the
 **`card-bookkeeping`** skill. Invoke it when opening a PR for a card, marking a
 card Done, or auditing whether a card's issues match its status.
 
+## Before a release: audit the product
+
+Cutting a release runs the **`pre-release-audit`** skill first. It stands up a
+local instance from a production dump on the release images, drives it with a
+browser, and scores the product on Nielsen's ten heuristics so two releases can
+be compared by a number rather than a feeling.
+
+`tests/e2e/` proves known things still hold, on seeded data, one page at a time.
+The audit proves nothing and walks journeys on data shaped like the real
+library: the two do not overlap, and the gap between them is where this project
+has shipped its bugs.
+
+The skill carries the setup procedure and the traps — the sign-in rate limiters,
+the hydration that discards a filled form, the run that reports zero findings
+because every page was the sign-in redirect.
+
 ## Commits
 
 Conventional Commits enforced by `commitlint` (see `commitlint.config.mjs`).

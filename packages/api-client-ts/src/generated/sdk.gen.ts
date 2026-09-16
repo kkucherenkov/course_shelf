@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApplyIdentifyResultData, ApplyIdentifyResultErrors, ApplyIdentifyResultResponses, CancelTranscriptionData, CancelTranscriptionErrors, CancelTranscriptionResponses, CreateBackupData, CreateBackupErrors, CreateBackupResponses, CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, DiscardIdentifyTaskData, DiscardIdentifyTaskErrors, DiscardIdentifyTaskResponses, DownloadBackupData, DownloadBackupErrors, DownloadBackupResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersErrors, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceErrors, GetAdminInstanceResponses, GetAdminUserData, GetAdminUserErrors, GetAdminUserResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseDownloadEstimateData, GetCourseDownloadEstimateErrors, GetCourseDownloadEstimateResponses, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCoursePosterData, GetCoursePosterErrors, GetCoursePosterResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetIdentifyTaskData, GetIdentifyTaskErrors, GetIdentifyTaskResponses, GetInstructorData, GetInstructorErrors, GetInstructorResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLatestTranscriptionData, GetLatestTranscriptionErrors, GetLatestTranscriptionResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetStudioData, GetStudioErrors, GetStudioResponses, GetTagData, GetTagErrors, GetTagResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, IssueMaterialDownloadUrlData, IssueMaterialDownloadUrlErrors, IssueMaterialDownloadUrlResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListAdminLibrariesData, ListAdminLibrariesErrors, ListAdminLibrariesResponses, ListAdminScansData, ListAdminScansErrors, ListAdminScansResponses, ListAdminTranscriptionsData, ListAdminTranscriptionsErrors, ListAdminTranscriptionsResponses, ListAdminUsersData, ListAdminUsersErrors, ListAdminUsersResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListIdentifyTasksData, ListIdentifyTasksErrors, ListIdentifyTasksResponses, ListInstructorsData, ListInstructorsErrors, ListInstructorsResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, ListLibraryTranscriptionsData, ListLibraryTranscriptionsErrors, ListLibraryTranscriptionsResponses, ListScrapersData, ListScrapersErrors, ListScrapersResponses, ListStudiosData, ListStudiosErrors, ListStudiosResponses, ListTagsData, ListTagsErrors, ListTagsResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RemoveLibraryData, RemoveLibraryErrors, RemoveLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunCourseRescanData, RunCourseRescanErrors, RunCourseRescanResponses, RunIdentifyTaskData, RunIdentifyTaskErrors, RunIdentifyTaskResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, ScrapeCoursePreviewData, ScrapeCoursePreviewErrors, ScrapeCoursePreviewResponses, SearchCatalogueData, SearchCatalogueErrors, SearchCatalogueResponses, SignOutOtherSessionsData, SignOutOtherSessionsErrors, SignOutOtherSessionsResponses, StartBackfillMetadataData, StartBackfillMetadataErrors, StartBackfillMetadataResponses, StartCourseTranscriptionData, StartCourseTranscriptionErrors, StartCourseTranscriptionResponses, StartTranscriptionData, StartTranscriptionErrors, StartTranscriptionResponses, StreamLessonSubtitleData, StreamLessonSubtitleErrors, StreamLessonSubtitleResponses, StreamLessonVideoData, StreamLessonVideoErrors, StreamLessonVideoResponses, StreamMaterialData, StreamMaterialErrors, StreamMaterialResponses, UpdateAdminUserData, UpdateAdminUserErrors, UpdateAdminUserResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpdateLibraryData, UpdateLibraryErrors, UpdateLibraryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpsertInstructorData, UpsertInstructorErrors, UpsertInstructorResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses, UpsertStudioData, UpsertStudioErrors, UpsertStudioResponses, UpsertTagData, UpsertTagErrors, UpsertTagResponses } from './types.gen';
+import type { ApplyIdentifyResultData, ApplyIdentifyResultErrors, ApplyIdentifyResultResponses, CancelTranscriptionData, CancelTranscriptionErrors, CancelTranscriptionResponses, CreateBackupData, CreateBackupErrors, CreateBackupResponses, CreateBookmarkData, CreateBookmarkErrors, CreateBookmarkResponses, CreateFlashcardData, CreateFlashcardErrors, CreateFlashcardResponses, DeleteBookmarkData, DeleteBookmarkErrors, DeleteBookmarkResponses, DeleteFlashcardData, DeleteFlashcardErrors, DeleteFlashcardResponses, DeleteNoteData, DeleteNoteErrors, DeleteNoteResponses, DiscardIdentifyTaskData, DiscardIdentifyTaskErrors, DiscardIdentifyTaskResponses, DownloadBackupData, DownloadBackupErrors, DownloadBackupResponses, GetAdminDashboardData, GetAdminDashboardErrors, GetAdminDashboardResponses, GetAdminHasUsersData, GetAdminHasUsersErrors, GetAdminHasUsersResponses, GetAdminInstanceData, GetAdminInstanceErrors, GetAdminInstanceResponses, GetAdminUserData, GetAdminUserErrors, GetAdminUserResponses, GetContinueWatchingData, GetContinueWatchingErrors, GetContinueWatchingResponses, GetCourseData, GetCourseDownloadEstimateData, GetCourseDownloadEstimateErrors, GetCourseDownloadEstimateResponses, GetCourseErrors, GetCourseOutlineData, GetCourseOutlineErrors, GetCourseOutlineResponses, GetCoursePosterData, GetCoursePosterErrors, GetCoursePosterResponses, GetCourseResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetIdentifyTaskData, GetIdentifyTaskErrors, GetIdentifyTaskResponses, GetInstructorData, GetInstructorErrors, GetInstructorResponses, GetLatestLibraryScanData, GetLatestLibraryScanErrors, GetLatestLibraryScanResponses, GetLatestTranscriptionData, GetLatestTranscriptionErrors, GetLatestTranscriptionResponses, GetLessonData, GetLessonErrors, GetLessonProgressData, GetLessonProgressErrors, GetLessonProgressResponses, GetLessonResponses, GetLibraryData, GetLibraryErrors, GetLibraryResponses, GetNoteData, GetNoteErrors, GetNoteResponses, GetRecentlyAddedData, GetRecentlyAddedErrors, GetRecentlyAddedResponses, GetRecentlyCompletedData, GetRecentlyCompletedErrors, GetRecentlyCompletedResponses, GetStudioData, GetStudioErrors, GetStudioResponses, GetTagData, GetTagErrors, GetTagResponses, GetYourWeekData, GetYourWeekErrors, GetYourWeekResponses, GradeFlashcardData, GradeFlashcardErrors, GradeFlashcardResponses, IssueMaterialDownloadUrlData, IssueMaterialDownloadUrlErrors, IssueMaterialDownloadUrlResponses, IssueRealtimeTokenData, IssueRealtimeTokenErrors, IssueRealtimeTokenResponses, IssueStreamUrlData, IssueStreamUrlErrors, IssueStreamUrlResponses, ListAdminLibrariesData, ListAdminLibrariesErrors, ListAdminLibrariesResponses, ListAdminScansData, ListAdminScansErrors, ListAdminScansResponses, ListAdminTranscriptionsData, ListAdminTranscriptionsErrors, ListAdminTranscriptionsResponses, ListAdminUsersData, ListAdminUsersErrors, ListAdminUsersResponses, ListCoursesData, ListCoursesErrors, ListCoursesResponses, ListDueFlashcardsData, ListDueFlashcardsErrors, ListDueFlashcardsResponses, ListGrantsByUserData, ListGrantsByUserErrors, ListGrantsByUserResponses, ListIdentifyTasksData, ListIdentifyTasksErrors, ListIdentifyTasksResponses, ListInstructorsData, ListInstructorsErrors, ListInstructorsResponses, ListLessonBookmarksData, ListLessonBookmarksErrors, ListLessonBookmarksResponses, ListLessonFlashcardsData, ListLessonFlashcardsErrors, ListLessonFlashcardsResponses, ListLibrariesData, ListLibrariesErrors, ListLibrariesResponses, ListLibraryTranscriptionsData, ListLibraryTranscriptionsErrors, ListLibraryTranscriptionsResponses, ListScrapersData, ListScrapersErrors, ListScrapersResponses, ListStudiosData, ListStudiosErrors, ListStudiosResponses, ListTagsData, ListTagsErrors, ListTagsResponses, MarkCourseCompleteData, MarkCourseCompleteErrors, MarkCourseCompleteResponses, PingData, PingErrors, PingResponses, RecordLessonProgressBatchData, RecordLessonProgressBatchErrors, RecordLessonProgressBatchResponses, RecordLessonProgressData, RecordLessonProgressErrors, RecordLessonProgressResponses, RegisterGrantData, RegisterGrantErrors, RegisterGrantResponses, RegisterLibraryData, RegisterLibraryErrors, RegisterLibraryResponses, RemoveLibraryData, RemoveLibraryErrors, RemoveLibraryResponses, ResetCourseProgressData, ResetCourseProgressErrors, ResetCourseProgressResponses, RevokeGrantData, RevokeGrantErrors, RevokeGrantResponses, RunCourseRescanData, RunCourseRescanErrors, RunCourseRescanResponses, RunIdentifyTaskData, RunIdentifyTaskErrors, RunIdentifyTaskResponses, RunLibraryScanData, RunLibraryScanErrors, RunLibraryScanResponses, ScrapeCoursePreviewData, ScrapeCoursePreviewErrors, ScrapeCoursePreviewResponses, SearchCatalogueData, SearchCatalogueErrors, SearchCatalogueResponses, SignOutOtherSessionsData, SignOutOtherSessionsErrors, SignOutOtherSessionsResponses, StartBackfillMetadataData, StartBackfillMetadataErrors, StartBackfillMetadataResponses, StartCourseTranscriptionData, StartCourseTranscriptionErrors, StartCourseTranscriptionResponses, StartTranscriptionData, StartTranscriptionErrors, StartTranscriptionResponses, StreamLessonSubtitleData, StreamLessonSubtitleErrors, StreamLessonSubtitleResponses, StreamLessonVideoData, StreamLessonVideoErrors, StreamLessonVideoResponses, StreamMaterialData, StreamMaterialErrors, StreamMaterialResponses, UpdateAdminUserData, UpdateAdminUserErrors, UpdateAdminUserResponses, UpdateBookmarkData, UpdateBookmarkErrors, UpdateBookmarkResponses, UpdateCourseData, UpdateCourseErrors, UpdateCourseResponses, UpdateFlashcardData, UpdateFlashcardErrors, UpdateFlashcardResponses, UpdateLibraryData, UpdateLibraryErrors, UpdateLibraryResponses, UpdateMeData, UpdateMeErrors, UpdateMeResponses, UpsertInstructorData, UpsertInstructorErrors, UpsertInstructorResponses, UpsertNoteData, UpsertNoteErrors, UpsertNoteResponses, UpsertStudioData, UpsertStudioErrors, UpsertStudioResponses, UpsertTagData, UpsertTagErrors, UpsertTagResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -1201,6 +1201,98 @@ export const getNote = <ThrowOnError extends boolean = false>(options: Options<G
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/notes/{lessonId}',
     ...options
+});
+
+/**
+ * List the requester's flashcards for a lesson
+ *
+ * Returns all flashcards the authenticated user has created for the given lesson, ordered by creation time ascending. An empty `items` array is returned when no flashcards exist yet.
+ */
+export const listLessonFlashcards = <ThrowOnError extends boolean = false>(options: Options<ListLessonFlashcardsData, ThrowOnError>) => (options.client ?? client).get<ListLessonFlashcardsResponses, ListLessonFlashcardsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/lessons/{lessonId}/flashcards',
+    ...options
+});
+
+/**
+ * Create a flashcard on a lesson
+ *
+ * Flashcards are personal — even your own admin role does not surface
+ * them in listings for other users. The three ways a card comes into
+ * being (typed by hand, promoted from a note, pulled from a transcript
+ * line) are a client concern: this is the one endpoint all of them call.
+ * Pass `sourceCueId` when the card is made from a transcript line;
+ * omit it otherwise. A fresh card is due for review immediately.
+ *
+ */
+export const createFlashcard = <ThrowOnError extends boolean = false>(options: Options<CreateFlashcardData, ThrowOnError>) => (options.client ?? client).post<CreateFlashcardResponses, CreateFlashcardErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/lessons/{lessonId}/flashcards',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List the requester's due flashcards (the review queue)
+ *
+ * Returns up to `limit` of the authenticated user's flashcards, across every lesson, whose `dueAt` has passed — a plain read, not a background job. Sorted by `dueAt` ascending, most overdue first.
+ */
+export const listDueFlashcards = <ThrowOnError extends boolean = false>(options?: Options<ListDueFlashcardsData, ThrowOnError>) => (options?.client ?? client).get<ListDueFlashcardsResponses, ListDueFlashcardsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/flashcards/due',
+    ...options
+});
+
+/**
+ * Delete a flashcard
+ *
+ * Owner-only. Admins may delete any flashcard for moderation.
+ */
+export const deleteFlashcard = <ThrowOnError extends boolean = false>(options: Options<DeleteFlashcardData, ThrowOnError>) => (options.client ?? client).delete<DeleteFlashcardResponses, DeleteFlashcardErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/flashcards/{id}',
+    ...options
+});
+
+/**
+ * Update a flashcard's front or back
+ *
+ * Owner-only. At least one of `front` / `back` must be present. The
+ * server returns 400 on empty patches. Does not touch the review
+ * schedule — grade the card via `POST /flashcards/{id}/grade` instead.
+ *
+ */
+export const updateFlashcard = <ThrowOnError extends boolean = false>(options: Options<UpdateFlashcardData, ThrowOnError>) => (options.client ?? client).patch<UpdateFlashcardResponses, UpdateFlashcardErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/flashcards/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Grade a flashcard review, advancing its SM-2 schedule
+ *
+ * Owner-only. `grade` is the SM-2 0..5 quality-of-response scale: 0-2 is
+ * a lapse (the card resets to a 1-day interval and its repetition
+ * streak resets to 0); 3-5 advances the streak and walks the SM-2
+ * interval (1 day, then 6 days, then `previousInterval * easeFactor`).
+ * Returns the card with its updated schedule.
+ *
+ */
+export const gradeFlashcard = <ThrowOnError extends boolean = false>(options: Options<GradeFlashcardData, ThrowOnError>) => (options.client ?? client).post<GradeFlashcardResponses, GradeFlashcardErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/flashcards/{id}/grade',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

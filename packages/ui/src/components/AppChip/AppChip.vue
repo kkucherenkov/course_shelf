@@ -187,7 +187,7 @@
     &--sm {
       height: $chip-height-sm;
       padding: 0 var(--space-1);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
     }
 
     &--md {

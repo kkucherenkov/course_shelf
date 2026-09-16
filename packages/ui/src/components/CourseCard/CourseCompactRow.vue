@@ -107,7 +107,7 @@
       flex: 1;
       min-width: 0;
       margin: 0;
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       font-weight: var(--fw-medium);
       color: var(--text-fg);
       line-height: var(--leading-snug);
@@ -135,7 +135,7 @@
     &__pct {
       flex-shrink: 0;
       font-family: var(--font-mono);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
       width: var(--space-6);
       text-align: right;

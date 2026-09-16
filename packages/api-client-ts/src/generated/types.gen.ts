@@ -1587,6 +1587,110 @@ export type NoteDto = {
     updatedAt: string;
 };
 
+/**
+ * A single user-owned flashcard with its SM-2 review schedule.
+ */
+export type FlashcardDto = {
+    /**
+     * Server-generated cuid identifying this flashcard.
+     */
+    id: string;
+    /**
+     * cuid of the lesson this flashcard belongs to.
+     */
+    lessonId: string;
+    /**
+     * Prompt side. Trimmed server-side.
+     */
+    front: string;
+    /**
+     * Answer side. Trimmed server-side.
+     */
+    back: string;
+    /**
+     * cuid of the TranscriptCue this card was made from, when created from a transcript line. Absent for manual and note-derived cards.
+     */
+    sourceCueId?: string;
+    /**
+     * SM-2 ease factor. Starts at 2.5, floors at 1.3.
+     */
+    easeFactor: number;
+    /**
+     * Days until the next scheduled review. 0 for a never-reviewed card.
+     */
+    intervalDays: number;
+    /**
+     * Consecutive passing reviews (grade >= 3) since the last lapse.
+     */
+    repetitions: number;
+    /**
+     * ISO-8601 instant this card is next due for review.
+     */
+    dueAt: string;
+    /**
+     * ISO-8601 instant when the flashcard was first created.
+     */
+    createdAt: string;
+    /**
+     * ISO-8601 instant when the flashcard was last updated.
+     */
+    updatedAt: string;
+};
+
+/**
+ * A list of the requester's flashcards.
+ */
+export type FlashcardListDto = {
+    items: Array<FlashcardDto>;
+};
+
+/**
+ * Payload for creating a new flashcard on a lesson.
+ */
+export type CreateFlashcardRequest = {
+    /**
+     * Prompt side. Trimmed server-side, so it must contain a non-whitespace character.
+     */
+    front: string;
+    /**
+     * Answer side. Trimmed server-side, so it must contain a non-whitespace character.
+     */
+    back: string;
+    /**
+     * Optional cuid of the TranscriptCue this card is made from — set when the card was created from a transcript line, omitted for manual and note-derived cards.
+     */
+    sourceCueId?: string;
+};
+
+/**
+ * Payload for updating a flashcard's front/back. At least one of `front` or `back` must be present — the server returns 400 on empty patches. Does not touch the review schedule.
+ */
+export type UpdateFlashcardRequest = {
+    /**
+     * New prompt side.
+     */
+    front?: string;
+    /**
+     * New answer side.
+     */
+    back?: string;
+};
+
+/**
+ * SM-2 quality-of-response grade for one review of a flashcard.
+ */
+export type GradeFlashcardRequest = {
+    /**
+     * 0 - complete blackout    3 - correct, serious difficulty
+     * 1 - incorrect, familiar  4 - correct, some hesitation
+     * 2 - incorrect, easy      5 - perfect recall
+     * Grades below 3 are a lapse: the repetition streak resets and the
+     * card is due again in 1 day.
+     *
+     */
+    grade: number;
+};
+
 export type PingResponse = {
     /**
      * User id (UUID v4) — Better Auth's internal identifier.
@@ -5482,6 +5586,299 @@ export type GetNoteResponses = {
 };
 
 export type GetNoteResponse = GetNoteResponses[keyof GetNoteResponses];
+
+export type ListLessonFlashcardsData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the lesson.
+         */
+        lessonId: string;
+    };
+    query?: never;
+    url: '/api/v1/lessons/{lessonId}/flashcards';
+};
+
+export type ListLessonFlashcardsErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * No READ grant on the parent library or course
+     */
+    403: Problem;
+    /**
+     * Lesson not found
+     */
+    404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type ListLessonFlashcardsError = ListLessonFlashcardsErrors[keyof ListLessonFlashcardsErrors];
+
+export type ListLessonFlashcardsResponses = {
+    /**
+     * Flashcard list returned
+     */
+    200: FlashcardListDto;
+};
+
+export type ListLessonFlashcardsResponse = ListLessonFlashcardsResponses[keyof ListLessonFlashcardsResponses];
+
+export type CreateFlashcardData = {
+    body: CreateFlashcardRequest;
+    path: {
+        /**
+         * Server-generated cuid identifying the lesson.
+         */
+        lessonId: string;
+    };
+    query?: never;
+    url: '/api/v1/lessons/{lessonId}/flashcards';
+};
+
+export type CreateFlashcardErrors = {
+    /**
+     * Validation error — missing or malformed fields
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * No READ grant on the parent library or course
+     */
+    403: Problem;
+    /**
+     * Lesson not found
+     */
+    404: Problem;
+    /**
+     * The request matched the schema but violated a domain invariant that JSON Schema cannot express — a display name that reduces to an empty slug, an external-id reference whose parts contradict each other, and so on. `code` names the specific rule. Documented since #321, when the authenticated contract run reported 422 as an undocumented status on four operations.
+     *
+     */
+    422: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type CreateFlashcardError = CreateFlashcardErrors[keyof CreateFlashcardErrors];
+
+export type CreateFlashcardResponses = {
+    /**
+     * Flashcard created
+     */
+    201: FlashcardDto;
+};
+
+export type CreateFlashcardResponse = CreateFlashcardResponses[keyof CreateFlashcardResponses];
+
+export type ListDueFlashcardsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Maximum number of due cards to return.
+         */
+        limit?: number;
+    };
+    url: '/api/v1/flashcards/due';
+};
+
+export type ListDueFlashcardsErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type ListDueFlashcardsError = ListDueFlashcardsErrors[keyof ListDueFlashcardsErrors];
+
+export type ListDueFlashcardsResponses = {
+    /**
+     * Due-queue returned
+     */
+    200: FlashcardListDto;
+};
+
+export type ListDueFlashcardsResponse = ListDueFlashcardsResponses[keyof ListDueFlashcardsResponses];
+
+export type DeleteFlashcardData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the flashcard to delete.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/flashcards/{id}';
+};
+
+export type DeleteFlashcardErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller is not the flashcard owner (and not an admin)
+     */
+    403: Problem;
+    /**
+     * Flashcard not found
+     */
+    404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type DeleteFlashcardError = DeleteFlashcardErrors[keyof DeleteFlashcardErrors];
+
+export type DeleteFlashcardResponses = {
+    /**
+     * Flashcard deleted — no body
+     */
+    204: void;
+};
+
+export type DeleteFlashcardResponse = DeleteFlashcardResponses[keyof DeleteFlashcardResponses];
+
+export type UpdateFlashcardData = {
+    body: UpdateFlashcardRequest;
+    path: {
+        /**
+         * Server-generated cuid identifying the flashcard to update.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/flashcards/{id}';
+};
+
+export type UpdateFlashcardErrors = {
+    /**
+     * Empty patch — no fields provided
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller is not the flashcard owner
+     */
+    403: Problem;
+    /**
+     * Flashcard not found
+     */
+    404: Problem;
+    /**
+     * The request matched the schema but violated a domain invariant that JSON Schema cannot express — a display name that reduces to an empty slug, an external-id reference whose parts contradict each other, and so on. `code` names the specific rule. Documented since #321, when the authenticated contract run reported 422 as an undocumented status on four operations.
+     *
+     */
+    422: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type UpdateFlashcardError = UpdateFlashcardErrors[keyof UpdateFlashcardErrors];
+
+export type UpdateFlashcardResponses = {
+    /**
+     * Flashcard updated
+     */
+    200: FlashcardDto;
+};
+
+export type UpdateFlashcardResponse = UpdateFlashcardResponses[keyof UpdateFlashcardResponses];
+
+export type GradeFlashcardData = {
+    body: GradeFlashcardRequest;
+    path: {
+        /**
+         * Server-generated cuid identifying the flashcard to grade.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/flashcards/{id}/grade';
+};
+
+export type GradeFlashcardErrors = {
+    /**
+     * Validation error — grade missing or out of the 0..5 range
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller is not the flashcard owner
+     */
+    403: Problem;
+    /**
+     * Flashcard not found
+     */
+    404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type GradeFlashcardError = GradeFlashcardErrors[keyof GradeFlashcardErrors];
+
+export type GradeFlashcardResponses = {
+    /**
+     * Flashcard graded — updated schedule returned
+     */
+    200: FlashcardDto;
+};
+
+export type GradeFlashcardResponse = GradeFlashcardResponses[keyof GradeFlashcardResponses];
 
 export type GetHealthData = {
     body?: never;

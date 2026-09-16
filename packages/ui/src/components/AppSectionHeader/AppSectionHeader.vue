@@ -131,7 +131,7 @@
 
     &__meta {
       flex-shrink: 0;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
       font-family: var(--font-mono);
       font-variant-numeric: tabular-nums;

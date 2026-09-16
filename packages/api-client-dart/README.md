@@ -142,16 +142,22 @@ Class | Method | HTTP request | Description
 [*IdentifyApi*](doc/IdentifyApi.md) | [**listIdentifyTasks**](doc/IdentifyApi.md#listidentifytasks) | **GET** /api/v1/admin/identify-tasks | List identify tasks
 [*IdentifyApi*](doc/IdentifyApi.md) | [**runIdentifyTask**](doc/IdentifyApi.md#runidentifytask) | **POST** /api/v1/admin/courses/{id}/identify | Create an identify proposal for a course
 [*LearningApi*](doc/LearningApi.md) | [**createBookmark**](doc/LearningApi.md#createbookmark) | **POST** /api/v1/lessons/{lessonId}/bookmarks | Create a bookmark on a lesson
+[*LearningApi*](doc/LearningApi.md) | [**createFlashcard**](doc/LearningApi.md#createflashcard) | **POST** /api/v1/lessons/{lessonId}/flashcards | Create a flashcard on a lesson
 [*LearningApi*](doc/LearningApi.md) | [**deleteBookmark**](doc/LearningApi.md#deletebookmark) | **DELETE** /api/v1/bookmarks/{id} | Delete a bookmark
+[*LearningApi*](doc/LearningApi.md) | [**deleteFlashcard**](doc/LearningApi.md#deleteflashcard) | **DELETE** /api/v1/flashcards/{id} | Delete a flashcard
 [*LearningApi*](doc/LearningApi.md) | [**deleteNote**](doc/LearningApi.md#deletenote) | **DELETE** /api/v1/notes/{lessonId} | Clear the requester&#39;s note for a lesson
 [*LearningApi*](doc/LearningApi.md) | [**getLessonProgress**](doc/LearningApi.md#getlessonprogress) | **GET** /api/v1/progress/{lessonId} | Get the requester&#39;s progress on a lesson
 [*LearningApi*](doc/LearningApi.md) | [**getNote**](doc/LearningApi.md#getnote) | **GET** /api/v1/notes/{lessonId} | Get the requester&#39;s note for a lesson
+[*LearningApi*](doc/LearningApi.md) | [**gradeFlashcard**](doc/LearningApi.md#gradeflashcard) | **POST** /api/v1/flashcards/{id}/grade | Grade a flashcard review, advancing its SM-2 schedule
+[*LearningApi*](doc/LearningApi.md) | [**listDueFlashcards**](doc/LearningApi.md#listdueflashcards) | **GET** /api/v1/flashcards/due | List the requester&#39;s due flashcards (the review queue)
 [*LearningApi*](doc/LearningApi.md) | [**listLessonBookmarks**](doc/LearningApi.md#listlessonbookmarks) | **GET** /api/v1/lessons/{lessonId}/bookmarks | List the requester&#39;s bookmarks for a lesson
+[*LearningApi*](doc/LearningApi.md) | [**listLessonFlashcards**](doc/LearningApi.md#listlessonflashcards) | **GET** /api/v1/lessons/{lessonId}/flashcards | List the requester&#39;s flashcards for a lesson
 [*LearningApi*](doc/LearningApi.md) | [**markCourseComplete**](doc/LearningApi.md#markcoursecomplete) | **POST** /api/v1/courses/{id}/mark-complete | Mark every lesson in the course as completed for the requester
 [*LearningApi*](doc/LearningApi.md) | [**recordLessonProgress**](doc/LearningApi.md#recordlessonprogress) | **POST** /api/v1/progress | Record (upsert) the requester&#39;s progress on a lesson
 [*LearningApi*](doc/LearningApi.md) | [**recordLessonProgressBatch**](doc/LearningApi.md#recordlessonprogressbatch) | **POST** /api/v1/progress/batch | Record up to 200 progress updates in a single call
 [*LearningApi*](doc/LearningApi.md) | [**resetCourseProgress**](doc/LearningApi.md#resetcourseprogress) | **POST** /api/v1/courses/{id}/reset-progress | Clear every progress row in the course for the requester
 [*LearningApi*](doc/LearningApi.md) | [**updateBookmark**](doc/LearningApi.md#updatebookmark) | **PATCH** /api/v1/bookmarks/{id} | Update a bookmark&#39;s position or label
+[*LearningApi*](doc/LearningApi.md) | [**updateFlashcard**](doc/LearningApi.md#updateflashcard) | **PATCH** /api/v1/flashcards/{id} | Update a flashcard&#39;s front or back
 [*LearningApi*](doc/LearningApi.md) | [**upsertNote**](doc/LearningApi.md#upsertnote) | **PUT** /api/v1/notes | Upsert the requester&#39;s note for a lesson
 [*MaintenanceApi*](doc/MaintenanceApi.md) | [**startBackfillMetadata**](doc/MaintenanceApi.md#startbackfillmetadata) | **POST** /api/v1/admin/maintenance/backfill-metadata | Trigger a background metadata backfill across the library
 [*OpsApi*](doc/OpsApi.md) | [**createBackup**](doc/OpsApi.md#createbackup) | **POST** /api/v1/admin/backups | Create a metadata database snapshot and return a signed download URL
@@ -209,9 +215,13 @@ Class | Method | HTTP request | Description
  - [CourseProgress](doc/CourseProgress.md)
  - [CourseTarget](doc/CourseTarget.md)
  - [CreateBookmarkRequest](doc/CreateBookmarkRequest.md)
+ - [CreateFlashcardRequest](doc/CreateFlashcardRequest.md)
  - [DateRange](doc/DateRange.md)
  - [DependencyStatus](doc/DependencyStatus.md)
  - [ExternalIdRef](doc/ExternalIdRef.md)
+ - [FlashcardDto](doc/FlashcardDto.md)
+ - [FlashcardListDto](doc/FlashcardListDto.md)
+ - [GradeFlashcardRequest](doc/GradeFlashcardRequest.md)
  - [GrantLevel](doc/GrantLevel.md)
  - [GrantTarget](doc/GrantTarget.md)
  - [HasUsersResponse](doc/HasUsersResponse.md)
@@ -286,6 +296,7 @@ Class | Method | HTTP request | Description
  - [TranscriptionStatus](doc/TranscriptionStatus.md)
  - [UpdateBookmarkRequest](doc/UpdateBookmarkRequest.md)
  - [UpdateCourseRequest](doc/UpdateCourseRequest.md)
+ - [UpdateFlashcardRequest](doc/UpdateFlashcardRequest.md)
  - [UpdateLibraryRequest](doc/UpdateLibraryRequest.md)
  - [UpdateMeRequest](doc/UpdateMeRequest.md)
  - [UpsertInstructorRequest](doc/UpsertInstructorRequest.md)

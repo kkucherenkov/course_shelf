@@ -16,12 +16,27 @@
   82 files, `apps/web/app` + `packages/ui/src`.
 - Codegen impact: no (design tokens only, no new scale steps)
 - Sub-steps:
-  - [x] T1 — `packages/ui/src/components/*` primitives (37 decls, 21 files) —
-        PR #685, green, awaiting review/merge
+  - [ ] T1 — `packages/ui/src/components/*` primitives (~80 decls)
   - [ ] T2 — reader surfaces: lesson-player, course-detail, home, search (~50)
   - [ ] T3 — admin surfaces (~70, dense tables stay put)
   - [ ] T4 — remaining pages: auth, settings, libraries, dev (~80), closes #658
 - Status: in-progress
-- Blockers: T2-T4 branched from `main` pre-T1 merge — reader components
-  consumed here (AppLessonRow, AppSectionHeader, CourseCard) render at their
-  OLD sizes until PR #685 lands; re-verify visually once it merges.
+- Blockers: —
+
+## T-2026-09-16-kkucherenkov-flashcards-domain — flashcard + SM-2 domain and API
+
+- Created: 2026-09-16
+- Owner: claude
+- Spec: [docs/roadmap/tasks/E29-F01-S01.md](../../docs/roadmap/tasks/E29-F01-S01.md), [docs/roadmap/tasks/E29-F01-S02.md](../../docs/roadmap/tasks/E29-F01-S02.md)
+- Goal: Flashcard aggregate with a pure SM-2 scheduler and review-queue query (S01), then CRUD + due-queue + grade endpoints over it (S02). Issues #232, #233, umbrella #250.
+- Spec diff: openapi.yaml — flashcard routes (create/list per lesson, due queue, update, delete, grade)
+- Codegen impact: yes
+- Sub-steps:
+  - [x] Prisma schema + migration for `Flashcard`
+  - [x] `ReviewSchedule` pure SM-2 function + table-driven tests
+  - [x] `Flashcard` aggregate + repository port + Prisma adapter
+  - [x] Migration verified against real Postgres — [PR #684](https://github.com/kkucherenkov/course_shelf/pull/684)
+  - [ ] OpenAPI routes + codegen (own commit)
+  - [ ] Commands/queries + controller + handler specs
+- Status: in-progress
+- Blockers: —

@@ -70,7 +70,7 @@
     &__error {
       margin: 0;
       font-family: var(--font-sans);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       line-height: var(--leading-normal);
     }
 

@@ -72,7 +72,7 @@
     &__trailing {
       flex-shrink: 0;
       color: var(--text-secondary); // bundle --text-muted → --text-secondary
-      font-size: var(--text-xs); // 11px
+      font-size: var(--text-sm); // 12px — meta role, one step up from 11px
       font-family: var(--font-mono);
       font-variant-numeric: tabular-nums;
     }

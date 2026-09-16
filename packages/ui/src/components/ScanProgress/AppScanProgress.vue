@@ -204,7 +204,7 @@
     }
 
     &__title {
-      font-size: var(--text-sm);
+      font-size: var(--text-md);
       font-weight: var(--fw-semibold);
       color: var(--text-fg);
       white-space: nowrap;
@@ -220,7 +220,7 @@
     &__meta {
       flex-shrink: 0;
       font-family: var(--font-mono);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
@@ -233,7 +233,7 @@
       gap: var(--space-1);
       padding: var(--space-1) var(--space-2);
       border-radius: var(--radius-sm);
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       font-weight: var(--fw-medium);
       cursor: pointer;
       border: 1px solid transparent;
@@ -321,7 +321,7 @@
     }
 
     &__stat-label {
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-secondary);
     }
 

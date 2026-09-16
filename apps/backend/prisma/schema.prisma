@@ -561,6 +561,36 @@ model Note {
   @@map("note")
 }
 
+// ----- Flashcard -----
+//
+// The review schedule (easeFactor, intervalDays, repetitions, dueAt) lives on
+// the same row as the card content rather than a separate table: it is always
+// read and written together with the card (SM-2 grading updates both in one
+// transaction), and a 1:1 join would buy nothing. `sourceCueId` is an opaque
+// reference to `TranscriptCue.id` with no FK — cues are deleted independently
+// of flashcards (cascades from Transcript), and a card born from a line
+// should survive its source transcript being regenerated.
+
+model Flashcard {
+  id           String   @id @default(cuid())
+  userId       String
+  lessonId     String
+  front        String
+  back         String
+  sourceCueId  String?
+  easeFactor   Float    @default(2.5)
+  intervalDays Int      @default(0)
+  repetitions  Int      @default(0)
+  dueAt        DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, lessonId])
+  // Backs the due-queue query: findMany({ userId, dueAt: { lte: now } }, orderBy: dueAt asc).
+  @@index([userId, dueAt])
+  @@map("flashcard")
+}
+
 // ----- Access -----
 
 enum GrantTargetKind {

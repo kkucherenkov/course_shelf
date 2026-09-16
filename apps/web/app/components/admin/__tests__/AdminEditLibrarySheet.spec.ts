@@ -4,14 +4,25 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { getCurrentInstance } from 'vue';
 import AdminEditLibrarySheet from '../AdminEditLibrarySheet.vue';
 
 // ── Nuxt auto-imports ──────────────────────────────────────────────────────
+// Guarded like the real composables: `useToast`/`useI18n` only resolve
+// inside an active component instance (`setup()`, not a post-`await`
+// continuation). An unconditional stub here would hide the exact defect
+// this component shipped with — see #639.
 const mockToastAdd = vi.fn();
-vi.stubGlobal('useToast', () => ({ add: mockToastAdd }));
+vi.stubGlobal('useToast', () => {
+  if (!getCurrentInstance()) throw new Error('useToast() called outside setup()');
+  return { add: mockToastAdd };
+});
 
 const mockT = vi.fn((key: string) => key);
-vi.stubGlobal('useI18n', () => ({ t: mockT }));
+vi.stubGlobal('useI18n', () => {
+  if (!getCurrentInstance()) throw new Error('useI18n() called outside setup()');
+  return { t: mockT };
+});
 
 vi.stubGlobal('navigateTo', vi.fn());
 
@@ -121,7 +132,24 @@ describe('AdminEditLibrarySheet', () => {
         body: { name: 'Data Science' },
       }),
     );
+    expect(mockToastAdd).toHaveBeenCalledWith(expect.objectContaining({ color: 'success' }));
     expect(wrapper.emitted('saved')).toEqual([[updatedLibrary]]);
+    expect(wrapper.emitted('update:open')).toEqual([[false]]);
+  });
+
+  it('shows a toast and closes on 403 without throwing', async () => {
+    mockUpdateLibrary.mockResolvedValueOnce({
+      data: undefined,
+      error: { status: 403 },
+      response: { status: 403 },
+    });
+
+    const wrapper = mount(AdminEditLibrarySheet, { props: baseProps });
+    await wrapper.find('input').setValue('Data Science');
+    await wrapper.find('form').trigger('submit');
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(mockToastAdd).toHaveBeenCalledWith(expect.objectContaining({ color: 'error' }));
     expect(wrapper.emitted('update:open')).toEqual([[false]]);
   });
 

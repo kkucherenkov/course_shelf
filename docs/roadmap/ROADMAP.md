@@ -211,7 +211,7 @@ gantt
     Export a lesson or course digest as Markdown                 :crit, active, e28f01s01, after e27f01s01 e09f02s02, 2d
 
     section E29 Learning mechanics
-    Flashcard and review schedule domain (SM-2)                  :crit, active, e29f01s01, after e09f02s02, 2d
+    Flashcard and review schedule domain (SM-2)                  :crit, done, e29f01s01, after e09f02s02, 2d
     Flashcard API                                                :active, e29f01s02, after e29f01s01, 2d
     Review UI on web                                             :active, e29f01s03, after e29f01s02, 2d
     Quizzes generated from a transcript                          :crit, active, e29f02s01, after e27f01s01, 3d

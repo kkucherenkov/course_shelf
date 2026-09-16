@@ -83,14 +83,44 @@
         decision, not a cleanup
   - [x] Open PR, note the apps/web deferral explicitly in the body —
         https://github.com/kkucherenkov/course_shelf/pull/668
-- Status: in-progress (PR open, awaiting review/merge)
+  - [x] Follow-up on PR #668 (maintainer split the 5 dead components:
+        1 real duplicate, 4 not this lane's call — #672 covers the rest):
+        deleted `AppAlert` outright — `AppBanner` is the strictly richer
+        superset (`variant`/`title`/`body`/`dismissible`/`dismissLabel` vs
+        `variant`/`message`) with 19 real consumers against `AppAlert`'s
+        zero, confirmed by grep (only its own folder, `index.ts`, the
+        showcase page, and roadmap/task-history docs, which stay
+        untouched — historical record). Removed: component + stories +
+        spec + folder, the `index.ts` export, the showcase block in
+        `apps/web/app/pages/dev/foundations.vue`, 6 orphaned Storybook
+        visual snapshots (`packages/ui/test/__snapshots__/feedback-appalert--*.png`).
+        **Did not** hand-edit `packages/ui/components.d.ts` — gitignored,
+        `unplugin-vue-components`-generated, self-corrects on next Nuxt
+        dev/build. **Did not** delete the `specs/design/README.md`
+        inventory row as instructed — verified Flutter's `app_ui` package
+        still ships and exports its own `AppAlert` widget
+        (`packages/ui_flutter/lib/src/feedback/app_alert.dart`, barrel
+        line 34), so the row still describes a real cross-platform
+        parity fact; deleting it would have made `pnpm design:audit`
+        report "Flutter components missing an inventory row: AppAlert" —
+        the same failure mode the instruction was trying to prevent.
+        Flipped the Vue column `✓` → `—` instead. `pnpm design:audit`
+        (`--strict` too) clean. Full gate green: `pnpm --filter @app/ui
+    lint --fix`, `pnpm --filter @app/web lint --fix`,
+        `pnpm stylelint:fix`, `pnpm format` (0 extra changes),
+        `pnpm turbo run lint test typecheck` (18/18, 569/569 web),
+        `pnpm check:i18n` clean, `pnpm --filter @app/ui storybook:build`
+        succeeds with the story gone
+- Status: in-progress (PR #668 open, second commit pushed, awaiting
+  review/merge)
 - Blockers: waiting on `dead-surfaces`' PR to land before starting
   apps/web cleanup — it's deleting `apps/web/app/pages/libraries.vue`
   outright, which carries a font-weight literal (line 210) and a
   duplicate `@keyframes` (line 277) this lane would otherwise redo work
   on; maintainer will give the signal + an up-to-date marker list once it
-  merges. The 5 dead components and the 2 raw search inputs are no longer
-  this lane's call — maintainer is filing issues for both.
+  merges. `AppProgressBadge`/`CoursePosterCard` is a redesign call, not
+  this release; `AppToast`/`AppSsoBlock`/`AppProgressCircle` tracked in
+  #672, not this lane's.
 
 ## T-2026-09-16-token-vocabulary — stop consuming short design-token aliases; clamp CourseDescription
 

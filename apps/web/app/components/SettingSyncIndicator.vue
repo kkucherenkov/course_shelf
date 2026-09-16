@@ -65,7 +65,7 @@
     display: inline-flex;
     align-items: center;
     gap: var(--space-1);
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     min-height: 1em;
     transition: opacity $dur-fade ease;
 

@@ -2,6 +2,41 @@
 
 _Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
 
+## T-2026-09-16-typography-roles — raise text roles one step (#658)
+
+- Created: 2026-09-16
+- Completed: 2026-09-16
+- Owner: claude
+- Spec: https://github.com/kkucherenkov/course_shelf/issues/658
+- Goal: raise the two bottom-heavy text steps (`--text-xs` 78% of usage) by
+  exactly one existing scale step per role — no new scale steps, no
+  mechanical grep-replace. Course title (`--text-2xl`) stays.
+  - body copy: `--text-sm` → `--text-base`
+  - lesson row / section heading: `--text-sm` → `--text-md`
+  - meta / caption: `--text-xs` → `--text-sm`
+  - deliberately dense surfaces (admin tables, tight rows): left alone
+- Baseline (re-measured on 6bb6fee5): 282 `font-size: var(--text-*)` decls,
+  82 files, `apps/web/app` + `packages/ui/src`. 111 declarations changed
+  across 4 PRs — the remaining ~171 stayed put by role (form-control chrome,
+  dense admin rows/tables, byline/subtitle text, reference-page specimens).
+- Codegen impact: no (design tokens only, no new scale steps)
+- Result:
+  - T1 — `packages/ui/src/components/*` primitives (37 decls, 21 files):
+    https://github.com/kkucherenkov/course_shelf/pull/685
+  - T2 — reader surfaces: lesson-player, course-detail, home, search
+    (26 decls, 9 files): https://github.com/kkucherenkov/course_shelf/pull/687
+  - T3 — admin surfaces (11 decls, 4 pages; dense row/table components left
+    untouched): https://github.com/kkucherenkov/course_shelf/pull/688
+  - T4 — remaining pages: auth, settings, course-edit, dev/foundations
+    (15 decls, 7 files), closes #658:
+    https://github.com/kkucherenkov/course_shelf/pull/689
+- All four PRs green (lint/typecheck/test/CI/CodeQL/Storybook+e2e visual
+  regression) and live docker-verified surface by surface, per the issue's
+  explicit instruction to go by surface rather than by grep. `mergeable`
+  shows CONFLICTING between the four branches on `specs/tasks/active.md` /
+  `done.md` only (each branched from `main` independently) — resolve as a
+  union on merge, oldest (T1) first.
+
 ## T-2026-09-16-kkucherenkov-flashcards-domain — flashcard + SM-2 domain and API
 
 - Created: 2026-09-16
@@ -3668,39 +3703,33 @@ backend` and that Admin → Backups reaches its success state.
   - [x] Locale keys (`admin.transcription.*`) in `en` and `ru`
 - Status: done
 
-## T-2026-08-30-001 — scan sidecars: subtitle ingest + thumbnail derived-path + orphan cleanup
+## T-2026-08-30-001 — E25-F03-S01/F02-S01 transcription contract and schema
 
 - Created: 2026-08-30
 - Completed: 2026-08-30
-- Owner: claude (lane, worktree `e27-scan-sidecars`)
-- Branch: `kkucherenkov/e27-scan-sidecars`
-- Result: https://github.com/kkucherenkov/course_shelf/pull/315
-- Spec: [docs/roadmap/tasks/E27-F01-S01.md](../../docs/roadmap/tasks/E27-F01-S01.md) (#227), [docs/roadmap/tasks/E25-F04-S01.md](../../docs/roadmap/tasks/E25-F04-S01.md) (#220, duplicate report #282)
-- Goal: scan parses `.srt`/`.vtt` sidecars into `Transcript(origin: sidecar)` + cues (re-parse only on
-  changed signature); scan thumbnails move under `<derivedPath>/<libraryId>/…` instead of next to the
-  video (COURSES_PATH is `:ro` in prod); a lesson that vanishes from a scan gets its Transcript rows
-  deleted and the generated file best-effort unlinked.
-- Spec diff: none
-- Codegen impact: no
+- Owner: claude (lane L1, worktree `e25-contract-schema`)
+- Branch: `kkucherenkov/e25-contract-schema`
+- Result: https://github.com/kkucherenkov/course_shelf/pull/256
+- Cards: [E25-F03-S01](../../docs/roadmap/tasks/E25-F03-S01.md), [E25-F02-S01](../../docs/roadmap/tasks/E25-F02-S01.md) · GitHub #217, #214
+- Spec diff: 5 transcription routes, 7 schemas, `SubtitleDto.generated`
+- Codegen impact: yes — landed in its own commits
 - Sub-steps:
-  - [x] `domain/scan/scan.ts` — widen `ScannedSubtitle` with `mtime`/`size`
-  - [x] `domain/transcription/transcript.repository.ts` — add `findExisting`, `replaceSidecar`, `deleteForLesson`
-  - [x] `domain/transcription/derived-path.ts` — add `derivedThumbnailPath`
-  - [x] `infra/prisma-transcript.repository.ts` — implement the three new methods
-  - [x] `application/scan/sidecar-transcript-ingester.ts` — new pure ingest function
-  - [x] `run-scan.handler.ts` — wire sidecar ingest (existing + newly-created lessons), thumbnail
-        derived-path, orphan cleanup
-  - [x] specs for all of the above
+  - [x] Routes and schemas mirroring the scan surface
+  - [x] `spec:validate && spec:bundle && spec:codegen`, artefacts in separate commits
+  - [x] Prisma models and enums; migration SQL reviewed for an accidental FK
+  - [x] `AdminTranscriptionListDto` / `AdminTranscriptionListItem` for the cross-library list
 - Notes:
-  - Sidecar ingest for a lesson whose _course_ already existed before this scan required loading that
-    library's existing lessons up front (`lessonRepo.findByCourse` per existing course) keyed by
-    `videoPath`, since v1's "skip on duplicate slug" otherwise makes existing lessons unreachable on a
-    repeat scan — that same map also drives orphan detection (a known videoPath the walk didn't see this
-    pass has vanished).
-  - `run-scan.handler.ts` gained a real `mkdir` call for the thumbnail's parent dir (mirroring
-    `run-transcription.handler.ts`'s existing pattern) — its spec now needs
-    `vi.mock('node:fs/promises', ...)` or every thumbnail-writing test hangs on real disk I/O.
-  - Closed tuxedo #35 (duplicate of #220/#282).
+  - Contract only. Handlers, the whisper adapter and run logic are E25-F01-\* and E25-F03-S02.
+  - The migration creates exactly two foreign keys, both internal. Nothing references
+    `lesson` or `subtitle`: `prisma-lesson.repository.ts` recreates every subtitle row on
+    each save, so a cascade would erase transcripts on the next ordinary scan.
+  - Review found the admin list reusing the plain `TranscriptionDto` while all three other
+    cross-library admin listings have a denormalised pair carrying `libraryName` and an
+    error count. Fixed before merge, while the generated clients were still cheap to change.
+  - The migration was produced with `prisma migrate diff`, not `migrate dev` — no database
+    was reachable from the worktree — and the SQL was reviewed by hand.
+  - `pnpm spec:contract-test` was not run: it needs Docker and a live backend, and it is
+    wired into no GitHub workflow. It belongs with E25-F03-S02.
 
 ## T-2026-08-30-012 — run whisper transcription over a library
 

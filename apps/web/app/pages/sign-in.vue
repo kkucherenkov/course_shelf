@@ -218,7 +218,7 @@
 
     &__legal {
       margin: var(--space-4) 0 0;
-      font-size: var(--text-xs);
+      font-size: var(--text-sm);
       color: var(--text-tertiary);
       text-align: center;
     }

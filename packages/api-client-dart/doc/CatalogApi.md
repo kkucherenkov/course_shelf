@@ -733,7 +733,7 @@ Name | Type | Description  | Notes
 
 Register a new library (or share an existing path)
 
-Persists a library pointing at an absolute filesystem path.  **Idempotent on `rootPath`.** When a library with the same path already exists, the call returns the existing library and grants the calling user READ access to it instead of creating a duplicate row. The response body matches what `GET /libraries/{id}` would return for that library — the original `name`/`createdAt` are preserved (the new `name` you submitted is ignored).  For brand-new libraries the controller chains an initial `runLibraryScan` so courses become visible shortly after the response. No initial scan is fired when the path already existed (the existing library is presumed already scanned). 
+Admin-only mutation. Persists a library pointing at an absolute filesystem path.  **Idempotent on `rootPath`.** When a library with the same path already exists, the call returns the existing library and grants the calling user READ access to it instead of creating a duplicate row. The response body matches what `GET /libraries/{id}` would return for that library — the original `name`/`createdAt` are preserved (the new `name` you submitted is ignored).  For brand-new libraries the controller chains an initial `runLibraryScan` so courses become visible shortly after the response. No initial scan is fired when the path already existed (the existing library is presumed already scanned).  A fresh `rootPath` is also checked against the server's configured root allowlist, when one is set (`LIBRARY_ROOT_ALLOWLIST`) — the admin role gates who can call this endpoint, not which directory they point it at. 
 
 ### Example
 ```dart

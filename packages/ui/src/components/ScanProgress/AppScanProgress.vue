@@ -293,7 +293,7 @@
       grid-template-columns: repeat(4, 1fr);
       gap: var(--space-2);
 
-      @media (max-width: 359px) {
+      @media (width <= 359px) {
         grid-template-columns: repeat(2, 1fr);
       }
     }

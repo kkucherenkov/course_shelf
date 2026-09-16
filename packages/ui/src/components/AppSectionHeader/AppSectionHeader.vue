@@ -122,7 +122,7 @@
       flex: 1 1 auto;
       min-width: 0;
       font-size: var(--text-md);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
       color: var(--text-fg);
       overflow: hidden;
       text-overflow: ellipsis;

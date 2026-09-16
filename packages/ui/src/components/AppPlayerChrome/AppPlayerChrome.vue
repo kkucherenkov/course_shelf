@@ -775,7 +775,7 @@
 
     &__lesson-title {
       font-size: var(--text-sm);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
       color: var(--media-fg);
     }
 
@@ -1002,7 +1002,7 @@
 
     &__end-title {
       font-size: var(--text-lg);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
     }
 
     &__end-actions {

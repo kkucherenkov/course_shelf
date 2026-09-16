@@ -4,7 +4,6 @@ export default {
       appName: 'Course Shelf',
       navHome: 'Home',
       navBrowse: 'Browse',
-      navLibraries: 'Libraries',
       navSignIn: 'Sign in',
       navSignOut: 'Sign out',
       searchPlaceholder: 'Search courses, lessons…',
@@ -450,10 +449,6 @@ export default {
     },
     admin: {
       navDashboard: 'Dashboard',
-      navLibraries: 'Libraries',
-      // Distinct from `navLibraries` above (the member-facing /libraries
-      // link) — the admin sidebar used to repeat the same word for two
-      // different destinations.
       navLibrariesManage: 'Manage libraries',
       navUsers: 'Users',
       navPermissions: 'Permissions',

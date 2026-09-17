@@ -495,7 +495,7 @@
           <button
             v-if="pipAvailable"
             type="button"
-            class="app-player-chrome__btn"
+            class="app-player-chrome__btn app-player-chrome__btn--pip"
             :aria-label="aria.pip"
             :disabled="isInert"
             @click="emit('togglePip')"
@@ -639,7 +639,10 @@
           </button>
           <button
             type="button"
-            class="app-player-chrome__btn"
+            class="app-player-chrome__btn app-player-chrome__btn--subtitles"
+            :class="{
+              'app-player-chrome__btn--active': subtitlesEnabled && subtitlesAvailable,
+            }"
             :aria-label="
               !subtitlesAvailable
                 ? aria.subtitlesUnavailable
@@ -655,7 +658,8 @@
           </button>
           <button
             type="button"
-            class="app-player-chrome__btn"
+            class="app-player-chrome__btn app-player-chrome__btn--fullscreen"
+            :class="{ 'app-player-chrome__btn--active': fullscreen }"
             :aria-label="fullscreen ? aria.fullscreenExit : aria.fullscreenEnter"
             :disabled="isInert"
             :aria-pressed="fullscreen ? 'true' : 'false'"
@@ -862,6 +866,12 @@
       &:focus-visible {
         outline: 2px solid var(--brand-accent);
         outline-offset: 2px;
+      }
+
+      // `aria-pressed` told a screen reader; nothing told anyone looking at it.
+      &--active {
+        color: var(--brand-accent);
+        background: var(--media-fill-hover);
       }
 
       &--text {

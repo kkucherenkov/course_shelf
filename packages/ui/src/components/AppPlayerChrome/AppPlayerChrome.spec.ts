@@ -600,4 +600,33 @@ describe('AppPlayerChrome', () => {
       expect(wrapper.emitted('play')).toHaveLength(1);
     });
   });
+
+  describe('toggle state is visible, not only announced', () => {
+    it('marks the subtitles button active when subtitles are on', () => {
+      const wrapper = makeWrapper({ subtitlesEnabled: true });
+      const cc = wrapper.find('[aria-pressed="true"].app-player-chrome__btn--subtitles');
+      expect(cc.exists()).toBe(true);
+      expect(cc.classes()).toContain('app-player-chrome__btn--active');
+    });
+
+    it('leaves it unmarked when subtitles are off', () => {
+      const wrapper = makeWrapper({ subtitlesEnabled: false });
+      const cc = wrapper.find('.app-player-chrome__btn--subtitles');
+      expect(cc.classes()).not.toContain('app-player-chrome__btn--active');
+    });
+
+    it('never marks it active when the lesson has no subtitle tracks', () => {
+      const wrapper = makeWrapper({ subtitlesEnabled: true, subtitlesAvailable: false });
+      const cc = wrapper.find('.app-player-chrome__btn--subtitles');
+      expect(cc.classes()).not.toContain('app-player-chrome__btn--active');
+      expect(cc.attributes('disabled')).toBeDefined();
+    });
+
+    it('marks the fullscreen button active in fullscreen', () => {
+      const wrapper = makeWrapper({ fullscreen: true });
+      expect(wrapper.find('.app-player-chrome__btn--fullscreen').classes()).toContain(
+        'app-player-chrome__btn--active',
+      );
+    });
+  });
 });

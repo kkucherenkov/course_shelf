@@ -1,6 +1,7 @@
 # 0011 — Local llama.cpp for quiz generation; on-demand, nothing leaves the machine
 
 - **Status:** accepted
+- **Superseded by:** [ADR-0012](0012-hosted-model-provider.md) — the hosted-API rejection in "Alternatives considered / Option A" no longer holds.
 - **Date:** 2026-09-16
 - **Deciders:** @kkucherenkov
 - **Tags:** backend, privacy, ml

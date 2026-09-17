@@ -75,6 +75,7 @@ function makeLlama(overrides: Partial<LlamaAdapter> = {}): LlamaAdapter {
 
 function makeAppConfig(overrides: Partial<QuizGenerationConfig> = {}): AppConfig {
   const quizGeneration: QuizGenerationConfig = {
+    provider: 'local',
     llamaPath: 'llama-completion',
     defaultModelFilename: 'Qwen3.5-4B-Q4_K_M.gguf',
     timeoutMs: 600_000,

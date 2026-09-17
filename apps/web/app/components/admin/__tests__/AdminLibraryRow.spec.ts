@@ -61,6 +61,7 @@ const baseProps = {
   copyPathAriaLabel: 'Copy path',
   labelRunning: 'Running',
   labelSucceeded: 'Succeeded',
+  labelPartial: 'Partial',
   labelFailed: 'Failed',
   labelCancelled: 'Cancelled',
 };

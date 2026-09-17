@@ -194,7 +194,7 @@
   watch(
     () => liveScan.value?.status,
     async (newStatus) => {
-      if (newStatus === 'succeeded' || newStatus === 'failed') {
+      if (newStatus === 'succeeded' || newStatus === 'partial' || newStatus === 'failed') {
         await Promise.all([refetchLibraries(), refetchScans()]);
       }
     },
@@ -379,6 +379,7 @@
             :col-errors="t('pages.admin.libraryDetail.tableErrors')"
             :label-running="t('pages.libraries.statusRunning')"
             :label-succeeded="t('pages.libraries.statusSucceeded')"
+            :label-partial="t('pages.libraries.statusPartial')"
             :label-failed="t('pages.libraries.statusFailed')"
             :label-cancelled="t('pages.libraries.statusCancelled')"
             :show-library="false"

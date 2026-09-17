@@ -201,6 +201,7 @@
       :col-errors="t('pages.admin.dashboard.tableErrors')"
       :label-running="t('pages.admin.dashboard.scanRunning')"
       :label-succeeded="t('pages.libraries.statusSucceeded')"
+      :label-partial="t('pages.libraries.statusPartial')"
       :label-failed="t('pages.libraries.statusFailed')"
       :label-cancelled="t('pages.libraries.statusCancelled')"
     />

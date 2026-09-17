@@ -18,8 +18,11 @@
  * locateSubtitle adds a parallel path for subtitle files:
  *   - Same lesson/course/library load + traversal guard.
  *   - Finds the first Subtitle on the lesson whose language matches (case-insensitive).
+ *   - Stats the resolved file, same as locate()/locateMaterial() (#698).
  *   - Returns { absolutePath, extension, courseId, libraryId }.
- *   - Missing language or unrecognised extension → SubtitleNotFoundError (404).
+ *   - Missing language, unrecognised extension, or a row whose file is gone
+ *     from disk → SubtitleNotFoundError (404), not a 500 from whatever reads
+ *     the path next.
  *
  *   Fallback to a generated transcript (E25-F03-S03): when no sidecar matches
  *   the language, check TRANSCRIPT_REPOSITORY for a `generated` Transcript in
@@ -143,7 +146,9 @@ export class LessonFileLocator {
    * - Returns { absolutePath, extension, courseId, libraryId }.
    *
    * Throws:
-   *   SubtitleNotFoundError — no matching language, or extension not .srt/.vtt.
+   *   SubtitleNotFoundError — no matching language, extension not .srt/.vtt,
+   *     or the row/file exist but the file itself is gone from disk (#698) —
+   *     same for the generated-transcript fallback below.
    *   LessonNotFoundError   — lesson/course/library missing.
    *   LessonFilePathEscapedError — path escapes library root (500, fail-closed).
    */
@@ -179,6 +184,17 @@ export class LessonFileLocator {
     }
     // At this point rawExt is narrowed to '.srt' | '.vtt' by the guard above.
     const extension = rawExt;
+
+    // Stat the file, same as locate()/locateMaterial() — a Subtitle row can
+    // outlive its file on disk (moved/deleted library content), and both
+    // source forms the controller serves (.vtt passthrough, .srt→vtt
+    // conversion) need this to have already happened, or a missing file
+    // reaches createReadStream()/readFile() and escapes as a 500 (#698).
+    try {
+      await fs.stat(absolutePath);
+    } catch {
+      throw new SubtitleNotFoundError(lessonId, language);
+    }
 
     return {
       absolutePath,
@@ -273,6 +289,14 @@ export class LessonFileLocator {
       videoPath,
       language,
     });
+
+    // The Transcript row and its .srt file on disk can drift apart the same
+    // way a sidecar Subtitle can — stat it rather than trusting the row (#698).
+    try {
+      await fs.stat(absolutePath);
+    } catch {
+      throw new SubtitleNotFoundError(lessonId, language);
+    }
 
     return { absolutePath, extension: '.srt', courseId, libraryId };
   }

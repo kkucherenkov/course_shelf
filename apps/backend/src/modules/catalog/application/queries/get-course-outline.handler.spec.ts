@@ -402,6 +402,36 @@ describe('GetCourseOutlineHandler', () => {
     });
   });
 
+  // #694 — a course-level grant can only ever match if the handler asks
+  // canSee() about the *course*, not the library alone.
+  describe('authz resource shape (#694)', () => {
+    it('asks canSee about the course, not just its library', async () => {
+      courseRepo = makeCourseRepo();
+      lessonRepo = makeLessonRepo();
+      const authz = makeAuthz(true);
+      vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
+      vi.mocked(lessonRepo.findByCourse).mockResolvedValue([]);
+
+      handler = new GetCourseOutlineHandler(
+        courseRepo,
+        lessonRepo,
+        authz,
+        makeProgressRepo(null),
+        makeLessonProgressRepo([]),
+        makeTranscriptRepo(),
+        makePosterTokenSigner(),
+      );
+
+      await handler.execute(new GetCourseOutlineQuery('course-1', adminActor));
+
+      expect(authz.canSee).toHaveBeenCalledWith(adminActor, {
+        kind: 'course',
+        id: 'course-1',
+        libraryId: 'lib-1',
+      });
+    });
+  });
+
   describe('course not found', () => {
     it('throws CourseNotFoundError when course does not exist', async () => {
       courseRepo = makeCourseRepo();

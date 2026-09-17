@@ -34,7 +34,7 @@ abstract class AdminScanListItem implements Built<AdminScanListItem, AdminScanLi
 
   @BuiltValueField(wireName: r'status')
   ScanStatus get status;
-  // enum statusEnum {  running,  succeeded,  failed,  cancelled,  };
+  // enum statusEnum {  running,  succeeded,  partial,  failed,  cancelled,  };
 
   @BuiltValueField(wireName: r'startedAt')
   DateTime get startedAt;

@@ -19,7 +19,7 @@ part 'transcription_dto.g.dart';
 /// * [status] 
 /// * [force] - When true, existing generated transcripts were redone.
 /// * [startedAt] - ISO-8601 instant when the run was started.
-/// * [finishedAt] - Set on terminal status (`succeeded` / `failed` / `cancelled`). Absent while `status: running`.
+/// * [finishedAt] - Set on terminal status (`succeeded` / `failed` / `cancelled` / `interrupted`). Absent while `status: running`.
 /// * [lessonsTotal] - Lessons considered by this run.
 /// * [lessonsSkipped] - Lessons left alone — a hand-made subtitle sidecar exists, or the generated transcript still matches the video's `(mtime, size)`.
 /// * [lessonsTranscribed] - Lessons for which a transcript was produced by this run.
@@ -49,7 +49,7 @@ abstract class TranscriptionDto implements Built<TranscriptionDto, Transcription
   @BuiltValueField(wireName: r'startedAt')
   DateTime get startedAt;
 
-  /// Set on terminal status (`succeeded` / `failed` / `cancelled`). Absent while `status: running`.
+  /// Set on terminal status (`succeeded` / `failed` / `cancelled` / `interrupted`). Absent while `status: running`.
   @BuiltValueField(wireName: r'finishedAt')
   DateTime? get finishedAt;
 

@@ -174,4 +174,26 @@ describe('GetCourseDownloadEstimateHandler', () => {
       expect(lessonRepo.findByCourse).not.toHaveBeenCalled();
     });
   });
+
+  // #694 — a course-level grant can only ever match if the handler asks
+  // canSee() about the *course*, not the library alone.
+  describe('authz resource shape (#694)', () => {
+    it('asks canSee about the course, not just its library', async () => {
+      courseRepo = makeCourseRepo();
+      lessonRepo = makeLessonRepo();
+      const authz = makeAuthz(true);
+      vi.mocked(courseRepo.findById).mockResolvedValue(makeCourse());
+      vi.mocked(lessonRepo.findByCourse).mockResolvedValue([]);
+
+      handler = new GetCourseDownloadEstimateHandler(courseRepo, lessonRepo, authz);
+
+      await handler.execute(new GetCourseDownloadEstimateQuery('course-1', adminActor));
+
+      expect(authz.canSee).toHaveBeenCalledWith(adminActor, {
+        kind: 'course',
+        id: 'course-1',
+        libraryId: 'lib-1',
+      });
+    });
+  });
 });

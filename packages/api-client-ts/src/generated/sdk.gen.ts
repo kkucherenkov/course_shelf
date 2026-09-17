@@ -1191,7 +1191,7 @@ export const runLibraryScan = <ThrowOnError extends boolean = false>(options: Op
 /**
  * Get the most recent scan for a library
  *
- * Returns the latest scan record regardless of status (running, succeeded, failed, cancelled).
+ * Returns the latest scan record regardless of status (running, succeeded, partial, failed, cancelled).
  */
 export const getLatestLibraryScan = <ThrowOnError extends boolean = false>(options: Options<GetLatestLibraryScanData, ThrowOnError>) => (options.client ?? client).get<GetLatestLibraryScanResponses, GetLatestLibraryScanErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],

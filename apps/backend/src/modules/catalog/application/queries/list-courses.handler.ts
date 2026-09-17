@@ -71,8 +71,9 @@ export class ListCoursesHandler implements IQueryHandler<ListCoursesQuery, Cours
     const visible = await Promise.all(
       courses.map((c) =>
         this.authz.canSee(query.actor, {
-          kind: 'library',
-          id: c.libraryId as LibraryId,
+          kind: 'course',
+          id: c.id,
+          libraryId: c.libraryId as LibraryId,
         }),
       ),
     );

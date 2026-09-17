@@ -528,7 +528,7 @@ class CatalogApi {
   }
 
   /// Get the most recent scan for a library
-  /// Returns the latest scan record regardless of status (running, succeeded, failed, cancelled).
+  /// Returns the latest scan record regardless of status (running, succeeded, partial, failed, cancelled).
   ///
   /// Parameters:
   /// * [id] - Server-generated cuid identifying the library.

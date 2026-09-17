@@ -22,8 +22,14 @@
 name: "courseshelf"
 
 networks:
+  # Subnet pinned so the backend can trust it by CIDR (TRUST_PROXY below) —
+  # see #693. Not the same block as compose.yml/compose.release.yml so all
+  # three stacks can run on one host without a subnet clash.
   cs-net:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.91.0/24
 
 volumes:
   pgdata:
@@ -85,6 +91,10 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3000"
+      # Express trusts X-Forwarded-For only from this exact subnet — the
+      # `proxy` container, never a client hitting the published backend port
+      # directly (its own IP never falls inside cs-net). #693.
+      TRUST_PROXY: 172.31.91.0/24
       DATABASE_URL: "postgresql://${POSTGRES_USER:-courseshelf}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-courseshelf}"
       BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required (openssl rand -hex 32)}"
       BETTER_AUTH_URL: "${PUBLIC_BASE_URL:?PUBLIC_BASE_URL is required (e.g. https://courseshelf.example.com)}"

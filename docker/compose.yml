@@ -1,8 +1,13 @@
 name: "${COMPOSE_PROJECT_NAME:-course-shelf}"
 
 networks:
+  # Subnet pinned (not left to Docker's dynamic allocator) so the backend can
+  # trust it by CIDR — see TRUST_PROXY below and #693.
   "course-shelf-net":
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.90.0/24
 
 volumes:
   pgdata:
@@ -80,6 +85,10 @@ services:
     environment:
       NODE_ENV: development
       PORT: "3000"
+      # Express trusts X-Forwarded-For only from this exact subnet — the
+      # `proxy` container, never a client hitting the published :3000
+      # directly (its own IP never falls inside course-shelf-net). #693.
+      TRUST_PROXY: 172.31.90.0/24
       DATABASE_URL: "postgresql://course-shelf:course-shelf@postgres:5432/course-shelf"
       BETTER_AUTH_SECRET: dev-secret-change-me
       BETTER_AUTH_URL: http://localhost:${CS_BACKEND_PORT:-3000}

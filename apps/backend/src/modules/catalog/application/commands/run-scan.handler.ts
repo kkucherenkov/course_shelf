@@ -1290,15 +1290,16 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
       // Publish 'finished' event before persisting so the SPA can react
       // to the terminal state. Fire-and-forget — Centrifugo failure must not
       // block or corrupt the scan's persistent terminal state.
-      const finishedStatus =
-        scan.status === 'failed' ? 'failed' : scan.errors.length > 0 ? 'partial' : 'succeeded';
+      //
+      // scan.status is already the right value here — complete()/fail() (both
+      // called above, one or the other) already decided succeeded/partial/failed.
       void this.centrifugo.publish(channel, {
         kind: 'finished',
         scanId: scan.id,
         libraryId,
         libraryName,
         at: new Date().toISOString(),
-        status: finishedStatus,
+        status: scan.status,
         filesScanned: scan.filesScanned,
         filesAdded: scan.filesAdded,
         coursesDiscovered: scan.coursesDiscovered,

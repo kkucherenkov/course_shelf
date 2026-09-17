@@ -11,16 +11,19 @@ part 'scan_status.g.dart';
 
 class ScanStatus extends EnumClass {
 
-  /// Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans only ever transition `running → {succeeded, failed}`.
+  /// Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans transition `running → {succeeded, partial, failed}`. `partial` is the walk completing without crashing but recording at least one `ScanError` (course-json-invalid, ffmpeg-probe-failed, an unreadable file, …) — distinct from `failed`, which is the walk itself throwing (`scan-walk-failed`) before it could finish. `succeeded` means zero `ScanError` rows.
   @BuiltValueEnumConst(wireName: r'running')
   static const ScanStatus running = _$running;
-  /// Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans only ever transition `running → {succeeded, failed}`.
+  /// Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans transition `running → {succeeded, partial, failed}`. `partial` is the walk completing without crashing but recording at least one `ScanError` (course-json-invalid, ffmpeg-probe-failed, an unreadable file, …) — distinct from `failed`, which is the walk itself throwing (`scan-walk-failed`) before it could finish. `succeeded` means zero `ScanError` rows.
   @BuiltValueEnumConst(wireName: r'succeeded')
   static const ScanStatus succeeded = _$succeeded;
-  /// Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans only ever transition `running → {succeeded, failed}`.
+  /// Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans transition `running → {succeeded, partial, failed}`. `partial` is the walk completing without crashing but recording at least one `ScanError` (course-json-invalid, ffmpeg-probe-failed, an unreadable file, …) — distinct from `failed`, which is the walk itself throwing (`scan-walk-failed`) before it could finish. `succeeded` means zero `ScanError` rows.
+  @BuiltValueEnumConst(wireName: r'partial')
+  static const ScanStatus partial = _$partial;
+  /// Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans transition `running → {succeeded, partial, failed}`. `partial` is the walk completing without crashing but recording at least one `ScanError` (course-json-invalid, ffmpeg-probe-failed, an unreadable file, …) — distinct from `failed`, which is the walk itself throwing (`scan-walk-failed`) before it could finish. `succeeded` means zero `ScanError` rows.
   @BuiltValueEnumConst(wireName: r'failed')
   static const ScanStatus failed = _$failed;
-  /// Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans only ever transition `running → {succeeded, failed}`.
+  /// Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans transition `running → {succeeded, partial, failed}`. `partial` is the walk completing without crashing but recording at least one `ScanError` (course-json-invalid, ffmpeg-probe-failed, an unreadable file, …) — distinct from `failed`, which is the walk itself throwing (`scan-walk-failed`) before it could finish. `succeeded` means zero `ScanError` rows.
   @BuiltValueEnumConst(wireName: r'cancelled')
   static const ScanStatus cancelled = _$cancelled;
 

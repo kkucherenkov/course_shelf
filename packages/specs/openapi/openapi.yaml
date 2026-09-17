@@ -329,7 +329,7 @@ paths:
                     latestScan:
                       scanId: clxvscn0000000000000000001
                       libraryId: clxvlib0000000000000000001
-                      status: succeeded
+                      status: partial
                       startedAt: "2026-04-27T09:55:00Z"
                       finishedAt: "2026-04-27T09:58:12Z"
                       filesScanned: 312
@@ -586,7 +586,7 @@ paths:
                       - scanId: clxvscn0000000000000000002
                         libraryId: clxvlib0000000000000000002
                         libraryName: Mathematics
-                        status: succeeded
+                        status: partial
                         startedAt: "2026-04-27T09:55:00Z"
                         finishedAt: "2026-04-27T09:58:12Z"
                         filesScanned: 312
@@ -768,7 +768,7 @@ paths:
                         coursesCount: 14
                         lessonsCount: 312
                         lastScan:
-                          status: succeeded
+                          status: partial
                           startedAt: "2026-04-27T09:55:00Z"
                           finishedAt: "2026-04-27T09:58:12Z"
                           errorsCount: 2
@@ -5917,7 +5917,7 @@ paths:
       summary: Get the most recent scan for a library
       description: >-
         Returns the latest scan record regardless of status
-        (running, succeeded, failed, cancelled).
+        (running, succeeded, partial, failed, cancelled).
       tags: [Catalog]
       security:
         - bearerAuth: []
@@ -5937,11 +5937,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/ScanDto"
               examples:
-                succeeded:
+                partial:
                   value:
                     id: clxvscn0000000000000000001
                     libraryId: clxvp1234567890abcdefghij
-                    status: succeeded
+                    status: partial
                     startedAt: "2026-04-25T10:30:00Z"
                     finishedAt: "2026-04-25T10:31:42Z"
                     filesScanned: 314
@@ -11174,8 +11174,8 @@ components:
           type: string
           format: date-time
           description: >-
-            Set on terminal status (`succeeded` / `failed` / `cancelled`).
-            Absent while `status: running`.
+            Set on terminal status (`succeeded` / `partial` / `failed` /
+            `cancelled`). Absent while `status: running`.
         filesScanned:
           type: integer
           minimum: 0
@@ -11254,10 +11254,15 @@ components:
 
     ScanStatus:
       type: string
-      enum: [running, succeeded, failed, cancelled]
+      enum: [running, succeeded, partial, failed, cancelled]
       description: >-
         Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans
-        only ever transition `running → {succeeded, failed}`.
+        transition `running → {succeeded, partial, failed}`. `partial` is the
+        walk completing without crashing but recording at least one
+        `ScanError` (course-json-invalid, ffmpeg-probe-failed, an unreadable
+        file, …) — distinct from `failed`, which is the walk itself throwing
+        (`scan-walk-failed`) before it could finish. `succeeded` means zero
+        `ScanError` rows.
 
     TranscriptionStatus:
       type: string
@@ -11331,8 +11336,8 @@ components:
           type: string
           format: date-time
           description: >-
-            Set on terminal status (`succeeded` / `failed` / `cancelled`).
-            Absent while `status: running`.
+            Set on terminal status (`succeeded` / `failed` / `cancelled` /
+            `interrupted`). Absent while `status: running`.
         lessonsTotal:
           type: integer
           minimum: 0

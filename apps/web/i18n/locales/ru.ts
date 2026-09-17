@@ -806,6 +806,7 @@ export default {
     libraries: {
       statusRunning: 'Идёт',
       statusSucceeded: 'Успешно',
+      statusPartial: 'Частично',
       statusFailed: 'Ошибка',
       statusCancelled: 'Отменено',
     },

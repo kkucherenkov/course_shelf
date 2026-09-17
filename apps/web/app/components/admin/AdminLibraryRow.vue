@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { AppIconButton, IconCS } from '@app/ui';
-  import type { AdminLibraryListItem } from '@app/api-client-ts';
+  import type { AdminLibraryListItem, ScanStatus } from '@app/api-client-ts';
   import AdminCopyablePath from './AdminCopyablePath.vue';
 
   interface Props {
@@ -15,6 +15,7 @@
     // Status labels for the pill
     labelRunning: string;
     labelSucceeded: string;
+    labelPartial: string;
     labelFailed: string;
     labelCancelled: string;
   }
@@ -49,13 +50,12 @@
     return props.lastScanLabel.replace('{time}', formatRelative(scan.startedAt));
   }
 
-  function statusLabel(
-    status: 'running' | 'succeeded' | 'failed' | 'cancelled' | null | undefined,
-  ): string {
+  function statusLabel(status: ScanStatus | null | undefined): string {
     if (!status) return '';
     const map: Record<string, string> = {
       running: props.labelRunning,
       succeeded: props.labelSucceeded,
+      partial: props.labelPartial,
       failed: props.labelFailed,
       cancelled: props.labelCancelled,
     };

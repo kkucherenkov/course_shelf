@@ -1,8 +1,9 @@
 /**
  * WHY this file exists:
  * The Scan aggregate captures the lifecycle and results of a single library walk.
- * It owns all invariants around state transitions (running → succeeded/failed)
- * and accumulates counters + error records during the walk.
+ * It owns all invariants around state transitions
+ * (running → succeeded/partial/failed) and accumulates counters + error
+ * records during the walk.
  *
  * Design decisions:
  *   - ScannedCourse is an in-memory value object; it is not persisted as its own
@@ -11,7 +12,8 @@
  *   - DiscoveredFileEntry represents a file signature (path, mtime, size) stored
  *     per scan for incremental no-op detection in subsequent scans.
  *   - All mutators throw ScanInTerminalStateError when the scan is in a terminal
- *     state (succeeded / failed / cancelled), so callers cannot mutate closed scans.
+ *     state (succeeded / partial / failed / cancelled), so callers cannot mutate
+ *     closed scans.
  *   - The aggregate is a plain class with no Prisma or NestJS types.
  */
 import { brand } from '../../../../shared/branded-id';
@@ -24,7 +26,7 @@ import type { Id } from '../../../../shared/branded-id';
 export type ScanId = Id<'Scan'>;
 
 /** Machine-readable status matching the OpenAPI ScanStatus enum. */
-export type ScanStatusValue = 'running' | 'succeeded' | 'failed' | 'cancelled';
+export type ScanStatusValue = 'running' | 'succeeded' | 'partial' | 'failed' | 'cancelled';
 
 /** A non-fatal per-file error recorded during the walk. */
 export interface ScanErrorEntry {
@@ -155,6 +157,7 @@ export interface ScanProps {
 
 const TERMINAL_STATUSES: ReadonlySet<ScanStatusValue> = new Set([
   'succeeded',
+  'partial',
   'failed',
   'cancelled',
 ]);
@@ -327,10 +330,17 @@ export class Scan {
     });
   }
 
-  /** Transition to succeeded. Sets finishedAt. */
+  /**
+   * Transition to a terminal non-crash state. `succeeded` when the walk
+   * recorded zero ScanErrors, `partial` when it recorded at least one — a
+   * scan that logged 9221 errors is not the same outcome as one that logged
+   * none, and reporting both as `succeeded` is what let that go unnoticed
+   * (#699). `fail()` is the separate, distinct transition for the walk
+   * itself throwing before it could finish.
+   */
   complete(now?: Date): void {
     this.assertRunning();
-    this._status = 'succeeded';
+    this._status = this._errors.length > 0 ? 'partial' : 'succeeded';
     this._finishedAt = now ?? new Date();
   }
 

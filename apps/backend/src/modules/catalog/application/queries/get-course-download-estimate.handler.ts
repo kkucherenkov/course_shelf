@@ -52,8 +52,9 @@ export class GetCourseDownloadEstimateHandler implements IQueryHandler<
 
     // 2. Authz check → 403.
     const allowed = await this.authz.canSee(actor, {
-      kind: 'library',
-      id: course.libraryId as LibraryId,
+      kind: 'course',
+      id: course.id,
+      libraryId: course.libraryId as LibraryId,
     });
     if (!allowed) {
       throw new PermissionDenied('You do not have access to this course.');

@@ -366,7 +366,7 @@ export type QuizListDto = {
  */
 export type GenerateQuizRequest = {
     /**
-     * Filename of the .gguf weight to use (see `GET /admin/model-weights`). Omitted uses the deployment's configured default.
+     * Model to use — meaning depends on the deployment's text-generation provider (ADR-0012): a `.gguf` weight filename under the local provider (see `GET /admin/model-weights`), or a hosted provider's own model id under `openrouter`. Omitted uses the deployment's configured default.
      */
     modelId?: string;
     /**
@@ -4256,7 +4256,7 @@ export type GenerateLessonQuizErrors = {
      */
     429: Problem;
     /**
-     * No model is configured (LLAMA_DEFAULT_MODEL is unset) and none was named.
+     * No usable model is configured for the deployment's selected provider (ADR-0012) — LLAMA_DEFAULT_MODEL unset under the local provider, or OPENROUTER_API_KEY/OPENROUTER_MODEL unset under openrouter — and none was named.
      */
     503: Problem;
 };
@@ -4314,7 +4314,7 @@ export type GenerateCourseQuizErrors = {
      */
     429: Problem;
     /**
-     * No model is configured (LLAMA_DEFAULT_MODEL is unset) and none was named.
+     * No usable model is configured for the deployment's selected provider (ADR-0012) — LLAMA_DEFAULT_MODEL unset under the local provider, or OPENROUTER_API_KEY/OPENROUTER_MODEL unset under openrouter — and none was named.
      */
     503: Problem;
 };

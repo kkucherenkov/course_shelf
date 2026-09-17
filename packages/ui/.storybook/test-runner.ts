@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { join } from 'node:path';
+import path from 'node:path';
 
 import type { TestContext, TestRunnerConfig } from '@storybook/test-runner';
 import { getStoryContext, waitForPageReady } from '@storybook/test-runner';
@@ -210,10 +210,10 @@ async function assertDarkContrast(page: Page, context: TestContext): Promise<voi
   const previous = await page.evaluate((theme) => {
     const html = document.documentElement;
     const before = {
-      theme: html.getAttribute('data-theme'),
+      theme: html.dataset['theme'],
       dark: html.classList.contains('dark'),
     };
-    html.setAttribute('data-theme', theme);
+    html.dataset['theme'] = theme;
     html.classList.add('dark');
     return before;
   }, A11Y_THEME);
@@ -244,8 +244,11 @@ async function assertDarkContrast(page: Page, context: TestContext): Promise<voi
   } finally {
     await page.evaluate((before) => {
       const html = document.documentElement;
-      if (before.theme === null) html.removeAttribute('data-theme');
-      else html.setAttribute('data-theme', before.theme);
+      // Bracket form, not `dataset.theme`: `dataset` is an index signature, so
+      // dot access is a TS4111 error. `unicorn/prefer-dom-node-dataset` is
+      // satisfied either way — it only objects to `setAttribute`.
+      if (before.theme === null) delete html.dataset['theme'];
+      else html.dataset['theme'] = before.theme;
       html.classList.toggle('dark', before.dark);
     }, previous);
   }
@@ -278,10 +281,13 @@ const config: TestRunnerConfig = {
       // Capture-only: overwrite the baseline. jest-image-snapshot's CI
       // mode would otherwise fail on missing baselines instead of
       // creating them, so we sidestep it entirely.
-      writeFileSync(join(SNAPSHOTS_DIR, `${context.id}.png`), image);
+      writeFileSync(path.join(SNAPSHOTS_DIR, `${context.id}.png`), image);
     } else {
       try {
-        // @ts-expect-error — extended via setup()
+        // No `@ts-expect-error` here any more: once this file came under the
+        // package's tsconfig, jest-image-snapshot's own type augmentation is
+        // visible and the matcher is properly typed. The directive had been
+        // suppressing nothing, which typecheck now says out loud (TS2578).
         expect(image).toMatchImageSnapshot({
           customSnapshotsDir: SNAPSHOTS_DIR,
           customSnapshotIdentifier: context.id,

@@ -1,6 +1,6 @@
 import { readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import path from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -11,7 +11,7 @@ describe('parseDiffPercent', () => {
     const message =
       'Expected image to match or be a close match to snapshot but was ' +
       '7.4047619047619045% different from snapshot (1234 differing pixels).';
-    expect(parseDiffPercent(message)).toBeCloseTo(7.4047619, 5);
+    expect(parseDiffPercent(message)).toBeCloseTo(7.404_761_9, 5);
   });
 
   it('reads an integer percentage', () => {
@@ -29,7 +29,7 @@ describe('parseDiffPercent', () => {
 });
 
 describe('report file', () => {
-  const file = join(tmpdir(), `visual-report-${process.pid}.ndjson`);
+  const file = path.join(tmpdir(), `visual-report-${process.pid}.ndjson`);
 
   afterEach(() => {
     rmSync(file, { force: true });

@@ -351,7 +351,6 @@ export default {
       sectionLabel: 'Раздел {n} · {title}',
       bookmarkAdd: '+ Отметить текущую позицию',
       transcript: {
-        empty: 'Для этого урока нет транскрипта.',
         noMatch: 'Ничего не найдено по вашему запросу.',
         filterPlaceholder: 'Фильтр по транскрипту',
       },

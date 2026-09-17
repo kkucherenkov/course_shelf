@@ -352,7 +352,6 @@ export default {
       sectionLabel: 'Section {n} · {title}',
       bookmarkAdd: '+ Bookmark current position',
       transcript: {
-        empty: 'No transcript for this lesson.',
         noMatch: 'No lines match your search.',
         filterPlaceholder: 'Filter transcript',
       },

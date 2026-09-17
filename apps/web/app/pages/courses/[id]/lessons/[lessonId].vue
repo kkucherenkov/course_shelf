@@ -495,16 +495,15 @@
           <section
             v-if="transcriptCues.length > 0"
             class="page-lesson-player__transcript"
-            :aria-label="t('pages.lessonPlayer.tabTranscript')"
+            aria-labelledby="lesson-transcript-title"
           >
-            <h2 class="page-lesson-player__transcript-title">
+            <h2 id="lesson-transcript-title" class="page-lesson-player__transcript-title">
               {{ t('pages.lessonPlayer.tabTranscript') }}
             </h2>
             <PlayerTranscriptTab
               class="page-lesson-player__transcript-body"
               :cues="transcriptCues"
               :active-index="transcriptActiveIndex"
-              :empty-label="t('pages.lessonPlayer.transcript.empty')"
               :no-match-label="t('pages.lessonPlayer.transcript.noMatch')"
               :filter-placeholder="t('pages.lessonPlayer.transcript.filterPlaceholder')"
               @seek="onBookmarkSeek"

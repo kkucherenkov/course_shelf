@@ -875,6 +875,11 @@
     &__big-play {
       position: absolute;
       inset: 0;
+      // Above &__overlay ($z-overlay): that div is a sibling painted after
+      // this button and covers the same box even where its background is
+      // transparent, so without this the overlay — not the button — is the
+      // real hit target for hover/focus/click.
+      z-index: $z-state;
       margin: auto;
       // --space-8 is 64px; the control-row buttons are --space-6 (32px). The
       // whole point of this affordance is that you do not have to aim.

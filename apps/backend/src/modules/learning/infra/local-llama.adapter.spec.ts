@@ -22,6 +22,7 @@
  *   6. generateQuestions: throws QuizGenerationFailedError on unparsable output.
  *   7. Non-zero exit / timeout → QuizGenerationFailedError.
  *   8. A model missing from the weights directory → QuizModelNotFoundError.
+ *   9. ensureModelUsable: throws for a missing model, resolves for a present one.
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
@@ -227,5 +228,21 @@ describe('LocalLlamaAdapter', () => {
       }),
     ).rejects.toBeInstanceOf(QuizModelNotFoundError);
     expect(execFile).not.toHaveBeenCalled();
+  });
+
+  it('ensureModelUsable throws QuizModelNotFoundError for a missing model, without spawning anything', async () => {
+    vi.mocked(existsSync).mockReturnValue(false);
+    const adapter = new LocalLlamaAdapter(makeAppConfig());
+
+    await expect(adapter.ensureModelUsable('does-not-exist.gguf')).rejects.toBeInstanceOf(
+      QuizModelNotFoundError,
+    );
+    expect(execFile).not.toHaveBeenCalled();
+  });
+
+  it('ensureModelUsable resolves for a model present on disk', async () => {
+    const adapter = new LocalLlamaAdapter(makeAppConfig());
+
+    await expect(adapter.ensureModelUsable('Qwen3.5-4B-Q4_K_M.gguf')).resolves.toBeUndefined();
   });
 });

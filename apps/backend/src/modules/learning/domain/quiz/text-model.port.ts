@@ -44,6 +44,16 @@ export interface GeneratedQuizQuestion {
 
 export interface TextModelAdapter {
   /**
+   * Throws before any generation starts when `model` cannot be used by this
+   * engine — a missing `.gguf` file locally, an unconfigured API key for a
+   * hosted provider. Exists so the handler can refuse a bad model name in
+   * its answer to the request, instead of discovering it per window inside
+   * fire-and-forget work, without learning where either engine keeps its
+   * models.
+   */
+  ensureModelUsable(model: string): Promise<void>;
+
+  /**
    * Returns as many corrected strings as the model produced — NOT guaranteed
    * to match `cueTexts.length`. Callers (`quiz-cleanup.ts`'s `applyCleanup`)
    * decide what an unexpected length means; this port only ever reports what

@@ -3,13 +3,17 @@
  * Orchestrates one quiz-generation walk, modelled on run-transcription.handler
  * down to the fire-and-forget shape:
  *   1. Resolve the model: named on the request, or AppConfig's configured
- *      default. Refuse before doing any work when nothing at all is
- *      configured — 503 (QuizGenerationNotConfiguredError). The model string
- *      itself is opaque here and travels unresolved to whichever adapter is
- *      wired in; a named-but-missing model is that adapter's 404 to raise
- *      (LocalLlamaAdapter's QuizModelNotFoundError, checked live because the
- *      admin delete endpoint can remove a file between two requests), not
- *      this handler's, since a hosted provider has no filesystem to check.
+ *      default. Refuse before doing any work: an entirely unconfigured
+ *      default is 503 (QuizGenerationNotConfiguredError), checked here
+ *      because it needs no adapter. Whether a *named* model is usable is the
+ *      adapter's business — a `.gguf` file existing locally, an API key
+ *      being set for a hosted provider — so the handler asks via
+ *      `ensureModelUsable` and awaits it before the walk starts, outside the
+ *      per-window try/catch below: a bad model name has to reach the caller
+ *      as this request's 404 (LocalLlamaAdapter's QuizModelNotFoundError,
+ *      checked live because the admin delete endpoint can remove a file
+ *      between two requests), not get swallowed as an empty per-window
+ *      result deep inside fire-and-forget work.
  *   2. Resolve the lesson list: one lesson, or every lesson in a course.
  *      Locking key is always the course — a lesson-scoped run still guards
  *      against a concurrent course-scoped one for the same course.
@@ -91,14 +95,16 @@ export class GenerateQuizHandler implements ICommandHandler<
   ) {}
 
   async execute(command: GenerateQuizCommand): Promise<QuizGenerationAccepted> {
-    // Resolving the model to a path (or checking it exists) is not this
-    // handler's business anymore: `model` is opaque to it, and each adapter
-    // resolves it in the terms of its own environment (LocalLlamaAdapter's
-    // resolveModelPath, the hosted adapter's provider model id). Only the
-    // "nothing configured at all" refusal stays here — it applies before any
-    // adapter is even reached.
+    // "Nothing configured at all" needs no adapter, so it is checked here.
     const model = command.modelFilename ?? this.appConfig.quizGeneration.defaultModelFilename;
     if (model === '') throw new QuizGenerationNotConfiguredError();
+
+    // Whether this *named* model is usable is the adapter's business (a
+    // `.gguf` file on disk, an API key for a hosted provider) — but the
+    // answer still has to reach the caller as this request's error, not get
+    // discovered per window inside the fire-and-forget walk below and
+    // swallowed by tryCleanup/tryGenerate's catch blocks.
+    await this.llama.ensureModelUsable(model);
 
     const { lessons, courseId } = command.lessonId
       ? await this.resolveLessonScope(command.lessonId)

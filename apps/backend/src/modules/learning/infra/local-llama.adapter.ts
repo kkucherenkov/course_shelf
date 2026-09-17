@@ -117,6 +117,19 @@ function execFileAsync(
 export class LocalLlamaAdapter implements TextModelAdapter {
   constructor(private readonly appConfig: AppConfig) {}
 
+  /**
+   * Discards the resolved path — resolveModelPath's throw is the whole
+   * point. Runs inside `.then()`, not the method body directly, so that
+   * throw is turned into a rejected promise rather than a synchronous
+   * exception from the call itself: the handler awaits this before starting
+   * the fire-and-forget walk, and needs a promise to await either way.
+   */
+  ensureModelUsable(model: string): Promise<void> {
+    return Promise.resolve().then(() => {
+      this.resolveModelPath(model);
+    });
+  }
+
   async cleanCues(req: CleanCuesRequest): Promise<readonly string[]> {
     const absolutePath = this.resolveModelPath(req.model);
     const prompt = chatPrompt(CLEANUP_SYSTEM_PROMPT, JSON.stringify(req.cueTexts));

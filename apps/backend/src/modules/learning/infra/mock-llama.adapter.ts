@@ -29,6 +29,10 @@ const MOCK_QUESTION: GeneratedQuizQuestion = {
 
 @Injectable()
 export class MockLlamaAdapter implements TextModelAdapter {
+  ensureModelUsable(_model: string): Promise<void> {
+    return Promise.resolve();
+  }
+
   cleanCues(req: CleanCuesRequest): Promise<readonly string[]> {
     return Promise.resolve(req.cueTexts);
   }

@@ -5,6 +5,7 @@ import { Quiz } from '../../domain/quiz/quiz';
 import {
   QuizGenerationAlreadyRunningError,
   QuizGenerationNotConfiguredError,
+  QuizModelNotFoundError,
 } from '../../domain/quiz/quiz.errors';
 import { QuizGenerationLockService } from '../quiz-generation-lock.service';
 import { GenerateQuizCommand } from './generate-quiz.command';
@@ -62,6 +63,7 @@ function makeQuizRepo(): QuizRepository & { saved: Quiz[] } {
 
 function makeLlama(overrides: Partial<TextModelAdapter> = {}): TextModelAdapter {
   return {
+    ensureModelUsable: vi.fn().mockResolvedValue(undefined),
     cleanCues: vi.fn().mockResolvedValue(['hello world']),
     generateQuestions: vi
       .fn()
@@ -213,6 +215,21 @@ describe('GenerateQuizHandler', () => {
     await expect(
       handler.execute(new GenerateQuizCommand('lesson-1', undefined, undefined, true)),
     ).rejects.toBeInstanceOf(QuizGenerationNotConfiguredError);
+  });
+
+  it('rejects with QuizModelNotFoundError when the adapter refuses the model, and never walks a lesson', async () => {
+    const llama = makeLlama({
+      ensureModelUsable: vi.fn().mockRejectedValue(new QuizModelNotFoundError('gone.gguf')),
+    });
+    const { handler } = makeHandler({ llama });
+
+    await expect(
+      handler.execute(new GenerateQuizCommand('lesson-1', undefined, 'gone.gguf', true)),
+    ).rejects.toBeInstanceOf(QuizModelNotFoundError);
+
+    await drainWalk();
+
+    expect(llama.generateQuestions).not.toHaveBeenCalled();
   });
 
   it('passes the resolved model straight through to the adapter, unresolved to a path', async () => {

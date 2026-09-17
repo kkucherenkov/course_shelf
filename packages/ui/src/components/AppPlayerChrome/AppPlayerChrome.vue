@@ -187,6 +187,7 @@
   const scrubberRef = ref<HTMLDivElement | null>(null);
   const shortcutsOpen = ref(false);
   const speedMenuOpen = ref(false);
+  const speedTriggerRef = ref<HTMLButtonElement | null>(null);
 
   const isPlaying = computed(() => props.state === 'playing');
   const isInert = computed(() => props.state === 'locked' || props.state === 'error');
@@ -253,6 +254,11 @@
   function closeSpeedMenu(): void {
     if (!speedMenuOpen.value) return;
     speedMenuOpen.value = false;
+    // Focus sat on a menu row, which `v-if` is about to unmount. Without this
+    // it lands on <body> and a keyboard user is dropped out of the player
+    // entirely. Synchronous: the trigger is already mounted, and waiting for
+    // the tick would let the browser blur first.
+    speedTriggerRef.value?.focus();
     scheduleIdleHide();
   }
 
@@ -667,6 +673,7 @@
                keydown bubbles here from either. -->
           <div class="app-player-chrome__speed" @keydown.escape="closeSpeedMenu">
             <button
+              ref="speedTriggerRef"
               type="button"
               class="app-player-chrome__btn app-player-chrome__btn--text app-player-chrome__btn--speed"
               :aria-label="aria.speed"
@@ -766,10 +773,6 @@
   // Stacking context within the chrome (exempt from raw-int ban — named vars).
   $z-overlay: 1;
   $z-state: 2;
-  // Local to &__speed's own stacking context (nested inside &__overlay, not a
-  // sibling of it), so this doesn't need to out-rank $z-overlay/$z-state —
-  // nothing else in that nested context sets a z-index for it to lose to.
-  $z-speed-menu: 1;
 
   // Player-chrome metrics that fall between design-token steps. Same literals
   // as before — these are named for intent, not rounded to the nearest token.
@@ -827,6 +830,13 @@
       position: absolute;
       inset: 0;
       z-index: $z-overlay;
+      // Query container for the speed menu's `max-height`. Sized entirely by
+      // `inset: 0`, so size containment costs nothing here. Deliberately on
+      // the overlay rather than the chrome root: `container-type` implies
+      // `contain: layout`, which would turn the root into a stacking context
+      // the rest of the page can see. The overlay is already one (`z-index`
+      // above), and the shortcuts `<dialog>` is its sibling, not its child.
+      container-type: size;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -1001,10 +1011,18 @@
       position: absolute;
       bottom: calc(100% + var(--space-2));
       right: 0;
-      z-index: $z-speed-menu;
       display: flex;
       flex-direction: column;
       min-width: var(--space-8); // 64px — fits "1.75×" with the padding below
+      // Seven rows are ~232px, and the chrome is a 16:9 box with
+      // `overflow: hidden` — at a 360px viewport it is only ~185px tall, so
+      // the top three rows were clipped away and could not be clicked at all.
+      // `100cqh` is the overlay's *content* box (its own padding is already
+      // out); what remains to subtract is the controls row the trigger sits
+      // in, this menu's offset above that row, and one step of clearance so a
+      // scrolling menu never butts against the top of the picture.
+      max-height: calc(100cqh - var(--space-6) - var(--space-2) - var(--space-4));
+      overflow-y: auto;
       padding: var(--space-1);
       border-radius: var(--radius-md);
       background: var(--media-scrim-strong);

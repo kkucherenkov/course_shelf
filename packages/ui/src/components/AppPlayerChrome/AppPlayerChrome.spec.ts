@@ -715,6 +715,30 @@ describe('AppPlayerChrome', () => {
       expect(wrapper.emitted('speed')).toBeUndefined();
     });
 
+    it('returns focus to the trigger after a choice', async () => {
+      // Attached to the document, or nothing in this component is focusable
+      // and the assertion would pass against a detached tree by accident.
+      const wrapper = mount(AppPlayerChrome, { props: baseProps, attachTo: document.body });
+      const trigger = wrapper.find('.app-player-chrome__btn--speed');
+      await trigger.trigger('click');
+      const row = wrapper.findAll('.app-player-chrome__speed-item')[0]!;
+      (row.element as HTMLButtonElement).focus();
+      await row.trigger('click');
+      expect(document.activeElement).toBe(trigger.element);
+      wrapper.unmount();
+    });
+
+    it('returns focus to the trigger after Escape', async () => {
+      const wrapper = mount(AppPlayerChrome, { props: baseProps, attachTo: document.body });
+      const trigger = wrapper.find('.app-player-chrome__btn--speed');
+      await trigger.trigger('click');
+      const row = wrapper.findAll('.app-player-chrome__speed-item')[0]!;
+      (row.element as HTMLButtonElement).focus();
+      await row.trigger('keydown', { key: 'Escape' });
+      expect(document.activeElement).toBe(trigger.element);
+      wrapper.unmount();
+    });
+
     it('honours a custom speeds list', async () => {
       const wrapper = makeWrapper({ speeds: [1, 2] });
       await wrapper.find('.app-player-chrome__btn--speed').trigger('click');

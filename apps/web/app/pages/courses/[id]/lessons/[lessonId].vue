@@ -5,7 +5,7 @@
   import type { LessonDto, BookmarkDto, LessonOutlineItem, MaterialDto } from '@app/api-client-ts';
 
   import { useCourseOutline } from '~/composables/useCourseOutline';
-  import { useLessonPlayer } from '~/composables/useLessonPlayer';
+  import { PLAYBACK_SPEEDS, useLessonPlayer } from '~/composables/useLessonPlayer';
   import { useMaterialDownload } from '~/composables/useMaterialDownload';
   import { useProgressReporter } from '~/composables/useProgressReporter';
   import { useStreamUrl } from '~/composables/useStreamUrl';
@@ -437,6 +437,7 @@
             :duration="duration"
             :buffered="buffered"
             :speed="speed"
+            :speeds="PLAYBACK_SPEEDS"
             :muted="muted"
             :subtitles-enabled="subtitlesOn"
             :subtitles-available="subtitlesAvailable"

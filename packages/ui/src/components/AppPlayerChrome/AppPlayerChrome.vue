@@ -59,8 +59,11 @@
       buffered?: number;
       /** Playback speed (e.g. 1.0, 1.5). */
       speed?: number;
-      /** Selectable playback rates. The trigger lists these in order. */
-      speeds?: number[];
+      /**
+       * Selectable playback rates. The menu lists these in order. `readonly`
+       * so a caller's `as const` ladder passes without being copied.
+       */
+      speeds?: readonly number[];
       /** Mute state — a prop so the parent (real `<video>`) owns it. */
       muted?: boolean;
       /** Subtitles toggle state. */
@@ -106,6 +109,9 @@
       state: 'idle',
       buffered: undefined,
       speed: 1,
+      // Stand-alone fallback so the component works in Storybook on its own.
+      // The lesson page passes `PLAYBACK_SPEEDS`, which is the list the
+      // composable actually accepts — anything else there falls back to 1×.
       speeds: () => [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
       muted: false,
       subtitlesEnabled: false,

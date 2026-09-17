@@ -137,6 +137,37 @@ describe('OpenRouterAdapter.generateQuestions', () => {
     ).rejects.toBeInstanceOf(QuizGenerationFailedError);
   });
 
+  it("a non-2xx error's detail carries both the status and the body text", async () => {
+    fetchMock.mockResolvedValue(
+      new Response('{"error":"daily free-tier limit reached"}', { status: 429 }),
+    );
+
+    let error: unknown;
+    try {
+      await adapter().generateQuestions({ model: 'm', windowText: 't', questionCount: 1 });
+    } catch (error_) {
+      error = error_;
+    }
+
+    expect(error).toBeInstanceOf(QuizGenerationFailedError);
+    const message = (error as Error).message;
+    expect(message).toContain('429');
+    expect(message).toContain('daily free-tier limit reached');
+  });
+
+  it('truncates a long error body to about 200 characters', async () => {
+    fetchMock.mockResolvedValue(new Response('x'.repeat(5000), { status: 500 }));
+
+    let error: unknown;
+    try {
+      await adapter().generateQuestions({ model: 'm', windowText: 't', questionCount: 1 });
+    } catch (error_) {
+      error = error_;
+    }
+
+    expect((error as Error).message.length).toBeLessThan(250);
+  });
+
   it('throws QuizGenerationFailedError, without the key, when fetch itself rejects', async () => {
     fetchMock.mockRejectedValue(new Error('getaddrinfo ENOTFOUND openrouter.test'));
 

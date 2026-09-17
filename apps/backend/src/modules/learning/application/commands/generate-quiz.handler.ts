@@ -35,7 +35,7 @@
  * nothing to say so; upgrade path is a Transcription-shaped run row if that
  * ever proves painful in a real course-scoped run.
  */
-import { Inject } from '@nestjs/common';
+import { Inject, Logger } from '@nestjs/common';
 import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
 import { nanoid } from 'nanoid';
 
@@ -83,6 +83,8 @@ export class GenerateQuizHandler implements ICommandHandler<
   GenerateQuizCommand,
   QuizGenerationAccepted
 > {
+  private readonly logger = new Logger(GenerateQuizHandler.name);
+
   constructor(
     @Inject(LESSON_REPOSITORY) private readonly lessonRepo: LessonRepository,
     @Inject(COURSE_REPOSITORY) private readonly courseRepo: CourseRepository,
@@ -207,11 +209,11 @@ export class GenerateQuizHandler implements ICommandHandler<
 
     for (const window of windows) {
       const windowCueList = cleanupEnabled
-        ? applyCleanup(window.cues, await this.tryCleanup(model, window.cues))
+        ? applyCleanup(window.cues, await this.tryCleanup(lessonId, model, window.cues))
         : window.cues;
 
       const windowText = windowCueList.map((c) => c.text).join(' ');
-      const generated = await this.tryGenerate(model, windowText);
+      const generated = await this.tryGenerate(lessonId, model, windowText);
       for (const q of generated) {
         questions.push({ ...q, cueStartMs: window.startMs });
       }
@@ -230,6 +232,7 @@ export class GenerateQuizHandler implements ICommandHandler<
 
   /** Cleanup is best-effort — any failure (throw or malformed reply) means "use the original text". */
   private async tryCleanup(
+    lessonId: string,
     model: string,
     cues: readonly { text: string }[],
   ): Promise<readonly string[] | undefined> {
@@ -239,13 +242,22 @@ export class GenerateQuizHandler implements ICommandHandler<
         cueTexts: cues.map((c) => c.text),
       });
       return cleaned.length === 0 ? undefined : cleaned;
-    } catch {
+    } catch (error) {
+      // Best-effort degrades silently to "keep the original text" for the
+      // caller, but a walk that never logs why cleanup failed is a walk
+      // nobody can debug — see I1/I2/I6 in the branch review.
+      this.logger.warn(
+        `Cleanup failed for lesson ${lessonId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
       return undefined;
     }
   }
 
   /** A window's generation failure costs its own questions, never the lesson. */
   private async tryGenerate(
+    lessonId: string,
     model: string,
     windowText: string,
   ): Promise<readonly GeneratedQuizQuestion[]> {
@@ -255,7 +267,12 @@ export class GenerateQuizHandler implements ICommandHandler<
         windowText,
         questionCount: QUESTIONS_PER_WINDOW,
       });
-    } catch {
+    } catch (error) {
+      this.logger.warn(
+        `Generation failed for lesson ${lessonId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
       return [];
     }
   }

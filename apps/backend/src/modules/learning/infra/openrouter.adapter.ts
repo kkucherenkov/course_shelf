@@ -9,8 +9,15 @@
  * reply for the same reason LocalLlamaAdapter does — `applyCleanup` in
  * `quiz-cleanup.ts` already treats a length mismatch as "keep the original
  * text", so a discarded cleanup attempt is never a lost transcript.
+ *
+ * A non-2xx answer's body is read, truncated and logged alongside the
+ * status before the error is thrown, so a bad key, an exhausted balance and
+ * a bad model id stop being indistinguishable in an empty log — and so the
+ * body is actually consumed, releasing the socket back to undici's pool
+ * instead of leaving it open until GC. A 200's `usage` block is logged too,
+ * for the same reason a whisper/llama run logs what it cost.
  */
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { AppConfig } from '../../../common/config/app-config';
 import {
@@ -61,6 +68,11 @@ function errorSummary(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+/** Truncates a provider-supplied string for a log line or error detail. */
+function truncate(text: string, maxLength: number): string {
+  return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
+}
+
 function toQuestion(raw: unknown): GeneratedQuizQuestion {
   const q = raw as { prompt?: unknown; options?: unknown; correctOptionIndex?: unknown };
   const options = q.options;
@@ -84,6 +96,8 @@ function toQuestion(raw: unknown): GeneratedQuizQuestion {
 
 @Injectable()
 export class OpenRouterAdapter implements TextModelAdapter {
+  private readonly logger = new Logger(OpenRouterAdapter.name);
+
   constructor(private readonly appConfig: AppConfig) {}
 
   /**
@@ -166,14 +180,33 @@ export class OpenRouterAdapter implements TextModelAdapter {
     }
 
     if (!response.ok) {
-      throw new QuizGenerationFailedError(`provider answered ${String(response.status)}`);
+      // Read and truncate the body so a 401 (bad key), 402 (no credits), 429
+      // (rate limit) and 400 (bad model id) stop looking identical in a log —
+      // and so the socket is released back to undici's pool instead of
+      // sitting open until GC, which matters on a course-scoped walk that can
+      // fire dozens of these. This is the provider's own error text, never
+      // anything we built the request from.
+      const bodyText = truncate(await response.text(), 200);
+      const detail = `provider answered ${String(response.status)}: ${bodyText}`;
+      this.logger.warn(`OpenRouter request failed: ${detail}`);
+      throw new QuizGenerationFailedError(detail);
     }
 
-    const content = extractContent(await response.json());
+    const payload: unknown = await response.json();
+    this.logUsage(payload);
+    const content = extractContent(payload);
     try {
       return JSON.parse(content);
     } catch {
       throw new QuizGenerationFailedError('reply was not JSON');
+    }
+  }
+
+  /** The plan's verification step asks the maintainer to read what a run cost. */
+  private logUsage(payload: unknown): void {
+    const usage = (payload as { usage?: unknown }).usage;
+    if (usage !== undefined) {
+      this.logger.log(`OpenRouter usage: ${JSON.stringify(usage)}`);
     }
   }
 }

@@ -97,7 +97,7 @@ export class GenerateQuizHandler implements ICommandHandler<
   async execute(command: GenerateQuizCommand): Promise<QuizGenerationAccepted> {
     // "Nothing configured at all" needs no adapter, so it is checked here.
     const model = command.modelFilename ?? this.appConfig.quizGeneration.defaultModelFilename;
-    if (model === '') throw new QuizGenerationNotConfiguredError();
+    if (model === '') throw new QuizGenerationNotConfiguredError('LLAMA_DEFAULT_MODEL');
 
     // Whether this *named* model is usable is the adapter's business (a
     // `.gguf` file on disk, an API key for a hosted provider) — but the

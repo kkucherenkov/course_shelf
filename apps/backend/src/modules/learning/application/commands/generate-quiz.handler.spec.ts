@@ -207,14 +207,20 @@ describe('GenerateQuizHandler', () => {
     expect(llama.generateQuestions).toHaveBeenCalledOnce();
   });
 
-  it('throws QuizGenerationNotConfiguredError when no model is named and no default is configured', async () => {
+  it('throws QuizGenerationNotConfiguredError naming LLAMA_DEFAULT_MODEL when no model is named and no default is configured', async () => {
     const { handler } = makeHandler({
       appConfig: makeAppConfig({ defaultModelFilename: '' }),
     });
 
-    await expect(
-      handler.execute(new GenerateQuizCommand('lesson-1', undefined, undefined, true)),
-    ).rejects.toBeInstanceOf(QuizGenerationNotConfiguredError);
+    let error: unknown;
+    try {
+      await handler.execute(new GenerateQuizCommand('lesson-1', undefined, undefined, true));
+    } catch (error_) {
+      error = error_;
+    }
+
+    expect(error).toBeInstanceOf(QuizGenerationNotConfiguredError);
+    expect((error as Error).message).toContain('LLAMA_DEFAULT_MODEL');
   });
 
   it('rejects with QuizModelNotFoundError when the adapter refuses the model, and never walks a lesson', async () => {

@@ -94,7 +94,7 @@ export class OpenRouterAdapter implements TextModelAdapter {
    */
   ensureModelUsable(_model: string): Promise<void> {
     if (!this.appConfig.hostedModel.configured) {
-      return Promise.reject(new QuizGenerationNotConfiguredError());
+      return Promise.reject(new QuizGenerationNotConfiguredError('OPENROUTER_API_KEY'));
     }
     return Promise.resolve();
   }
@@ -117,7 +117,7 @@ export class OpenRouterAdapter implements TextModelAdapter {
     const parsed = await this.complete({
       model: req.model,
       system: GENERATE_SYSTEM_PROMPT,
-      user: req.windowText,
+      user: `${req.windowText}\n\nGenerate ${String(req.questionCount)} question(s).`,
       schemaName: 'quiz_questions',
       schema: generateJsonSchema(),
       maxTokens: GENERATE_MAX_TOKENS,
@@ -145,9 +145,17 @@ export class OpenRouterAdapter implements TextModelAdapter {
             { role: 'system', content: req.system },
             { role: 'user', content: req.user },
           ],
+          // No `strict: true` here: OpenAI-compatible strict JSON-schema mode
+          // requires `additionalProperties: false` on every object and every
+          // required property, and the shared schemas in model-prompts.ts
+          // declare neither — a provider that enforces strict mode would
+          // reject every request. Non-strict `json_schema` still shapes the
+          // reply; `toQuestion` below and cleanCues' array check are the
+          // actual safety net regardless of what the provider enforces. If
+          // model-prompts.ts ever adds those declarations, strict can return.
           response_format: {
             type: 'json_schema',
-            json_schema: { name: req.schemaName, strict: true, schema: req.schema },
+            json_schema: { name: req.schemaName, schema: req.schema },
           },
         }),
       });

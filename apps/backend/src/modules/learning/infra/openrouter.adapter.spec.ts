@@ -53,10 +53,16 @@ afterEach(() => {
 });
 
 describe('OpenRouterAdapter.ensureModelUsable', () => {
-  it('throws QuizGenerationNotConfiguredError when no API key is configured', async () => {
-    await expect(
-      adapter({ apiKey: '', configured: false }).ensureModelUsable('openai/gpt-oss-120b'),
-    ).rejects.toBeInstanceOf(QuizGenerationNotConfiguredError);
+  it('throws QuizGenerationNotConfiguredError naming OPENROUTER_API_KEY when no API key is configured', async () => {
+    let error: unknown;
+    try {
+      await adapter({ apiKey: '', configured: false }).ensureModelUsable('openai/gpt-oss-120b');
+    } catch (error_) {
+      error = error_;
+    }
+
+    expect(error).toBeInstanceOf(QuizGenerationNotConfiguredError);
+    expect((error as Error).message).toContain('OPENROUTER_API_KEY');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -90,12 +96,17 @@ describe('OpenRouterAdapter.generateQuestions', () => {
     expect(init.headers.Authorization).toBe('Bearer sk-test');
     const body = JSON.parse(init.body as string) as {
       model: string;
-      response_format: { type: string };
+      response_format: { type: string; json_schema: { strict?: boolean } };
       messages: { content: string }[];
     };
     expect(body.model).toBe('openai/gpt-oss-120b');
     expect(body.response_format.type).toBe('json_schema');
+    // Not strict: the shared schemas in model-prompts.ts omit
+    // `additionalProperties: false`, which OpenAI-compatible strict mode
+    // requires on every object — see the comment at the call site.
+    expect(body.response_format.json_schema.strict).toBeUndefined();
     expect(body.messages[1]?.content).toContain('text');
+    expect(body.messages[1]?.content).toContain('Generate 1 question(s).');
   });
 
   it('parses the questions out of the message content', async () => {

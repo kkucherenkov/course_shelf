@@ -71,25 +71,40 @@ describe('useLessonPlayer', () => {
       expect(PLAYBACK_SPEEDS).toEqual([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]);
     });
 
-    it('cycles 0.5x to 0.75x — the step the old player-only ladder skipped', () => {
-      const player = useLessonPlayer({ initialSpeed: 0.5 });
+    it('sets the rate it was given', () => {
+      const player = useLessonPlayer({ initialSpeed: 1 });
       const el = fakeVideoEl();
       player.attach(el);
 
-      player.onSpeed(0.5);
+      player.onSpeed(0.75);
 
       expect(player.speed.value).toBe(0.75);
       expect(el.playbackRate).toBe(0.75);
     });
 
-    it('wraps from the top of the ladder back to the bottom', () => {
-      const player = useLessonPlayer({ initialSpeed: 2 });
+    it('stays put when handed the rate already playing', () => {
+      // The speed menu renders the current rate as a pickable row. This used
+      // to cycle to the next rung, so picking "1×" at 1× silently gave 1.25×.
+      for (const rate of PLAYBACK_SPEEDS) {
+        const player = useLessonPlayer({ initialSpeed: rate });
+        const el = fakeVideoEl();
+        player.attach(el);
+
+        player.onSpeed(rate);
+
+        expect(player.speed.value).toBe(rate);
+        expect(el.playbackRate).toBe(rate);
+      }
+    });
+
+    it('falls back to 1x for a rate outside the ladder', () => {
+      const player = useLessonPlayer({ initialSpeed: 1.5 });
       const el = fakeVideoEl();
       player.attach(el);
 
-      player.onSpeed(2);
+      player.onSpeed(3);
 
-      expect(player.speed.value).toBe(0.5);
+      expect(player.speed.value).toBe(1);
     });
   });
 

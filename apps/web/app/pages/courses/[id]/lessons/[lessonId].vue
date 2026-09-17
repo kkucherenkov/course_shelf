@@ -5,7 +5,7 @@
   import type { LessonDto, BookmarkDto, LessonOutlineItem, MaterialDto } from '@app/api-client-ts';
 
   import { useCourseOutline } from '~/composables/useCourseOutline';
-  import { useLessonPlayer } from '~/composables/useLessonPlayer';
+  import { PLAYBACK_SPEEDS, useLessonPlayer } from '~/composables/useLessonPlayer';
   import { useMaterialDownload } from '~/composables/useMaterialDownload';
   import { useProgressReporter } from '~/composables/useProgressReporter';
   import { useStreamUrl } from '~/composables/useStreamUrl';
@@ -15,6 +15,7 @@
   import { buildSubtitleTracks } from '~/utils/subtitle-url';
 
   import PlayerSidebar from '~/components/lesson-player/PlayerSidebar.vue';
+  import PlayerTranscriptTab from '~/components/lesson-player/PlayerTranscriptTab.vue';
 
   definePageMeta({ layout: 'default' });
 
@@ -220,6 +221,8 @@
     play: t('pages.lessonPlayer.aria.play'),
     prevLesson: t('pages.lessonPlayer.aria.prevLesson'),
     nextLesson: t('pages.lessonPlayer.aria.nextLesson'),
+    skipBack: t('pages.lessonPlayer.aria.skipBack'),
+    skipForward: t('pages.lessonPlayer.aria.skipForward'),
     mute: t('pages.lessonPlayer.aria.mute'),
     unmute: t('pages.lessonPlayer.aria.unmute'),
     speed: t('pages.lessonPlayer.aria.speed'),
@@ -434,6 +437,7 @@
             :duration="duration"
             :buffered="buffered"
             :speed="speed"
+            :speeds="PLAYBACK_SPEEDS"
             :muted="muted"
             :subtitles-enabled="subtitlesOn"
             :subtitles-available="subtitlesAvailable"
@@ -487,6 +491,24 @@
               </video>
             </template>
           </AppPlayerChrome>
+
+          <section
+            v-if="transcriptCues.length > 0"
+            class="page-lesson-player__transcript"
+            aria-labelledby="lesson-transcript-title"
+          >
+            <h2 id="lesson-transcript-title" class="page-lesson-player__transcript-title">
+              {{ t('pages.lessonPlayer.tabTranscript') }}
+            </h2>
+            <PlayerTranscriptTab
+              class="page-lesson-player__transcript-body"
+              :cues="transcriptCues"
+              :active-index="transcriptActiveIndex"
+              :no-match-label="t('pages.lessonPlayer.transcript.noMatch')"
+              :filter-placeholder="t('pages.lessonPlayer.transcript.filterPlaceholder')"
+              @seek="onBookmarkSeek"
+            />
+          </section>
         </div>
 
         <!-- Sidebar column -->
@@ -499,21 +521,15 @@
           :bookmarks="bookmarks"
           :materials="lessonData.materials"
           :current-time="position"
-          :transcript-cues="transcriptCues"
-          :transcript-active-index="transcriptActiveIndex"
           :tabs-label="t('pages.lessonPlayer.sidebarTabsLabel')"
           :tab-sections="t('pages.lessonPlayer.tabSections')"
           :tab-notes="t('pages.lessonPlayer.tabNotes')"
           :tab-bookmarks="t('pages.lessonPlayer.tabBookmarks')"
           :tab-materials="t('pages.lessonPlayer.tabMaterials')"
-          :tab-transcript="t('pages.lessonPlayer.tabTranscript')"
           :bookmarks-empty-title="t('pages.lessonPlayer.bookmarksEmptyTitle')"
           :bookmarks-empty-body="t('pages.lessonPlayer.bookmarksEmptyBody')"
           :bookmarks-add-label="t('pages.lessonPlayer.bookmarkAdd')"
           :materials-empty-label="t('pages.lessonPlayer.materialsEmpty')"
-          :transcript-empty-label="t('pages.lessonPlayer.transcript.empty')"
-          :transcript-no-match-label="t('pages.lessonPlayer.transcript.noMatch')"
-          :transcript-filter-placeholder="t('pages.lessonPlayer.transcript.filterPlaceholder')"
           @seek="onBookmarkSeek"
           @update:bookmarks="(b) => (bookmarks = b)"
           @download-attempt="onDownloadAttempt"
@@ -625,6 +641,33 @@
 
     // The `<video>` box is sized by AppPlayerChrome's frame slot — it owns the
     // 16:9 stage every aspect ratio letterboxes into.
+
+    &__transcript {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid var(--border-default);
+      background: var(--surface-raised);
+      overflow: hidden;
+
+      @media (width < 768px) {
+        // The column layout page-scrolls below this width by design
+        // (see `&__layout`), so a nested scroller here would trap the gesture.
+        overflow: visible;
+      }
+    }
+
+    &__transcript-title {
+      padding: var(--space-3) var(--space-4) var(--space-2);
+      margin: 0;
+    }
+
+    &__transcript-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
 
     &__sidebar {
       @media (width < 768px) {

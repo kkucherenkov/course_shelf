@@ -16,7 +16,6 @@ const CUES: TranscriptCue[] = [
 const baseProps = {
   cues: CUES,
   activeIndex: -1,
-  emptyLabel: 'No transcript for this lesson.',
   noMatchLabel: 'No lines match your search.',
   filterPlaceholder: 'Filter transcript',
 };
@@ -60,11 +59,5 @@ describe('PlayerTranscriptTab', () => {
     await wrapper.find('.player-transcript-tab__filter').setValue('nonexistent');
     expect(wrapper.find('.player-transcript-tab__no-match').text()).toBe(baseProps.noMatchLabel);
     expect(wrapper.find('.player-transcript-tab__row').exists()).toBe(false);
-  });
-
-  it('shows the empty state and hides the filter box when there is no transcript', () => {
-    const wrapper = mount(PlayerTranscriptTab, { props: { ...baseProps, cues: [] } });
-    expect(wrapper.find('.player-transcript-tab__empty').text()).toBe(baseProps.emptyLabel);
-    expect(wrapper.find('.player-transcript-tab__filter').exists()).toBe(false);
   });
 });

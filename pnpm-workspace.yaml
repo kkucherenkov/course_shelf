@@ -2,3 +2,23 @@ packages:
   - "apps/backend"
   - "apps/web"
   - "packages/*"
+
+# `@vue/test-utils` requires `@vue/server-renderer` at runtime without declaring
+# it in either `dependencies` or `peerDependencies`, so pnpm has no reason to
+# link it beside test-utils. For months it was reachable only because it
+# happened to land in the virtual store's hoist directory — luck, not a
+# guarantee, since the package is peer-resolved and hoisting of peer-resolved
+# packages depends on whatever else is in the graph.
+#
+# Raising Storybook to 10.6 reshuffled that graph, the hoist vanished, and 49 of
+# 52 `@app/ui` specs plus every `apps/web` spec failed to collect with "Cannot
+# find module '@vue/server-renderer'". Declaring it in the workspace packages
+# does NOT help: the require resolves upward from inside
+# `.pnpm/@vue+test-utils@2.4.6/`, which never sees a workspace package's
+# node_modules. Public-hoisting puts one copy at the root, on that resolution
+# path, where it stays through future graph churn.
+#
+# This lives here rather than in `.npmrc` because npm also reads `.npmrc` and
+# warns "Unknown project config" on every husky hook.
+publicHoistPattern:
+  - "@vue/server-renderer"

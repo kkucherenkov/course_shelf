@@ -30,6 +30,47 @@ Pages in `apps/web/app/pages/` are thin orchestrators: fetch data, pass props, h
 - **Compositions**: page hero, price display, pricing card, feature list, empty state, skeleton, master card, service row — also in `@app/ui`.
 - **Storybook-first is blocking**: no `apps/web` PR may introduce a new visual element not already in `@app/ui` with a story + spec.
 
+### Check what already exists before writing a component
+
+`@app/ui` exports 62 symbols and 50 of them have stories. The most expensive
+mistake in this package is re-implementing one of them, and it has been made:
+`CoursePosterCard` and `CourseWideCard` each hand-rolled a progress strip in
+CSS while `AppProgressLinear` already shipped a `thin` prop that draws exactly
+that, and `AppPlayerChrome` grew a `seekBy` helper that no button ever called.
+
+Two inventories answer "does this exist already":
+
+```sh
+grep -E '^export' packages/ui/src/index.ts     # every exported symbol
+curl -s localhost:6006/index.json | jq -r '[.entries[].title] | unique[]'
+```
+
+The second needs Storybook running (`pnpm storybook`, or the compose
+`storybook` service). Read the component's own `.vue` file before concluding a
+prop is missing — several of these components implement more than their
+template currently uses.
+
+### Storybook over MCP
+
+`@storybook/addon-mcp` serves an MCP endpoint at `localhost:6006/mcp`, wired
+into `.mcp.json` as the `storybook` server. It exposes four tools:
+
+| Tool | Use |
+| --- | --- |
+| `stories-find-by-component` | stories belonging to given component files |
+| `get-storybook-story-instructions` | how to write a story here, plus a component's documented args |
+| `stories-preview` | preview URLs for stories, with optional overridden args and globals |
+| `stories-changed` | metadata for stories touched since a ref |
+
+What it is good for: writing stories, and handing back a URL so a human can
+look at what an agent built. **It does not search the design system** — there
+is no "list every component" tool, and `stories-find-by-component` wants file
+paths you already know. Discovery stays with the two commands above; MCP takes
+over once you know which component you are dealing with.
+
+The endpoint exists only while `storybook dev` runs. A static
+`storybook:build` does not serve it.
+
 ## Foundation primitives are native SCSS (not Nuxt UI wrappers)
 
 `AppButton`, `AppBadge`, `AppChip`, `AppInput`, `AppSwitch`, `AppProgress`, `AppCard`, … are **native Vue SFCs** with scoped SCSS on tokens. Do NOT wrap `UButton`, `UBadge`, `UInput`, etc.

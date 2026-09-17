@@ -2,13 +2,11 @@
   import { ref } from 'vue';
   import { AppTabs, AppTab } from '@app/ui';
   import type { SectionOutline, BookmarkDto, MaterialDto } from '@app/api-client-ts';
-  import type { TranscriptCue } from '~/composables/useTranscriptCues';
 
   import PlayerSectionsTab from './PlayerSectionsTab.vue';
   import PlayerNotesTab from './PlayerNotesTab.vue';
   import PlayerBookmarksTab from './PlayerBookmarksTab.vue';
   import PlayerMaterialsTab from './PlayerMaterialsTab.vue';
-  import PlayerTranscriptTab from './PlayerTranscriptTab.vue';
 
   const props = defineProps<{
     sections: SectionOutline[];
@@ -17,8 +15,6 @@
     bookmarks: BookmarkDto[];
     materials: MaterialDto[];
     currentTime: number;
-    transcriptCues: TranscriptCue[];
-    transcriptActiveIndex: number;
 
     // i18n strings
     /** aria-label for the tablist itself — must differ from any one tab's own
@@ -30,14 +26,10 @@
     tabNotes: string;
     tabBookmarks: string;
     tabMaterials: string;
-    tabTranscript: string;
     bookmarksEmptyTitle: string;
     bookmarksEmptyBody: string;
     bookmarksAddLabel: string;
     materialsEmptyLabel: string;
-    transcriptEmptyLabel: string;
-    transcriptNoMatchLabel: string;
-    transcriptFilterPlaceholder: string;
   }>();
 
   const emit = defineEmits<{
@@ -46,9 +38,7 @@
     downloadAttempt: [material: MaterialDto];
   }>();
 
-  const activeTab = ref<'sections' | 'notes' | 'bookmarks' | 'materials' | 'transcript'>(
-    'sections',
-  );
+  const activeTab = ref<'sections' | 'notes' | 'bookmarks' | 'materials'>('sections');
 </script>
 
 <template>
@@ -58,7 +48,6 @@
       <AppTab value="notes" :label="props.tabNotes" />
       <AppTab value="bookmarks" :label="props.tabBookmarks" />
       <AppTab value="materials" :label="props.tabMaterials" />
-      <AppTab value="transcript" :label="props.tabTranscript" />
     </AppTabs>
 
     <div class="player-sidebar__body">
@@ -86,15 +75,6 @@
         :empty-label="props.materialsEmptyLabel"
         @download-attempt="(m) => emit('downloadAttempt', m)"
       />
-      <PlayerTranscriptTab
-        v-else-if="activeTab === 'transcript'"
-        :cues="props.transcriptCues"
-        :active-index="props.transcriptActiveIndex"
-        :empty-label="props.transcriptEmptyLabel"
-        :no-match-label="props.transcriptNoMatchLabel"
-        :filter-placeholder="props.transcriptFilterPlaceholder"
-        @seek="(t) => emit('seek', t)"
-      />
     </div>
   </aside>
 </template>
@@ -110,12 +90,16 @@
 
     &__tabs {
       flex-shrink: 0;
-      // #696: five tabs (448px) never fit the sidebar at any desktop width
-      // (359px, 279px at 1024px), and a horizontally-scrolling strip with no
-      // affordance hid Transcript entirely — 1952 transcripts, unreachable.
-      // Wrap onto a second row instead: every tab stays visible and directly
-      // clickable at every width, no JS, no overflow menu needed for five
-      // items.
+      // #696 (historical): five tabs (448px) never fit the sidebar at any
+      // desktop width (359px, 279px at 1024px), and a horizontally-scrolling
+      // strip with no affordance hid Transcript entirely — 1952 transcripts,
+      // unreachable. Wrap onto a second row instead of an overflow menu:
+      // every tab stays visible and directly clickable at every width, no JS
+      // needed. #216 moved Transcript into its own panel below the video,
+      // leaving four tabs here; their combined width at four is not
+      // remeasured, so the wrap stays as a width-agnostic guarantee rather
+      // than being dropped on an unverified assumption that four now fit on
+      // one row.
       flex-wrap: wrap;
     }
 

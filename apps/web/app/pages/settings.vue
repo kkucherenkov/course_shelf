@@ -35,7 +35,7 @@
 
   definePageMeta({ layout: 'default' });
 
-  const { t } = useI18n();
+  const { t, locale, locales, setLocale } = useI18n();
   const toast = useToast();
   const { config: instanceConfig } = useInstanceConfig();
   const serverVersion = computed(() => instanceConfig.value.version || '—');
@@ -153,6 +153,24 @@
 
     toast.add({ title: t('pages.settings.profilePasswordToastSaved'), color: 'success' });
     togglePasswordForm();
+  }
+
+  // ── Appearance — language ─────────────────────────────────────────────────
+  // The topbar's EN | RU switch hides below 600px, where the shell drops to
+  // bottom tabs and has no room for it — a segmented control is wider than the
+  // single button it replaced, and full-width topbars on a phone are how the
+  // home page ended up scrolling horizontally. So this is the only place a
+  // phone can change language, which it previously could not do at all.
+  const languageOptions = computed<string[]>(() => locales.value.map((l) => l.code));
+
+  function languageLabel(code: string): string {
+    // A language's own name, never translated: English is "English" whatever
+    // the interface language is.
+    return locales.value.find((l) => l.code === code)?.name ?? code;
+  }
+
+  function onLanguage(code: string): void {
+    void setLocale(code as Parameters<typeof setLocale>[0]);
   }
 
   // ── Appearance — theme ────────────────────────────────────────────────────
@@ -333,6 +351,30 @@
         <h2 id="section-appearance" class="settings-section__title">
           {{ t('pages.settings.sectionAppearance') }}
         </h2>
+
+        <!-- Language row -->
+        <div v-if="languageOptions.length > 1" class="settings-row">
+          <div class="settings-row__left">
+            <span class="settings-row__label">{{
+              t('pages.settings.appearanceLanguageLabel')
+            }}</span>
+            <span class="settings-row__help">{{ t('pages.settings.appearanceLanguageHelp') }}</span>
+          </div>
+          <div class="settings-row__control">
+            <AppSegmented
+              :model-value="locale"
+              :label="t('pages.settings.appearanceLanguageLabel')"
+              @update:model-value="onLanguage"
+            >
+              <AppSegmentedItem
+                v-for="opt in languageOptions"
+                :key="opt"
+                :value="opt"
+                :label="languageLabel(opt)"
+              />
+            </AppSegmented>
+          </div>
+        </div>
 
         <!-- Theme row -->
         <div class="settings-row">

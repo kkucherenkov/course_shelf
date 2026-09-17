@@ -45,6 +45,8 @@ const ALL_NAMES = [
   'fullscreen',
   'pip',
   'speed',
+  'skip-back',
+  'skip-forward',
   'list',
   'grid',
   'filter',

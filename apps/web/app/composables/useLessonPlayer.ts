@@ -13,10 +13,10 @@ import { ref } from 'vue';
 import type { Ref } from 'vue';
 
 /**
- * The one speed ladder for the lesson player — the in-player cycle button
- * (`chromeSpeed`) and the settings page's default-speed picker both read
- * this instead of keeping their own list. They drifted once already: the
- * player omitted 0.75×, settings omitted 0.5×.
+ * The one speed ladder for the lesson player — the in-player speed menu and
+ * the settings page's default-speed picker both read this instead of keeping
+ * their own list. They drifted once already: the player omitted 0.75×,
+ * settings omitted 0.5×.
  */
 export const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 
@@ -251,15 +251,12 @@ export function useLessonPlayer(options: UseLessonPlayerOptions = {}): UseLesson
 
   function chromeSpeed(rate: number): void {
     if (!videoEl) return;
-    // Cycle through preset speeds when the same speed is clicked, or set directly
-    let next: number;
-    if (rate === speed.value) {
-      // cycle to next
-      const idx = PLAYBACK_SPEEDS.indexOf(rate as (typeof PLAYBACK_SPEEDS)[number]);
-      next = PLAYBACK_SPEEDS[(idx + 1) % PLAYBACK_SPEEDS.length] ?? 1;
-    } else {
-      next = (PLAYBACK_SPEEDS as readonly number[]).includes(rate) ? rate : 1;
-    }
+    // Set the rate the caller names — nothing more. This used to advance to
+    // the next rung whenever `rate` equalled the current speed, which served
+    // the old cycle-on-click speed button. The chrome now emits a rate picked
+    // from a menu, and picking the row that reads "1×" while playing at 1×
+    // has to leave the speed at 1×, not step it to 1.25×.
+    const next = (PLAYBACK_SPEEDS as readonly number[]).includes(rate) ? rate : 1;
     videoEl.playbackRate = next;
     speed.value = next;
   }

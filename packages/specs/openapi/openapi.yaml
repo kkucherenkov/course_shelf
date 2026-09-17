@@ -8393,6 +8393,14 @@ components:
       properties:
         modelId:
           type: string
+          # A blank string is a client mistake, not a request for the default:
+          # the handler reads `command.modelFilename ?? configuredDefault`, and
+          # `??` only falls back on null/undefined, so `""` slipped through and
+          # surfaced as a 503 `quiz-generation-not-configured` — the service
+          # reporting itself unconfigured when it was merely handed rubbish.
+          # Schemathesis found it. Rejecting it here answers 400 before the
+          # handler runs; omit the property entirely to get the default.
+          minLength: 1
           description: >-
             Model to use — meaning depends on the deployment's text-generation
             provider (ADR-0012): a `.gguf` weight filename under the local

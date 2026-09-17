@@ -12,10 +12,25 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { mount, type VueWrapper } from '@vue/test-utils';
+import { computed, inject, provide } from 'vue';
 
 // ── Nuxt auto-imports ──────────────────────────────────────────────────────
 vi.stubGlobal('definePageMeta', () => undefined);
-vi.stubGlobal('useI18n', () => ({ t: (key: string) => key }));
+// `locale`, `locales` and `setLocale` are here because the Appearance section
+// now carries a language row — the topbar's switch hides below 600px, so on a
+// phone this page is the only way to change language.
+const setLocaleMock = vi.fn();
+vi.stubGlobal('useI18n', () => ({
+  t: (key: string) => key,
+  locale: { value: 'en' },
+  locales: {
+    value: [
+      { code: 'en', name: 'English' },
+      { code: 'ru', name: 'Русский' },
+    ],
+  },
+  setLocale: setLocaleMock,
+}));
 vi.stubGlobal('useToast', () => ({ add: vi.fn() }));
 vi.stubGlobal('useColorMode', () => ({ preference: 'dark' }));
 vi.stubGlobal('navigateTo', vi.fn());
@@ -89,16 +104,38 @@ vi.mock('@app/ui', () => ({
     emits: ['update:modelValue'],
     template: '<input type="password" :value="modelValue" />',
   },
+  // These two mirror the one contract the page depends on: the real pair talks
+  // through `provide`/`inject`, an item renders `role="radio"`, and clicking it
+  // sets the group's value. The previous stub rendered a bare button with no
+  // role and no wiring, so a test could neither find an option nor prove that
+  // choosing one did anything.
   AppSegmented: {
     name: 'AppSegmented',
     props: ['modelValue', 'label'],
     emits: ['update:modelValue'],
-    template: '<div class="stub-segmented"><slot /></div>',
+    template: '<div class="stub-segmented" role="radiogroup" :aria-label="label"><slot /></div>',
+    setup(props: { modelValue: unknown }, { emit }: { emit: (e: string, v: unknown) => void }) {
+      provide('app-segmented', {
+        modelValue: computed(() => props.modelValue),
+        setValue: (v: unknown) => emit('update:modelValue', v),
+      });
+    },
   },
   AppSegmentedItem: {
     name: 'AppSegmentedItem',
     props: ['value', 'label'],
-    template: '<button>{{ label }}</button>',
+    template:
+      '<button role="radio" :aria-checked="String(selected)" @click="onClick">{{ label }}</button>',
+    setup(props: { value: unknown }) {
+      const ctx = inject<{
+        modelValue: { value: unknown };
+        setValue: (v: unknown) => void;
+      }>('app-segmented');
+      return {
+        selected: computed(() => ctx?.modelValue.value === props.value),
+        onClick: () => ctx?.setValue(props.value),
+      };
+    },
   },
   AppDialog: {
     name: 'AppDialog',
@@ -127,6 +164,20 @@ describe('settings page', () => {
     expect(text).toContain('pages.settings.sectionAppearance');
     expect(text).toContain('pages.settings.sectionPlayback');
     expect(text).toContain('pages.settings.sectionAccount');
+  });
+
+  it('offers a language row, since the topbar switch is gone below 600px', async () => {
+    const wrapper = await mountSettings();
+
+    // Languages appear by their own name here, unlike the topbar's two-letter
+    // codes: this page has room, and the codes existed only to fit the bar.
+    const options = wrapper.findAll('[role="radio"]');
+    const russian = options.find((el) => el.text() === 'Русский');
+    expect(russian).toBeDefined();
+
+    setLocaleMock.mockClear();
+    await russian?.trigger('click');
+    expect(setLocaleMock).toHaveBeenCalledWith('ru');
   });
 
   it('keeps the controls that actually work', async () => {

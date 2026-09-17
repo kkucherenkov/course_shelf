@@ -7,5 +7,15 @@
     "types": ["vite/client"],
     "exactOptionalPropertyTypes": false
   },
-  "include": ["src/**/*.ts", "src/**/*.vue", "scripts/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "scripts/**/*.ts",
+    // `.storybook/**` sat outside this list, so the visual gate's own
+    // config — test-runner.ts, which decides whether a story passes —
+    // was never typechecked. An `await` in a non-async function there
+    // passed `pnpm typecheck` and `pnpm lint` locally and surfaced only
+    // in CI, as an esbuild error inside a 20-minute capture job.
+    ".storybook/**/*.ts"
+  ]
 }

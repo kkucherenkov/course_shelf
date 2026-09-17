@@ -12,7 +12,12 @@ export default [
       'eslint.config.mjs',
       'vite.config.ts',
       'vitest.config.ts',
-      '.storybook/**',
+      // `.storybook/**` used to be ignored here, which also made the rule
+      // relaxations declared for it further down dead config. Worse, it left
+      // test-runner.ts — the file that decides whether a story passes the
+      // visual gate — unchecked by both linter and typechecker, so on
+      // 2026-09-17 an `await` in a non-async function only surfaced in CI,
+      // inside a 20-minute capture job.
       'src/design-tokens.generated.ts',
       'src/tokens.generated.css',
     ],

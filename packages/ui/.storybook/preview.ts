@@ -1,9 +1,13 @@
-import type { Preview, Renderer } from '@storybook/vue3';
+// `Decorator` rather than `DecoratorFunction<Renderer>` from '@storybook/types':
+// that package does not exist in Storybook 10, and '@storybook/vue3' declares
+// `Renderer` without exporting it. `Decorator` is the framework-specific type
+// this file wanted all along, and taking it means the decorator below needs no
+// cast and `context.globals` arrives typed.
+import type { Decorator, Preview } from '@storybook/vue3';
 import { withThemeByDataAttribute } from '@storybook/addon-themes';
-import type { DecoratorFunction } from '@storybook/types';
 import { setup } from '@storybook/vue3';
 import ui from '@nuxt/ui/vue-plugin';
-import { h, type PropType } from 'vue';
+import { defineComponent, h, type PropType } from 'vue';
 import type { RouteLocationRaw } from 'vue-router';
 
 import '../src/styles.css';
@@ -18,16 +22,24 @@ setup((app) => {
   // by Nuxt's build, which Storybook does not run. `preview.css` maps
   // `--ui-primary` onto the brand accent instead.
   app.use(ui);
-  app.component('NuxtLink', {
-    props: {
-      to: { type: [String, Object] as PropType<RouteLocationRaw>, required: true },
-    },
-    setup(props, { slots }) {
-      const href =
-        typeof props.to === 'string' ? props.to : ((props.to as { path?: string }).path ?? '#');
-      return () => h('a', { href }, slots.default?.());
-    },
-  });
+  app.component(
+    'NuxtLink',
+    // Wrapped in `defineComponent` so `props` and `slots` are inferred. A bare
+    // object literal here left both implicitly `any`, which went unnoticed
+    // while `.storybook/**` sat outside this package's tsconfig include.
+    defineComponent({
+      props: {
+        to: { type: [String, Object] as PropType<RouteLocationRaw>, required: true },
+      },
+      setup(props, { slots }) {
+        const href =
+          typeof props.to === 'string' ? props.to : ((props.to as { path?: string }).path ?? '#');
+        // Bracket form for the same TS4111 reason as `globals` below: the
+        // slots object is an index signature, so dot access is an error.
+        return () => h('a', { href }, slots['default']?.());
+      },
+    }),
+  );
 });
 
 const preview: Preview = {
@@ -53,14 +65,12 @@ const preview: Preview = {
     // Sync Nuxt UI's class-based dark mode with our theme selection.
     // UModal/UTooltip/etc. read class="dark" on <html>, not data-theme.
     ((story, context) => {
-      const theme = (context.globals as Record<string, string>).theme ?? 'light';
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+      // `globals` is an index-signature type, so the key has to be read in
+      // bracket form — TS4111. Not a style choice: dot access is an error here.
+      const theme = context.globals['theme'] ?? 'light';
+      document.documentElement.classList.toggle('dark', theme === 'dark');
       return story();
-    }) as DecoratorFunction<Renderer>,
+    }) satisfies Decorator,
     withThemeByDataAttribute({
       themes: { light: 'light', dark: 'dark', sepia: 'sepia', forest: 'forest' },
       defaultTheme: 'light',

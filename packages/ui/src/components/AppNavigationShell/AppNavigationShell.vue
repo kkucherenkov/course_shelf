@@ -4,6 +4,8 @@
   import AppAvatar from '../AppAvatar/AppAvatar.vue';
   import AppDialog from '../AppDialog/AppDialog.vue';
   import AppRow from '../AppRow/AppRow.vue';
+  import AppSegmented from '../AppSegmented/AppSegmented.vue';
+  import AppSegmentedItem from '../AppSegmentedItem/AppSegmentedItem.vue';
   import IconCS from '../IconCS/IconCS.vue';
   import type { IconName } from '../IconCS/IconCS.vue';
 
@@ -104,15 +106,27 @@
       themeSystemLabel?: string;
       /** Static aria-label for the icon-only topbar theme toggle. */
       themeToggleLabel?: string;
+      /** aria-label for the language switch; it has no visible caption. */
+      localeSwitchLabel?: string;
       /**
-       * The locale a click on the topbar language button switches *to* —
-       * same "shows the target, not the current state" convention as the
-       * theme toggle. `name` is that locale's own name (e.g. "Русский"),
-       * which is never translated — a language's name isn't relative to
-       * whatever language is currently active. `undefined` hides the
-       * control entirely (single-locale deployments).
+       * Every locale this deployment ships, in display order. Rendered as a
+       * segmented control so the current language is visible as state rather
+       * than inferred from a button that names a different one. Each `name` is
+       * that locale's own name (e.g. "Русский"), never translated — a
+       * language's name is not relative to whatever language is active. Fewer
+       * than two entries hides the control: there is nothing to switch.
        */
-      otherLocale?: { code: string; name: string };
+      locales?: readonly { code: string; name: string }[];
+      /** Which of `locales` is active. */
+      locale?: string;
+      /**
+       * The light/dark the viewer is actually looking at, which is NOT the
+       * same as `colorMode`: that one stores the preference and may say
+       * `system`. The topbar toggle flips relative to what is on screen, so it
+       * needs this. `apps/web` has both for free — Nuxt's `useColorMode()`
+       * exposes `.value` (resolved) and `.preference` (stored).
+       */
+      resolvedColorMode?: 'light' | 'dark';
     }>(),
     {
       adminNav: () => [],
@@ -134,14 +148,17 @@
       themeDarkLabel: 'Dark',
       themeSystemLabel: 'System',
       themeToggleLabel: 'Toggle color theme',
-      otherLocale: undefined,
+      localeSwitchLabel: 'Language',
+      locales: () => [],
+      locale: '',
+      resolvedColorMode: 'dark',
     },
   );
 
   const emit = defineEmits<{
     'update:searchValue': [value: string];
     'update:colorMode': [mode: ColorMode];
-    /** Fired with `otherLocale.code` when the language button is clicked. */
+    /** Fired with the chosen locale's code. */
     'update:locale': [code: string];
     /** Fired on every nav-item click with the item's key. */
     nav: [key: string];
@@ -151,8 +168,6 @@
     settings: [];
     signOut: [];
   }>();
-
-  const THEME_CYCLE: ColorMode[] = ['light', 'dark', 'system'];
 
   const slots = useSlots();
 
@@ -230,27 +245,29 @@
   // item both show/act on the state a click switches *to*, same convention
   // the binary toggle used.
 
-  const nextColorMode = computed<ColorMode>(() => {
-    const idx = THEME_CYCLE.indexOf(props.colorMode);
-    // Modulo of a fixed-length array always lands in range; the fallback
-    // only satisfies the indexed-access type, never actually taken.
-    return THEME_CYCLE[(idx + 1) % THEME_CYCLE.length] ?? 'light';
-  });
+  // Binary by design: the topbar is the flip-on-the-fly control, and Settings
+  // owns the full three-way choice including `system` (settings.vue already
+  // renders all three in an AppSegmented). A three-step cycle in the topbar
+  // made `system` reachable only by passing through it, and the icon showed
+  // the state a click switches *to* — the same misleading convention the
+  // language button used, and the reason both were reported.
+  //
+  // `resolvedColorMode`, not `colorMode`: when the stored preference is
+  // `system` the click has to flip away from what is actually on screen. A
+  // toggle keyed on the preference would emit `dark` while the viewer already
+  // sees dark and nothing would appear to happen.
+  const oppositeColorMode = computed<'light' | 'dark'>(() =>
+    props.resolvedColorMode === 'dark' ? 'light' : 'dark',
+  );
 
-  const themeToggleIcon = computed<IconName>(() => {
-    if (nextColorMode.value === 'light') return 'sun';
-    if (nextColorMode.value === 'dark') return 'moon';
-    return 'sliders';
-  });
-
-  const nextColorModeLabel = computed<string>(() => {
-    if (nextColorMode.value === 'light') return props.themeLightLabel;
-    if (nextColorMode.value === 'dark') return props.themeDarkLabel;
-    return props.themeSystemLabel;
-  });
+  // The icon names the state you are IN, not the one you are going to. Its
+  // accessible name carries the action, so nothing is lost.
+  const themeToggleIcon = computed<IconName>(() =>
+    props.resolvedColorMode === 'dark' ? 'moon' : 'sun',
+  );
 
   function toggleColorMode() {
-    emit('update:colorMode', nextColorMode.value);
+    emit('update:colorMode', oppositeColorMode.value);
   }
 
   function onProfile() {
@@ -265,11 +282,6 @@
 
   function onSignOut() {
     emit('signOut');
-    closeMenu();
-  }
-
-  function onThemeMenuItem() {
-    toggleColorMode();
     closeMenu();
   }
 
@@ -398,18 +410,33 @@
 
         <slot name="actions" />
 
-        <!-- Shows the locale a click switches *to*, same convention as the
-             theme toggle — its own accessible name IS its visible text
-             (the target language's own name), so no separate aria-label
-             is needed (#607). -->
-        <button
-          v-if="otherLocale"
-          type="button"
-          class="app-navigation-shell__locale-toggle"
-          @click="emit('update:locale', otherLocale.code)"
+        <!-- Both languages visible at once, the active one marked. The button
+             this replaced showed the language a click switched *to*, which read
+             as a status label and was actually a target. Hidden below two
+             locales: there is nothing to switch between. -->
+        <AppSegmented
+          v-if="locales.length > 1"
+          :model-value="locale"
+          :label="localeSwitchLabel"
+          class="app-navigation-shell__locale-switch"
+          @update:model-value="(code: string) => emit('update:locale', code)"
         >
-          {{ otherLocale.name }}
-        </button>
+          <!-- The code is what shows; the locale's own name is the accessible
+               name. Full names made the topbar 31px wider than the button this
+               replaced and pushed the home page into horizontal scroll at
+               375px, which tests/e2e/home.spec.ts caught. Two codes side by
+               side with one marked still supply the property that was missing
+               before — the old control was a lone button naming the OTHER
+               language. -->
+          <AppSegmentedItem
+            v-for="loc in locales"
+            :key="loc.code"
+            :value="loc.code"
+            :aria-label="loc.name"
+          >
+            {{ loc.code.toUpperCase() }}
+          </AppSegmentedItem>
+        </AppSegmented>
 
         <button
           type="button"
@@ -464,15 +491,6 @@
             >
               <IconCS name="settings" :size="16" />
               {{ settingsLabel }}
-            </button>
-            <button
-              type="button"
-              class="app-navigation-shell__menu-item"
-              role="menuitem"
-              @click="onThemeMenuItem"
-            >
-              <IconCS :name="themeToggleIcon" :size="16" />
-              {{ nextColorModeLabel }}
             </button>
             <div class="app-navigation-shell__menu-divider" role="separator" />
             <button
@@ -797,8 +815,8 @@
       }
     }
 
-    // ── Language toggle ──────────────────────────────────────────────────
-    &__locale-toggle {
+    // ── Language switch ──────────────────────────────────────────────────
+    &__locale-switch {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -1022,6 +1040,16 @@
 
       &__bottom-tabs {
         display: flex;
+      }
+
+      // No room for it beside the search and the avatar at this width, and a
+      // segmented control cannot shrink to the width of the single button it
+      // replaced — tests/e2e/home.spec.ts caught the home page scrolling
+      // horizontally at 375px. Settings carries the language row instead, the
+      // same split the theme control uses: full choice there, quick switch here
+      // only where it fits.
+      &__locale-switch {
+        display: none;
       }
 
       // Clears the fixed bottom-tab bar, whose height is the same --space-8.

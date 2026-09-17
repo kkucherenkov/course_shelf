@@ -222,6 +222,24 @@ describe('GenerateQuizHandler', () => {
     expect(llama.generateQuestions).toHaveBeenCalledOnce();
   });
 
+  it('treats a blank modelId as absent rather than reporting itself unconfigured', async () => {
+    // `command.modelFilename ?? default` fell back only on null/undefined, so a
+    // blank string reached the `model === ''` check and raised
+    // QuizGenerationNotConfiguredError — a 503 telling the caller the service
+    // is unconfigured when it was configured and merely handed rubbish.
+    // Schemathesis generated `{"modelId": ""}` and caught it; the spec now
+    // rejects blank with a 400, and this keeps any other caller honest.
+    for (const blank of ['', '   ']) {
+      const { handler, llama } = makeHandler({
+        appConfig: makeAppConfig({ defaultModelFilename: 'Qwen3.5-4B-Q4_K_M.gguf' }),
+      });
+
+      await handler.execute(new GenerateQuizCommand('lesson-1', blank, undefined, true));
+
+      expect(llama.ensureModelUsable).toHaveBeenCalledWith('Qwen3.5-4B-Q4_K_M.gguf');
+    }
+  });
+
   it('throws QuizGenerationNotConfiguredError naming LLAMA_DEFAULT_MODEL when no model is named and no default is configured', async () => {
     const { handler } = makeHandler({
       appConfig: makeAppConfig({ defaultModelFilename: '' }),

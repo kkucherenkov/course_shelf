@@ -1,10 +1,15 @@
 {
-  "$comment": "MCP server suggestions for this boilerplate \u2014 all entries are DISABLED by default. To enable a server, move it out of the `_disabled` stub and into `mcpServers`, replace env placeholders, and restart your agent client. Do NOT commit real credentials. The boilerplate ships this file so every clone gets the same starting menu.",
+  "$comment": "MCP server suggestions for this boilerplate — all entries are DISABLED by default. To enable a server, move it out of the `_disabled` stub and into `mcpServers`, replace env placeholders, and restart your agent client. Do NOT commit real credentials. The boilerplate ships this file so every clone gets the same starting menu.",
   "mcpServers": {
     "repowise": {
       "command": "repowise",
       "args": ["mcp", "${MCP_REPO_ROOT}", "--transport", "stdio"],
-      "description": "repowise: codebase intelligence \u2014 docs, graph, git signals, dead code, decisions"
+      "description": "repowise: codebase intelligence — docs, graph, git signals, dead code, decisions"
+    },
+    "storybook": {
+      "type": "http",
+      "url": "http://localhost:6006/mcp",
+      "description": "Storybook for @app/ui: find the stories belonging to a component file, read how a story is written here, and get preview URLs to hand back. It does NOT search the design system — to check whether a component already exists, grep packages/ui/src/index.ts or read localhost:6006/index.json. Needs `pnpm storybook` (or the compose `storybook` service) running on 6006."
     }
   },
   "_disabled": {
@@ -24,7 +29,7 @@
       "args": ["-y", "@playwright/mcp@latest"]
     },
     "chrome-devtools": {
-      "$why": "Pass C of the pre-release audit: performance traces, CPU/network throttling and Core Web Vitals, plus driving Chrome conversationally instead of extending the audit driver first. Does NOT see the player's native CC menu or fullscreen \u2014 those are browser chrome, not page DOM.",
+      "$why": "Pass C of the pre-release audit: performance traces, CPU/network throttling and Core Web Vitals, plus driving Chrome conversationally instead of extending the audit driver first. Does NOT see the player's native CC menu or fullscreen — those are browser chrome, not page DOM.",
       "command": "npx",
       "args": ["-y", "chrome-devtools-mcp@latest"]
     },

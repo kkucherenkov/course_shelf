@@ -7,8 +7,6 @@
     cues: TranscriptCue[];
     /** Index (into `cues`) of the cue under the playhead, `-1` when none. */
     activeIndex: number;
-    /** Shown when the lesson has no transcript at all. */
-    emptyLabel: string;
     /** Shown when the filter matches none of the cues. */
     noMatchLabel: string;
     /** Placeholder and accessible label for the filter input. */
@@ -31,36 +29,34 @@
 </script>
 
 <template>
+  <!-- No empty state: the page only renders this once the lesson has cues, so
+       a "no transcript" line here would have been a titled panel of nothing
+       under every video without one. -->
   <div class="player-transcript-tab">
-    <div v-if="props.cues.length === 0" class="player-transcript-tab__empty">
-      {{ props.emptyLabel }}
+    <input
+      v-model="query"
+      type="search"
+      class="player-transcript-tab__filter"
+      :placeholder="props.filterPlaceholder"
+      :aria-label="props.filterPlaceholder"
+    />
+    <div v-if="filteredCues.length === 0" class="player-transcript-tab__no-match">
+      {{ props.noMatchLabel }}
     </div>
-    <template v-else>
-      <input
-        v-model="query"
-        type="search"
-        class="player-transcript-tab__filter"
-        :placeholder="props.filterPlaceholder"
-        :aria-label="props.filterPlaceholder"
-      />
-      <div v-if="filteredCues.length === 0" class="player-transcript-tab__no-match">
-        {{ props.noMatchLabel }}
-      </div>
-      <ul v-else class="player-transcript-tab__list">
-        <li v-for="item in filteredCues" :key="item.index" class="player-transcript-tab__item">
-          <button
-            type="button"
-            class="player-transcript-tab__row"
-            :class="{ 'player-transcript-tab__row--active': item.index === props.activeIndex }"
-            :aria-current="item.index === props.activeIndex ? 'true' : undefined"
-            @click="emit('seek', item.cue.start)"
-          >
-            <span class="player-transcript-tab__time">{{ formatCueTime(item.cue.start) }}</span>
-            <span class="player-transcript-tab__text">{{ item.cue.text }}</span>
-          </button>
-        </li>
-      </ul>
-    </template>
+    <ul v-else class="player-transcript-tab__list">
+      <li v-for="item in filteredCues" :key="item.index" class="player-transcript-tab__item">
+        <button
+          type="button"
+          class="player-transcript-tab__row"
+          :class="{ 'player-transcript-tab__row--active': item.index === props.activeIndex }"
+          :aria-current="item.index === props.activeIndex ? 'true' : undefined"
+          @click="emit('seek', item.cue.start)"
+        >
+          <span class="player-transcript-tab__time">{{ formatCueTime(item.cue.start) }}</span>
+          <span class="player-transcript-tab__text">{{ item.cue.text }}</span>
+        </button>
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -71,7 +67,6 @@
     flex-direction: column;
     gap: var(--space-2);
 
-    &__empty,
     &__no-match {
       font-size: var(--text-base);
       color: var(--text-secondary);

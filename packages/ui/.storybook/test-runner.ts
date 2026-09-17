@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { join } from 'node:path';
+import path from 'node:path';
 
 import type { TestContext, TestRunnerConfig } from '@storybook/test-runner';
 import { getStoryContext, waitForPageReady } from '@storybook/test-runner';
@@ -36,6 +36,88 @@ import { parseDiffPercent, recordA11y, recordDrift } from './visual-report';
  */
 const SNAPSHOTS_DIR = `${process.cwd()}/test/__snapshots__`;
 const REGEN_MODE = process.env['STORYBOOK_REGEN'] === '1';
+
+/**
+ * Fails a story whose capture is a single flat colour.
+ *
+ * Without this the gate lies by omission. Storybook's global
+ * `layout: 'centered'` makes `#storybook-root` a shrink-to-fit flex item, so a
+ * component with no intrinsic width — a `width: 100%` track, anything sized
+ * only by `aspect-ratio` — lays out at zero and screenshots as an empty
+ * rectangle. The first run writes that blank frame as the baseline, and every
+ * run after it compares blank to blank and reports PASS. Measured 2026-09-17:
+ * 13 of AppPlayerChrome's 14 baselines and 4 of AppProgressLinear's were flat
+ * frames of 165 and 118 bytes, so the component this repo's player rework
+ * touched had no visual coverage at all.
+ *
+ * The check is on the captured image rather than on the DOM deliberately. A
+ * DOM rule — "no visible descendant may have zero size" — was measured against
+ * all 299 stories and flagged about 30 healthy ones: a progress `__strip-fill`
+ * at 0 percent, an `OPTION` inside AppSelect, AppScanProgress's `__spacer` are
+ * all legitimately zero-sized. Uniformity of the frame is the property that
+ * actually matters.
+ *
+ * Decoding happens in the browser because `pngjs` is not reachable from this
+ * package under pnpm's isolated layout, and a new dependency for one assertion
+ * is not worth it. The count short-circuits at three colours, so the cost is a
+ * few rows of pixels for a healthy story.
+ *
+ * It runs in regen mode too: capturing a blank baseline is what arms the trap.
+ */
+async function assertFrameNotBlank(page: Page, image: Buffer, context: TestContext): Promise<void> {
+  const storyId = context.id;
+
+  // One story legitimately renders nothing: AppSsoBlock with no providers
+  // configured. That is a real state worth browsing in Storybook, but a blank
+  // pixel baseline is the wrong tool for asserting it — a spec is. The opt-out
+  // is explicit so the blankness is a stated intention rather than the silent
+  // accident this whole function exists to catch.
+  const storyContext = await getStoryContext(page, context);
+  if (storyContext.parameters?.['allowBlankFrame'] === true) return;
+
+  const distinctColours = await page.evaluate(async (base64: string) => {
+    const img = new Image();
+    img.src = `data:image/png;base64,${base64}`;
+    await img.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return -1;
+    ctx.drawImage(img, 0, 0);
+    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const seen = new Set<number>();
+    for (let i = 0; i < data.length; i += 4) {
+      seen.add(
+        ((data[i] ?? 0) << 24) |
+          ((data[i + 1] ?? 0) << 16) |
+          ((data[i + 2] ?? 0) << 8) |
+          (data[i + 3] ?? 0),
+      );
+      if (seen.size > 1) return seen.size;
+    }
+    return seen.size;
+  }, image.toString('base64'));
+
+  // -1 means the canvas context was unavailable — do not fail a story over a
+  // missing 2D context, that is an environment problem, not a story defect.
+  if (distinctColours === -1) return;
+
+  // Exactly one colour, and no more. The threshold is measured, not guessed:
+  // both blank captures (AppPlayerChrome at 165 bytes, AppProgressLinear at
+  // 118) hold precisely one colour, while `appiconbutton--ghost` is a healthy
+  // 36x36 render that holds precisely two — a transparent ground plus one
+  // monochrome glyph. A `<= 2` threshold was tried first and failed that
+  // button, which would have traded a silent pass for a loud false accusation.
+  if (distinctColours === 1) {
+    throw new Error(
+      `Story "${storyId}" captured a flat, single-colour frame. Its baseline ` +
+        `would assert nothing. If the component takes its ` +
+        `size from its parent, set \`parameters: { layout: 'padded' }\` on the story ` +
+        `or its meta — the global layout is 'centered', which shrink-wraps the canvas.`,
+    );
+  }
+}
 
 /**
  * The addon renders every story in its default theme, which is `light`. That
@@ -128,10 +210,10 @@ async function assertDarkContrast(page: Page, context: TestContext): Promise<voi
   const previous = await page.evaluate((theme) => {
     const html = document.documentElement;
     const before = {
-      theme: html.getAttribute('data-theme'),
+      theme: html.dataset['theme'],
       dark: html.classList.contains('dark'),
     };
-    html.setAttribute('data-theme', theme);
+    html.dataset['theme'] = theme;
     html.classList.add('dark');
     return before;
   }, A11Y_THEME);
@@ -162,8 +244,11 @@ async function assertDarkContrast(page: Page, context: TestContext): Promise<voi
   } finally {
     await page.evaluate((before) => {
       const html = document.documentElement;
-      if (before.theme === null) html.removeAttribute('data-theme');
-      else html.setAttribute('data-theme', before.theme);
+      // Bracket form, not `dataset.theme`: `dataset` is an index signature, so
+      // dot access is a TS4111 error. `unicorn/prefer-dom-node-dataset` is
+      // satisfied either way — it only objects to `setAttribute`.
+      if (before.theme === null) delete html.dataset['theme'];
+      else html.dataset['theme'] = before.theme;
       html.classList.toggle('dark', before.dark);
     }, previous);
   }
@@ -172,6 +257,7 @@ async function assertDarkContrast(page: Page, context: TestContext): Promise<voi
 const config: TestRunnerConfig = {
   setup() {
     expect.extend({ toMatchImageSnapshot });
+
     if (REGEN_MODE) {
       mkdirSync(SNAPSHOTS_DIR, { recursive: true });
     }
@@ -189,14 +275,19 @@ const config: TestRunnerConfig = {
       caret: 'hide',
     });
 
+    await assertFrameNotBlank(page, image, context);
+
     if (REGEN_MODE) {
       // Capture-only: overwrite the baseline. jest-image-snapshot's CI
       // mode would otherwise fail on missing baselines instead of
       // creating them, so we sidestep it entirely.
-      writeFileSync(join(SNAPSHOTS_DIR, `${context.id}.png`), image);
+      writeFileSync(path.join(SNAPSHOTS_DIR, `${context.id}.png`), image);
     } else {
       try {
-        // @ts-expect-error — extended via setup()
+        // No `@ts-expect-error` here any more: once this file came under the
+        // package's tsconfig, jest-image-snapshot's own type augmentation is
+        // visible and the matcher is properly typed. The directive had been
+        // suppressing nothing, which typecheck now says out loud (TS2578).
         expect(image).toMatchImageSnapshot({
           customSnapshotsDir: SNAPSHOTS_DIR,
           customSnapshotIdentifier: context.id,

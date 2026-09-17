@@ -21,6 +21,14 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
+    // Mounting a whole Nuxt page costs well over vitest's 5s default once
+    // another package's suite is competing for CPU. On 2026-09-17 four page
+    // specs failed with "Test timed out in 5000ms" at the mount call during a
+    // parallel `turbo run test`, and all 583 passed when this suite ran alone
+    // (tuxedo 231). The timeout is a hung-process heuristic, not a performance
+    // budget, so raising it costs nothing and stops a loaded runner reporting
+    // a false red.
+    testTimeout: 15_000,
     include: [
       'tests/unit/**/*.spec.ts',
       'app/__tests__/**/*.spec.ts',

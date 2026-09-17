@@ -104,15 +104,15 @@ flowchart LR
 
 ### Локальная инфраструктура
 
-| Сервис     | Версия      | Порт | Примечания                                                        |
-| ---------- | ----------- | ---- | ----------------------------------------------------------------- |
-| postgres   | 18.1-alpine | 5432 | Инициализация SQL в `docker/postgres/init.sql`                    |
-| centrifugo | v6          | 8000 | Веб-сокеты реального времени, конфигурация в `docker/centrifugo/` |
-| backend    | Dockerfile  | 3000 | Ожидает готовности postgres, centrifugo                           |
-| web        | Dockerfile  | 3001 | Nuxt dev server                                                   |
-| nginx      | --          | 8080 | Обратный прокси: единый origin для SPA и API                      |
-| storybook  | Dockerfile  | 6006 | Storybook для `@app/ui` (его же поднимает `pnpm storybook`)       |
-| otel-lgtm  | Grafana     | 3200 | Локальный стек наблюдаемости Grafana + LGTM                       |
+| Сервис     | Версия      | Порт | Примечания                                                                           |
+| ---------- | ----------- | ---- | ------------------------------------------------------------------------------------ |
+| postgres   | 18.1-alpine | 5432 | Инициализация SQL в `docker/postgres/init.sql`                                       |
+| centrifugo | v6          | 8000 | Веб-сокеты реального времени, конфигурация в `docker/centrifugo/`                    |
+| backend    | Dockerfile  | 3000 | Ожидает готовности postgres, centrifugo                                              |
+| web        | Dockerfile  | 3001 | Nuxt dev server                                                                      |
+| nginx      | --          | 8080 | Обратный прокси: единый origin для SPA и API                                         |
+| storybook  | Dockerfile  | 6006 | Storybook для `@app/ui` и MCP-эндпоинт на `/mcp` (его же поднимает `pnpm storybook`) |
+| otel-lgtm  | Grafana     | 3200 | Локальный стек наблюдаемости Grafana + LGTM                                          |
 
 Контейнеры монтируют репозиторий как том, поэтому изменения попадают в работающий контейнер без пересборки. Не запускайте `pnpm dev` одновременно с `docker compose up` -- они используют одни и те же порты на хосте.
 
@@ -292,7 +292,7 @@ scripts/            setup.sh + вспомогательные скрипты
 | `pnpm typecheck`          | Проверка TypeScript по всем рабочим пространствам (Turbo)        |
 | `pnpm test`               | Vitest по всем рабочим пространствам (Turbo)                     |
 | `pnpm build`              | Сборка production по всем рабочим пространствам (Turbo)          |
-| `pnpm storybook`          | Storybook для `@app/ui` на порту `:6006`                         |
+| `pnpm storybook`          | Storybook для `@app/ui` на порту `:6006`; отдаёт MCP на `/mcp`   |
 | `pnpm check:i18n`         | Проверка полноты ключей локализации в backend, web и mobile      |
 | `pnpm format`             | Форматирование через Prettier                                    |
 | `pnpm stylelint`          | Stylelint для SCSS и Vue-файлов                                  |

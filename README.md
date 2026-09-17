@@ -104,15 +104,15 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 
 ### Local Infrastructure
 
-| Service    | Version     | Port | Notes                                              |
-| ---------- | ----------- | ---- | -------------------------------------------------- |
-| postgres   | 18.1-alpine | 5432 | Init SQL in `docker/postgres/init.sql`             |
-| centrifugo | v6          | 8000 | Realtime websocket, config in `docker/centrifugo/` |
-| backend    | Dockerfile  | 3000 | Waits on postgres, centrifugo                      |
-| web        | Dockerfile  | 3001 | Nuxt dev server                                    |
-| nginx      | --          | 8080 | Reverse proxy: same-origin SPA + API               |
-| storybook  | Dockerfile  | 6006 | `@app/ui` Storybook (`pnpm storybook` runs it too) |
-| otel-lgtm  | Grafana     | 3200 | Local Grafana + LGTM observability stack           |
+| Service    | Version     | Port | Notes                                                                              |
+| ---------- | ----------- | ---- | ---------------------------------------------------------------------------------- |
+| postgres   | 18.1-alpine | 5432 | Init SQL in `docker/postgres/init.sql`                                             |
+| centrifugo | v6          | 8000 | Realtime websocket, config in `docker/centrifugo/`                                 |
+| backend    | Dockerfile  | 3000 | Waits on postgres, centrifugo                                                      |
+| web        | Dockerfile  | 3001 | Nuxt dev server                                                                    |
+| nginx      | --          | 8080 | Reverse proxy: same-origin SPA + API                                               |
+| storybook  | Dockerfile  | 6006 | `@app/ui` Storybook, plus an MCP endpoint at `/mcp` (`pnpm storybook` runs it too) |
+| otel-lgtm  | Grafana     | 3200 | Local Grafana + LGTM observability stack                                           |
 
 Containers mount the repository as a volume, so edits reach the running container without a rebuild. Do not run `pnpm dev` alongside `docker compose up` -- they share the same host ports.
 
@@ -292,7 +292,7 @@ scripts/            setup.sh + cross-repo helpers
 | `pnpm typecheck`          | TypeScript check across every workspace (Turbo)         |
 | `pnpm test`               | Vitest across every workspace (Turbo)                   |
 | `pnpm build`              | Production build across every workspace (Turbo)         |
-| `pnpm storybook`          | `@app/ui` Storybook on `:6006`                          |
+| `pnpm storybook`          | `@app/ui` Storybook on `:6006`; serves MCP at `/mcp`    |
 | `pnpm check:i18n`         | Locale key-parity check across backend, web, and mobile |
 | `pnpm format`             | Prettier                                                |
 | `pnpm stylelint`          | Stylelint for SCSS and Vue files                        |

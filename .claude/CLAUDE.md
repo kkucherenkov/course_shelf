@@ -166,7 +166,7 @@ pnpm check:i18n                          # locale key parity (web + mobile + bac
 pnpm e2e                                 # Playwright (tests/e2e/playwright.config.ts)
 
 # storybook & docker
-pnpm --filter @app/ui storybook          # :6006
+pnpm --filter @app/ui storybook          # :6006, and the MCP endpoint at /mcp
 docker compose -f docker/compose.yml up -d
 docker compose -f docker/compose.yml logs -f web --tail=100
 docker compose -f docker/compose.yml restart backend
@@ -371,6 +371,11 @@ docs.
 - Use `any` to escape a type error.
 - Ship a user-visible string without `t()` / `AppLocalizations`.
 - Ship a `@app/ui` component without a Storybook story + colocated spec.
+- Write a new UI element before checking whether `@app/ui` already has one.
+  `grep -E '^export' packages/ui/src/index.ts` lists all 62 exports, and a
+  running Storybook lists the 50 with stories at `localhost:6006/index.json`.
+  Read the candidate's `.vue` file too — more than one of them implements a
+  prop or helper its own template does not yet use.
 - Use `!important`, inline `style=""`, or hard-coded hex brand colors.
 - Skip updating `specs/tasks/active.md` / `done.md`.
 - Commit to `main` without going through a PR.

@@ -5,7 +5,6 @@ import { Quiz } from '../../domain/quiz/quiz';
 import {
   QuizGenerationAlreadyRunningError,
   QuizGenerationNotConfiguredError,
-  QuizModelNotFoundError,
 } from '../../domain/quiz/quiz.errors';
 import { QuizGenerationLockService } from '../quiz-generation-lock.service';
 import { GenerateQuizCommand } from './generate-quiz.command';
@@ -17,8 +16,8 @@ import type {
   TranscriptRepository,
 } from '../../../../common/catalog-tokens';
 import type { AppConfig, QuizGenerationConfig } from '../../../../common/config/app-config';
-import type { LlamaAdapter } from '../../domain/quiz/llama.port';
 import type { QuizRepository } from '../../domain/quiz/quiz.repository';
+import type { TextModelAdapter } from '../../domain/quiz/text-model.port';
 
 const LESSON = { id: 'lesson-1', courseId: 'course-1' };
 
@@ -61,7 +60,7 @@ function makeQuizRepo(): QuizRepository & { saved: Quiz[] } {
   };
 }
 
-function makeLlama(overrides: Partial<LlamaAdapter> = {}): LlamaAdapter {
+function makeLlama(overrides: Partial<TextModelAdapter> = {}): TextModelAdapter {
   return {
     cleanCues: vi.fn().mockResolvedValue(['hello world']),
     generateQuestions: vi
@@ -104,7 +103,7 @@ interface Harness {
   lessonRepo: LessonRepository;
   courseRepo: CourseRepository;
   transcripts: TranscriptRepository;
-  llama: LlamaAdapter;
+  llama: TextModelAdapter;
   eventBus: EventBus;
 }
 
@@ -113,7 +112,7 @@ function makeHandler(
     lessonRepo?: LessonRepository;
     courseRepo?: CourseRepository;
     transcripts?: TranscriptRepository;
-    llama?: LlamaAdapter;
+    llama?: TextModelAdapter;
     appConfig?: AppConfig;
     lock?: QuizGenerationLockService;
   } = {},
@@ -216,12 +215,19 @@ describe('GenerateQuizHandler', () => {
     ).rejects.toBeInstanceOf(QuizGenerationNotConfiguredError);
   });
 
-  it('throws QuizModelNotFoundError for a named model that does not exist on disk (mode=real)', async () => {
-    const { handler } = makeHandler({ appConfig: makeAppConfig({ mode: 'real' }) });
+  it('passes the resolved model straight through to the adapter, unresolved to a path', async () => {
+    const llama = makeLlama();
+    const { handler } = makeHandler({ llama });
 
-    await expect(
-      handler.execute(new GenerateQuizCommand('lesson-1', undefined, 'does-not-exist.gguf', true)),
-    ).rejects.toBeInstanceOf(QuizModelNotFoundError);
+    await handler.execute(new GenerateQuizCommand('lesson-1', undefined, undefined, true));
+    await drainWalk();
+
+    expect(llama.cleanCues).toHaveBeenCalledWith(
+      expect.objectContaining({ model: 'Qwen3.5-4B-Q4_K_M.gguf' }),
+    );
+    expect(llama.generateQuestions).toHaveBeenCalledWith(
+      expect.objectContaining({ model: 'Qwen3.5-4B-Q4_K_M.gguf' }),
+    );
   });
 
   it('refuses a second course-scoped run while the first is still in flight, then allows one after it finishes', async () => {

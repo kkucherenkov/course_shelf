@@ -1,9 +1,11 @@
 /**
  * WHY this file exists:
- * Deterministic, network-free LlamaAdapter used when LLAMA_MODE=mock (CI).
- * No model file is ever read; no process is ever spawned — mirrors
+ * Deterministic, network-free TextModelAdapter used when LLAMA_MODE=mock
+ * (CI). No model file is ever read; no process is ever spawned — mirrors
  * MockWhisperAdapter's reasoning exactly (E29-F02-S01 clarification #5: no
- * workflow downloads a .gguf, no test calls a live model).
+ * workflow downloads a .gguf, no test calls a live model). `model` is
+ * ignored exactly like everything else here — this adapter never resolves
+ * it to anything.
  *
  * `cleanCues` echoes the input back unchanged — the interesting cleanup
  * behaviour (falling back to the original on a count mismatch) is domain
@@ -13,11 +15,11 @@
 import { Injectable } from '@nestjs/common';
 
 import type {
+  CleanCuesRequest,
   GeneratedQuizQuestion,
-  LlamaAdapter,
-  LlamaCleanCuesRequest,
-  LlamaGenerateQuestionsRequest,
-} from '../domain/quiz/llama.port';
+  GenerateQuestionsRequest,
+  TextModelAdapter,
+} from '../domain/quiz/text-model.port';
 
 const MOCK_QUESTION: GeneratedQuizQuestion = {
   prompt: 'Mock question about this excerpt?',
@@ -26,12 +28,12 @@ const MOCK_QUESTION: GeneratedQuizQuestion = {
 };
 
 @Injectable()
-export class MockLlamaAdapter implements LlamaAdapter {
-  cleanCues(req: LlamaCleanCuesRequest): Promise<readonly string[]> {
+export class MockLlamaAdapter implements TextModelAdapter {
+  cleanCues(req: CleanCuesRequest): Promise<readonly string[]> {
     return Promise.resolve(req.cueTexts);
   }
 
-  generateQuestions(req: LlamaGenerateQuestionsRequest): Promise<readonly GeneratedQuizQuestion[]> {
+  generateQuestions(req: GenerateQuestionsRequest): Promise<readonly GeneratedQuizQuestion[]> {
     return Promise.resolve(Array.from({ length: req.questionCount }, () => MOCK_QUESTION));
   }
 }

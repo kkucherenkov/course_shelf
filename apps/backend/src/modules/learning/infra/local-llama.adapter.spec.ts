@@ -4,13 +4,15 @@
  * llama-completion is never executed — child_process.execFile is mocked,
  * exactly as in local-whisper.adapter.spec.ts; node:fs/promises is mocked too
  * so the prompt file's actual content is inspectable without touching disk.
- * There is deliberately no integration counterpart: a real run needs a
+ * node:fs's existsSync is mocked separately so the model-resolution check can
+ * be flipped per test without a real weights directory. There is
+ * deliberately no integration counterpart: a real run needs a
  * multi-gigabyte gguf model (E29-F02-S01 clarification #5 — no test calls a
  * live model).
  *
  * Scenarios covered:
- *   1. Exact argv: model, prompt FILE (not inline -p), threads, context,
- *      temp/seed, json-schema, --no-warmup.
+ *   1. Exact argv: model resolved to its absolute path, prompt FILE (not
+ *      inline -p), threads, context, temp/seed, json-schema, --no-warmup.
  *   2. The written prompt file primes an already-closed <think> block — the
  *      fix for Qwen3.5 burning its whole token budget on reasoning.
  *   3. Parsing skips past the echoed prompt (llama-completion's stdout
@@ -19,13 +21,17 @@
  *   5. generateQuestions: parses a well-formed { questions: [...] } reply.
  *   6. generateQuestions: throws QuizGenerationFailedError on unparsable output.
  *   7. Non-zero exit / timeout → QuizGenerationFailedError.
+ *   8. A model missing from the weights directory → QuizModelNotFoundError.
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 // Hoisted by Vitest above every import, so the mocks are installed before the
-// adapter module binds node:child_process / node:fs/promises.
+// adapter module binds node:child_process / node:fs / node:fs/promises.
 vi.mock('node:child_process', () => ({
   execFile: vi.fn(),
+}));
+vi.mock('node:fs', () => ({
+  existsSync: vi.fn().mockReturnValue(true),
 }));
 vi.mock('node:fs/promises', () => ({
   mkdtemp: vi.fn().mockResolvedValue('/tmp/cs-llama-XXXXXX'),
@@ -35,9 +41,10 @@ vi.mock('node:fs/promises', () => ({
 
 // Imported AFTER the mock declarations so the bindings resolve to the mocks.
 import { execFile } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 
-import { QuizGenerationFailedError } from '../domain/quiz/quiz.errors';
+import { QuizGenerationFailedError, QuizModelNotFoundError } from '../domain/quiz/quiz.errors';
 import { LocalLlamaAdapter } from './local-llama.adapter';
 
 import type { AppConfig, QuizGenerationConfig } from '../../../common/config/app-config';
@@ -80,13 +87,14 @@ function makeAppConfig(overrides: Partial<QuizGenerationConfig> = {}): AppConfig
     mode: 'real',
     ...overrides,
   };
-  return { quizGeneration } as unknown as AppConfig;
+  return { quizGeneration, modelWeightsDir: '/models' } as unknown as AppConfig;
 }
 
 describe('LocalLlamaAdapter', () => {
   beforeEach(() => {
     vi.mocked(execFile).mockReset();
     vi.mocked(writeFile).mockReset().mockResolvedValue(undefined);
+    vi.mocked(existsSync).mockReset().mockReturnValue(true);
   });
 
   it('invokes llama-completion with model, PROMPT FILE, threads, context, temp/seed, no-warmup and a json-schema', async () => {
@@ -94,7 +102,7 @@ describe('LocalLlamaAdapter', () => {
     const adapter = new LocalLlamaAdapter(makeAppConfig());
 
     await adapter.cleanCues({
-      modelAbsolutePath: '/models/Qwen3.5-4B-Q4_K_M.gguf',
+      model: 'Qwen3.5-4B-Q4_K_M.gguf',
       cueTexts: ['helo wrold', 'this si a tset'],
     });
 
@@ -119,7 +127,7 @@ describe('LocalLlamaAdapter', () => {
     mockResolveWithCompletion('["ok"]');
     const adapter = new LocalLlamaAdapter(makeAppConfig());
 
-    await adapter.cleanCues({ modelAbsolutePath: '/models/x.gguf', cueTexts: ['a'] });
+    await adapter.cleanCues({ model: 'x.gguf', cueTexts: ['a'] });
 
     const written = vi.mocked(writeFile).mock.calls[0]?.[1] as string;
     expect(written).toContain('<|im_start|>assistant\n<think>\n\n</think>\n\n');
@@ -130,7 +138,7 @@ describe('LocalLlamaAdapter', () => {
     const adapter = new LocalLlamaAdapter(makeAppConfig());
 
     const result = await adapter.cleanCues({
-      modelAbsolutePath: '/models/x.gguf',
+      model: 'x.gguf',
       cueTexts: ['a', 'b'],
     });
 
@@ -142,7 +150,7 @@ describe('LocalLlamaAdapter', () => {
     const adapter = new LocalLlamaAdapter(makeAppConfig());
 
     const result = await adapter.cleanCues({
-      modelAbsolutePath: '/models/x.gguf',
+      model: 'x.gguf',
       cueTexts: ['a'],
     });
 
@@ -158,7 +166,7 @@ describe('LocalLlamaAdapter', () => {
     const adapter = new LocalLlamaAdapter(makeAppConfig());
 
     const result = await adapter.generateQuestions({
-      modelAbsolutePath: '/models/x.gguf',
+      model: 'x.gguf',
       windowText: 'some transcript window',
       questionCount: 1,
     });
@@ -174,7 +182,7 @@ describe('LocalLlamaAdapter', () => {
 
     await expect(
       adapter.generateQuestions({
-        modelAbsolutePath: '/models/x.gguf',
+        model: 'x.gguf',
         windowText: 'w',
         questionCount: 1,
       }),
@@ -187,7 +195,7 @@ describe('LocalLlamaAdapter', () => {
 
     await expect(
       adapter.generateQuestions({
-        modelAbsolutePath: '/models/x.gguf',
+        model: 'x.gguf',
         windowText: 'w',
         questionCount: 1,
       }),
@@ -200,10 +208,24 @@ describe('LocalLlamaAdapter', () => {
 
     await expect(
       adapter.generateQuestions({
-        modelAbsolutePath: '/models/x.gguf',
+        model: 'x.gguf',
         windowText: 'w',
         questionCount: 1,
       }),
     ).rejects.toMatchObject({ code: 'quiz-generation-failed' });
+  });
+
+  it('raises QuizModelNotFoundError when the model is missing from the weights directory', async () => {
+    vi.mocked(existsSync).mockReturnValue(false);
+    const adapter = new LocalLlamaAdapter(makeAppConfig());
+
+    await expect(
+      adapter.generateQuestions({
+        model: 'does-not-exist.gguf',
+        windowText: 'w',
+        questionCount: 1,
+      }),
+    ).rejects.toBeInstanceOf(QuizModelNotFoundError);
+    expect(execFile).not.toHaveBeenCalled();
   });
 });

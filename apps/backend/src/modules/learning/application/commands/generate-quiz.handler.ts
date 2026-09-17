@@ -3,10 +3,13 @@
  * Orchestrates one quiz-generation walk, modelled on run-transcription.handler
  * down to the fire-and-forget shape:
  *   1. Resolve the model: named on the request, or AppConfig's configured
- *      default. Refuse before doing any work — unset entirely is 503
- *      (QuizGenerationNotConfiguredError); named but missing from disk is 404
- *      (QuizModelNotFoundError), checked live because the admin delete
- *      endpoint can remove a file between two requests.
+ *      default. Refuse before doing any work when nothing at all is
+ *      configured — 503 (QuizGenerationNotConfiguredError). The model string
+ *      itself is opaque here and travels unresolved to whichever adapter is
+ *      wired in; a named-but-missing model is that adapter's 404 to raise
+ *      (LocalLlamaAdapter's QuizModelNotFoundError, checked live because the
+ *      admin delete endpoint can remove a file between two requests), not
+ *      this handler's, since a hosted provider has no filesystem to check.
  *   2. Resolve the lesson list: one lesson, or every lesson in a course.
  *      Locking key is always the course — a lesson-scoped run still guards
  *      against a concurrent course-scoped one for the same course.
@@ -28,9 +31,6 @@
  * nothing to say so; upgrade path is a Transcription-shaped run row if that
  * ever proves painful in a real course-scoped run.
  */
-import { existsSync } from 'node:fs';
-import path from 'node:path';
-
 import { Inject } from '@nestjs/common';
 import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
 import { nanoid } from 'nanoid';
@@ -44,13 +44,12 @@ import {
 } from '../../../../common/catalog-tokens';
 import { AppConfig } from '../../../../common/config/app-config';
 import { applyCleanup } from '../../domain/quiz/quiz-cleanup';
-import { LLAMA_ADAPTER } from '../../domain/quiz/llama.port';
 import { Quiz } from '../../domain/quiz/quiz';
 import {
   QuizGenerationAlreadyRunningError,
   QuizGenerationNotConfiguredError,
-  QuizModelNotFoundError,
 } from '../../domain/quiz/quiz.errors';
+import { TEXT_MODEL_ADAPTER } from '../../domain/quiz/text-model.port';
 import { QuizProposed } from '../../domain/quiz/quiz.events';
 import { QUIZ_REPOSITORY } from '../../domain/quiz/quiz.repository';
 import { windowCues } from '../../domain/quiz/quiz-window';
@@ -63,9 +62,9 @@ import type {
   LessonRepository,
   TranscriptRepository,
 } from '../../../../common/catalog-tokens';
-import type { GeneratedQuizQuestion, LlamaAdapter } from '../../domain/quiz/llama.port';
 import type { QuizQuestion } from '../../domain/quiz/quiz';
 import type { QuizRepository } from '../../domain/quiz/quiz.repository';
+import type { GeneratedQuizQuestion, TextModelAdapter } from '../../domain/quiz/text-model.port';
 
 /** One question per window keeps a single window's worth of text honest about what it can ask. */
 const QUESTIONS_PER_WINDOW = 1;
@@ -85,14 +84,21 @@ export class GenerateQuizHandler implements ICommandHandler<
     @Inject(COURSE_REPOSITORY) private readonly courseRepo: CourseRepository,
     @Inject(TRANSCRIPT_REPOSITORY) private readonly transcripts: TranscriptRepository,
     @Inject(QUIZ_REPOSITORY) private readonly quizzes: QuizRepository,
-    @Inject(LLAMA_ADAPTER) private readonly llama: LlamaAdapter,
+    @Inject(TEXT_MODEL_ADAPTER) private readonly llama: TextModelAdapter,
     private readonly appConfig: AppConfig,
     private readonly lock: QuizGenerationLockService,
     private readonly eventBus: EventBus,
   ) {}
 
   async execute(command: GenerateQuizCommand): Promise<QuizGenerationAccepted> {
-    const modelAbsolutePath = this.resolveModel(command.modelFilename);
+    // Resolving the model to a path (or checking it exists) is not this
+    // handler's business anymore: `model` is opaque to it, and each adapter
+    // resolves it in the terms of its own environment (LocalLlamaAdapter's
+    // resolveModelPath, the hosted adapter's provider model id). Only the
+    // "nothing configured at all" refusal stays here — it applies before any
+    // adapter is even reached.
+    const model = command.modelFilename ?? this.appConfig.quizGeneration.defaultModelFilename;
+    if (model === '') throw new QuizGenerationNotConfiguredError();
 
     const { lessons, courseId } = command.lessonId
       ? await this.resolveLessonScope(command.lessonId)
@@ -102,11 +108,8 @@ export class GenerateQuizHandler implements ICommandHandler<
       throw new QuizGenerationAlreadyRunningError(courseId);
     }
 
-    const modelFilename = path.basename(modelAbsolutePath);
     Promise.resolve()
-      .then(() =>
-        this.walk(lessons, courseId, modelAbsolutePath, modelFilename, command.cleanupEnabled),
-      )
+      .then(() => this.walk(lessons, courseId, model, command.cleanupEnabled))
       .catch(() => {
         // walk() handles its own per-lesson errors. This catch is a
         // belt-and-suspenders guard for a truly unexpected throw.
@@ -116,20 +119,6 @@ export class GenerateQuizHandler implements ICommandHandler<
       });
 
     return { courseId, lessonsQueued: lessons.length };
-  }
-
-  private resolveModel(requested: string | undefined): string {
-    const cfg = this.appConfig.quizGeneration;
-    const filename = requested ?? cfg.defaultModelFilename;
-    if (filename === '') throw new QuizGenerationNotConfiguredError();
-
-    const absolutePath = path.join(this.appConfig.modelWeightsDir, filename);
-    if (cfg.mode === 'mock') return absolutePath;
-
-    if (!filename.endsWith('.gguf') || !existsSync(absolutePath)) {
-      throw new QuizModelNotFoundError(filename);
-    }
-    return absolutePath;
   }
 
   /** Unreachable via the two real call sites (each route always passes its own param) — defensive only. */
@@ -165,18 +154,11 @@ export class GenerateQuizHandler implements ICommandHandler<
   private async walk(
     lessons: readonly { id: string; courseId: string }[],
     courseId: string,
-    modelAbsolutePath: string,
-    modelFilename: string,
+    model: string,
     cleanupEnabled: boolean,
   ): Promise<void> {
     for (const lesson of lessons) {
-      const quiz = await this.generateForLesson(
-        lesson.id,
-        courseId,
-        modelAbsolutePath,
-        modelFilename,
-        cleanupEnabled,
-      );
+      const quiz = await this.generateForLesson(lesson.id, courseId, model, cleanupEnabled);
       if (quiz) {
         await this.quizzes.save(quiz);
         this.eventBus.publish(
@@ -196,8 +178,7 @@ export class GenerateQuizHandler implements ICommandHandler<
   private async generateForLesson(
     lessonId: string,
     courseId: string,
-    modelAbsolutePath: string,
-    modelFilename: string,
+    model: string,
     cleanupEnabled: boolean,
   ): Promise<Quiz | null> {
     const transcript = await this.transcripts.findCuesForLesson(lessonId);
@@ -208,11 +189,11 @@ export class GenerateQuizHandler implements ICommandHandler<
 
     for (const window of windows) {
       const windowCueList = cleanupEnabled
-        ? applyCleanup(window.cues, await this.tryCleanup(modelAbsolutePath, window.cues))
+        ? applyCleanup(window.cues, await this.tryCleanup(model, window.cues))
         : window.cues;
 
       const windowText = windowCueList.map((c) => c.text).join(' ');
-      const generated = await this.tryGenerate(modelAbsolutePath, windowText);
+      const generated = await this.tryGenerate(model, windowText);
       for (const q of generated) {
         questions.push({ ...q, cueStartMs: window.startMs });
       }
@@ -224,19 +205,19 @@ export class GenerateQuizHandler implements ICommandHandler<
       id: nanoid(),
       lessonId,
       courseId,
-      modelFilename,
+      modelFilename: model,
       questions,
     });
   }
 
   /** Cleanup is best-effort — any failure (throw or malformed reply) means "use the original text". */
   private async tryCleanup(
-    modelAbsolutePath: string,
+    model: string,
     cues: readonly { text: string }[],
   ): Promise<readonly string[] | undefined> {
     try {
       const cleaned = await this.llama.cleanCues({
-        modelAbsolutePath,
+        model,
         cueTexts: cues.map((c) => c.text),
       });
       return cleaned.length === 0 ? undefined : cleaned;
@@ -247,12 +228,12 @@ export class GenerateQuizHandler implements ICommandHandler<
 
   /** A window's generation failure costs its own questions, never the lesson. */
   private async tryGenerate(
-    modelAbsolutePath: string,
+    model: string,
     windowText: string,
   ): Promise<readonly GeneratedQuizQuestion[]> {
     try {
       return await this.llama.generateQuestions({
-        modelAbsolutePath,
+        model,
         windowText,
         questionCount: QUESTIONS_PER_WINDOW,
       });

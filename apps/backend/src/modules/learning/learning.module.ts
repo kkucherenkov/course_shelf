@@ -31,9 +31,9 @@
  *   - PrismaNoteRepository bound behind NOTE_REPOSITORY
  *   - PrismaFlashcardRepository bound behind FLASHCARD_REPOSITORY
  *   - PrismaQuizRepository bound behind QUIZ_REPOSITORY
- *   - LLAMA_ADAPTER factory: MockLlamaAdapter or LocalLlamaAdapter depending
- *     on AppConfig.quizGeneration.mode — same shape as CatalogModule's
- *     WHISPER_ADAPTER factory
+ *   - TEXT_MODEL_ADAPTER factory: MockLlamaAdapter or LocalLlamaAdapter
+ *     depending on AppConfig.quizGeneration.mode — same shape as
+ *     CatalogModule's WHISPER_ADAPTER factory
  *   - QuizGenerationLockService — in-memory per-course concurrency guard
  *   - CatalogRepositoriesModule — provides LESSON_REPOSITORY +
  *     COURSE_REPOSITORY + TRANSCRIPT_REPOSITORY
@@ -75,7 +75,7 @@ import { ListLessonFlashcardsHandler } from './application/queries/list-lesson-f
 import { ListQuizzesHandler } from './application/queries/list-quizzes.handler';
 import { BOOKMARK_REPOSITORY } from './domain/bookmark/bookmark.repository';
 import { FLASHCARD_REPOSITORY } from './domain/flashcard/flashcard.repository';
-import { LLAMA_ADAPTER } from './domain/quiz/llama.port';
+import { TEXT_MODEL_ADAPTER } from './domain/quiz/text-model.port';
 import { QUIZ_REPOSITORY } from './domain/quiz/quiz.repository';
 import { NOTE_REPOSITORY } from './domain/note/note.repository';
 import { LESSON_PROGRESS_REPOSITORY } from './domain/progress/lesson-progress.repository';
@@ -94,7 +94,7 @@ import { NotesController } from './notes.controller';
 import { ProgressController } from './progress.controller';
 import { QuizzesController } from './quizzes.controller';
 
-import type { LlamaAdapter } from './domain/quiz/llama.port';
+import type { TextModelAdapter } from './domain/quiz/text-model.port';
 
 @Module({
   imports: [CqrsModule, CommonAccessModule, CatalogRepositoriesModule],
@@ -137,8 +137,8 @@ import type { LlamaAdapter } from './domain/quiz/llama.port';
     { provide: FLASHCARD_REPOSITORY, useClass: PrismaFlashcardRepository },
     { provide: QUIZ_REPOSITORY, useClass: PrismaQuizRepository },
     {
-      provide: LLAMA_ADAPTER,
-      useFactory: (config: AppConfig): LlamaAdapter =>
+      provide: TEXT_MODEL_ADAPTER,
+      useFactory: (config: AppConfig): TextModelAdapter =>
         config.quizGeneration.mode === 'mock'
           ? new MockLlamaAdapter()
           : new LocalLlamaAdapter(config),

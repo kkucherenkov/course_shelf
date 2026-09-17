@@ -254,7 +254,6 @@ async function assertDarkContrast(page: Page, context: TestContext): Promise<voi
 const config: TestRunnerConfig = {
   setup() {
     expect.extend({ toMatchImageSnapshot });
-    await assertFrameNotBlank(page, image, context);
 
     if (REGEN_MODE) {
       mkdirSync(SNAPSHOTS_DIR, { recursive: true });
@@ -272,6 +271,8 @@ const config: TestRunnerConfig = {
       animations: 'disabled',
       caret: 'hide',
     });
+
+    await assertFrameNotBlank(page, image, context);
 
     if (REGEN_MODE) {
       // Capture-only: overwrite the baseline. jest-image-snapshot's CI

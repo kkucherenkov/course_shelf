@@ -69,7 +69,16 @@ vi.mock('~/stores/auth', () => ({
 vi.mock('@app/ui', () => ({
   AppNavigationShell: {
     name: 'AppNavigationShell',
-    props: ['activeRoute', 'nav', 'adminNav', 'user', 'colorMode', 'otherLocale'],
+    props: [
+      'activeRoute',
+      'nav',
+      'adminNav',
+      'user',
+      'colorMode',
+      'resolvedColorMode',
+      'locales',
+      'locale',
+    ],
     emits: [
       'nav',
       'update:colorMode',
@@ -148,13 +157,32 @@ describe('layouts/default.vue', () => {
     expect(w.find('.default-layout-bare').exists()).toBe(true);
   });
 
-  it('passes the other configured locale to the shell for the language toggle (#607)', async () => {
+  it('passes every configured locale, and which one is active, to the shell (#607)', async () => {
     routePath = '/';
     authUser = { displayName: 'Admin User', role: 'admin' };
     authToken = 'token-123';
     const w = await mountDefaultLayout();
     const shell = w.getComponent({ name: 'AppNavigationShell' });
-    expect(shell.props('otherLocale')).toEqual({ code: 'ru', name: 'Русский' });
+    // The whole list plus the current code, not "the other one": the shell
+    // renders a segmented control, and the button it replaced named the
+    // language a click switched to, which read as a status label.
+    expect(shell.props('locales')).toEqual([
+      { code: 'en', name: 'English' },
+      { code: 'ru', name: 'Русский' },
+    ]);
+    expect(shell.props('locale')).toBe('en');
+  });
+
+  it('hands the shell the resolved appearance, not the stored preference', async () => {
+    routePath = '/';
+    authUser = { displayName: 'Admin User', role: 'admin' };
+    authToken = 'token-123';
+    const w = await mountDefaultLayout();
+    const shell = w.getComponent({ name: 'AppNavigationShell' });
+    // `useColorMode().value` never reads back "system", which is exactly why
+    // the binary topbar toggle needs it: it has to flip away from what is on
+    // screen. `colorMode` keeps carrying the preference for Settings.
+    expect(shell.props('resolvedColorMode')).toMatch(/^(light|dark)$/);
   });
 
   it('the command palette is not mounted until first opened (#607, no stray app-dialog)', async () => {

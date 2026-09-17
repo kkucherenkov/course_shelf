@@ -902,6 +902,7 @@ export default {
       meterHint: '12+ chars w/ a symbol = strong',
     },
     nav: {
+      language: 'Language',
       primary: 'Primary navigation',
       sidebar: 'Sidebar',
       rightRail: 'Secondary content',

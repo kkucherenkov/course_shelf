@@ -905,6 +905,7 @@ export default {
       meterHint: '12+ символов и спецсимвол — надёжно',
     },
     nav: {
+      language: 'Язык',
       primary: 'Основная навигация',
       sidebar: 'Боковая панель',
       rightRail: 'Дополнительный контент',

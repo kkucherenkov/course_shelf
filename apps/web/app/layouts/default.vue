@@ -168,20 +168,22 @@
     colorMode.preference = mode;
   }
 
-  // The topbar toggle's icon always shows the state a click switches *to*
-  // (see AppNavigationShell's own comment on this) — which means the state
-  // it's currently IN was never announced anywhere (#597). Composing the
-  // static action label with the current state's existing translated word
-  // reuses `ui.nav.theme*` as-is; no new copy.
-  const themeToggleAriaLabel = computed<string>(() => {
-    const current =
-      shellColorMode.value === 'light'
-        ? t('ui.nav.themeLight')
-        : shellColorMode.value === 'system'
-          ? t('ui.nav.themeSystem')
-          : t('ui.nav.themeDark');
-    return `${t('ui.nav.themeToggle')}: ${current}`;
-  });
+  // The topbar toggle is binary now — Settings owns `system` — so the shell
+  // also needs the *resolved* appearance. `colorMode.value` never reads back
+  // "system", which is exactly what makes it the right source here: the click
+  // has to flip away from what is on screen, not from the stored preference.
+  const resolvedColorMode = computed<'light' | 'dark'>(() =>
+    colorMode.value === 'light' ? 'light' : 'dark',
+  );
+
+  // The icon names the state you are in; the accessible name carries the
+  // action, so a screen reader still hears what the click does. Reuses the
+  // existing `ui.nav.theme*` keys, no new copy.
+  const themeToggleAriaLabel = computed<string>(() =>
+    resolvedColorMode.value === 'dark'
+      ? `${t('ui.nav.themeToggle')}: ${t('ui.nav.themeLight')}`
+      : `${t('ui.nav.themeToggle')}: ${t('ui.nav.themeDark')}`,
+  );
 
   // ── Locale switch (#607) ──────────────────────────────────────────────────
   // No prefix-based locale routing (`strategy: 'no_prefix'`), so switching
@@ -189,15 +191,22 @@
   // cookie `detectBrowserLanguage` reads. A locale's own name is never
   // translated (English is called "English" no matter what UI language is
   // active), which is why this needs no `t()` key.
-  const otherLocale = computed<{ code: string; name: string } | undefined>(() => {
-    const other = locales.value.find((l) => l.code !== locale.value);
-    return other?.name ? { code: other.code, name: other.name } : undefined;
-  });
+  const shellLocales = computed<{ code: string; name: string }[]>(() =>
+    locales.value.flatMap((l) => (l.name ? [{ code: l.code, name: l.name }] : [])),
+  );
+
+  // Through a computed rather than binding `locale` straight into the template.
+  // `useI18n()` hands back a ref, and while the template would unwrap a real
+  // one, reading `.value` here is what makes the prop a plain string on every
+  // path — the layout spec's stubbed `useI18n` returns a hand-rolled
+  // `{ value: 'en' }` that Vue has no reason to unwrap, and the shell would
+  // have received the object.
+  const shellLocale = computed<string>(() => locale.value);
 
   function onLocaleChange(code: string): void {
     // The shell's `update:locale` contract is a bare `string` (the UI
     // package has no notion of this app's configured locales); `code` here
-    // always came from `locales.value` a moment earlier in `otherLocale`,
+    // always came from `locales.value` a moment earlier in `shellLocales`,
     // so it's safe to hand back to `setLocale`'s narrower, generated union.
     void setLocale(code as Parameters<typeof setLocale>[0]);
   }
@@ -351,7 +360,10 @@
     :theme-dark-label="t('ui.nav.themeDark')"
     :theme-system-label="t('ui.nav.themeSystem')"
     :theme-toggle-label="themeToggleAriaLabel"
-    :other-locale="otherLocale"
+    :locales="shellLocales"
+    :locale="shellLocale"
+    :locale-switch-label="t('ui.nav.language')"
+    :resolved-color-mode="resolvedColorMode"
     @nav="onNav"
     @update:color-mode="onColorMode"
     @update:locale="onLocaleChange"

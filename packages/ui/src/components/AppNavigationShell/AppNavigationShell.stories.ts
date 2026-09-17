@@ -66,11 +66,16 @@ export const Default: Story = {
   parameters: {
     viewport: { defaultViewport: 'desktop' },
   },
-  // Only this story demonstrates the language toggle (#607) — adding it to
-  // the shared meta `args` would touch every story's committed visual
-  // snapshot instead of just this one's.
+  // Only this story demonstrates the language switch (#607) — adding it to the
+  // shared meta `args` would touch every story's committed visual snapshot
+  // instead of just this one's. Two locales is the minimum the control renders
+  // at: below that there is nothing to switch between and it hides itself.
   args: {
-    otherLocale: { code: 'ru', name: 'Русский' },
+    locales: [
+      { code: 'en', name: 'English' },
+      { code: 'ru', name: 'Русский' },
+    ],
+    locale: 'en',
   },
   render: (args) => ({
     components: { AppNavigationShell },

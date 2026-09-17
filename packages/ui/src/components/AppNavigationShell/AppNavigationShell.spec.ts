@@ -218,26 +218,47 @@ describe('AppNavigationShell', () => {
   });
 
   // ── Theme toggle ─────────────────────────────────────────────────────────
-  // A binary toggle can only write an explicit light/dark preference — one
-  // click from "System" and it's gone, with no control anywhere that can
-  // set it again. The toggle now cycles light → dark → system → light.
+  // Binary, and keyed on the RESOLVED appearance rather than the stored
+  // preference. The old three-step cycle existed because, as the comment here
+  // used to say, "one click from System and it's gone, with no control anywhere
+  // that can set it again" — that premise is no longer true: the Settings page
+  // renders all three modes in an AppSegmented, so the topbar is free to be
+  // the quick flip and nothing else.
+  //
+  // Reading `resolvedColorMode` is what makes the `system` case work: a toggle
+  // keyed on `colorMode` would see "system", have no opposite to pick, and
+  // either guess or no-op while the viewer stares at an unchanged screen.
 
-  it('emits update:colorMode advancing "dark" to "system"', async () => {
-    const w = factory({ props: { colorMode: 'dark' } });
-    await w.find('.app-navigation-shell__theme-toggle').trigger('click');
-    expect(w.emitted('update:colorMode')).toEqual([['system']]);
-  });
-
-  it('emits update:colorMode advancing "system" to "light"', async () => {
-    const w = factory({ props: { colorMode: 'system' } });
+  it('flips to light when the viewer is looking at dark', async () => {
+    const w = factory({ props: { colorMode: 'dark', resolvedColorMode: 'dark' } });
     await w.find('.app-navigation-shell__theme-toggle').trigger('click');
     expect(w.emitted('update:colorMode')).toEqual([['light']]);
   });
 
-  it('emits update:colorMode advancing "light" to "dark"', async () => {
-    const w = factory({ props: { colorMode: 'light' } });
+  it('flips to dark when the viewer is looking at light', async () => {
+    const w = factory({ props: { colorMode: 'light', resolvedColorMode: 'light' } });
     await w.find('.app-navigation-shell__theme-toggle').trigger('click');
     expect(w.emitted('update:colorMode')).toEqual([['dark']]);
+  });
+
+  it('flips away from what is on screen when the stored preference is "system"', async () => {
+    const dark = factory({ props: { colorMode: 'system', resolvedColorMode: 'dark' } });
+    await dark.find('.app-navigation-shell__theme-toggle').trigger('click');
+    expect(dark.emitted('update:colorMode')).toEqual([['light']]);
+
+    const light = factory({ props: { colorMode: 'system', resolvedColorMode: 'light' } });
+    await light.find('.app-navigation-shell__theme-toggle').trigger('click');
+    expect(light.emitted('update:colorMode')).toEqual([['dark']]);
+  });
+
+  it('never emits "system" — the topbar cannot set it, only Settings can', async () => {
+    for (const mode of ['light', 'dark', 'system'] as const) {
+      for (const resolved of ['light', 'dark'] as const) {
+        const w = factory({ props: { colorMode: mode, resolvedColorMode: resolved } });
+        await w.find('.app-navigation-shell__theme-toggle').trigger('click');
+        expect(w.emitted('update:colorMode')?.flat()).not.toContain('system');
+      }
+    }
   });
 
   it('theme toggle aria-label is static — it does not depend on colorMode', () => {
@@ -255,21 +276,48 @@ describe('AppNavigationShell', () => {
     );
   });
 
-  // ── Language toggle (#607) ──────────────────────────────────────────────────
+  // ── Language switch (#607) ─────────────────────────────────────────────────
+  // A segmented control, not a relabelled button. The button it replaced
+  // rendered the language a click switched *to*, so a Russian UI displayed the
+  // word "Russian" only because English was next in the list — it read as a
+  // status label while actually being a target.
 
-  it('does not render the language toggle when otherLocale is absent (default)', () => {
+  const TWO_LOCALES = [
+    { code: 'en', name: 'English' },
+    { code: 'ru', name: 'Русский' },
+  ];
+
+  it('does not render the language switch without locales (default)', () => {
     const w = factory();
-    expect(w.find('.app-navigation-shell__locale-toggle').exists()).toBe(false);
+    expect(w.find('.app-navigation-shell__locale-switch').exists()).toBe(false);
   });
 
-  it('renders the target locale’s own name as the toggle text', () => {
-    const w = factory({ props: { otherLocale: { code: 'ru', name: 'Русский' } } });
-    expect(w.find('.app-navigation-shell__locale-toggle').text()).toBe('Русский');
+  it('does not render the language switch for a single locale', () => {
+    const w = factory({ props: { locales: [{ code: 'en', name: 'English' }], locale: 'en' } });
+    expect(w.find('.app-navigation-shell__locale-switch').exists()).toBe(false);
   });
 
-  it('emits update:locale with otherLocale.code on click', async () => {
-    const w = factory({ props: { otherLocale: { code: 'ru', name: 'Русский' } } });
-    await w.find('.app-navigation-shell__locale-toggle').trigger('click');
+  it('shows every locale by its own name, current one included', () => {
+    const w = factory({ props: { locales: TWO_LOCALES, locale: 'ru' } });
+    const text = w.find('.app-navigation-shell__locale-switch').text();
+    expect(text).toContain('English');
+    expect(text).toContain('Русский');
+  });
+
+  it('marks the active locale rather than leaving it to be inferred', () => {
+    const w = factory({ props: { locales: TWO_LOCALES, locale: 'ru' } });
+    const checked = w
+      .findAll('.app-navigation-shell__locale-switch [role="radio"]')
+      .filter((el) => el.attributes('aria-checked') === 'true');
+    expect(checked).toHaveLength(1);
+    expect(checked[0]?.text()).toBe('Русский');
+  });
+
+  it('emits the code of the locale that was picked', async () => {
+    const w = factory({ props: { locales: TWO_LOCALES, locale: 'en' } });
+    const options = w.findAll('.app-navigation-shell__locale-switch [role="radio"]');
+    const russian = options.find((el) => el.text() === 'Русский');
+    await russian?.trigger('click');
     expect(w.emitted('update:locale')).toEqual([['ru']]);
   });
 
@@ -359,26 +407,18 @@ describe('AppNavigationShell', () => {
     expect(w.find('.app-navigation-shell__menu').exists()).toBe(false);
   });
 
-  it('theme menu item shows the state a click switches to, and emits it (dark→system)', async () => {
-    const w = factory({ props: { colorMode: 'dark' } });
+  it('offers no theme item — Settings owns the full choice, the topbar the flip', async () => {
+    const w = factory({ props: { colorMode: 'dark', resolvedColorMode: 'dark' } });
     await w.find('.app-navigation-shell__avatar-trigger').trigger('click');
     const items = w.findAll('[role="menuitem"]');
-    const themeItem = items.find((el) => el.text().includes('System'));
-    expect(themeItem).toBeDefined();
-    await themeItem?.trigger('click');
-    expect(w.emitted('update:colorMode')).toEqual([['system']]);
-    expect(w.find('.app-navigation-shell__menu').exists()).toBe(false);
-  });
-
-  it('theme menu item shows the state a click switches to, and emits it (light→dark)', async () => {
-    const w = factory({ props: { colorMode: 'light' } });
-    await w.find('.app-navigation-shell__avatar-trigger').trigger('click');
-    const items = w.findAll('[role="menuitem"]');
-    const themeItem = items.find((el) => el.text().includes('Dark'));
-    expect(themeItem).toBeDefined();
-    await themeItem?.trigger('click');
-    expect(w.emitted('update:colorMode')).toEqual([['dark']]);
-    expect(w.find('.app-navigation-shell__menu').exists()).toBe(false);
+    expect(items.map((el) => el.text())).toEqual(['Profile', 'Settings', 'Sign out']);
+    // A third entry point that also cycled three ways was the defect, not a
+    // convenience: it carried the same show-the-next-state wording as the two
+    // controls this change fixed.
+    for (const el of items) {
+      await el.trigger('click');
+    }
+    expect(w.emitted('update:colorMode')).toBeUndefined();
   });
 
   // ── Menu keyboard navigation ───────────────────────────────────────────────
@@ -527,7 +567,7 @@ describe('AppNavigationShell', () => {
     const w = factory();
     await w.find('.app-navigation-shell__avatar-trigger').trigger('click');
     const items = w.findAll('[role="menuitem"]');
-    expect(items.length).toBeGreaterThanOrEqual(4); // Profile, Settings, Theme, Sign out
+    expect(items.length).toBeGreaterThanOrEqual(3); // Profile, Settings, Sign out
   });
 
   // ── z-index layering (#160) ─────────────────────────────────────────────────

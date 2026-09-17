@@ -248,11 +248,15 @@
     clamp01((props.buffered ?? props.position) / nonZero(props.duration)),
   );
 
-  const speedLabel = computed(() => `${props.speed.toFixed(1)}×`);
+  // One formatter for the trigger and the menu rows. `toFixed(1)` used to
+  // render the trigger and lied on three of the seven presets — 0.75 showed as
+  // "0.8×", 1.25 as "1.3×", 1.75 as "1.8×" — so the button named a rate that
+  // does not appear in the menu it opens. Nothing asserted that text, which is
+  // why it survived.
+  const speedLabel = computed(() => formatSpeed(props.speed));
 
-  // `speedLabel` renders the trigger with toFixed(1), which turns 0.75 into
-  // "0.8×". Fine for a single glance at the current rate, wrong for a list the
-  // user picks from, so the menu formats its own rows exactly.
+  // Shared by the trigger above and the menu rows below. Declared as a
+  // function, not a const, so the hoisting keeps `speedLabel` above it valid.
   function formatSpeed(rate: number): string {
     return `${String(rate)}×`;
   }

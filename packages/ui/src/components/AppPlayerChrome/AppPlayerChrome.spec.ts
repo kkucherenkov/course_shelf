@@ -658,6 +658,23 @@ describe('AppPlayerChrome', () => {
   });
 
   describe('playback speed menu', () => {
+    it('names the rate it is on, without rounding it into one the menu does not offer', () => {
+      // toFixed(1) used to render this label and turned 0.75 into "0.8×",
+      // 1.25 into "1.3×" and 1.75 into "1.8×" — rates absent from the menu the
+      // button opens. Nothing asserted the text, which is how it survived.
+      for (const [rate, expected] of [
+        [0.5, '0.5×'],
+        [0.75, '0.75×'],
+        [1, '1×'],
+        [1.25, '1.25×'],
+        [1.75, '1.75×'],
+        [2, '2×'],
+      ] as const) {
+        const wrapper = makeWrapper({ speed: rate });
+        expect(wrapper.find('.app-player-chrome__btn--speed').text()).toBe(expected);
+      }
+    });
+
     it('is closed until the speed button is pressed', () => {
       const wrapper = makeWrapper();
       expect(wrapper.find('.app-player-chrome__speed-menu').exists()).toBe(false);

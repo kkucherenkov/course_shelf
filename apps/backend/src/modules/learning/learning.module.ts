@@ -31,9 +31,12 @@
  *   - PrismaNoteRepository bound behind NOTE_REPOSITORY
  *   - PrismaFlashcardRepository bound behind FLASHCARD_REPOSITORY
  *   - PrismaQuizRepository bound behind QUIZ_REPOSITORY
- *   - TEXT_MODEL_ADAPTER factory: MockLlamaAdapter or LocalLlamaAdapter
- *     depending on AppConfig.quizGeneration.mode — same shape as
- *     CatalogModule's WHISPER_ADAPTER factory
+ *   - TEXT_MODEL_ADAPTER factory (`textModelAdapterFactory`, exported so it
+ *     is unit-testable without booting Nest): MockLlamaAdapter when
+ *     AppConfig.quizGeneration.mode is 'mock', OpenRouterAdapter when
+ *     AppConfig.quizGeneration.provider is 'openrouter' (ADR-0012), else
+ *     LocalLlamaAdapter — same shape as CatalogModule's WHISPER_ADAPTER
+ *     factory
  *   - QuizGenerationLockService — in-memory per-course concurrency guard
  *   - CatalogRepositoriesModule — provides LESSON_REPOSITORY +
  *     COURSE_REPOSITORY + TRANSCRIPT_REPOSITORY
@@ -81,6 +84,7 @@ import { NOTE_REPOSITORY } from './domain/note/note.repository';
 import { LESSON_PROGRESS_REPOSITORY } from './domain/progress/lesson-progress.repository';
 import { LocalLlamaAdapter } from './infra/local-llama.adapter';
 import { MockLlamaAdapter } from './infra/mock-llama.adapter';
+import { OpenRouterAdapter } from './infra/openrouter.adapter';
 import { PrismaBookmarkRepository } from './infra/prisma-bookmark.repository';
 import { PrismaFlashcardRepository } from './infra/prisma-flashcard.repository';
 import { PrismaNoteRepository } from './infra/prisma-note.repository';
@@ -95,6 +99,17 @@ import { ProgressController } from './progress.controller';
 import { QuizzesController } from './quizzes.controller';
 
 import type { TextModelAdapter } from './domain/quiz/text-model.port';
+
+/**
+ * Mock mode is checked first on purpose: LLAMA_MODE=mock is CI's guarantee
+ * that no test reaches a network or a multi-gigabyte weight file, and a
+ * stray OPENROUTER_API_KEY in an environment must not quietly undo it.
+ */
+export function textModelAdapterFactory(config: AppConfig): TextModelAdapter {
+  if (config.quizGeneration.mode === 'mock') return new MockLlamaAdapter();
+  if (config.quizGeneration.provider === 'openrouter') return new OpenRouterAdapter(config);
+  return new LocalLlamaAdapter(config);
+}
 
 @Module({
   imports: [CqrsModule, CommonAccessModule, CatalogRepositoriesModule],
@@ -138,10 +153,7 @@ import type { TextModelAdapter } from './domain/quiz/text-model.port';
     { provide: QUIZ_REPOSITORY, useClass: PrismaQuizRepository },
     {
       provide: TEXT_MODEL_ADAPTER,
-      useFactory: (config: AppConfig): TextModelAdapter =>
-        config.quizGeneration.mode === 'mock'
-          ? new MockLlamaAdapter()
-          : new LocalLlamaAdapter(config),
+      useFactory: textModelAdapterFactory,
       inject: [AppConfig],
     },
   ],

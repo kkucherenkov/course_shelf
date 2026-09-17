@@ -10,9 +10,9 @@
 - Codegen impact: yes
 - Sub-steps:
   - [x] design pre-step (settles E28-F01-S01's first sub-step)
-  - [ ] ADR-0012: hosted model provider, supersedes ADR-0011
+  - [x] ADR-0012: hosted model provider, supersedes ADR-0011
   - [ ] roadmap card for the summary feature under E29
-  - [ ] hosted model adapter + AppConfig
+  - [x] hosted model adapter + AppConfig
   - [ ] FfmpegAdapter: widen thumbnail dimensions, add scene extraction
   - [ ] LessonSummary aggregate, routes, admin review screen
   - [ ] renderer + ZIP export + web entry point (E28-F01-S01)

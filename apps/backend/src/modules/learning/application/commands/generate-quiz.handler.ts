@@ -104,9 +104,20 @@ export class GenerateQuizHandler implements ICommandHandler<
     // OPENROUTER_MODEL, so the unset one must never be consulted.
     const cfg = this.appConfig.quizGeneration;
     const hosted = cfg.provider === 'openrouter';
+    // `??` alone was wrong: it falls back only on null/undefined, so an
+    // explicitly blank `modelId` sailed past it and tripped the
+    // not-configured check below — the service answering 503 "I am not
+    // configured" to a request that merely carried rubbish. Schemathesis
+    // found it by generating `{"modelId": ""}`. The spec now rejects blank at
+    // the edge with a 400; treating blank as absent here keeps any other
+    // caller from reaching the same misleading error.
+    const requested = command.modelFilename?.trim();
     const model =
-      command.modelFilename ??
-      (hosted ? this.appConfig.hostedModel.defaultModel : cfg.defaultModelFilename);
+      requested !== undefined && requested !== ''
+        ? requested
+        : hosted
+          ? this.appConfig.hostedModel.defaultModel
+          : cfg.defaultModelFilename;
     if (model === '') {
       throw new QuizGenerationNotConfiguredError(
         hosted ? 'OPENROUTER_MODEL' : 'LLAMA_DEFAULT_MODEL',

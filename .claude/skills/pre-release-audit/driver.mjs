@@ -110,13 +110,18 @@ async function tokenFor(persona) {
     const probe = await fetch(`${BASE}/api/v1/courses`, {
       headers: { Authorization: `Bearer ${c.token}` },
     });
-    if (probe.ok) return c;
+    // 429 means "too many requests", not "bad token" — the general throttler
+    // (60/min) fires during a sweep and would otherwise send us to sign-in,
+    // which has its own, stricter limiter.
+    if (probe.ok || probe.status === 429) return c;
   } catch {
     /* no cache */
   }
   const res = await fetch(`${BASE}/api/v1/auth/sign-in/email`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    // Better Auth rejects a request whose Origin is absent-but-browser-shaped
+    // (undici sends Sec-Fetch-* without Origin) with MISSING_OR_NULL_ORIGIN.
+    headers: { 'Content-Type': 'application/json', Origin: BASE },
     body: JSON.stringify({ email, password: PASS }),
   });
   if (!res.ok)

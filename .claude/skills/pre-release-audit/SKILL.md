@@ -119,11 +119,25 @@ first sweep reported "56 pages, 0 violations" while every page was the sign-in
 redirect. Make the harness refuse to continue when authentication did not take,
 and check a screenshot before believing a clean result.
 
-**Sign-in is rate-limited twice.** Five attempts per 15 minutes per IP
-(`sign-in-rate-limit.middleware.ts`, hardcoded, in-process) plus a general 60
-requests per 60 seconds. A harness that signs in per run burns the allowance on
-plumbing. Mint once, cache to disk, reuse. `docker restart` on the backend
-clears the in-memory counter.
+**Sign-in is rate-limited twice.** Five attempts per 15 minutes plus a general
+60 requests per 60 seconds. A harness that signs in per run burns the allowance
+on plumbing. Mint once, cache to disk, reuse.
+
+`docker restart` on the backend does **not** reliably clear the counter — a
+restart mid-audit answered with a fresh `429` and 780 seconds remaining. Seed
+`.auth-<persona>.json` by hand from a sign-up response instead; the driver
+probes a cached token before using it and skips sign-in entirely.
+
+That probe must treat **429 as valid**, not as a bad token: the general
+throttler fires during a sweep, and a probe that reads 429 as "expired" sends
+the run into the stricter sign-in limiter. Fixed in `driver.mjs`, recorded here
+because the same trap will appear in any harness written against this API.
+
+**Node's fetch cannot sign in without an explicit `Origin`.** `undici` sends
+`Sec-Fetch-*` headers but no `Origin`, and Better Auth reads that combination as
+a browser request with a null origin — `403 MISSING_OR_NULL_ORIGIN`. curl, which
+sends neither, is let through. Any non-browser client that looks half-browser
+hits this.
 
 **Filling the sign-in form does not work.** Nuxt hydrates after `networkidle`
 and replaces the inputs, discarding the fill silently. Authenticate over the API
@@ -164,6 +178,12 @@ monitor event claiming four lanes had finished while two were 90 seconds old.
 `mv report.json` from the driver's directory silently moves nothing and the
 next sweep overwrites the previous run's report. Archive the whole output
 directory, or point `AUDIT_OUT` at a per-run one.
+
+**`sweep` and `states` need different `AUDIT_OUT` directories, not just
+different runs.** Both write `report.json`, so running `states` after `sweep`
+into the same directory destroys the sweep's findings — and the result looks
+like a clean product: `findings: 0`, which is the shape of success. This is the
+same "a zero is a failure" trap one level down.
 
 **A clip probe flags the visually-hidden heading pattern.** A `sr-only` `h1`
 (`position:absolute; width:1px; clip-path:inset(50%)`) is indistinguishable

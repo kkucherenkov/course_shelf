@@ -10,11 +10,11 @@
 - Spec diff: none
 - Codegen impact: no
 - Sub-steps:
-  - [ ] raise the page-spec timeout so a loaded runner stops reporting false reds (tuxedo 231)
+  - [x] raise the page-spec timeout so a loaded runner stops reporting false reds (tuxedo 231)
   - [x] add 15s skip buttons and a play target over the picture (tuxedo 222)
-  - [ ] show the subtitles and fullscreen toggles as pressed (tuxedo 223)
-  - [ ] replace the speed cycle with a menu (tuxedo 224)
-  - [ ] move the transcript below the video at full column width (tuxedo 216)
+  - [x] show the subtitles and fullscreen toggles as pressed (tuxedo 223)
+  - [x] replace the speed cycle with a menu (tuxedo 224)
+  - [x] move the transcript below the video at full column width (tuxedo 216)
 - Status: in-progress
 - Blockers: —
 

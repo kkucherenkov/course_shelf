@@ -59,6 +59,8 @@
       buffered?: number;
       /** Playback speed (e.g. 1.0, 1.5). */
       speed?: number;
+      /** Selectable playback rates. The trigger lists these in order. */
+      speeds?: number[];
       /** Mute state — a prop so the parent (real `<video>`) owns it. */
       muted?: boolean;
       /** Subtitles toggle state. */
@@ -104,6 +106,7 @@
       state: 'idle',
       buffered: undefined,
       speed: 1,
+      speeds: () => [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
       muted: false,
       subtitlesEnabled: false,
       subtitlesAvailable: true,
@@ -183,6 +186,7 @@
   const rootRef = ref<HTMLDivElement | null>(null);
   const scrubberRef = ref<HTMLDivElement | null>(null);
   const shortcutsOpen = ref(false);
+  const speedMenuOpen = ref(false);
 
   const isPlaying = computed(() => props.state === 'playing');
   const isInert = computed(() => props.state === 'locked' || props.state === 'error');
@@ -210,7 +214,7 @@
 
   function scheduleIdleHide(): void {
     clearIdleTimer();
-    if (!isPlaying.value) return;
+    if (!isPlaying.value || speedMenuOpen.value) return;
     idleTimer = setTimeout(() => {
       controlsHidden.value = true;
     }, IDLE_HIDE_MS);
@@ -238,6 +242,35 @@
   );
 
   const speedLabel = computed(() => `${props.speed.toFixed(1)}×`);
+
+  // `speedLabel` renders the trigger with toFixed(1), which turns 0.75 into
+  // "0.8×". Fine for a single glance at the current rate, wrong for a list the
+  // user picks from, so the menu formats its own rows exactly.
+  function formatSpeed(rate: number): string {
+    return `${String(rate)}×`;
+  }
+
+  function closeSpeedMenu(): void {
+    if (!speedMenuOpen.value) return;
+    speedMenuOpen.value = false;
+    scheduleIdleHide();
+  }
+
+  function toggleSpeedMenu(): void {
+    if (speedMenuOpen.value) {
+      closeSpeedMenu();
+      return;
+    }
+    speedMenuOpen.value = true;
+    // Opening must cancel the timer already ticking from the last pointer
+    // move, or the overlay idle-hides out from under the open menu.
+    clearIdleTimer();
+  }
+
+  function chooseSpeed(rate: number): void {
+    closeSpeedMenu();
+    emit('speed', rate);
+  }
 
   const currentTimeLabel = computed(() => fmtTime(props.position));
   const totalTimeLabel = computed(() => fmtTime(props.duration));
@@ -628,15 +661,41 @@
             {{ currentTimeLabel }} / {{ totalTimeLabel }}
           </span>
           <span class="app-player-chrome__spacer" />
-          <button
-            type="button"
-            class="app-player-chrome__btn app-player-chrome__btn--text"
-            :aria-label="aria.speed"
-            :disabled="isInert"
-            @click="emit('speed', props.speed)"
-          >
-            {{ speedLabel }}
-          </button>
+          <!-- Escape is handled on this wrapper, not on the menu: the menu is a
+               div with no tabindex, so it never holds focus. Focus sits on the
+               trigger button or a menu item, both inside this wrapper, and the
+               keydown bubbles here from either. -->
+          <div class="app-player-chrome__speed" @keydown.escape="closeSpeedMenu">
+            <button
+              type="button"
+              class="app-player-chrome__btn app-player-chrome__btn--text app-player-chrome__btn--speed"
+              :aria-label="aria.speed"
+              aria-haspopup="menu"
+              :aria-expanded="speedMenuOpen ? 'true' : 'false'"
+              :disabled="isInert"
+              @click="toggleSpeedMenu"
+            >
+              {{ speedLabel }}
+            </button>
+            <div
+              v-if="speedMenuOpen"
+              class="app-player-chrome__speed-menu"
+              role="menu"
+              :aria-label="aria.speed"
+            >
+              <button
+                v-for="rate in speeds"
+                :key="rate"
+                type="button"
+                role="menuitemradio"
+                class="app-player-chrome__speed-item"
+                :aria-checked="rate === speed ? 'true' : 'false'"
+                @click="chooseSpeed(rate)"
+              >
+                {{ formatSpeed(rate) }}
+              </button>
+            </div>
+          </div>
           <button
             type="button"
             class="app-player-chrome__btn app-player-chrome__btn--subtitles"
@@ -707,6 +766,10 @@
   // Stacking context within the chrome (exempt from raw-int ban — named vars).
   $z-overlay: 1;
   $z-state: 2;
+  // Local to &__speed's own stacking context (nested inside &__overlay, not a
+  // sibling of it), so this doesn't need to out-rank $z-overlay/$z-state —
+  // nothing else in that nested context sets a z-index for it to lose to.
+  $z-speed-menu: 1;
 
   // Player-chrome metrics that fall between design-token steps. Same literals
   // as before — these are named for intent, not rounded to the nearest token.
@@ -927,6 +990,49 @@
 
     &__spacer {
       flex: 1;
+    }
+
+    &__speed {
+      position: relative;
+      display: inline-flex;
+    }
+
+    &__speed-menu {
+      position: absolute;
+      bottom: calc(100% + var(--space-2));
+      right: 0;
+      z-index: $z-speed-menu;
+      display: flex;
+      flex-direction: column;
+      min-width: var(--space-8); // 64px — fits "1.75×" with the padding below
+      padding: var(--space-1);
+      border-radius: var(--radius-md);
+      background: var(--media-scrim-strong);
+      box-shadow: var(--shadow-md);
+    }
+
+    &__speed-item {
+      padding: var(--space-1) var(--space-3);
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--media-fg);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+
+      &:hover {
+        background: var(--media-fill-hover);
+      }
+
+      &[aria-checked='true'] {
+        color: var(--brand-accent);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--brand-accent);
+        outline-offset: -2px;
+      }
     }
 
     // ---- Scrubber ----

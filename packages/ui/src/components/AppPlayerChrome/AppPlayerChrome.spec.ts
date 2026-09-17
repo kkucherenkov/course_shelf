@@ -384,6 +384,16 @@ describe('AppPlayerChrome', () => {
       expect(wrapper.classes()).not.toContain('app-player-chrome--idle-hidden');
       vi.useRealTimers();
     });
+
+    it('keeps the overlay up while the speed menu is open', async () => {
+      vi.useFakeTimers();
+      const wrapper = makeWrapper({ state: 'playing' });
+      await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+      vi.advanceTimersByTime(10_000);
+      await nextTick();
+      expect(wrapper.classes()).not.toContain('app-player-chrome--idle-hidden');
+      vi.useRealTimers();
+    });
   });
 
   describe('keyboard map', () => {
@@ -627,6 +637,74 @@ describe('AppPlayerChrome', () => {
       expect(wrapper.find('.app-player-chrome__btn--fullscreen').classes()).toContain(
         'app-player-chrome__btn--active',
       );
+    });
+  });
+
+  describe('playback speed menu', () => {
+    it('is closed until the speed button is pressed', () => {
+      const wrapper = makeWrapper();
+      expect(wrapper.find('.app-player-chrome__speed-menu').exists()).toBe(false);
+      expect(wrapper.find('.app-player-chrome__btn--speed').attributes('aria-expanded')).toBe(
+        'false',
+      );
+    });
+
+    it('lists every preset speed when opened', async () => {
+      const wrapper = makeWrapper();
+      await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+      const items = wrapper.findAll('.app-player-chrome__speed-item');
+      expect(items).toHaveLength(7);
+      expect(items.map((i) => i.text())).toEqual([
+        '0.5×',
+        '0.75×',
+        '1×',
+        '1.25×',
+        '1.5×',
+        '1.75×',
+        '2×',
+      ]);
+    });
+
+    it('emits the chosen rate, not the current one', async () => {
+      const wrapper = makeWrapper({ speed: 1 });
+      await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+      await wrapper.findAll('.app-player-chrome__speed-item')[4]!.trigger('click');
+      expect(wrapper.emitted('speed')?.[0]).toEqual([1.5]);
+    });
+
+    it('closes after a choice', async () => {
+      const wrapper = makeWrapper();
+      await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+      await wrapper.findAll('.app-player-chrome__speed-item')[0]!.trigger('click');
+      expect(wrapper.find('.app-player-chrome__speed-menu').exists()).toBe(false);
+    });
+
+    it('marks the current speed as the selected option', async () => {
+      const wrapper = makeWrapper({ speed: 1.25 });
+      await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+      const selected = wrapper
+        .findAll('.app-player-chrome__speed-item')
+        .filter((i) => i.attributes('aria-checked') === 'true');
+      expect(selected).toHaveLength(1);
+      expect(selected[0]!.text()).toBe('1.25×');
+    });
+
+    it('closes on Escape pressed on the trigger, where focus actually is', async () => {
+      const wrapper = makeWrapper();
+      const trigger = wrapper.find('.app-player-chrome__btn--speed');
+      await trigger.trigger('click');
+      // Deliberately dispatched at the button, not the menu: the menu is a
+      // non-focusable div, so a test that presses Escape on it would pass
+      // while the real keyboard path stayed broken.
+      await trigger.trigger('keydown', { key: 'Escape' });
+      expect(wrapper.find('.app-player-chrome__speed-menu').exists()).toBe(false);
+      expect(wrapper.emitted('speed')).toBeUndefined();
+    });
+
+    it('honours a custom speeds list', async () => {
+      const wrapper = makeWrapper({ speeds: [1, 2] });
+      await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+      expect(wrapper.findAll('.app-player-chrome__speed-item')).toHaveLength(2);
     });
   });
 });

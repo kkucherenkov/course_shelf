@@ -85,6 +85,8 @@ export const Minimal: Story = { args: { ...base, mode: 'minimal' } };
 
 export const Muted: Story = { args: { ...base, state: 'playing', muted: true } };
 
+export const SpeedChanged: Story = { args: { ...base, state: 'playing', speed: 1.5 } };
+
 export const NoChaptersOrBookmarks: Story = {
   args: { ...base, chapters: [], bookmarks: [] },
 };

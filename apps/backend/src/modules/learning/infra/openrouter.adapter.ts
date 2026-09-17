@@ -8,7 +8,11 @@
  * has to be sliced apart first. `cleanCues` degrades to `[]` on a malformed
  * reply for the same reason LocalLlamaAdapter does — `applyCleanup` in
  * `quiz-cleanup.ts` already treats a length mismatch as "keep the original
- * text", so a discarded cleanup attempt is never a lost transcript.
+ * text", so a discarded cleanup attempt is never a lost transcript. Its
+ * request wraps the shared array schema in `{ cues: [...] }` before sending
+ * it — an object root, unlike `cleanupJsonSchema`'s own array root, which
+ * several OpenAI-compatible providers reject at the top level; see the
+ * comment at the call site.
  *
  * A non-2xx answer's body is read, truncated and logged alongside the
  * status before the error is thrown, so a bad key, an exhausted balance and
@@ -119,10 +123,20 @@ export class OpenRouterAdapter implements TextModelAdapter {
       system: CLEANUP_SYSTEM_PROMPT,
       user: JSON.stringify(req.cueTexts),
       schemaName: 'cleaned_cues',
-      schema: cleanupJsonSchema(req.cueTexts.length),
+      // cleanupJsonSchema's own root is an array — fine for LocalLlamaAdapter's
+      // llama.cpp grammar path, but OpenAI-compatible structured-output modes
+      // generally require an object at the root, so only THIS transport wraps
+      // it. Not a change to cleanupJsonSchema itself: that schema, and the
+      // local adapter's grammar path built from it, stay exactly as they are.
+      schema: {
+        type: 'object',
+        properties: { cues: cleanupJsonSchema(req.cueTexts.length) },
+        required: ['cues'],
+      },
       maxTokens: CLEANUP_MAX_TOKENS,
     });
-    return Array.isArray(parsed) ? parsed.filter((t): t is string => typeof t === 'string') : [];
+    const cues = (parsed as { cues?: unknown }).cues;
+    return Array.isArray(cues) ? cues.filter((t): t is string => typeof t === 'string') : [];
   }
 
   async generateQuestions(

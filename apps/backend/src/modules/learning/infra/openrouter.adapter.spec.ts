@@ -233,17 +233,37 @@ describe('OpenRouterAdapter.generateQuestions', () => {
 });
 
 describe('OpenRouterAdapter.cleanCues', () => {
-  it('returns the corrected strings', async () => {
-    fetchMock.mockResolvedValue(answered(JSON.stringify(['one', 'two'])));
+  it('returns the corrected strings from a well-formed { cues: [...] } reply', async () => {
+    fetchMock.mockResolvedValue(answered(JSON.stringify({ cues: ['one', 'two'] })));
 
     const cues = await adapter().cleanCues({ model: 'm', cueTexts: ['oen', 'tow'] });
 
     expect(cues).toEqual(['one', 'two']);
   });
 
-  it('degrades to an empty array when the reply is not an array', async () => {
+  it("sends a request whose schema root is an object with a 'cues' property", async () => {
+    fetchMock.mockResolvedValue(answered(JSON.stringify({ cues: ['one'] })));
+
+    await adapter().cleanCues({ model: 'm', cueTexts: ['oen'] });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit & { body: string }];
+    const body = JSON.parse(init.body) as {
+      response_format: { json_schema: { schema: { type: string; properties: object } } };
+    };
+    const schema = body.response_format.json_schema.schema;
+    expect(schema.type).toBe('object');
+    expect(schema.properties).toHaveProperty('cues');
+  });
+
+  it('degrades to an empty array when the reply is not the expected shape', async () => {
     fetchMock.mockResolvedValue(answered(JSON.stringify({ nope: true })));
 
     expect(await adapter().cleanCues({ model: 'm', cueTexts: ['a'] })).toEqual([]);
+  });
+
+  it('degrades to an empty array when the reply is the old top-level array shape', async () => {
+    fetchMock.mockResolvedValue(answered(JSON.stringify(['one', 'two'])));
+
+    expect(await adapter().cleanCues({ model: 'm', cueTexts: ['a', 'b'] })).toEqual([]);
   });
 });

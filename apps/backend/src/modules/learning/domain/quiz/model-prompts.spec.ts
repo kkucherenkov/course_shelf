@@ -1,3 +1,10 @@
+/**
+ * WHY this file exists:
+ * Both TextModelAdapter implementations read these schemas, so a regression
+ * here (a dropped bound, a loosened minItems/maxItems) would silently widen
+ * what either adapter accepts from a model — pinned here rather than only
+ * observed indirectly through each adapter's own tests.
+ */
 import { describe, expect, it } from 'vitest';
 
 import { cleanupJsonSchema, generateJsonSchema } from './model-prompts';

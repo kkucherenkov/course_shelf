@@ -35,6 +35,8 @@
     play: string;
     prevLesson: string;
     nextLesson: string;
+    skipBack: string;
+    skipForward: string;
     mute: string;
     unmute: string;
     speed: string;
@@ -57,6 +59,11 @@
       buffered?: number;
       /** Playback speed (e.g. 1.0, 1.5). */
       speed?: number;
+      /**
+       * Selectable playback rates. The menu lists these in order. `readonly`
+       * so a caller's `as const` ladder passes without being copied.
+       */
+      speeds?: readonly number[];
       /** Mute state — a prop so the parent (real `<video>`) owns it. */
       muted?: boolean;
       /** Subtitles toggle state. */
@@ -102,6 +109,10 @@
       state: 'idle',
       buffered: undefined,
       speed: 1,
+      // Stand-alone fallback so the component works in Storybook on its own.
+      // The lesson page passes `PLAYBACK_SPEEDS`, which is the list the
+      // composable actually accepts — anything else there falls back to 1×.
+      speeds: () => [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
       muted: false,
       subtitlesEnabled: false,
       subtitlesAvailable: true,
@@ -142,6 +153,9 @@
     stayHere: [];
   }>();
 
+  /** Transport skip step. 15s is the interval every mainstream player uses. */
+  const SKIP_SECONDS = 15;
+
   const DEFAULT_ARIA: PlayerChromeAriaLabels = {
     player: 'Lesson video player',
     buffering: 'Buffering',
@@ -153,6 +167,8 @@
     play: 'Play',
     prevLesson: 'Previous lesson',
     nextLesson: 'Next lesson',
+    skipBack: 'Back 15 seconds',
+    skipForward: 'Forward 15 seconds',
     mute: 'Mute',
     unmute: 'Unmute',
     speed: 'Playback speed',
@@ -176,9 +192,16 @@
   const rootRef = ref<HTMLDivElement | null>(null);
   const scrubberRef = ref<HTMLDivElement | null>(null);
   const shortcutsOpen = ref(false);
+  const speedMenuOpen = ref(false);
+  const speedTriggerRef = ref<HTMLButtonElement | null>(null);
 
   const isPlaying = computed(() => props.state === 'playing');
   const isInert = computed(() => props.state === 'locked' || props.state === 'error');
+
+  // Only over a picture that is genuinely waiting to be started. The buffering,
+  // error, locked and end states each paint their own overlay and must not get
+  // a play button on top of them.
+  const showBigPlay = computed(() => props.state === 'idle' || props.state === 'paused');
 
   // ── Overlay idle-hide ───────────────────────────────────────────────────────
   // Only while actively playing — paused/buffering/error/locked/end always
@@ -198,7 +221,7 @@
 
   function scheduleIdleHide(): void {
     clearIdleTimer();
-    if (!isPlaying.value) return;
+    if (!isPlaying.value || speedMenuOpen.value) return;
     idleTimer = setTimeout(() => {
       controlsHidden.value = true;
     }, IDLE_HIDE_MS);
@@ -226,6 +249,40 @@
   );
 
   const speedLabel = computed(() => `${props.speed.toFixed(1)}×`);
+
+  // `speedLabel` renders the trigger with toFixed(1), which turns 0.75 into
+  // "0.8×". Fine for a single glance at the current rate, wrong for a list the
+  // user picks from, so the menu formats its own rows exactly.
+  function formatSpeed(rate: number): string {
+    return `${String(rate)}×`;
+  }
+
+  function closeSpeedMenu(): void {
+    if (!speedMenuOpen.value) return;
+    speedMenuOpen.value = false;
+    // Focus sat on a menu row, which `v-if` is about to unmount. Without this
+    // it lands on <body> and a keyboard user is dropped out of the player
+    // entirely. Synchronous: the trigger is already mounted, and waiting for
+    // the tick would let the browser blur first.
+    speedTriggerRef.value?.focus();
+    scheduleIdleHide();
+  }
+
+  function toggleSpeedMenu(): void {
+    if (speedMenuOpen.value) {
+      closeSpeedMenu();
+      return;
+    }
+    speedMenuOpen.value = true;
+    // Opening must cancel the timer already ticking from the last pointer
+    // move, or the overlay idle-hides out from under the open menu.
+    clearIdleTimer();
+  }
+
+  function chooseSpeed(rate: number): void {
+    closeSpeedMenu();
+    emit('speed', rate);
+  }
 
   const currentTimeLabel = computed(() => fmtTime(props.position));
   const totalTimeLabel = computed(() => fmtTime(props.duration));
@@ -458,6 +515,16 @@
       </div>
     </div>
 
+    <button
+      v-if="showBigPlay"
+      type="button"
+      class="app-player-chrome__big-play"
+      :aria-label="aria.play"
+      @click="emit('play')"
+    >
+      <IconCS name="play" :size="32" />
+    </button>
+
     <!-- Full chrome (overlay mode) -->
     <div v-show="mode === 'overlay'" class="app-player-chrome__overlay">
       <div class="app-player-chrome__top">
@@ -473,7 +540,7 @@
           <button
             v-if="pipAvailable"
             type="button"
-            class="app-player-chrome__btn"
+            class="app-player-chrome__btn app-player-chrome__btn--pip"
             :aria-label="aria.pip"
             :disabled="isInert"
             @click="emit('togglePip')"
@@ -548,6 +615,15 @@
         <div class="app-player-chrome__controls">
           <button
             type="button"
+            class="app-player-chrome__btn app-player-chrome__btn--skip-back"
+            :aria-label="aria.skipBack"
+            :disabled="isInert"
+            @click="seekBy(-SKIP_SECONDS)"
+          >
+            <IconCS name="skip-back" :size="16" />
+          </button>
+          <button
+            type="button"
             class="app-player-chrome__btn"
             :aria-label="isPlaying ? aria.pause : aria.play"
             :aria-pressed="isPlaying ? 'true' : 'false'"
@@ -555,6 +631,15 @@
             @click="togglePlay"
           >
             <IconCS :name="isPlaying ? 'pause' : 'play'" :size="16" />
+          </button>
+          <button
+            type="button"
+            class="app-player-chrome__btn app-player-chrome__btn--skip-forward"
+            :aria-label="aria.skipForward"
+            :disabled="isInert"
+            @click="seekBy(SKIP_SECONDS)"
+          >
+            <IconCS name="skip-forward" :size="16" />
           </button>
           <button
             type="button"
@@ -588,18 +673,48 @@
             {{ currentTimeLabel }} / {{ totalTimeLabel }}
           </span>
           <span class="app-player-chrome__spacer" />
+          <!-- Escape is handled on this wrapper, not on the menu: the menu is a
+               div with no tabindex, so it never holds focus. Focus sits on the
+               trigger button or a menu item, both inside this wrapper, and the
+               keydown bubbles here from either. -->
+          <div class="app-player-chrome__speed" @keydown.escape="closeSpeedMenu">
+            <button
+              ref="speedTriggerRef"
+              type="button"
+              class="app-player-chrome__btn app-player-chrome__btn--text app-player-chrome__btn--speed"
+              :aria-label="aria.speed"
+              aria-haspopup="menu"
+              :aria-expanded="speedMenuOpen ? 'true' : 'false'"
+              :disabled="isInert"
+              @click="toggleSpeedMenu"
+            >
+              {{ speedLabel }}
+            </button>
+            <div
+              v-if="speedMenuOpen"
+              class="app-player-chrome__speed-menu"
+              role="menu"
+              :aria-label="aria.speed"
+            >
+              <button
+                v-for="rate in speeds"
+                :key="rate"
+                type="button"
+                role="menuitemradio"
+                class="app-player-chrome__speed-item"
+                :aria-checked="rate === speed ? 'true' : 'false'"
+                @click="chooseSpeed(rate)"
+              >
+                {{ formatSpeed(rate) }}
+              </button>
+            </div>
+          </div>
           <button
             type="button"
-            class="app-player-chrome__btn app-player-chrome__btn--text"
-            :aria-label="aria.speed"
-            :disabled="isInert"
-            @click="emit('speed', props.speed)"
-          >
-            {{ speedLabel }}
-          </button>
-          <button
-            type="button"
-            class="app-player-chrome__btn"
+            class="app-player-chrome__btn app-player-chrome__btn--subtitles"
+            :class="{
+              'app-player-chrome__btn--active': subtitlesEnabled && subtitlesAvailable,
+            }"
             :aria-label="
               !subtitlesAvailable
                 ? aria.subtitlesUnavailable
@@ -615,7 +730,8 @@
           </button>
           <button
             type="button"
-            class="app-player-chrome__btn"
+            class="app-player-chrome__btn app-player-chrome__btn--fullscreen"
+            :class="{ 'app-player-chrome__btn--active': fullscreen }"
             :aria-label="fullscreen ? aria.fullscreenExit : aria.fullscreenEnter"
             :disabled="isInert"
             :aria-pressed="fullscreen ? 'true' : 'false'"
@@ -720,6 +836,13 @@
       position: absolute;
       inset: 0;
       z-index: $z-overlay;
+      // Query container for the speed menu's `max-height`. Sized entirely by
+      // `inset: 0`, so size containment costs nothing here. Deliberately on
+      // the overlay rather than the chrome root: `container-type` implies
+      // `contain: layout`, which would turn the root into a stacking context
+      // the rest of the page can see. The overlay is already one (`z-index`
+      // above), and the shortcuts `<dialog>` is its sibling, not its child.
+      container-type: size;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -824,11 +947,52 @@
         outline-offset: 2px;
       }
 
+      // `aria-pressed` told a screen reader; nothing told anyone looking at it.
+      &--active {
+        color: var(--brand-accent);
+        background: var(--media-fill-hover);
+      }
+
       &--text {
         width: auto;
         padding: 0 var(--space-2);
         font-family: var(--font-mono);
         font-size: var(--text-xs);
+      }
+    }
+
+    &__big-play {
+      position: absolute;
+      inset: 0;
+      // Above &__overlay ($z-overlay): that div is a sibling painted after
+      // this button and covers the same box even where its background is
+      // transparent, so without this the overlay — not the button — is the
+      // real hit target for hover/focus/click.
+      z-index: $z-state;
+      margin: auto;
+      // --space-8 is 64px; the control-row buttons are --space-6 (32px). The
+      // whole point of this affordance is that you do not have to aim.
+      width: var(--space-8);
+      height: var(--space-8);
+      border-radius: var(--radius-pill);
+      display: grid;
+      place-items: center;
+      color: var(--media-fg);
+      background: var(--media-scrim-strong);
+      border: 0;
+      cursor: pointer;
+      transition:
+        background var(--dur-fast),
+        transform var(--dur-fast);
+
+      &:hover {
+        background: var(--media-fill-hover);
+        transform: scale(1.05);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--brand-accent);
+        outline-offset: 2px;
       }
     }
 
@@ -842,6 +1006,57 @@
 
     &__spacer {
       flex: 1;
+    }
+
+    &__speed {
+      position: relative;
+      display: inline-flex;
+    }
+
+    &__speed-menu {
+      position: absolute;
+      bottom: calc(100% + var(--space-2));
+      right: 0;
+      display: flex;
+      flex-direction: column;
+      min-width: var(--space-8); // 64px — fits "1.75×" with the padding below
+      // Seven rows are ~232px, and the chrome is a 16:9 box with
+      // `overflow: hidden` — at a 360px viewport it is only ~185px tall, so
+      // the top three rows were clipped away and could not be clicked at all.
+      // `100cqh` is the overlay's *content* box (its own padding is already
+      // out); what remains to subtract is the controls row the trigger sits
+      // in, this menu's offset above that row, and one step of clearance so a
+      // scrolling menu never butts against the top of the picture.
+      max-height: calc(100cqh - var(--space-6) - var(--space-2) - var(--space-4));
+      overflow-y: auto;
+      padding: var(--space-1);
+      border-radius: var(--radius-md);
+      background: var(--media-scrim-strong);
+      box-shadow: var(--shadow-md);
+    }
+
+    &__speed-item {
+      padding: var(--space-1) var(--space-3);
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--media-fg);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+
+      &:hover {
+        background: var(--media-fill-hover);
+      }
+
+      &[aria-checked='true'] {
+        color: var(--brand-accent);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--brand-accent);
+        outline-offset: -2px;
+      }
     }
 
     // ---- Scrubber ----

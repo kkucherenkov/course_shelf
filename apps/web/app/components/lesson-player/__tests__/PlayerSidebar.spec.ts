@@ -39,21 +39,15 @@ const baseProps = {
   bookmarks: [],
   materials: [],
   currentTime: 0,
-  transcriptCues: [],
-  transcriptActiveIndex: -1,
   tabsLabel: 'Lesson sidebar',
   tabSections: 'Sections',
   tabNotes: 'Notes',
   tabBookmarks: 'Bookmarks',
   tabMaterials: 'Materials',
-  tabTranscript: 'Transcript',
   bookmarksEmptyTitle: 'No bookmarks yet',
   bookmarksEmptyBody: 'Add a bookmark to see it here.',
   bookmarksAddLabel: '+ Bookmark',
   materialsEmptyLabel: 'No materials',
-  transcriptEmptyLabel: 'No transcript',
-  transcriptNoMatchLabel: 'No matches',
-  transcriptFilterPlaceholder: 'Filter',
 };
 
 function mountSidebar() {
@@ -65,7 +59,6 @@ function mountSidebar() {
         PlayerNotesTab: true,
         PlayerBookmarksTab: true,
         PlayerMaterialsTab: true,
-        PlayerTranscriptTab: true,
       },
     },
   });
@@ -79,5 +72,14 @@ describe('PlayerSidebar — tablist accessible name (#597)', () => {
 
     expect(tablist.attributes('aria-label')).toBe('Lesson sidebar');
     expect(tablist.attributes('aria-label')).not.toBe(firstTab.text());
+  });
+});
+
+describe('PlayerSidebar — tabs', () => {
+  it('offers four tabs, with the transcript no longer among them', () => {
+    const wrapper = mountSidebar();
+    const tabs = wrapper.findAll('[role="tab"]');
+    expect(tabs).toHaveLength(4);
+    expect(tabs.map((t) => t.text())).toEqual(['Sections', 'Notes', 'Bookmarks', 'Materials']);
   });
 });

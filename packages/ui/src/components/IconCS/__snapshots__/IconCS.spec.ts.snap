@@ -608,6 +608,30 @@ exports[`IconCS > renders shield with valid SVG 1`] = `
 </svg>"
 `;
 
+exports[`IconCS > renders skip-back with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- skip-back -->
+  <path data-v-6f4b1ecb="" d="M12 5a7 7 0 107 7"></path>
+  <path data-v-6f4b1ecb="" d="M12 2.5L9 5l3 2.5"></path>
+  <path data-v-6f4b1ecb="" d="M10.4 15.5V11l-1.4.9"></path>
+  <path data-v-6f4b1ecb="" d="M13.2 11.6a1.2 1.2 0 012.4 0v2.8a1.2 1.2 0 01-2.4 0z"></path>
+</svg>"
+`;
+
+exports[`IconCS > renders skip-forward with valid SVG 1`] = `
+"<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
+  <!--v-if-->
+  <!-- play -->
+  <!-- skip-forward -->
+  <path data-v-6f4b1ecb="" d="M12 5a7 7 0 11-7 7"></path>
+  <path data-v-6f4b1ecb="" d="M12 2.5L15 5l-3 2.5"></path>
+  <path data-v-6f4b1ecb="" d="M10.4 15.5V11l-1.4.9"></path>
+  <path data-v-6f4b1ecb="" d="M13.2 11.6a1.2 1.2 0 012.4 0v2.8a1.2 1.2 0 01-2.4 0z"></path>
+</svg>"
+`;
+
 exports[`IconCS > renders sliders with valid SVG 1`] = `
 "<svg data-v-6f4b1ecb="" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="app-icon-cs">
   <!--v-if-->

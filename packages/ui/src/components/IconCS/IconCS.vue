@@ -44,6 +44,8 @@
     | 'fullscreen'
     | 'pip'
     | 'speed'
+    | 'skip-back'
+    | 'skip-forward'
     | 'list'
     | 'grid'
     | 'filter'
@@ -369,6 +371,22 @@
     <template v-else-if="name === 'speed'">
       <path d="M5 18a8 8 0 1114 0" />
       <path d="M12 14l4-4" />
+    </template>
+
+    <!-- skip-back -->
+    <template v-else-if="name === 'skip-back'">
+      <path d="M12 5a7 7 0 107 7" />
+      <path d="M12 2.5L9 5l3 2.5" />
+      <path d="M10.4 15.5V11l-1.4.9" />
+      <path d="M13.2 11.6a1.2 1.2 0 012.4 0v2.8a1.2 1.2 0 01-2.4 0z" />
+    </template>
+
+    <!-- skip-forward -->
+    <template v-else-if="name === 'skip-forward'">
+      <path d="M12 5a7 7 0 11-7 7" />
+      <path d="M12 2.5L15 5l-3 2.5" />
+      <path d="M10.4 15.5V11l-1.4.9" />
+      <path d="M13.2 11.6a1.2 1.2 0 012.4 0v2.8a1.2 1.2 0 01-2.4 0z" />
     </template>
 
     <!-- list -->

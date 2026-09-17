@@ -351,7 +351,6 @@ export default {
       sectionLabel: 'Раздел {n} · {title}',
       bookmarkAdd: '+ Отметить текущую позицию',
       transcript: {
-        empty: 'Для этого урока нет транскрипта.',
         noMatch: 'Ничего не найдено по вашему запросу.',
         filterPlaceholder: 'Фильтр по транскрипту',
       },
@@ -366,6 +365,8 @@ export default {
         play: 'Воспроизвести',
         prevLesson: 'Предыдущий урок',
         nextLesson: 'Следующий урок',
+        skipBack: 'Назад на 15 секунд',
+        skipForward: 'Вперёд на 15 секунд',
         mute: 'Выключить звук',
         unmute: 'Включить звук',
         speed: 'Скорость воспроизведения',

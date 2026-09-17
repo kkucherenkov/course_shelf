@@ -384,6 +384,16 @@ describe('AppPlayerChrome', () => {
       expect(wrapper.classes()).not.toContain('app-player-chrome--idle-hidden');
       vi.useRealTimers();
     });
+
+    it('keeps the overlay up while the speed menu is open', async () => {
+      vi.useFakeTimers();
+      const wrapper = makeWrapper({ state: 'playing' });
+      await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+      vi.advanceTimersByTime(10_000);
+      await nextTick();
+      expect(wrapper.classes()).not.toContain('app-player-chrome--idle-hidden');
+      vi.useRealTimers();
+    });
   });
 
   describe('keyboard map', () => {
@@ -527,6 +537,229 @@ describe('AppPlayerChrome', () => {
         ({ left: 0, top: 0, right: 200, bottom: 16, width: 200, height: 16 }) as DOMRect;
       await slider.trigger('click', { clientX: 50 });
       expect(wrapper.emitted('seek')?.[0]).toEqual([150]); // 25% of 600
+    });
+  });
+
+  describe('transport controls', () => {
+    it('skips back 15 seconds without going below zero', async () => {
+      const wrapper = makeWrapper({ position: 5, duration: 600 });
+      await wrapper.find('.app-player-chrome__btn--skip-back').trigger('click');
+      expect(wrapper.emitted('seek')?.[0]).toEqual([0]);
+    });
+
+    it('skips forward 15 seconds without passing the duration', async () => {
+      const wrapper = makeWrapper({ position: 595, duration: 600 });
+      await wrapper.find('.app-player-chrome__btn--skip-forward').trigger('click');
+      expect(wrapper.emitted('seek')?.[0]).toEqual([600]);
+    });
+
+    it('skips by exactly 15 seconds away from the boundaries', async () => {
+      const wrapper = makeWrapper({ position: 100, duration: 600 });
+      await wrapper.find('.app-player-chrome__btn--skip-back').trigger('click');
+      await wrapper.find('.app-player-chrome__btn--skip-forward').trigger('click');
+      expect(wrapper.emitted('seek')).toEqual([[85], [115]]);
+    });
+
+    it('disables the skip buttons in an inert state', () => {
+      for (const state of ['locked', 'error'] as const) {
+        const wrapper = makeWrapper({ state });
+        for (const side of ['skip-back', 'skip-forward']) {
+          const btn = wrapper.find(`.app-player-chrome__btn--${side}`).element as HTMLButtonElement;
+          expect(btn.disabled).toBe(true);
+        }
+      }
+    });
+
+    it('does not skip in an inert state even if the button is reachable', async () => {
+      // The `disabled` attribute above is what normally stops the click, and a
+      // click is never dispatched on a disabled button — neither by a browser
+      // nor by `trigger()`. So asserting on a click alone proves the attribute
+      // and never reaches `seekBy`'s own guard. Strip the attribute to get
+      // there: the guard is what holds if the state turns inert mid-gesture.
+      const wrapper = makeWrapper({ state: 'locked', position: 100, duration: 600 });
+      const btn = wrapper.find('.app-player-chrome__btn--skip-back');
+      (btn.element as HTMLButtonElement).disabled = false;
+      await btn.trigger('click');
+      expect(wrapper.emitted('seek')).toBeUndefined();
+    });
+
+    it('labels the skip buttons from ariaLabels', () => {
+      const wrapper = makeWrapper({
+        ariaLabels: { skipBack: 'Назад 15 секунд', skipForward: 'Вперёд 15 секунд' },
+      });
+      expect(wrapper.find('.app-player-chrome__btn--skip-back').attributes('aria-label')).toBe(
+        'Назад 15 секунд',
+      );
+      expect(wrapper.find('.app-player-chrome__btn--skip-forward').attributes('aria-label')).toBe(
+        'Вперёд 15 секунд',
+      );
+    });
+  });
+
+  describe('big play affordance', () => {
+    it('shows over the picture while idle', () => {
+      const wrapper = makeWrapper({ state: 'idle' });
+      expect(wrapper.find('.app-player-chrome__big-play').exists()).toBe(true);
+    });
+
+    it('shows while paused', () => {
+      const wrapper = makeWrapper({ state: 'paused' });
+      expect(wrapper.find('.app-player-chrome__big-play').exists()).toBe(true);
+    });
+
+    it('is gone while playing', () => {
+      const wrapper = makeWrapper({ state: 'playing' });
+      expect(wrapper.find('.app-player-chrome__big-play').exists()).toBe(false);
+    });
+
+    it('stays out of the way of the buffering, error, locked and end overlays', () => {
+      for (const state of ['buffering', 'error', 'locked'] as const) {
+        const wrapper = makeWrapper({ state });
+        expect(wrapper.find('.app-player-chrome__big-play').exists()).toBe(false);
+      }
+      const ended = makeWrapper({ state: 'end', endNext: { title: 'Next one' } });
+      expect(ended.find('.app-player-chrome__big-play').exists()).toBe(false);
+    });
+
+    it('emits play when clicked, and does not double-fire through the frame tap', async () => {
+      const wrapper = makeWrapper({ state: 'paused' });
+      await wrapper.find('.app-player-chrome__big-play').trigger('click');
+      expect(wrapper.emitted('play')).toHaveLength(1);
+    });
+  });
+
+  describe('toggle state is visible, not only announced', () => {
+    it('marks the subtitles button active when subtitles are on', () => {
+      const wrapper = makeWrapper({ subtitlesEnabled: true });
+      const cc = wrapper.find('[aria-pressed="true"].app-player-chrome__btn--subtitles');
+      expect(cc.exists()).toBe(true);
+      expect(cc.classes()).toContain('app-player-chrome__btn--active');
+    });
+
+    it('leaves it unmarked when subtitles are off', () => {
+      const wrapper = makeWrapper({ subtitlesEnabled: false });
+      const cc = wrapper.find('.app-player-chrome__btn--subtitles');
+      expect(cc.classes()).not.toContain('app-player-chrome__btn--active');
+    });
+
+    it('never marks it active when the lesson has no subtitle tracks', () => {
+      const wrapper = makeWrapper({ subtitlesEnabled: true, subtitlesAvailable: false });
+      const cc = wrapper.find('.app-player-chrome__btn--subtitles');
+      expect(cc.classes()).not.toContain('app-player-chrome__btn--active');
+      expect(cc.attributes('disabled')).toBeDefined();
+    });
+
+    it('marks the fullscreen button active in fullscreen', () => {
+      const wrapper = makeWrapper({ fullscreen: true });
+      expect(wrapper.find('.app-player-chrome__btn--fullscreen').classes()).toContain(
+        'app-player-chrome__btn--active',
+      );
+    });
+  });
+
+  describe('playback speed menu', () => {
+    it('is closed until the speed button is pressed', () => {
+      const wrapper = makeWrapper();
+      expect(wrapper.find('.app-player-chrome__speed-menu').exists()).toBe(false);
+      expect(wrapper.find('.app-player-chrome__btn--speed').attributes('aria-expanded')).toBe(
+        'false',
+      );
+    });
+
+    it('lists every preset speed when opened', async () => {
+      const wrapper = makeWrapper();
+      await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+      const items = wrapper.findAll('.app-player-chrome__speed-item');
+      expect(items).toHaveLength(7);
+      expect(items.map((i) => i.text())).toEqual([
+        '0.5×',
+        '0.75×',
+        '1×',
+        '1.25×',
+        '1.5×',
+        '1.75×',
+        '2×',
+      ]);
+    });
+
+    it('emits the rate on the row that was picked', async () => {
+      const wrapper = makeWrapper({ speed: 1 });
+      await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+      await wrapper.findAll('.app-player-chrome__speed-item')[4]!.trigger('click');
+      expect(wrapper.emitted('speed')?.[0]).toEqual([1.5]);
+    });
+
+    it('emits the current rate when its own row is picked', async () => {
+      // The row the menu marks as selected is still a row, and picking it must
+      // re-assert that rate rather than move to a neighbour. Every rate, so a
+      // future off-by-one in the list cannot hide in the one index we chose.
+      for (const [index, rate] of [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].entries()) {
+        const wrapper = makeWrapper({ speed: rate });
+        await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+        const row = wrapper.findAll('.app-player-chrome__speed-item')[index]!;
+        expect(row.attributes('aria-checked')).toBe('true');
+        await row.trigger('click');
+        expect(wrapper.emitted('speed')?.[0]).toEqual([rate]);
+      }
+    });
+
+    it('closes after a choice', async () => {
+      const wrapper = makeWrapper();
+      await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+      await wrapper.findAll('.app-player-chrome__speed-item')[0]!.trigger('click');
+      expect(wrapper.find('.app-player-chrome__speed-menu').exists()).toBe(false);
+    });
+
+    it('marks the current speed as the selected option', async () => {
+      const wrapper = makeWrapper({ speed: 1.25 });
+      await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+      const selected = wrapper
+        .findAll('.app-player-chrome__speed-item')
+        .filter((i) => i.attributes('aria-checked') === 'true');
+      expect(selected).toHaveLength(1);
+      expect(selected[0]!.text()).toBe('1.25×');
+    });
+
+    it('closes on Escape pressed on the trigger, where focus actually is', async () => {
+      const wrapper = makeWrapper();
+      const trigger = wrapper.find('.app-player-chrome__btn--speed');
+      await trigger.trigger('click');
+      // Deliberately dispatched at the button, not the menu: the menu is a
+      // non-focusable div, so a test that presses Escape on it would pass
+      // while the real keyboard path stayed broken.
+      await trigger.trigger('keydown', { key: 'Escape' });
+      expect(wrapper.find('.app-player-chrome__speed-menu').exists()).toBe(false);
+      expect(wrapper.emitted('speed')).toBeUndefined();
+    });
+
+    it('returns focus to the trigger after a choice', async () => {
+      // Attached to the document, or nothing in this component is focusable
+      // and the assertion would pass against a detached tree by accident.
+      const wrapper = mount(AppPlayerChrome, { props: baseProps, attachTo: document.body });
+      const trigger = wrapper.find('.app-player-chrome__btn--speed');
+      await trigger.trigger('click');
+      const row = wrapper.findAll('.app-player-chrome__speed-item')[0]!;
+      (row.element as HTMLButtonElement).focus();
+      await row.trigger('click');
+      expect(document.activeElement).toBe(trigger.element);
+      wrapper.unmount();
+    });
+
+    it('returns focus to the trigger after Escape', async () => {
+      const wrapper = mount(AppPlayerChrome, { props: baseProps, attachTo: document.body });
+      const trigger = wrapper.find('.app-player-chrome__btn--speed');
+      await trigger.trigger('click');
+      const row = wrapper.findAll('.app-player-chrome__speed-item')[0]!;
+      (row.element as HTMLButtonElement).focus();
+      await row.trigger('keydown', { key: 'Escape' });
+      expect(document.activeElement).toBe(trigger.element);
+      wrapper.unmount();
+    });
+
+    it('honours a custom speeds list', async () => {
+      const wrapper = makeWrapper({ speeds: [1, 2] });
+      await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+      expect(wrapper.findAll('.app-player-chrome__speed-item')).toHaveLength(2);
     });
   });
 });

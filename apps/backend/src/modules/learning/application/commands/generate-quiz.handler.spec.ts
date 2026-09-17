@@ -16,7 +16,11 @@ import type {
   LessonRepository,
   TranscriptRepository,
 } from '../../../../common/catalog-tokens';
-import type { AppConfig, QuizGenerationConfig } from '../../../../common/config/app-config';
+import type {
+  AppConfig,
+  HostedModelConfig,
+  QuizGenerationConfig,
+} from '../../../../common/config/app-config';
 import type { QuizRepository } from '../../domain/quiz/quiz.repository';
 import type { TextModelAdapter } from '../../domain/quiz/text-model.port';
 
@@ -74,7 +78,10 @@ function makeLlama(overrides: Partial<TextModelAdapter> = {}): TextModelAdapter 
   };
 }
 
-function makeAppConfig(overrides: Partial<QuizGenerationConfig> = {}): AppConfig {
+function makeAppConfig(
+  overrides: Partial<QuizGenerationConfig> = {},
+  hostedOverrides: Partial<HostedModelConfig> = {},
+): AppConfig {
   const quizGeneration: QuizGenerationConfig = {
     provider: 'local',
     llamaPath: 'llama-completion',
@@ -85,7 +92,15 @@ function makeAppConfig(overrides: Partial<QuizGenerationConfig> = {}): AppConfig
     mode: 'mock',
     ...overrides,
   };
-  return { quizGeneration, modelWeightsDir: '/models' } as unknown as AppConfig;
+  const hostedModel: HostedModelConfig = {
+    apiKey: 'sk-test',
+    baseUrl: 'https://openrouter.test/api/v1',
+    defaultModel: 'mistralai/mistral-nemo',
+    timeoutMs: 120_000,
+    configured: true,
+    ...hostedOverrides,
+  };
+  return { quizGeneration, hostedModel, modelWeightsDir: '/models' } as unknown as AppConfig;
 }
 
 function makeEventBus(): EventBus {
@@ -222,6 +237,75 @@ describe('GenerateQuizHandler', () => {
     expect(error).toBeInstanceOf(QuizGenerationNotConfiguredError);
     expect((error as Error).message).toContain('LLAMA_DEFAULT_MODEL');
   });
+
+  it('throws QuizGenerationNotConfiguredError naming OPENROUTER_MODEL under the hosted provider when no model is named and no default is configured', async () => {
+    const { handler } = makeHandler({
+      appConfig: makeAppConfig({ provider: 'openrouter' }, { defaultModel: '' }),
+    });
+
+    let error: unknown;
+    try {
+      await handler.execute(new GenerateQuizCommand('lesson-1', undefined, undefined, true));
+    } catch (error_) {
+      error = error_;
+    }
+
+    expect(error).toBeInstanceOf(QuizGenerationNotConfiguredError);
+    expect((error as Error).message).toContain('OPENROUTER_MODEL');
+  });
+
+  it('resolves the default from OPENROUTER_MODEL under the hosted provider, never LLAMA_DEFAULT_MODEL', async () => {
+    const llama = makeLlama();
+    const { handler } = makeHandler({
+      llama,
+      appConfig: makeAppConfig(
+        { provider: 'openrouter', defaultModelFilename: 'Qwen3.5-4B-Q4_K_M.gguf' },
+        { defaultModel: 'mistralai/mistral-nemo' },
+      ),
+    });
+
+    await handler.execute(new GenerateQuizCommand('lesson-1', undefined, undefined, true));
+    await drainWalk();
+
+    expect(llama.generateQuestions).toHaveBeenCalledWith(
+      expect.objectContaining({ model: 'mistralai/mistral-nemo' }),
+    );
+  });
+
+  it('still resolves the default from LLAMA_DEFAULT_MODEL under the local provider', async () => {
+    const llama = makeLlama();
+    const { handler } = makeHandler({
+      llama,
+      appConfig: makeAppConfig({ provider: 'local' }, { defaultModel: 'mistralai/mistral-nemo' }),
+    });
+
+    await handler.execute(new GenerateQuizCommand('lesson-1', undefined, undefined, true));
+    await drainWalk();
+
+    expect(llama.generateQuestions).toHaveBeenCalledWith(
+      expect.objectContaining({ model: 'Qwen3.5-4B-Q4_K_M.gguf' }),
+    );
+  });
+
+  it.each(['local', 'openrouter'] as const)(
+    "an explicit command.modelFilename beats the default under provider '%s'",
+    async (provider) => {
+      const llama = makeLlama();
+      const { handler } = makeHandler({
+        llama,
+        appConfig: makeAppConfig({ provider }, { defaultModel: 'mistralai/mistral-nemo' }),
+      });
+
+      await handler.execute(
+        new GenerateQuizCommand('lesson-1', undefined, 'openai/gpt-oss-120b', true),
+      );
+      await drainWalk();
+
+      expect(llama.generateQuestions).toHaveBeenCalledWith(
+        expect.objectContaining({ model: 'openai/gpt-oss-120b' }),
+      );
+    },
+  );
 
   it('rejects with QuizModelNotFoundError when the adapter refuses the model, and never walks a lesson', async () => {
     const llama = makeLlama({

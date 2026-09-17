@@ -4,6 +4,8 @@
  *   - `quizGeneration.provider` defaults to 'local' and honours LLM_PROVIDER.
  *   - `hostedModel.configured` is a key-presence check, nothing more.
  *   - `hostedModel`'s endpoint, model and timeout default and can be overridden.
+ *   - `hostedModel.baseUrl` strips a trailing slash so the adapter's
+ *     `${baseUrl}/chat/completions` join never doubles a slash.
  */
 import { ConfigService } from '@nestjs/config';
 import { describe, expect, it } from 'vitest';
@@ -52,5 +54,13 @@ describe('AppConfig.hostedModel', () => {
     expect(cfg.hostedModel.baseUrl).toBe('https://example.test/v1');
     expect(cfg.hostedModel.defaultModel).toBe('openai/gpt-oss-120b');
     expect(cfg.hostedModel.timeoutMs).toBe(45_000);
+  });
+
+  it('strips a trailing slash from the base URL', () => {
+    const cfg = configWith({
+      OPENROUTER_API_KEY: 'sk-test',
+      OPENROUTER_BASE_URL: 'https://example.test/v1/',
+    });
+    expect(cfg.hostedModel.baseUrl).toBe('https://example.test/v1');
   });
 });

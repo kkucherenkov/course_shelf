@@ -197,7 +197,9 @@ already there.
 Quiz generation defaults to local llama.cpp. Set `LLM_PROVIDER=openrouter`
 plus `OPENROUTER_API_KEY` to run it against a hosted model instead;
 `OPENROUTER_BASE_URL` and `OPENROUTER_MODEL` override the endpoint and model
-id if you don't want OpenRouter's default (`mistralai/mistral-nemo`). See
+id if you don't want OpenRouter's default (`mistralai/mistral-nemo`).
+`OPENROUTER_TIMEOUT_MS` (two minutes) bounds one call — see
+[`.env.example`](.env.example). See
 [ADR-0012](docs/adr/0012-hosted-model-provider.md).
 
 ### 3 — Verify

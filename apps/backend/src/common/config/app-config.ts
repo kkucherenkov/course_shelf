@@ -488,9 +488,13 @@ export class AppConfig {
    */
   get hostedModel(): HostedModelConfig {
     const apiKey = this.stringOrDefault('OPENROUTER_API_KEY', '');
+    const baseUrl = this.stringOrDefault('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1');
     return {
       apiKey,
-      baseUrl: this.stringOrDefault('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
+      // Stripped so `OpenRouterAdapter` can always join with `/chat/completions`
+      // — an operator-supplied value with a trailing slash (or several) used
+      // to survive untouched and produce `.../v1//chat/completions`.
+      baseUrl: baseUrl.replace(/\/+$/, ''),
       defaultModel: this.stringOrDefault('OPENROUTER_MODEL', 'mistralai/mistral-nemo'),
       timeoutMs: this.numberOrDefault('OPENROUTER_TIMEOUT_MS', 120_000),
       configured: apiKey.length > 0,

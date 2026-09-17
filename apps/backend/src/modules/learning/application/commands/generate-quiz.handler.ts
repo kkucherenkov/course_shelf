@@ -96,8 +96,20 @@ export class GenerateQuizHandler implements ICommandHandler<
 
   async execute(command: GenerateQuizCommand): Promise<QuizGenerationAccepted> {
     // "Nothing configured at all" needs no adapter, so it is checked here.
-    const model = command.modelFilename ?? this.appConfig.quizGeneration.defaultModelFilename;
-    if (model === '') throw new QuizGenerationNotConfiguredError('LLAMA_DEFAULT_MODEL');
+    // Which setting counts as "the default" depends on the selected
+    // provider — an operator running `openrouter` has never set
+    // LLAMA_DEFAULT_MODEL, and one running `local` has never set
+    // OPENROUTER_MODEL, so the unset one must never be consulted.
+    const cfg = this.appConfig.quizGeneration;
+    const hosted = cfg.provider === 'openrouter';
+    const model =
+      command.modelFilename ??
+      (hosted ? this.appConfig.hostedModel.defaultModel : cfg.defaultModelFilename);
+    if (model === '') {
+      throw new QuizGenerationNotConfiguredError(
+        hosted ? 'OPENROUTER_MODEL' : 'LLAMA_DEFAULT_MODEL',
+      );
+    }
 
     // Whether this *named* model is usable is the adapter's business (a
     // `.gguf` file on disk, an API key for a hosted provider) — but the

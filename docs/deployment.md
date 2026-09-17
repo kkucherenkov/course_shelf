@@ -178,6 +178,7 @@ Optional toggles (sensible defaults shipped):
 - `OPENROUTER_API_KEY=` (empty) — required when `LLM_PROVIDER=openrouter`.
 - `OPENROUTER_BASE_URL=https://openrouter.ai/api/v1`,
   `OPENROUTER_MODEL=mistralai/mistral-nemo`
+- `OPENROUTER_TIMEOUT_MS=120000`
 
 ## Course data layout
 

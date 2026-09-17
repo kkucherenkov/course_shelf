@@ -198,7 +198,9 @@ docker compose -f docker/compose.yml up -d backend
 `LLM_PROVIDER=openrouter` и `OPENROUTER_API_KEY`, чтобы запускать её через
 внешнюю модель; `OPENROUTER_BASE_URL` и `OPENROUTER_MODEL` переопределяют
 эндпоинт и модель, если модель по умолчанию (`mistralai/mistral-nemo`) не
-подходит. См. [ADR-0012](docs/adr/0012-hosted-model-provider.md).
+подходит. `OPENROUTER_TIMEOUT_MS` (две минуты) ограничивает один вызов — см.
+[`.env.example`](.env.example). См.
+[ADR-0012](docs/adr/0012-hosted-model-provider.md).
 
 ### 3 — Проверка
 

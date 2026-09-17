@@ -35,8 +35,8 @@
  *     is unit-testable without booting Nest): MockLlamaAdapter when
  *     AppConfig.quizGeneration.mode is 'mock', OpenRouterAdapter when
  *     AppConfig.quizGeneration.provider is 'openrouter' (ADR-0012), else
- *     LocalLlamaAdapter — same shape as CatalogModule's WHISPER_ADAPTER
- *     factory
+ *     LocalLlamaAdapter — extracted as its own three-way function, unlike
+ *     CatalogModule's WHISPER_ADAPTER's inline two-way ternary
  *   - QuizGenerationLockService — in-memory per-course concurrency guard
  *   - CatalogRepositoriesModule — provides LESSON_REPOSITORY +
  *     COURSE_REPOSITORY + TRANSCRIPT_REPOSITORY

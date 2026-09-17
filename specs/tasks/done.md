@@ -169,6 +169,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 ## T-2026-09-16-typography-roles — raise text roles one step (#658)
 
 - Created: 2026-09-16
+- Status: done
 - Completed: 2026-09-16
 - Owner: claude
 - Spec: https://github.com/kkucherenkov/course_shelf/issues/658
@@ -218,7 +219,7 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
   - [x] Commands/queries + controller + handler specs
 - Status: done
 - Completed: 2026-09-16
-- Result: [PR #684](https://github.com/kkucherenkov/course_shelf/pull/684) (domain, S01), [PR #686](https://github.com/kkucherenkov/course_shelf/pull/686) (API, S02, stacked on #684) — both green
+- Result: [PR #684](https://github.com/kkucherenkov/course_shelf/pull/684) (domain, S01), [PR #690](https://github.com/kkucherenkov/course_shelf/pull/690) (API, S02) — both green. The API half was first opened as #686, stacked on the domain branch; GitHub auto-closed it when #684 merged and its base branch was deleted, so the same branch was reopened as #690 against `main`.
 
 ## T-2026-09-16-style-gates-2 — extend dialect gates to apps/web, drop the packages/ui-only override
 

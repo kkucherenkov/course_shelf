@@ -161,6 +161,28 @@ describe('GetCourseHandler', () => {
     });
   });
 
+  // #694 — a course-level grant can only ever match if the handler asks
+  // canSee() about the *course* (with libraryId along for the library
+  // implication), not the library alone. LruAuthorizationService.evaluate()
+  // already proves a course grant resolves correctly for that shape
+  // (lru-authorization.service.spec.ts); this asserts the handler sends it.
+  describe('authz resource shape (#694)', () => {
+    it('asks canSee about the course, not just its library', async () => {
+      repo = makeRepo();
+      const authz = makeAuthz(true);
+      handler = new GetCourseHandler(repo, authz, makeProgressRepo(null), makePosterTokenSigner());
+      vi.mocked(repo.findById).mockResolvedValue(makeCourse());
+
+      await handler.execute(new GetCourseQuery('course-1', userActor));
+
+      expect(authz.canSee).toHaveBeenCalledWith(userActor, {
+        kind: 'course',
+        id: 'course-1',
+        libraryId: 'lib-1',
+      });
+    });
+  });
+
   describe('missing course', () => {
     beforeEach(() => {
       repo = makeRepo();

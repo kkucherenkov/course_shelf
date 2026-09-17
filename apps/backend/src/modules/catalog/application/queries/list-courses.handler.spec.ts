@@ -394,6 +394,31 @@ describe('ListCoursesHandler', () => {
     });
   });
 
+  // #694 — a course-level grant can only ever match if the handler asks
+  // canSee() about the *course*, not the library alone.
+  describe('authz resource shape (#694)', () => {
+    it('asks canSee about the course, not just its library', async () => {
+      repo = makeRepo();
+      const authz = makeAuthz(true);
+      handler = new ListCoursesHandler(
+        repo,
+        authz,
+        makeProgressRepo(),
+        makeLessonRepo(),
+        makePosterTokenSigner(),
+      );
+      vi.mocked(repo.findAll).mockResolvedValue([makeCourse({ id: 'c1', libraryId: 'lib-1' })]);
+
+      await handler.execute(new ListCoursesQuery(userActor));
+
+      expect(authz.canSee).toHaveBeenCalledWith(userActor, {
+        kind: 'course',
+        id: 'c1',
+        libraryId: 'lib-1',
+      });
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // Browse-page filters + sort (E14-F01-S02)
   // ---------------------------------------------------------------------------

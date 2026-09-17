@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 **libraryId** | **String** | cuid of the library that was scanned. | 
 **status** | [**ScanStatus**](ScanStatus.md) |  | 
 **startedAt** | [**DateTime**](DateTime.md) | ISO-8601 instant when the scan was started. | 
-**finishedAt** | [**DateTime**](DateTime.md) | Set on terminal status (`succeeded` / `failed` / `cancelled`). Absent while `status: running`. | [optional] 
+**finishedAt** | [**DateTime**](DateTime.md) | Set on terminal status (`succeeded` / `partial` / `failed` / `cancelled`). Absent while `status: running`. | [optional] 
 **filesScanned** | **int** | Total number of filesystem entries inspected. | 
 **filesAdded** | **int** | Files that did not exist in the catalog before this scan. | 
 **filesUpdated** | **int** | Files whose metadata changed since the last scan. | 

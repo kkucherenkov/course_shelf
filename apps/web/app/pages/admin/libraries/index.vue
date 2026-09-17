@@ -136,6 +136,7 @@
         :copy-path-aria-label="t('pages.admin.libraries.colPath') + ': ' + lib.rootPath"
         :label-running="t('pages.libraries.statusRunning')"
         :label-succeeded="t('pages.libraries.statusSucceeded')"
+        :label-partial="t('pages.libraries.statusPartial')"
         :label-failed="t('pages.libraries.statusFailed')"
         :label-cancelled="t('pages.libraries.statusCancelled')"
         @click="goToLibrary(lib.id)"

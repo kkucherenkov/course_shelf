@@ -301,7 +301,7 @@ No authorization required
 
 Get the most recent scan for a library
 
-Returns the latest scan record regardless of status (running, succeeded, failed, cancelled).
+Returns the latest scan record regardless of status (running, succeeded, partial, failed, cancelled).
 
 ### Example
 ```dart

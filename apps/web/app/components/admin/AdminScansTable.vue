@@ -15,6 +15,7 @@
     // Status label strings (pre-translated)
     labelRunning: string;
     labelSucceeded: string;
+    labelPartial: string;
     labelFailed: string;
     labelCancelled: string;
     // Optional: show library column (dashboard) vs hide (detail page)
@@ -47,6 +48,7 @@
     const map: Record<ScanStatus, string> = {
       running: props.labelRunning,
       succeeded: props.labelSucceeded,
+      partial: props.labelPartial,
       failed: props.labelFailed,
       cancelled: props.labelCancelled,
     };

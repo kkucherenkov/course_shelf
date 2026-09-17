@@ -20,7 +20,7 @@ part 'admin_library_list_item_scan.g.dart';
 abstract class AdminLibraryListItemScan implements Built<AdminLibraryListItemScan, AdminLibraryListItemScanBuilder> {
   @BuiltValueField(wireName: r'status')
   ScanStatus get status;
-  // enum statusEnum {  running,  succeeded,  failed,  cancelled,  };
+  // enum statusEnum {  running,  succeeded,  partial,  failed,  cancelled,  };
 
   @BuiltValueField(wireName: r'startedAt')
   DateTime get startedAt;

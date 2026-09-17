@@ -13,7 +13,7 @@ Name | Type | Description | Notes
 **status** | [**TranscriptionStatus**](TranscriptionStatus.md) |  | 
 **force** | **bool** | When true, existing generated transcripts were redone. | 
 **startedAt** | [**DateTime**](DateTime.md) | ISO-8601 instant when the run was started. | 
-**finishedAt** | [**DateTime**](DateTime.md) | Set on terminal status (`succeeded` / `failed` / `cancelled`). Absent while `status: running`. | [optional] 
+**finishedAt** | [**DateTime**](DateTime.md) | Set on terminal status (`succeeded` / `failed` / `cancelled` / `interrupted`). Absent while `status: running`. | [optional] 
 **lessonsTotal** | **int** | Lessons considered by this run. | 
 **lessonsSkipped** | **int** | Lessons left alone — a hand-made subtitle sidecar exists, or the generated transcript still matches the video's `(mtime, size)`. | 
 **lessonsTranscribed** | **int** | Lessons for which a transcript was produced by this run. | 

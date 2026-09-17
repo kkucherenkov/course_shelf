@@ -112,12 +112,33 @@ describe('Scan aggregate', () => {
   });
 
   describe('complete', () => {
-    it('transitions status to succeeded and sets finishedAt', () => {
+    it('transitions status to succeeded and sets finishedAt when no errors were recorded', () => {
       const scan = Scan.start({ id: 'scan-1', libraryId: 'lib-1' });
       scan.complete(NOW);
 
       expect(scan.status).toBe('succeeded');
       expect(scan.finishedAt).toBe(NOW);
+    });
+
+    // #699 — a scan that recorded errors is not the same outcome as one that
+    // didn't; reporting both as `succeeded` is the bug the audit found.
+    it('transitions status to partial when at least one error was recorded', () => {
+      const scan = Scan.start({ id: 'scan-1', libraryId: 'lib-1' });
+      scan.recordError({ path: '/lib/bad.txt', message: 'Unsupported' });
+      scan.complete(NOW);
+
+      expect(scan.status).toBe('partial');
+      expect(scan.finishedAt).toBe(NOW);
+    });
+
+    it('9221 errors still transitions to partial, not succeeded', () => {
+      const scan = Scan.start({ id: 'scan-1', libraryId: 'lib-1' });
+      for (let i = 0; i < 9221; i++) {
+        scan.recordError({ path: `/lib/file-${String(i)}.txt`, message: 'Unsupported' });
+      }
+      scan.complete(NOW);
+
+      expect(scan.status).toBe('partial');
     });
   });
 
@@ -166,7 +187,8 @@ describe('Scan aggregate', () => {
       expect(scan.filesAdded).toBe(2);
       expect(scan.coursesDiscovered).toBe(1);
       expect(scan.errors).toHaveLength(1);
-      expect(scan.status).toBe('succeeded');
+      // One error recorded during the walk → partial, not succeeded (#699).
+      expect(scan.status).toBe('partial');
     });
   });
 });

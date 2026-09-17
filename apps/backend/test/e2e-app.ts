@@ -164,7 +164,11 @@ export async function createE2eApp(options: E2eAppOptions = {}): Promise<E2eApp>
   }).compile();
 
   const app = moduleRef.createNestApplication<NestExpressApplication>({ logger: false });
-  configureApp(app, { nodeEnv, corsOrigins: config.runtime.corsOrigins });
+  configureApp(app, {
+    nodeEnv,
+    corsOrigins: config.runtime.corsOrigins,
+    trustProxy: config.runtime.trustProxy,
+  });
   await app.init();
 
   return {

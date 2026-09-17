@@ -798,6 +798,7 @@ export default {
     libraries: {
       statusRunning: 'Running',
       statusSucceeded: 'Succeeded',
+      statusPartial: 'Partial',
       statusFailed: 'Failed',
       statusCancelled: 'Cancelled',
     },

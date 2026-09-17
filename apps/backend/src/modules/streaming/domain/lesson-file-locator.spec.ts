@@ -280,6 +280,7 @@ describe('LessonFileLocator', () => {
   // ---------------------------------------------------------------------------
 
   it('locateSubtitle happy path — VTT returns extension .vtt', async () => {
+    statSpy.mockResolvedValue({ size: 1 } as Awaited<ReturnType<typeof fs.stat>>);
     const lessonWithVtt = makeLessonWithSubtitles([
       { language: 'en', path: SUBTITLE_VTT_RELATIVE },
     ]);
@@ -298,6 +299,7 @@ describe('LessonFileLocator', () => {
   });
 
   it('locateSubtitle happy path — SRT returns extension .srt', async () => {
+    statSpy.mockResolvedValue({ size: 1 } as Awaited<ReturnType<typeof fs.stat>>);
     const lessonWithSrt = makeLessonWithSubtitles([
       { language: 'ru', path: SUBTITLE_SRT_RELATIVE },
     ]);
@@ -314,6 +316,7 @@ describe('LessonFileLocator', () => {
   });
 
   it('locateSubtitle — language lookup is case-insensitive', async () => {
+    statSpy.mockResolvedValue({ size: 1 } as Awaited<ReturnType<typeof fs.stat>>);
     const lessonWithVtt = makeLessonWithSubtitles([
       { language: 'EN', path: SUBTITLE_VTT_RELATIVE },
     ]);
@@ -341,6 +344,7 @@ describe('LessonFileLocator', () => {
   });
 
   it('locateSubtitle falls back to a generated transcript when no sidecar matches the language', async () => {
+    statSpy.mockResolvedValue({ size: 1 } as Awaited<ReturnType<typeof fs.stat>>);
     const lessonNoSubtitles = makeLessonWithSubtitles([]);
     const transcriptRepo = makeTranscriptRepo({
       findGeneratedForLessons: vi
@@ -427,6 +431,7 @@ describe('LessonFileLocator', () => {
   });
 
   it('locateSubtitle prefers a sidecar over a generated transcript in the same language', async () => {
+    statSpy.mockResolvedValue({ size: 1 } as Awaited<ReturnType<typeof fs.stat>>);
     const lessonWithVtt = makeLessonWithSubtitles([
       { language: 'en', path: SUBTITLE_VTT_RELATIVE },
     ]);
@@ -466,6 +471,62 @@ describe('LessonFileLocator', () => {
 
     await expect(locator.locateSubtitle(LESSON_ID, 'fr')).rejects.toBeInstanceOf(
       DerivedPathEscapedError,
+    );
+  });
+
+  // #698 — a Subtitle row can outlive its file on disk. Both extensions the
+  // controller serves differently (.vtt passthrough, .srt→vtt conversion)
+  // must 404 through the same locator check, not 500 downstream.
+  it('locateSubtitle throws SubtitleNotFoundError when the sidecar .vtt row exists but the file is gone from disk', async () => {
+    statSpy.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+    const lessonWithVtt = makeLessonWithSubtitles([
+      { language: 'en', path: SUBTITLE_VTT_RELATIVE },
+    ]);
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithVtt) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+    );
+
+    await expect(locator.locateSubtitle(LESSON_ID, 'en')).rejects.toBeInstanceOf(
+      SubtitleNotFoundError,
+    );
+  });
+
+  it('locateSubtitle throws SubtitleNotFoundError when the sidecar .srt row exists but the file is gone from disk', async () => {
+    statSpy.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+    const lessonWithSrt = makeLessonWithSubtitles([
+      { language: 'ru', path: SUBTITLE_SRT_RELATIVE },
+    ]);
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithSrt) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+    );
+
+    await expect(locator.locateSubtitle(LESSON_ID, 'ru')).rejects.toBeInstanceOf(
+      SubtitleNotFoundError,
+    );
+  });
+
+  it('locateSubtitle throws SubtitleNotFoundError when a generated transcript row exists but its file is gone from disk', async () => {
+    statSpy.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+    const lessonNoSubtitles = makeLessonWithSubtitles([]);
+    const transcriptRepo = makeTranscriptRepo({
+      findGeneratedForLessons: vi
+        .fn()
+        .mockResolvedValue(new Map([[LESSON_ID, { sourceMtime: new Date(), sourceSize: 1 }]])),
+    });
+    const locator = makeLocator(
+      makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonNoSubtitles) }),
+      makeCourseRepo(),
+      makeLibraryRepo(),
+      transcriptRepo,
+      makeAppConfig('/srv/derived'),
+    );
+
+    await expect(locator.locateSubtitle(LESSON_ID, 'fr')).rejects.toBeInstanceOf(
+      SubtitleNotFoundError,
     );
   });
 

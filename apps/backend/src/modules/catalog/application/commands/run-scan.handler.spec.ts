@@ -33,7 +33,7 @@
  *   Two-video fixture where the first video has a successful probe but a failing
  *   thumbnail write, and the second video has a failing probe (so thumbnail is
  *   never attempted). Asserts:
- *     - scan status = 'succeeded'
+ *     - scan status = 'partial' (two ScanErrors recorded)
  *     - discoveredLessons[0].metadata is populated (probe succeeded)
  *     - discoveredLessons[1].metadata is undefined (probe failed)
  *     - exactly two ScanErrors: one 'ffmpeg-thumbnail-failed' (first video) and
@@ -734,7 +734,9 @@ describe('RunScanHandler', () => {
     await drainMicrotasks();
 
     const saved = scanRepo.store.get(scan.id)!;
-    expect(saved.status).toBe('succeeded');
+    // Reaches a terminal state without crashing — partial, not succeeded,
+    // because it did record a ScanError (#699).
+    expect(saved.status).toBe('partial');
     const jsonError = saved.errors.find((e) => e.code === 'course-json-invalid');
     expect(jsonError).toBeDefined();
   });
@@ -1091,7 +1093,7 @@ describe('RunScanHandler', () => {
   //       thumbnail NOT attempted (probe failed).
   //       lesson entry has metadata === undefined.
   //
-  // Result: scan status = 'succeeded', two ScanErrors (one per video with the
+  // Result: scan status = 'partial', two ScanErrors (one per video with the
   // respective code), discoveredLessons[0].metadata populated,
   // discoveredLessons[1].metadata undefined.
   // -------------------------------------------------------------------------
@@ -1138,8 +1140,9 @@ describe('RunScanHandler', () => {
 
       const saved = ffScanRepo.store.get(scan.id)!;
 
-      // Scan completes successfully despite per-file failures.
-      expect(saved.status).toBe('succeeded');
+      // Scan reaches a terminal state despite per-file failures — partial,
+      // since it did record ScanErrors for them (#699).
+      expect(saved.status).toBe('partial');
 
       // One course, two lessons discovered.
       expect(saved.coursesDiscovered).toBe(1);
@@ -1246,8 +1249,8 @@ describe('RunScanHandler', () => {
       await drainMicrotasks();
 
       const saved = failScanRepo.store.get(scan.id)!;
-      // Failure is per-file, not fatal — the scan still succeeds overall.
-      expect(saved.status).toBe('succeeded');
+      // Failure is per-file, not fatal — the scan reaches partial, not failed.
+      expect(saved.status).toBe('partial');
       expect(saved.errors).toHaveLength(1);
       expect(saved.errors[0]?.code).toBe('ffmpeg-thumbnail-failed');
       expect(saved.coursesDiscovered).toBe(1);
@@ -1479,8 +1482,9 @@ describe('RunScanHandler', () => {
       await drainMicrotasks();
 
       const saved = scanRepo2.store.get(scan.id)!;
-      // The scan itself still succeeds — the bad sidecar costs only itself.
-      expect(saved.status).toBe('succeeded');
+      // The scan itself still reaches partial — the bad sidecar costs only
+      // itself, but it is still a recorded error (#699).
+      expect(saved.status).toBe('partial');
       const err = saved.errors.find((e) => e.code === 'subtitle-sidecar-invalid');
       expect(err).toBeDefined();
       expect(transcriptRepo.store.has(`${lessonId}:en`)).toBe(false);
@@ -1522,7 +1526,8 @@ describe('RunScanHandler', () => {
       await drainMicrotasks();
 
       const saved = orderScanRepo.store.get(scan.id)!;
-      expect(saved.status).toBe('succeeded');
+      // The advisory 'course-order-unreliable' code is still a ScanError → partial.
+      expect(saved.status).toBe('partial');
 
       const orderErrors = saved.errors.filter((e) => e.code === 'course-order-unreliable');
       expect(orderErrors).toHaveLength(1); // one per course, not one per file
@@ -1660,8 +1665,9 @@ describe('RunScanHandler', () => {
       await drainMicrotasks();
 
       const saved = scanRepo2.store.get(scan.id)!;
-      // Cleanup failure is non-fatal — the scan still reaches a terminal state.
-      expect(saved.status).toBe('succeeded');
+      // Cleanup failure is non-fatal — the scan still reaches a terminal
+      // state, but partial rather than succeeded since it recorded an error.
+      expect(saved.status).toBe('partial');
       const err = saved.errors.find((e) => e.code === 'transcript-cleanup-failed');
       expect(err).toBeDefined();
     });
@@ -1908,6 +1914,52 @@ describe('RunScanHandler', () => {
 
       const [, payload] = finishedCalls[0]!;
       expect((payload as { status: string }).status).toBe('succeeded');
+      expect((payload as { scanId: string }).scanId).toBe(scan.id);
+    });
+
+    // #699 — a scan that recorded errors is not the same outcome as a clean
+    // one; the finished event (and the persisted Scan) must say so.
+    it('publishes finished event with status=partial when there are recorded errors', async () => {
+      vi.useRealTimers();
+
+      const partialFiles: FileRecord[] = [
+        { path: '/lib/Partial Course/01 - Intro.mp4', mtime: BASE_TIME, size: 100 },
+        // Shares the video's stem, but an extension nothing recognises —
+        // recorded as an 'unsupported-extension' ScanError (belt-and-
+        // suspenders path: still reported even inside a group with a video).
+        { path: '/lib/Partial Course/01 - Intro.xyz', mtime: BASE_TIME, size: 10 },
+      ];
+      const partialFs = new FakeFsAdapter(partialFiles);
+      const partialScanRepo = makeScanRepo();
+      const partialCentrifugo = makeCentrifugoService();
+      const partialHandler = new RunScanHandler(
+        libraryRepo,
+        partialScanRepo,
+        makeCourseRepo(),
+        makeLessonRepo(),
+        partialFs,
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        partialCentrifugo,
+        makeMetadataLinker(),
+        makePosterSync(),
+      );
+
+      const scan = await partialHandler.execute(new RunScanCommand('lib-1', ACTOR_USER_ID));
+      await drainMicrotasks();
+
+      const saved = partialScanRepo.store.get(scan.id)!;
+      expect(saved.status).toBe('partial');
+      expect(saved.errors.some((e) => e.code === 'unsupported-extension')).toBe(true);
+
+      const finishedCalls = vi
+        .mocked(partialCentrifugo.publish)
+        .mock.calls.filter(([, data]) => (data as { kind: string }).kind === 'finished');
+      expect(finishedCalls).toHaveLength(1);
+
+      const [, payload] = finishedCalls[0]!;
+      expect((payload as { status: string }).status).toBe('partial');
       expect((payload as { scanId: string }).scanId).toBe(scan.id);
     });
 
@@ -2536,11 +2588,12 @@ describe('RunScanHandler', () => {
       await drainMicrotasks();
 
       const saved = scanRepo2.store.get(scan.id)!;
-      expect(saved.status).toBe('succeeded');
       // "Bonus.mp4" parses no ordinal — advisory 'course-order-unreliable',
-      // not a failure. See the "course-order-unreliable signal" describe
-      // block for the dedicated test; this one still asserts zero *other*
-      // errors and the resulting position order.
+      // not a failure, but still a recorded ScanError → partial (#699). See
+      // the "course-order-unreliable signal" describe block for the
+      // dedicated test; this one still asserts zero *other* errors and the
+      // resulting position order.
+      expect(saved.status).toBe('partial');
       expect(saved.errors).toHaveLength(1);
       expect(saved.errors[0]?.code).toBe('course-order-unreliable');
       expect(lessonRepo2.store.size).toBe(3);
@@ -2591,8 +2644,9 @@ describe('RunScanHandler', () => {
       await drainMicrotasks();
 
       const saved = scanRepo2.store.get(scan.id)!;
-      // Scan reaches a terminal state and reports the failure — never silent.
-      expect(saved.status).toBe('succeeded');
+      // Scan reaches a terminal state and reports the failure — never
+      // silent, and partial rather than succeeded since it recorded one.
+      expect(saved.status).toBe('partial');
       const err = saved.errors.find((e) => e.code === 'lesson-persist-failed');
       expect(err).toBeDefined();
       // The other lesson in the same course still gets persisted — one
@@ -3545,7 +3599,8 @@ describe('RunScanHandler', () => {
       // The loser keeps the base slug as its stem and gains a suffix.
       expect(slugs.find((s) => s !== 'графы')).toMatch(/^графы-[\da-f]{8}$/u);
 
-      expect(scan.status).toBe('succeeded');
+      // Reported, not silent — one course-slug-collision ScanError → partial.
+      expect(scan.status).toBe('partial');
       const collision = scan.errors.filter((e) => e.code === 'course-slug-collision');
       expect(collision).toHaveLength(1);
       expect(collision[0]!.message).toContain('графы-');
@@ -3852,7 +3907,9 @@ describe('RunScanHandler', () => {
       await drainMicrotasks();
 
       const saved = scanRepo2.store.get(scan.id)!;
-      expect(saved.status).toBe('succeeded');
+      // At least one lesson in this fixture has no parseable ordinal —
+      // advisory 'course-order-unreliable', still a recorded ScanError (#699).
+      expect(saved.status).toBe('partial');
       expect(lessonRepo2.parkPositionsForResync).toHaveBeenCalledWith(course.id);
 
       for (const [filename] of rows) {

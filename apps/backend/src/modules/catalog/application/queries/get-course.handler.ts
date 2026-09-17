@@ -46,8 +46,9 @@ export class GetCourseHandler implements IQueryHandler<GetCourseQuery, CourseDto
     }
 
     const allowed = await this.authz.canSee(query.actor, {
-      kind: 'library',
-      id: course.libraryId as LibraryId,
+      kind: 'course',
+      id: course.id,
+      libraryId: course.libraryId as LibraryId,
     });
 
     if (!allowed) {

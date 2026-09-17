@@ -1590,7 +1590,7 @@ export interface paths {
     };
     /**
      * Get the most recent scan for a library
-     * @description Returns the latest scan record regardless of status (running, succeeded, failed, cancelled).
+     * @description Returns the latest scan record regardless of status (running, succeeded, partial, failed, cancelled).
      */
     get: operations['getLatestLibraryScan'];
     put?: never;
@@ -4233,7 +4233,7 @@ export interface components {
       startedAt: string;
       /**
        * Format: date-time
-       * @description Set on terminal status (`succeeded` / `failed` / `cancelled`). Absent while `status: running`.
+       * @description Set on terminal status (`succeeded` / `partial` / `failed` / `cancelled`). Absent while `status: running`.
        */
       finishedAt?: string;
       /** @description Total number of filesystem entries inspected. */
@@ -4268,10 +4268,10 @@ export interface components {
       code?: string;
     };
     /**
-     * @description Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans only ever transition `running → {succeeded, failed}`.
+     * @description Scan lifecycle. `cancelled` is reserved for v2 admin-cancel; v1 scans transition `running → {succeeded, partial, failed}`. `partial` is the walk completing without crashing but recording at least one `ScanError` (course-json-invalid, ffmpeg-probe-failed, an unreadable file, …) — distinct from `failed`, which is the walk itself throwing (`scan-walk-failed`) before it could finish. `succeeded` means zero `ScanError` rows.
      * @enum {string}
      */
-    ScanStatus: 'running' | 'succeeded' | 'failed' | 'cancelled';
+    ScanStatus: 'running' | 'succeeded' | 'partial' | 'failed' | 'cancelled';
     /**
      * @description Transcription-run lifecycle. Mirrors `ScanStatus` with one addition: `interrupted` is written by a boot-time recovery pass when the process that owned a `running` run died (a SIGKILL, a container recreate) before it could write a terminal state itself — the run's per-lesson work is not lost, and a plain re-run finishes cheaply thanks to the skip rule. `cancelled` is reachable here because a run can also be stopped from the admin screen.
      * @enum {string}
@@ -4330,7 +4330,7 @@ export interface components {
       startedAt: string;
       /**
        * Format: date-time
-       * @description Set on terminal status (`succeeded` / `failed` / `cancelled`). Absent while `status: running`.
+       * @description Set on terminal status (`succeeded` / `failed` / `cancelled` / `interrupted`). Absent while `status: running`.
        */
       finishedAt?: string;
       /** @description Lessons considered by this run. */

@@ -292,6 +292,32 @@ describe('browse page filters', () => {
       expect(wrapper.text()).not.toContain('pages.browse.emptyTitle');
     });
 
+    // #701: a full filter bar (4 chips + 3 selects) rendering above "you have
+    // no access" was 13 interactive controls operating on nothing.
+    it('hides the filter bar and the "0 courses" count for a denied member (#701)', async () => {
+      authUser.value = { role: 'member' };
+      libraries.value = { items: [] };
+      const wrapper = await mountBrowse();
+
+      expect(wrapper.find('[data-testid="browse-filter-library"]').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="browse-sort"]').exists()).toBe(false);
+      expect(wrapper.find('[role="group"]').exists()).toBe(false);
+      expect(wrapper.text()).not.toContain('pages.browse.subtitle');
+    });
+
+    // A stale filter in a bookmarked URL must not mask the denial behind the
+    // "filtered" empty state — access is checked independently of the query
+    // string (#701).
+    it('still shows the access denial when a denied member has a stale filter in the URL', async () => {
+      authUser.value = { role: 'member' };
+      libraries.value = { items: [] };
+      route.query = { duration: 'gt20' };
+      const wrapper = await mountBrowse();
+
+      expect(wrapper.find('.no-permission').text()).toContain('pages.browse.emptyNoAccessTitle');
+      expect(wrapper.text()).not.toContain('pages.browse.emptyFilteredTitle');
+    });
+
     it('tells a member with a granted-but-empty library to check back, not to add a library', async () => {
       authUser.value = { role: 'member' };
       libraries.value = {

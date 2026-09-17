@@ -66,16 +66,13 @@
 </template>
 
 <style scoped lang="scss">
-  // Avatar diameters and glyph sizes that fall between design-token steps.
-  // The scale is a bespoke ramp, not the spacing scale, so the off-step rungs
-  // live here as named variables (same literals as before — nothing moves).
+  // Avatar diameters that fall between design-token steps — a bespoke ramp,
+  // not the spacing scale, so these off-step rungs stay named SCSS variables.
+  // Glyph font sizes (#700) snap onto the type scale instead: --text-xs is
+  // its floor, so anything that was hand-picked smaller lands there too.
   $size-xs: 20px;
   $size-lg: 40px;
   $size-xl: 56px;
-  $initials-xs: 10px;
-  $initials-md: 13px;
-  $initials-lg: 15px;
-  $role-glyph: 7px;
 
   .app-avatar {
     position: relative;
@@ -108,7 +105,7 @@
     &--xs {
       width: $size-xs;
       height: $size-xs;
-      font-size: $initials-xs;
+      font-size: var(--text-xs); // scale floor — was a hand-picked 10px (#700)
     }
     &--sm {
       width: var(--space-5);
@@ -118,12 +115,12 @@
     &--md {
       width: var(--space-6);
       height: var(--space-6);
-      font-size: $initials-md;
+      font-size: var(--text-md);
     }
     &--lg {
       width: $size-lg;
       height: $size-lg;
-      font-size: $initials-lg;
+      font-size: var(--text-base);
     }
     &--xl {
       width: $size-xl;
@@ -139,7 +136,7 @@
       height: var(--space-3);
       border-radius: 50%;
       border: 2px solid var(--surface-page);
-      font-size: $role-glyph;
+      font-size: var(--text-xs); // scale floor — was a hand-picked 7px (#700)
       display: grid;
       place-items: center;
       font-weight: var(--fw-bold);

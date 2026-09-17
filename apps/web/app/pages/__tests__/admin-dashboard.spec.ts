@@ -163,6 +163,47 @@ describe('admin dashboard page', () => {
     expect(wrapper.text()).toContain('pages.admin.dashboard.statLastScanNever');
   });
 
+  it('names the last-scan library from the recent-scans join, not its raw cuid (#701)', async () => {
+    dashData.value = DASH; // latestScan.scanId === 'scan-1', libraryId === 'lib-abcdefgh-1234'
+    dashStatus.value = 'success';
+    scansData.value = {
+      items: [
+        {
+          scanId: 'scan-1',
+          libraryId: 'lib-abcdefgh-1234',
+          libraryName: 'Computer Science',
+          status: 'succeeded',
+          startedAt: '2026-09-16T00:00:00Z',
+          finishedAt: '2026-09-16T00:01:00Z',
+          filesScanned: 42,
+          coursesAdded: 0,
+          errorsCount: 0,
+        },
+      ],
+    };
+    scansStatus.value = 'success';
+
+    const wrapper = await mountPage();
+
+    expect(wrapper.text()).toContain(
+      'pages.admin.dashboard.statLastScanMeta({"libraryName":"Computer Science","n":42})',
+    );
+    expect(wrapper.text()).not.toContain('lib-abcdefgh');
+  });
+
+  it('falls back to the truncated cuid when the recent-scans list has no matching row', async () => {
+    dashData.value = DASH;
+    dashStatus.value = 'success';
+    scansData.value = { items: [] };
+    scansStatus.value = 'success';
+
+    const wrapper = await mountPage();
+
+    expect(wrapper.text()).toContain(
+      'pages.admin.dashboard.statLastScanMeta({"libraryName":"lib-abcd…","n":42})',
+    );
+  });
+
   it('shows the error banner and retries both sources on click', async () => {
     dashStatus.value = 'error';
     dashError.value = new Error('boom');

@@ -148,7 +148,6 @@
 
 <style lang="scss" scoped>
   $icon-size: 28px;
-  $icon-inner-font: 14px;
   $dot-size: 6px;
   $dur-dot: var(--dur-slower, 1600ms);
 
@@ -194,7 +193,7 @@
       display: grid;
       place-items: center;
       color: var(--text-secondary);
-      font-size: $icon-inner-font;
+      font-size: var(--text-md); // #700: was a raw 14px SCSS var, invisible to the literal gate
       flex-shrink: 0;
     }
 

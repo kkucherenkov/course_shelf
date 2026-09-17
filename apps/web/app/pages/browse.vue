@@ -62,7 +62,11 @@
 
   // The count subtitle reflects loaded results, so only show it once data has
   // arrived — during `pending` `items` is empty and a raw count flashes "0".
+  // Suppressed entirely once `hasLibraryAccess` is confirmed false (#701) —
+  // "0 courses" reads as a fact about the library when it's actually a
+  // permissions denial the body text below already states.
   const subtitle = computed<string>(() => {
+    if (!hasLibraryAccess.value) return '';
     if (fetchStatus.value === 'pending') return t('pages.browse.subtitleLoading');
     if (fetchStatus.value === 'success')
       return t('pages.browse.subtitle', { n: items.value.length });
@@ -135,18 +139,29 @@
   const auth = useAuthStore();
   const isAdmin = computed(() => auth.user?.role?.toLowerCase() === 'admin');
 
-  type BrowseEmptyKind = 'filtered' | 'no-access' | 'no-courses' | 'no-library';
+  // Same signal the home page uses (#666) to tell "nothing was ever granted
+  // to this account" apart from every other empty/filtered state — reused
+  // here rather than inventing a second pattern (#701). Independent of
+  // `hasActiveFilter`: a stale filter in a bookmarked URL must not mask a
+  // real access denial behind the "filtered" copy.
+  const hasLibraryAccess = computed(() => {
+    if (isAdmin.value) return true;
+    // Libraries haven't resolved yet — default to the safe, always-true
+    // state rather than briefly asserting "no access" off `useLibraries`'s
+    // pre-fetch `{ items: [] }` default.
+    if (librariesStatus.value === 'pending' || librariesStatus.value === 'idle') return true;
+    return (librariesData.value?.items.length ?? 0) > 0;
+  });
+
+  // Reached only once `hasLibraryAccess` is true (see the template) — the
+  // remaining distinctions are all about *what* is empty, not *whether* the
+  // account can see anything at all.
+  type BrowseEmptyKind = 'filtered' | 'no-courses' | 'no-library';
 
   const emptyKind = computed<BrowseEmptyKind>(() => {
     if (hasActiveFilter.value) return 'filtered';
-    // Libraries haven't resolved yet — default to the safe, always-true
-    // copy rather than briefly asserting "no access" off `useLibraries`'s
-    // pre-fetch `{ items: [] }` default.
-    if (librariesStatus.value === 'pending' || librariesStatus.value === 'idle') {
-      return 'no-library';
-    }
     if (isAdmin.value) return 'no-library';
-    return (librariesData.value?.items.length ?? 0) > 0 ? 'no-courses' : 'no-access';
+    return 'no-courses';
   });
 
   const emptyTitle = computed<string>(() => {
@@ -198,138 +213,145 @@
       </p>
     </header>
 
-    <!-- Filters + sort row. Wraps under tight viewports; no dedicated
-         bottom-sheet UX yet (deferred to design polish follow-up). -->
-    <div
-      class="page-browse__controls"
-      role="region"
-      :aria-label="t('pages.browse.filters.regionLabel')"
-    >
-      <div
-        class="page-browse__chips"
-        role="group"
-        :aria-label="t('pages.browse.filters.statusLabel')"
-      >
-        <AppChip
-          v-for="option in statusOptions"
-          :key="option.value"
-          :remove-label="t('ui.chip.remove')"
-          :variant="status === option.value ? 'primary' : 'default'"
-          :selected="status === option.value"
-          :label="option.label"
-          :data-testid="`browse-filter-${option.value}`"
-          @click="selectStatus(option.value)"
-        />
-      </div>
-
-      <div class="page-browse__selects">
-        <label class="page-browse__select">
-          <span class="page-browse__select-label">{{ t('pages.browse.library.label') }}</span>
-          <AppSelect
-            v-model="libraryId"
-            :options="libraryOptions"
-            size="sm"
-            data-testid="browse-filter-library"
-          />
-        </label>
-
-        <label class="page-browse__select">
-          <span class="page-browse__select-label">{{ t('pages.browse.duration.label') }}</span>
-          <AppSelect
-            v-model="durationBucket"
-            :options="durationOptions"
-            size="sm"
-            data-testid="browse-filter-duration"
-          />
-        </label>
-
-        <label v-if="showInstructorFilter" class="page-browse__select">
-          <span class="page-browse__select-label">{{ t('pages.browse.instructor.label') }}</span>
-          <AppSelect
-            v-model="instructorId"
-            :options="instructorOptions"
-            size="sm"
-            data-testid="browse-filter-instructor"
-          />
-        </label>
-
-        <label class="page-browse__select">
-          <span class="page-browse__select-label">{{ t('pages.browse.sort.label') }}</span>
-          <AppSelect v-model="sort" :options="sortOptions" size="sm" data-testid="browse-sort" />
-        </label>
-
-        <AppButton
-          v-if="hasActiveFilter"
-          variant="ghost"
-          size="sm"
-          data-testid="browse-clear-filters"
-          @click="clearFilters"
-        >
-          {{ t('pages.browse.filters.clear') }}
-        </AppButton>
-      </div>
-    </div>
-
-    <!-- Loading: skeleton grid -->
-    <div v-if="fetchStatus === 'pending'" class="page-browse__grid">
-      <div v-for="n in 8" :key="`skel-${n}`" class="page-browse__skeleton-cell">
-        <AppSkeleton width="100%" height="220px" radius="md" />
-      </div>
-    </div>
-
-    <!-- Error -->
-    <AppBanner
-      v-else-if="fetchStatus === 'error'"
-      variant="error"
-      :title="t('pages.browse.errorTitle')"
-      :body="t('pages.browse.errorBody')"
-      class="page-browse__banner"
-    >
-      <template #actions>
-        <AppButton variant="secondary" size="sm" @click="refetch">
-          {{ t('pages.browse.retry') }}
-        </AppButton>
-      </template>
-    </AppBanner>
-
-    <!-- Empty — no grants: a student's problem is access, not the library -->
+    <!--
+      ── No library access: one explanation, not a filter bar above it (#701) ──
+      Same lesson as the home page's #666: a user with zero grants gets the
+      denial and nothing else — no chips, no selects, no "0 courses" acting
+      on a shelf they were never given access to.
+    -->
     <AppNoPermission
-      v-else-if="items.length === 0 && emptyKind === 'no-access'"
+      v-if="!hasLibraryAccess"
       icon="lock"
       :title="t('pages.browse.emptyNoAccessTitle')"
       :body="t('pages.browse.emptyNoAccessBody')"
     />
 
-    <!-- Empty — filtered / granted-but-empty / true empty-library (admin) -->
-    <AppEmptyState
-      v-else-if="items.length === 0"
-      icon="folder"
-      :title="emptyTitle"
-      :body="emptyBody"
-    >
-      <template v-if="emptyKind === 'filtered'" #action>
-        <AppButton
-          variant="secondary"
-          size="sm"
-          data-testid="browse-empty-clear"
-          @click="clearFilters"
-        >
-          {{ t('pages.browse.emptyShowAll') }}
-        </AppButton>
-      </template>
-    </AppEmptyState>
-
-    <!-- Populated grid -->
-    <div v-else class="page-browse__grid">
-      <NuxtLink
-        v-for="item in items"
-        :key="item.id"
-        :to="`/courses/${item.id}`"
-        class="page-browse__card-link"
+    <template v-else>
+      <!-- Filters + sort row. Wraps under tight viewports; no dedicated
+           bottom-sheet UX yet (deferred to design polish follow-up). -->
+      <div
+        class="page-browse__controls"
+        role="region"
+        :aria-label="t('pages.browse.filters.regionLabel')"
       >
-        <CoursePosterCard :course="toCourse(item)" :interactive="false" />
-      </NuxtLink>
-    </div>
+        <div
+          class="page-browse__chips"
+          role="group"
+          :aria-label="t('pages.browse.filters.statusLabel')"
+        >
+          <AppChip
+            v-for="option in statusOptions"
+            :key="option.value"
+            :remove-label="t('ui.chip.remove')"
+            :variant="status === option.value ? 'primary' : 'default'"
+            :selected="status === option.value"
+            :label="option.label"
+            :data-testid="`browse-filter-${option.value}`"
+            @click="selectStatus(option.value)"
+          />
+        </div>
+
+        <div class="page-browse__selects">
+          <label class="page-browse__select">
+            <span class="page-browse__select-label">{{ t('pages.browse.library.label') }}</span>
+            <AppSelect
+              v-model="libraryId"
+              :options="libraryOptions"
+              size="sm"
+              data-testid="browse-filter-library"
+            />
+          </label>
+
+          <label class="page-browse__select">
+            <span class="page-browse__select-label">{{ t('pages.browse.duration.label') }}</span>
+            <AppSelect
+              v-model="durationBucket"
+              :options="durationOptions"
+              size="sm"
+              data-testid="browse-filter-duration"
+            />
+          </label>
+
+          <label v-if="showInstructorFilter" class="page-browse__select">
+            <span class="page-browse__select-label">{{ t('pages.browse.instructor.label') }}</span>
+            <AppSelect
+              v-model="instructorId"
+              :options="instructorOptions"
+              size="sm"
+              data-testid="browse-filter-instructor"
+            />
+          </label>
+
+          <label class="page-browse__select">
+            <span class="page-browse__select-label">{{ t('pages.browse.sort.label') }}</span>
+            <AppSelect v-model="sort" :options="sortOptions" size="sm" data-testid="browse-sort" />
+          </label>
+
+          <AppButton
+            v-if="hasActiveFilter"
+            variant="ghost"
+            size="sm"
+            data-testid="browse-clear-filters"
+            @click="clearFilters"
+          >
+            {{ t('pages.browse.filters.clear') }}
+          </AppButton>
+        </div>
+      </div>
+
+      <!-- Loading: skeleton grid -->
+      <div v-if="fetchStatus === 'pending'" class="page-browse__grid">
+        <div v-for="n in 8" :key="`skel-${n}`" class="page-browse__skeleton-cell">
+          <AppSkeleton width="100%" height="220px" radius="md" />
+        </div>
+      </div>
+
+      <!-- Error -->
+      <AppBanner
+        v-else-if="fetchStatus === 'error'"
+        variant="error"
+        :title="t('pages.browse.errorTitle')"
+        :body="t('pages.browse.errorBody')"
+        class="page-browse__banner"
+      >
+        <template #actions>
+          <AppButton variant="secondary" size="sm" @click="refetch">
+            {{ t('pages.browse.retry') }}
+          </AppButton>
+        </template>
+      </AppBanner>
+
+      <!-- Empty — filtered / granted-but-empty / true empty-library (admin) -->
+      <AppEmptyState
+        v-else-if="items.length === 0"
+        icon="folder"
+        :title="emptyTitle"
+        :body="emptyBody"
+      >
+        <template v-if="emptyKind === 'filtered'" #action>
+          <AppButton
+            variant="secondary"
+            size="sm"
+            data-testid="browse-empty-clear"
+            @click="clearFilters"
+          >
+            {{ t('pages.browse.emptyShowAll') }}
+          </AppButton>
+        </template>
+      </AppEmptyState>
+
+      <!-- Populated grid -->
+      <div v-else class="page-browse__grid">
+        <NuxtLink
+          v-for="item in items"
+          :key="item.id"
+          :to="`/courses/${item.id}`"
+          class="page-browse__card-link"
+        >
+          <CoursePosterCard :course="toCourse(item)" :interactive="false" />
+        </NuxtLink>
+      </div>
+    </template>
   </div>
 </template>
 

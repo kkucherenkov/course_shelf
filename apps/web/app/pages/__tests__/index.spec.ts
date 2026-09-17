@@ -63,29 +63,34 @@ vi.mock('~/composables/useLibraries', () => ({
 const recentlyAddedData = ref<RecentlyAddedDto | undefined>({ items: [] });
 const recentlyCompletedData = ref<RecentlyCompletedDto | undefined>({ items: [] });
 const recentlyCompletedStatus = ref<'idle' | 'pending' | 'success' | 'error'>('success');
+const continueWatchingErrorStatus = ref<number | null>(null);
 vi.mock('~/composables/useHome', () => ({
   useContinueWatching: () => ({
     data: ref<ContinueWatchingDto | undefined>({ items: [] }),
     status: ref('success'),
     error: ref(null),
+    errorStatus: continueWatchingErrorStatus,
     refetch: vi.fn(),
   }),
   useRecentlyAdded: () => ({
     data: recentlyAddedData,
     status: ref('success'),
     error: ref(null),
+    errorStatus: ref(null),
     refetch: vi.fn(),
   }),
   useRecentlyCompleted: () => ({
     data: recentlyCompletedData,
     status: recentlyCompletedStatus,
     error: ref(null),
+    errorStatus: ref(null),
     refetch: vi.fn(),
   }),
   useYourWeek: () => ({
     data: ref<YourWeekDto | undefined>(undefined),
     status: ref('success'),
     error: ref(null),
+    errorStatus: ref(null),
     refetch: vi.fn(),
   }),
 }));
@@ -298,5 +303,34 @@ describe('pages/index.vue — recently-completed count label respects loading st
 
     const recentlyCompleted = findRow(wrapper, 'pages.home.recentlyCompleted.heading');
     expect(recentlyCompleted?.props('collapsibleMeta')).toBe('pages.home.recentlyCompleted.count');
+  });
+});
+
+// A 429 says "check your connection and try again" — wrong advice: the
+// connection is fine, and retrying only extends the block (#701).
+describe('pages/index.vue — 429 gets different advice than a network error (#701)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authUser.value = { role: 'ADMIN' };
+    recentlyAddedData.value = { items: [] };
+    librariesData.value = { items: [] };
+    librariesStatus.value = 'success';
+    continueWatchingErrorStatus.value = null;
+  });
+
+  it('shows the shared rate-limited body on a 429', async () => {
+    continueWatchingErrorStatus.value = 429;
+    const wrapper = await mountPage();
+
+    const row = findRow(wrapper, 'pages.home.continueWatching.heading');
+    expect(row?.props('errorBody')).toBe('ui.errors.rateLimitedBody');
+  });
+
+  it('keeps the generic body on a non-429 error', async () => {
+    continueWatchingErrorStatus.value = 500;
+    const wrapper = await mountPage();
+
+    const row = findRow(wrapper, 'pages.home.continueWatching.heading');
+    expect(row?.props('errorBody')).toBe('pages.home.continueWatching.errorBody');
   });
 });

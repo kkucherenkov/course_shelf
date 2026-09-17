@@ -57,16 +57,18 @@ describe('locale pluralization end-to-end', () => {
     expect(t('pages.admin.dashboard.statLibrariesMetaLessons', { n: 5973 })).toBe('5973 урока');
   });
 
-  it('repeats the {libraryId} prefix across every plural form', () => {
-    expect(t('pages.admin.dashboard.statLastScanMeta', { libraryId: 'abc12345', n: 1 })).toBe(
-      'Библиотека abc12345 · 1 файл',
-    );
-    expect(t('pages.admin.dashboard.statLastScanMeta', { libraryId: 'abc12345', n: 2 })).toBe(
-      'Библиотека abc12345 · 2 файла',
-    );
-    expect(t('pages.admin.dashboard.statLastScanMeta', { libraryId: 'abc12345', n: 5 })).toBe(
-      'Библиотека abc12345 · 5 файлов',
-    );
+  // #701: was `{libraryId}` — a raw cuid; the last-scan card now names the
+  // library instead (see pages/admin/index.vue's join on the recent-scans list).
+  it('repeats the {libraryName} prefix across every plural form', () => {
+    expect(
+      t('pages.admin.dashboard.statLastScanMeta', { libraryName: 'Computer Science', n: 1 }),
+    ).toBe('Библиотека Computer Science · 1 файл');
+    expect(
+      t('pages.admin.dashboard.statLastScanMeta', { libraryName: 'Computer Science', n: 2 }),
+    ).toBe('Библиотека Computer Science · 2 файла');
+    expect(
+      t('pages.admin.dashboard.statLastScanMeta', { libraryName: 'Computer Science', n: 5 }),
+    ).toBe('Библиотека Computer Science · 5 файлов');
   });
 
   it('repeats the search query across every plural form', () => {

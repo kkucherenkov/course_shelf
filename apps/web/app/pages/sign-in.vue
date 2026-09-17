@@ -21,7 +21,6 @@
 
   const emailValid = computed(() => email.value.includes('@') && email.value.length >= 5);
   const passwordValid = computed(() => password.value.length >= 8);
-  const formValid = computed(() => emailValid.value && passwordValid.value);
 
   // Countdown formatter — m:ss once we're over a minute, else "{n}s".
   function formatRetry(sec: number): string {
@@ -136,13 +135,19 @@
           </NuxtLink>
         </div>
 
+        <!-- Only rate-limit lockout disables submit (#701) — a client-side
+             `formValid` gate used to also disable it whenever the password
+             was under 8 chars, which made `onSignIn`'s own
+             errorEmailInvalid/errorPasswordTooShort branches unreachable: a
+             short password just left a dead button with no explanation.
+             `onSignIn` validates and shows the specific error itself. -->
         <AppButton
           :label="t('pages.signIn.signInButton')"
           type="submit"
           variant="primary"
           block
           :loading="authStore.isPending"
-          :disabled="!formValid || rateLimitSec !== null"
+          :disabled="rateLimitSec !== null"
         />
       </form>
 

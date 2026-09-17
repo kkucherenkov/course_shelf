@@ -26,6 +26,7 @@ vi.stubGlobal('definePageMeta', () => undefined);
 vi.stubGlobal('useI18n', () => ({ t: (key: string) => key }));
 vi.stubGlobal('useRoute', () => ({ params: { id: 'course-1' }, name: 'courses-id' }));
 vi.stubGlobal('useToast', () => ({ add: vi.fn() }));
+vi.stubGlobal('useHead', () => undefined);
 
 // ── Composables ────────────────────────────────────────────────────────────
 const outlineData = ref<CourseOutlineDto | undefined>(undefined);

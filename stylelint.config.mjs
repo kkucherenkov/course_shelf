@@ -50,6 +50,7 @@ const TOKEN_ALIASES = [
 /** @type {import('stylelint').Config} */
 export default {
   extends: ['stylelint-config-recommended-scss', 'stylelint-config-recommended-vue/scss'],
+  plugins: ['./stylelint-plugins/font-size-token-only.mjs'],
   overrides: [
     {
       files: ['**/*.vue'],
@@ -184,6 +185,10 @@ export default {
         resolveNestedSelectors: true,
       },
     ],
+    // #700: font-size reaching through a SCSS $variable that holds a raw px
+    // literal — the indirection the #668/#675 literal gate above can't see.
+    'course-shelf/font-size-token-only': true,
+
     'scss/at-rule-no-unknown': [true, { ignoreAtRules: ['theme', 'tailwind', 'apply', 'layer'] }],
     'max-nesting-depth': [3, { ignore: ['pseudo-classes'] }],
     // Disable noisy rules that conflict with tokens / scoped SCSS.

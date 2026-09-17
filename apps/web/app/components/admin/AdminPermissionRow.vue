@@ -151,7 +151,6 @@
   $chevron-icon-size: 14px;
   $course-dot-size: 18px;
   $course-dot-h: 14px;
-  $badge-font: 11px;
   $badge-min-w: 18px;
   $badge-h: 18px;
   $empty-icon-size: 20px;
@@ -219,7 +218,7 @@
       min-width: $badge-min-w;
       height: $badge-h;
       border-radius: var(--radius-pill);
-      font-size: $badge-font;
+      font-size: var(--text-xs); // #700: was a raw 11px SCSS var, invisible to the literal gate
       font-weight: var(--fw-semibold);
       background: var(--status-info-soft);
       color: var(--status-info-fg);

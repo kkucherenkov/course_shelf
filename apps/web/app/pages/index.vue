@@ -159,6 +159,33 @@
       ? t('pages.home.recentlyAdded.emptyBody')
       : t('pages.home.recentlyAdded.emptyBodyMember'),
   );
+
+  // ── Rate-limited error bodies (#701) ────────────────────────────────────────
+  //
+  // Each row's generic errorBody says "check your connection and try again" —
+  // wrong advice for a 429, where the connection is fine and retrying only
+  // extends the block. `RateLimitBanner`'s countdown treatment is /sign-in
+  // only; these read-only rows just need the advice to stop being wrong.
+  const continueWatchingErrorBody = computed(() =>
+    continueWatching.errorStatus.value === 429
+      ? t('ui.errors.rateLimitedBody')
+      : t('pages.home.continueWatching.errorBody'),
+  );
+  const recentlyAddedErrorBody = computed(() =>
+    recentlyAdded.errorStatus.value === 429
+      ? t('ui.errors.rateLimitedBody')
+      : t('pages.home.recentlyAdded.errorBody'),
+  );
+  const recentlyCompletedErrorBody = computed(() =>
+    recentlyCompleted.errorStatus.value === 429
+      ? t('ui.errors.rateLimitedBody')
+      : t('pages.home.recentlyCompleted.errorBody'),
+  );
+  const yourWeekErrorBody = computed(() =>
+    yourWeek.errorStatus.value === 429
+      ? t('ui.errors.rateLimitedBody')
+      : t('pages.home.yourWeek.errorBody'),
+  );
 </script>
 
 <template>
@@ -201,7 +228,7 @@
           :empty-title="t('pages.home.continueWatching.empty')"
           :empty-body="t('pages.home.continueWatching.emptyBody')"
           :error-title="t('pages.home.continueWatching.error')"
-          :error-body="t('pages.home.continueWatching.errorBody')"
+          :error-body="continueWatchingErrorBody"
           :retry-label="t('pages.home.continueWatching.retry')"
           :skeleton-count="5"
           class="page-home__row page-home__row--continue"
@@ -229,7 +256,7 @@
           :empty-title="t('pages.home.recentlyAdded.empty')"
           :empty-body="recentlyAddedEmptyBody"
           :error-title="t('pages.home.recentlyAdded.error')"
-          :error-body="t('pages.home.recentlyAdded.errorBody')"
+          :error-body="recentlyAddedErrorBody"
           :retry-label="t('pages.home.recentlyAdded.retry')"
           :skeleton-count="6"
           class="page-home__row page-home__row--recently-added"
@@ -257,7 +284,7 @@
           :empty-title="t('pages.home.recentlyCompleted.empty')"
           :empty-body="t('pages.home.recentlyCompleted.emptyBody')"
           :error-title="t('pages.home.recentlyCompleted.error')"
-          :error-body="t('pages.home.recentlyCompleted.errorBody')"
+          :error-body="recentlyCompletedErrorBody"
           :retry-label="t('pages.home.recentlyCompleted.retry')"
           :skeleton-count="4"
           collapsible
@@ -295,7 +322,7 @@
           :lessons-label="yourWeekLessonsLabel"
           :range-label="yourWeekRangeLabel"
           :error-title="t('pages.home.yourWeek.error')"
-          :error-body="t('pages.home.yourWeek.errorBody')"
+          :error-body="yourWeekErrorBody"
           :retry-label="t('pages.home.yourWeek.retry')"
           @retry="yourWeek.refetch()"
         />

@@ -90,12 +90,16 @@
 
     &__tabs {
       flex-shrink: 0;
-      // #696: five tabs (448px) never fit the sidebar at any desktop width
-      // (359px, 279px at 1024px), and a horizontally-scrolling strip with no
-      // affordance hid Transcript entirely — 1952 transcripts, unreachable.
-      // Wrap onto a second row instead: every tab stays visible and directly
-      // clickable at every width, no JS, no overflow menu needed for five
-      // items.
+      // #696 (historical): five tabs (448px) never fit the sidebar at any
+      // desktop width (359px, 279px at 1024px), and a horizontally-scrolling
+      // strip with no affordance hid Transcript entirely — 1952 transcripts,
+      // unreachable. Wrap onto a second row instead of an overflow menu:
+      // every tab stays visible and directly clickable at every width, no JS
+      // needed. #216 moved Transcript into its own panel below the video,
+      // leaving four tabs here; their combined width at four is not
+      // remeasured, so the wrap stays as a width-agnostic guarantee rather
+      // than being dropped on an unverified assumption that four now fit on
+      // one row.
       flex-wrap: wrap;
     }
 

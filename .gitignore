@@ -113,3 +113,6 @@ docs/data
 # are reproducible output and ggml models are hundreds of megabytes.
 /derived/
 /models/
+
+# git worktrees created for isolated lanes
+.claude/worktrees/

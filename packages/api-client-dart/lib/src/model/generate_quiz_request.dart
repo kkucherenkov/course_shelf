@@ -11,11 +11,11 @@ part 'generate_quiz_request.g.dart';
 /// Payload for starting a quiz-generation run. Body may be omitted entirely.
 ///
 /// Properties:
-/// * [modelId] - Filename of the .gguf weight to use (see `GET /admin/model-weights`). Omitted uses the deployment's configured default.
+/// * [modelId] - Model to use — meaning depends on the deployment's text-generation provider (ADR-0012): a `.gguf` weight filename under the local provider (see `GET /admin/model-weights`), or a hosted provider's own model id under `openrouter`. Omitted uses the deployment's configured default.
 /// * [cleanupEnabled] - Runs an ASR-typo cleanup pass on each transcript window before generating questions from it. The cleaned text is never written back to the transcript — only used for this run. Turning it off roughly halves generation time and is reasonable for already-clean author-provided subtitles.
 @BuiltValue()
 abstract class GenerateQuizRequest implements Built<GenerateQuizRequest, GenerateQuizRequestBuilder> {
-  /// Filename of the .gguf weight to use (see `GET /admin/model-weights`). Omitted uses the deployment's configured default.
+  /// Model to use — meaning depends on the deployment's text-generation provider (ADR-0012): a `.gguf` weight filename under the local provider (see `GET /admin/model-weights`), or a hosted provider's own model id under `openrouter`. Omitted uses the deployment's configured default.
   @BuiltValueField(wireName: r'modelId')
   String? get modelId;
 

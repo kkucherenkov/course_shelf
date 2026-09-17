@@ -219,7 +219,25 @@ export interface TranscriptionConfig {
 
 export type ProviderMode = 'mock' | 'real';
 
+/** Which engine answers a text-generation call. Default 'local' keeps llama.cpp. */
+export type LlmProvider = 'local' | 'openrouter';
+
+export interface HostedModelConfig {
+  /** Secret. Empty means the hosted provider cannot be used. */
+  readonly apiKey: string;
+  /** API root, without a trailing slash. */
+  readonly baseUrl: string;
+  /** Model id used when a request names none, e.g. 'mistralai/mistral-nemo'. */
+  readonly defaultModel: string;
+  /** Wall-clock timeout for one chat-completions call, in milliseconds. */
+  readonly timeoutMs: number;
+  /** True once an API key is present — the hosted equivalent of whisper's model-file check. */
+  readonly configured: boolean;
+}
+
 export interface QuizGenerationConfig {
+  /** 'local' (llama.cpp, default) or 'openrouter' (ADR-0012). */
+  readonly provider: LlmProvider;
   /** llama.cpp's one-shot completion CLI. Default: 'llama-completion' (resolved via PATH). */
   readonly llamaPath: string;
   /** Filename (not a path — resolved under `modelWeightsDir`) used when a request names no model. */
@@ -436,11 +454,14 @@ export class AppConfig {
    * exist" is checked live, by the command handler, not cached at boot — the
    * admin delete endpoint can remove a file between two requests, and a
    * boot-cached boolean would go stale the moment that happens.
-   * Env: LLAMA_MODE, LLAMA_PATH, LLAMA_DEFAULT_MODEL, LLAMA_TIMEOUT_MS,
-   *      LLAMA_THREADS, LLAMA_CONTEXT_SIZE.
+   * `provider` picks the engine (ADR-0012); everything else here stays
+   * llama.cpp-only and is unread once `provider` is 'openrouter'.
+   * Env: LLM_PROVIDER, LLAMA_MODE, LLAMA_PATH, LLAMA_DEFAULT_MODEL,
+   *      LLAMA_TIMEOUT_MS, LLAMA_THREADS, LLAMA_CONTEXT_SIZE.
    */
   get quizGeneration(): QuizGenerationConfig {
     return {
+      provider: this.stringOrDefault('LLM_PROVIDER', 'local') as LlmProvider,
       llamaPath: this.stringOrDefault('LLAMA_PATH', 'llama-completion'),
       // Empty disables the feature explicitly (mirrors WHISPER_MODEL_PATH's
       // "empty = unavailable"); the maintainer's own default deployment keeps
@@ -454,6 +475,29 @@ export class AppConfig {
       threads: this.numberOrDefault('LLAMA_THREADS', 4),
       contextSize: this.numberOrDefault('LLAMA_CONTEXT_SIZE', 4096),
       mode: this.stringOrDefault('LLAMA_MODE', 'real') as ProviderMode,
+    };
+  }
+
+  /**
+   * Hosted text-generation settings (ADR-0012). `configured` is a key check
+   * and nothing more: unlike a local weight file, whether the model id is
+   * real is only knowable from the provider's answer, so a bad id surfaces
+   * as a failed generation rather than a boot-time refusal.
+   * Env: OPENROUTER_API_KEY, OPENROUTER_BASE_URL, OPENROUTER_MODEL,
+   *      OPENROUTER_TIMEOUT_MS.
+   */
+  get hostedModel(): HostedModelConfig {
+    const apiKey = this.stringOrDefault('OPENROUTER_API_KEY', '');
+    const baseUrl = this.stringOrDefault('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1');
+    return {
+      apiKey,
+      // Stripped so `OpenRouterAdapter` can always join with `/chat/completions`
+      // — an operator-supplied value with a trailing slash (or several) used
+      // to survive untouched and produce `.../v1//chat/completions`.
+      baseUrl: baseUrl.replace(/\/+$/, ''),
+      defaultModel: this.stringOrDefault('OPENROUTER_MODEL', 'mistralai/mistral-nemo'),
+      timeoutMs: this.numberOrDefault('OPENROUTER_TIMEOUT_MS', 120_000),
+      configured: apiKey.length > 0,
     };
   }
 

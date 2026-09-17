@@ -7,11 +7,17 @@ import { describe, expect, it } from 'vitest';
 import { MockLlamaAdapter } from './mock-llama.adapter';
 
 describe('MockLlamaAdapter', () => {
+  it('ensureModelUsable resolves without reading anything', async () => {
+    const adapter = new MockLlamaAdapter();
+
+    await expect(adapter.ensureModelUsable('anything')).resolves.toBeUndefined();
+  });
+
   it('cleanCues echoes the input texts unchanged, same length', async () => {
     const adapter = new MockLlamaAdapter();
     const cueTexts = ['helo wrold', 'this si a tset'];
 
-    const result = await adapter.cleanCues({ modelAbsolutePath: '/models/x.gguf', cueTexts });
+    const result = await adapter.cleanCues({ model: 'x.gguf', cueTexts });
 
     expect(result).toEqual(cueTexts);
   });
@@ -20,7 +26,7 @@ describe('MockLlamaAdapter', () => {
     const adapter = new MockLlamaAdapter();
 
     const result = await adapter.generateQuestions({
-      modelAbsolutePath: '/models/x.gguf',
+      model: 'x.gguf',
       windowText: 'irrelevant',
       questionCount: 3,
     });

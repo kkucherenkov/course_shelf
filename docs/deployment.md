@@ -171,6 +171,14 @@ Optional toggles (sensible defaults shipped):
   `WHISPER_MODEL_DIR` to switch quiz generation on. See
   [Quiz generation](#quiz-generation-local-llamacpp).
 - `LLAMA_THREADS=4`, `LLAMA_TIMEOUT_MS=600000`, `LLAMA_CONTEXT_SIZE=4096`
+- `LLM_PROVIDER=local` — set to `openrouter` to run quiz generation against a
+  hosted model instead of local llama.cpp. See
+  [Quiz generation](#quiz-generation-local-llamacpp) and
+  [ADR-0012](./adr/0012-hosted-model-provider.md).
+- `OPENROUTER_API_KEY=` (empty) — required when `LLM_PROVIDER=openrouter`.
+- `OPENROUTER_BASE_URL=https://openrouter.ai/api/v1`,
+  `OPENROUTER_MODEL=mistralai/mistral-nemo`
+- `OPENROUTER_TIMEOUT_MS=120000`
 
 ## Course data layout
 
@@ -328,6 +336,15 @@ prompt processing) on a 16-thread, AVX-512-capable machine, because this
 version of ggml defaults every SIMD flag to `OFF`. Twenty times slower,
 silently — the Dockerfile's build stage now proves AVX2 landed in the binary
 before the image is considered built.
+
+**Or skip the benchmark and use a hosted model.** Set `LLM_PROVIDER=openrouter`
+plus `OPENROUTER_API_KEY` to send generation calls to OpenRouter instead of
+running `llama-completion` on this machine at all — no build flags to get
+right, no NAS-class tok/s to measure. The trade is the one ADR-0011 declined
+to make and [ADR-0012](./adr/0012-hosted-model-provider.md) now makes
+explicit: a lesson's transcript text leaves the machine on every generation
+call. `OPENROUTER_BASE_URL` and `OPENROUTER_MODEL` override the endpoint and
+model id (default `mistralai/mistral-nemo`); see `.env.example`.
 
 ## Per-deployment URL
 

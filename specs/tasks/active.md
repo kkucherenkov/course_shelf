@@ -1,5 +1,23 @@
 # Active tasks
 
+## T-2026-09-17-player-transport-controls — familiar transport controls and a readable transcript
+
+- Created: 2026-09-17
+- Owner: claude
+- Spec: [docs/superpowers/plans/2026-09-17-player-transport-and-transcript.md](../../docs/superpowers/plans/2026-09-17-player-transport-and-transcript.md)
+- Goal: the lesson player behaves like a video player people have used before,
+  and the transcript gets the width it needs to be read.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [ ] raise the page-spec timeout so a loaded runner stops reporting false reds (tuxedo 231)
+  - [ ] add 15s skip buttons and a play target over the picture (tuxedo 222)
+  - [ ] show the subtitles and fullscreen toggles as pressed (tuxedo 223)
+  - [ ] replace the speed cycle with a menu (tuxedo 224)
+  - [ ] move the transcript below the video at full column width (tuxedo 216)
+- Status: in-progress
+- Blockers: —
+
 ## T-2026-09-17-storybook-mcp — expose the design system to agents over MCP
 
 - Created: 2026-09-17

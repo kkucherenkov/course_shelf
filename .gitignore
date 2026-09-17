@@ -113,3 +113,7 @@ docs/data
 # are reproducible output and ggml models are hundreds of megabytes.
 /derived/
 /models/
+
+# lane worktrees created by the agent workflow — checkouts of this same repo,
+# never content of their own
+.claude/worktrees/

@@ -766,6 +766,9 @@ export default {
       profilePasswordErrorMismatch: 'Пароли не совпадают.',
       profilePasswordErrorWrongCurrent: 'Текущий пароль введён неверно.',
       profilePasswordErrorGeneric: 'Что-то пошло не так. Попробуйте ещё раз.',
+      appearanceLanguageLabel: 'Язык',
+      appearanceLanguageHelp:
+        'Язык интерфейса. На широких экранах переключается ещё и в верхней панели.',
       appearanceThemeLabel: 'Тема',
       appearanceThemeHelp: 'Выберите оформление интерфейса.',
       themeDark: 'Тёмная',

@@ -421,12 +421,21 @@
           class="app-navigation-shell__locale-switch"
           @update:model-value="(code: string) => emit('update:locale', code)"
         >
+          <!-- The code is what shows; the locale's own name is the accessible
+               name. Full names made the topbar 31px wider than the button this
+               replaced and pushed the home page into horizontal scroll at
+               375px, which tests/e2e/home.spec.ts caught. Two codes side by
+               side with one marked still supply the property that was missing
+               before — the old control was a lone button naming the OTHER
+               language. -->
           <AppSegmentedItem
             v-for="loc in locales"
             :key="loc.code"
             :value="loc.code"
-            :label="loc.name"
-          />
+            :aria-label="loc.name"
+          >
+            {{ loc.code.toUpperCase() }}
+          </AppSegmentedItem>
         </AppSegmented>
 
         <button
@@ -1031,6 +1040,16 @@
 
       &__bottom-tabs {
         display: flex;
+      }
+
+      // No room for it beside the search and the avatar at this width, and a
+      // segmented control cannot shrink to the width of the single button it
+      // replaced — tests/e2e/home.spec.ts caught the home page scrolling
+      // horizontally at 375px. Settings carries the language row instead, the
+      // same split the theme control uses: full choice there, quick switch here
+      // only where it fits.
+      &__locale-switch {
+        display: none;
       }
 
       // Clears the fixed bottom-tab bar, whose height is the same --space-8.

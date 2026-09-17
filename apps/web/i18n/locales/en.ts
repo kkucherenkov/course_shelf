@@ -764,6 +764,9 @@ export default {
       profilePasswordErrorMismatch: 'Passwords do not match.',
       profilePasswordErrorWrongCurrent: 'Current password is incorrect.',
       profilePasswordErrorGeneric: 'Something went wrong. Please try again.',
+      appearanceLanguageLabel: 'Language',
+      appearanceLanguageHelp:
+        'The interface language. Also switchable from the top bar on wider screens.',
       appearanceThemeLabel: 'Theme',
       appearanceThemeHelp: 'Choose how the interface looks.',
       themeDark: 'Dark',

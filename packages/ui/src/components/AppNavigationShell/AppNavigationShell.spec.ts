@@ -297,11 +297,13 @@ describe('AppNavigationShell', () => {
     expect(w.find('.app-navigation-shell__locale-switch').exists()).toBe(false);
   });
 
-  it('shows every locale by its own name, current one included', () => {
+  it('shows every locale as its code, and carries the name for screen readers', () => {
     const w = factory({ props: { locales: TWO_LOCALES, locale: 'ru' } });
-    const text = w.find('.app-navigation-shell__locale-switch').text();
-    expect(text).toContain('English');
-    expect(text).toContain('Русский');
+    const options = w.findAll('.app-navigation-shell__locale-switch [role="radio"]');
+    // Codes, not names: full words made the topbar wide enough to push the home
+    // page into horizontal scroll at 375px.
+    expect(options.map((el) => el.text())).toEqual(['EN', 'RU']);
+    expect(options.map((el) => el.attributes('aria-label'))).toEqual(['English', 'Русский']);
   });
 
   it('marks the active locale rather than leaving it to be inferred', () => {
@@ -310,13 +312,14 @@ describe('AppNavigationShell', () => {
       .findAll('.app-navigation-shell__locale-switch [role="radio"]')
       .filter((el) => el.attributes('aria-checked') === 'true');
     expect(checked).toHaveLength(1);
-    expect(checked[0]?.text()).toBe('Русский');
+    expect(checked[0]?.text()).toBe('RU');
+    expect(checked[0]?.attributes('aria-label')).toBe('Русский');
   });
 
   it('emits the code of the locale that was picked', async () => {
     const w = factory({ props: { locales: TWO_LOCALES, locale: 'en' } });
     const options = w.findAll('.app-navigation-shell__locale-switch [role="radio"]');
-    const russian = options.find((el) => el.text() === 'Русский');
+    const russian = options.find((el) => el.text() === 'RU');
     await russian?.trigger('click');
     expect(w.emitted('update:locale')).toEqual([['ru']]);
   });

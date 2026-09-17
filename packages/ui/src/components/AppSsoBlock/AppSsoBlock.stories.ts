@@ -30,4 +30,12 @@ export const GitHubOnly: Story = { args: { providers: [github] } };
 
 export const SsoOnly: Story = { args: { providers: [sso] } };
 
-export const Empty: Story = { args: { providers: [] } };
+// Renders nothing on purpose: with no providers there is no block to draw. The
+// visual gate rejects single-colour captures, because a blank baseline matches
+// a blank capture forever — see `assertFrameNotBlank` in
+// .storybook/test-runner.ts. Here the blankness IS the documented state, so it
+// opts out by name rather than being excused silently.
+export const Empty: Story = {
+  args: { providers: [] },
+  parameters: { allowBlankFrame: true },
+};

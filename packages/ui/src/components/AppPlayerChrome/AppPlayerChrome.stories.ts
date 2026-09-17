@@ -7,6 +7,14 @@ import AppPlayerChrome from './AppPlayerChrome.vue';
 const meta: Meta<typeof AppPlayerChrome> = {
   title: 'Domain/AppPlayerChrome',
   component: AppPlayerChrome,
+  // `layout: 'padded'`, not the global `'centered'` from `.storybook/preview.ts`.
+  // Storybook's centered layout makes `#storybook-root` a shrink-to-fit flex
+  // item (`.sb-main-centered #storybook-root { margin: auto }`), and this
+  // component has no intrinsic width — its root is sized only by `aspect-ratio: 16 / 9`, so zero width means zero height. Measured 2026-09-17: the subject
+  // rendered 0x0 under `centered` and 768x432 under `padded`, so every
+  // baseline here was a flat 165-byte frame and the visual gate was
+  // comparing blank to blank.
+  parameters: { layout: 'padded' },
   argTypes: {
     state: {
       control: 'select',

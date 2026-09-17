@@ -5,6 +5,14 @@ import type { Meta, StoryObj } from '@storybook/vue3';
 const meta: Meta<typeof AppProgressLinear> = {
   title: 'Primitives/AppProgressLinear',
   component: AppProgressLinear,
+  // `layout: 'padded'`, not the global `'centered'` from `.storybook/preview.ts`.
+  // Storybook's centered layout makes `#storybook-root` a shrink-to-fit flex
+  // item (`.sb-main-centered #storybook-root { margin: auto }`), and this
+  // component has no intrinsic width — the track is `width: 100%`, and 100% of a shrink-to-fit parent is zero. Measured 2026-09-17: the subject
+  // rendered 0x4 under `centered` and 1216x4 under `padded`, so every
+  // baseline here was a flat 118-byte frame and the visual gate was
+  // comparing blank to blank.
+  parameters: { layout: 'padded' },
   tags: ['autodocs'],
   args: {
     value: 60,

@@ -54,8 +54,6 @@ _Archive of shipped tasks. Never delete entries — cancelled tasks go here with
 - Result: [PR #704](https://github.com/kkucherenkov/course_shelf/pull/704) — all 11 CI checks green
 - Blockers: —
 
-_Archive of shipped tasks. Never delete entries — cancelled tasks go here with reason._
-
 ## T-2026-09-16-kkucherenkov-quiz-generation — quizzes generated from a transcript
 
 - Created: 2026-09-16

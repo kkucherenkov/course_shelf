@@ -65,8 +65,8 @@ Every task's requirements implicitly include this section.
 | `packages/ui/src/components/AppPlayerChrome/AppPlayerChrome.stories.ts` | its stories, 198 lines today | T2, T4 |
 | `apps/web/app/components/lesson-player/PlayerSidebar.vue` | the five-tab sidebar | T5 |
 | `apps/web/app/components/lesson-player/__tests__/PlayerSidebar.spec.ts` | its spec | T5 |
-| `apps/web/app/pages/courses/[id]/lessons/[lessonId].vue` | page composition, aria mapping, layout CSS | T2, T4, T5 |
-| `apps/web/i18n/locales/{en,ru}.ts` | locale trees under `pages.lessonPlayer` | T2, T4, T5 |
+| `apps/web/app/pages/courses/[id]/lessons/[lessonId].vue` | page composition, aria mapping, layout CSS | T2, T5 |
+| `apps/web/i18n/locales/{en,ru}.ts` | locale trees under `pages.lessonPlayer` | T2 |
 
 `PlayerTranscriptTab.vue` itself is **not modified** in T5 — it already takes
 `cues`, `activeIndex`, `emptyLabel`, `noMatchLabel`, `filterPlaceholder` and
@@ -728,10 +728,14 @@ targets the chrome root, and a teleported menu would render outside it.
       expect(selected[0]!.text()).toBe('1.25×');
     });
 
-    it('closes on Escape without changing the speed', async () => {
+    it('closes on Escape pressed on the trigger, where focus actually is', async () => {
       const wrapper = makeWrapper();
-      await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
-      await wrapper.find('.app-player-chrome__speed-menu').trigger('keydown', { key: 'Escape' });
+      const trigger = wrapper.find('.app-player-chrome__btn--speed');
+      await trigger.trigger('click');
+      // Deliberately dispatched at the button, not the menu: the menu is a
+      // non-focusable div, so a test that presses Escape on it would pass
+      // while the real keyboard path stayed broken.
+      await trigger.trigger('keydown', { key: 'Escape' });
       expect(wrapper.find('.app-player-chrome__speed-menu').exists()).toBe(false);
       expect(wrapper.emitted('speed')).toBeUndefined();
     });
@@ -793,13 +797,21 @@ and next to `speedLabel`:
   }
 ```
 
+Step 7 revises this one line — closing the menu also has to restart the
+overlay's idle timer — so expect to come back to it.
+
+
 - [ ] **Step 5: Replace the speed button with a trigger plus menu**
 
 Swap the existing speed `<button>` for this wrapper. Everything else in the
 control row is untouched:
 
 ```html
-          <div class="app-player-chrome__speed">
+          <!-- Escape is handled on this wrapper, not on the menu: the menu is a
+               div with no tabindex, so it never holds focus. Focus sits on the
+               trigger button or a menu item, both inside this wrapper, and the
+               keydown bubbles here from either. -->
+          <div class="app-player-chrome__speed" @keydown.escape="closeSpeedMenu">
             <button
               type="button"
               class="app-player-chrome__btn app-player-chrome__btn--text app-player-chrome__btn--speed"
@@ -807,7 +819,7 @@ control row is untouched:
               :aria-haspopup="'menu'"
               :aria-expanded="speedMenuOpen ? 'true' : 'false'"
               :disabled="isInert"
-              @click="speedMenuOpen = !speedMenuOpen"
+              @click="toggleSpeedMenu"
             >
               {{ speedLabel }}
             </button>
@@ -816,7 +828,6 @@ control row is untouched:
               class="app-player-chrome__speed-menu"
               role="menu"
               :aria-label="aria.speed"
-              @keydown.escape="speedMenuOpen = false"
             >
               <button
                 v-for="rate in speeds"
@@ -909,25 +920,34 @@ Change its guard to:
     if (!isPlaying.value || speedMenuOpen.value) return;
 ```
 
-and replace the inline `@click="speedMenuOpen = !speedMenuOpen"` from Step 5
-with a function that handles both directions:
+and add the two functions Step 5's markup already refers to — `toggleSpeedMenu`
+on the trigger and `closeSpeedMenu` on the wrapper's Escape handler:
 
 ```ts
+  function closeSpeedMenu(): void {
+    if (!speedMenuOpen.value) return;
+    speedMenuOpen.value = false;
+    scheduleIdleHide();
+  }
+
   function toggleSpeedMenu(): void {
-    speedMenuOpen.value = !speedMenuOpen.value;
+    if (speedMenuOpen.value) {
+      closeSpeedMenu();
+      return;
+    }
+    speedMenuOpen.value = true;
     // Opening must cancel the timer already ticking from the last pointer
-    // move; closing restarts the normal idle behaviour.
-    if (speedMenuOpen.value) clearIdleTimer();
-    else scheduleIdleHide();
+    // move, or the overlay idle-hides out from under the open menu.
+    clearIdleTimer();
   }
 ```
 
-`chooseSpeed` closes the menu too, so give it the same restart:
+`chooseSpeed` from Step 4 closes the menu too, so route it through the same
+close path rather than setting the flag by hand:
 
 ```ts
   function chooseSpeed(rate: number): void {
-    speedMenuOpen.value = false;
-    scheduleIdleHide();
+    closeSpeedMenu();
     emit('speed', rate);
   }
 ```

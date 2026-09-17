@@ -4,7 +4,6 @@
 
 import 'dart:async';
 
-import 'package:built_value/json_object.dart';
 import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
@@ -12,7 +11,6 @@ import 'package:app_api_client/src/api_util.dart';
 import 'package:app_api_client/src/model/instructor_detail_dto.dart';
 import 'package:app_api_client/src/model/instructor_dto.dart';
 import 'package:app_api_client/src/model/instructor_list_dto.dart';
-import 'package:app_api_client/src/model/problem.dart';
 import 'package:app_api_client/src/model/studio_detail_dto.dart';
 import 'package:app_api_client/src/model/studio_dto.dart';
 import 'package:app_api_client/src/model/studio_list_dto.dart';

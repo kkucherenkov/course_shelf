@@ -4,7 +4,6 @@
 
 import 'dart:async';
 
-import 'package:built_value/json_object.dart';
 import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
@@ -18,7 +17,6 @@ import 'package:app_api_client/src/model/course_outline_dto.dart';
 import 'package:app_api_client/src/model/lesson_dto.dart';
 import 'package:app_api_client/src/model/library_dto.dart';
 import 'package:app_api_client/src/model/library_list_dto.dart';
-import 'package:app_api_client/src/model/problem.dart';
 import 'package:app_api_client/src/model/recently_added_dto.dart';
 import 'package:app_api_client/src/model/recently_completed_dto.dart';
 import 'package:app_api_client/src/model/register_library_request.dart';

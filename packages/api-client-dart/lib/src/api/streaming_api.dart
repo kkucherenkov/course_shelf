@@ -4,14 +4,12 @@
 
 import 'dart:async';
 
-import 'package:built_value/json_object.dart';
 import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
 import 'dart:typed_data';
 import 'package:app_api_client/src/api_util.dart';
 import 'package:app_api_client/src/model/material_download_url_dto.dart';
-import 'package:app_api_client/src/model/problem.dart';
 import 'package:app_api_client/src/model/stream_url_dto.dart';
 
 class StreamingApi {

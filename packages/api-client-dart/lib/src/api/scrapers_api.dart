@@ -4,12 +4,10 @@
 
 import 'dart:async';
 
-import 'package:built_value/json_object.dart';
 import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
 import 'package:app_api_client/src/api_util.dart';
-import 'package:app_api_client/src/model/problem.dart';
 import 'package:app_api_client/src/model/scrape_preview_request.dart';
 import 'package:app_api_client/src/model/scrape_preview_response.dart';
 import 'package:app_api_client/src/model/scraper_list_dto.dart';

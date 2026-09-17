@@ -35,6 +35,8 @@
     play: string;
     prevLesson: string;
     nextLesson: string;
+    skipBack: string;
+    skipForward: string;
     mute: string;
     unmute: string;
     speed: string;
@@ -142,6 +144,9 @@
     stayHere: [];
   }>();
 
+  /** Transport skip step. 15s is the interval every mainstream player uses. */
+  const SKIP_SECONDS = 15;
+
   const DEFAULT_ARIA: PlayerChromeAriaLabels = {
     player: 'Lesson video player',
     buffering: 'Buffering',
@@ -153,6 +158,8 @@
     play: 'Play',
     prevLesson: 'Previous lesson',
     nextLesson: 'Next lesson',
+    skipBack: 'Back 15 seconds',
+    skipForward: 'Forward 15 seconds',
     mute: 'Mute',
     unmute: 'Unmute',
     speed: 'Playback speed',
@@ -179,6 +186,11 @@
 
   const isPlaying = computed(() => props.state === 'playing');
   const isInert = computed(() => props.state === 'locked' || props.state === 'error');
+
+  // Only over a picture that is genuinely waiting to be started. The buffering,
+  // error, locked and end states each paint their own overlay and must not get
+  // a play button on top of them.
+  const showBigPlay = computed(() => props.state === 'idle' || props.state === 'paused');
 
   // ── Overlay idle-hide ───────────────────────────────────────────────────────
   // Only while actively playing — paused/buffering/error/locked/end always
@@ -458,6 +470,16 @@
       </div>
     </div>
 
+    <button
+      v-if="showBigPlay"
+      type="button"
+      class="app-player-chrome__big-play"
+      :aria-label="aria.play"
+      @click="emit('play')"
+    >
+      <IconCS name="play" :size="32" />
+    </button>
+
     <!-- Full chrome (overlay mode) -->
     <div v-show="mode === 'overlay'" class="app-player-chrome__overlay">
       <div class="app-player-chrome__top">
@@ -548,6 +570,15 @@
         <div class="app-player-chrome__controls">
           <button
             type="button"
+            class="app-player-chrome__btn app-player-chrome__btn--skip-back"
+            :aria-label="aria.skipBack"
+            :disabled="isInert"
+            @click="seekBy(-SKIP_SECONDS)"
+          >
+            <IconCS name="skip-back" :size="16" />
+          </button>
+          <button
+            type="button"
             class="app-player-chrome__btn"
             :aria-label="isPlaying ? aria.pause : aria.play"
             :aria-pressed="isPlaying ? 'true' : 'false'"
@@ -555,6 +586,15 @@
             @click="togglePlay"
           >
             <IconCS :name="isPlaying ? 'pause' : 'play'" :size="16" />
+          </button>
+          <button
+            type="button"
+            class="app-player-chrome__btn app-player-chrome__btn--skip-forward"
+            :aria-label="aria.skipForward"
+            :disabled="isInert"
+            @click="seekBy(SKIP_SECONDS)"
+          >
+            <IconCS name="skip-forward" :size="16" />
           </button>
           <button
             type="button"
@@ -829,6 +869,36 @@
         padding: 0 var(--space-2);
         font-family: var(--font-mono);
         font-size: var(--text-xs);
+      }
+    }
+
+    &__big-play {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      // --space-8 is 64px; the control-row buttons are --space-6 (32px). The
+      // whole point of this affordance is that you do not have to aim.
+      width: var(--space-8);
+      height: var(--space-8);
+      border-radius: var(--radius-pill);
+      display: grid;
+      place-items: center;
+      color: var(--media-fg);
+      background: var(--media-scrim-strong);
+      border: 0;
+      cursor: pointer;
+      transition:
+        background var(--dur-fast),
+        transform var(--dur-fast);
+
+      &:hover {
+        background: var(--media-fill-hover);
+        transform: scale(1.05);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--brand-accent);
+        outline-offset: 2px;
       }
     }
 

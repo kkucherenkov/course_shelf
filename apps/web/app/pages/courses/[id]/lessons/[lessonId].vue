@@ -220,6 +220,8 @@
     play: t('pages.lessonPlayer.aria.play'),
     prevLesson: t('pages.lessonPlayer.aria.prevLesson'),
     nextLesson: t('pages.lessonPlayer.aria.nextLesson'),
+    skipBack: t('pages.lessonPlayer.aria.skipBack'),
+    skipForward: t('pages.lessonPlayer.aria.skipForward'),
     mute: t('pages.lessonPlayer.aria.mute'),
     unmute: t('pages.lessonPlayer.aria.unmute'),
     speed: t('pages.lessonPlayer.aria.speed'),

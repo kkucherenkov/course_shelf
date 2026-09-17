@@ -367,6 +367,8 @@ export default {
         play: 'Play',
         prevLesson: 'Previous lesson',
         nextLesson: 'Next lesson',
+        skipBack: 'Back 15 seconds',
+        skipForward: 'Forward 15 seconds',
         mute: 'Mute',
         unmute: 'Unmute',
         speed: 'Playback speed',

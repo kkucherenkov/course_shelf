@@ -529,4 +529,75 @@ describe('AppPlayerChrome', () => {
       expect(wrapper.emitted('seek')?.[0]).toEqual([150]); // 25% of 600
     });
   });
+
+  describe('transport controls', () => {
+    it('skips back 15 seconds without going below zero', async () => {
+      const wrapper = makeWrapper({ position: 5, duration: 600 });
+      await wrapper.find('.app-player-chrome__btn--skip-back').trigger('click');
+      expect(wrapper.emitted('seek')?.[0]).toEqual([0]);
+    });
+
+    it('skips forward 15 seconds without passing the duration', async () => {
+      const wrapper = makeWrapper({ position: 595, duration: 600 });
+      await wrapper.find('.app-player-chrome__btn--skip-forward').trigger('click');
+      expect(wrapper.emitted('seek')?.[0]).toEqual([600]);
+    });
+
+    it('skips by exactly 15 seconds away from the boundaries', async () => {
+      const wrapper = makeWrapper({ position: 100, duration: 600 });
+      await wrapper.find('.app-player-chrome__btn--skip-back').trigger('click');
+      await wrapper.find('.app-player-chrome__btn--skip-forward').trigger('click');
+      expect(wrapper.emitted('seek')).toEqual([[85], [115]]);
+    });
+
+    it('does not skip in an inert state', async () => {
+      const wrapper = makeWrapper({ state: 'locked' });
+      await wrapper.find('.app-player-chrome__btn--skip-back').trigger('click');
+      expect(wrapper.emitted('seek')).toBeUndefined();
+    });
+
+    it('labels the skip buttons from ariaLabels', () => {
+      const wrapper = makeWrapper({
+        ariaLabels: { skipBack: 'Назад 15 секунд', skipForward: 'Вперёд 15 секунд' },
+      });
+      expect(wrapper.find('.app-player-chrome__btn--skip-back').attributes('aria-label')).toBe(
+        'Назад 15 секунд',
+      );
+      expect(wrapper.find('.app-player-chrome__btn--skip-forward').attributes('aria-label')).toBe(
+        'Вперёд 15 секунд',
+      );
+    });
+  });
+
+  describe('big play affordance', () => {
+    it('shows over the picture while idle', () => {
+      const wrapper = makeWrapper({ state: 'idle' });
+      expect(wrapper.find('.app-player-chrome__big-play').exists()).toBe(true);
+    });
+
+    it('shows while paused', () => {
+      const wrapper = makeWrapper({ state: 'paused' });
+      expect(wrapper.find('.app-player-chrome__big-play').exists()).toBe(true);
+    });
+
+    it('is gone while playing', () => {
+      const wrapper = makeWrapper({ state: 'playing' });
+      expect(wrapper.find('.app-player-chrome__big-play').exists()).toBe(false);
+    });
+
+    it('stays out of the way of the buffering, error, locked and end overlays', () => {
+      for (const state of ['buffering', 'error', 'locked'] as const) {
+        const wrapper = makeWrapper({ state });
+        expect(wrapper.find('.app-player-chrome__big-play').exists()).toBe(false);
+      }
+      const ended = makeWrapper({ state: 'end', endNext: { title: 'Next one' } });
+      expect(ended.find('.app-player-chrome__big-play').exists()).toBe(false);
+    });
+
+    it('emits play when clicked, and does not double-fire through the frame tap', async () => {
+      const wrapper = makeWrapper({ state: 'paused' });
+      await wrapper.find('.app-player-chrome__big-play').trigger('click');
+      expect(wrapper.emitted('play')).toHaveLength(1);
+    });
+  });
 });

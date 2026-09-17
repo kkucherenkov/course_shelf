@@ -665,11 +665,25 @@ describe('AppPlayerChrome', () => {
       ]);
     });
 
-    it('emits the chosen rate, not the current one', async () => {
+    it('emits the rate on the row that was picked', async () => {
       const wrapper = makeWrapper({ speed: 1 });
       await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
       await wrapper.findAll('.app-player-chrome__speed-item')[4]!.trigger('click');
       expect(wrapper.emitted('speed')?.[0]).toEqual([1.5]);
+    });
+
+    it('emits the current rate when its own row is picked', async () => {
+      // The row the menu marks as selected is still a row, and picking it must
+      // re-assert that rate rather than move to a neighbour. Every rate, so a
+      // future off-by-one in the list cannot hide in the one index we chose.
+      for (const [index, rate] of [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].entries()) {
+        const wrapper = makeWrapper({ speed: rate });
+        await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+        const row = wrapper.findAll('.app-player-chrome__speed-item')[index]!;
+        expect(row.attributes('aria-checked')).toBe('true');
+        await row.trigger('click');
+        expect(wrapper.emitted('speed')?.[0]).toEqual([rate]);
+      }
     });
 
     it('closes after a choice', async () => {

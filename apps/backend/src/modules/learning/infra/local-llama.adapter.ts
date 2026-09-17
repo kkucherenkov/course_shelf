@@ -1,6 +1,6 @@
 /**
  * WHY this file exists:
- * Concrete LlamaAdapter backed by a child_process.execFile shell-out to
+ * Concrete TextModelAdapter backed by a child_process.execFile shell-out to
  * llama.cpp's `llama-completion`, mirroring LocalWhisperAdapter (E29-F02-S01
  * clarification #3): a thin execFile wrapper, no resident model, no server —
  * the weight file only lives in RAM for the duration of one invocation.
@@ -19,12 +19,16 @@
  * documented way to skip straight to the answer — baked into the prompt
  * unconditionally, not a caller-configurable option, because there is no
  * scenario where burning the budget on invisible reasoning is preferable.
+ * The `<|im_start|>` template and this primer are llama.cpp/Qwen specifics,
+ * meaningless to a chat-completions API — that is why they stay here rather
+ * than in model-prompts.ts, which both adapters share.
  *
  * `--json-schema` (`-j`) still constrains the answer to parseable JSON; both
  * operations share one prompt-building + one parsing path, differing only in
  * system prompt, schema and max tokens.
  */
 import { execFile } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -32,23 +36,23 @@ import path from 'node:path';
 import { Injectable } from '@nestjs/common';
 
 import { AppConfig } from '../../../common/config/app-config';
-import { QuizGenerationFailedError } from '../domain/quiz/quiz.errors';
+import { QuizGenerationFailedError, QuizModelNotFoundError } from '../domain/quiz/quiz.errors';
+import {
+  CLEANUP_MAX_TOKENS,
+  CLEANUP_SYSTEM_PROMPT,
+  GENERATE_MAX_TOKENS,
+  GENERATE_SYSTEM_PROMPT,
+  SEED,
+  cleanupJsonSchema,
+  generateJsonSchema,
+} from '../domain/quiz/model-prompts';
 
 import type {
+  CleanCuesRequest,
   GeneratedQuizQuestion,
-  LlamaAdapter,
-  LlamaCleanCuesRequest,
-  LlamaGenerateQuestionsRequest,
-} from '../domain/quiz/llama.port';
-
-/** Enough for a window's worth of short corrected fragments, JSON overhead included. */
-const CLEANUP_MAX_TOKENS = 800;
-
-/** Enough for a handful of MCQ questions as JSON. */
-const GENERATE_MAX_TOKENS = 600;
-
-/** Fixed seed + greedy decoding: structured JSON extraction wants the least wandering, not variety. */
-const SEED = 1;
+  GenerateQuestionsRequest,
+  TextModelAdapter,
+} from '../domain/quiz/text-model.port';
 
 /**
  * Primes the model past its default reasoning pass (see file header). Also
@@ -58,55 +62,8 @@ const SEED = 1;
  */
 const ASSISTANT_PRIMER = '<|im_start|>assistant\n<think>\n\n</think>\n\n';
 
-const CLEANUP_SYSTEM_PROMPT =
-  'You are a transcript proofreader. You receive a JSON array of short ' +
-  'speech-to-text fragments, in their original spoken order. Fix ONLY ' +
-  'obvious speech-recognition mistakes (misheard words, wrong homophones, ' +
-  'garbled punctuation). Do not paraphrase, do not add or remove words, do ' +
-  'not translate, do not censor anything. If a word looks like a rare term ' +
-  'or a proper name you do not recognize, keep it exactly as given rather ' +
-  'than guessing a replacement. Reply with a JSON array of the same length, ' +
-  'one corrected string per input fragment, in the same order.';
-
-const GENERATE_SYSTEM_PROMPT =
-  'You write multiple-choice comprehension questions from a short excerpt ' +
-  'of a lesson transcript. Ask only about content actually stated in the ' +
-  'excerpt — never invent facts. Each question has exactly 4 options with ' +
-  'exactly one correct answer. Write the question and options in the same ' +
-  'language as the excerpt. Reply with a JSON object matching the given schema.';
-
 function chatPrompt(system: string, user: string): string {
   return `<|im_start|>system\n${system}<|im_end|>\n<|im_start|>user\n${user}<|im_end|>\n${ASSISTANT_PRIMER}`;
-}
-
-function cleanupJsonSchema(count: number): string {
-  return JSON.stringify({
-    type: 'array',
-    items: { type: 'string' },
-    minItems: count,
-    maxItems: count,
-  });
-}
-
-function generateJsonSchema(): string {
-  return JSON.stringify({
-    type: 'object',
-    properties: {
-      questions: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            prompt: { type: 'string' },
-            options: { type: 'array', items: { type: 'string' }, minItems: 4, maxItems: 4 },
-            correctOptionIndex: { type: 'integer', minimum: 0, maximum: 3 },
-          },
-          required: ['prompt', 'options', 'correctOptionIndex'],
-        },
-      },
-    },
-    required: ['questions'],
-  });
 }
 
 /**
@@ -157,15 +114,29 @@ function execFileAsync(
 }
 
 @Injectable()
-export class LocalLlamaAdapter implements LlamaAdapter {
+export class LocalLlamaAdapter implements TextModelAdapter {
   constructor(private readonly appConfig: AppConfig) {}
 
-  async cleanCues(req: LlamaCleanCuesRequest): Promise<readonly string[]> {
+  /**
+   * Discards the resolved path — resolveModelPath's throw is the whole
+   * point. Runs inside `.then()`, not the method body directly, so that
+   * throw is turned into a rejected promise rather than a synchronous
+   * exception from the call itself: the handler awaits this before starting
+   * the fire-and-forget walk, and needs a promise to await either way.
+   */
+  ensureModelUsable(model: string): Promise<void> {
+    return Promise.resolve().then(() => {
+      this.resolveModelPath(model);
+    });
+  }
+
+  async cleanCues(req: CleanCuesRequest): Promise<readonly string[]> {
+    const absolutePath = this.resolveModelPath(req.model);
     const prompt = chatPrompt(CLEANUP_SYSTEM_PROMPT, JSON.stringify(req.cueTexts));
     const stdout = await this.run(
-      req.modelAbsolutePath,
+      absolutePath,
       prompt,
-      cleanupJsonSchema(req.cueTexts.length),
+      JSON.stringify(cleanupJsonSchema(req.cueTexts.length)),
       CLEANUP_MAX_TOKENS,
     );
     const parsed = this.tryParseArray(extractCompletion(stdout));
@@ -177,16 +148,17 @@ export class LocalLlamaAdapter implements LlamaAdapter {
   }
 
   async generateQuestions(
-    req: LlamaGenerateQuestionsRequest,
+    req: GenerateQuestionsRequest,
   ): Promise<readonly GeneratedQuizQuestion[]> {
+    const absolutePath = this.resolveModelPath(req.model);
     const prompt = chatPrompt(
       GENERATE_SYSTEM_PROMPT,
       `${req.windowText}\n\nGenerate ${String(req.questionCount)} question(s).`,
     );
     const stdout = await this.run(
-      req.modelAbsolutePath,
+      absolutePath,
       prompt,
-      generateJsonSchema(),
+      JSON.stringify(generateJsonSchema()),
       GENERATE_MAX_TOKENS,
     );
     const slice = extractJsonSlice(extractCompletion(stdout));
@@ -204,8 +176,21 @@ export class LocalLlamaAdapter implements LlamaAdapter {
     return this.toQuestions(parsed);
   }
 
+  /**
+   * A filename, never a path: the weights directory is this adapter's
+   * business, not its caller's. Mirrors what GenerateQuizHandler used to do
+   * before a second adapter existed.
+   */
+  private resolveModelPath(model: string): string {
+    const absolutePath = path.join(this.appConfig.modelWeightsDir, model);
+    if (!model.endsWith('.gguf') || !existsSync(absolutePath)) {
+      throw new QuizModelNotFoundError(model);
+    }
+    return absolutePath;
+  }
+
   private async run(
-    modelAbsolutePath: string,
+    absolutePath: string,
     prompt: string,
     jsonSchema: string,
     maxTokens: number,
@@ -222,7 +207,7 @@ export class LocalLlamaAdapter implements LlamaAdapter {
 
     const args = [
       '-m',
-      modelAbsolutePath,
+      absolutePath,
       '-f',
       promptFile,
       '-t',
@@ -246,7 +231,7 @@ export class LocalLlamaAdapter implements LlamaAdapter {
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       throw new QuizGenerationFailedError(
-        `llama-completion on "${modelAbsolutePath}" failed: ${detail}`,
+        `llama-completion on "${absolutePath}" failed: ${detail}`,
       );
     } finally {
       await rm(dir, { recursive: true, force: true }).catch(() => {

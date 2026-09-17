@@ -128,6 +128,14 @@ services:
       # second bind mount.
       LLAMA_DEFAULT_MODEL: "${LLAMA_DEFAULT_MODEL:-}"
       LLAMA_THREADS: "${LLAMA_THREADS:-4}"
+      # Hosted quiz generation (ADR-0012): OpenRouter instead of local
+      # llama.cpp. LLM_PROVIDER stays 'local' unless explicitly overridden, so
+      # a host that sets nothing new keeps using llama-completion.
+      LLM_PROVIDER: "${LLM_PROVIDER:-local}"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
+      OPENROUTER_BASE_URL: "${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}"
+      OPENROUTER_MODEL: "${OPENROUTER_MODEL:-mistralai/mistral-nemo}"
+      OPENROUTER_TIMEOUT_MS: "${OPENROUTER_TIMEOUT_MS:-120000}"
     volumes:
       # Course content lives on the host. Mount read-only — the backend
       # only ever reads files from libraries; writes go to the DB.

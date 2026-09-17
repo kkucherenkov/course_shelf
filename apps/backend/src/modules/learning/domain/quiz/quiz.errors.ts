@@ -28,17 +28,21 @@ export class QuizNotPendingError extends DomainError {
 }
 
 /**
- * Thrown when no model was named on the request AND no default is configured
- * (`LLAMA_DEFAULT_MODEL` unset). Mirrors TranscriptionNotConfiguredError —
- * refuse before doing any work rather than start a run that can only fail.
+ * Thrown when the engine an adapter needs has nothing to work with: no
+ * default model configured for LocalLlamaAdapter (`LLAMA_DEFAULT_MODEL`
+ * unset), no API key configured for OpenRouterAdapter (`OPENROUTER_API_KEY`
+ * unset). Mirrors TranscriptionNotConfiguredError — refuse before doing any
+ * work rather than start a run that can only fail. `settingName` names the
+ * actual missing setting so the 503 tells an operator what to fix instead of
+ * naming the other engine's variable.
  */
 export class QuizGenerationNotConfiguredError extends DomainError {
-  constructor() {
+  constructor(settingName: string) {
     super({
       code: 'quiz-generation-not-configured',
       status: 503,
       title: 'Service Unavailable',
-      detail: 'LLAMA_DEFAULT_MODEL is unset, so no quiz-generation model is available.',
+      detail: `${settingName} is unset, so no quiz-generation model is available.`,
     });
     this.name = 'QuizGenerationNotConfiguredError';
   }

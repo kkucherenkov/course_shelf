@@ -192,6 +192,16 @@ docker compose -f docker/compose.yml up -d backend
 (шесть часов) настраивают прогон — см. [`docker/README.md`](docker/README.md) и
 [`.env.example`](.env.example).
 
+### 2c — Генерация квизов через внешнюю модель (опционально)
+
+По умолчанию генерация квизов идёт через локальный llama.cpp. Установите
+`LLM_PROVIDER=openrouter` и `OPENROUTER_API_KEY`, чтобы запускать её через
+внешнюю модель; `OPENROUTER_BASE_URL` и `OPENROUTER_MODEL` переопределяют
+эндпоинт и модель, если модель по умолчанию (`mistralai/mistral-nemo`) не
+подходит. `OPENROUTER_TIMEOUT_MS` (две минуты) ограничивает один вызов — см.
+[`.env.example`](.env.example). См.
+[ADR-0012](docs/adr/0012-hosted-model-provider.md).
+
 ### 3 — Проверка
 
 ```sh

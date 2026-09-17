@@ -1,6 +1,6 @@
 /**
  * WHY this file exists:
- * The cleanup pass (LlamaAdapter.cleanCues) fixes obvious ASR typos before a
+ * The cleanup pass (TextModelAdapter.cleanCues) fixes obvious ASR typos before a
  * window feeds question generation — but it is never allowed to change how
  * many cues exist or where they start/end (E29-F02-S01 maintainer
  * clarification #7): the transcript also backs player subtitles, trigram

@@ -119,6 +119,14 @@ services:
       # default below assumes the maintainer's own 4B weight is present.
       LLAMA_DEFAULT_MODEL: "${LLAMA_DEFAULT_MODEL:-Qwen3.5-4B-Q4_K_M.gguf}"
       LLAMA_THREADS: "${LLAMA_THREADS:-4}"
+      # Hosted quiz generation (ADR-0012): OpenRouter instead of local
+      # llama.cpp. LLM_PROVIDER stays 'local' unless explicitly overridden, so
+      # an environment that sets nothing new keeps using llama-completion.
+      LLM_PROVIDER: "${LLM_PROVIDER:-local}"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
+      OPENROUTER_BASE_URL: "${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}"
+      OPENROUTER_MODEL: "${OPENROUTER_MODEL:-mistralai/mistral-nemo}"
+      OPENROUTER_TIMEOUT_MS: "${OPENROUTER_TIMEOUT_MS:-120000}"
     working_dir: /workspace
     # Anonymous volumes mask host node_modules at every package boundary.
     # Without this, host's macOS-pathed pnpm symlinks shadow the container's

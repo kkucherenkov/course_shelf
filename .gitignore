@@ -114,6 +114,5 @@ docs/data
 /derived/
 /models/
 
-# lane worktrees created by the agent workflow — checkouts of this same repo,
-# never content of their own
+# git worktrees created for isolated lanes
 .claude/worktrees/

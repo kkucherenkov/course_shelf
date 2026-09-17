@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:built_value/json_object.dart';
 import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
@@ -21,6 +22,7 @@ import 'package:app_api_client/src/model/generate_quiz_request.dart';
 import 'package:app_api_client/src/model/grade_flashcard_request.dart';
 import 'package:app_api_client/src/model/lesson_progress_dto.dart';
 import 'package:app_api_client/src/model/note_dto.dart';
+import 'package:app_api_client/src/model/problem.dart';
 import 'package:app_api_client/src/model/quiz_dto.dart';
 import 'package:app_api_client/src/model/quiz_generation_accepted_dto.dart';
 import 'package:app_api_client/src/model/quiz_list_dto.dart';

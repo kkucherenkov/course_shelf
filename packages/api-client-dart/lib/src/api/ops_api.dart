@@ -4,11 +4,13 @@
 
 import 'dart:async';
 
+import 'package:built_value/json_object.dart';
 import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
 import 'package:app_api_client/src/model/backup_created_dto.dart';
 import 'package:app_api_client/src/model/ping_response.dart';
+import 'package:app_api_client/src/model/problem.dart';
 
 class OpsApi {
 

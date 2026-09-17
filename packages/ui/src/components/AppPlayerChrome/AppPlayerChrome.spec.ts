@@ -560,9 +560,26 @@ describe('AppPlayerChrome', () => {
       expect(wrapper.emitted('seek')).toEqual([[85], [115]]);
     });
 
-    it('does not skip in an inert state', async () => {
-      const wrapper = makeWrapper({ state: 'locked' });
-      await wrapper.find('.app-player-chrome__btn--skip-back').trigger('click');
+    it('disables the skip buttons in an inert state', () => {
+      for (const state of ['locked', 'error'] as const) {
+        const wrapper = makeWrapper({ state });
+        for (const side of ['skip-back', 'skip-forward']) {
+          const btn = wrapper.find(`.app-player-chrome__btn--${side}`).element as HTMLButtonElement;
+          expect(btn.disabled).toBe(true);
+        }
+      }
+    });
+
+    it('does not skip in an inert state even if the button is reachable', async () => {
+      // The `disabled` attribute above is what normally stops the click, and a
+      // click is never dispatched on a disabled button — neither by a browser
+      // nor by `trigger()`. So asserting on a click alone proves the attribute
+      // and never reaches `seekBy`'s own guard. Strip the attribute to get
+      // there: the guard is what holds if the state turns inert mid-gesture.
+      const wrapper = makeWrapper({ state: 'locked', position: 100, duration: 600 });
+      const btn = wrapper.find('.app-player-chrome__btn--skip-back');
+      (btn.element as HTMLButtonElement).disabled = false;
+      await btn.trigger('click');
       expect(wrapper.emitted('seek')).toBeUndefined();
     });
 

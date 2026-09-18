@@ -778,5 +778,137 @@ describe('AppPlayerChrome', () => {
       await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
       expect(wrapper.findAll('.app-player-chrome__speed-item')).toHaveLength(2);
     });
+
+    // A "menu" that never receives focus, never accepts arrow keys and never
+    // notices a click elsewhere isn't a menu — it's a `role` attribute lying
+    // about what a screen reader is about to be told (tuxedo 235).
+    describe('role=menu behaviour (tuxedo 235)', () => {
+      it('moves focus onto the checked row as soon as the menu opens', async () => {
+        // Attached to the document — focus() is a no-op against a detached tree.
+        const wrapper = mount(AppPlayerChrome, {
+          props: { ...baseProps, speed: 1.5 },
+          attachTo: document.body,
+        });
+        await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+        const rows = wrapper.findAll('.app-player-chrome__speed-item');
+        expect(document.activeElement).toBe(rows[4]!.element); // 1.5× is index 4
+        expect(document.activeElement?.textContent).toBe('1.5×');
+        wrapper.unmount();
+      });
+
+      it('falls back to the first row when the current speed is off the list', async () => {
+        const wrapper = mount(AppPlayerChrome, {
+          props: { ...baseProps, speed: 3, speeds: [1, 2] },
+          attachTo: document.body,
+        });
+        await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+        const rows = wrapper.findAll('.app-player-chrome__speed-item');
+        expect(document.activeElement).toBe(rows[0]!.element);
+        wrapper.unmount();
+      });
+
+      it('ArrowDown/ArrowUp move focus between rows and wrap at the ends', async () => {
+        const wrapper = mount(AppPlayerChrome, {
+          props: { ...baseProps, speeds: [1, 2, 3] },
+          attachTo: document.body,
+        });
+        await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+        const rows = wrapper.findAll('.app-player-chrome__speed-item');
+        (rows[0]!.element as HTMLButtonElement).focus();
+
+        await rows[0]!.trigger('keydown', { key: 'ArrowDown' });
+        expect(document.activeElement).toBe(rows[1]!.element);
+
+        await rows[1]!.trigger('keydown', { key: 'ArrowUp' });
+        expect(document.activeElement).toBe(rows[0]!.element);
+
+        await rows[0]!.trigger('keydown', { key: 'ArrowUp' });
+        expect(document.activeElement).toBe(rows[2]!.element); // wraps to the last row
+        wrapper.unmount();
+      });
+
+      it('Home/End jump to the first/last row', async () => {
+        const wrapper = mount(AppPlayerChrome, {
+          props: { ...baseProps, speeds: [1, 2, 3] },
+          attachTo: document.body,
+        });
+        await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+        const rows = wrapper.findAll('.app-player-chrome__speed-item');
+        (rows[1]!.element as HTMLButtonElement).focus();
+
+        await rows[1]!.trigger('keydown', { key: 'End' });
+        expect(document.activeElement).toBe(rows[2]!.element);
+
+        await rows[2]!.trigger('keydown', { key: 'Home' });
+        expect(document.activeElement).toBe(rows[0]!.element);
+        wrapper.unmount();
+      });
+
+      it('closes on a click outside the menu, and still returns focus to the trigger', async () => {
+        const wrapper = mount(AppPlayerChrome, { props: baseProps, attachTo: document.body });
+        const trigger = wrapper.find('.app-player-chrome__btn--speed');
+        await trigger.trigger('click');
+        expect(wrapper.find('.app-player-chrome__speed-menu').exists()).toBe(true);
+
+        document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        await nextTick();
+        expect(wrapper.find('.app-player-chrome__speed-menu').exists()).toBe(false);
+        expect(document.activeElement).toBe(trigger.element);
+        wrapper.unmount();
+      });
+
+      it('leaves the menu open on a click inside it, e.g. the trigger re-toggling it', async () => {
+        const wrapper = mount(AppPlayerChrome, { props: baseProps, attachTo: document.body });
+        await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+        wrapper
+          .find('.app-player-chrome__speed-menu')
+          .element.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        await nextTick();
+        expect(wrapper.find('.app-player-chrome__speed-menu').exists()).toBe(true);
+        wrapper.unmount();
+      });
+    });
+
+    // isInert only ever disabled the trigger — an already-open menu kept
+    // taking picks straight through a lock/error transition (tuxedo 236).
+    describe('closes on lock/error (tuxedo 236)', () => {
+      it.each(['locked', 'error'] as const)(
+        'closes an open menu when the state becomes %s',
+        async (state) => {
+          const wrapper = makeWrapper({ state: 'playing' });
+          await wrapper.find('.app-player-chrome__btn--speed').trigger('click');
+          expect(wrapper.find('.app-player-chrome__speed-menu').exists()).toBe(true);
+
+          await wrapper.setProps({ state });
+          expect(wrapper.find('.app-player-chrome__speed-menu').exists()).toBe(false);
+        },
+      );
+
+      it('disables every row while inert', async () => {
+        // The menu closes itself in the same tick a lock/error prop lands (the
+        // watch above), so reaching a *rendered but disabled* row means
+        // opening it from a state that starts out inert and stripping the
+        // trigger's own disabled attribute — same technique the skip-button
+        // race test uses.
+        const wrapper = makeWrapper({ state: 'locked' });
+        const trigger = wrapper.find('.app-player-chrome__btn--speed');
+        (trigger.element as HTMLButtonElement).disabled = false;
+        await trigger.trigger('click');
+        for (const row of wrapper.findAll('.app-player-chrome__speed-item')) {
+          expect((row.element as HTMLButtonElement).disabled).toBe(true);
+        }
+      });
+
+      it('does not emit speed in an inert state even if a row is reachable', async () => {
+        const wrapper = makeWrapper({ state: 'locked' });
+        const trigger = wrapper.find('.app-player-chrome__btn--speed');
+        (trigger.element as HTMLButtonElement).disabled = false;
+        await trigger.trigger('click');
+        const row = wrapper.find('.app-player-chrome__speed-item');
+        (row.element as HTMLButtonElement).disabled = false;
+        await row.trigger('click');
+        expect(wrapper.emitted('speed')).toBeUndefined();
+      });
+    });
   });
 });

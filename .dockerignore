@@ -55,3 +55,8 @@ docs/data
 # would otherwise happily copy into the build context.
 /models
 
+# Derived artefacts (transcripts, thumbnails, scraper defs) bound at dev/prod
+# time via $DERIVED_PATH — same reasoning as /models above. .env.example and
+# docker/compose.yml both default it to repo-root derived/.
+/derived
+

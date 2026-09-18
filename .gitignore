@@ -108,6 +108,11 @@ architecture.pptx
 # example data
 docs/data
 
+# the maintainer's global gitignore hides new files under docs/*, but not a
+# whole new directory — docs/roadmap/tools/ is a real script directory, and
+# running it drops a __pycache__ next to it that the global rule never catches
+docs/roadmap/tools/__pycache__/
+
 # derived artefacts + whisper models — the default host binds of the dev stack
 # (docker/compose.yml: DERIVED_PATH, WHISPER_MODEL_DIR). Generated transcripts
 # are reproducible output and ggml models are hundreds of megabytes.

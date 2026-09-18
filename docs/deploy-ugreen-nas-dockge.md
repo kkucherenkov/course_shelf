@@ -443,7 +443,7 @@ default.
 | `CENTRIFUGO_API_KEY` | **yes** | — | Lets the API publish realtime events. |
 | `CENTRIFUGO_TOKEN_HMAC_SECRET` | **yes** | — | Signs the browser's realtime tokens. Must differ from the API key. |
 | `PROXY_PORT` | no | `8080` | Host port for the proxy. The only port published. |
-| `RELEASE_TAG` | no | pinned | Image tag. The bundled compose pins the exact version; set `latest` to float. |
+| `RELEASE_TAG` | no | — | **Vestigial in a downloaded bundle.** The release workflow bakes the version into `compose.yaml`'s image tags as a literal before it ships, so this variable is not read by the running stack — see [Updating to a new release](#updating-to-a-new-release). It only does something if you build `docker/compose.release.yml` from source yourself. |
 | `REGISTRY` | no | `ghcr.io` | Change only if you host the images yourself. |
 | `REGISTRY_NAMESPACE` | no | `kkucherenkov` | Same. |
 | `POSTGRES_DB` | no | `courseshelf` | Database name. |
@@ -500,18 +500,43 @@ holding your data and starts you on an empty database.
 
 ## Updating to a new release
 
+`RELEASE_TAG` in `.env` is not read by the running stack — `compose.yaml`
+pins each image tag as a literal (`ghcr.io/kkucherenkov/courseshelf-backend:1.6.0`,
+not `${RELEASE_TAG}`), baked in by the release workflow when it rendered your
+bundle. Editing `.env` and pressing **Update** in Dockge changes nothing; the
+stack keeps pulling the same images it already has.
+
+Edit the tags in `compose.yaml` directly, over SSH or Dockge's editor:
+
 ```sh
 cd "$STACKS/courseshelf"
+cp compose.yaml compose.yaml.<old-version>   # keeps a rollback copy
+sed -i "s#courseshelf-backend:<old>#courseshelf-backend:<new>#; \
+        s#courseshelf-web:<old>#courseshelf-web:<new>#" compose.yaml
+grep -n "courseshelf-\(backend\|web\):" compose.yaml   # confirm before pulling
 ```
 
-1. Edit `RELEASE_TAG` in `.env` to the new version.
-2. In Dockge, press **Update** on the stack (this is `pull` then `up -d`).
+Then pull and restart only the two services whose image changed — Postgres,
+Centrifugo and the proxy are untouched by a release:
 
-Database migrations run automatically when the new API container starts. Only
-the containers whose image changed are recreated; your volumes are untouched.
+```sh
+docker compose pull backend web
+docker compose up -d backend web
+```
 
-If a release changes `compose.yml` or `nginx-prod.conf` — the changelog says so
-— download the new bundle and copy those two files over before updating.
+Database migrations run automatically when the new API container starts.
+Verify the deploy actually landed by the **version**, not the container
+status — `Up (healthy)` only means the process answers, not which build it
+is:
+
+```sh
+curl -s http://<host>:<port>/api/v1/health
+# {"status":"ok","version":"1.6.1","dependencies":{"db":"ok","centrifugo":"ok"}}
+```
+
+If a release changes `compose.yml` or `nginx-prod.conf` — the changelog says
+so — download the new bundle and copy those two files over before updating,
+rather than sed-editing tags in place.
 
 **If you moved the database off the named volume, re-apply that edit every time
 you copy in a new `compose.yml`.** The shipped file stores Postgres in a Docker
@@ -520,12 +545,15 @@ bundle knows nothing about, so a fresh `compose.yml` silently restores the named
 volume. Nothing is lost — your data stays on disk where you put it — but the
 container comes up against an empty volume, and an instance with no users and no
 courses looks exactly like an instance that lost everything. Check the
-`postgres` service's `volumes:` line before pressing Update.
+`postgres` service's `volumes:` line before pulling — this only applies when
+you copied in a fresh `compose.yml`; the sed-in-place tag bump above never
+touches this line.
 
-**Rolling back** is setting `RELEASE_TAG` to the previous version and pressing
-Update again. That works for the application; it does **not** undo a database
-migration, so take a backup first (below) if you are moving across a release
-that changed the schema.
+**Rolling back** is restoring the `compose.yaml.<old-version>` copy you made
+before updating and running `docker compose up -d backend web` again. That
+works for the application; it does **not** undo a database migration, so take
+a backup first (below) if you are moving across a release that changed the
+schema.
 
 ---
 

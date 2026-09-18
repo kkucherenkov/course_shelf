@@ -2,7 +2,7 @@
  * Spec for PlayerTranscriptTab component.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import PlayerTranscriptTab from '../PlayerTranscriptTab.vue';
 import type { TranscriptCue } from '~/composables/useTranscriptCues';
@@ -74,5 +74,58 @@ describe('PlayerTranscriptTab', () => {
     await wrapper.find('.player-transcript-tab__filter').setValue('nonexistent');
     expect(wrapper.find('.player-transcript-tab__no-match').text()).toBe(baseProps.noMatchLabel);
     expect(wrapper.find('.player-transcript-tab__row').exists()).toBe(false);
+  });
+});
+
+describe('PlayerTranscriptTab — scroll-into-view', () => {
+  it('scrolls the newly active row into view when activeIndex changes', async () => {
+    const wrapper = mount(PlayerTranscriptTab, { props: baseProps });
+    const scrollIntoView = vi.fn();
+    wrapper.findAll('.player-transcript-tab__row')[1]!.element.scrollIntoView = scrollIntoView;
+
+    await wrapper.setProps({ activeIndex: 1 });
+
+    expect(scrollIntoView).toHaveBeenCalledWith(
+      expect.objectContaining({ block: 'nearest', behavior: 'smooth' }),
+    );
+  });
+
+  it('uses an instant jump under prefers-reduced-motion', async () => {
+    vi.spyOn(globalThis, 'matchMedia').mockReturnValue({
+      matches: true,
+    } as MediaQueryList);
+
+    const wrapper = mount(PlayerTranscriptTab, { props: baseProps });
+    const scrollIntoView = vi.fn();
+    wrapper.findAll('.player-transcript-tab__row')[1]!.element.scrollIntoView = scrollIntoView;
+
+    await wrapper.setProps({ activeIndex: 1 });
+
+    expect(scrollIntoView).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'auto' }));
+    vi.restoreAllMocks();
+  });
+
+  it('stops auto-scrolling once the reader has scrolled the panel themselves', async () => {
+    const wrapper = mount(PlayerTranscriptTab, { props: baseProps });
+    const rows = wrapper.findAll('.player-transcript-tab__row');
+    const scrollIntoView = vi.fn();
+    rows[1]!.element.scrollIntoView = scrollIntoView;
+    rows[2]!.element.scrollIntoView = scrollIntoView;
+
+    wrapper.find('.player-transcript-tab').element.dispatchEvent(new Event('wheel'));
+    await wrapper.setProps({ activeIndex: 1 });
+    await wrapper.setProps({ activeIndex: 2 });
+
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('does not scroll when there is no active cue', async () => {
+    const wrapper = mount(PlayerTranscriptTab, { props: { ...baseProps, activeIndex: 0 } });
+    const scrollIntoView = vi.fn();
+    wrapper.findAll('.player-transcript-tab__row')[0]!.element.scrollIntoView = scrollIntoView;
+
+    await wrapper.setProps({ activeIndex: -1 });
+
+    expect(scrollIntoView).not.toHaveBeenCalled();
   });
 });

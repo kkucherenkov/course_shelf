@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import { IconCS } from '@app/ui';
   import type { IconName } from '@app/ui';
   import type { CourseMaterialItem } from '@app/api-client-ts';
@@ -15,6 +16,8 @@
   const emit = defineEmits<{
     downloadAttempt: [material: CourseMaterialItem];
   }>();
+
+  const { t } = useI18n();
 
   // The backend now sorts the flat materials list by
   // (section.position, lesson.position, material.id) and decorates each
@@ -55,15 +58,19 @@
   function kindIcon(kind: CourseMaterialItem['kind']): IconName {
     if (kind === 'doc') return 'pdf';
     if (kind === 'note') return 'note';
-    if (kind === 'image') return 'folder';
-    // slide and fallback
-    return 'cloud';
+    // No dedicated "picture" glyph in IconCS — a 2x2 grid reads as a
+    // thumbnail grid, the closest existing name to "image".
+    if (kind === 'image') return 'grid';
+    // slide: stacked ellipses read as a deck of slides.
+    return 'circle-stack';
   }
 
   function fmtSize(bytes: number): string {
-    if (bytes < 1024) return `${String(bytes)} B`;
-    if (bytes < 1024 * 1024) return `${String(Math.round(bytes / 1024))} KB`;
-    return `${String(Math.round(bytes / (1024 * 1024)))} MB`;
+    if (bytes < 1024) return t('pages.courseDetail.materialSizeBytes', { n: bytes });
+    if (bytes < 1024 * 1024) {
+      return t('pages.courseDetail.materialSizeKb', { n: Math.round(bytes / 1024) });
+    }
+    return t('pages.courseDetail.materialSizeMb', { n: Math.round(bytes / (1024 * 1024)) });
   }
 </script>
 

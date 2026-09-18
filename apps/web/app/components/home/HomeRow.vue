@@ -219,12 +219,15 @@
         flex-shrink: 0;
       }
 
-      // xs (<640px): always scroll horizontally
-      @media (width < 640px) {
-        flex-wrap: nowrap;
-      }
-
-      // md+ (≥768px): allow wrap if enough width
+      // One switch point, at md (768px): below it the row scrolls
+      // horizontally, at and above it the row wraps. That's already flex's
+      // initial state (nowrap) plus this block's own `overflow-x: auto`, so
+      // below md needs no media query of its own — a prior `< 640px` rule
+      // restated that default and left 640–767px governed by nothing
+      // explicit. Two breakpoints for one behaviour invited them to drift
+      // apart; a tablet in that gap has no fewer cards than the desktop
+      // wrap needs, so scroll (the narrower side's behaviour) is the one
+      // that stays correct as the row grows.
       @media (width >= 768px) {
         flex-wrap: wrap;
         overflow-x: visible;

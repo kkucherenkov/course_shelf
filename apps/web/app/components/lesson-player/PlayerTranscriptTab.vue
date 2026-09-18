@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
+  import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import type { TranscriptCue } from '~/composables/useTranscriptCues';
   import { formatCueTime } from '~/utils/format-time';
 
@@ -28,10 +28,56 @@
       .map((cue, index) => ({ cue, index }))
       .filter(({ cue }) => cue.text.toLowerCase().includes(needle));
   });
+
+  // Keep the active row in view as playback advances — on a lesson with 80+
+  // cues the highlighted row drifts off-screen within seconds otherwise.
+  const containerRef = ref<HTMLElement | null>(null);
+  const rowRefs = new Map<number, HTMLElement>();
+
+  function setRowRef(index: number, el: Element | null): void {
+    if (el instanceof HTMLElement) {
+      rowRefs.set(index, el);
+    } else {
+      rowRefs.delete(index);
+    }
+  }
+
+  function prefersReducedMotion(): boolean {
+    return globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  // A reader who scrolled the panel themselves is looking for something —
+  // the next playhead advance must not yank them back to the active row.
+  const userScrolled = ref(false);
+
+  function onUserScroll(): void {
+    userScrolled.value = true;
+  }
+
+  onMounted(() => {
+    containerRef.value?.addEventListener('wheel', onUserScroll, { passive: true });
+    containerRef.value?.addEventListener('touchmove', onUserScroll, { passive: true });
+  });
+
+  onBeforeUnmount(() => {
+    containerRef.value?.removeEventListener('wheel', onUserScroll);
+    containerRef.value?.removeEventListener('touchmove', onUserScroll);
+  });
+
+  watch(
+    () => props.activeIndex,
+    (index) => {
+      if (userScrolled.value || index < 0) return;
+      rowRefs.get(index)?.scrollIntoView({
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+        block: 'nearest',
+      });
+    },
+  );
 </script>
 
 <template>
-  <div class="player-transcript-tab">
+  <div ref="containerRef" class="player-transcript-tab">
     <!-- The panel is no longer gated on the lesson having cues — it moved out
          of the sidebar into the player column and hiding it left "this lesson
          has no transcript" reachable from nowhere. Without this branch the
@@ -54,6 +100,7 @@
       <ul v-else class="player-transcript-tab__list">
         <li v-for="item in filteredCues" :key="item.index" class="player-transcript-tab__item">
           <button
+            :ref="(el) => setRowRef(item.index, el as Element | null)"
             type="button"
             class="player-transcript-tab__row"
             :class="{ 'player-transcript-tab__row--active': item.index === props.activeIndex }"

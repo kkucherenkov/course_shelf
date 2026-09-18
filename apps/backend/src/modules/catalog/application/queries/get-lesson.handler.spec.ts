@@ -79,6 +79,7 @@ function makeTranscriptRepo(overrides?: Partial<TranscriptRepository>): Transcri
     findGeneratedByLanguage: vi.fn().mockResolvedValue([]),
     reclassifyGenerated: vi.fn(),
     findCuesForLesson: vi.fn().mockResolvedValue(null),
+    cueBelongsToLesson: vi.fn().mockResolvedValue(true),
     ...overrides,
   };
 }
@@ -110,9 +111,16 @@ function makeLesson(): Lesson {
     now: NOW,
   });
   lesson.addMaterial(
-    Material.fromFile({ id: 'm1', path: '/lib/course/01 - Intro.pdf', sizeBytes: 500 }),
+    Material.fromFile({
+      id: 'm1',
+      path: '/lib/course/01 - Intro.pdf',
+      libraryRoot: '/lib',
+      sizeBytes: 500,
+    }),
   );
-  lesson.addSubtitle(Subtitle.fromFile({ id: 's1', path: '/lib/course/01 - Intro.en.srt' }));
+  lesson.addSubtitle(
+    Subtitle.fromFile({ id: 's1', path: '/lib/course/01 - Intro.en.srt', libraryRoot: '/lib' }),
+  );
   return lesson;
 }
 

@@ -258,16 +258,19 @@ export function buildSeedLesson(): Lesson {
 
   lesson.setDuration(60);
   lesson.addMaterial(
-    Material.fromFile({
+    Material.reconstitute({
       id: SEED_IDS.material,
-      path: `${SEED_SLUGS.course}/01-welcome.pdf`,
+      kind: 'doc',
+      label: '01-welcome',
+      path: LibraryRelativePath.reconstitute(`${SEED_SLUGS.course}/01-welcome.pdf`),
       sizeBytes: 2048,
     }),
   );
   lesson.addSubtitle(
-    Subtitle.fromFile({
+    Subtitle.reconstitute({
       id: SEED_IDS.subtitle,
-      path: `${SEED_SLUGS.course}/01-welcome.en.vtt`,
+      language: 'en',
+      path: LibraryRelativePath.reconstitute(`${SEED_SLUGS.course}/01-welcome.en.vtt`),
     }),
   );
 

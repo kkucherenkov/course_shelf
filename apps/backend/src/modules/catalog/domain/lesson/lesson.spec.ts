@@ -34,11 +34,16 @@ function makeLesson(): Lesson {
 }
 
 function makeMaterial(id = 'm1'): Material {
-  return Material.fromFile({ id, path: `/lib/course/${id}.pdf`, sizeBytes: 500 });
+  return Material.fromFile({
+    id,
+    path: `/lib/course/${id}.pdf`,
+    libraryRoot: '/lib',
+    sizeBytes: 500,
+  });
 }
 
 function makeSubtitle(id = 's1'): Subtitle {
-  return Subtitle.fromFile({ id, path: `/lib/course/${id}.en.srt` });
+  return Subtitle.fromFile({ id, path: `/lib/course/${id}.en.srt`, libraryRoot: '/lib' });
 }
 
 describe('Lesson.create', () => {

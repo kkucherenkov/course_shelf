@@ -27,6 +27,16 @@ export class FlashcardNotFoundError extends NotFound {
   }
 }
 
+export class FlashcardSourceCueInvalidError extends NotFound {
+  constructor(cueId: string) {
+    super(
+      `Transcript cue "${cueId}" does not belong to this lesson.`,
+      'flashcard-source-cue-invalid',
+    );
+    this.name = 'FlashcardSourceCueInvalidError';
+  }
+}
+
 export class FlashcardOwnershipMismatchError extends DomainError {
   constructor() {
     super({

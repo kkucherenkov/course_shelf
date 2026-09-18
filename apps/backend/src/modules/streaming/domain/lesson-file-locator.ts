@@ -36,7 +36,7 @@
  * locateMaterial adds a parallel path for material sidecar files (PDF / MD / image):
  *   - Same lesson/course/library load + traversal guard.
  *   - Finds the material on lesson.materials by id → MaterialNotFoundError (404).
- *   - Resolves path.resolve(library.rootPath, material.path) + traversal guard.
+ *   - Resolves material.absolutePath(library.rootPath) + traversal guard.
  *   - Stats the file → MaterialFileNotFoundError (404) if absent.
  *   - Returns { absolutePath, sizeBytes, label, kind, courseId, libraryId }.
  *
@@ -169,7 +169,7 @@ export class LessonFileLocator {
 
     // Resolve and guard the subtitle path the same way as the video path.
     const canonicalRoot = path.resolve(library.rootPath);
-    const absolutePath = path.resolve(library.rootPath, subtitle.path);
+    const absolutePath = subtitle.absolutePath(library.rootPath);
 
     const rel = path.relative(canonicalRoot, absolutePath);
     if (rel.startsWith('..') || path.isAbsolute(rel)) {
@@ -229,7 +229,7 @@ export class LessonFileLocator {
 
     // Resolve absolute path and apply the same traversal guard as the video path.
     const canonicalRoot = path.resolve(library.rootPath);
-    const absolutePath = path.resolve(library.rootPath, material.path);
+    const absolutePath = material.absolutePath(library.rootPath);
 
     const rel = path.relative(canonicalRoot, absolutePath);
     if (rel.startsWith('..') || path.isAbsolute(rel)) {

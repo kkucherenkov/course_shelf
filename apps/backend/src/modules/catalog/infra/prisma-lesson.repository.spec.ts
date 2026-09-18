@@ -173,9 +173,16 @@ describe('PrismaLessonRepository', () => {
   it('deletes and recreates materials + subtitles inside transaction', async () => {
     const lesson = makeLesson();
     lesson.addMaterial(
-      Material.fromFile({ id: 'm1', path: '/lib/course/01 - Intro.pdf', sizeBytes: 500 }),
+      Material.fromFile({
+        id: 'm1',
+        path: '/lib/course/01 - Intro.pdf',
+        libraryRoot: '/lib',
+        sizeBytes: 500,
+      }),
     );
-    lesson.addSubtitle(Subtitle.fromFile({ id: 's1', path: '/lib/course/01 - Intro.en.srt' }));
+    lesson.addSubtitle(
+      Subtitle.fromFile({ id: 's1', path: '/lib/course/01 - Intro.en.srt', libraryRoot: '/lib' }),
+    );
 
     await repo.save(lesson);
 
@@ -234,11 +241,9 @@ describe('PrismaLessonRepository', () => {
   it('reconstitutes aggregate from row with materials + subtitles', async () => {
     const row = makeLessonRow({
       materials: [
-        { id: 'm1', kind: 'doc', label: '01 - Intro', path: '/lib/01 - Intro.pdf', sizeBytes: 500 },
+        { id: 'm1', kind: 'doc', label: '01 - Intro', path: '01 - Intro.pdf', sizeBytes: 500 },
       ],
-      subtitles: [
-        { id: 's1', language: 'en', label: '01 - Intro', path: '/lib/01 - Intro.en.srt' },
-      ],
+      subtitles: [{ id: 's1', language: 'en', label: '01 - Intro', path: '01 - Intro.en.srt' }],
     });
     vi.mocked(prisma.lesson.findUnique).mockResolvedValue(row);
 
@@ -258,19 +263,24 @@ describe('PrismaLessonRepository', () => {
   it('roundtrip: save then findById reconstitutes the aggregate', async () => {
     const lesson = makeLesson();
     lesson.addMaterial(
-      Material.fromFile({ id: 'm1', path: '/lib/01 - Intro.pdf', sizeBytes: 500 }),
+      Material.fromFile({
+        id: 'm1',
+        path: '/lib/01 - Intro.pdf',
+        libraryRoot: '/lib',
+        sizeBytes: 500,
+      }),
     );
-    lesson.addSubtitle(Subtitle.fromFile({ id: 's1', path: '/lib/01 - Intro.en.srt' }));
+    lesson.addSubtitle(
+      Subtitle.fromFile({ id: 's1', path: '/lib/01 - Intro.en.srt', libraryRoot: '/lib' }),
+    );
 
     const row = makeLessonRow({
       id: lesson.id,
       title: lesson.title,
       materials: [
-        { id: 'm1', kind: 'doc', label: '01 - Intro', path: '/lib/01 - Intro.pdf', sizeBytes: 500 },
+        { id: 'm1', kind: 'doc', label: '01 - Intro', path: '01 - Intro.pdf', sizeBytes: 500 },
       ],
-      subtitles: [
-        { id: 's1', language: 'en', label: '01 - Intro', path: '/lib/01 - Intro.en.srt' },
-      ],
+      subtitles: [{ id: 's1', language: 'en', label: '01 - Intro', path: '01 - Intro.en.srt' }],
     });
     vi.mocked(prisma.lesson.findUnique).mockResolvedValue(row);
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import AppProgressBadge from '../AppProgressBadge/AppProgressBadge.vue';
   import AppSkeleton from '../AppSkeleton/AppSkeleton.vue';
   import IconCS from '../IconCS/IconCS.vue';
   import { useCourseCard } from './use-course-card';
@@ -46,28 +47,21 @@
       <span class="app-course-poster-card__initials" aria-hidden="true">{{ coverInitials }}</span>
       <div class="app-course-poster-card__overlay" aria-hidden="true" />
 
-      <!-- completed badge -->
-      <div
-        v-if="realState === 'completed'"
-        class="app-course-poster-card__badge app-course-poster-card__badge--completed"
-        aria-hidden="true"
-      >
-        <IconCS name="check" :size="16" />
-      </div>
-
-      <!-- locked scrim -->
-      <div
-        v-else-if="realState === 'locked'"
-        class="app-course-poster-card__scrim"
-        aria-hidden="true"
-      >
+      <!-- locked scrim: covers the whole cover, independent of progress -->
+      <div v-if="realState === 'locked'" class="app-course-poster-card__scrim" aria-hidden="true">
         <IconCS name="lock" :size="20" />
       </div>
 
-      <!-- progress strip -->
-      <div v-else class="app-course-poster-card__strip" aria-hidden="true">
-        <div class="app-course-poster-card__strip-fill" :style="{ width: `${pct}%` }" />
-      </div>
+      <!-- progress badge: pct is 0 for both not-started and locked, so the
+           corner is empty for both by construction — no per-state branch. -->
+      <AppProgressBadge
+        v-if="pct > 0"
+        variant="ring"
+        :state="realState"
+        :completed="course.completed"
+        :total="course.lessons"
+        class="app-course-poster-card__badge"
+      />
     </div>
 
     <div class="app-course-poster-card__body">
@@ -101,9 +95,6 @@
 </template>
 
 <style lang="scss" scoped>
-  // Badge circle and hairline progress strip — both sit between --space steps.
-  $badge-size: 28px;
-  $strip-height: 3px;
   $skeleton-instructor-gap: 6px;
 
   // Stacking context within the card (named vars — no raw ints).
@@ -176,17 +167,6 @@
       top: var(--space-2);
       right: var(--space-2);
       z-index: $z-cover-top;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: $badge-size;
-      height: $badge-size;
-      border-radius: var(--radius-pill);
-      color: var(--media-fg);
-
-      &--completed {
-        background: var(--status-success-fg);
-      }
     }
 
     &__scrim {
@@ -198,22 +178,6 @@
       justify-content: center;
       background: var(--media-scrim-soft);
       color: var(--media-fg);
-    }
-
-    &__strip {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: $strip-height;
-      background: var(--media-track-cover);
-      z-index: $z-cover-top;
-    }
-
-    &__strip-fill {
-      height: 100%;
-      background: var(--brand-accent);
-      transition: width var(--dur-slow) var(--ease-out);
     }
 
     &__body {

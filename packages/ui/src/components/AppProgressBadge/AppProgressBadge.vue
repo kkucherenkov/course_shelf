@@ -86,9 +86,10 @@
 <style scoped lang="scss">
   // bundle's --primary maps to --brand-accent; --surface-3 → --surface-overlay;
   // --success → --status-success-fg; --text-muted → --text-secondary
-  // 26px/22px fall between --space-* steps (24/32), so they are named SCSS
-  // variables holding the same literals.
+  // 26px/22px/28px fall between --space-* steps (24/32), so they are named
+  // SCSS variables holding the same literals.
   $ring-inner-size: 26px;
+  $ring-completed-size: 28px;
   $pill-height: 22px;
 
   .app-progress-badge {
@@ -102,6 +103,15 @@
       border-radius: 50%;
       display: inline-grid;
       place-items: center;
+    }
+
+    // Completed draws as a solid filled circle (the conic-gradient goes
+    // to 100% the same colour as the centre) — a touch smaller than the
+    // in-progress ring reads as a tighter, "done" badge rather than a
+    // bigger ring that just happens to be full.
+    &--ring.app-progress-badge--completed {
+      width: $ring-completed-size;
+      height: $ring-completed-size;
     }
 
     &__ring-inner {

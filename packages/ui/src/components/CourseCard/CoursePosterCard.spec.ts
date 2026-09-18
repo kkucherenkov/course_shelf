@@ -46,50 +46,50 @@ describe('CoursePosterCard', () => {
 
   // --- state auto derivation ---
 
-  it('state=auto + completed===lessons → shows completed badge', () => {
+  it('state=auto + completed===lessons → shows the completed ring badge', () => {
     const completed: Course = { ...base, completed: 12, lessons: 12 };
     const wrapper = mount(CoursePosterCard, { props: { course: completed } });
-    expect(wrapper.find('.app-course-poster-card__badge--completed').exists()).toBe(true);
+    const badge = wrapper.find('.app-course-poster-card__badge');
+    expect(badge.classes()).toContain('app-progress-badge--completed');
     expect(wrapper.find('.app-course-poster-card__scrim').exists()).toBe(false);
   });
 
-  it('state=auto + partial progress → shows progress strip', () => {
+  it('state=auto + partial progress → shows the in-progress ring badge', () => {
     const inProgress: Course = { ...base, completed: 4, lessons: 12 };
     const wrapper = mount(CoursePosterCard, { props: { course: inProgress } });
-    expect(wrapper.find('.app-course-poster-card__strip').exists()).toBe(true);
-    expect(wrapper.find('.app-course-poster-card__badge--completed').exists()).toBe(false);
+    const badge = wrapper.find('.app-course-poster-card__badge');
+    expect(badge.classes()).toContain('app-progress-badge--in-progress');
+    expect(badge.attributes('aria-label')).toBe('33%');
   });
 
-  it('state=auto + zero progress → shows strip with 0% fill', () => {
+  it('state=auto + zero progress → the corner has no badge', () => {
     const notStarted: Course = { ...base, completed: 0, lessons: 12 };
     const wrapper = mount(CoursePosterCard, { props: { course: notStarted } });
-    const fill = wrapper.find('.app-course-poster-card__strip-fill');
-    expect(fill.exists()).toBe(true);
-    expect(fill.attributes('style')).toContain('width: 0%');
+    expect(wrapper.find('.app-course-poster-card__badge').exists()).toBe(false);
   });
 
-  it('state=completed → shows completed badge', () => {
+  it('state=completed → shows the completed ring badge', () => {
     const wrapper = mount(CoursePosterCard, {
       props: { course: base, state: 'completed' },
     });
-    expect(wrapper.find('.app-course-poster-card__badge--completed').exists()).toBe(true);
+    expect(wrapper.find('.app-course-poster-card__badge').classes()).toContain(
+      'app-progress-badge--completed',
+    );
   });
 
-  it('state=locked → shows scrim with lock icon', () => {
+  it('state=locked → shows scrim with lock icon, no corner badge', () => {
     const wrapper = mount(CoursePosterCard, {
       props: { course: base, state: 'locked' },
     });
     expect(wrapper.find('.app-course-poster-card__scrim').exists()).toBe(true);
-    expect(wrapper.find('.app-course-poster-card__badge--completed').exists()).toBe(false);
-    expect(wrapper.find('.app-course-poster-card__strip').exists()).toBe(false);
+    expect(wrapper.find('.app-course-poster-card__badge').exists()).toBe(false);
   });
 
-  it('state=not-started → shows strip with 0% fill', () => {
+  it('state=not-started → the corner has no badge', () => {
     const wrapper = mount(CoursePosterCard, {
       props: { course: base, state: 'not-started' },
     });
-    const fill = wrapper.find('.app-course-poster-card__strip-fill');
-    expect(fill.attributes('style')).toContain('width: 0%');
+    expect(wrapper.find('.app-course-poster-card__badge').exists()).toBe(false);
   });
 
   // --- a11y ---

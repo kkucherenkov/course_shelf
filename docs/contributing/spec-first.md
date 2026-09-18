@@ -197,7 +197,7 @@ PR through `main` — never push directly.
 - [ ] Handler tests cover the auth + happy + 404 paths.
 - [ ] Web composable tests OR Playwright e2e cover the SPA wiring.
 - [ ] Conventional Commit prefix on every commit.
-- [ ] Spec entry updated in `specs/tasks/active.md` → `specs/tasks/done.md`.
+- [ ] Task file moved from `specs/tasks/active/` to `specs/tasks/done/`.
 
 ## Pitfalls
 

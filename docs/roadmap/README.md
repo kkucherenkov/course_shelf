@@ -2,7 +2,7 @@
 
 This directory holds the executable plan for CourseShelf: **157 stories in
 31 epics**, each with a one-file task spec and a checkbox in `TODO.md`. The
-roadmap is the static plan; the live work log is `specs/tasks/active.md`.
+roadmap is the static plan; the live work log is `specs/tasks/active/`.
 
 Two milestones live here side by side:
 
@@ -78,12 +78,12 @@ reopen a milestone that is finished.
 
 ## Two trackers, one direction
 
-The roadmap is **the plan**. The task stack at `specs/tasks/active.md`
+The roadmap is **the plan**. The task stack under `specs/tasks/active/`
 is **what is happening right now**. Carry both:
 
 |                                                     | Roadmap (`docs/roadmap/`) | Task stack (`specs/tasks/`)                    |
 | --------------------------------------------------- | ------------------------- | ---------------------------------------------- |
-| Lives forever                                       | yes                       | `active.md` while in flight, `done.md` forever |
+| Lives forever                                       | yes                       | `active/` while in flight, `done/` forever |
 | Granularity                                         | one story = one card      | one feature pass = one entry                   |
 | Statuses                                            | ⬜ → ✅ on merge          | `in-progress` / `blocked` / shipped            |
 | Source of truth for _what is being built right now_ | no                        | **yes**                                        |
@@ -96,15 +96,15 @@ is **what is happening right now**. Carry both:
 2. Open the linked `tasks/<ID>.md` file and read **Spec / Design
    references**, **Goal**, **Acceptance**, sub-steps. If anything is
    ambiguous, leave a question under **Notes** and stop.
-3. Push a fresh entry to the top of `specs/tasks/active.md` using the
+3. Create a fresh file under `specs/tasks/active/` using the
    `specs/tasks/templates/feature.md` template. The card under
    `tasks/<ID>.md` stays at ⬜ Not started until the story actually ships
-   — the `active.md` entry is where progress is tracked while in flight.
-4. Do the work. Tick sub-step boxes inside the `active.md` entry as you
+   — the task file is where progress is tracked while in flight.
+4. Do the work. Tick sub-step boxes inside the task file as you
    land them. If you get stuck, flip `Status: blocked` and document the
    blocker.
 5. When the PR merges:
-   - Move the `active.md` entry to the top of `specs/tasks/done.md` with
+   - `git mv` the task file from `specs/tasks/active/` into `done/` with
      `- Completed: YYYY-MM-DD` and `- Result: <PR link>`.
    - Edit `tasks/<ID>.md`: change **Status** to ✅ Done, tick the
      sub-step list, append `- Completed: YYYY-MM-DD` and
@@ -120,7 +120,7 @@ got blocked by an external dependency; document the blocker under
 | Glyph | Meaning                                                |
 | ----- | ------------------------------------------------------ |
 | ⬜    | Not started                                            |
-| 🔄    | In progress (rare — `active.md` is the primary marker) |
+| 🔄    | In progress (rare — `specs/tasks/active/` is the primary marker) |
 | 🚫    | Blocked (see Notes)                                    |
 | ⏸     | Paused (see Notes)                                     |
 | ✅    | Done                                                   |
@@ -136,9 +136,9 @@ being asked.
    sub-step #2. For real-time channels, edit
    `packages/specs/asyncapi/centrifugo.yaml` first. Codegen artefacts
    land in their own commit.
-2. **Live work log.** No coding starts without an entry in
-   `specs/tasks/active.md`. The card in `tasks/<ID>.md` is the _plan_;
-   the `active.md` entry is the _log_.
+2. **Live work log.** No coding starts without a file under
+   `specs/tasks/active/`. The card in `tasks/<ID>.md` is the _plan_;
+   the task file is the _log_.
 3. **Catalog-first.** Any new visual primitive starts as a `@app/ui`
    Storybook story (web) or a `ui_flutter` Widgetbook use case (mobile),
    each with a colocated spec. Pages and screens compose from the

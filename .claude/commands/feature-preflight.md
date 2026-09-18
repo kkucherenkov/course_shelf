@@ -2,7 +2,7 @@
 description: Pre-feature checklist — verify baseline before starting a new task.
 ---
 
-Before pushing an entry to `specs/tasks/active.md` and writing code, verify the
+Before creating a file under `specs/tasks/active/` and writing code, verify the
 baseline is healthy. Bugs that show up after you edit are easier to attribute
 when you start from green.
 
@@ -27,7 +27,7 @@ pnpm design:audit
 pnpm typecheck
 ```
 
-Then read `specs/tasks/active.md` to check:
+Then read `specs/tasks/active/` to check:
 
 - Is there already an in-progress task? If yes, finish or explicitly park it
   (`status: blocked` with reason) before starting a new one.

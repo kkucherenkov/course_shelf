@@ -24,12 +24,12 @@ docker compose -f docker/compose.yml up -d
 Every non-trivial change follows the task-stack convention enforced in
 [.claude/CLAUDE.md](.claude/CLAUDE.md):
 
-1. Before coding, push an entry to `specs/tasks/active.md` (template in
+1. Before coding, create `specs/tasks/active/<id>.md` (template in
    `specs/tasks/README.md`).
 2. Check items off as you progress. Flip to `blocked` with a reason if
    stuck.
-3. On completion, move the whole entry to the top of `specs/tasks/done.md`
-   with the PR link. Cancelled tasks also go to `done.md` with the reason —
+3. On completion, `git mv` the file into `specs/tasks/done/` and add the PR
+   link. Cancelled tasks move there too, with the reason —
    never delete history.
 
 ## Spec-first loop (non-negotiable)
@@ -77,7 +77,7 @@ Valid types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `perf`,
 
 Before requesting review:
 
-- [ ] Task entry in `specs/tasks/active.md` is up to date (or archived if done)
+- [ ] Task file in `specs/tasks/active/` is up to date (or moved to `done/`)
 - [ ] Spec changes are in their own commit, followed by `spec:codegen`
       output in the next commit
 - [ ] `pnpm lint && pnpm typecheck && pnpm test` is green locally

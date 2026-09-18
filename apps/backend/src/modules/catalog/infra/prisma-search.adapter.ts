@@ -59,7 +59,7 @@
  * Punctuation: the query is matched against the raw title/text — one stray
  * punctuation character right at the match point still defeats it (e.g. a
  * query spanning a "#N." boundary). Deliberately out of scope here — see
- * `specs/tasks/active.md` T-2026-09-14-search-substring for the reasoning and
+ * `specs/tasks/done/T-2026-09-14-search-substring.md` for the reasoning and
  * the follow-up.
  */
 import { Injectable } from '@nestjs/common';

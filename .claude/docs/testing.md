@@ -53,7 +53,7 @@ A task is done when **all** hold:
 3. OpenAPI / AsyncAPI updated if contracts changed; codegen committed.
 4. New user-visible strings in `en` **and** `ru` translation files.
 5. New UI has a Storybook story + spec file.
-6. Task entry moved from `specs/tasks/active.md` to `done.md` with PR link.
+6. Task file moved from `specs/tasks/active/` to `done/` with PR link.
 7. No TODO without an issue reference; no `@ts-ignore` / `eslint-disable` without a WHY comment.
 
 ## Coverage thresholds (backend)
@@ -82,7 +82,7 @@ Target: grow toward 70%/70%/70%/60% as more modules gain test coverage.
 - [ ] PII / secrets / tokens absent from logs.
 - [ ] Error paths render, not just the happy path.
 - [ ] Tests added for new behaviour; edge cases considered.
-- [ ] `specs/tasks/active.md` → `done.md` entry updated.
+- [ ] `specs/tasks/active/` → `done/` file moved.
 - [ ] `pnpm --filter @app/ui audit:components` exits 0 (no story/spec gaps).
 - [ ] Every new page handles all three states: loading, error, empty — not just the happy path.
 - [ ] Every new form uses `useFormValidation(schema)` — no inline regex or `computed` validators.

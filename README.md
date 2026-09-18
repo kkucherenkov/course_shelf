@@ -77,7 +77,7 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 
 **Observable by default.** Sentry captures errors. OpenTelemetry ships traces and metrics to a local Grafana + LGTM stack at `:3200`. Health checks at `/api/v1/health` report the status of PostgreSQL and Centrifugo.
 
-**AI-agent-ready workflow.** The repository carries its own task stack (`specs/tasks/active.md`), project rules (`.claude/CLAUDE.md`), domain handbooks (`.claude/docs/*`), and a subagent roster. A fresh Claude Code session picks up the rules automatically and starts from the top of the task stack.
+**AI-agent-ready workflow.** The repository carries its own task stack (`specs/tasks/active/`), project rules (`.claude/CLAUDE.md`), domain handbooks (`.claude/docs/*`), and a subagent roster. A fresh Claude Code session picks up the rules automatically and starts from the top of the task stack.
 
 ## Tech Stack
 

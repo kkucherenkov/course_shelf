@@ -134,6 +134,15 @@ jobs:
         run: pnpm design:build
 
       - name: Pull external images
+        # `--ignore-buildable` skips postgres/backend/web (compose.ci.yml
+        # rewrites them to `build:`) and centrifugo (always `build:`, config
+        # baked in) — nothing in this job's service list is a plain `image:`
+        # today, but the step stays real rather than a body-less placeholder
+        # (workflow_dispatch's static validator rejects a step with neither
+        # `run` nor `uses` outright — this file failed to dispatch at all
+        # until this line existed) and it starts pulling the moment any
+        # service in the list goes back to a plain image.
+        run: docker compose -f docker/compose.yml -f docker/compose.ci.yml pull --ignore-buildable
 
       # Identical production-shaped stack to e2e.yml — the baselines must be
       # captured against the same `nuxt generate` build the nightly compares

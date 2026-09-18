@@ -601,7 +601,6 @@ export default {
       permissions: {
         title: 'Права доступа',
         subtitle: 'Управляйте доступом к библиотекам и курсам для конкретного пользователя.',
-        addGrantCta: 'Добавить доступ',
         backToUsersCta: 'Назад к пользователям',
         roleChipReadOnlyTooltip: 'Изменить роль можно на странице Пользователи.',
         infoBannerBody:
@@ -675,7 +674,6 @@ export default {
         scanProgressScanning: 'Сканирование',
         scanProgressComplete: 'Сканирование завершено',
         scanProgressFailed: 'Сканирование завершилось с ошибкой',
-        scanProgressCancel: 'Отмена',
         scanProgressErrors: '{n} ошибка | {n} ошибки | {n} ошибок',
         scanProgressScanned: 'Проверено',
         scanProgressAdded: 'Добавлено',
@@ -833,7 +831,6 @@ export default {
       statusComplete: 'Сканирование завершено',
       statusFailed: 'Сканирование завершилось с ошибкой',
       statusPartial: 'Сканирование частично завершено',
-      cancel: 'Отмена',
       errorsButton: '{n} ошибка | {n} ошибки | {n} ошибок',
       statScanned: 'Проверено',
       statAdded: 'Добавлено',

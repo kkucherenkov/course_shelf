@@ -721,15 +721,19 @@ scanner output is treated as a failure, not a pass).
 **`main` is branch-protected**: the four jobs above (`Checks (lint ·
 typecheck · test · specs · ui audit)`, `Codegen drift guard`, `Flutter
 (analyze · test · goldens)`, `Security (secret scan · license audit ·
-vulnerabilities)`) are required status checks, and `strict` mode is on — a
-branch must be up to date with `main` before GitHub will let it merge.
-`enforce_admins` is off and no review is required.
+vulnerabilities)`) are required status checks, but `strict` mode is **off** —
+a PR's checks are validated as they stand, not re-run against whatever just
+landed on `main` in the meantime, so a branch does not have to be up to date
+to merge. `enforce_admins` is off and no review is required.
 
-That combination is why the parallel-lane workflow (`.claude/CLAUDE.md`,
-**Parallel work**) merges one PR at a time rather than all at once: `strict`
-forces every branch but the first to rebase and re-run CI against whatever
-just landed, while `enforce_admins: false` lets the maintainer merge a
-branch that fell behind without waiting on that re-run.
+GitHub's branch protection therefore never forces a lane to rebase before
+merging. What still keeps the parallel-lane workflow (`.claude/CLAUDE.md`,
+**Parallel work**) landing one PR at a time is ordinary git, not the
+protection rules: GitHub computes mergeability with a plain three-way merge,
+so two lanes that touch the same file get a real `CONFLICTING` PR regardless
+of `strict`. The lane discipline — one owner per shared file, one file per
+task under `specs/tasks/active/`/`done/` — exists to keep that overlap from
+happening in the first place, not to satisfy a status-check requirement.
 
 ---
 

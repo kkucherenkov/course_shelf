@@ -458,3 +458,29 @@ include-operation-id = [
   "searchCatalogue",
 ]
 checks.negative_data_rejection.enabled = false
+
+# ---- schemas whose pattern uses a Unicode property class --------------------
+#
+# `UpsertInstructorRequest`, `UpsertStudioRequest` and `UpsertTagRequest` all
+# constrain `displayName` with `pattern: "[\p{L}\p{N}]"` — at least one letter
+# or digit in any script, the rule that stopped the contract promising input
+# `slugify()` refuses (#321, and the reason a Cyrillic instructor name used to
+# be unrecordable).
+#
+# Python's `re` cannot compile that class at all: `re.search(r"[\p{L}\p{N}]",
+# x)` raises `bad escape \p`. The API's own validator reads it correctly, so
+# any generated payload whose only letter is non-ASCII is valid input that the
+# fuzzer believes violates the schema — and `negative_data_rejection` reports
+# the API accepting it as a finding.
+#
+# Measured 2026-09-18 on PR #717, whose diff was two Vue pages and two locale
+# files: the run failed on `{"displayName": "!…µ…"}` — the micro sign U+00B5 is
+# a letter, so the API was right to take it. Seed-dependent, so it turned CI
+# red at random on branches that never touched the API (tuxedo 255).
+#
+# The check is off for these three rather than the pattern being loosened: the
+# spec is right, the fuzzer's regex engine is the part that cannot read it.
+# Every other check stays armed on all three operations.
+[[operations]]
+include-operation-id = ["upsertInstructor", "upsertStudio", "upsertTag"]
+checks.negative_data_rejection.enabled = false

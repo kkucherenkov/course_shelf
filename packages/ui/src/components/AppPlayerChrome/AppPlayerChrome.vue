@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, onUnmounted, ref, watch } from 'vue';
+  import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 
   import AppButton from '../AppButton/AppButton.vue';
   import AppDialog from '../AppDialog/AppDialog.vue';
@@ -194,6 +194,10 @@
   const shortcutsOpen = ref(false);
   const speedMenuOpen = ref(false);
   const speedTriggerRef = ref<HTMLButtonElement | null>(null);
+  // Wraps both the trigger and the menu — doubles as the "am I inside the
+  // widget" check for the outside-click close and as the query root for the
+  // rows the roving-focus keydown handler moves between.
+  const speedWrapRef = ref<HTMLDivElement | null>(null);
 
   const isPlaying = computed(() => props.state === 'playing');
   const isInert = computed(() => props.state === 'locked' || props.state === 'error');
@@ -241,7 +245,10 @@
     { immediate: true },
   );
 
-  onUnmounted(clearIdleTimer);
+  onUnmounted(() => {
+    clearIdleTimer();
+    document.removeEventListener('mousedown', onSpeedMenuOutsideClick);
+  });
 
   const playedFraction = computed(() => clamp01(props.position / nonZero(props.duration)));
   const bufferedFraction = computed(() =>
@@ -261,9 +268,27 @@
     return `${String(rate)}×`;
   }
 
+  function speedMenuItems(): HTMLButtonElement[] {
+    return [
+      ...(speedWrapRef.value?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? []),
+    ];
+  }
+
+  // Bound on `document` only while the menu is open (added in `toggleSpeedMenu`,
+  // removed in `closeSpeedMenu` and on unmount) — a `mousedown`, not `click`,
+  // so the close beats the click that would otherwise land on whatever was
+  // under the pointer.
+  function onSpeedMenuOutsideClick(event: MouseEvent): void {
+    const target = event.target as Node | null;
+    if (target && speedWrapRef.value && !speedWrapRef.value.contains(target)) {
+      closeSpeedMenu();
+    }
+  }
+
   function closeSpeedMenu(): void {
     if (!speedMenuOpen.value) return;
     speedMenuOpen.value = false;
+    document.removeEventListener('mousedown', onSpeedMenuOutsideClick);
     // Focus sat on a menu row, which `v-if` is about to unmount. Without this
     // it lands on <body> and a keyboard user is dropped out of the player
     // entirely. Synchronous: the trigger is already mounted, and waiting for
@@ -281,12 +306,67 @@
     // Opening must cancel the timer already ticking from the last pointer
     // move, or the overlay idle-hides out from under the open menu.
     clearIdleTimer();
+    document.addEventListener('mousedown', onSpeedMenuOutsideClick);
+    // `role="menu"` means opening moves focus in, not just paints the rows.
+    // Land on the checked rate rather than always the first row — the menu
+    // is a radio group, and that is where a native radio group's roving
+    // tabindex would already be sitting.
+    void nextTick(() => {
+      const items = speedMenuItems();
+      const checkedIndex = items.findIndex((item) => item.getAttribute('aria-checked') === 'true');
+      items[Math.max(checkedIndex, 0)]?.focus();
+    });
+  }
+
+  // Roving focus across the rows. Mirrors `AppNavigationShell`'s avatar-menu
+  // keydown handler (ArrowUp/Down wrap via modulo on `indexOf`); Home/End are
+  // this menu's own addition. Escape is handled separately by the
+  // `@keydown.escape` listener on the wrapping element below, since it must
+  // fire even when focus never made it past the trigger.
+  function onSpeedMenuKeydown(event: KeyboardEvent): void {
+    const items = speedMenuItems();
+    if (items.length === 0) return;
+    const idx = items.indexOf(document.activeElement as HTMLButtonElement);
+    switch (event.key) {
+      case 'ArrowDown': {
+        event.preventDefault();
+        items[(idx + 1) % items.length]?.focus();
+        return;
+      }
+      case 'ArrowUp': {
+        event.preventDefault();
+        items[(idx - 1 + items.length) % items.length]?.focus();
+        return;
+      }
+      case 'Home': {
+        event.preventDefault();
+        items[0]?.focus();
+        return;
+      }
+      case 'End': {
+        event.preventDefault();
+        items.at(-1)?.focus();
+        return;
+      }
+      default:
+    }
   }
 
   function chooseSpeed(rate: number): void {
+    // Same inert guard every other emitting handler in this file carries
+    // (`seekBy`, `togglePlay`, …) — the `:disabled` binding on the row stops
+    // a real click, but not a click already queued the instant the player
+    // went locked/error.
+    if (isInert.value) return;
     closeSpeedMenu();
     emit('speed', rate);
   }
+
+  // A menu left open across a state transition into locked/error would still
+  // take picks — `isInert` disables the trigger, not an already-open menu.
+  watch(isInert, (inert) => {
+    if (inert) closeSpeedMenu();
+  });
 
   const currentTimeLabel = computed(() => fmtTime(props.position));
   const totalTimeLabel = computed(() => fmtTime(props.duration));
@@ -681,7 +761,7 @@
                div with no tabindex, so it never holds focus. Focus sits on the
                trigger button or a menu item, both inside this wrapper, and the
                keydown bubbles here from either. -->
-          <div class="app-player-chrome__speed" @keydown.escape="closeSpeedMenu">
+          <div ref="speedWrapRef" class="app-player-chrome__speed" @keydown.escape="closeSpeedMenu">
             <button
               ref="speedTriggerRef"
               type="button"
@@ -699,6 +779,7 @@
               class="app-player-chrome__speed-menu"
               role="menu"
               :aria-label="aria.speed"
+              @keydown="onSpeedMenuKeydown"
             >
               <button
                 v-for="rate in speeds"
@@ -707,6 +788,7 @@
                 role="menuitemradio"
                 class="app-player-chrome__speed-item"
                 :aria-checked="rate === speed ? 'true' : 'false'"
+                :disabled="isInert"
                 @click="chooseSpeed(rate)"
               >
                 {{ formatSpeed(rate) }}
@@ -1049,8 +1131,13 @@
       font-variant-numeric: tabular-nums;
       cursor: pointer;
 
-      &:hover {
+      &:hover:not(:disabled) {
         background: var(--media-fill-hover);
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
       }
 
       &[aria-checked='true'] {

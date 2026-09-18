@@ -12,10 +12,15 @@
  * the server, so the response is the answer — there is no client-side
  * post-filtering to keep in sync. The cache key embeds the whole active
  * combination, so returning to a previous one hits cache instantly.
+ *
+ * `useCourseCatalogAccess` (below) is the unfiltered case of the same call —
+ * see its own doc comment for why Browse and Home each need it alongside
+ * `useLibraries`.
  */
 
 import { client, listCourses } from '@app/api-client-ts';
 import type { CourseListDto } from '@app/api-client-ts';
+import type { ComputedRef } from 'vue';
 
 // Reuse the canonical row-status alias from useHome so every page-level
 // composable shares one type — Nuxt warns on duplicate auto-imports.
@@ -125,5 +130,36 @@ export function useCoursesList(options: UseCoursesListOptions = {}): {
     refetch: async () => {
       await refresh();
     },
+  };
+}
+
+/**
+ * Whether the account can see ANY course in the catalogue at all — an
+ * unfiltered `GET /courses` probe, i.e. `useCoursesList()` with no filters.
+ *
+ * Browse and Home both need this to tell "nothing was ever granted to this
+ * account" apart from every other empty state, and both used to answer it
+ * from `useLibraries` alone. That signal only covers grants that target a
+ * library directly: `AuthorizationService.canSee`'s "library grant implies
+ * access to its courses" rule is one-directional, so a COURSE-level grant —
+ * the admin UI offers those — puts a course in this response without ever
+ * putting a row in `GET /libraries`. Read `useLibraries` alone, that account
+ * looks exactly like one with zero grants: the catalogue gets hidden,
+ * including the one course the grant was actually for (tuxedo 249).
+ *
+ * Neither probe alone is enough, which is why callers OR this with
+ * `useLibraries`'s own item count rather than replacing it: a library-level
+ * grant to a library that is genuinely empty leaves THIS probe at zero
+ * without the account being denied (that's the "granted, nothing to see"
+ * empty state, not "no access").
+ */
+export function useCourseCatalogAccess(): {
+  hasAnyCourse: ComputedRef<boolean>;
+  status: Ref<RowStatus>;
+} {
+  const { data, status } = useCoursesList();
+  return {
+    hasAnyCourse: computed(() => (data.value?.items.length ?? 0) > 0),
+    status,
   };
 }

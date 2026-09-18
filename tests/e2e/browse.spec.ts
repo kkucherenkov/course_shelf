@@ -193,6 +193,57 @@ test('a chosen filter reaches the server and lands in the URL', async ({ page })
   await expect.poll(() => seen.some((url) => url.includes('durationBucket=gt20'))).toBe(true);
 });
 
+// tuxedo 249: a member holding only a COURSE-level grant (the admin UI
+// offers those) used to be told they have no access at all. `GET
+// /libraries` only lists library-level grants, so it went empty; the page
+// read that alone as "nothing was ever granted" and hid the whole
+// catalogue, including the course the grant was actually for.
+test('a member with only a course-level grant sees the catalogue, not the access denial', async ({
+  page,
+}) => {
+  await mockAuthenticated(page);
+
+  // Override the admin session `mockAuthenticated` set up, and the empty
+  // library-grant list a course-only grant leaves behind.
+  await page.route('**/api/v1/auth/get-session', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        user: { id: 'u-2', email: 'member@e.com', name: 'Member', role: 'USER' },
+        session: { id: 's-2', token: 'fake-token' },
+      }),
+    }),
+  );
+  await page.route('**/api/v1/libraries', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: [] }),
+    }),
+  );
+  await page.route('**/api/v1/courses**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(SAMPLE_COURSES),
+    }),
+  );
+  await page.route('**/api/v1/courses', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(SAMPLE_COURSES),
+    }),
+  );
+
+  await page.goto('/browse');
+
+  await expect(page.locator('[data-testid="page-browse"]')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.app-no-permission')).toHaveCount(0);
+  await expect(page.getByText('Pragmatic Clean Architecture')).toBeVisible();
+});
+
 test('filters survive a reload through the query string', async ({ page }) => {
   await mockAuthenticated(page);
   const seen = await mockCourses(page, SAMPLE_COURSES);
@@ -217,4 +268,31 @@ test('filters survive a reload through the query string', async ({ page }) => {
   await expect(page.locator('[data-testid="browse-filter-duration"]')).toHaveValue('lt5');
   await expect(page.locator('[data-testid="browse-sort"]')).toHaveValue('duration');
   await expect(page.locator('[data-testid="browse-filter-library"]')).toHaveValue('lib-1');
+});
+
+// The filter group used to sit beside the status chips in English and drop
+// below them in Russian, because `__controls` was a wrapping row and the
+// Russian labels are wider — so switching language moved the filters and the
+// grid under them. The position must not depend on the language.
+test('the filter group sits below the status chips in both locales', async ({ page }) => {
+  for (const locale of ['en', 'ru']) {
+    await page.context().clearCookies();
+    await page
+      .context()
+      .addCookies([{ name: 'i18n_locale', value: locale, domain: 'localhost', path: '/' }]);
+    await mockAuthenticated(page);
+    await mockCourses(page, SAMPLE_COURSES);
+
+    await page.goto('/browse');
+    await expect(page.locator('[data-testid="page-browse"]')).toBeVisible({ timeout: 10_000 });
+
+    const chips = await page.locator('.page-browse__chips').boundingBox();
+    const selects = await page.locator('.page-browse__selects').boundingBox();
+
+    expect(chips, `chips missing in ${locale}`).toBeTruthy();
+    expect(selects, `selects missing in ${locale}`).toBeTruthy();
+    expect(selects!.y, `selects must start below the chips in ${locale}`).toBeGreaterThanOrEqual(
+      chips!.y + chips!.height,
+    );
+  }
 });

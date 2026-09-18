@@ -504,6 +504,7 @@
               class="page-lesson-player__transcript-body"
               :cues="transcriptCues"
               :active-index="transcriptActiveIndex"
+              :empty-label="t('pages.lessonPlayer.transcript.empty')"
               :no-match-label="t('pages.lessonPlayer.transcript.noMatch')"
               :filter-placeholder="t('pages.lessonPlayer.transcript.filterPlaceholder')"
               @seek="onBookmarkSeek"

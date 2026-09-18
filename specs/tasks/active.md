@@ -76,8 +76,8 @@
   - [x] `CoursePosterCard`: replace badge/strip with `AppProgressBadge`
   - [x] `CourseWideCard`: replace strip with `AppProgressBadge` + add locked scrim
   - [x] update colocated specs for both cards
-  - [ ] regenerate Storybook visual baselines via CI workflow (they move)
-  - [ ] open PR, `Closes #675`
+  - [x] regenerate Storybook visual baselines via CI workflow (they move)
+  - [x] open PR, `Closes #675`
 - Status: in-progress
 - Blockers: —
 

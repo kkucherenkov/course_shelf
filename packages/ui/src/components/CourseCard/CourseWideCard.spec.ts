@@ -76,33 +76,33 @@ describe('CourseWideCard', () => {
 
   // --- state derivation ---
 
-  it('state=auto + completed===lessons → strip fill=100%', () => {
+  it('state=auto + completed===lessons → shows the completed ring badge', () => {
     const completed: Course = { ...base, completed: 12, lessons: 12 };
     const wrapper = mount(CourseWideCard, { props: { course: completed } });
-    const fill = wrapper.find('.app-course-wide-card__strip-fill');
-    expect(fill.attributes('style')).toContain('width: 100%');
+    const badge = wrapper.find('.app-course-wide-card__badge');
+    expect(badge.classes()).toContain('app-progress-badge--completed');
   });
 
-  it('state=auto + partial → strip fill proportional', () => {
+  it('state=auto + partial → shows the in-progress ring badge at the right pct', () => {
     const wrapper = mount(CourseWideCard, {
       props: { course: { ...base, completed: 6, lessons: 12 } },
     });
-    const fill = wrapper.find('.app-course-wide-card__strip-fill');
-    expect(fill.attributes('style')).toContain('width: 50%');
+    const badge = wrapper.find('.app-course-wide-card__badge');
+    expect(badge.classes()).toContain('app-progress-badge--in-progress');
+    expect(badge.attributes('aria-label')).toBe('50%');
   });
 
-  it('state=auto + zero → strip fill=0%', () => {
+  it('state=auto + zero → the corner has no badge', () => {
     const wrapper = mount(CourseWideCard, {
       props: { course: { ...base, completed: 0, lessons: 12 } },
     });
-    const fill = wrapper.find('.app-course-wide-card__strip-fill');
-    expect(fill.attributes('style')).toContain('width: 0%');
+    expect(wrapper.find('.app-course-wide-card__badge').exists()).toBe(false);
   });
 
-  it('state=locked → strip fill=0%', () => {
+  it('state=locked → shows scrim with lock icon, no corner badge', () => {
     const wrapper = mount(CourseWideCard, { props: { course: base, state: 'locked' } });
-    const fill = wrapper.find('.app-course-wide-card__strip-fill');
-    expect(fill.attributes('style')).toContain('width: 0%');
+    expect(wrapper.find('.app-course-wide-card__scrim').exists()).toBe(true);
+    expect(wrapper.find('.app-course-wide-card__badge').exists()).toBe(false);
   });
 
   // --- a11y ---

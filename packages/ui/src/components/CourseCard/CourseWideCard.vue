@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { computed } from 'vue';
 
+  import AppProgressBadge from '../AppProgressBadge/AppProgressBadge.vue';
   import AppSkeleton from '../AppSkeleton/AppSkeleton.vue';
   import IconCS from '../IconCS/IconCS.vue';
   import { useCourseCard } from './use-course-card';
@@ -25,11 +26,12 @@
 
   const emit = defineEmits<{ click: [course: Course] }>();
 
-  const { pct, coverStyle, coverInitials, interactiveAttrs, shouldActivate } = useCourseCard(
-    () => props.course,
-    () => props.state,
-    () => props.interactive,
-  );
+  const { pct, realState, coverStyle, coverInitials, interactiveAttrs, shouldActivate } =
+    useCourseCard(
+      () => props.course,
+      () => props.state,
+      () => props.interactive,
+    );
 
   const metaLabel = computed(() => props.resumeLabel ?? `${String(pct.value)}%`);
 
@@ -50,9 +52,22 @@
     <div class="app-course-wide-card__thumb" :style="coverStyle">
       <span class="app-course-wide-card__initials" aria-hidden="true">{{ coverInitials }}</span>
       <div class="app-course-wide-card__overlay" aria-hidden="true" />
-      <div class="app-course-wide-card__strip" aria-hidden="true">
-        <div class="app-course-wide-card__strip-fill" :style="{ width: `${pct}%` }" />
+
+      <!-- locked scrim: covers the whole cover, independent of progress -->
+      <div v-if="realState === 'locked'" class="app-course-wide-card__scrim" aria-hidden="true">
+        <IconCS name="lock" :size="16" />
       </div>
+
+      <!-- progress badge: pct is 0 for both not-started and locked, so the
+           corner is empty for both by construction — no per-state branch. -->
+      <AppProgressBadge
+        v-if="pct > 0"
+        variant="ring"
+        :state="realState"
+        :completed="course.completed"
+        :total="course.lessons"
+        class="app-course-wide-card__badge"
+      />
     </div>
 
     <!-- body -->
@@ -96,16 +111,15 @@
 </template>
 
 <style lang="scss" scoped>
-  // Fixed thumbnail square and hairline progress strip — both sit between
-  // --space steps, so they stay as named literals.
+  // Fixed thumbnail square — sits between --space steps, so it stays a
+  // named literal.
   $thumb-size: 80px;
-  $strip-height: 3px;
   $skeleton-instructor-gap: 6px;
 
   // Stacking context within the card (named vars — no raw ints).
   $z-cover-overlay: 0;
   $z-initials: 1;
-  $z-strip: 2;
+  $z-cover-top: 2;
 
   .app-course-wide-card {
     display: flex;
@@ -163,20 +177,22 @@
       pointer-events: none;
     }
 
-    &__strip {
+    &__scrim {
       position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: $strip-height;
-      background: var(--media-track-cover);
-      z-index: $z-strip;
+      inset: 0;
+      z-index: $z-cover-top;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--media-scrim-soft);
+      color: var(--media-fg);
     }
 
-    &__strip-fill {
-      height: 100%;
-      background: var(--brand-accent);
-      transition: width var(--dur-slow) var(--ease-out);
+    &__badge {
+      position: absolute;
+      top: var(--space-2);
+      right: var(--space-2);
+      z-index: $z-cover-top;
     }
 
     &__body {

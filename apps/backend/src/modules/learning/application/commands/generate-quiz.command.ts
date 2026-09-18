@@ -10,8 +10,8 @@ export class GenerateQuizCommand {
   constructor(
     public readonly lessonId: string | undefined,
     public readonly courseId: string | undefined,
-    /** Weight filename to use, or undefined to take AppConfig's configured default. */
-    public readonly modelFilename: string | undefined,
+    /** Model to use (weight filename or hosted model id), or undefined to take AppConfig's configured default. */
+    public readonly model: string | undefined,
     /** Runs the ASR-cleanup pass before generation. Default true — see quiz-cleanup.ts. */
     public readonly cleanupEnabled: boolean,
   ) {}

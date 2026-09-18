@@ -16,7 +16,7 @@ class _$QuizDto extends QuizDto {
   @override
   final QuizStatus status;
   @override
-  final String modelFilename;
+  final String model;
   @override
   final BuiltList<QuizQuestionDto> questions;
   @override
@@ -32,7 +32,7 @@ class _$QuizDto extends QuizDto {
     required this.lessonId,
     required this.courseId,
     required this.status,
-    required this.modelFilename,
+    required this.model,
     required this.questions,
     required this.createdAt,
     this.completedAt,
@@ -52,7 +52,7 @@ class _$QuizDto extends QuizDto {
         lessonId == other.lessonId &&
         courseId == other.courseId &&
         status == other.status &&
-        modelFilename == other.modelFilename &&
+        model == other.model &&
         questions == other.questions &&
         createdAt == other.createdAt &&
         completedAt == other.completedAt;
@@ -65,7 +65,7 @@ class _$QuizDto extends QuizDto {
     _$hash = $jc(_$hash, lessonId.hashCode);
     _$hash = $jc(_$hash, courseId.hashCode);
     _$hash = $jc(_$hash, status.hashCode);
-    _$hash = $jc(_$hash, modelFilename.hashCode);
+    _$hash = $jc(_$hash, model.hashCode);
     _$hash = $jc(_$hash, questions.hashCode);
     _$hash = $jc(_$hash, createdAt.hashCode);
     _$hash = $jc(_$hash, completedAt.hashCode);
@@ -80,7 +80,7 @@ class _$QuizDto extends QuizDto {
           ..add('lessonId', lessonId)
           ..add('courseId', courseId)
           ..add('status', status)
-          ..add('modelFilename', modelFilename)
+          ..add('model', model)
           ..add('questions', questions)
           ..add('createdAt', createdAt)
           ..add('completedAt', completedAt))
@@ -107,10 +107,9 @@ class QuizDtoBuilder implements Builder<QuizDto, QuizDtoBuilder> {
   QuizStatus? get status => _$this._status;
   set status(QuizStatus? status) => _$this._status = status;
 
-  String? _modelFilename;
-  String? get modelFilename => _$this._modelFilename;
-  set modelFilename(String? modelFilename) =>
-      _$this._modelFilename = modelFilename;
+  String? _model;
+  String? get model => _$this._model;
+  set model(String? model) => _$this._model = model;
 
   ListBuilder<QuizQuestionDto>? _questions;
   ListBuilder<QuizQuestionDto> get questions =>
@@ -137,7 +136,7 @@ class QuizDtoBuilder implements Builder<QuizDto, QuizDtoBuilder> {
       _lessonId = $v.lessonId;
       _courseId = $v.courseId;
       _status = $v.status;
-      _modelFilename = $v.modelFilename;
+      _model = $v.model;
       _questions = $v.questions.toBuilder();
       _createdAt = $v.createdAt;
       _completedAt = $v.completedAt;
@@ -181,10 +180,10 @@ class QuizDtoBuilder implements Builder<QuizDto, QuizDtoBuilder> {
               r'QuizDto',
               'status',
             ),
-            modelFilename: BuiltValueNullFieldError.checkNotNull(
-              modelFilename,
+            model: BuiltValueNullFieldError.checkNotNull(
+              model,
               r'QuizDto',
-              'modelFilename',
+              'model',
             ),
             questions: questions.build(),
             createdAt: BuiltValueNullFieldError.checkNotNull(

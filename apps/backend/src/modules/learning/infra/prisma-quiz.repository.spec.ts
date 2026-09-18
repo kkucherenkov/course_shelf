@@ -9,7 +9,7 @@ describe('quizRowToDomain', () => {
       lessonId: 'lesson-1',
       courseId: 'course-1',
       status: 'proposed',
-      modelFilename: 'Qwen3.5-4B-Q4_K_M.gguf',
+      model: 'Qwen3.5-4B-Q4_K_M.gguf',
       questions: [
         { prompt: 'What?', options: ['A', 'B'], correctOptionIndex: 0, cueStartMs: 1000 },
       ],
@@ -19,7 +19,7 @@ describe('quizRowToDomain', () => {
 
     expect(quiz.id).toBe('quiz-1');
     expect(quiz.status).toBe('proposed');
-    expect(quiz.modelFilename).toBe('Qwen3.5-4B-Q4_K_M.gguf');
+    expect(quiz.model).toBe('Qwen3.5-4B-Q4_K_M.gguf');
     expect(quiz.questions).toHaveLength(1);
     expect(quiz.questions[0]?.prompt).toBe('What?');
     expect(quiz.completedAt).toBeUndefined();
@@ -31,7 +31,7 @@ describe('quizRowToDomain', () => {
       lessonId: 'lesson-1',
       courseId: 'course-1',
       status: 'applied',
-      modelFilename: 'Qwen3.5-4B-Q4_K_M.gguf',
+      model: 'Qwen3.5-4B-Q4_K_M.gguf',
       questions: [],
       createdAt: new Date('2026-09-16T00:00:00.000Z'),
       completedAt: new Date('2026-09-17T00:00:00.000Z'),

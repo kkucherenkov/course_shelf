@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 **lessonId** | **String** |  | 
 **courseId** | **String** |  | 
 **status** | [**QuizStatus**](QuizStatus.md) |  | 
-**modelFilename** | **String** | Filename of the .gguf weight this proposal was generated with — what lets an admin compare a 4B run against a 9B run of the same lesson. | 
+**model** | **String** | Model that generated this proposal — meaning depends on the deployment's text-generation provider (ADR-0012): a `.gguf` weight filename under the local provider, or a hosted provider's own model id under `openrouter`. Lets an admin compare a 4B run against a 9B run of the same lesson under the local provider. | 
 **questions** | [**BuiltList&lt;QuizQuestionDto&gt;**](QuizQuestionDto.md) |  | 
 **createdAt** | [**DateTime**](DateTime.md) |  | 
 **completedAt** | [**DateTime**](DateTime.md) |  | [optional] 

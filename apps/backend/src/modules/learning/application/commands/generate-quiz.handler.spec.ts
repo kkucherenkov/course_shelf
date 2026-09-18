@@ -168,7 +168,7 @@ describe('GenerateQuizHandler', () => {
     const quiz = quizzes.saved[0]!;
     expect(quiz.lessonId).toBe('lesson-1');
     expect(quiz.courseId).toBe('course-1');
-    expect(quiz.modelFilename).toBe('Qwen3.5-4B-Q4_K_M.gguf');
+    expect(quiz.model).toBe('Qwen3.5-4B-Q4_K_M.gguf');
     expect(quiz.questions).toEqual([
       { prompt: 'What?', options: ['A', 'B', 'C', 'D'], correctOptionIndex: 0, cueStartMs: 0 },
     ]);
@@ -223,7 +223,7 @@ describe('GenerateQuizHandler', () => {
   });
 
   it('treats a blank modelId as absent rather than reporting itself unconfigured', async () => {
-    // `command.modelFilename ?? default` fell back only on null/undefined, so a
+    // `command.model ?? default` fell back only on null/undefined, so a
     // blank string reached the `model === ''` check and raised
     // QuizGenerationNotConfiguredError — a 503 telling the caller the service
     // is unconfigured when it was configured and merely handed rubbish.
@@ -306,7 +306,7 @@ describe('GenerateQuizHandler', () => {
   });
 
   it.each(['local', 'openrouter'] as const)(
-    "an explicit command.modelFilename beats the default under provider '%s'",
+    "an explicit command.model beats the default under provider '%s'",
     async (provider) => {
       const llama = makeLlama();
       const { handler } = makeHandler({

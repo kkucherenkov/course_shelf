@@ -610,9 +610,11 @@ model Quiz {
   lessonId      String
   courseId      String
   status        QuizStatus @default(proposed)
-  /// Filename of the .gguf weight this proposal was generated with (E29-F02-S01 §4) —
-  /// what later lets an admin compare a 4B run against a 9B run of the same lesson.
-  modelFilename String
+  /// Model that generated this proposal (E29-F02-S01 §4) — a `.gguf` weight
+  /// filename under the local provider, or a hosted provider's own model id
+  /// under `openrouter` (ADR-0012). Lets an admin compare a 4B run against a
+  /// 9B run of the same lesson under the local provider.
+  model         String
   questions     Json
   createdAt     DateTime   @default(now())
   completedAt   DateTime?

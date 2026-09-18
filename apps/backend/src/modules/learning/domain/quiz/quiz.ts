@@ -5,8 +5,10 @@
  * rather than duplicated (E29-F02-S01): a generated quiz is reviewed by a
  * human before it becomes real, exactly like a scraped metadata fragment.
  * The generated questions are carried as plain data (persisted as jsonb);
- * `modelFilename` records which .gguf weight produced them, so an admin can
- * later compare a 4B run against a 9B run of the same lesson.
+ * `model` records which model produced them — a `.gguf` weight filename
+ * under the local provider, or a hosted provider's own model id under
+ * `openrouter` (ADR-0012) — so an admin can later compare a 4B run against a
+ * 9B run of the same lesson under the local provider.
  */
 import { QuizNotPendingError } from './quiz.errors';
 
@@ -29,7 +31,7 @@ export interface QuizProps {
   readonly lessonId: string;
   readonly courseId: string;
   readonly status: QuizStatus;
-  readonly modelFilename: string;
+  readonly model: string;
   readonly questions: readonly QuizQuestion[];
   readonly createdAt: Date;
   readonly completedAt?: Date;
@@ -39,7 +41,7 @@ export class Quiz {
   readonly id: string;
   readonly lessonId: string;
   readonly courseId: string;
-  readonly modelFilename: string;
+  readonly model: string;
   readonly questions: readonly QuizQuestion[];
   readonly createdAt: Date;
   private _status: QuizStatus;
@@ -49,7 +51,7 @@ export class Quiz {
     this.id = props.id;
     this.lessonId = props.lessonId;
     this.courseId = props.courseId;
-    this.modelFilename = props.modelFilename;
+    this.model = props.model;
     this.questions = props.questions;
     this.createdAt = props.createdAt;
     this._status = props.status;
@@ -68,7 +70,7 @@ export class Quiz {
     id: string;
     lessonId: string;
     courseId: string;
-    modelFilename: string;
+    model: string;
     questions: readonly QuizQuestion[];
     now?: Date;
   }): Quiz {
@@ -77,7 +79,7 @@ export class Quiz {
       lessonId: props.lessonId,
       courseId: props.courseId,
       status: 'proposed',
-      modelFilename: props.modelFilename,
+      model: props.model,
       questions: props.questions,
       createdAt: props.now ?? new Date(),
     });

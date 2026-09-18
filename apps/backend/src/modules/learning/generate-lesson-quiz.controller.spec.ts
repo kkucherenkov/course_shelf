@@ -33,7 +33,7 @@ describe('GenerateLessonQuizController', () => {
     });
 
     const cmd = vi.mocked(commandBus.execute).mock.calls[0]![0] as GenerateQuizCommand;
-    expect(cmd.modelFilename).toBe('Qwen3.5-9B-Q4_K_M.gguf');
+    expect(cmd.model).toBe('Qwen3.5-9B-Q4_K_M.gguf');
     expect(cmd.cleanupEnabled).toBe(false);
   });
 

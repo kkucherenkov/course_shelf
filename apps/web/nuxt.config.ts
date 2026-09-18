@@ -27,14 +27,6 @@ export default defineNuxtConfig({
     // Pending https://github.com/nuxt/nuxt — expected to clear in 4.5.
   },
 
-  // Translation messages live in `i18n/locales/{en,ru}.json` (the source of
-  // truth). They're loaded via `i18n.config.ts` as plain JSON imports rather
-  // than @nuxtjs/i18n's `langDir`+`file` mechanism — that mechanism races with
-  // Vite's built-in `vite:json` plugin (the unplugin's `include` doesn't
-  // reliably match the absolute path Vite passes during transform, and
-  // vite:json wins the chain). The vueI18n config approach skips that race:
-  // the JSON imports go through Vite's normal module graph and `vite:json`
-  // happily parses valid JSON.
   i18n: {
     vueI18n: './i18n.config.ts',
     strategy: 'no_prefix',

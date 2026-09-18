@@ -606,7 +606,6 @@ export default {
       permissions: {
         title: 'Permissions',
         subtitle: 'Grant library and course access for a specific user.',
-        addGrantCta: 'Add grant',
         backToUsersCta: 'Back to users',
         roleChipReadOnlyTooltip: 'Change roles on the Users page.',
         infoBannerBody:
@@ -680,7 +679,6 @@ export default {
         scanProgressScanning: 'Scanning',
         scanProgressComplete: 'Scan complete',
         scanProgressFailed: 'Scan failed',
-        scanProgressCancel: 'Cancel',
         scanProgressErrors: '{n} error | {n} errors',
         scanProgressScanned: 'Scanned',
         scanProgressAdded: 'Added',
@@ -837,7 +835,6 @@ export default {
       statusComplete: 'Scan complete',
       statusFailed: 'Scan failed',
       statusPartial: 'Scan partial',
-      cancel: 'Cancel',
       errorsButton: '{n} error | {n} errors',
       statScanned: 'Scanned',
       statAdded: 'Added',

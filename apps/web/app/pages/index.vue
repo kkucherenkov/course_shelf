@@ -18,6 +18,7 @@
     useRecentlyCompleted,
     useYourWeek,
   } from '~/composables/useHome';
+  import { useCourseCatalogAccess } from '~/composables/useCoursesList';
   import { useLibraries } from '~/composables/useLibraries';
 
   import { useAuthStore } from '~/stores/auth';
@@ -58,21 +59,27 @@
   const recentlyCompleted = useRecentlyCompleted();
   const yourWeek = useYourWeek();
 
-  // ── Library access (#623) ───────────────────────────────────────────────────
+  // ── Catalog access (#623) ────────────────────────────────────────────────────
   //
   // Same signal `browse.vue` uses to tell "nothing was ever granted to this
   // account" apart from "granted, but genuinely nothing to see" — reused here
-  // so a user with zero library grants reads the same honest answer on both
-  // screens, instead of "start a course"/"finish a course" advice they have
-  // no course to act on.
+  // so a user with zero grants reads the same honest answer on both screens,
+  // instead of "start a course"/"finish a course" advice they have no course
+  // to act on. Two unfiltered probes, OR'd together — see
+  // `useCourseCatalogAccess`'s doc comment for why `useLibraries` alone
+  // misses a course-level grant (tuxedo 249).
   const { data: librariesData, status: librariesStatus } = useLibraries();
+  const { hasAnyCourse: hasAnyCatalogCourse, status: catalogAccessStatus } =
+    useCourseCatalogAccess();
 
-  const hasLibraryAccess = computed(() => {
+  const hasCatalogAccess = computed(() => {
     if (userRole.value === 'ADMIN') return true;
-    // Default to the safe, always-true state while libraries haven't
+    // Default to the safe, always-true state while neither probe has
     // resolved yet, rather than briefly asserting "no access".
     if (librariesStatus.value === 'pending' || librariesStatus.value === 'idle') return true;
-    return (librariesData.value?.items.length ?? 0) > 0;
+    if (catalogAccessStatus.value === 'pending' || catalogAccessStatus.value === 'idle')
+      return true;
+    return (librariesData.value?.items.length ?? 0) > 0 || hasAnyCatalogCourse.value;
   });
 
   // ── Recently completed — collapsible state ─────────────────────────────────
@@ -151,7 +158,7 @@
   });
 
   // Member vs. admin split for a *genuinely* empty library — reachable only
-  // when `hasLibraryAccess` is true, since the whole three-row block is
+  // when `hasCatalogAccess` is true, since the whole three-row block is
   // gated on it below (#666: the no-access explanation now renders once,
   // not once per row).
   const recentlyAddedEmptyBody = computed(() =>
@@ -210,7 +217,7 @@
       flow) — out of scope for this fix, tracked separately.
     -->
     <AppNoPermission
-      v-if="!hasLibraryAccess"
+      v-if="!hasCatalogAccess"
       :title="t('pages.browse.emptyNoAccessTitle')"
       :body="t('pages.browse.emptyNoAccessBody')"
       class="page-home__no-access"

@@ -24,6 +24,12 @@
  * repeated three times over a table of zeros. Zero library grants now gates
  * the whole three-row block (and the rail) behind one `AppNoPermission`
  * instead — see the "no library access" describe block below.
+ *
+ * tuxedo 249: "zero library grants" stopped meaning "zero access" once the
+ * admin UI could hand out COURSE-level grants — those never put a row in
+ * `GET /libraries`. The access check is now `useLibraries` OR'd with
+ * `useCourseCatalogAccess`'s own unfiltered `GET /courses` probe; see the
+ * regression case in the "#666" describe block below.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -57,6 +63,18 @@ vi.mock('~/composables/useLibraries', () => ({
     refresh: vi.fn(),
     register: vi.fn(),
     registerErrorDetail: ref(null),
+  }),
+}));
+
+// The unfiltered `GET /courses` access probe — independent from
+// `librariesData` above. tuxedo 249: a course-level grant makes THIS
+// non-empty while `librariesData` stays empty.
+const hasAnyCatalogCourse = ref(false);
+const catalogAccessStatus = ref<'idle' | 'pending' | 'success' | 'error'>('success');
+vi.mock('~/composables/useCoursesList', () => ({
+  useCourseCatalogAccess: () => ({
+    hasAnyCourse: hasAnyCatalogCourse,
+    status: catalogAccessStatus,
   }),
 }));
 
@@ -143,6 +161,8 @@ describe('pages/index.vue — recently added empty row (#579)', () => {
     recentlyAddedData.value = { items: [] };
     librariesData.value = { items: [] };
     librariesStatus.value = 'success';
+    hasAnyCatalogCourse.value = false;
+    catalogAccessStatus.value = 'success';
   });
 
   it('tells an admin to add courses to a library', async () => {
@@ -200,6 +220,8 @@ describe('pages/index.vue — no-access copy on continue watching / recently com
     recentlyAddedData.value = { items: [] };
     recentlyCompletedData.value = { items: [] };
     recentlyCompletedStatus.value = 'success';
+    hasAnyCatalogCourse.value = false;
+    catalogAccessStatus.value = 'success';
   });
 
   it('a member with a library grant keeps the normal "nothing yet" copy', async () => {
@@ -248,6 +270,8 @@ describe('pages/index.vue — no library access renders one explanation (#666)',
     recentlyAddedData.value = { items: [] };
     recentlyCompletedData.value = { items: [] };
     recentlyCompletedStatus.value = 'success';
+    hasAnyCatalogCourse.value = false;
+    catalogAccessStatus.value = 'success';
   });
 
   it('shows a single no-access block instead of the three rows', async () => {
@@ -273,6 +297,23 @@ describe('pages/index.vue — no library access renders one explanation (#666)',
     expect(wrapper.find('.no-permission-probe').exists()).toBe(false);
     expect(wrapper.findAllComponents(HomeRowProbe)).toHaveLength(3);
   });
+
+  // tuxedo 249: a COURSE-level grant (the admin UI offers those) puts
+  // courses in `GET /courses` without ever putting a row in `GET /libraries`
+  // — `AuthorizationService.canSee`'s library-grant-implies-course-access
+  // rule doesn't run in reverse. A member holding only that grant must see
+  // the three-row layout, not the access denial.
+  it('renders the normal three-row layout for a member with only a course-level grant', async () => {
+    authUser.value = { role: 'USER' };
+    librariesData.value = { items: [] };
+    librariesStatus.value = 'success';
+    hasAnyCatalogCourse.value = true;
+    catalogAccessStatus.value = 'success';
+    const wrapper = await mountPage();
+
+    expect(wrapper.find('.no-permission-probe').exists()).toBe(false);
+    expect(wrapper.findAllComponents(HomeRowProbe)).toHaveLength(3);
+  });
 });
 
 // `HomeRow` renders `collapsibleMeta` in its header, outside the row's own
@@ -281,9 +322,15 @@ describe('pages/index.vue — no library access renders one explanation (#666)',
 describe('pages/index.vue — recently-completed count label respects loading state', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Access itself is not what these tests probe — pin ADMIN so the block
+    // renders independent of whatever the previous describe block's tests
+    // last left `authUser`/`librariesData`/`hasAnyCatalogCourse` at.
+    authUser.value = { role: 'ADMIN' };
     recentlyAddedData.value = { items: [] };
     recentlyCompletedData.value = { items: [] };
     recentlyCompletedStatus.value = 'success';
+    hasAnyCatalogCourse.value = false;
+    catalogAccessStatus.value = 'success';
   });
 
   it('shows no count while the request is still pending', async () => {
@@ -315,6 +362,8 @@ describe('pages/index.vue — 429 gets different advice than a network error (#7
     recentlyAddedData.value = { items: [] };
     librariesData.value = { items: [] };
     librariesStatus.value = 'success';
+    hasAnyCatalogCourse.value = false;
+    catalogAccessStatus.value = 'success';
     continueWatchingErrorStatus.value = null;
   });
 

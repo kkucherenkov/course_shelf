@@ -492,11 +492,11 @@
             </template>
           </AppPlayerChrome>
 
-          <section
-            v-if="transcriptCues.length > 0"
-            class="page-lesson-player__transcript"
-            aria-labelledby="lesson-transcript-title"
-          >
+          <!-- No `v-if` on the cue count: the panel is content-sized up to a
+               viewport cap, so an untranscribed lesson costs one line that says
+               so. Hiding it left no empty state anywhere, because the sidebar
+               tab that used to carry one is gone. -->
+          <section class="page-lesson-player__transcript" aria-labelledby="lesson-transcript-title">
             <h2 id="lesson-transcript-title" class="page-lesson-player__transcript-title">
               {{ t('pages.lessonPlayer.tabTranscript') }}
             </h2>
@@ -643,8 +643,25 @@
     // 16:9 stage every aspect ratio letterboxes into.
 
     &__transcript {
-      flex: 1;
+      // Bounded in viewport units, and that is the load-bearing part: this
+      // panel first shipped with `flex: 1; min-height: 0` on the assumption
+      // that `&__layout { height: 100% }` constrains the column. It does not —
+      // no ancestor gives a definite height, so nothing constrained anything
+      // and the page grew with the cue list. Measured on a 46-cue lesson: 3186px
+      // at 1440x900 and 7424px at 390x844, with the sidebar stretched to 3098px
+      // alongside, the video scrolled out of view by the sixth cue and the
+      // lesson list five and a half screens down on a phone. A 38-minute lesson
+      // has 698 cues.
+      // ---
+      // `dvh` rather than `vh`: mobile browser chrome resizes the viewport as
+      // you scroll, and `vh` freezes at the larger value.
+      // ---
+      // `flex: 0 1 auto` rather than `flex: 1`: the panel grows with its content
+      // up to the cap, so a lesson with no transcript shows one line of empty
+      // state instead of a half-screen void. That is what lets the `v-if` go.
+      flex: 0 1 auto;
       min-height: 0;
+      max-height: 55dvh;
       display: flex;
       flex-direction: column;
       border-top: 1px solid var(--border-default);
@@ -652,9 +669,11 @@
       overflow: hidden;
 
       @media (width < 768px) {
-        // The column layout page-scrolls below this width by design
-        // (see `&__layout`), so a nested scroller here would trap the gesture.
-        overflow: visible;
+        // The earlier `overflow: visible` here was the worst of it — reasoning
+        // that a nested scroller would trap the page gesture, it let every cue
+        // render inline. Browsers chain the scroll back to the page at the
+        // ends, so the worry was unfounded and the cure was the disease.
+        max-height: 45dvh;
       }
     }
 

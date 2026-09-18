@@ -18,7 +18,7 @@ part 'quiz_dto.g.dart';
 /// * [lessonId] 
 /// * [courseId] 
 /// * [status] 
-/// * [modelFilename] - Filename of the .gguf weight this proposal was generated with — what lets an admin compare a 4B run against a 9B run of the same lesson.
+/// * [model] - Model that generated this proposal — meaning depends on the deployment's text-generation provider (ADR-0012): a `.gguf` weight filename under the local provider, or a hosted provider's own model id under `openrouter`. Lets an admin compare a 4B run against a 9B run of the same lesson under the local provider.
 /// * [questions] 
 /// * [createdAt] 
 /// * [completedAt] 
@@ -37,9 +37,9 @@ abstract class QuizDto implements Built<QuizDto, QuizDtoBuilder> {
   QuizStatus get status;
   // enum statusEnum {  proposed,  applied,  discarded,  };
 
-  /// Filename of the .gguf weight this proposal was generated with — what lets an admin compare a 4B run against a 9B run of the same lesson.
-  @BuiltValueField(wireName: r'modelFilename')
-  String get modelFilename;
+  /// Model that generated this proposal — meaning depends on the deployment's text-generation provider (ADR-0012): a `.gguf` weight filename under the local provider, or a hosted provider's own model id under `openrouter`. Lets an admin compare a 4B run against a 9B run of the same lesson under the local provider.
+  @BuiltValueField(wireName: r'model')
+  String get model;
 
   @BuiltValueField(wireName: r'questions')
   BuiltList<QuizQuestionDto> get questions;
@@ -93,9 +93,9 @@ class _$QuizDtoSerializer implements PrimitiveSerializer<QuizDto> {
       object.status,
       specifiedType: const FullType(QuizStatus),
     );
-    yield r'modelFilename';
+    yield r'model';
     yield serializers.serialize(
-      object.modelFilename,
+      object.model,
       specifiedType: const FullType(String),
     );
     yield r'questions';
@@ -166,12 +166,12 @@ class _$QuizDtoSerializer implements PrimitiveSerializer<QuizDto> {
           ) as QuizStatus;
           result.status = valueDes;
           break;
-        case r'modelFilename':
+        case r'model':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(String),
           ) as String;
-          result.modelFilename = valueDes;
+          result.model = valueDes;
           break;
         case r'questions':
           final valueDes = serializers.deserialize(

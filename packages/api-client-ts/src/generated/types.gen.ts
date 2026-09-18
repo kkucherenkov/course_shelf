@@ -346,9 +346,9 @@ export type QuizDto = {
     courseId: string;
     status: QuizStatus;
     /**
-     * Filename of the .gguf weight this proposal was generated with — what lets an admin compare a 4B run against a 9B run of the same lesson.
+     * Model that generated this proposal — meaning depends on the deployment's text-generation provider (ADR-0012): a `.gguf` weight filename under the local provider, or a hosted provider's own model id under `openrouter`. Lets an admin compare a 4B run against a 9B run of the same lesson under the local provider.
      */
-    modelFilename: string;
+    model: string;
     questions: Array<QuizQuestionDto>;
     createdAt: string;
     completedAt?: string;

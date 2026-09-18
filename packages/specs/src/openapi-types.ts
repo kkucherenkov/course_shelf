@@ -2468,10 +2468,10 @@ export interface components {
       courseId: string;
       status: components['schemas']['QuizStatus'];
       /**
-       * @description Filename of the .gguf weight this proposal was generated with — what lets an admin compare a 4B run against a 9B run of the same lesson.
+       * @description Model that generated this proposal — meaning depends on the deployment's text-generation provider (ADR-0012): a `.gguf` weight filename under the local provider, or a hosted provider's own model id under `openrouter`. Lets an admin compare a 4B run against a 9B run of the same lesson under the local provider.
        * @example Qwen3.5-4B-Q4_K_M.gguf
        */
-      modelFilename: string;
+      model: string;
       questions: components['schemas']['QuizQuestionDto'][];
       /** Format: date-time */
       createdAt: string;

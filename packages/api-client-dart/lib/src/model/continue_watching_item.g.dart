@@ -23,6 +23,8 @@ class _$ContinueWatchingItem extends ContinueWatchingItem {
   final DateTime lastSeenAt;
   @override
   final String lastSeenLessonId;
+  @override
+  final int? resumePositionSeconds;
 
   factory _$ContinueWatchingItem([
     void Function(ContinueWatchingItemBuilder)? updates,
@@ -37,6 +39,7 @@ class _$ContinueWatchingItem extends ContinueWatchingItem {
     required this.lessonsTotal,
     required this.lastSeenAt,
     required this.lastSeenLessonId,
+    this.resumePositionSeconds,
   }) : super._();
   @override
   ContinueWatchingItem rebuild(
@@ -58,7 +61,8 @@ class _$ContinueWatchingItem extends ContinueWatchingItem {
         lessonsCompleted == other.lessonsCompleted &&
         lessonsTotal == other.lessonsTotal &&
         lastSeenAt == other.lastSeenAt &&
-        lastSeenLessonId == other.lastSeenLessonId;
+        lastSeenLessonId == other.lastSeenLessonId &&
+        resumePositionSeconds == other.resumePositionSeconds;
   }
 
   @override
@@ -72,6 +76,7 @@ class _$ContinueWatchingItem extends ContinueWatchingItem {
     _$hash = $jc(_$hash, lessonsTotal.hashCode);
     _$hash = $jc(_$hash, lastSeenAt.hashCode);
     _$hash = $jc(_$hash, lastSeenLessonId.hashCode);
+    _$hash = $jc(_$hash, resumePositionSeconds.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -86,7 +91,8 @@ class _$ContinueWatchingItem extends ContinueWatchingItem {
           ..add('lessonsCompleted', lessonsCompleted)
           ..add('lessonsTotal', lessonsTotal)
           ..add('lastSeenAt', lastSeenAt)
-          ..add('lastSeenLessonId', lastSeenLessonId))
+          ..add('lastSeenLessonId', lastSeenLessonId)
+          ..add('resumePositionSeconds', resumePositionSeconds))
         .toString();
   }
 }
@@ -129,6 +135,11 @@ class ContinueWatchingItemBuilder
   set lastSeenLessonId(String? lastSeenLessonId) =>
       _$this._lastSeenLessonId = lastSeenLessonId;
 
+  int? _resumePositionSeconds;
+  int? get resumePositionSeconds => _$this._resumePositionSeconds;
+  set resumePositionSeconds(int? resumePositionSeconds) =>
+      _$this._resumePositionSeconds = resumePositionSeconds;
+
   ContinueWatchingItemBuilder() {
     ContinueWatchingItem._defaults(this);
   }
@@ -144,6 +155,7 @@ class ContinueWatchingItemBuilder
       _lessonsTotal = $v.lessonsTotal;
       _lastSeenAt = $v.lastSeenAt;
       _lastSeenLessonId = $v.lastSeenLessonId;
+      _resumePositionSeconds = $v.resumePositionSeconds;
       _$v = null;
     }
     return this;
@@ -202,6 +214,7 @@ class ContinueWatchingItemBuilder
             r'ContinueWatchingItem',
             'lastSeenLessonId',
           ),
+          resumePositionSeconds: resumePositionSeconds,
         );
     replace(_$result);
     return _$result;

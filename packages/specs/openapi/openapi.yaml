@@ -4614,11 +4614,13 @@ paths:
                         courseTitle: Implementing Domain-Driven Design
                         librarySlug: conference-recordings
                         lessonCount: 24
+                        lessonsCompleted: 0
                         totalDurationSeconds: 14400
                         createdAt: "2026-04-26T08:14:00Z"
                       - courseId: clxvcrs0000000000000000011
                         courseTitle: Streaming Systems Concepts
                         lessonCount: 12
+                        lessonsCompleted: 3
                         totalDurationSeconds: 6300
                         createdAt: "2026-04-25T17:02:00Z"
         "400":
@@ -9630,6 +9632,13 @@ components:
           description: >-
             The lesson the player last reported a position on, used to wire
             the 'Resume' CTA.
+        resumePositionSeconds:
+          type: integer
+          minimum: 0
+          description: >-
+            Playback position on `lastSeenLessonId`, sourced from
+            `LessonProgress.positionSeconds`. Absent if the lesson was never
+            played past its start.
       example:
         courseId: clxvcrs0000000000000000001
         courseTitle: Pragmatic Clean Architecture
@@ -9639,6 +9648,7 @@ components:
         lessonsTotal: 76
         lastSeenAt: "2026-04-25T14:32:00Z"
         lastSeenLessonId: clxvles0000000000000000042
+        resumePositionSeconds: 125
 
     RecentlyAddedDto:
       type: object
@@ -9656,6 +9666,7 @@ components:
             courseTitle: Implementing Domain-Driven Design
             librarySlug: conference-recordings
             lessonCount: 24
+            lessonsCompleted: 0
             totalDurationSeconds: 14400
             createdAt: "2026-04-26T08:14:00Z"
 
@@ -9665,6 +9676,7 @@ components:
         - courseId
         - courseTitle
         - lessonCount
+        - lessonsCompleted
         - totalDurationSeconds
         - createdAt
       description: A course freshly added to one of the requester's libraries.
@@ -9686,6 +9698,14 @@ components:
           type: integer
           minimum: 0
           description: Number of lessons in the course at intake time.
+        lessonsCompleted:
+          type: integer
+          minimum: 0
+          description: >-
+            Number of lessons the user has completed in this course. Same
+            name as `ContinueWatchingItem.lessonsCompleted` so the two home
+            rails never disagree about one course's progress. `0` if the
+            course has no progress yet.
         totalDurationSeconds:
           type: integer
           minimum: 0
@@ -9699,6 +9719,7 @@ components:
         courseTitle: Implementing Domain-Driven Design
         librarySlug: conference-recordings
         lessonCount: 24
+        lessonsCompleted: 0
         totalDurationSeconds: 14400
         createdAt: "2026-04-26T08:14:00Z"
 

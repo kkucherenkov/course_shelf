@@ -3208,7 +3208,8 @@ export interface components {
      *       "lessonsCompleted": 12,
      *       "lessonsTotal": 76,
      *       "lastSeenAt": "2026-04-25T14:32:00Z",
-     *       "lastSeenLessonId": "clxvles0000000000000000042"
+     *       "lastSeenLessonId": "clxvles0000000000000000042",
+     *       "resumePositionSeconds": 125
      *     }
      */
     ContinueWatchingItem: {
@@ -3231,6 +3232,8 @@ export interface components {
       lastSeenAt: string;
       /** @description The lesson the player last reported a position on, used to wire the 'Resume' CTA. */
       lastSeenLessonId: string;
+      /** @description Playback position on `lastSeenLessonId`, sourced from `LessonProgress.positionSeconds`. Absent if the lesson was never played past its start. */
+      resumePositionSeconds?: number;
     };
     /**
      * @description Courses added to the requester's libraries, most recent first.
@@ -3241,6 +3244,7 @@ export interface components {
      *           "courseTitle": "Implementing Domain-Driven Design",
      *           "librarySlug": "conference-recordings",
      *           "lessonCount": 24,
+     *           "lessonsCompleted": 0,
      *           "totalDurationSeconds": 14400,
      *           "createdAt": "2026-04-26T08:14:00Z"
      *         }
@@ -3257,6 +3261,7 @@ export interface components {
      *       "courseTitle": "Implementing Domain-Driven Design",
      *       "librarySlug": "conference-recordings",
      *       "lessonCount": 24,
+     *       "lessonsCompleted": 0,
      *       "totalDurationSeconds": 14400,
      *       "createdAt": "2026-04-26T08:14:00Z"
      *     }
@@ -3270,6 +3275,8 @@ export interface components {
       librarySlug?: string;
       /** @description Number of lessons in the course at intake time. */
       lessonCount: number;
+      /** @description Number of lessons the user has completed in this course. Same name as `ContinueWatchingItem.lessonsCompleted` so the two home rails never disagree about one course's progress. `0` if the course has no progress yet. */
+      lessonsCompleted: number;
       /** @description Sum of `Lesson.duration` across the course, in whole seconds. */
       totalDurationSeconds: number;
       /**

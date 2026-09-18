@@ -16,6 +16,8 @@ class _$RecentlyAddedItem extends RecentlyAddedItem {
   @override
   final int lessonCount;
   @override
+  final int lessonsCompleted;
+  @override
   final int totalDurationSeconds;
   @override
   final DateTime createdAt;
@@ -29,6 +31,7 @@ class _$RecentlyAddedItem extends RecentlyAddedItem {
     required this.courseTitle,
     this.librarySlug,
     required this.lessonCount,
+    required this.lessonsCompleted,
     required this.totalDurationSeconds,
     required this.createdAt,
   }) : super._();
@@ -48,6 +51,7 @@ class _$RecentlyAddedItem extends RecentlyAddedItem {
         courseTitle == other.courseTitle &&
         librarySlug == other.librarySlug &&
         lessonCount == other.lessonCount &&
+        lessonsCompleted == other.lessonsCompleted &&
         totalDurationSeconds == other.totalDurationSeconds &&
         createdAt == other.createdAt;
   }
@@ -59,6 +63,7 @@ class _$RecentlyAddedItem extends RecentlyAddedItem {
     _$hash = $jc(_$hash, courseTitle.hashCode);
     _$hash = $jc(_$hash, librarySlug.hashCode);
     _$hash = $jc(_$hash, lessonCount.hashCode);
+    _$hash = $jc(_$hash, lessonsCompleted.hashCode);
     _$hash = $jc(_$hash, totalDurationSeconds.hashCode);
     _$hash = $jc(_$hash, createdAt.hashCode);
     _$hash = $jf(_$hash);
@@ -72,6 +77,7 @@ class _$RecentlyAddedItem extends RecentlyAddedItem {
           ..add('courseTitle', courseTitle)
           ..add('librarySlug', librarySlug)
           ..add('lessonCount', lessonCount)
+          ..add('lessonsCompleted', lessonsCompleted)
           ..add('totalDurationSeconds', totalDurationSeconds)
           ..add('createdAt', createdAt))
         .toString();
@@ -98,6 +104,11 @@ class RecentlyAddedItemBuilder
   int? get lessonCount => _$this._lessonCount;
   set lessonCount(int? lessonCount) => _$this._lessonCount = lessonCount;
 
+  int? _lessonsCompleted;
+  int? get lessonsCompleted => _$this._lessonsCompleted;
+  set lessonsCompleted(int? lessonsCompleted) =>
+      _$this._lessonsCompleted = lessonsCompleted;
+
   int? _totalDurationSeconds;
   int? get totalDurationSeconds => _$this._totalDurationSeconds;
   set totalDurationSeconds(int? totalDurationSeconds) =>
@@ -118,6 +129,7 @@ class RecentlyAddedItemBuilder
       _courseTitle = $v.courseTitle;
       _librarySlug = $v.librarySlug;
       _lessonCount = $v.lessonCount;
+      _lessonsCompleted = $v.lessonsCompleted;
       _totalDurationSeconds = $v.totalDurationSeconds;
       _createdAt = $v.createdAt;
       _$v = null;
@@ -157,6 +169,11 @@ class RecentlyAddedItemBuilder
             lessonCount,
             r'RecentlyAddedItem',
             'lessonCount',
+          ),
+          lessonsCompleted: BuiltValueNullFieldError.checkNotNull(
+            lessonsCompleted,
+            r'RecentlyAddedItem',
+            'lessonsCompleted',
           ),
           totalDurationSeconds: BuiltValueNullFieldError.checkNotNull(
             totalDurationSeconds,

@@ -12,6 +12,12 @@
  *      can delete a lesson without touching this projection field, unlike
  *      lessonsTotal/percent, which self-heal on the next progress event. One
  *      findMany, not one exists() per row.
+ *   4b. Bulk-fetch LessonProgress rows for the same lastSeenLessonId set (one
+ *      findManyByUserAndLessons call, same join get-course-outline.handler
+ *      already uses) to source resumePositionSeconds. The
+ *      CourseProgressReadModel projection tracks lastSeenLessonId but not a
+ *      position, so this is a join by (userId, lastSeenLessonId), not a new
+ *      column.
  *   5. Filter by AuthorizationService.canSee — defensive even though grants
  *      normally do not revoke after progress was recorded.
  *   6. Map to ContinueWatchingItem[], dropping rows whose last-seen lesson no
@@ -33,6 +39,7 @@ import { AUTHORIZATION_SERVICE } from '../../../../common/access/authorization.s
 import { COURSE_REPOSITORY } from '../../domain/course/course.repository';
 import { LESSON_REPOSITORY } from '../../domain/lesson/lesson.repository';
 import { COURSE_PROGRESS_READ_MODEL_REPOSITORY } from '../../domain/progress/course-progress-read-model.repository';
+import { LESSON_PROGRESS_REPOSITORY } from '../../../../common/learning-progress';
 
 import { GetContinueWatchingQuery } from './get-continue-watching.query';
 
@@ -40,6 +47,7 @@ import type { AuthorizationService } from '../../../../common/access/authorizati
 import type { CourseRepository } from '../../domain/course/course.repository';
 import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
+import type { LessonProgressRepository } from '../../../../common/learning-progress';
 import type { ContinueWatchingDto, ContinueWatchingItem } from '@app/api-client-ts';
 import type { LibraryId } from '../../../../common/access/authorization.service';
 
@@ -53,6 +61,8 @@ export class GetContinueWatchingHandler implements IQueryHandler<
     private readonly progressRepo: CourseProgressReadModelRepository,
     @Inject(COURSE_REPOSITORY) private readonly courseRepo: CourseRepository,
     @Inject(LESSON_REPOSITORY) private readonly lessonRepo: LessonRepository,
+    @Inject(LESSON_PROGRESS_REPOSITORY)
+    private readonly lessonProgressRepo: LessonProgressRepository,
     @Inject(AUTHORIZATION_SERVICE) private readonly authz: AuthorizationService,
   ) {}
 
@@ -77,10 +87,15 @@ export class GetContinueWatchingHandler implements IQueryHandler<
     const courses = await this.courseRepo.findByIds(courseIds);
     const courseMap = new Map<string, (typeof courses)[number]>(courses.map((c) => [c.id, c]));
 
-    // 4. Batch-verify lastSeenLessonId still exists (#497).
-    const existingLessonIds = await this.lessonRepo.existsByIds(
-      rows.map((r) => r.lastSeenLessonId),
-    );
+    // 4. Batch-verify lastSeenLessonId still exists (#497). 4b. Bulk-fetch
+    // LessonProgress rows for the same lesson set to source
+    // resumePositionSeconds — one findMany, not one lookup per row.
+    const lastSeenLessonIds = [...new Set(rows.map((r) => r.lastSeenLessonId))];
+    const [existingLessonIds, positionRows] = await Promise.all([
+      this.lessonRepo.existsByIds(lastSeenLessonIds),
+      this.lessonProgressRepo.findManyByUserAndLessons(actor.id, lastSeenLessonIds),
+    ]);
+    const positionByLessonId = new Map(positionRows.map((p) => [p.lessonId, p.positionSeconds]));
 
     // 5. Authorization filter — defensive even though grants normally do not
     //    revoke after progress was recorded. Admins always pass.
@@ -107,6 +122,8 @@ export class GetContinueWatchingHandler implements IQueryHandler<
         // type marks librarySlug as optional so omitting it is spec-compliant.
         // Add a slug field to Library in a future story and wire it here.
 
+        const resumePositionSeconds = positionByLessonId.get(row.lastSeenLessonId);
+
         const item: ContinueWatchingItem = {
           courseId: row.courseId,
           courseTitle: course.title,
@@ -115,6 +132,7 @@ export class GetContinueWatchingHandler implements IQueryHandler<
           lessonsTotal: row.lessonsTotal,
           lastSeenAt: row.lastSeenAt.toISOString(),
           lastSeenLessonId: row.lastSeenLessonId,
+          ...(resumePositionSeconds === undefined ? {} : { resumePositionSeconds }),
         };
 
         return [item];

@@ -30,7 +30,10 @@ inputs:
       Flutter version. Must match the version the goldens were generated with —
       golden PNGs are rendering-engine artefacts, so a version skew fails them
       for reasons that have nothing to do with the code. Bump here, in
-      `.claude/CLAUDE.md`, and in both pubspec floors together.
+      `.claude/CLAUDE.md`, in both pubspec floors, and in the
+      `EXPECTED_DART_VERSION` guard in `packages/specs/scripts/codegen.ts`
+      (the Dart SDK version this Flutter version bundles, not this value
+      itself) together.
     required: false
     default: "3.44.4"
 

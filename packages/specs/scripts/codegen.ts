@@ -1,7 +1,19 @@
-import { execSync } from 'node:child_process';
+import { execFileSync, execSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+// The Dart SDK bundled with a Flutter version determines what
+// `dart fix --apply` (below) decides is an unused import — its behaviour
+// comes from the analyzer shipped inside the SDK, not from openapi-generator
+// (which is pinned and jar-cached identically everywhere). CI runs
+// `flutter-version: 3.44.4` (`.github/actions/setup-cs/action.yml`), which
+// ships Dart SDK 3.12.2 (source: releases_linux.json for that version). A
+// machine with a newer Dart strips a different set of imports than CI does,
+// producing a plausible 33-line diff that CI's regeneration reverts — this
+// already cost a revert on PR #707. Bump this alongside the other two spots
+// action.yml names when Flutter's pin moves.
+const EXPECTED_DART_VERSION = '3.12.2';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const specsRoot = path.resolve(here, '..');
@@ -31,6 +43,32 @@ function run(cmd: string, cwd = specsRoot): void {
   console.warn(`\n$ ${cmd}`);
   execSync(cmd, { stdio: 'inherit', cwd });
 }
+
+// Guard, not toolchain provisioning: fail loudly instead of silently emitting
+// a diff `dart fix --apply` would strip on CI's SDK. Provisioning (fvm/asdf,
+// pinning the SDK itself) was considered and rejected — it buys nothing over
+// what CI already gives, at the cost of per-machine setup.
+function assertDartVersion(): void {
+  const output = execFileSync('dart', ['--version'], { encoding: 'utf8' });
+  const found = /Dart SDK version: (\d+\.\d+\.\d+)/.exec(output)?.[1];
+  if (found !== EXPECTED_DART_VERSION) {
+    throw new Error(
+      `[codegen] Dart SDK mismatch: found ${found ?? 'unparseable (' + output.trim() + ')'}, ` +
+        `expected ${EXPECTED_DART_VERSION} — the SDK bundled with the Flutter version pinned in ` +
+        `.github/actions/setup-cs/action.yml (flutter-version). dart fix --apply strips unused ` +
+        `imports per-analyzer-version, so a mismatched SDK produces a plausible diff that CI's own ` +
+        `regeneration reverts (see PR #707). Install the matching Flutter/Dart locally, or skip this ` +
+        `script and let CI regenerate — its codegen-drift-guard job runs the same steps end to end.`,
+    );
+  }
+}
+
+// Checked before step 1/3, not just before the dart-* steps further down:
+// by the time those run, step 3/3 has already overwritten
+// packages/api-client-dart/lib/**, so a guard placed later leaves exactly
+// the pre-`dart fix` diff it exists to prevent sitting in the working tree
+// on a failed run.
+assertDartVersion();
 
 console.warn('[codegen] 1/3 openapi-typescript → @app/specs/openapi-types.ts');
 run(`pnpm exec openapi-typescript "${bundle}" --output "${openapiTypesOut}"`);
@@ -62,7 +100,10 @@ run(
 // the package won't compile. Generate the parts and commit them as artifacts.
 console.warn('[codegen] post: dart pub get + build_runner (emit built_value .g.dart parts)');
 run('dart pub get', dartOut);
-run('dart run build_runner build --delete-conflicting-outputs', dartOut);
+// `--delete-conflicting-outputs` was removed by build_runner and is now a
+// no-op the tool warns about ("These options have been removed and were
+// ignored") — dropped rather than carried as dead ceremony.
+run('dart run build_runner build', dartOut);
 
 // The dart-dio template emits a fixed import block per *_api.dart
 // (Problem, built_value/json_object) regardless of whether the operations

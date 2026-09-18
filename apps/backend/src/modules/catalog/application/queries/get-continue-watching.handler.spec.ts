@@ -11,12 +11,14 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { Course } from '../../domain/course/course';
 import { CourseProgressReadModel } from '../../domain/progress/course-progress-read-model';
+import { LessonProgress } from '../../../../common/learning-progress';
 import { GetContinueWatchingQuery } from './get-continue-watching.query';
 import { GetContinueWatchingHandler } from './get-continue-watching.handler';
 
 import type { CourseRepository } from '../../domain/course/course.repository';
 import type { LessonRepository } from '../../domain/lesson/lesson.repository';
 import type { CourseProgressReadModelRepository } from '../../domain/progress/course-progress-read-model.repository';
+import type { LessonProgressRepository } from '../../../../common/learning-progress';
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
 
 // ---------------------------------------------------------------------------
@@ -65,6 +67,36 @@ function makeProgressRepo(rows: CourseProgressReadModel[]): CourseProgressReadMo
   };
 }
 
+function makePositionRow(lessonId: string, positionSeconds: number): LessonProgress {
+  return LessonProgress.reconstitute({
+    id: `lp-${lessonId}`,
+    userId: USER.id,
+    lessonId,
+    positionSeconds,
+    durationSeconds: 600,
+    percent: Math.round((positionSeconds / 600) * 100),
+    completed: false,
+    lastSeenAt: NOW,
+    completedAt: undefined,
+    createdAt: NOW,
+  });
+}
+
+/** Defaults to "no positions recorded" — tests that care about resumePositionSeconds override this. */
+function makeLessonProgressRepo(positions?: LessonProgress[]): LessonProgressRepository {
+  return {
+    save: vi.fn(),
+    findByUserAndLesson: vi.fn(),
+    countCompletedByUserAndCourse: vi.fn(),
+    findAllUserCoursePairs: vi.fn(),
+    findLatestByUserAndCourse: vi.fn(),
+    aggregateForUserRange: vi.fn(),
+    findManyByUserAndLessons: vi.fn().mockResolvedValue(positions ?? []),
+    bulkUpsertCompleted: vi.fn(),
+    deleteAllByUserAndCourse: vi.fn(),
+  };
+}
+
 function makeCourseRepo(courses: Course[]): CourseRepository {
   return {
     save: vi.fn(),
@@ -105,15 +137,23 @@ function makeHandler(opts: {
   courses?: Course[];
   allow?: boolean;
   existingLessonIds?: string[];
+  positions?: LessonProgress[];
 }) {
   const rows = opts.rows ?? [];
   const courses = opts.courses ?? [];
   const progressRepo = makeProgressRepo(rows);
   const courseRepo = makeCourseRepo(courses);
   const lessonRepo = makeLessonRepo(opts.existingLessonIds);
+  const lessonProgressRepo = makeLessonProgressRepo(opts.positions);
   const authz = makeAuthz(opts.allow ?? true);
-  const handler = new GetContinueWatchingHandler(progressRepo, courseRepo, lessonRepo, authz);
-  return { handler, progressRepo, courseRepo, lessonRepo, authz };
+  const handler = new GetContinueWatchingHandler(
+    progressRepo,
+    courseRepo,
+    lessonRepo,
+    lessonProgressRepo,
+    authz,
+  );
+  return { handler, progressRepo, courseRepo, lessonRepo, lessonProgressRepo, authz };
 }
 
 // ---------------------------------------------------------------------------
@@ -176,7 +216,14 @@ describe('GetContinueWatchingHandler', () => {
         listAccessibleLibraryIds: vi.fn().mockResolvedValue(null),
       };
       const lessonRepo = makeLessonRepo();
-      const handler = new GetContinueWatchingHandler(progressRepo, courseRepo, lessonRepo, authz);
+      const lessonProgressRepo = makeLessonProgressRepo();
+      const handler = new GetContinueWatchingHandler(
+        progressRepo,
+        courseRepo,
+        lessonRepo,
+        lessonProgressRepo,
+        authz,
+      );
       const result = await handler.execute(new GetContinueWatchingQuery(USER, 10));
 
       expect(result.items).toHaveLength(1);
@@ -258,6 +305,38 @@ describe('GetContinueWatchingHandler', () => {
         lastSeenLessonId: 'lesson-1',
       });
       expect(result.items[0]?.lastSeenAt).toBe(NOW.toISOString());
+    });
+  });
+
+  describe('resumePositionSeconds (tuxedo 200)', () => {
+    it('fills resumePositionSeconds from the bulk LessonProgress lookup', async () => {
+      const row = makeProgressRow('course-1', NOW);
+      const course = makeCourse('course-1');
+      const { handler } = makeHandler({
+        rows: [row],
+        courses: [course],
+        allow: true,
+        positions: [makePositionRow('lesson-1', 125)],
+      });
+
+      const result = await handler.execute(new GetContinueWatchingQuery(ADMIN, 10));
+
+      expect(result.items[0]?.resumePositionSeconds).toBe(125);
+    });
+
+    it('omits resumePositionSeconds when no LessonProgress row exists', async () => {
+      const row = makeProgressRow('course-1', NOW);
+      const course = makeCourse('course-1');
+      const { handler } = makeHandler({
+        rows: [row],
+        courses: [course],
+        allow: true,
+        positions: [],
+      });
+
+      const result = await handler.execute(new GetContinueWatchingQuery(ADMIN, 10));
+
+      expect(result.items[0]).not.toHaveProperty('resumePositionSeconds');
     });
   });
 });

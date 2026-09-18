@@ -13,7 +13,7 @@
   - `docs/deploy-ugreen-nas-dockge.md`'s "Updating to a new release" section
     matches the procedure in `.claude/skills/deploy-nas/SKILL.md`
   - the NAS's live `compose.yaml` no longer promises a `deploy-nas.sh` that
-    does not exist — **not landed by this PR**, see blocker below
+    does not exist
 - Spec diff: none
 - Codegen impact: no
 - Design impact: none
@@ -40,25 +40,9 @@
         create. Only copying in a fresh `compose.yaml` (a release that
         changed it) drops the bind mount, and the deploy doc already tells
         the reader to re-apply it by hand then.
-  - [ ] (177) **not applied** — confirmed by SSH that the NAS's live
-        `compose.yaml` carries the exact comment quoted in the brief, at
-        the `postgres.volumes:` line. Writing the fix back over SSH was
-        denied by this session's auto-mode guard (`Remote Shell Writes`) —
-        reads were allowed, the write was not. Replacement text below.
-- Status: blocked
-- Blockers: (177)'s live-NAS edit needs the maintainer — remote-write to the
-  NAS is outside what this session's auto-mode guard allows. Everything else
-  is done; open a task or apply the patch below by hand.
-
-Patch for the maintainer — on the NAS, replace the 4-line comment above
-`- /volume2/docker/courseshelf/pgdata:/var/lib/postgresql` in
-`/volume1/docker/dockge/stacks/courseshelf/compose.yaml`:
-
-```
-# Bind mount instead of the shipped named volume: the Docker root sits
-# on /volume1, which is 95% full. Manual, not scripted — deploy-nas
-# (.claude/skills/deploy-nas/SKILL.md) sed-edits only the two image
-# tags in this same file in place, so this line survives every
-# ordinary update untouched. Re-apply it by hand only if a release
-# ever ships a changed compose.yml that gets copied in fresh.
-```
+  - [x] (177) applied on the NAS by the coordinator, 2026-09-18 — this
+        session's sandbox denied the remote-shell write, so the coordinator
+        landed it directly. Backup kept as `compose.yaml.bak-177`;
+        `docker compose config` validates clean.
+- Status: in-progress
+- Blockers: —

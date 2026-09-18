@@ -1,5 +1,18 @@
 # Active tasks
 
+## T-2026-09-18-browse-controls-stack — stop the browse filters moving between locales
+
+- Created: 2026-09-18
+- Owner: claude
+- Goal: the filter group sits in the same place in every language.
+- Spec diff: none
+- Codegen impact: no
+- Sub-steps:
+  - [x] e2e guard: the selects start below the chips in en and ru alike
+  - [x] stack `.page-browse__controls` into a column
+- Status: in-progress
+- Blockers: —
+
 ## T-2026-09-17-lesson-summary-export — lesson summary with screenshots, Markdown export
 
 - Created: 2026-09-17

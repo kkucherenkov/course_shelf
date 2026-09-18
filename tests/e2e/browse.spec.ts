@@ -218,3 +218,30 @@ test('filters survive a reload through the query string', async ({ page }) => {
   await expect(page.locator('[data-testid="browse-sort"]')).toHaveValue('duration');
   await expect(page.locator('[data-testid="browse-filter-library"]')).toHaveValue('lib-1');
 });
+
+// The filter group used to sit beside the status chips in English and drop
+// below them in Russian, because `__controls` was a wrapping row and the
+// Russian labels are wider — so switching language moved the filters and the
+// grid under them. The position must not depend on the language.
+test('the filter group sits below the status chips in both locales', async ({ page }) => {
+  for (const locale of ['en', 'ru']) {
+    await page.context().clearCookies();
+    await page
+      .context()
+      .addCookies([{ name: 'i18n_locale', value: locale, domain: 'localhost', path: '/' }]);
+    await mockAuthenticated(page);
+    await mockCourses(page, SAMPLE_COURSES);
+
+    await page.goto('/browse');
+    await expect(page.locator('[data-testid="page-browse"]')).toBeVisible({ timeout: 10_000 });
+
+    const chips = await page.locator('.page-browse__chips').boundingBox();
+    const selects = await page.locator('.page-browse__selects').boundingBox();
+
+    expect(chips, `chips missing in ${locale}`).toBeTruthy();
+    expect(selects, `selects missing in ${locale}`).toBeTruthy();
+    expect(selects!.y, `selects must start below the chips in ${locale}`).toBeGreaterThanOrEqual(
+      chips!.y + chips!.height,
+    );
+  }
+});

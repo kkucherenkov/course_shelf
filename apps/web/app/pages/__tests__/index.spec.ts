@@ -81,10 +81,11 @@ vi.mock('~/composables/useCoursesList', () => ({
 const recentlyAddedData = ref<RecentlyAddedDto | undefined>({ items: [] });
 const recentlyCompletedData = ref<RecentlyCompletedDto | undefined>({ items: [] });
 const recentlyCompletedStatus = ref<'idle' | 'pending' | 'success' | 'error'>('success');
+const continueWatchingData = ref<ContinueWatchingDto | undefined>({ items: [] });
 const continueWatchingErrorStatus = ref<number | null>(null);
 vi.mock('~/composables/useHome', () => ({
   useContinueWatching: () => ({
-    data: ref<ContinueWatchingDto | undefined>({ items: [] }),
+    data: continueWatchingData,
     status: ref('success'),
     error: ref(null),
     errorStatus: continueWatchingErrorStatus,
@@ -114,7 +115,11 @@ vi.mock('~/composables/useHome', () => ({
 }));
 
 vi.mock('@app/ui', () => ({
-  CourseWideCard: { name: 'CourseWideCard', props: ['course', 'interactive'], template: '<div />' },
+  CourseWideCard: {
+    name: 'CourseWideCard',
+    props: ['course', 'interactive', 'resumeLabel'],
+    template: '<div />',
+  },
   CoursePosterCard: {
     name: 'CoursePosterCard',
     props: ['course', 'interactive', 'state'],
@@ -381,5 +386,92 @@ describe('pages/index.vue — 429 gets different advice than a network error (#7
 
     const row = findRow(wrapper, 'pages.home.continueWatching.heading');
     expect(row?.props('errorBody')).toBe('pages.home.continueWatching.errorBody');
+  });
+});
+
+// tuxedo 182: a half-finished course used to show 50% on "continue watching"
+// and 0% on "recently added" — the same course disagreeing with itself.
+describe('pages/index.vue — recently-added shows real progress (tuxedo 182)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authUser.value = { role: 'ADMIN' };
+    recentlyCompletedData.value = { items: [] };
+    recentlyCompletedStatus.value = 'success';
+    hasAnyCatalogCourse.value = false;
+    catalogAccessStatus.value = 'success';
+  });
+
+  it('passes the real lessonsCompleted through to the card, not a hardcoded 0', async () => {
+    recentlyAddedData.value = {
+      items: [
+        {
+          courseId: 'c-1',
+          courseTitle: 'Aggregates',
+          lessonCount: 10,
+          lessonsCompleted: 4,
+          totalDurationSeconds: 3600,
+          createdAt: '2026-04-26T08:14:00Z',
+        },
+      ],
+    };
+    const wrapper = await mountPage();
+
+    const card = wrapper.findComponent({ name: 'CoursePosterCard' });
+    expect(card.props('course')).toMatchObject({ completed: 4, lessons: 10 });
+  });
+});
+
+// tuxedo 200: the resume CTA can show a real position instead of only a
+// percentage once the backend supplies one.
+describe('pages/index.vue — continue-watching resume label (tuxedo 200)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authUser.value = { role: 'ADMIN' };
+    recentlyAddedData.value = { items: [] };
+    recentlyCompletedData.value = { items: [] };
+    recentlyCompletedStatus.value = 'success';
+    hasAnyCatalogCourse.value = false;
+    catalogAccessStatus.value = 'success';
+  });
+
+  it('formats resumePositionSeconds into the resume-label prop', async () => {
+    continueWatchingData.value = {
+      items: [
+        {
+          courseId: 'c-1',
+          courseTitle: 'Aggregates',
+          percent: 15,
+          lessonsCompleted: 1,
+          lessonsTotal: 10,
+          lastSeenAt: '2026-04-25T14:32:00Z',
+          lastSeenLessonId: 'lesson-1',
+          resumePositionSeconds: 125,
+        },
+      ],
+    };
+    const wrapper = await mountPage();
+
+    const card = wrapper.findComponent({ name: 'CourseWideCard' });
+    expect(card.props('resumeLabel')).toBe('pages.home.continueWatching.resumeLabel');
+  });
+
+  it('leaves resume-label undefined when no position was recorded', async () => {
+    continueWatchingData.value = {
+      items: [
+        {
+          courseId: 'c-1',
+          courseTitle: 'Aggregates',
+          percent: 15,
+          lessonsCompleted: 1,
+          lessonsTotal: 10,
+          lastSeenAt: '2026-04-25T14:32:00Z',
+          lastSeenLessonId: 'lesson-1',
+        },
+      ],
+    };
+    const wrapper = await mountPage();
+
+    const card = wrapper.findComponent({ name: 'CourseWideCard' });
+    expect(card.props('resumeLabel')).toBeUndefined();
   });
 });

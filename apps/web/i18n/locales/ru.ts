@@ -23,6 +23,7 @@ export default {
         error: 'Не удалось загрузить прогресс',
         errorBody: 'Проверьте соединение и попробуйте снова.',
         retry: 'Повторить',
+        resumeLabel: 'Продолжить с {time}',
       },
       recentlyAdded: {
         heading: 'Недавно добавлено',

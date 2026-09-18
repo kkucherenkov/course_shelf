@@ -23,6 +23,7 @@ export default {
         error: 'Could not load your progress',
         errorBody: 'Check your connection, then try again.',
         retry: 'Retry',
+        resumeLabel: 'Resume {time}',
       },
       recentlyAdded: {
         heading: 'Recently added',

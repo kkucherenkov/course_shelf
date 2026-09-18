@@ -11,6 +11,7 @@
   import HomeGreeting from '~/components/home/HomeGreeting.vue';
   import HomeRow from '~/components/home/HomeRow.vue';
   import HomeYourWeek from '~/components/home/HomeYourWeek.vue';
+  import { formatCueTime } from '~/utils/format-time';
 
   import {
     useContinueWatching,
@@ -105,9 +106,19 @@
       title: item.courseTitle,
       instructor: '',
       lessons: item.lessonCount,
-      completed: 0,
+      completed: item.lessonsCompleted,
       accent: accentFromId(item.courseId),
     };
+  }
+
+  // tuxedo 200: resumeLabel formats a real player position (mm:ss / h:mm:ss)
+  // instead of CourseWideCard's percentage fallback. Undefined when the
+  // course has no recorded position — the card falls back to `${pct}%`.
+  function continueWatchingResumeLabel(item: ContinueWatchingItem): string | undefined {
+    if (item.resumePositionSeconds === undefined) return undefined;
+    return t('pages.home.continueWatching.resumeLabel', {
+      time: formatCueTime(item.resumePositionSeconds),
+    });
   }
 
   function recentlyCompletedToCourse(item: RecentlyCompletedItem): Course {
@@ -249,6 +260,7 @@
           >
             <CourseWideCard
               :course="continueWatchingToCourse(item)"
+              :resume-label="continueWatchingResumeLabel(item)"
               :interactive="false"
               class="page-home__wide-card"
             />

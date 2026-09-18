@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.19.0
+  version: 0.19.1
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -88,6 +88,9 @@ paths:
                       libraryId: clxvp1234567890abcdefghij
                     level: READ
                     createdAt: "2026-04-25T10:00:00Z"
+          links:
+            RevokeGrant:
+              $ref: "#/components/links/RevokeGrantById"
         "400":
           description: Validation error — missing or malformed fields
           content:
@@ -1617,6 +1620,13 @@ paths:
                       tags: merge
                       externalIds: merge
                     createdAt: "2026-05-24T10:00:00Z"
+          links:
+            GetIdentifyTask:
+              $ref: "#/components/links/GetIdentifyTaskById"
+            ApplyIdentifyTask:
+              $ref: "#/components/links/ApplyIdentifyTaskById"
+            DiscardIdentifyTask:
+              $ref: "#/components/links/DiscardIdentifyTaskById"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -2809,7 +2819,11 @@ paths:
                     type: about:blank
                     title: Bad Request
                     status: 400
-                    detail: At least one of title, description, or slug must be present.
+                    detail: >-
+                      At least one of title, description, slug, instructorIds,
+                      studioIds, tagIds, posterUrl, level, language, releaseDate,
+                      sourceUpdatedAt, ratingAverage, ratingCount, or externalIds
+                      must be present.
         "401":
           description: Missing or invalid bearer token
           content:
@@ -5361,6 +5375,11 @@ paths:
                     label: Aggregates intro
                     createdAt: "2026-04-25T14:00:00Z"
                     updatedAt: "2026-04-25T14:00:00Z"
+          links:
+            UpdateBookmark:
+              $ref: "#/components/links/UpdateBookmarkById"
+            DeleteBookmark:
+              $ref: "#/components/links/DeleteBookmarkById"
         "201":
           description: Bookmark created
           content:
@@ -5376,6 +5395,11 @@ paths:
                     label: Aggregates intro
                     createdAt: "2026-04-25T14:00:00Z"
                     updatedAt: "2026-04-25T14:00:00Z"
+          links:
+            UpdateBookmark:
+              $ref: "#/components/links/UpdateBookmarkById"
+            DeleteBookmark:
+              $ref: "#/components/links/DeleteBookmarkById"
         "400":
           description: Validation error — missing or malformed fields
           content:
@@ -6054,6 +6078,9 @@ paths:
                     lessonsTranscribed: 0
                     lessonsFailed: 0
                     errors: []
+          links:
+            CancelTranscription:
+              $ref: "#/components/links/CancelTranscriptionById"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -7869,6 +7896,50 @@ components:
                 title: Too Many Requests
                 status: 429
                 detail: "ThrottlerException: Too Many Requests"
+  # Runtime-created resources whose id a create response hands to a later
+  # request's path parameter — the Schemathesis Stateful phase chains through
+  # these instead of generating a path id that can never match a row. Defined
+  # once and referenced by `$ref` from every response that offers the id,
+  # same pattern this file already applies to shared enums and responses.
+  # `packages/specs/schemathesis.toml` explains why a seed cannot substitute
+  # for these four: the row belongs to the run's own principal or is minted
+  # mid-scenario, so no constant id can stand in for it.
+  links:
+    GetIdentifyTaskById:
+      operationId: getIdentifyTask
+      parameters:
+        id: $response.body#/id
+      description: The `id` this response returned, usable as `GET /admin/identify-tasks/{id}`'s path parameter.
+    ApplyIdentifyTaskById:
+      operationId: applyIdentifyResult
+      parameters:
+        id: $response.body#/id
+      description: The `id` this response returned, usable as `POST /admin/identify-tasks/{id}/apply`'s path parameter.
+    DiscardIdentifyTaskById:
+      operationId: discardIdentifyTask
+      parameters:
+        id: $response.body#/id
+      description: The `id` this response returned, usable as `POST /admin/identify-tasks/{id}/discard`'s path parameter.
+    CancelTranscriptionById:
+      operationId: cancelTranscription
+      parameters:
+        id: $response.body#/id
+      description: The `id` this response returned, usable as `POST /transcriptions/{id}/cancel`'s path parameter.
+    UpdateBookmarkById:
+      operationId: updateBookmark
+      parameters:
+        id: $response.body#/id
+      description: The `id` this response returned, usable as `PATCH /bookmarks/{id}`'s path parameter.
+    DeleteBookmarkById:
+      operationId: deleteBookmark
+      parameters:
+        id: $response.body#/id
+      description: The `id` this response returned, usable as `DELETE /bookmarks/{id}`'s path parameter.
+    RevokeGrantById:
+      operationId: revokeGrant
+      parameters:
+        id: $response.body#/id
+      description: The `id` this response returned, usable as `DELETE /access/grants/{id}`'s path parameter.
   schemas:
     BackfillJobAccepted:
       type: object

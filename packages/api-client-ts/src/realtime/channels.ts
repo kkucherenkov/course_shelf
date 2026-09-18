@@ -129,6 +129,7 @@ export type ScanLifecycleEvent =
       at: string;
       filesScanned: number;
       filesAdded: number;
+      filesUpdated: number;
       coursesDiscovered: number;
       errorsCount: number;
       /**
@@ -152,6 +153,7 @@ export type ScanLifecycleEvent =
       status: 'succeeded' | 'failed' | 'partial';
       filesScanned: number;
       filesAdded: number;
+      filesUpdated: number;
       coursesDiscovered: number;
       errorsCount: number;
       /**

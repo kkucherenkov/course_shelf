@@ -19,6 +19,7 @@ export interface ActiveScan {
   startedAt: string;
   filesScanned: number;
   filesAdded: number;
+  filesUpdated: number;
   coursesDiscovered: number;
   errorsCount: number;
   finished?: { status: 'succeeded' | 'failed' | 'partial'; at: string };
@@ -48,6 +49,7 @@ export type ScanLifecycleEvent =
       at: string;
       filesScanned: number;
       filesAdded: number;
+      filesUpdated: number;
       coursesDiscovered: number;
       errorsCount: number;
     } & ScanScopeFields)
@@ -60,6 +62,7 @@ export type ScanLifecycleEvent =
       status: 'succeeded' | 'failed' | 'partial';
       filesScanned: number;
       filesAdded: number;
+      filesUpdated: number;
       coursesDiscovered: number;
       errorsCount: number;
     } & ScanScopeFields);
@@ -120,6 +123,7 @@ export const useScanLifecycleStore = defineStore('scanLifecycle', () => {
         startedAt: event.at,
         filesScanned: 0,
         filesAdded: 0,
+        filesUpdated: 0,
         coursesDiscovered: 0,
         errorsCount: 0,
         scopeCourseId: event.scopeCourseId,
@@ -137,6 +141,7 @@ export const useScanLifecycleStore = defineStore('scanLifecycle', () => {
         startedAt: event.at,
         filesScanned: 0,
         filesAdded: 0,
+        filesUpdated: 0,
         coursesDiscovered: 0,
         errorsCount: 0,
         scopeCourseId: event.scopeCourseId,
@@ -146,6 +151,7 @@ export const useScanLifecycleStore = defineStore('scanLifecycle', () => {
         ...base,
         filesScanned: event.filesScanned,
         filesAdded: event.filesAdded,
+        filesUpdated: event.filesUpdated,
         coursesDiscovered: event.coursesDiscovered,
         errorsCount: event.errorsCount,
       });
@@ -167,6 +173,7 @@ export const useScanLifecycleStore = defineStore('scanLifecycle', () => {
       }),
       filesScanned: event.filesScanned,
       filesAdded: event.filesAdded,
+      filesUpdated: event.filesUpdated,
       coursesDiscovered: event.coursesDiscovered,
       errorsCount: event.errorsCount,
       finished: { status: event.status, at: event.at },

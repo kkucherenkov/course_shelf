@@ -12,10 +12,12 @@ Progress (update by hand):
 
 - **v1** — `119 / 119` complete. 121 cards, 2 cancelled.
 - **v2** — `42 / 45` complete. 46 cards across E25–E32, 1 cancelled.
+- **2.0** — `0 / 10` complete. 10 cards, all in E33.
 
 v1 is the shipped product; v2 is the transcript-first direction and the
-honest-v1.1 cleanup. The two denominators are kept apart on purpose — merging
-them would quietly reopen a milestone that is finished.
+honest-v1.1 cleanup; 2.0 is ownership and taxonomy. The denominators are kept
+apart on purpose — merging them would quietly reopen a milestone that is
+finished.
 
 ## E00 — Stage the design bundle
 
@@ -279,3 +281,16 @@ them would quietly reopen a milestone that is finished.
 - [x] [E32-F01-S04](./tasks/E32-F01-S04.md) `A` — Two videos may share a filename in different section folders · ⇐ E32-F01-S03
 - [x] [E32-F01-S05](./tasks/E32-F01-S05.md) `A` — A course title with no Latin letters must not delete the course · ⇐ E32-F01-S04
 - [x] [E32-F02-S01](./tasks/E32-F02-S01.md) `A` — Transcribe a single course · ⇐ E32-F01-S02
+
+## E33 — Ownership and taxonomy
+
+- [ ] [E33-F01-S01](./tasks/E33-F01-S01.md) `A` — Enrollment as its own entity
+- [ ] [E33-F01-S02](./tasks/E33-F01-S02.md) `A` — My courses · ⇐ E33-F01-S01
+- [ ] [E33-F01-S03](./tasks/E33-F01-S03.md) `A` — Personal course rating
+- [ ] [E33-F02-S01](./tasks/E33-F02-S01.md) `A` — Tags on the card and the course page · ⇐ E33-F02-S02
+- [ ] [E33-F02-S02](./tasks/E33-F02-S02.md) `A` — Wider browse filters
+- [ ] [E33-F03-S01](./tasks/E33-F03-S01.md) `A` — Transcript section on the course page
+- [ ] [E33-F03-S02](./tasks/E33-F03-S02.md) `A` — Live transcription progress on the course page · ⇐ E33-F03-S01
+- [ ] [E33-F04-S01](./tasks/E33-F04-S01.md) `A` — My notes and bookmarks across courses
+- [ ] [E33-F05-S01](./tasks/E33-F05-S01.md) `A` — `/admin` becomes a hub
+- [ ] [E33-F05-S02](./tasks/E33-F05-S02.md) `A` — Admin block leaves the main navigation · ⇐ E33-F05-S01

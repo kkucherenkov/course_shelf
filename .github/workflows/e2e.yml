@@ -63,8 +63,6 @@ jobs:
         # context.
         run: pnpm design:build
 
-      - name: Pull external images
-
       # Production-shaped stack: compose.ci.yml overrides the dev bind-mount
       # services with real image builds (see that file's header for the full
       # rationale). Explicit service list skips `proxy` and `storybook`.

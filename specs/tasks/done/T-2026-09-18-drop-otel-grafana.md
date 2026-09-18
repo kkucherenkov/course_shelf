@@ -12,5 +12,7 @@
   - [x] the `otel-lgtm` service, its volume, its `depends_on` and `docker/grafana/`
   - [x] the service out of both CI workflows that started it
   - [x] every document that described it as live
-- Status: in-progress
+- Status: done
 - Blockers: —
+- Completed: 2026-09-18
+- Result: https://github.com/kkucherenkov/course_shelf/pull/736

@@ -1,41 +1,51 @@
 # Task stack
 
-The only durable record of what Claude (or a human) is working on, what is blocked, and what has already shipped. Two files:
+The only durable record of what Claude (or a human) is working on, what is
+blocked, and what has already shipped. Two directories, **one file per entry**:
 
-- **`active.md`** — LIFO stack of in-flight work. Newest task on top. Every in-progress task lives here until it ships.
-- **`done.md`** — append-only archive of shipped tasks. Each entry links back to the feature spec / ADR / PR.
+- **`active/`** — work in flight. One file per task, named after its id.
+- **`done/`** — the archive. Shipped and cancelled tasks, same file, moved here
+  with `git mv`.
+
+There is no index file and nothing to regenerate: `ls specs/tasks/active/` is
+the stack, and `cat specs/tasks/active/*.md` reads it.
+
+## Why one file per entry
+
+It used to be two files, `active.md` and `done.md`, each an append-at-the-top
+list. Every lane wrote at the top of the same file, so every lane after the
+first hit a conflict there — in a file whose entries never actually overlap.
+
+A custom merge driver (`merge=taskstack`) resolved that locally and worked. It
+could not help where the cost actually landed: **GitHub does not run custom
+merge drivers.** It computes mergeability with a plain three-way merge, so the
+PR page said CONFLICTING regardless, the lane had to rebase, the force-push
+restarted the whole CI run, and a green PR went back through twenty minutes of
+checks to absorb a bookkeeping line. One wave of five lanes paid that twice.
+
+Separate files cannot conflict — locally or on GitHub. Finishing a task is a
+rename, which git tracks by itself, so the "the other lane already moved this
+entry to done" case that the driver had special code for cannot arise.
 
 ## Rules
 
-1. **Before touching code**, push a new entry to the top of `active.md` using
-   the template at [`templates/feature.md`](templates/feature.md). Minimal
-   example:
+1. **Before touching code**, create `active/<id>.md` from
+   [`templates/feature.md`](templates/feature.md).
 
-   ```md
-   ## T-2026-04-18-booking-create — add booking endpoint
+2. **While working**, tick sub-steps in place. If the task is blocked, set
+   `Status: blocked` and fill `Blockers:`.
 
-   - Created: 2026-04-18
-   - Owner: claude
-   - Spec: [specs/features/booking-create.md](../features/booking-create.md)
-   - Goal: users can create a booking from the detail page.
-   - Spec diff: openapi.yaml — POST /api/v1/bookings
-   - Codegen impact: yes
-   - Sub-steps:
-     - [ ] extend openapi.yaml with POST /api/v1/bookings
-     - [ ] regen clients
-     - [ ] implement command handler
-     - [ ] wire page
-   - Status: in-progress
-   - Blockers: —
-   ```
+3. **When shipped**, `git mv specs/tasks/active/<id>.md specs/tasks/done/`,
+   set `Status: done`, and add `- Completed: YYYY-MM-DD` and `- Result: <PR
+link>`. The entry must reference the spec it implemented (ADR, feature doc,
+   or card) so the audit trail survives.
 
-2. **While working**, check sub-step boxes in place. If the task is blocked, flip `Status: blocked` and fill `Blockers:`.
+4. **Never delete** a file from `done/`. A cancelled task moves there with
+   `- Result: cancelled — <reason>`.
 
-3. **When shipped**, move the whole entry to the top of `done.md`, add `- Completed: YYYY-MM-DD` and `- Result: <PR link or commit sha>`. The entry in `done.md` must reference the spec it implemented (ADR, feature doc, or linear issue) so the audit trail survives.
-
-4. **Never delete** entries from `done.md`. If a task was cancelled, move it to `done.md` with `- Result: cancelled — <reason>`.
-
-5. **Stack depth** — `active.md` should rarely have more than three entries. If it does, something is being left half-done. Close or cancel before opening the next.
+5. **Stack depth** — `active/` should rarely hold more than three files. If it
+   does, something is being left half-done. Close or cancel before opening the
+   next.
 
 ## Task ID format
 
@@ -51,21 +61,17 @@ by `-`:
 
 **Do not allocate a number.** The id used to be `T-YYYY-MM-DD-NNN`, a
 zero-padded counter per day, and that counter has no allocator: a lane picks
-the next free number by reading the two files, so two lanes working at the
-same time read the same state and pick the same number. On 2026-08-31 five
-parallel lanes collided three times — two both took `-001`, and a third took
-an id another lane had already written into `done.md`. Every collision surfaced
-as a merge conflict in a file whose entries do not otherwise overlap.
+the next free number by reading what exists, so two lanes working at the same
+time read the same state and pick the same number. On 2026-08-31 five parallel
+lanes collided three times. A branch slug needs no allocator because the
+uniqueness already exists further up: two lanes cannot share a branch.
 
-A branch slug needs no allocator because the uniqueness already exists further
-up: one lane is one branch is one PR (see **Parallel work** in
-`.claude/CLAUDE.md`), and git will not let two lanes hold the same branch name.
-The id stops being a second identifier that has to be kept unique by hand and
-becomes a restatement of one that already is.
+The filename is now the id, so a collision is no longer a merge conflict — it
+is two lanes trying to create the same path, which git refuses outright.
 
-Entries written before this change keep their numeric ids — `done.md` is an
-archive, and rewriting history there would break every link that points at it.
+## Entries older than the split
 
-## Why this exists
-
-Claude loses memory between sessions. Git history records commits, not intent. The task stack is the one place where "what is currently being worked on and why" is legible both to a cold-start Claude and to a human skimming the repo.
+The archive was one 6878-line file until 2026-09-18. Splitting it produced 249
+files, named by their id where they had one and by `<date>-<slug>` where the
+heading predated the id convention. One pair turned out to be the same entry
+written twice by a union merge; the duplicate is gone.

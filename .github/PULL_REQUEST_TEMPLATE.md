@@ -1,7 +1,7 @@
 ## Summary
 
-<!-- What does this PR do, and why? Link to the `specs/tasks/active.md`
-entry or its `specs/tasks/done.md` archive row. -->
+<!-- What does this PR do, and why? Link to the `specs/tasks/active/`
+file or its `specs/tasks/done/` archive entry. -->
 
 ## Changes
 
@@ -44,8 +44,8 @@ entry or its `specs/tasks/done.md` archive row. -->
 
 ## Task stack
 
-- [ ] Entry pushed to `specs/tasks/active.md` at start
-- [ ] Entry moved to top of `specs/tasks/done.md` with this PR's link on merge
+- [ ] File created under `specs/tasks/active/` at start
+- [ ] File moved to `specs/tasks/done/` with this PR's link on merge
 
 ## Screenshots / recordings
 

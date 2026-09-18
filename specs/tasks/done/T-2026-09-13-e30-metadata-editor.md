@@ -1,0 +1,27 @@
+## T-2026-09-13-e30-metadata-editor — course metadata editor (web)
+
+- Created: 2026-09-13
+- Completed: 2026-09-13
+- Result: https://github.com/kkucherenkov/course_shelf/pull/452
+- Owner: claude
+- Spec: none (no wire change) — [E30-F03-S01](../../docs/roadmap/tasks/E30-F03-S01.md)
+- Goal: let an admin correct a course's metadata by hand, and optionally pre-fill the form from a source, instead of being limited to whatever a scraper could reach.
+- Acceptance:
+  - admin-only edit surface reachable from `pages/courses/[id].vue`, real guard (`admin` route middleware on `pages/courses/[id]/edit.vue`, not just hidden UI)
+  - covers all 14 `UpdateCourseRequest` fields; entity fields pick from existing instructors/studios/tags rather than raw ids
+  - "fill from source" panel over `scrapeCoursePreview`, applies one field at a time — never a blanket overwrite
+  - an untouched field is never sent; partial-update payload built from a touched-set, not from every rendered value
+  - `pnpm check:i18n` green (en + ru)
+- Spec diff: none
+- Codegen impact: no
+- Design impact: no — composes existing `@app/ui` primitives + Nuxt UI's `USelectMenu` directly (no new `@app/ui` primitive; no existing one covers async multi-select)
+- Tests: 23 new — `useCourseEdit` (payload construction, touched-tracking, save), `useEntitySearch` (debounce, known-option persistence), `CourseMetadataForm` (field-alone / untouched-form), `CourseScrapePreviewPanel` (per-field apply), edit-page guard binding. Full web suite: 48 files / 328 tests green.
+- Sub-steps:
+  - [x] `useCourseEdit` composable over `getCourse` + `updateCourse`
+  - [x] `useEntitySearch` + instructor/studio/tag option fetchers
+  - [x] `useCourseScrapePreview` composable over `scrapeCoursePreview` + `listScrapers`
+  - [x] `CourseMetadataForm` (all 14 fields) + `CourseScrapePreviewPanel`, both under `apps/web/app/components/course-edit/`
+  - [x] `pages/courses/[id]/edit.vue` (admin middleware) + entry-point button on the course detail page
+  - [x] locale keys (en + ru)
+  - [x] specs (composables + components)
+  - [x] card bookkeeping + dnote CHANGELOG

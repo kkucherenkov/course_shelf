@@ -20,7 +20,7 @@ apps/mobile     Flutter 3.44 + flutter_bloc + get_it + Dio
 packages/specs  OpenAPI 3.1 + AsyncAPI 3.0 — single source of API truth
 packages/ui     brand components + colocated Storybook + specs
 packages/api-client-{ts,dart}   generated clients — never edit by hand
-specs/tasks/    active.md (LIFO stack) + done.md (archive)
+specs/tasks/    active/ (one file per task in flight) + done/ (archive)
 specs/design/   W3C tokens + optional JSX mockups under mockups/
 docker/         local stack (postgres / redis / centrifugo / otel-lgtm)
 ```
@@ -32,7 +32,7 @@ Before the rules about _what_ you build, five about _how_. Full text in
 
 1. **Answer in Russian.** Everything committed to the repo stays in English.
 2. **Plan first.** Read the code, trace the flow, state the plan — and push an
-   entry to `specs/tasks/active.md` before the first edit. Ambiguity or an
+   file to `specs/tasks/active/` before the first edit. Ambiguity or an
    architectural fork: ask, don't guess.
 3. **Update the docs in the same pass.** Behaviour → `docs/user-guide.md`;
    architecture → `docs/architecture.md` (+ an ADR if the decision is new);
@@ -46,8 +46,8 @@ Before the rules about _what_ you build, five about _how_. Full text in
 
 ## Five rules every agent must follow
 
-1. **Task stack.** On session start, read `specs/tasks/active.md` first. Push an
-   entry before coding, move it to `specs/tasks/done.md` when the PR is merged.
+1. **Task stack.** On session start, read `specs/tasks/active/` first. Add a
+   file before coding, `git mv` it to `specs/tasks/done/` when the PR is merged.
    Use [`specs/tasks/templates/feature.md`](specs/tasks/templates/feature.md).
 
 2. **Spec-first.** Any wire change starts in `packages/specs/openapi/openapi.yaml`

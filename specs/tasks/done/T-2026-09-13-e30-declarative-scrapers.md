@@ -1,0 +1,31 @@
+## T-2026-09-13-e30-declarative-scrapers — declarative scraper definitions
+
+- Created: 2026-09-13
+- Completed: 2026-09-13
+- Result: https://github.com/kkucherenkov/course_shelf/pull/449
+- Owner: claude
+- Spec: [docs/superpowers/specs/2026-09-13-declarative-scrapers-design.md](../../docs/superpowers/specs/2026-09-13-declarative-scrapers-design.md), [E30-F01-S01](../../docs/roadmap/tasks/E30-F01-S01.md)
+- Goal: a hand-authored JSON definition under `$DERIVED_PATH/scrapers/` registers a new metadata source without a backend rebuild.
+- Acceptance:
+  - a valid definition file is loaded at startup and dispatches through the existing `Scraper` port (`canHandle` / `scrape`)
+  - rule-extracted fields win over the generic JSON-LD/OpenGraph extractor on conflict
+  - a malformed definition, an unparseable file, or an id colliding with a built-in scraper is reported and skipped — startup never fails
+- Spec diff: none
+- Codegen impact: no
+- Design impact: none
+- Tests: 31 new unit tests — `ScraperDefinitionLoader`, `parseScraperDefinition`, `RuleExtractor`, `DeclarativeScraper`, registry-wiring ordering. Full backend suite: 180 files / 1864 tests green.
+- Sub-steps:
+  - [x] design pre-step (landed as the design doc, committed separately first)
+  - [x] definition type + hand-rolled validator (domain)
+  - [x] `ScraperDefinitionLoader` (infra)
+  - [x] `RuleExtractor` (infra)
+  - [x] `DeclarativeScraper` (infra)
+  - [x] `catalog.module.ts` wiring (extracted into `build-scraper-registry.ts` for testability)
+  - [x] tests per design §6
+  - [x] docs: user-guide (real stepik.org worked example, verified against the live page), deployment, README/README.ru, architecture
+  - [x] card bookkeeping + dnote CHANGELOG
+- Status: done
+- Blockers: —
+- Deviations from the design doc:
+  - `RuleExtractor.extract()` takes a third `sourceId` argument, not the design's two-arg sketch — `externalIds` coerces to `ScrapedExternalId[]` (objects with a `source`), which isn't reachable from html+rules alone
+  - the worked example in `user-guide.md` uses a real, live-verified `stepik.org` definition instead of an invented one (mid-task request from the maintainer, still inside the original brief)

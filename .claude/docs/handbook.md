@@ -196,7 +196,7 @@ Skipping `error` or `pending` state is a review blocker. This applies to every d
 
 - Conventional Commits: `feat(api): ...`, `fix(web): ...`, `chore(specs): ...`.
 - Small, focused PRs. Spec change + codegen + implementation may be one PR but separate commits.
-- Every PR that shipped a task updates `specs/tasks/done.md`.
+- Every PR that shipped a task moves its file into `specs/tasks/done/`.
 - Never force-push to `main`. Never commit `.env`.
 - Dependency bumps: minor/patch grouped weekly; majors get their own PR with changelog link + smoke test.
 

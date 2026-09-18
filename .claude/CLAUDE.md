@@ -19,7 +19,7 @@ the conversation's.
 Every task starts with a plan, not an edit. Read the code the change
 touches, trace the real flow end to end, then say what you intend to do
 before doing it. For anything larger than a one-line fix, that plan becomes
-an entry at the top of `specs/tasks/active.md` (see **Task stack** below)
+a file under `specs/tasks/active/` (see **Task stack** below)
 _before_ the first edit — not after.
 
 If the task is ambiguous, if there is an architectural fork, or if a library
@@ -32,14 +32,14 @@ A change is not done when the code works. If the change alters behaviour,
 structure, contracts, or setup, the docs that describe it change **in the
 same commit or PR**:
 
-| You changed                                                           | Update                                                                               |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| A route or channel                                                    | `packages/specs/` **first** (spec-first loop below)                                  |
-| Architecture, a bounded context, a data flow                          | `docs/architecture.md`, and an ADR under `docs/adr/` if the _decision_ is new        |
-| User-visible behaviour, admin flows, folder/`course.json` conventions | `docs/user-guide.md`                                                                 |
-| Setup, ports, versions, env vars                                      | `README.md` **and** `README.ru.md` (they are kept in sync)                           |
-| A CI gate, a script, a command                                        | the section of `.claude/CLAUDE.md` or `README.md` that names it                      |
-| A story's status                                                      | its card in `docs/roadmap/tasks/`, `docs/roadmap/TODO.md`, and `specs/tasks/done.md` |
+| You changed                                                           | Update                                                                             |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| A route or channel                                                    | `packages/specs/` **first** (spec-first loop below)                                |
+| Architecture, a bounded context, a data flow                          | `docs/architecture.md`, and an ADR under `docs/adr/` if the _decision_ is new      |
+| User-visible behaviour, admin flows, folder/`course.json` conventions | `docs/user-guide.md`                                                               |
+| Setup, ports, versions, env vars                                      | `README.md` **and** `README.ru.md` (they are kept in sync)                         |
+| A CI gate, a script, a command                                        | the section of `.claude/CLAUDE.md` or `README.md` that names it                    |
+| A story's status                                                      | its card in `docs/roadmap/tasks/`, `docs/roadmap/TODO.md`, and `specs/tasks/done/` |
 
 **Never leave a document asserting something that is no longer true.** A
 stale claim is worse than no claim — see
@@ -95,7 +95,7 @@ YYYY-MM-DD · Что сделали — кратко, по сути измене
 ```
 
 Substance, not ceremony: what changed and why it matters, not which files were
-touched. This is separate from `specs/tasks/done.md` (per-task record, with
+touched. This is separate from `specs/tasks/done/` (per-task record, with
 sub-steps and PR links) and from the knowledge notes in rule 4 — the changelog
 is the flat chronology you read to answer "what happened to this project?".
 
@@ -103,11 +103,19 @@ Append before you report the work as finished.
 
 ## Task stack — read every session
 
-1. Before coding: push entry to `specs/tasks/active.md` (template in `specs/tasks/README.md`; id is `T-YYYY-MM-DD-<branch-slug>`, never a counter).
+One file per task, `specs/tasks/active/<id>.md` while it runs and
+`specs/tasks/done/<id>.md` once it ships. No index, no shared list.
+
+1. Before coding: create `specs/tasks/active/<id>.md` (template in `specs/tasks/README.md`; id is `T-YYYY-MM-DD-<branch-slug>`, never a counter).
 2. Check boxes as you go; flip to `blocked` with reason if stuck.
-3. On done: move whole entry to top of `specs/tasks/done.md` with PR link.
-4. Never delete from `done.md` — cancelled tasks go there with reason.
-5. Session start: **read `active.md` first**.
+3. On done: `git mv specs/tasks/active/<id>.md specs/tasks/done/`, set `Status: done`, add `- Completed:` and `- Result: <PR link>`.
+4. Never delete from `done/` — cancelled tasks move there with the reason.
+5. Session start: **read `specs/tasks/active/` first** (`cat specs/tasks/active/*.md`).
+
+It was two append-at-the-top files until 2026-09-18, and a merge driver kept
+them mergeable locally. GitHub does not run custom merge drivers, so every
+second lane still saw CONFLICTING, rebased, force-pushed, and paid for a second
+full CI run over a bookkeeping line. Separate files cannot collide.
 
 ## Spec-first loop (non-negotiable)
 
@@ -313,27 +321,44 @@ Either way the lane discipline is the same:
 - A file two lanes both need (`packages/specs/openapi/openapi.yaml`,
   `docker/compose.yml`, a shared module) belongs to exactly one of them; the
   others wait for that PR to land.
-- `specs/tasks/active.md` **and `specs/tasks/done.md`** are the exception —
-  every lane appends its own entry at the top of whichever applies, and the
-  union is resolved at merge. Id the entry `T-YYYY-MM-DD-<your branch slug>`;
-  there is no counter to allocate, precisely so that two lanes cannot read the
-  same state and pick the same id.
+- `specs/tasks/active/` and `specs/tasks/done/` hold **one file per task**, so
+  two lanes never write the same path and there is nothing to resolve. Name the
+  file `T-YYYY-MM-DD-<your branch slug>.md`; there is no counter to allocate,
+  precisely so that two lanes cannot read the same state and pick the same id.
+  Finishing a task is `git mv` between the two directories, which git tracks as
+  a rename on both sides of a merge.
 
-  **Resolve them as a union: keep both sides, newest first, never drop another
-  lane's entry — with one exception.** An entry the other side has already
-  _moved_ from `active.md` to `done.md` must not be kept on the `active.md`
-  side: a blind union resurrects it and the same task then sits in both files.
-  Check `done.md` on the branch you are merging in before keeping an entry your
-  side still has. This bit the change that first wrote this paragraph down. `done.md` sits in exactly the same position as `active.md` —
-  append-only at the top — so every second and third lane to merge hits a
-  conflict there. One wave produced three, each resolved identically. Resolve
-  every conflict region, not just the first, and check that no marker survived
-  before committing: a half-resolved file has been committed here before.
+### What a lane's brief must say
 
-  `docs/roadmap/TODO.md` is **not** in this category. Lanes ticking different
-  rows merge cleanly because they touch different lines; only two lanes
-  inserting a new row at the same point conflict, and that is an ordinary
-  conflict to resolve on its merits, not a union.
+A lane that has to ask is a lane that has stopped. Put all of this in the brief
+before dispatching, not after the first question:
+
+- **The paths it owns, and the paths other lanes own.** Name them; "stay in your
+  area" is not a boundary.
+- **The measurement, not the symptom.** The lane should not have to re-derive
+  the number that opened the task.
+- **What is already settled** — a design decision, an ADR, a rejected
+  alternative. Otherwise the lane re-opens it and you get a different answer per
+  lane.
+- **What it must NOT do**: reach for a label instead of fixing a gate, change
+  backend semantics from a web lane, write to `dnote` or `tuxedo` (the
+  coordinator does that centrally, or five lanes edit one note at once).
+- **Wait for CI with the `Monitor` tool, never a sleep-and-poll loop.** A poll
+  loop burns the lane's context on its own output and reports last.
+
+### A subagent shares your checkout unless you give it one
+
+An agent dispatched without its own worktree runs `git` in the working copy you
+are sitting in, on whatever branch is checked out. Ask one to "work on a new
+branch" and it may commit to yours instead — that happened on 2026-09-18, with
+ten roadmap cards landing on a local `main`. Dispatch with
+`isolation: "worktree"`, or create the worktree yourself and name it in the
+brief. Check `git log --oneline -1` on your own branch after an agent reports.
+
+`docs/roadmap/TODO.md` is **not** in this category. Lanes ticking different
+rows merge cleanly because they touch different lines; only two lanes
+inserting a new row at the same point conflict, and that is an ordinary
+conflict to resolve on its merits, not a union.
 
 ## Fix root causes, not symptoms
 
@@ -377,7 +402,7 @@ docs.
   Read the candidate's `.vue` file too — more than one of them implements a
   prop or helper its own template does not yet use.
 - Use `!important`, inline `style=""`, or hard-coded hex brand colors.
-- Skip updating `specs/tasks/active.md` / `done.md`.
+- Skip updating `specs/tasks/active/` / `done/`.
 - Commit to `main` without going through a PR.
 
 ## Detailed docs

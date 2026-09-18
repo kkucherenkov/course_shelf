@@ -178,7 +178,7 @@ The CI pipeline runs the same gates. If anything fails, fix the source — never
 - [ ] Tokens come from `var(--…)` or `designTokens.*` — no raw hex.
 - [ ] `pnpm check:i18n` is green; ru.json + en.json have parity.
 - [ ] PR title is a Conventional Commit (`feat(web): …` or `feat(ui): …`).
-- [ ] `specs/tasks/active.md` entry moved to `specs/tasks/done.md` with the PR link.
+- [ ] Task file moved from `specs/tasks/active/` to `specs/tasks/done/` with the PR link.
 
 ## Pitfalls
 

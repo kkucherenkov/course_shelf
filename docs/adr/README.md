@@ -75,4 +75,4 @@ Link the ADR from:
 - The PR that introduces it.
 - Any code file whose design it governs (header comment:
   `// See docs/adr/0042-cqrs-command-bus.md`).
-- `specs/tasks/active.md` or `done.md` when a task is driven by an ADR.
+- the task file under `specs/tasks/active/` or `done/` when a task is driven by an ADR.

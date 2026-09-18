@@ -10,7 +10,7 @@ export class QuizProposed {
     readonly quizId: string,
     readonly lessonId: string,
     readonly courseId: string,
-    readonly modelFilename: string,
+    readonly model: string,
     readonly proposedAt: Date,
   ) {}
 }

@@ -8,7 +8,7 @@ function make(): Quiz {
     id: 'quiz-1',
     lessonId: 'lesson-1',
     courseId: 'course-1',
-    modelFilename: 'Qwen3.5-4B-Q4_K_M.gguf',
+    model: 'Qwen3.5-4B-Q4_K_M.gguf',
     questions: [
       {
         prompt: 'What is X?',

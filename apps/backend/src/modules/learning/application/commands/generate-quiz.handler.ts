@@ -30,7 +30,7 @@
  * questions, never the lesson's.
  *
  * ponytail: no persisted run record — the maintainer confirmed the Quiz
- * proposal itself IS the run record (it already carries `modelFilename`).
+ * proposal itself IS the run record (it already carries `model`).
  * A crash mid-walk silently leaves the remaining lessons ungenerated, with
  * nothing to say so; upgrade path is a Transcription-shaped run row if that
  * ever proves painful in a real course-scoped run.
@@ -111,7 +111,7 @@ export class GenerateQuizHandler implements ICommandHandler<
     // found it by generating `{"modelId": ""}`. The spec now rejects blank at
     // the edge with a 400; treating blank as absent here keeps any other
     // caller from reaching the same misleading error.
-    const requested = command.modelFilename?.trim();
+    const requested = command.model?.trim();
     const model =
       requested !== undefined && requested !== ''
         ? requested
@@ -193,13 +193,7 @@ export class GenerateQuizHandler implements ICommandHandler<
       if (quiz) {
         await this.quizzes.save(quiz);
         this.eventBus.publish(
-          new QuizProposed(
-            quiz.id,
-            quiz.lessonId,
-            quiz.courseId,
-            quiz.modelFilename,
-            quiz.createdAt,
-          ),
+          new QuizProposed(quiz.id, quiz.lessonId, quiz.courseId, quiz.model, quiz.createdAt),
         );
       }
     }
@@ -236,7 +230,7 @@ export class GenerateQuizHandler implements ICommandHandler<
       id: nanoid(),
       lessonId,
       courseId,
-      modelFilename: model,
+      model,
       questions,
     });
   }

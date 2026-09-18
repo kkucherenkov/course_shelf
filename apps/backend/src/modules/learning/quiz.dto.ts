@@ -13,7 +13,7 @@ export function toQuizDto(quiz: Quiz): QuizDto {
     lessonId: quiz.lessonId,
     courseId: quiz.courseId,
     status: quiz.status,
-    modelFilename: quiz.modelFilename,
+    model: quiz.model,
     questions: quiz.questions.map((q) => ({
       prompt: q.prompt,
       options: [...q.options] as [string, string, string, string],

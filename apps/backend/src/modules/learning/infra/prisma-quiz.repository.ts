@@ -19,7 +19,7 @@ interface QuizRow {
   lessonId: string;
   courseId: string;
   status: string;
-  modelFilename: string;
+  model: string;
   questions: unknown;
   createdAt: Date;
   completedAt: Date | null;
@@ -31,7 +31,7 @@ export function quizRowToDomain(row: QuizRow): Quiz {
     lessonId: row.lessonId,
     courseId: row.courseId,
     status: row.status as QuizStatus,
-    modelFilename: row.modelFilename,
+    model: row.model,
     questions: row.questions as readonly QuizQuestion[],
     createdAt: row.createdAt,
     ...(row.completedAt === null ? {} : { completedAt: row.completedAt }),
@@ -47,7 +47,7 @@ export class PrismaQuizRepository implements QuizRepository {
       lessonId: quiz.lessonId,
       courseId: quiz.courseId,
       status: quiz.status,
-      modelFilename: quiz.modelFilename,
+      model: quiz.model,
       questions: quiz.questions as object,
       completedAt: quiz.completedAt ?? null,
     };

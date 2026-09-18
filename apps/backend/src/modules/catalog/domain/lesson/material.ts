@@ -8,11 +8,17 @@
  * MaterialKindUnsupportedError — the scan handler catches that and records a
  * ScanError instead of propagating.
  *
- * No path is stored on the value object after construction — the read DTO must
- * never expose raw filesystem paths (NFR-S-01). `path` is only needed at save
- * time and is stored on the Prisma row; the aggregate keeps it internally so the
- * repository can persist it, but it is never part of any public interface.
+ * The read DTO must never expose raw filesystem paths (NFR-S-01). `path` is
+ * only needed at save time and is stored on the Prisma row; the aggregate
+ * keeps it internally so the repository can persist it, but it is never part
+ * of any public DTO.
+ *
+ * `path` is a `LibraryRelativePath` (tuxedo 174), the same VO
+ * `Lesson.videoPath` uses (see that file's header) — an absolute path is
+ * rejected at construction instead of silently accepted and mishandled by
+ * `path.resolve` at read time.
  */
+import { LibraryRelativePath } from '../shared-vo/library-relative-path';
 import { MaterialKindUnsupportedError } from './lesson.errors';
 
 export type MaterialKindValue = 'doc' | 'note' | 'image' | 'slide';
@@ -31,7 +37,7 @@ export interface MaterialProps {
   readonly id: string;
   readonly kind: MaterialKindValue;
   readonly label: string;
-  readonly path: string;
+  readonly path: LibraryRelativePath;
   readonly sizeBytes: number;
 }
 
@@ -40,7 +46,7 @@ export class Material {
   readonly kind: MaterialKindValue;
   readonly label: string;
   /** Relative to library root — stored internally; never exposed in DTOs. */
-  readonly path: string;
+  readonly path: LibraryRelativePath;
   readonly sizeBytes: number;
 
   private constructor(props: MaterialProps) {
@@ -51,17 +57,30 @@ export class Material {
     this.sizeBytes = props.sizeBytes;
   }
 
+  /** This material's file, resolved to an absolute path under `libraryRoot`. */
+  absolutePath(libraryRoot: string): string {
+    return this.path.resolveAbsolute(libraryRoot);
+  }
+
   /**
    * Derive a Material value object from a filesystem entry.
    *
    * @param id    - Pre-generated cuid for persistence.
-   * @param path  - Relative path from library root.
+   * @param path  - Absolute or library-relative path, as walked off disk.
+   * @param libraryRoot - The library's root; `path` is normalised against it.
    * @param sizeBytes - File size in bytes.
    *
    * Throws MaterialKindUnsupportedError for unrecognised extensions — callers
-   * (scan handler) catch this and record a ScanError instead.
+   * (scan handler) catch this and record a ScanError instead. Throws
+   * LibraryRelativePathEscapedError when `path` would resolve outside
+   * `libraryRoot`.
    */
-  static fromFile(props: { id: string; path: string; sizeBytes: number }): Material {
+  static fromFile(props: {
+    id: string;
+    path: string;
+    libraryRoot: string;
+    sizeBytes: number;
+  }): Material {
     const lastDot = props.path.lastIndexOf('.');
     const ext = lastDot === -1 ? '' : props.path.slice(lastDot).toLowerCase();
 
@@ -78,7 +97,7 @@ export class Material {
       id: props.id,
       kind,
       label,
-      path: props.path,
+      path: LibraryRelativePath.from(props.path, props.libraryRoot),
       sizeBytes: props.sizeBytes,
     });
   }

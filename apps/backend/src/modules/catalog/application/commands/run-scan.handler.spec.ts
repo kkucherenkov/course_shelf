@@ -510,6 +510,7 @@ function makeTranscriptRepo(): TranscriptRepository & { store: Map<string, FakeT
     findGeneratedByLanguage: vi.fn(async () => []),
     reclassifyGenerated: vi.fn(async () => undefined),
     findCuesForLesson: vi.fn(async () => null),
+    cueBelongsToLesson: vi.fn(async () => true),
   };
 }
 
@@ -1027,7 +1028,7 @@ describe('RunScanHandler', () => {
 
       // One track per language — `.vtt` wins for `en` so no conversion is needed.
       expect(lesson.subtitles.map((s) => s.language).toSorted()).toEqual(['en', 'ru']);
-      expect(lesson.subtitles.find((s) => s.language === 'en')!.path).toBe(
+      expect(lesson.subtitles.find((s) => s.language === 'en')!.absolutePath('/lib')).toBe(
         '/lib/05 - Dup Course/01 - Intro.en.vtt',
       );
       // Label names the language, not the video stem.
@@ -3395,15 +3396,16 @@ describe('RunScanHandler', () => {
       expect(scan.errors.filter((e) => e.code === 'unsupported-extension')).toHaveLength(0);
 
       // Every lesson carries exactly its own folder's sidecars. Subtitle/
-      // Material paths are out of #554's scope and stay absolute (what the
-      // walk itself produces) — `videoPath` is now library-relative, so the
-      // directory prefix for THOSE comparisons has to come from the absolute
-      // form.
+      // Material paths are library-relative too now (tuxedo 174, same
+      // LibraryRelativePath guard #554 gave videoPath), so the comparison
+      // resolves each back to absolute via the same library root.
       for (const lesson of lessonRepo2.store.values()) {
         const absoluteVideoPath = lesson.absoluteVideoPath('/lib');
         const dir = absoluteVideoPath.slice(0, absoluteVideoPath.lastIndexOf('/'));
-        expect(lesson.subtitles.map((s) => s.path)).toEqual([`${dir}/video.en.srt`]);
-        expect(lesson.materials.map((m) => m.path)).toEqual([`${dir}/video.pdf`]);
+        expect(lesson.subtitles.map((s) => s.absolutePath('/lib'))).toEqual([
+          `${dir}/video.en.srt`,
+        ]);
+        expect(lesson.materials.map((m) => m.absolutePath('/lib'))).toEqual([`${dir}/video.pdf`]);
       }
     });
 

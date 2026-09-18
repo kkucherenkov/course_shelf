@@ -13,8 +13,10 @@
  * same string for every track of the same lesson and tells the viewer nothing.
  *
  * As with Material, the raw `path` is stored internally for persistence but is
- * never exposed in DTOs (NFR-S-01).
+ * never exposed in DTOs (NFR-S-01). `path` is a `LibraryRelativePath`
+ * (tuxedo 174) — see `Material`'s header for why.
  */
+import { LibraryRelativePath } from '../shared-vo/library-relative-path';
 
 /** Matches an optional 2–3 letter language tag before the final extension. */
 const LANG_SUFFIX_RE = /\.([a-z]{2,3})\.(srt|vtt)$/i;
@@ -73,19 +75,24 @@ function isVtt(filePath: string): boolean {
 export interface SubtitleProps {
   readonly id: string;
   readonly language: string;
-  readonly path: string;
+  readonly path: LibraryRelativePath;
 }
 
 export class Subtitle {
   readonly id: string;
   readonly language: string;
   /** Relative to library root — stored internally; never exposed in DTOs. */
-  readonly path: string;
+  readonly path: LibraryRelativePath;
 
   private constructor(props: SubtitleProps) {
     this.id = props.id;
     this.language = props.language;
     this.path = props.path;
+  }
+
+  /** This subtitle's file, resolved to an absolute path under `libraryRoot`. */
+  absolutePath(libraryRoot: string): string {
+    return this.path.resolveAbsolute(libraryRoot);
   }
 
   /**
@@ -103,9 +110,17 @@ export class Subtitle {
    *   `Lesson.en.srt`  → language = `en`,  label = `English`
    *   `Lesson.ru.vtt`  → language = `ru`,  label = `Russian`
    *   `Lesson.srt`     → language = `und`, label = `Unknown`
+   *
+   * @param libraryRoot - The library's root; `path` is normalised against it.
+   * @throws LibraryRelativePathEscapedError when `path` would resolve outside
+   *   `libraryRoot`.
    */
-  static fromFile(props: { id: string; path: string }): Subtitle {
-    return new Subtitle({ id: props.id, language: languageOf(props.path), path: props.path });
+  static fromFile(props: { id: string; path: string; libraryRoot: string }): Subtitle {
+    return new Subtitle({
+      id: props.id,
+      language: languageOf(props.path),
+      path: LibraryRelativePath.from(props.path, props.libraryRoot),
+    });
   }
 
   /** Reconstitute from a persisted row. */

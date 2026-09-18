@@ -182,6 +182,7 @@ function makeTranscriptRepo(
     findGeneratedByLanguage: vi.fn(async () => []),
     reclassifyGenerated: vi.fn(async () => undefined),
     findCuesForLesson: vi.fn(async () => null),
+    cueBelongsToLesson: vi.fn(async () => true),
   };
 }
 
@@ -264,7 +265,9 @@ function makeLesson(
     sizeBytes: 100,
   });
   for (const [i, p] of subtitlePaths.entries()) {
-    lesson.addSubtitle(Subtitle.fromFile({ id: `sub-${id}-${String(i)}`, path: p }));
+    lesson.addSubtitle(
+      Subtitle.fromFile({ id: `sub-${id}-${String(i)}`, path: p, libraryRoot: ROOT }),
+    );
   }
   return lesson;
 }

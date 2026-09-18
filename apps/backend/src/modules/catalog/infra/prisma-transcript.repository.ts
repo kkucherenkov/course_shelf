@@ -205,6 +205,14 @@ export class PrismaTranscriptRepository implements TranscriptRepository {
     return row === null ? null : { language: row.language, cues: row.cues };
   }
 
+  async cueBelongsToLesson(cueId: string, lessonId: string): Promise<boolean> {
+    const row = await this.prisma.transcriptCue.findFirst({
+      where: { id: cueId, transcript: { lessonId } },
+      select: { id: true },
+    });
+    return row !== null;
+  }
+
   private async replace(input: ReplaceRowInput): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       await tx.transcript.deleteMany({

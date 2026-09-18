@@ -33,5 +33,16 @@
   - [x] `LessonFileLocator` uses `absolutePath(libraryRoot)`
   - [x] update all call sites + specs
   - [x] `pnpm format`
+  - [x] PR review (#752): NAS `material`/`subtitle` are 100% absolute paths
+        (316/316, 1883/1883) — validation alone would 500 every read after
+        deploy. Added `20260918220000_material_subtitle_path_relative`
+        (backfill, same shape as `20260915120000_lesson_video_path_relative`)
+        in this PR, riding with the validation so `prisma migrate deploy` at
+        container start never applies one without the other.
+  - [x] verified backfill against a throwaway Postgres: strips the absolute
+        prefix, leaves already-relative rows untouched, second run is
+        `UPDATE 0` on every table (idempotent), and a decoy row under a
+        `rootPath` containing `_` proves the `left()` comparison doesn't fall
+        into the `LIKE`-wildcard trap a naive pattern match would
 - Status: in-progress
-- Blockers: — (awaiting PR)
+- Blockers: — (awaiting CI on the backfill commit, PR https://github.com/kkucherenkov/course_shelf/pull/752)

@@ -93,7 +93,6 @@ from the environment by `AppConfig`.
 | ---------- | ----------------------------- | ------------ | -------------------- | --------------------------------------------------------------------- |
 | postgres   | `postgres:18.1-alpine`        | 5432         | `CS_POSTGRES_PORT`   | PGDATA is `/var/lib/postgresql/18/docker` (Postgres 18 layout)        |
 | centrifugo | `centrifugo/centrifugo:v6`    | 8000         | `CS_CENTRIFUGO_PORT` | HMAC secret + API key from `centrifugo/config.json`, in-memory engine |
-| otel-lgtm  | `grafana/otel-lgtm:0.8.1`     | 3200         | `CS_GRAFANA_PORT`    | Grafana UI; OTLP gRPC `CS_OTLP_GRPC_PORT` / HTTP `CS_OTLP_HTTP_PORT`  |
 | backend    | `apps/backend/Dockerfile.dev` | 3000         | `CS_BACKEND_PORT`    | Mounts repo, runs `nest start --watch`                                |
 | web        | `apps/web/Dockerfile.dev`     | 3001         | `CS_WEB_PORT`        | Mounts repo, runs `nuxt dev`                                          |
 | proxy      | `nginx:1.27-alpine`           | 8080         | `CS_PROXY_PORT`      | Single origin for the browser — web + backend behind one host         |
@@ -105,7 +104,6 @@ After `pnpm dev:up`, point your browser at:
 - Backend API — http://localhost:3000/api/v1/health
 - Web SPA direct (bypasses the proxy) — http://localhost:3001
 - Storybook — http://localhost:6006
-- Grafana (OTel) — http://localhost:3200
 
 Those are the defaults; substitute your own ports if you overrode them.
 

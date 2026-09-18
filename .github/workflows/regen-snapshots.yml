@@ -134,7 +134,6 @@ jobs:
         run: pnpm design:build
 
       - name: Pull external images
-        run: docker compose -f docker/compose.yml -f docker/compose.ci.yml pull --quiet otel-lgtm
 
       # Identical production-shaped stack to e2e.yml — the baselines must be
       # captured against the same `nuxt generate` build the nightly compares
@@ -144,7 +143,7 @@ jobs:
         run: |
           docker compose -f docker/compose.yml -f docker/compose.ci.yml \
             up -d --build --wait --wait-timeout 600 \
-            postgres centrifugo otel-lgtm backend web
+            postgres centrifugo backend web
 
       # `=all`, not the default `changed`. The visual spec compares with
       # `maxDiffPixelRatio: 0.02`, and `changed` only rewrites a baseline when

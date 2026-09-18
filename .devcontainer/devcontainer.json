@@ -12,11 +12,10 @@
       "version": "3.44.4"
     }
   },
-  "forwardPorts": [3000, 3001, 3200, 5432, 6379, 8000],
+  "forwardPorts": [3000, 3001, 5432, 6379, 8000],
   "portsAttributes": {
     "3000": { "label": "backend (NestJS)" },
     "3001": { "label": "web (Nuxt)" },
-    "3200": { "label": "grafana (otel-lgtm)" },
     "5432": { "label": "postgres" },
     "6379": { "label": "redis" },
     "8000": { "label": "centrifugo" }

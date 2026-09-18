@@ -27,7 +27,6 @@ export interface AppRuntimeConfig {
   readonly corsOrigins: string[];
   readonly version: string;
   readonly sentryDsn: string | null;
-  readonly otelEndpoint: string | null;
   /**
    * Express `trust proxy` value — who this instance believes about
    * `X-Forwarded-For`. A comma-separated list of IPs/CIDRs/presets
@@ -313,7 +312,6 @@ export class AppConfig {
 
   get runtime(): AppRuntimeConfig {
     const sentryDsn = this.config.get<string>('SENTRY_DSN') ?? '';
-    const otelEndpoint = this.config.get<string>('OTEL_EXPORTER_OTLP_ENDPOINT') ?? '';
     return {
       port: this.numberOrDefault('PORT', 3000),
       nodeEnv: this.stringOrDefault('NODE_ENV', 'development') as AppRuntimeConfig['nodeEnv'],
@@ -323,7 +321,6 @@ export class AppConfig {
         .filter(Boolean),
       version: this.stringOrDefault('APP_VERSION', '0.0.0-dev'),
       sentryDsn: sentryDsn.length > 0 ? sentryDsn : null,
-      otelEndpoint: otelEndpoint.length > 0 ? otelEndpoint : null,
       trustProxy: this.stringOrDefault('TRUST_PROXY', 'loopback'),
     };
   }

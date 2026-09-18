@@ -62,22 +62,30 @@
     return map[status] ?? status;
   }
 
-  function onScanClick(e: Event): void {
-    e.stopPropagation();
-    emit('scan');
+  function openAriaLabel(): string {
+    return t('pages.admin.libraries.openAriaLabel', { name: props.library.name });
   }
 </script>
 
 <template>
-  <div
-    class="adm-lib-row"
-    data-testid="library-row"
-    role="button"
-    tabindex="0"
-    @click="emit('click')"
-    @keydown.enter="emit('click')"
-    @keydown.space.prevent="emit('click')"
-  >
+  <div class="adm-lib-row" data-testid="library-row">
+    <!-- Row-wide hit target — a real, focusable `<button>` rather than
+         `role="button"` on this whole `<div>` (tuxedo 251): the row
+         also contains AdminCopyablePath's own button, the Scan button and
+         two `AppIconButton`s, and nesting real interactive controls inside
+         an interactive-role ancestor is exactly axe's `nested-interactive`
+         (native focus/AT semantics for a button-in-a-button are undefined,
+         `@click.stop` only stops the JS event, not the ARIA nesting). This
+         button is a sibling, absolutely covering the row; the truly
+         interactive descendants get `position: relative` so they still
+         paint — and receive clicks — above it. -->
+    <button
+      type="button"
+      class="adm-lib-row__hit"
+      :aria-label="openAriaLabel()"
+      @click="emit('click')"
+    />
+
     <!-- Icon -->
     <div class="adm-lib-row__icon" aria-hidden="true">
       <IconCS name="library" :size="14" />
@@ -120,8 +128,10 @@
     </span>
     <span v-else class="adm-lib-row__status-pill adm-lib-row__status-pill--none" />
 
-    <!-- Actions -->
-    <div class="adm-lib-row__actions" @click.stop @keydown.stop>
+    <!-- Actions — true siblings of `__hit` above, not nested inside it, so
+         no `@click.stop` is needed to keep their clicks from also opening
+         the library (sibling clicks never bubble to `__hit`). -->
+    <div class="adm-lib-row__actions">
       <!-- xs: more-only -->
       <AppIconButton
         name="more-h"
@@ -131,7 +141,7 @@
         :ariaLabel="props.moreCtaLabel"
       />
       <!-- md+: scan + more -->
-      <button type="button" class="adm-lib-row__btn adm-lib-row__btn--md-up" @click="onScanClick">
+      <button type="button" class="adm-lib-row__btn adm-lib-row__btn--md-up" @click="emit('scan')">
         <IconCS name="refresh" :size="16" />
         {{ props.scanCtaLabel }}
       </button>
@@ -152,6 +162,7 @@
   $dur-dot: var(--dur-slower, 1600ms);
 
   .adm-lib-row {
+    position: relative; // containing block for &__hit below
     display: grid;
     gap: var(--space-3);
     align-items: center;
@@ -179,9 +190,25 @@
       border-color: var(--border-strong);
     }
 
-    &:focus-visible {
-      outline: 2px solid var(--brand-accent);
-      outline-offset: 2px;
+    // ── Row-wide hit target ─────────────────────────────────────────────────
+    &__hit {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      // Out-of-flow (absolute), so it never takes a grid track — an outline
+      // here matches the row's own bounds exactly, same as the old
+      // `role="button"` div's focus ring did.
+
+      &:focus-visible {
+        outline: 2px solid var(--brand-accent);
+        outline-offset: 2px;
+      }
     }
 
     // ── Icon ──────────────────────────────────────────────────────────────────
@@ -240,6 +267,11 @@
     // ── Copyable path ────────────────────────────────────────────────────────
     &__path {
       display: none;
+      // Positioned (any value) so it paints, and stays clickable, above the
+      // absolutely-positioned &__hit rather than being covered by it —
+      // stacking among positioned siblings with no z-index follows DOM
+      // order, and &__path/&__actions both come after &__hit.
+      position: relative;
 
       @media (width >= 768px) {
         display: inline-flex;
@@ -332,6 +364,7 @@
     &__actions {
       display: flex;
       gap: var(--space-1);
+      position: relative; // see &__path — stays above &__hit
     }
 
     &__btn {

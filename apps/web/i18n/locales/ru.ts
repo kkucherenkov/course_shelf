@@ -150,6 +150,14 @@ export default {
     reset: {
       title: 'Установить новый пароль',
     },
+    // `app/error.vue` — Nuxt's error boundary, not a route of its own.
+    error: {
+      notFoundTitle: 'Страница не найдена',
+      notFoundBody: 'Такой страницы не существует или она была перемещена.',
+      genericTitle: 'Что-то пошло не так',
+      genericBody: 'Произошла непредвиденная ошибка. Попробуйте вернуться на главную.',
+      homeCta: 'На главную',
+    },
     // Only `title`/`subtitle` remain — reused by `sign-up.vue`'s
     // `isFirstAdmin` branch. The rest was `pages/setup.vue`'s own copy;
     // that page was unreachable (#665) and is gone.
@@ -544,6 +552,7 @@ export default {
         colActions: 'Действия',
         scanCta: 'Сканировать',
         moreCta: 'Ещё',
+        openAriaLabel: 'Открыть библиотеку {name}',
         lastScanNever: 'Не сканировалась',
         lastScan: 'Последнее сканирование {time}',
         courseCount: '{n} курс | {n} курса | {n} курсов',
@@ -861,6 +870,9 @@ export default {
       errorsHeading: 'Ошибки',
       startError: 'Не удалось запустить транскрипцию. Попробуйте ещё раз.',
       cancelError: 'Не удалось отменить прогон. Попробуйте ещё раз.',
+    },
+    scansTable: {
+      expandColumnLabel: 'Подробности',
     },
   },
   /**

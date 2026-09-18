@@ -145,10 +145,10 @@ test('admin libraries page lists, registers, and triggers scans', async ({ page 
   await expect(page.getByText('Course Shelf samples')).toBeVisible();
   await expect(page.getByText('/workspace/docs/data/courses')).toBeVisible();
 
-  // Click Scan and verify the POST was made. Scoped to the row: the row
-  // itself is also `role="button"` (opens the detail page) and its computed
-  // accessible name is every descendant's text concatenated, which includes
-  // "Scan" — an unscoped locator matches both.
+  // Click Scan and verify the POST was made. Scoped to the row: it also
+  // contains a row-wide "Open library …" hit target (opens the detail page)
+  // whose accessible name doesn't collide with "Scan" — the scoping here is
+  // defensive, not required to disambiguate them.
   await page.getByTestId('library-row').getByRole('button', { name: 'Scan' }).click();
   await expect.poll(() => scansTriggered, { timeout: 5000 }).toBe(1);
 

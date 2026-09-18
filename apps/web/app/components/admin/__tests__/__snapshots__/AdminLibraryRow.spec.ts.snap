@@ -1,15 +1,27 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`AdminLibraryRow > matches snapshot 1`] = `
-"<div data-v-9ac31328="" class="adm-lib-row" data-testid="library-row" role="button" tabindex="0">
-  <!-- Icon -->
+"<div data-v-9ac31328="" class="adm-lib-row" data-testid="library-row">
+  <!-- Row-wide hit target — a real, focusable \`<button>\` rather than
+         \`role="button"\` on this whole \`<div>\` (tuxedo 251): the row
+         also contains AdminCopyablePath's own button, the Scan button and
+         two \`AppIconButton\`s, and nesting real interactive controls inside
+         an interactive-role ancestor is exactly axe's \`nested-interactive\`
+         (native focus/AT semantics for a button-in-a-button are undefined,
+         \`@click.stop\` only stops the JS event, not the ARIA nesting). This
+         button is a sibling, absolutely covering the row; the truly
+         interactive descendants get \`position: relative\` so they still
+         paint — and receive clicks — above it. --><button data-v-9ac31328="" type="button" class="adm-lib-row__hit" aria-label="pages.admin.libraries.openAriaLabel"></button><!-- Icon -->
   <div data-v-9ac31328="" class="adm-lib-row__icon" aria-hidden="true"><svg data-v-9ac31328="" class="stub-icon" data-name="library"></svg></div><!-- Name + sub-line -->
   <div data-v-9ac31328="" class="adm-lib-row__name-col">
     <div data-v-9ac31328="" class="adm-lib-row__name">Computer Science</div>
     <div data-v-9ac31328="" class="adm-lib-row__sub adm-lib-row__sub--xs"><span data-v-9ac31328="">12 courses</span><span data-v-9ac31328="" class="adm-lib-row__sep">·</span><span data-v-9ac31328="">Never scanned</span></div>
     <div data-v-9ac31328="" class="adm-lib-row__sub adm-lib-row__sub--md-up"><span data-v-9ac31328="">Never scanned</span></div>
   </div><!-- Copyable path (md+) --><button data-v-9ac31328="" class="stub-copyable-path adm-lib-row__path">/srv/courses/cs</button><!-- Course count (lg) -->
-  <div data-v-9ac31328="" class="adm-lib-row__courses"><span data-v-9ac31328="" class="adm-lib-row__courses-num">12</span> courses</div><!-- Status pill (md+) --><span data-v-9ac31328="" class="adm-lib-row__status-pill adm-lib-row__status-pill--none"></span><!-- Actions -->
+  <div data-v-9ac31328="" class="adm-lib-row__courses"><span data-v-9ac31328="" class="adm-lib-row__courses-num">12</span> courses</div><!-- Status pill (md+) --><span data-v-9ac31328="" class="adm-lib-row__status-pill adm-lib-row__status-pill--none"></span>
+  <!-- Actions — true siblings of \`__hit\` above, not nested inside it, so
+         no \`@click.stop\` is needed to keep their clicks from also opening
+         the library (sibling clicks never bubble to \`__hit\`). -->
   <div data-v-9ac31328="" class="adm-lib-row__actions">
     <!-- xs: more-only --><button data-v-9ac31328="" aria-label="More" class="adm-lib-row__action--xs"></button><!-- md+: scan + more --><button data-v-9ac31328="" type="button" class="adm-lib-row__btn adm-lib-row__btn--md-up"><svg data-v-9ac31328="" class="stub-icon" data-name="refresh"></svg> Scan</button><button data-v-9ac31328="" aria-label="More" class="adm-lib-row__action--md-up"></button>
   </div>

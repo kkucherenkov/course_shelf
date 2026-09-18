@@ -103,6 +103,34 @@ describe('useCoursesList', () => {
     });
   });
 
+  it('surfaces the HTTP status of a failed request (#212)', async () => {
+    mockListCourses.mockResolvedValueOnce({
+      data: undefined,
+      error: { title: 'Too Many Requests' },
+      response: { status: 429 },
+    });
+
+    // Not `async`: the real useAsyncData returns the refs synchronously and
+    // resolves the fetch in the background — an async stub would return a
+    // Promise instead, and destructuring `{ error }` off *that* is undefined
+    // before it settles.
+    const errorRef = ref<Error | null>(null);
+    vi.stubGlobal('useAsyncData', (_key: unknown, handler: () => Promise<CourseListDto>) => {
+      void handler().catch((error: unknown) => {
+        errorRef.value = error as Error;
+      });
+      return { data: ref(EMPTY), error: errorRef, status: ref('error'), refresh: vi.fn() };
+    });
+
+    const { useCoursesList } = await import('../useCoursesList');
+    const { errorStatus } = useCoursesList({} as never);
+    await new Promise((r) => {
+      setTimeout(r, 0);
+    });
+
+    expect(errorStatus.value).toBe(429);
+  });
+
   it('gives each filter combination its own cache key', async () => {
     const keys: unknown[] = [];
     mockListCourses.mockResolvedValue({ data: EMPTY, error: null, response: { status: 200 } });

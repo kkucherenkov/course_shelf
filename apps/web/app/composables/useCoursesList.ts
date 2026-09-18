@@ -18,13 +18,49 @@
  * `useLibraries`.
  */
 
+import { computed } from 'vue';
 import { client, listCourses } from '@app/api-client-ts';
-import type { CourseListDto } from '@app/api-client-ts';
+import type { CourseListDto, Problem } from '@app/api-client-ts';
 import type { ComputedRef } from 'vue';
 
 // Reuse the canonical row-status alias from useHome so every page-level
 // composable shares one type — Nuxt warns on duplicate auto-imports.
 import type { RowStatus } from './useHome';
+
+// `statusCode` mirrors useCourseOutline.ts's HttpStatusError — same reason:
+// h3 / Nuxt's `createError` (which useAsyncData wraps thrown errors in)
+// reads and preserves this exact property name.
+class HttpStatusError extends Error {
+  readonly statusCode: number;
+
+  constructor(statusCode: number, message: string) {
+    super(message);
+    this.name = 'HttpStatusError';
+    this.statusCode = statusCode;
+  }
+}
+
+function toError(raw: unknown, statusCode: number): Error {
+  if (raw instanceof Error) return raw;
+  const p = raw as Problem;
+  const msg = p.detail ?? p.title ?? 'Failed to load courses';
+  return new HttpStatusError(statusCode, msg);
+}
+
+// `error.value` is a plain `Error` at the type level, but useAsyncData wraps
+// whatever the handler throws with `createError`, which preserves
+// `statusCode`/`status` while breaking `instanceof HttpStatusError` — duck
+// type it instead (same approach as useCourseOutline.ts's `errorStatus`).
+// Lets Browse tell a 429 (wrong advice: "check your connection") apart from
+// a genuine network/5xx failure (#212).
+function errorStatusOf(error: Ref<Error | null>): ComputedRef<number | null> {
+  return computed(() => {
+    const e = error.value as { statusCode?: number; status?: number } | null;
+    if (typeof e?.statusCode === 'number') return e.statusCode;
+    if (typeof e?.status === 'number') return e.status;
+    return null;
+  });
+}
 
 export type CourseListStatusFilter = 'all' | 'not-started' | 'in-progress' | 'completed';
 export type CourseListSort = 'recently-watched' | 'newest' | 'alphabetical' | 'duration';
@@ -51,6 +87,9 @@ export function useCoursesList(options: UseCoursesListOptions = {}): {
   data: Ref<CourseListDto | undefined>;
   status: Ref<RowStatus>;
   error: Ref<Error | null>;
+  /** HTTP status of the last failed request — lets a caller tell a 429 apart
+   * from a genuine connection/server failure (#212). */
+  errorStatus: ComputedRef<number | null>;
   refetch: () => Promise<void>;
 } {
   const {
@@ -109,7 +148,7 @@ export function useCoursesList(options: UseCoursesListOptions = {}): {
         ...(Object.keys(query).length > 0 ? { query } : {}),
       });
       if (res.error) {
-        throw new Error('Failed to load courses');
+        throw toError(res.error, res.response.status);
       }
       return res.data;
     },
@@ -127,6 +166,7 @@ export function useCoursesList(options: UseCoursesListOptions = {}): {
     data: data as unknown as Ref<CourseListDto | undefined>,
     status: status as Ref<RowStatus>,
     error: error as Ref<Error | null>,
+    errorStatus: errorStatusOf(error as Ref<Error | null>),
     refetch: async () => {
       await refresh();
     },

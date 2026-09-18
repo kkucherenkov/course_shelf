@@ -27,6 +27,7 @@ vi.mock('@app/ui', () => ({
       'errors',
       'scanningLabel',
       'successLabel',
+      'partialLabel',
       'failedLabel',
       'errorsLabel',
       'statScannedLabel',
@@ -261,6 +262,38 @@ describe('ScanLifecycleNotifier', () => {
 
     const card = wrapper.find('.stub-app-scan-progress');
     expect(card.attributes('data-status')).toBe('success');
+  });
+
+  // #213: finished/partial used to collapse into 'success' — same icon and
+  // colour as a clean scan even though the label already read "Scan partial".
+  it('maps finished/partial status to "partial" for AppScanProgress, not "success"', async () => {
+    const store = useScanLifecycleStore();
+
+    store.applyEvent({
+      kind: 'started',
+      scanId: 'scan-1',
+      libraryId: 'lib-1',
+      libraryName: 'CS Library',
+      at: new Date().toISOString(),
+    });
+    store.applyEvent({
+      kind: 'finished',
+      scanId: 'scan-1',
+      libraryId: 'lib-1',
+      libraryName: 'CS Library',
+      at: new Date().toISOString(),
+      status: 'partial',
+      filesScanned: 100,
+      filesAdded: 20,
+      coursesDiscovered: 5,
+      errorsCount: 3,
+    });
+
+    const wrapper = mount(ScanLifecycleNotifier);
+    await wrapper.vm.$nextTick();
+
+    const card = wrapper.find('.stub-app-scan-progress');
+    expect(card.attributes('data-status')).toBe('partial');
   });
 
   it('does not toast a finished scan the panel already shows (#667)', async () => {

@@ -57,6 +57,11 @@ vi.mock('@app/ui', () => ({
     props: ['title', 'body'],
     template: '<div class="no-permission">{{ title }}::{{ body }}</div>',
   },
+  AppErrorState: {
+    name: 'AppErrorState',
+    props: ['title', 'body'],
+    template: '<div class="error-state">{{ title }}::{{ body }}<slot name="action" /></div>',
+  },
   AppSkeleton: { name: 'AppSkeleton', template: '<div />' },
 }));
 
@@ -96,6 +101,14 @@ describe('pages/courses/[id].vue — load-error copy (#701)', () => {
     const wrapper = await mountPage();
 
     expect(wrapper.text()).toContain('pages.courseDetail.loadingError');
+  });
+
+  it('renders the non-403 branch through the shared AppErrorState (#196)', async () => {
+    outlineErrorStatus.value = 500;
+    const wrapper = await mountPage();
+
+    expect(wrapper.find('.error-state').exists()).toBe(true);
+    expect(wrapper.text()).toContain('pages.courseDetail.loadErrorTitle');
   });
 
   it('keeps the dedicated no-access branch on a 403, unaffected', async () => {

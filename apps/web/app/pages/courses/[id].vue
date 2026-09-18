@@ -1,10 +1,11 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
-  import { AppButton, AppDialog, AppNoPermission, AppSkeleton } from '@app/ui';
+  import { AppButton, AppDialog, AppErrorState, AppNoPermission, AppSkeleton } from '@app/ui';
   import { runCourseRescan, startCourseTranscription, client } from '@app/api-client-ts';
   import type { CourseMaterialItem, LessonOutlineItem } from '@app/api-client-ts';
 
   import { accentFromId } from '~/utils/course-accent';
+  import { descriptionBody } from '~/utils/description-lead';
   import { problemDetail } from '~/utils/library-register';
   import { useCourseOutline } from '~/composables/useCourseOutline';
   import { useMaterialDownload } from '~/composables/useMaterialDownload';
@@ -279,6 +280,13 @@
     return t('pages.courseDetail.durationValue', { h, m });
   });
 
+  // `CourseHero` already prints the lead line (descriptionLead); this is the
+  // remainder `CourseDescription` shows below the fold, so the lead doesn't
+  // print twice (#184).
+  const courseDescriptionBody = computed<string>(() =>
+    descriptionBody(data.value?.course.description ?? ''),
+  );
+
   // ── Access control ───────────────────────────────────────────────────────────
 
   const isLocked = computed<boolean>(() => errorStatus.value === 403);
@@ -360,15 +368,20 @@
         :title="t('pages.courseDetail.noAccess')"
         :body="t('pages.courseDetail.noAccessBody')"
       />
-      <div v-else class="page-course-detail__load-error">
-        <p class="page-course-detail__load-error-msg">{{ loadingErrorBody }}</p>
-        <AppButton
-          variant="secondary"
-          size="md"
-          :label="t('pages.courseDetail.retry')"
-          @click="refetch()"
-        />
-      </div>
+      <AppErrorState
+        v-else
+        :title="t('pages.courseDetail.loadErrorTitle')"
+        :body="loadingErrorBody"
+      >
+        <template #action>
+          <AppButton
+            variant="secondary"
+            size="md"
+            :label="t('pages.courseDetail.retry')"
+            @click="refetch()"
+          />
+        </template>
+      </AppErrorState>
     </div>
 
     <!-- ── Loading skeleton ──────────────────────────────────────────────────── -->
@@ -468,9 +481,9 @@
         <!-- Main: full description + completed banner + section list -->
         <div class="page-course-detail__main">
           <CourseDescription
-            v-if="data.course.description"
+            v-if="courseDescriptionBody"
             :heading="t('pages.courseDetail.descriptionHeading')"
-            :description="data.course.description"
+            :description="courseDescriptionBody"
             class="page-course-detail__description"
           />
           <CourseCompletedBanner
@@ -523,19 +536,6 @@
       display: flex;
       justify-content: center;
       padding: var(--space-8) 0;
-    }
-
-    &__load-error {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-4);
-    }
-
-    &__load-error-msg {
-      margin: 0;
-      font-size: var(--text-base);
-      color: var(--text-secondary);
     }
 
     &__skeleton {

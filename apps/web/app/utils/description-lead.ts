@@ -34,3 +34,20 @@ export function descriptionLead(description: string): string {
   if (chars.length <= DESCRIPTION_LEAD_MAX_CHARS) return firstLine;
   return `${chars.slice(0, DESCRIPTION_LEAD_MAX_CHARS).join('').trimEnd()}…`;
 }
+
+/**
+ * What `CourseDescription` renders below the fold — the same description
+ * with `descriptionLead`'s cut removed, so the lead line doesn't print
+ * twice (#184).
+ *
+ * Only strips when the lead is an exact, untruncated first line: a
+ * truncated lead (ellipsis) is a preview cut mid-paragraph, not a separate
+ * line, so the one-paragraph description stays whole here rather than
+ * losing its start to a cut that never actually happened at a line break.
+ */
+export function descriptionBody(description: string): string {
+  const trimmed = description.trim();
+  const lead = descriptionLead(trimmed);
+  if (!lead || lead.endsWith('…')) return trimmed;
+  return trimmed.startsWith(lead) ? trimmed.slice(lead.length).trimStart() : trimmed;
+}

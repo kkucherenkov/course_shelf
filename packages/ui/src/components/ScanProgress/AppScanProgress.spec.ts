@@ -6,6 +6,7 @@ import AppScanProgress from './AppScanProgress.vue';
 const i18nProps = {
   scanningLabel: 'Scanning',
   successLabel: 'Scan complete',
+  partialLabel: 'Scan partial',
   failedLabel: 'Scan failed',
   errorsLabel: '2 errors',
   statScannedLabel: 'Scanned',
@@ -50,6 +51,18 @@ const baseSuccessWithErrors = {
   errorsLabel: '3 errors',
 };
 
+const basePartial = {
+  ...i18nProps,
+  status: 'partial' as const,
+  courseName: 'Computer Science',
+  elapsedTime: '00:07:05',
+  scanned: 1890,
+  added: 40,
+  updated: 9,
+  errors: 4,
+  errorsLabel: '4 errors',
+};
+
 const baseFailed = {
   ...i18nProps,
   status: 'failed' as const,
@@ -82,6 +95,11 @@ describe('AppScanProgress snapshots', () => {
 
   it('SuccessWithErrors (errors=3)', () => {
     const wrapper = mount(AppScanProgress, { props: baseSuccessWithErrors });
+    expect(wrapper.html()).toMatchSnapshot();
+  });
+
+  it('Partial (finished with 4 errors)', () => {
+    const wrapper = mount(AppScanProgress, { props: basePartial });
     expect(wrapper.html()).toMatchSnapshot();
   });
 
@@ -164,6 +182,11 @@ describe('AppScanProgress status classes', () => {
     expect(wrapper.find('.app-scan-progress--success').exists()).toBe(true);
   });
 
+  it('applies --partial modifier to root when status=partial', () => {
+    const wrapper = mount(AppScanProgress, { props: basePartial });
+    expect(wrapper.find('.app-scan-progress--partial').exists()).toBe(true);
+  });
+
   it('applies --failed modifier to root when status=failed', () => {
     const wrapper = mount(AppScanProgress, { props: baseFailed });
     expect(wrapper.find('.app-scan-progress--failed').exists()).toBe(true);
@@ -207,6 +230,34 @@ describe('AppScanProgress status classes', () => {
   it('header shows the failed label when status=failed', () => {
     const wrapper = mount(AppScanProgress, { props: baseFailed });
     expect(wrapper.find('.app-scan-progress__title').text()).toContain('Scan failed');
+  });
+
+  // #213: a partial scan used to collapse into 'success' — same green dot,
+  // same success label — even though the label text next to it already read
+  // "Scan partial". The status itself has to carry the distinction.
+  it('header shows the partial label when status=partial, not the success label', () => {
+    const wrapper = mount(AppScanProgress, { props: basePartial });
+    expect(wrapper.find('.app-scan-progress__title').text()).toContain('Scan partial');
+    expect(wrapper.find('.app-scan-progress__title').text()).not.toContain('Scan complete');
+  });
+
+  it('dot has the --partial modifier when status=partial, not --success', () => {
+    const wrapper = mount(AppScanProgress, { props: basePartial });
+    expect(wrapper.find('.app-scan-progress__dot--partial').exists()).toBe(true);
+    expect(wrapper.find('.app-scan-progress__dot--success').exists()).toBe(false);
+  });
+
+  it('bar-fill has the --partial modifier when status=partial, not --failed', () => {
+    const wrapper = mount(AppScanProgress, { props: basePartial });
+    expect(wrapper.find('.app-scan-progress__bar-fill--partial').exists()).toBe(true);
+    expect(wrapper.find('.app-scan-progress__bar-fill--failed').exists()).toBe(false);
+  });
+
+  it('bar is determinate and full once a scan terminates (partial)', () => {
+    const wrapper = mount(AppScanProgress, { props: basePartial });
+    const bar = wrapper.find('.app-scan-progress__bar');
+    expect(bar.attributes('aria-valuenow')).toBe('100');
+    expect(wrapper.find('.app-scan-progress__bar-fill--indeterminate').exists()).toBe(false);
   });
 
   it('meta shows only elapsed time — no fabricated percent (total files is unknown mid-scan)', () => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { AppErrorState, AppEmptyState, AppButton } from '@app/ui';
+  import { AppErrorState, AppEmptyState, AppButton, IconCS } from '@app/ui';
   import type { RowStatus } from '~/composables/useHome';
 
   /**
@@ -84,7 +84,12 @@
         <span v-if="collapsibleMeta" class="home-row__meta">{{ collapsibleMeta }}</span>
         <button type="button" class="home-row__toggle" :aria-expanded="expanded" @click="onToggle">
           {{ expanded ? collapseLabel : showAllLabel }}
-          <span class="home-row__chevron" :class="{ 'home-row__chevron--open': expanded }">▾</span>
+          <IconCS
+            name="chevron-down"
+            :size="14"
+            class="home-row__chevron"
+            :class="{ 'home-row__chevron--open': expanded }"
+          />
         </button>
       </template>
     </div>
@@ -188,10 +193,8 @@
     }
 
     &__chevron {
-      display: inline-block;
+      flex-shrink: 0;
       transition: transform var(--dur-fast) var(--ease-default);
-      font-size: var(--text-sm);
-      line-height: var(--leading-none);
 
       &--open {
         transform: rotate(180deg);

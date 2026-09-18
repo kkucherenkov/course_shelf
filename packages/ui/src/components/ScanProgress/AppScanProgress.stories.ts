@@ -5,6 +5,7 @@ import AppScanProgress from './AppScanProgress.vue';
 const i18nProps = {
   scanningLabel: 'Scanning',
   successLabel: 'Scan complete',
+  partialLabel: 'Scan partial',
   failedLabel: 'Scan failed',
   errorsLabel: '2 errors',
   statScannedLabel: 'Scanned',
@@ -20,7 +21,7 @@ const meta: Meta<typeof AppScanProgress> = {
   argTypes: {
     status: {
       control: { type: 'select' },
-      options: ['running', 'success', 'failed'],
+      options: ['running', 'success', 'partial', 'failed'],
     },
     'onErrors-clicked': { action: 'errors-clicked' },
   },
@@ -87,6 +88,20 @@ export const SuccessWithErrors: Story = {
   },
 };
 
+/** Finished with per-file errors — distinct warning colour, not the success green. */
+export const Partial: Story = {
+  args: {
+    status: 'partial',
+    elapsedTime: '00:07:05',
+    scanned: 1890,
+    added: 40,
+    updated: 9,
+    errors: 4,
+    errorsLabel: '4 errors',
+    currentFile: undefined,
+  },
+};
+
 /** Failed scan with 5 errors — bar coloured in error accent. */
 export const Failed: Story = {
   args: {
@@ -101,7 +116,7 @@ export const Failed: Story = {
   },
 };
 
-/** All three states side by side for quick visual comparison. */
+/** All four states side by side for quick visual comparison. */
 export const AllStates: Story = {
   render: () => ({
     components: { AppScanProgress },
@@ -131,6 +146,18 @@ export const AllStates: Story = {
         errorsLabel: '0 errors',
       };
 
+      const partial = {
+        status: 'partial' as const,
+        courseName: 'Computer Science',
+        elapsedTime: '00:07:05',
+        scanned: 1890,
+        added: 40,
+        updated: 9,
+        errors: 4,
+        ...i18nProps,
+        errorsLabel: '4 errors',
+      };
+
       const failed = {
         status: 'failed' as const,
         courseName: 'Computer Science',
@@ -143,12 +170,13 @@ export const AllStates: Story = {
         errorsLabel: '5 errors',
       };
 
-      return { running, success, failed };
+      return { running, success, partial, failed };
     },
     template: `
       <div style="display: flex; flex-direction: column; gap: var(--space-4); max-width: 640px; padding: var(--space-4);">
         <AppScanProgress v-bind="running" />
         <AppScanProgress v-bind="success" />
+        <AppScanProgress v-bind="partial" />
         <AppScanProgress v-bind="failed" />
       </div>
     `,

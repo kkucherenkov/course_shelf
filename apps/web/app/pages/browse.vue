@@ -7,7 +7,6 @@
     AppEmptyState,
     AppNoPermission,
     AppSelect,
-    AppSkeleton,
     CoursePosterCard,
   } from '@app/ui';
   import type { Course } from '@app/ui';
@@ -56,10 +55,18 @@
   const {
     data,
     status: fetchStatus,
+    errorStatus,
     refetch,
   } = useCoursesList({ status, sort, durationBucket, libraryId, instructorId });
 
   const items = computed(() => data.value?.items ?? []);
+
+  // Cause-specific error body: a 429 reads differently from a transient
+  // failure — "check your connection" is wrong advice when the connection is
+  // fine and retrying only extends the block (#212).
+  const errorBody = computed<string>(() =>
+    errorStatus.value === 429 ? t('ui.errors.rateLimitedBody') : t('pages.browse.errorBody'),
+  );
 
   // The count subtitle reflects loaded results, so only show it once data has
   // arrived — during `pending` `items` is empty and a raw count flashes "0".
@@ -209,6 +216,19 @@
       cover: item.posterUrl ? `url(${item.posterUrl}) center / cover no-repeat` : undefined,
     };
   }
+
+  // Placeholder for the loading grid's `CoursePosterCard`s — `loading` skips
+  // every field this stub carries, so its values never render. Reusing the
+  // real card (rather than a hand-measured skeleton box) is what keeps the
+  // grid from jumping when data lands: the skeleton *is* the card (#183).
+  const skeletonCourse: Course = {
+    id: '',
+    title: '',
+    instructor: '',
+    lessons: 0,
+    completed: 0,
+    accent: 'neutral',
+  };
 </script>
 
 <template>
@@ -306,11 +326,10 @@
         </div>
       </div>
 
-      <!-- Loading: skeleton grid -->
+      <!-- Loading: skeleton grid — the real card in its own `loading` state,
+           so it can never drift from what data renders into (#183). -->
       <div v-if="fetchStatus === 'pending'" class="page-browse__grid">
-        <div v-for="n in 8" :key="`skel-${n}`" class="page-browse__skeleton-cell">
-          <AppSkeleton width="100%" height="220px" radius="md" />
-        </div>
+        <CoursePosterCard v-for="n in 8" :key="`skel-${n}`" :course="skeletonCourse" loading />
       </div>
 
       <!-- Error -->
@@ -318,7 +337,7 @@
         v-else-if="fetchStatus === 'error'"
         variant="error"
         :title="t('pages.browse.errorTitle')"
-        :body="t('pages.browse.errorBody')"
+        :body="errorBody"
         class="page-browse__banner"
       >
         <template #actions>
@@ -443,10 +462,6 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: var(--space-4);
-    }
-
-    &__skeleton-cell {
-      aspect-ratio: 3 / 4;
     }
 
     &__card-link {

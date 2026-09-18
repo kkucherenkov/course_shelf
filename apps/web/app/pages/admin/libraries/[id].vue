@@ -295,6 +295,7 @@
               :errors="scanErrors.length"
               :scanning-label="t('pages.admin.libraryDetail.scanProgressScanning')"
               :success-label="t('pages.admin.libraryDetail.scanProgressComplete')"
+              :partial-label="t('pages.admin.libraryDetail.scanProgressPartial')"
               :failed-label="t('pages.admin.libraryDetail.scanProgressFailed')"
               :errors-label="
                 t('pages.admin.libraryDetail.scanProgressErrors', scanErrors.length, {

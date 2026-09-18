@@ -68,7 +68,9 @@
 
   function toScanStatus(card: ActiveScan): ScanStatus {
     if (!card.finished) return 'running';
-    return card.finished.status === 'failed' ? 'failed' : 'success';
+    if (card.finished.status === 'failed') return 'failed';
+    if (card.finished.status === 'partial') return 'partial';
+    return 'success';
   }
 
   // E32-F01-S02: a scoped rescan names the course, not the library, so the
@@ -165,11 +167,8 @@
           :updated="0"
           :errors="card.errorsCount"
           :scanning-label="t('notifiers.scan.statusScanning')"
-          :success-label="
-            card.finished?.status === 'partial'
-              ? t('notifiers.scan.statusPartial')
-              : t('notifiers.scan.statusComplete')
-          "
+          :success-label="t('notifiers.scan.statusComplete')"
+          :partial-label="t('notifiers.scan.statusPartial')"
           :failed-label="t('notifiers.scan.statusFailed')"
           :errors-label="
             t('notifiers.scan.errorsButton', card.errorsCount, { named: { n: card.errorsCount } })

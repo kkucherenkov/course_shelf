@@ -37,6 +37,7 @@ vi.stubGlobal('computed', computed);
 // how the assertions read the live filter state.
 const courses = ref<CourseListDto>({ items: [] });
 const fetchStatus = ref('success');
+const errorStatus = ref<number | null>(null);
 let lastOptions: Record<string, { value: string }> = {};
 
 // Independent from the filtered `courses`/`fetchStatus` pair above — the
@@ -53,7 +54,13 @@ vi.mock('~/composables/useCoursesList', async () => {
     ...actual,
     useCoursesList: (options: Record<string, { value: string }>) => {
       lastOptions = options;
-      return { data: courses, status: fetchStatus, error: ref(null), refetch: vi.fn() };
+      return {
+        data: courses,
+        status: fetchStatus,
+        error: ref(null),
+        errorStatus,
+        refetch: vi.fn(),
+      };
     },
     useCourseCatalogAccess: () => ({
       hasAnyCourse: hasAnyCatalogCourse,
@@ -94,7 +101,11 @@ vi.mock('~/composables/useInstructors', () => ({
 
 // ── @app/ui stubs ──────────────────────────────────────────────────────────
 vi.mock('@app/ui', () => ({
-  AppBanner: { name: 'AppBanner', props: ['variant', 'title', 'body'], template: '<div />' },
+  AppBanner: {
+    name: 'AppBanner',
+    props: ['variant', 'title', 'body'],
+    template: '<div>{{ title }}::{{ body }}</div>',
+  },
   AppButton: {
     name: 'AppButton',
     props: ['variant', 'size'],
@@ -150,6 +161,7 @@ describe('browse page filters', () => {
     route.query = {};
     courses.value = { items: [] };
     fetchStatus.value = 'success';
+    errorStatus.value = null;
     instructors.value = { items: [], total: 0, offset: 0, limit: 100 };
     lastOptions = {};
     replace.mockClear();
@@ -370,6 +382,26 @@ describe('browse page filters', () => {
 
   // #496: a course with a downloaded poster shows it; one without falls back
   // to the accent placeholder CoursePosterCard already renders on undefined.
+  // #212: a 429 got the same "check your connection" copy as a genuine
+  // failure — wrong advice when the connection is fine and retrying only
+  // extends the block.
+  it('shows rate-limit copy on a 429, not the generic connection-check body', async () => {
+    fetchStatus.value = 'error';
+    errorStatus.value = 429;
+    const wrapper = await mountBrowse();
+
+    expect(wrapper.text()).toContain('ui.errors.rateLimitedBody');
+    expect(wrapper.text()).not.toContain('pages.browse.errorBody');
+  });
+
+  it('keeps the generic connection-check body on a non-429 failure', async () => {
+    fetchStatus.value = 'error';
+    errorStatus.value = 500;
+    const wrapper = await mountBrowse();
+
+    expect(wrapper.text()).toContain('pages.browse.errorBody');
+  });
+
   it('passes a background-image cover for a course with a stored poster, and none without', async () => {
     courses.value = {
       items: [

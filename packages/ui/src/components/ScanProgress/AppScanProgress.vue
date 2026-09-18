@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { computed } from 'vue';
 
-  export type ScanStatus = 'running' | 'success' | 'failed';
+  export type ScanStatus = 'running' | 'success' | 'partial' | 'failed';
 
   const props = defineProps<{
     /** Current scan status — drives dot colour, header word and bar colour. */
@@ -26,6 +26,8 @@
     scanningLabel: string;
     /** e.g. "Scan complete" */
     successLabel: string;
+    /** e.g. "Scan partial" — finished, but with per-file errors. */
+    partialLabel: string;
     /** e.g. "Scan failed" */
     failedLabel: string;
     /** e.g. "2 errors" — count already interpolated by consumer */
@@ -47,6 +49,7 @@
   const statusWord = computed(() => {
     if (props.status === 'running') return props.scanningLabel;
     if (props.status === 'success') return props.successLabel;
+    if (props.status === 'partial') return props.partialLabel;
     return props.failedLabel;
   });
 
@@ -116,6 +119,7 @@
         class="app-scan-progress__bar-fill"
         :class="{
           'app-scan-progress__bar-fill--indeterminate': isIndeterminate,
+          'app-scan-progress__bar-fill--partial': status === 'partial',
           'app-scan-progress__bar-fill--failed': status === 'failed',
         }"
         :style="isIndeterminate ? undefined : { width: '100%' }"
@@ -198,6 +202,10 @@
         background: var(--status-success-fg);
       }
 
+      &--partial {
+        background: var(--status-warning-fg);
+      }
+
       &--failed {
         background: var(--status-error-fg);
       }
@@ -270,6 +278,10 @@
       border-radius: var(--radius-pill);
       background: var(--brand-accent);
       transition: width var(--dur-slow) var(--ease-out);
+
+      &--partial {
+        background: var(--status-warning-fg);
+      }
 
       &--failed {
         background: var(--status-error-fg);

@@ -114,6 +114,7 @@ vi.mock('@app/ui', () => ({
       'errors',
       'scanningLabel',
       'successLabel',
+      'partialLabel',
       'failedLabel',
       'errorsLabel',
       'statScannedLabel',

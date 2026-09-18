@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { descriptionLead, DESCRIPTION_LEAD_MAX_CHARS } from './description-lead';
+import { descriptionLead, descriptionBody, DESCRIPTION_LEAD_MAX_CHARS } from './description-lead';
 
 describe('descriptionLead', () => {
   it('returns the whole string when short and single-line', () => {
@@ -42,5 +42,29 @@ describe('descriptionLead', () => {
 
   it('returns an empty string for an empty description', () => {
     expect(descriptionLead('')).toBe('');
+  });
+});
+
+describe('descriptionBody', () => {
+  it('strips the lead line so it does not print twice (#184)', () => {
+    const description = 'Intro paragraph.\nЧему вы научитесь\n- Bullet one\n- Bullet two';
+    expect(descriptionBody(description)).toBe('Чему вы научитесь\n- Bullet one\n- Bullet two');
+  });
+
+  it('keeps the whole paragraph when the lead was truncated with an ellipsis', () => {
+    const long = 'x'.repeat(DESCRIPTION_LEAD_MAX_CHARS + 50);
+    expect(descriptionBody(long)).toBe(long);
+  });
+
+  it('returns the trimmed text unchanged when there is nothing after the lead', () => {
+    expect(descriptionBody('  A short summary.  ')).toBe('');
+  });
+
+  it('trims surrounding whitespace before measuring', () => {
+    expect(descriptionBody('  padded  \nrest')).toBe('rest');
+  });
+
+  it('returns an empty string for an empty description', () => {
+    expect(descriptionBody('')).toBe('');
   });
 });

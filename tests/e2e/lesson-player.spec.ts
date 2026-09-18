@@ -47,14 +47,47 @@ function makeLesson(lastSeenAtSeconds = 0) {
   };
 }
 
-function makeOutline() {
+// `extraLessons` pads the outline past the two lessons the other specs need:
+// a two-lesson sidebar is short enough to fit any viewport, so it cannot tell a
+// working scroll container from a missing one (tuxedo 253).
+function makeOutline(extraLessons = 0) {
+  const lessons = [
+    {
+      id: LESSON_ID,
+      position: 1,
+      title: 'Introduction to TypeScript',
+      durationSeconds: 300,
+      hasMaterials: false,
+      state: 'in-progress',
+      progressPercent: 20,
+    },
+    {
+      id: NEXT_LESSON_ID,
+      position: 2,
+      title: 'Types and Interfaces',
+      durationSeconds: 300,
+      hasMaterials: false,
+      state: 'not-started',
+      progressPercent: 0,
+    },
+    ...Array.from({ length: extraLessons }, (_, index) => ({
+      id: `lesson-${String(index + 3).padStart(3, '0')}`,
+      position: index + 3,
+      title: `Generics, part ${index + 1}`,
+      durationSeconds: 300,
+      hasMaterials: false,
+      state: 'not-started',
+      progressPercent: 0,
+    })),
+  ];
+
   return {
     course: {
       id: COURSE_ID,
       title: 'TypeScript Fundamentals',
-      lessonsTotal: 2,
-      totalDurationSeconds: 600,
-      progress: { percent: 0, lessonsCompleted: 0, lessonsTotal: 2 },
+      lessonsTotal: lessons.length,
+      totalDurationSeconds: lessons.length * 300,
+      progress: { percent: 0, lessonsCompleted: 0, lessonsTotal: lessons.length },
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-04-01T00:00:00Z',
     },
@@ -63,27 +96,8 @@ function makeOutline() {
         id: 'sec-1',
         position: 1,
         title: 'Getting Started',
-        totalDurationSeconds: 600,
-        lessons: [
-          {
-            id: LESSON_ID,
-            position: 1,
-            title: 'Introduction to TypeScript',
-            durationSeconds: 300,
-            hasMaterials: false,
-            state: 'in-progress',
-            progressPercent: 20,
-          },
-          {
-            id: NEXT_LESSON_ID,
-            position: 2,
-            title: 'Types and Interfaces',
-            durationSeconds: 300,
-            hasMaterials: false,
-            state: 'not-started',
-            progressPercent: 0,
-          },
-        ],
+        totalDurationSeconds: lessons.length * 300,
+        lessons,
       },
     ],
     materials: [],
@@ -119,12 +133,12 @@ async function mockLesson(page: Page, body: object, status = 200): Promise<void>
   });
 }
 
-async function mockOutline(page: Page): Promise<void> {
+async function mockOutline(page: Page, extraLessons = 0): Promise<void> {
   await page.route(`**/api/v1/courses/${COURSE_ID}/outline**`, (route) => {
     void route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(makeOutline()),
+      body: JSON.stringify(makeOutline(extraLessons)),
     });
   });
 }
@@ -329,6 +343,53 @@ test.describe('lesson player — no viewport overflow', () => {
 
     expect(docHeight).toBeLessThanOrEqual(viewportHeight);
     expect(topbarVisible).toBe(true);
+  });
+});
+
+// ── Tests: sidebar scroll container (tuxedo 253) ─────────────────────────────
+//
+// Measured on 1.8.2 with a 48-lesson outline: `.page-lesson-player__sidebar`
+// reported scrollHeight == clientHeight == 2627px at every viewport, so the
+// outline set the document height (2715px against a 900px window) and any wheel
+// scroll carried the video off-screen. `__body` has had `overflow-y: auto` all
+// along; it clipped nothing because no ancestor gives the column a definite
+// height, so `height: 100%` resolved to `auto`. The viewport-overflow test above
+// stays green either way — its two-lesson outline fits any screen.
+test.describe('lesson player — the sidebar scrolls, not the page', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('a 48-lesson outline scrolls inside the sidebar at desktop and phone widths', async ({
+    page,
+  }) => {
+    await mockLesson(page, makeLesson(0));
+    await mockOutline(page, 46);
+    await mockStreamUrl(page);
+    await mockBookmarks(page);
+    await mockProgress(page);
+    await gotoLessonPlayer(page);
+
+    await expect(page.locator('.app-player-chrome')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.player-sidebar')).toBeVisible();
+
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+
+      const measured = await page.evaluate(() => {
+        const sidebar = document.querySelector('.page-lesson-player__sidebar');
+        const body = document.querySelector('.player-sidebar__body');
+        return {
+          sidebarHeight: Math.round(sidebar?.getBoundingClientRect().height ?? 0),
+          bodyScrolls: body ? body.scrollHeight > body.clientHeight : false,
+          viewportHeight: window.innerHeight,
+        };
+      });
+
+      expect(measured.sidebarHeight).toBeLessThanOrEqual(measured.viewportHeight);
+      expect(measured.bodyScrolls).toBe(true);
+    }
   });
 });
 

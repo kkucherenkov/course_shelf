@@ -690,6 +690,22 @@
     }
 
     &__sidebar {
+      // Same defect as `&__transcript` above, same remedy. The sidebar carries
+      // `height: 100%` with `__body { overflow-y: auto }` inside it, and both
+      // only bind if an ancestor has a definite height. None does, so on a
+      // 48-lesson outline this element measured scrollHeight == clientHeight ==
+      // 2627px at 1440x900, 1280x720 and 390x844 alike: no scroll container at
+      // all, and the outline — not the player — set the document height (2715px
+      // against a 900px window). It was invisible until the transcript beside it
+      // stopped stretching the page too.
+      // ---
+      // Capped at the whole viewport rather than at the space left under the
+      // shell's topbar: the column beside it already runs past the fold (video
+      // plus a 55dvh transcript), so subtracting chrome here would shorten the
+      // visible outline without buying back a single scroll — and re-deriving
+      // that chrome by hand is what tuxedo 114 got wrong.
+      max-height: 100dvh;
+
       @media (width < 768px) {
         border-left: none;
         border-top: 1px solid var(--border-default);

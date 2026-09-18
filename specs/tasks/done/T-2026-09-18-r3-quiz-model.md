@@ -39,8 +39,11 @@
   - [x] Backend specs updated to match
   - [x] `pnpm --filter @app/backend test` green (228 files, 2359 tests)
   - [x] `pnpm format`
-  - [ ] Commit: spec+codegen in one commit, backend in another (per repo
-        convention: codegen artefacts land in their own commit)
-  - [ ] Open PR, wait on CI via Monitor
-- Status: in-progress
+  - [x] Commit: spec, codegen, and backend split into three commits (matches
+        the repo's `feat(specs)` / `chore(specs): regenerate clients for …`
+        convention)
+  - [x] Open PR (#751), all checks green incl. Playwright smoke
+- Status: done
 - Blockers: —
+- Completed: 2026-09-18
+- Result: https://github.com/kkucherenkov/course_shelf/pull/751

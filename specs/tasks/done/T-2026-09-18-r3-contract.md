@@ -41,4 +41,4 @@
   - [x] `pnpm format` on this file.
 - Status: done
 - Completed: 2026-09-18
-- Result: PR — see repository PR list for this branch
+- Result: https://github.com/kkucherenkov/course_shelf/pull/742

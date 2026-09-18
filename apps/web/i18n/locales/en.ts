@@ -149,6 +149,16 @@ export default {
     reset: {
       title: 'Set a new password',
     },
+    // `app/error.vue` — Nuxt's error boundary, not a route of its own. Shown
+    // for both a 404 (no route matches, including a dead link) and any
+    // other fatal error a page escalates.
+    error: {
+      notFoundTitle: 'Page not found',
+      notFoundBody: "The page you're looking for doesn't exist or has moved.",
+      genericTitle: 'Something went wrong',
+      genericBody: 'An unexpected error occurred. Try going back to the homepage.',
+      homeCta: 'Go to homepage',
+    },
     // Only `title`/`subtitle` remain — reused by `sign-up.vue`'s
     // `isFirstAdmin` branch. The rest was `pages/setup.vue`'s own copy;
     // that page was unreachable (#665) and is gone.
@@ -543,6 +553,11 @@ export default {
         colActions: 'Actions',
         scanCta: 'Scan',
         moreCta: 'More',
+        // Accessible name for AdminLibraryRow's row-wide hit target — the
+        // row has no visible "open" affordance of its own (the whole row
+        // reads as clickable instead), so a screen-reader user tabbing to
+        // it needs the destination spelled out, not just the library name.
+        openAriaLabel: 'Open library {name}',
         lastScanNever: 'Never scanned',
         lastScan: 'Last scan {time}',
         courseCount: '{n} course | {n} courses',
@@ -858,6 +873,12 @@ export default {
       errorsHeading: 'Errors',
       startError: 'Could not start transcription. Please try again.',
       cancelError: 'Could not cancel the run. Please try again.',
+    },
+    // AdminScansTable.vue's trailing column has no visible label (it only
+    // ever holds a decorative chevron) — an empty `<th>` has no accessible
+    // name at all, which fails axe's empty-table-header rule.
+    scansTable: {
+      expandColumnLabel: 'Details',
     },
   },
   /**

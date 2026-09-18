@@ -225,9 +225,12 @@
 
 <template>
   <section class="course-scrape-preview">
-    <h3 class="course-scrape-preview__heading">
+    <!-- h2, not h3: this panel sits directly under the page's single h1
+         (both here on /courses/{id}/edit and inside AdminIdentifyTaskReview),
+         so h3 skipped a level — axe's heading-order rule (tuxedo 251). -->
+    <h2 class="course-scrape-preview__heading">
       {{ t('pages.courseEdit.scrapePreview.heading') }}
-    </h3>
+    </h2>
     <p class="course-scrape-preview__subtitle">
       {{ t('pages.courseEdit.scrapePreview.subtitle') }}
     </p>

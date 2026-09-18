@@ -105,8 +105,11 @@
           <th class="adm-scans-tbl__col--lg">{{ props.colFiles }}</th>
           <th class="adm-scans-tbl__col--lg">{{ props.colAdded }}</th>
           <th class="adm-scans-tbl__col--lg">{{ props.colErrors }}</th>
-          <th class="adm-scans-tbl__col--md-combined" />
-          <th aria-label="" />
+          <th
+            class="adm-scans-tbl__col--md-combined"
+            :aria-label="`${props.colFiles} / ${props.colAdded}`"
+          />
+          <th :aria-label="t('admin.scansTable.expandColumnLabel')" />
         </tr>
       </thead>
       <tbody>
@@ -272,14 +275,23 @@
       font-family: var(--font-mono);
       font-variant-numeric: tabular-nums;
       color: var(--text-loud);
+
+      // Combined with &__num-cell rather than standing alone: a bare
+      // `.adm-scans-tbl__errors--nonzero` (one class) loses the cascade to
+      // the SCSS-nested `tbody td` rule above, which compiles to
+      // `.adm-scans-tbl tbody td` (one class + two type selectors) — a
+      // higher specificity than a single class. A nonzero error count
+      // painted in the same colour as zero, right next to a green
+      // "Succeeded" badge (tuxedo 250). Two classes on the same cell beats
+      // it outright, which is also the correct BEM shape: a modifier is
+      // always scoped to the block/element it modifies, never bare.
+      &.adm-scans-tbl__errors--nonzero {
+        color: var(--status-error-fg);
+      }
     }
 
     &__added {
       color: var(--status-success-fg);
-    }
-
-    &__errors--nonzero {
-      color: var(--status-error-fg);
     }
 
     &__errors-btn {

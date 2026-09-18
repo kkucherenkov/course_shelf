@@ -1,11 +1,12 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
   import { AppBanner, AppButton } from '@app/ui';
 
   import AdminStatCard from '~/components/admin/AdminStatCard.vue';
   import AdminScansTable from '~/components/admin/AdminScansTable.vue';
   import { useAdminDashboard } from '~/composables/useAdminDashboard';
   import { useAdminScans } from '~/composables/useAdminScans';
+  import { useScanProgress } from '~/composables/useScanProgress';
 
   definePageMeta({ middleware: 'admin' });
 
@@ -99,6 +100,24 @@
 
   const scanRows = computed(() => scansData.value?.items ?? []);
   const scansLoading = computed(() => scansStatus.value === 'pending');
+
+  // Only the instance-wide latest scan has real per-file error detail behind
+  // it — `AdminScanListItem` (the recent-scans list) only carries
+  // `errorsCount`, same as `AdminDashboardLatestScan`; the one place a full
+  // `ScanError[]` exists is `GET /libraries/{id}/scans/latest`, which is
+  // exactly what `useScanProgress` already polls for the library detail page
+  // (#620). Reused here, scoped to whichever library owns the latest scan —
+  // that scan is trivially that library's own latest too. Without this the
+  // dashboard's chevron was decoration: `AdminScansTable` never got an
+  // `expandableScanId` at all, so no row's errorsCount ever became a button
+  // (tuxedo 250).
+  const latestScanLibraryId = computed(() => dashData.value?.latestScan?.libraryId ?? '');
+  const { scan: latestScanDetail } = useScanProgress(latestScanLibraryId);
+  const scanErrorsOpen = ref(false);
+  const scanErrors = computed(() => latestScanDetail.value?.errors ?? []);
+  const hasScanErrors = computed(() => scanErrors.value.length > 0);
+  const expandableScanId = computed(() => dashData.value?.latestScan?.scanId ?? null);
+  const expandedScanId = computed(() => (scanErrorsOpen.value ? expandableScanId.value : null));
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -204,11 +223,33 @@
       :label-partial="t('pages.libraries.statusPartial')"
       :label-failed="t('pages.libraries.statusFailed')"
       :label-cancelled="t('pages.libraries.statusCancelled')"
+      :expandable-scan-id="expandableScanId"
+      :expanded-scan-id="expandedScanId"
+      @toggle-errors="scanErrorsOpen = !scanErrorsOpen"
     />
+
+    <!-- Per-file detail for the one expandable row above (#620/tuxedo 250) -->
+    <ul
+      v-if="scanErrorsOpen && hasScanErrors"
+      class="adm-dashboard__scan-errors"
+      role="list"
+      :aria-label="t('pages.admin.dashboard.tableErrors')"
+    >
+      <li
+        v-for="scanError in scanErrors"
+        :key="scanError.path"
+        class="adm-dashboard__scan-errors-item"
+      >
+        <span class="adm-dashboard__scan-errors-path">{{ scanError.path }}</span>
+        <span class="adm-dashboard__scan-errors-msg">{{ scanError.message }}</span>
+      </li>
+    </ul>
   </div>
 </template>
 
 <style lang="scss" scoped>
+  $scan-errors-max-h: 220px;
+
   .adm-dashboard {
     // ── Page header ─────────────────────────────────────────────────────────
     &__page-h {
@@ -267,6 +308,44 @@
       font-size: var(--text-md);
       font-weight: var(--fw-semibold);
       color: var(--text-loud);
+    }
+
+    // ── Expanded scan-error detail ────────────────────────────────────────────
+    &__scan-errors {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      margin: var(--space-3) 0 0;
+      padding: var(--space-3);
+      list-style: none;
+      background: var(--surface-raised);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      max-height: $scan-errors-max-h;
+      overflow-y: auto;
+    }
+
+    &__scan-errors-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: var(--space-1) 0;
+
+      & + & {
+        border-top: 1px solid var(--border-default);
+      }
+    }
+
+    &__scan-errors-path {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--text-loud);
+      word-break: break-all;
+    }
+
+    &__scan-errors-msg {
+      font-size: var(--text-xs);
+      color: var(--status-error-fg);
     }
   }
 </style>

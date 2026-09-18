@@ -114,10 +114,18 @@ describe('AdminLibraryRow', () => {
     expect(wrapper.text()).toContain('Succeeded');
   });
 
-  it('emits click when row is clicked', async () => {
+  it('emits click when the row-wide hit target is clicked', async () => {
     const wrapper = mount(AdminLibraryRow, { props: baseProps });
-    await wrapper.find('.adm-lib-row').trigger('click');
+    await wrapper.find('.adm-lib-row__hit').trigger('click');
     expect(wrapper.emitted('click')).toBeTruthy();
+  });
+
+  it('does not nest a real button inside a role="button" ancestor (nested-interactive)', () => {
+    const wrapper = mount(AdminLibraryRow, { props: baseProps });
+    expect(wrapper.find('[role="button"]').exists()).toBe(false);
+    const hit = wrapper.get('.adm-lib-row__hit');
+    expect(hit.element.tagName).toBe('BUTTON');
+    expect(hit.find('button').exists()).toBe(false);
   });
 
   it('emits scan when Scan button is clicked (does not bubble click)', async () => {

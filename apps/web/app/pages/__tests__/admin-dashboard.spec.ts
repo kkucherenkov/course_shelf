@@ -58,6 +58,22 @@ vi.mock('~/composables/useAdminScans', () => ({
   }),
 }));
 
+// Real `useScanProgress` fires a network call the moment `libraryId` is
+// non-empty (tuxedo 250's fix reuses it for whichever library owns the
+// dashboard's `latestScan`) — stub it out the same way the other
+// data-fetching composables above are stubbed, so this stays a page-logic
+// unit test rather than an integration test against a live backend.
+vi.mock('~/composables/useScanProgress', () => ({
+  useScanProgress: () => ({
+    scan: ref(null),
+    isRunning: ref(false),
+    elapsedTime: ref('00:00:00'),
+    error: ref(null),
+    start: vi.fn(),
+    stop: vi.fn(),
+  }),
+}));
+
 // ── @app/ui + child component stubs ─────────────────────────────────────────
 vi.mock('@app/ui', () => ({
   AppBanner: {
@@ -87,8 +103,9 @@ vi.mock('~/components/admin/AdminStatCard.vue', () => ({
 vi.mock('~/components/admin/AdminScansTable.vue', () => ({
   default: {
     name: 'AdminScansTable',
-    props: ['items', 'loading'],
-    template: '<div data-testid="scans-table">{{ items.length }} rows, loading={{ loading }}</div>',
+    props: ['items', 'loading', 'expandableScanId', 'expandedScanId'],
+    template:
+      '<div data-testid="scans-table" :data-expandable-scan-id="expandableScanId">{{ items.length }} rows, loading={{ loading }}</div>',
   },
 }));
 
@@ -242,5 +259,31 @@ describe('admin dashboard page', () => {
     const wrapper = await mountPage();
 
     expect(wrapper.get('[data-testid="scans-table"]').text()).toContain('1 rows');
+  });
+
+  it('passes latestScan.scanId as expandableScanId so its row can expand (tuxedo 250)', async () => {
+    dashData.value = DASH; // latestScan.scanId === 'scan-1'
+    dashStatus.value = 'success';
+    scansData.value = { items: [] };
+    scansStatus.value = 'success';
+
+    const wrapper = await mountPage();
+
+    expect(wrapper.get('[data-testid="scans-table"]').attributes('data-expandable-scan-id')).toBe(
+      'scan-1',
+    );
+  });
+
+  it('leaves expandableScanId unset when no scan has ever run', async () => {
+    dashData.value = { ...DASH, latestScan: null };
+    dashStatus.value = 'success';
+    scansData.value = { items: [] };
+    scansStatus.value = 'success';
+
+    const wrapper = await mountPage();
+
+    expect(
+      wrapper.get('[data-testid="scans-table"]').attributes('data-expandable-scan-id'),
+    ).toBeUndefined();
   });
 });

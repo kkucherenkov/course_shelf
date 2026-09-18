@@ -381,11 +381,16 @@
       color: var(--text-secondary);
     }
 
+    // A column, not a wrapping row. As a row with `space-between` the selects
+    // sat beside the chips in English and dropped below them in Russian, whose
+    // labels are wider — so switching locale moved the whole filter group and
+    // the grid under it jumped. Stacking makes the position the same in every
+    // language, and the row never had enough width for both groups at the
+    // narrow end anyway.
     &__controls {
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
+      flex-direction: column;
+      align-items: stretch;
       gap: var(--space-3);
       margin-bottom: var(--space-6);
     }
@@ -404,9 +409,9 @@
       }
     }
 
-    // Four selects plus a clear button do not fit beside the chip row below
-    // roughly 900px, so the group wraps as a unit and each select keeps its
-    // label attached rather than orphaning it on the previous line.
+    // Four selects plus a clear button wrap among themselves on a narrow
+    // screen; each select keeps its label attached rather than orphaning it on
+    // the previous line.
     &__selects {
       display: flex;
       flex-wrap: wrap;

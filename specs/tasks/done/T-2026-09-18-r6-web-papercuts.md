@@ -28,5 +28,8 @@
   - [x] HomeRow: close the 640–767px breakpoint gap, document the choice
   - [x] `pnpm --filter @app/web lint --fix && pnpm stylelint:fix && pnpm format`
   - [x] `pnpm --filter @app/web test` and `pnpm check:i18n` green
-- Status: in-progress
+  - [x] PR opened, CI green (Monitor)
+- Status: done
 - Blockers: —
+- Completed: 2026-09-18
+- Result: https://github.com/kkucherenkov/course_shelf/pull/749

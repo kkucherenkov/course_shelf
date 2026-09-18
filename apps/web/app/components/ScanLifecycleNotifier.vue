@@ -164,7 +164,7 @@
           :elapsed-time="formatElapsed(card.startedAt, elapsedClockNow)"
           :scanned="card.filesScanned"
           :added="card.filesAdded"
-          :updated="0"
+          :updated="card.filesUpdated"
           :errors="card.errorsCount"
           :scanning-label="t('notifiers.scan.statusScanning')"
           :success-label="t('notifiers.scan.statusComplete')"

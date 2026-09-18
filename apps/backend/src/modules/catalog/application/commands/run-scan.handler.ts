@@ -283,6 +283,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
         at: new Date().toISOString(),
         filesScanned: scan.filesScanned,
         filesAdded: scan.filesAdded,
+        filesUpdated: scan.filesUpdated,
         coursesDiscovered: scan.coursesDiscovered,
         errorsCount: scan.errors.length,
         ...(scan.scopeCourseId
@@ -1302,6 +1303,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
         status: scan.status,
         filesScanned: scan.filesScanned,
         filesAdded: scan.filesAdded,
+        filesUpdated: scan.filesUpdated,
         coursesDiscovered: scan.coursesDiscovered,
         errorsCount: scan.errors.length,
         ...(scan.scopeCourseId

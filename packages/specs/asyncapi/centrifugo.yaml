@@ -1,7 +1,7 @@
 asyncapi: 3.1.0
 info:
   title: App Realtime API
-  version: 0.3.0
+  version: 0.3.1
   description: |
     Real-time channels delivered via Centrifugo. Clients connect with a
     short-lived JWT issued by the backend (`POST /api/v1/realtime/token`)
@@ -374,6 +374,7 @@ components:
         - at
         - filesScanned
         - filesAdded
+        - filesUpdated
         - coursesDiscovered
         - errorsCount
       properties:
@@ -393,6 +394,9 @@ components:
           type: integer
           minimum: 0
         filesAdded:
+          type: integer
+          minimum: 0
+        filesUpdated:
           type: integer
           minimum: 0
         coursesDiscovered:
@@ -419,6 +423,7 @@ components:
         - status
         - filesScanned
         - filesAdded
+        - filesUpdated
         - coursesDiscovered
         - errorsCount
       properties:
@@ -440,6 +445,9 @@ components:
           type: integer
           minimum: 0
         filesAdded:
+          type: integer
+          minimum: 0
+        filesUpdated:
           type: integer
           minimum: 0
         coursesDiscovered:

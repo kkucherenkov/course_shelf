@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **courseTitle** | **String** | Display title of the course. | 
 **librarySlug** | **String** | Slug of the parent library, included for the URL builder. Optional because not every layout exposes a per-library slug yet. | [optional] 
 **lessonCount** | **int** | Number of lessons in the course at intake time. | 
+**lessonsCompleted** | **int** | Number of lessons the user has completed in this course. Same name as `ContinueWatchingItem.lessonsCompleted` so the two home rails never disagree about one course's progress. `0` if the course has no progress yet. | 
 **totalDurationSeconds** | **int** | Sum of `Lesson.duration` across the course, in whole seconds. | 
 **createdAt** | [**DateTime**](DateTime.md) | Moment the course was added to its library. | 
 

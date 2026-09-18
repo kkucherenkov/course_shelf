@@ -15,6 +15,7 @@ part 'recently_added_item.g.dart';
 /// * [courseTitle] - Display title of the course.
 /// * [librarySlug] - Slug of the parent library, included for the URL builder. Optional because not every layout exposes a per-library slug yet.
 /// * [lessonCount] - Number of lessons in the course at intake time.
+/// * [lessonsCompleted] - Number of lessons the user has completed in this course. Same name as `ContinueWatchingItem.lessonsCompleted` so the two home rails never disagree about one course's progress. `0` if the course has no progress yet.
 /// * [totalDurationSeconds] - Sum of `Lesson.duration` across the course, in whole seconds.
 /// * [createdAt] - Moment the course was added to its library.
 @BuiltValue()
@@ -34,6 +35,10 @@ abstract class RecentlyAddedItem implements Built<RecentlyAddedItem, RecentlyAdd
   /// Number of lessons in the course at intake time.
   @BuiltValueField(wireName: r'lessonCount')
   int get lessonCount;
+
+  /// Number of lessons the user has completed in this course. Same name as `ContinueWatchingItem.lessonsCompleted` so the two home rails never disagree about one course's progress. `0` if the course has no progress yet.
+  @BuiltValueField(wireName: r'lessonsCompleted')
+  int get lessonsCompleted;
 
   /// Sum of `Lesson.duration` across the course, in whole seconds.
   @BuiltValueField(wireName: r'totalDurationSeconds')
@@ -86,6 +91,11 @@ class _$RecentlyAddedItemSerializer implements PrimitiveSerializer<RecentlyAdded
     yield r'lessonCount';
     yield serializers.serialize(
       object.lessonCount,
+      specifiedType: const FullType(int),
+    );
+    yield r'lessonsCompleted';
+    yield serializers.serialize(
+      object.lessonsCompleted,
       specifiedType: const FullType(int),
     );
     yield r'totalDurationSeconds';
@@ -148,6 +158,13 @@ class _$RecentlyAddedItemSerializer implements PrimitiveSerializer<RecentlyAdded
             specifiedType: const FullType(int),
           ) as int;
           result.lessonCount = valueDes;
+          break;
+        case r'lessonsCompleted':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(int),
+          ) as int;
+          result.lessonsCompleted = valueDes;
           break;
         case r'totalDurationSeconds':
           final valueDes = serializers.deserialize(

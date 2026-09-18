@@ -1003,6 +1003,10 @@ export type ContinueWatchingItem = {
      * The lesson the player last reported a position on, used to wire the 'Resume' CTA.
      */
     lastSeenLessonId: string;
+    /**
+     * Playback position on `lastSeenLessonId`, sourced from `LessonProgress.positionSeconds`. Absent if the lesson was never played past its start.
+     */
+    resumePositionSeconds?: number;
 };
 
 /**
@@ -1032,6 +1036,10 @@ export type RecentlyAddedItem = {
      * Number of lessons in the course at intake time.
      */
     lessonCount: number;
+    /**
+     * Number of lessons the user has completed in this course. Same name as `ContinueWatchingItem.lessonsCompleted` so the two home rails never disagree about one course's progress. `0` if the course has no progress yet.
+     */
+    lessonsCompleted: number;
     /**
      * Sum of `Lesson.duration` across the course, in whole seconds.
      */

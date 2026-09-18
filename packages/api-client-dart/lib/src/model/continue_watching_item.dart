@@ -19,6 +19,7 @@ part 'continue_watching_item.g.dart';
 /// * [lessonsTotal] - Total number of lessons in the course.
 /// * [lastSeenAt] - Most recent moment any lesson in this course was watched (completed or not).
 /// * [lastSeenLessonId] - The lesson the player last reported a position on, used to wire the 'Resume' CTA.
+/// * [resumePositionSeconds] - Playback position on `lastSeenLessonId`, sourced from `LessonProgress.positionSeconds`. Absent if the lesson was never played past its start.
 @BuiltValue()
 abstract class ContinueWatchingItem implements Built<ContinueWatchingItem, ContinueWatchingItemBuilder> {
   /// Server-generated cuid identifying the course.
@@ -52,6 +53,10 @@ abstract class ContinueWatchingItem implements Built<ContinueWatchingItem, Conti
   /// The lesson the player last reported a position on, used to wire the 'Resume' CTA.
   @BuiltValueField(wireName: r'lastSeenLessonId')
   String get lastSeenLessonId;
+
+  /// Playback position on `lastSeenLessonId`, sourced from `LessonProgress.positionSeconds`. Absent if the lesson was never played past its start.
+  @BuiltValueField(wireName: r'resumePositionSeconds')
+  int? get resumePositionSeconds;
 
   ContinueWatchingItem._();
 
@@ -118,6 +123,13 @@ class _$ContinueWatchingItemSerializer implements PrimitiveSerializer<ContinueWa
       object.lastSeenLessonId,
       specifiedType: const FullType(String),
     );
+    if (object.resumePositionSeconds != null) {
+      yield r'resumePositionSeconds';
+      yield serializers.serialize(
+        object.resumePositionSeconds,
+        specifiedType: const FullType(int),
+      );
+    }
   }
 
   @override
@@ -196,6 +208,13 @@ class _$ContinueWatchingItemSerializer implements PrimitiveSerializer<ContinueWa
             specifiedType: const FullType(String),
           ) as String;
           result.lastSeenLessonId = valueDes;
+          break;
+        case r'resumePositionSeconds':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(int),
+          ) as int;
+          result.resumePositionSeconds = valueDes;
           break;
         default:
           unhandled.add(key);

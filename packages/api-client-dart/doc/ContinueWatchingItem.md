@@ -16,6 +16,7 @@ Name | Type | Description | Notes
 **lessonsTotal** | **int** | Total number of lessons in the course. | 
 **lastSeenAt** | [**DateTime**](DateTime.md) | Most recent moment any lesson in this course was watched (completed or not). | 
 **lastSeenLessonId** | **String** | The lesson the player last reported a position on, used to wire the 'Resume' CTA. | 
+**resumePositionSeconds** | **int** | Playback position on `lastSeenLessonId`, sourced from `LessonProgress.positionSeconds`. Absent if the lesson was never played past its start. | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

@@ -68,6 +68,17 @@ jobs:
               - '!specs/tasks/**'
               - '!LICENSE'
 
+  # `code` only has a diff to compare on `pull_request` — a real base ref.
+  # `push: main`, `merge_group`, `schedule` and `workflow_dispatch` have no
+  # such base, or one that can legitimately come back empty, and the nightly
+  # cron below exists specifically to catch drift that IS "empty diff" by
+  # definition (base image, upstream deps). Gating the fast path on
+  # `needs.changes.outputs.code == 'true'` alone would let `code` come back
+  # false on those triggers and silently turn the nightly run — and every
+  # push to main — into a no-op that still reports green. Every `if:` below
+  # is therefore `code == 'true' OR the event isn't a pull_request`: only a
+  # PR gets to skip the expensive steps.
+
   smoke:
     name: Playwright smoke (web + backend health)
     needs: changes
@@ -78,14 +89,14 @@ jobs:
       - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-cs
-        if: needs.changes.outputs.code == 'true'
+        if: needs.changes.outputs.code == 'true' || github.event_name != 'pull_request'
 
       - name: Prisma generate
-        if: needs.changes.outputs.code == 'true'
+        if: needs.changes.outputs.code == 'true' || github.event_name != 'pull_request'
         run: pnpm --filter @app/backend prisma:generate
 
       - name: Build design tokens
-        if: needs.changes.outputs.code == 'true'
+        if: needs.changes.outputs.code == 'true' || github.event_name != 'pull_request'
         # Tokens are gitignored — apps/web's docker build (`nuxt generate`)
         # fails to resolve tokens.generated.css without them in the build
         # context.
@@ -95,18 +106,18 @@ jobs:
       # services with real image builds (see that file's header for the full
       # rationale). Explicit service list skips `proxy` and `storybook`.
       - name: Bring up docker stack
-        if: needs.changes.outputs.code == 'true'
+        if: needs.changes.outputs.code == 'true' || github.event_name != 'pull_request'
         run: |
           docker compose -f docker/compose.yml -f docker/compose.ci.yml \
             up -d --build --wait --wait-timeout 600 \
             postgres centrifugo backend web
 
       - name: Verify backend health
-        if: needs.changes.outputs.code == 'true'
+        if: needs.changes.outputs.code == 'true' || github.event_name != 'pull_request'
         run: curl -fsS http://localhost:3000/api/v1/health
 
       - name: Verify web
-        if: needs.changes.outputs.code == 'true'
+        if: needs.changes.outputs.code == 'true' || github.event_name != 'pull_request'
         run: curl -fsS http://localhost:3001/ > /dev/null
 
       # Credentials for the Schemathesis step further down. This has to run
@@ -119,7 +130,7 @@ jobs:
       # Playwright is unaffected: every page-driven spec stubs the API through
       # `page.route`, so an extra row in the users table is invisible to it.
       - name: Mint an admin bearer token for the contract test
-        if: needs.changes.outputs.code == 'true'
+        if: needs.changes.outputs.code == 'true' || github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           password="contract-$(openssl rand -hex 16)"
@@ -154,7 +165,7 @@ jobs:
       # repo mounts read-write because Playwright writes its report and
       # traces into tests/e2e/.
       - name: Run Playwright smoke (inside the baseline-capture image)
-        if: needs.changes.outputs.code == 'true'
+        if: needs.changes.outputs.code == 'true' || github.event_name != 'pull_request'
         run: |
           docker run --rm --ipc=host --network=host \
             -v "$PWD:/work" -w /work \
@@ -185,7 +196,7 @@ jobs:
       # `pnpm db:seed` is the same entry point with a `nest build` in front,
       # which the image does not need.
       - name: Seed the catalog
-        if: needs.changes.outputs.code == 'true'
+        if: needs.changes.outputs.code == 'true' || github.event_name != 'pull_request'
         run: |
           docker compose -f docker/compose.yml -f docker/compose.ci.yml \
             exec -T backend node dist/seed.js
@@ -211,7 +222,7 @@ jobs:
       # it 62 of the 75 operations answered 401 before a handler ran, so no
       # response body had ever been compared against its schema (#321).
       - name: Spec contract test (Schemathesis)
-        if: needs.changes.outputs.code == 'true'
+        if: needs.changes.outputs.code == 'true' || github.event_name != 'pull_request'
         # REQUIRE_AUTH turns a missing token into a failure instead of a
         # warning. The token reaching the script is a two-link chain (GITHUB_ENV
         # → turbo `passThroughEnv`) and the first CI run broke on the second
@@ -221,13 +232,13 @@ jobs:
         run: pnpm spec:contract-test
 
       - name: Container state after Playwright
-        if: always() && needs.changes.outputs.code == 'true'
+        if: always() && (needs.changes.outputs.code == 'true' || github.event_name != 'pull_request')
         run: |
           docker compose -f docker/compose.yml -f docker/compose.ci.yml ps
           docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}'
 
       - name: Upload Playwright report
-        if: always() && needs.changes.outputs.code == 'true'
+        if: always() && (needs.changes.outputs.code == 'true' || github.event_name != 'pull_request')
         uses: actions/upload-artifact@v5
         with:
           name: playwright-report
@@ -235,7 +246,7 @@ jobs:
           retention-days: 7
 
       - name: Dump service logs on failure
-        if: failure() && needs.changes.outputs.code == 'true'
+        if: failure() && (needs.changes.outputs.code == 'true' || github.event_name != 'pull_request')
         run: |
           for svc in centrifugo postgres backend web; do
             echo "===== $svc ====="
@@ -243,5 +254,5 @@ jobs:
           done
 
       - name: Tear down
-        if: always() && needs.changes.outputs.code == 'true'
+        if: always() && (needs.changes.outputs.code == 'true' || github.event_name != 'pull_request')
         run: docker compose -f docker/compose.yml -f docker/compose.ci.yml down -v

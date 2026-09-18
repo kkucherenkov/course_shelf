@@ -39,6 +39,12 @@ const courses = ref<CourseListDto>({ items: [] });
 const fetchStatus = ref('success');
 let lastOptions: Record<string, { value: string }> = {};
 
+// Independent from the filtered `courses`/`fetchStatus` pair above — the
+// unfiltered `GET /courses` access probe (tuxedo 249: a course-level grant
+// makes THIS one non-empty while `libraries` below stays empty).
+const hasAnyCatalogCourse = ref(false);
+const catalogAccessStatus = ref<'idle' | 'pending' | 'success' | 'error'>('success');
+
 vi.mock('~/composables/useCoursesList', async () => {
   const actual = await vi.importActual<typeof CoursesListModule>(
     '../../composables/useCoursesList',
@@ -49,6 +55,10 @@ vi.mock('~/composables/useCoursesList', async () => {
       lastOptions = options;
       return { data: courses, status: fetchStatus, error: ref(null), refetch: vi.fn() };
     },
+    useCourseCatalogAccess: () => ({
+      hasAnyCourse: hasAnyCatalogCourse,
+      status: catalogAccessStatus,
+    }),
   };
 });
 
@@ -144,6 +154,8 @@ describe('browse page filters', () => {
     lastOptions = {};
     replace.mockClear();
     librariesStatus.value = 'success';
+    hasAnyCatalogCourse.value = false;
+    catalogAccessStatus.value = 'success';
     authUser.value = { role: 'admin' };
   });
 
@@ -327,6 +339,32 @@ describe('browse page filters', () => {
 
       expect(wrapper.text()).toContain('pages.browse.emptyNoCoursesTitle');
       expect(wrapper.find('.no-permission').exists()).toBe(false);
+    });
+
+    // tuxedo 249: a COURSE-level grant (the admin UI offers those) puts
+    // courses in `GET /courses` without ever putting a row in `GET
+    // /libraries` — `AuthorizationService.canSee`'s library-grant-implies-
+    // course-access rule doesn't run in reverse. A member holding only that
+    // grant must see the catalogue, not the access denial.
+    it('shows the catalogue for a member with only a course-level grant (tuxedo 249)', async () => {
+      authUser.value = { role: 'member' };
+      libraries.value = { items: [] };
+      hasAnyCatalogCourse.value = true;
+      courses.value = {
+        items: [
+          {
+            id: 'c-course-grant',
+            title: 'Granted Course',
+            instructors: [],
+            progress: { percent: 0, lessonsCompleted: 0, lessonsTotal: 5 },
+          },
+        ],
+      } as unknown as CourseListDto;
+      const wrapper = await mountBrowse();
+
+      expect(wrapper.find('.no-permission').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="browse-filter-library"]').exists()).toBe(true);
+      expect(wrapper.findAll('.page-browse__card-link')).toHaveLength(1);
     });
   });
 

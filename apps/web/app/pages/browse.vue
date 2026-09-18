@@ -15,6 +15,7 @@
 
   import {
     useCoursesList,
+    useCourseCatalogAccess,
     COURSE_LIST_DEFAULTS,
     type CourseListDurationBucket,
     type CourseListSort,
@@ -62,11 +63,11 @@
 
   // The count subtitle reflects loaded results, so only show it once data has
   // arrived — during `pending` `items` is empty and a raw count flashes "0".
-  // Suppressed entirely once `hasLibraryAccess` is confirmed false (#701) —
+  // Suppressed entirely once `hasCatalogAccess` is confirmed false (#701) —
   // "0 courses" reads as a fact about the library when it's actually a
   // permissions denial the body text below already states.
   const subtitle = computed<string>(() => {
-    if (!hasLibraryAccess.value) return '';
+    if (!hasCatalogAccess.value) return '';
     if (fetchStatus.value === 'pending') return t('pages.browse.subtitleLoading');
     if (fetchStatus.value === 'success')
       return t('pages.browse.subtitle', { n: items.value.length });
@@ -132,10 +133,14 @@
   // ── Empty state (#579) ───────────────────────────────────────────────────────
   //
   // `useCoursesList` returning zero items is ambiguous on its own: it means
-  // something different depending on who's asking. `GET /libraries` answers
-  // that — it returns only the libraries the requester has READ access to
-  // (everything, for an admin) — so its own emptiness tells apart "nothing
-  // was ever granted to this account" from "granted, but truly nothing to see".
+  // something different depending on who's asking. Two unfiltered probes
+  // answer that together — `GET /libraries` (library-level grants) and
+  // `useCourseCatalogAccess`'s unfiltered `GET /courses` (any grant at all,
+  // library- or course-level; see its doc comment for why a course-level
+  // grant needs its own probe — tuxedo 249). Either one being non-empty means
+  // "granted"; both empty means "nothing was ever granted to this account".
+  const { hasAnyCourse: hasAnyCatalogCourse, status: catalogAccessStatus } =
+    useCourseCatalogAccess();
   const auth = useAuthStore();
   const isAdmin = computed(() => auth.user?.role?.toLowerCase() === 'admin');
 
@@ -144,16 +149,18 @@
   // here rather than inventing a second pattern (#701). Independent of
   // `hasActiveFilter`: a stale filter in a bookmarked URL must not mask a
   // real access denial behind the "filtered" copy.
-  const hasLibraryAccess = computed(() => {
+  const hasCatalogAccess = computed(() => {
     if (isAdmin.value) return true;
-    // Libraries haven't resolved yet — default to the safe, always-true
-    // state rather than briefly asserting "no access" off `useLibraries`'s
+    // Neither probe has resolved yet — default to the safe, always-true
+    // state rather than briefly asserting "no access" off either probe's
     // pre-fetch `{ items: [] }` default.
     if (librariesStatus.value === 'pending' || librariesStatus.value === 'idle') return true;
-    return (librariesData.value?.items.length ?? 0) > 0;
+    if (catalogAccessStatus.value === 'pending' || catalogAccessStatus.value === 'idle')
+      return true;
+    return (librariesData.value?.items.length ?? 0) > 0 || hasAnyCatalogCourse.value;
   });
 
-  // Reached only once `hasLibraryAccess` is true (see the template) — the
+  // Reached only once `hasCatalogAccess` is true (see the template) — the
   // remaining distinctions are all about *what* is empty, not *whether* the
   // account can see anything at all.
   type BrowseEmptyKind = 'filtered' | 'no-courses' | 'no-library';
@@ -220,7 +227,7 @@
       on a shelf they were never given access to.
     -->
     <AppNoPermission
-      v-if="!hasLibraryAccess"
+      v-if="!hasCatalogAccess"
       icon="lock"
       :title="t('pages.browse.emptyNoAccessTitle')"
       :body="t('pages.browse.emptyNoAccessBody')"

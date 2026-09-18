@@ -3733,7 +3733,7 @@ paths:
                         lessonId: clxvles0000000000000000001
                         courseId: clxvcrs0000000000000000001
                         status: proposed
-                        modelFilename: Qwen3.5-4B-Q4_K_M.gguf
+                        model: Qwen3.5-4B-Q4_K_M.gguf
                         questions:
                           - prompt: What does the lesson say architecture decisions should optimize for?
                             options: [Cost, Maintainability, Speed, Popularity]
@@ -3793,7 +3793,7 @@ paths:
                     lessonId: clxvles0000000000000000001
                     courseId: clxvcrs0000000000000000001
                     status: proposed
-                    modelFilename: Qwen3.5-4B-Q4_K_M.gguf
+                    model: Qwen3.5-4B-Q4_K_M.gguf
                     questions:
                       - prompt: What does the lesson say architecture decisions should optimize for?
                         options: [Cost, Maintainability, Speed, Popularity]
@@ -3867,7 +3867,7 @@ paths:
                     lessonId: clxvles0000000000000000001
                     courseId: clxvcrs0000000000000000001
                     status: applied
-                    modelFilename: Qwen3.5-4B-Q4_K_M.gguf
+                    model: Qwen3.5-4B-Q4_K_M.gguf
                     questions:
                       - prompt: What does the lesson say architecture decisions should optimize for?
                         options: [Cost, Maintainability, Speed, Popularity]
@@ -3950,7 +3950,7 @@ paths:
                     lessonId: clxvles0000000000000000001
                     courseId: clxvcrs0000000000000000001
                     status: discarded
-                    modelFilename: Qwen3.5-4B-Q4_K_M.gguf
+                    model: Qwen3.5-4B-Q4_K_M.gguf
                     questions: []
                     createdAt: "2026-09-16T10:00:00Z"
                     completedAt: "2026-09-16T10:04:00Z"
@@ -8427,7 +8427,7 @@ components:
 
     QuizDto:
       type: object
-      required: [id, lessonId, courseId, status, modelFilename, questions, createdAt]
+      required: [id, lessonId, courseId, status, model, questions, createdAt]
       description: >-
         A reviewable quiz-generation proposal for one lesson — reviewed by an
         admin (apply/discard) before it counts as real, the same lifecycle as
@@ -8437,12 +8437,14 @@ components:
         lessonId: { type: string, example: clxvles0000000000000000001 }
         courseId: { type: string, example: clxvcrs0000000000000000001 }
         status: { $ref: "#/components/schemas/QuizStatus" }
-        modelFilename:
+        model:
           type: string
           description: >-
-            Filename of the .gguf weight this proposal was generated with —
-            what lets an admin compare a 4B run against a 9B run of the same
-            lesson.
+            Model that generated this proposal — meaning depends on the
+            deployment's text-generation provider (ADR-0012): a `.gguf`
+            weight filename under the local provider, or a hosted provider's
+            own model id under `openrouter`. Lets an admin compare a 4B run
+            against a 9B run of the same lesson under the local provider.
           example: Qwen3.5-4B-Q4_K_M.gguf
         questions:
           type: array
@@ -8467,8 +8469,8 @@ components:
         modelId:
           type: string
           # A blank string is a client mistake, not a request for the default:
-          # the handler reads `command.modelFilename ?? configuredDefault`, and
-          # `??` only falls back on null/undefined, so `""` slipped through and
+          # the handler reads `command.model ?? configuredDefault`, and `??`
+          # only falls back on null/undefined, so `""` slipped through and
           # surfaced as a 503 `quiz-generation-not-configured` — the service
           # reporting itself unconfigured when it was merely handed rubbish.
           # Schemathesis found it. Rejecting it here answers 400 before the

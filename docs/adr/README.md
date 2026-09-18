@@ -19,12 +19,15 @@ get closed. An ADR survives both.
 | [0009](0009-progressive-streaming-no-hls.md) | Progressive streaming with Range; HLS deferred | streaming |
 | [0010](0010-design-bundle-tokens-source-of-truth.md) | `tokens.json` generates all three platforms | design-system |
 | [0011](0011-local-llm-quiz-generation.md) | Local llama.cpp for quiz generation; on-demand, nothing leaves the machine | backend, privacy, ml |
+| [0012](0012-hosted-model-provider.md) | Hosted text-generation provider, selectable; local stays the default | backend, ml |
+| [0013](0013-ownership-taxonomy-and-ratings.md) | Enrollment, read-only tags, a personal rating, and the transcript's place | product, backend, web |
 
 The first ten were written together on 2026-08-29 and are **retroactive**: they
 record decisions already load-bearing in the codebase, not new proposals. Each
 says so, and points at the card or commit where the decision was actually made.
-0011 is a genuinely new decision, made and recorded in the same PR that
-implements it.
+0011 onwards are genuinely new decisions, recorded when they were taken:
+0011 and 0012 in the PRs that implement them, 0013 before implementation,
+because it settles five questions that block the 2.0 scope.
 
 ## When to write one
 

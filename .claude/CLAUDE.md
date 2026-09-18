@@ -345,6 +345,15 @@ before dispatching, not after the first question:
   coordinator does that centrally, or five lanes edit one note at once).
 - **Wait for CI with the `Monitor` tool, never a sleep-and-poll loop.** A poll
   loop burns the lane's context on its own output and reports last.
+- **Its own Compose project name and ports, if it brings the stack up.**
+  `docker/compose.yml` names the project `${COMPOSE_PROJECT_NAME:-course-shelf}`,
+  so a lane that runs `docker compose up` from its worktree without setting one
+  does not get a stack of its own — it adopts the dev stack's project and
+  rewrites its services with whatever config the lane passed. A lane did that on
+  2026-09-18 with `compose.ci.yml`; the dev stack happened to be down, so it
+  took only the name. `docker/README.md` carries the pattern. Two stacks still
+  cannot run at once — the subnet is pinned — so a lane that needs the stack
+  takes it for the duration and says so.
 
 ### A subagent shares your checkout unless you give it one
 

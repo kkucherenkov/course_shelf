@@ -26,6 +26,8 @@
         `build:` today, so the step pulls nothing either way, and a step that
         does nothing is the thing that broke
   - [x] scan every workflow for the same shape — none left
-  - [ ] PR opened, CI green
-- Status: in-progress
+  - [x] PR opened, CI green
+- Status: done
 - Blockers: —
+- Completed: 2026-09-18
+- Result: https://github.com/kkucherenkov/course_shelf/pull/743

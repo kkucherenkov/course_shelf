@@ -44,5 +44,7 @@
         session's sandbox denied the remote-shell write, so the coordinator
         landed it directly. Backup kept as `compose.yaml.bak-177`;
         `docker compose config` validates clean.
-- Status: in-progress
+- Status: done
 - Blockers: —
+- Completed: 2026-09-18
+- Result: https://github.com/kkucherenkov/course_shelf/pull/739

@@ -16,11 +16,26 @@ const CUES: TranscriptCue[] = [
 const baseProps = {
   cues: CUES,
   activeIndex: -1,
+  emptyLabel: 'This lesson has no transcript.',
   noMatchLabel: 'No lines match your search.',
   filterPlaceholder: 'Filter transcript',
 };
 
 describe('PlayerTranscriptTab', () => {
+  it('says the lesson has no transcript rather than blaming the search', () => {
+    // The panel used to be hidden unless the lesson had cues, so this branch
+    // did not exist and the filter's own "no match" line answered instead —
+    // telling a reader their search found nothing when they had not searched.
+    // Removing that `v-if` (the panel now carries the empty state, since the
+    // sidebar tab that used to is gone) is what made this reachable.
+    const wrapper = mount(PlayerTranscriptTab, { props: { ...baseProps, cues: [] } });
+
+    expect(wrapper.text()).toContain('This lesson has no transcript.');
+    expect(wrapper.text()).not.toContain('No lines match your search.');
+    // No filter to offer when there is nothing to filter.
+    expect(wrapper.find('input[type="search"]').exists()).toBe(false);
+  });
+
   it('renders one row per cue', () => {
     const wrapper = mount(PlayerTranscriptTab, { props: baseProps });
     expect(wrapper.findAll('.player-transcript-tab__row')).toHaveLength(CUES.length);

@@ -63,6 +63,13 @@ function assertDartVersion(): void {
   }
 }
 
+// Checked before step 1/3, not just before the dart-* steps further down:
+// by the time those run, step 3/3 has already overwritten
+// packages/api-client-dart/lib/**, so a guard placed later leaves exactly
+// the pre-`dart fix` diff it exists to prevent sitting in the working tree
+// on a failed run.
+assertDartVersion();
+
 console.warn('[codegen] 1/3 openapi-typescript → @app/specs/openapi-types.ts');
 run(`pnpm exec openapi-typescript "${bundle}" --output "${openapiTypesOut}"`);
 
@@ -92,7 +99,6 @@ run(
 // build_runner, so without this step every `part '*.g.dart'` is missing and
 // the package won't compile. Generate the parts and commit them as artifacts.
 console.warn('[codegen] post: dart pub get + build_runner (emit built_value .g.dart parts)');
-assertDartVersion();
 run('dart pub get', dartOut);
 // `--delete-conflicting-outputs` was removed by build_runner and is now a
 // no-op the tool warns about ("These options have been removed and were

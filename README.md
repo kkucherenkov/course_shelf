@@ -35,7 +35,6 @@ flowchart LR
   subgraph infra["local stack · docker/compose.yml"]
     postgres[("postgres 18<br/>:5432")]
     centrifugo["centrifugo v6<br/>:8000"]
-    otel["grafana + otel-lgtm<br/>:3200"]
   end
 
   subgraph contracts["packages/specs — single source of truth"]
@@ -51,7 +50,6 @@ flowchart LR
   mobile -.->|"ws subscribe"| centrifugo
   backend --> postgres
   backend -->|"publish"| centrifugo
-  backend -->|"OTLP"| otel
 
   openapi -. "codegen" .-> web
   openapi -. "codegen" .-> mobile
@@ -75,7 +73,7 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 
 **Transcription with Whisper.** The backend image ships a pinned `whisper-cli`; supply a ggml model at runtime and lessons without subtitles get transcribed into cues stored alongside the imported sidecars. The web player renders them as a searchable transcript tab, and `?t=` deep-links a lesson to a timestamp. See [Transcription](#2b--transcription-optional).
 
-**Observable by default.** Sentry captures errors. OpenTelemetry ships traces and metrics to a local Grafana + LGTM stack at `:3200`. Health checks at `/api/v1/health` report the status of PostgreSQL and Centrifugo.
+**Observable by default.** Sentry captures errors. Health checks at `/api/v1/health` report the status of PostgreSQL and Centrifugo.
 
 **AI-agent-ready workflow.** The repository carries its own task stack (`specs/tasks/active/`), project rules (`.claude/CLAUDE.md`), domain handbooks (`.claude/docs/*`), and a subagent roster. A fresh Claude Code session picks up the rules automatically and starts from the top of the task stack.
 
@@ -85,7 +83,7 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 
 | App                | Stack                                 | Key libraries                                                                                                   |
 | ------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| **`apps/backend`** | NestJS 11, Prisma 7, CQRS             | Better Auth, express-openapi-validator, nestjs-i18n, Sentry, OpenTelemetry                                      |
+| **`apps/backend`** | NestJS 11, Prisma 7, CQRS             | Better Auth, express-openapi-validator, nestjs-i18n, Sentry                                                     |
 | **`apps/web`**     | Nuxt 4 (SPA), Nuxt UI v4, Tailwind v4 | @nuxtjs/i18n, generated api-client-ts, SCSS + BEM                                                               |
 | **`apps/mobile`**  | Flutter 3.44                          | flutter_bloc, get_it, Dio, Drift (offline), workmanager, video_player, slang (i18n), Firebase Messaging, Sentry |
 
@@ -112,7 +110,6 @@ The nginx reverse proxy folds the SPA (`web:3001`) and the API (`backend:3000`) 
 | web        | Dockerfile  | 3001 | Nuxt dev server                                                                    |
 | nginx      | --          | 8080 | Reverse proxy: same-origin SPA + API                                               |
 | storybook  | Dockerfile  | 6006 | `@app/ui` Storybook, plus an MCP endpoint at `/mcp` (`pnpm storybook` runs it too) |
-| otel-lgtm  | Grafana     | 3200 | Local Grafana + LGTM observability stack                                           |
 
 Containers mount the repository as a volume, so edits reach the running container without a rebuild. Do not run `pnpm dev` alongside `docker compose up` -- they share the same host ports.
 
@@ -217,7 +214,6 @@ Then open the app:
 | `http://localhost:3001`        | Web app directly (bypasses the proxy)          |
 | `http://localhost:3000/api/v1` | Backend API directly                           |
 | `http://localhost:6006`        | `@app/ui` Storybook                            |
-| `http://localhost:3200`        | Grafana + LGTM dashboards                      |
 
 ### 4 — First sign-in
 

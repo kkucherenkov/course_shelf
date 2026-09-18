@@ -35,7 +35,6 @@ flowchart LR
   subgraph infra["local stack · docker/compose.yml"]
     postgres[("postgres 18<br/>:5432")]
     centrifugo["centrifugo v6<br/>:8000"]
-    otel["grafana + otel-lgtm<br/>:3200"]
   end
 
   subgraph contracts["packages/specs — single source of truth"]
@@ -51,7 +50,6 @@ flowchart LR
   mobile -.->|"ws subscribe"| centrifugo
   backend --> postgres
   backend -->|"publish"| centrifugo
-  backend -->|"OTLP"| otel
 
   openapi -. "codegen" .-> web
   openapi -. "codegen" .-> mobile
@@ -75,7 +73,7 @@ flowchart LR
 
 **Транскрипция через Whisper.** В образ бэкенда вшит зафиксированный `whisper-cli`; подложите ggml-модель во время выполнения — и уроки без субтитров получают транскрипт, который хранится рядом с импортированными sidecar-файлами. Веб-плеер показывает их во вкладке транскрипта с поиском, а `?t=` даёт ссылку на конкретную секунду урока. См. [Транскрипция](#2b--транскрипция-опционально).
 
-**Наблюдаемость по умолчанию.** Sentry фиксирует ошибки. OpenTelemetry отправляет трейсы и метрики в локальный стек Grafana + LGTM на порту `:3200`. Проверки состояния на `/api/v1/health` сообщают статус PostgreSQL и Centrifugo.
+**Наблюдаемость по умолчанию.** Sentry фиксирует ошибки. Проверки состояния на `/api/v1/health` сообщают статус PostgreSQL и Centrifugo.
 
 **Рабочий процесс для AI-агентов.** Репозиторий содержит собственный стек задач (`specs/tasks/active/`), правила проекта (`.claude/CLAUDE.md`), предметные справочники (`.claude/docs/*`) и реестр подагентов. Новая сессия Claude Code автоматически подхватывает правила и начинает работу с вершины стека задач.
 
@@ -85,7 +83,7 @@ flowchart LR
 
 | Приложение         | Стек                                  | Основные библиотеки                                                                                            |
 | ------------------ | ------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **`apps/backend`** | NestJS 11, Prisma 7, CQRS             | Better Auth, express-openapi-validator, nestjs-i18n, Sentry, OpenTelemetry                                     |
+| **`apps/backend`** | NestJS 11, Prisma 7, CQRS             | Better Auth, express-openapi-validator, nestjs-i18n, Sentry                                                    |
 | **`apps/web`**     | Nuxt 4 (SPA), Nuxt UI v4, Tailwind v4 | @nuxtjs/i18n, сгенерированный api-client-ts, SCSS + BEM                                                        |
 | **`apps/mobile`**  | Flutter 3.44                          | flutter_bloc, get_it, Dio, Drift (офлайн), workmanager, video_player, slang (i18n), Firebase Messaging, Sentry |
 
@@ -112,7 +110,6 @@ flowchart LR
 | web        | Dockerfile  | 3001 | Nuxt dev server                                                                      |
 | nginx      | --          | 8080 | Обратный прокси: единый origin для SPA и API                                         |
 | storybook  | Dockerfile  | 6006 | Storybook для `@app/ui` и MCP-эндпоинт на `/mcp` (его же поднимает `pnpm storybook`) |
-| otel-lgtm  | Grafana     | 3200 | Локальный стек наблюдаемости Grafana + LGTM                                          |
 
 Контейнеры монтируют репозиторий как том, поэтому изменения попадают в работающий контейнер без пересборки. Не запускайте `pnpm dev` одновременно с `docker compose up` -- они используют одни и те же порты на хосте.
 
@@ -217,7 +214,6 @@ curl http://localhost:8080/api/v1/health
 | `http://localhost:3001`        | Веб-приложение напрямую (в обход прокси)                   |
 | `http://localhost:3000/api/v1` | API бэкенда напрямую                                       |
 | `http://localhost:6006`        | Storybook `@app/ui`                                        |
-| `http://localhost:3200`        | Дашборды Grafana + LGTM                                    |
 
 ### 4 — Первый вход
 

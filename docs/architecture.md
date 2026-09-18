@@ -833,11 +833,14 @@ See `.env.example`, `.env.production.example`, `.env.release.example`.
 
 ## 16 — Observability
 
-Sentry and OpenTelemetry initialise **before any other module** in `main.ts`,
-so auto-instrumentation patches land before the patched modules are imported —
-reordering those imports silently disables tracing. OTel spans flush on
-shutdown via `enableShutdownHooks()`. Grafana ships in the local stack on
-`:3200`.
+Sentry initialises **before any other module** in `main.ts`, so its
+auto-instrumentation patches land before the patched modules are imported —
+reordering those imports silently disables error capture.
+
+OpenTelemetry and the local Grafana + LGTM stack were removed on 2026-09-18:
+nothing in the product read them, and the collector was one more container to
+keep alive for a personal instance. Errors go to Sentry; health is the health
+endpoint.
 
 `GET /api/v1/health` reports per-dependency status
 (`{"status":"ok","dependencies":{"db":"ok","centrifugo":"ok"}}`);

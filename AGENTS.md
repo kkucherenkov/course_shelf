@@ -22,7 +22,7 @@ packages/ui     brand components + colocated Storybook + specs
 packages/api-client-{ts,dart}   generated clients — never edit by hand
 specs/tasks/    active/ (one file per task in flight) + done/ (archive)
 specs/design/   W3C tokens + optional JSX mockups under mockups/
-docker/         local stack (postgres / redis / centrifugo / otel-lgtm)
+docker/         local stack (postgres / redis / centrifugo)
 ```
 
 ## How to work here
@@ -94,7 +94,6 @@ docker ps --format '{{.Names}} {{.Status}} {{.Ports}}'
 | web        | 3001 | http://localhost:3001        |
 | backend    | 3000 | http://localhost:3000/api/v1 |
 | centrifugo | 8000 | ws://localhost:8000          |
-| grafana    | 3200 | http://localhost:3200        |
 
 Containers mount the repo as a volume — edits reach the running container. Do
 not start `pnpm dev` if the container is up.

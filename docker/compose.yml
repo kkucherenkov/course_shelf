@@ -11,7 +11,6 @@ networks:
 
 volumes:
   pgdata:
-  otel_lgtm_data:
 
 services:
   postgres:
@@ -58,21 +57,6 @@ services:
       retries: 20
     networks: ["course-shelf-net"]
 
-  otel-lgtm:
-    image: grafana/otel-lgtm:0.8.1
-    restart: unless-stopped
-    ports:
-      - "${CS_GRAFANA_PORT:-3200}:3000" # Grafana UI
-      - "${CS_OTLP_GRPC_PORT:-4317}:4317" # OTLP gRPC
-      - "${CS_OTLP_HTTP_PORT:-4318}:4318" # OTLP HTTP
-    environment:
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
-    volumes:
-      - otel_lgtm_data:/data
-      - ./grafana/provisioning:/etc/grafana/provisioning
-    networks: ["course-shelf-net"]
-
   backend:
     build:
       context: ..
@@ -81,7 +65,6 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
       centrifugo: { condition: service_healthy }
-      otel-lgtm: { condition: service_started }
     environment:
       NODE_ENV: development
       PORT: "3000"
@@ -100,7 +83,6 @@ services:
       # Proxy is the canonical SPA origin; 3001 stays whitelisted so devs
       # can still hit Nuxt directly when bypassing the proxy.
       CORS_ORIGINS: http://localhost:${CS_PROXY_PORT:-8080},http://localhost:${CS_WEB_PORT:-3001}
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4318
       # Generated artefacts (whisper transcripts, later scan thumbnails) go to
       # a writable root of their own — /data/courses is read-only in prod.
       DERIVED_PATH: /data/derived

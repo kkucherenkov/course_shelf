@@ -21,7 +21,9 @@
 - **Request correlation.** Every HTTP request gets `x-request-id` from `RequestIdMiddleware` — log it on every line.
 - **Never log PII** — emails, phones, addresses, tokens, passwords, full names. Log stable user IDs only. Scrub third-party payloads before logging.
 - **Error visibility.** 5xx responses logged with stack trace by `HttpExceptionFilter`. 4xx are noise — don't log by default.
-- **Metrics & tracing.** Use OpenTelemetry when added. Never hand-roll counters.
+- **Metrics & tracing.** None ship today — OpenTelemetry was removed on
+  2026-09-18 as unused. If it comes back, wire it through the SDK rather than
+  hand-rolling counters.
 
 ## Accessibility (web)
 

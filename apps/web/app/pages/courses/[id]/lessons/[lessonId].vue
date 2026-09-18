@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-  import { AppPlayerChrome, AppSkeleton, AppNoPermission } from '@app/ui';
+  import { AppButton, AppPlayerChrome, AppSkeleton, AppNoPermission } from '@app/ui';
   import { getLesson, listLessonBookmarks } from '@app/api-client-ts';
   import type { LessonDto, BookmarkDto, LessonOutlineItem, MaterialDto } from '@app/api-client-ts';
 
@@ -395,6 +395,13 @@
   const pageHeading = computed(() => lessonData.value?.title ?? t('pages.lessonPlayer.title'));
 
   useHead(() => ({ title: pageHeading.value }));
+
+  // ── Back to course (tuxedo 217) ──────────────────────────────────────────────
+  // Labelled with the real course title once the outline has loaded; a generic
+  // fallback covers the loading/error states, where it's shown too.
+  const backToCourseLabel = computed(
+    () => outlineData.value?.course.title ?? t('pages.lessonPlayer.backToCourse'),
+  );
 </script>
 
 <template>
@@ -403,6 +410,16 @@
          own visible chrome; this exists purely so the document has an
          outline heading a screen reader can land on (#623). -->
     <h1 class="page-lesson-player__sr-title">{{ pageHeading }}</h1>
+
+    <!-- Back to course (tuxedo 217) — compact, one row, shown in every state -->
+    <AppButton
+      variant="ghost"
+      size="sm"
+      icon-leading="arrow-left"
+      :label="backToCourseLabel"
+      :to="`/courses/${courseId}`"
+      class="page-lesson-player__back"
+    />
 
     <!-- No permission -->
     <div v-if="isNoPermission" class="page-lesson-player__no-permission">
@@ -570,6 +587,16 @@
       border: 0;
     }
 
+    // Compact, one row — deliberately not a full breadcrumb bar; the player
+    // below is already dvh-bounded (tuxedo 114/253), so `&__layout` and
+    // `&__skeleton` give up their `height: 100%` for `flex: 1; min-height: 0`
+    // to make room for this row without spilling past the shell's viewport.
+    &__back {
+      flex: 0 0 auto;
+      align-self: flex-start;
+      margin-bottom: var(--space-1);
+    }
+
     &__no-permission {
       display: flex;
       justify-content: center;
@@ -581,7 +608,8 @@
       display: grid;
       grid-template-columns: 1fr $sidebar-w-xl;
       gap: 0;
-      height: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
 
       @media (width <= 1024px) {
         grid-template-columns: 1fr $sidebar-w-lg;
@@ -610,7 +638,8 @@
     &__layout {
       display: grid;
       grid-template-columns: 1fr $sidebar-w-xl;
-      height: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
       overflow: hidden;
 
       @media (width <= 1024px) {

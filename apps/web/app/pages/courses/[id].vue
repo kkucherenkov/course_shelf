@@ -343,6 +343,16 @@
   <NuxtPage v-if="hasChildRoute" />
 
   <div v-else class="page-course-detail">
+    <!-- ── Back to browse (tuxedo 217) ───────────────────────────────────────── -->
+    <AppButton
+      variant="ghost"
+      size="sm"
+      icon-leading="arrow-left"
+      :label="t('pages.courseDetail.backToBrowse')"
+      to="/browse"
+      class="page-course-detail__back"
+    />
+
     <!-- ── Error / no-access state ───────────────────────────────────────────── -->
     <div v-if="status === 'error'" class="page-course-detail__error-wrap">
       <AppNoPermission
@@ -504,6 +514,10 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-6);
+
+    &__back {
+      align-self: flex-start;
+    }
 
     &__error-wrap {
       display: flex;

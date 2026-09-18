@@ -171,6 +171,7 @@ export default {
       // never does) — the loaded case always uses the real course title
       // instead (#701).
       title: 'Course',
+      backToBrowse: 'Browse',
       loadingError: 'Could not load course. Please try again.',
       retry: 'Retry',
       noAccess: 'No access',
@@ -342,6 +343,7 @@ export default {
       // when it never does) — the loaded case always uses the real lesson
       // title instead (#623).
       title: 'Lesson',
+      backToCourse: 'Back to course',
       loadingError: 'Could not load lesson. Please try again.',
       retry: 'Retry',
       noAccess: 'No access',

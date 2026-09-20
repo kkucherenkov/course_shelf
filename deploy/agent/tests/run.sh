@@ -133,10 +133,23 @@ HEALTH_OK='{"status":"ok","version":"1.7.0","uptimeSeconds":12,"dependencies":{"
 
 # ── detect-state ────────────────────────────────────────────────────────────
 
+# A PATH holding only the coreutils the probe uses, so `docker` and `curl`
+# are absent by construction. Trimming PATH to /usr/bin:/bin is not enough —
+# that is exactly where docker lives on a CI runner, and the case then
+# silently tests the opposite of what it claims.
+bare_path() {
+  local dir cmd p
+  dir=$(mktemp -d "$TMP_ROOT/barebin.XXXXXX")
+  for cmd in bash sh sed awk grep uname df tr sort find od cat head tail cut wc date mktemp cmp; do
+    p=$(command -v "$cmd" 2>/dev/null) && ln -sf "$p" "$dir/$cmd"
+  done
+  printf '%s' "$dir"
+}
+
 it "detect-state prints valid JSON on a bare host with no docker"
-out=$(PATH="$TMP_ROOT/empty-bin:/usr/bin:/bin" CS_SKIP_NETWORK=1 CS_STACK_DIR="$TMP_ROOT" bash "$DETECT" 2>/dev/null)
+bare=$(bare_path)
+out=$(PATH="$bare" CS_SKIP_NETWORK=1 CS_STACK_DIR="$TMP_ROOT" bash "$DETECT" 2>/dev/null)
 rc=$?
-mkdir -p "$TMP_ROOT/empty-bin"
 assert_eq "exit code is 0 even with nothing installed" "0" "$rc"
 python3 -c "import json,sys; json.loads(sys.argv[1])" "$out" 2>/dev/null
 assert "output parses as JSON" $?

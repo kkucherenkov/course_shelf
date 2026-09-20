@@ -38,6 +38,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       mobile: ${{ steps.filter.outputs.mobile }}
+      installer: ${{ steps.filter.outputs.installer }}
 
     steps:
       - uses: actions/checkout@v6
@@ -52,6 +53,31 @@ jobs:
               - 'packages/api-client-dart/**'
               - 'packages/specs/**'
               - 'pnpm-lock.yaml'
+            installer:
+              - 'deploy/agent/**'
+
+  # ── Release installer agent ───────────────────────────────────────────────
+  # The shell the release bundle ships to self-hosters. No pnpm, no setup-cs:
+  # the suite is plain bash with fake `docker`/`curl` on PATH, and keeping it
+  # dependency-free is the point — it has to be runnable on the NAS it
+  # installs onto, not only here.
+  installer:
+    name: Installer agent (shell)
+    needs: changes
+    if: needs.changes.outputs.installer == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Syntax-check every script
+        run: |
+          set -euo pipefail
+          find deploy/agent -name '*.sh' -print0 | xargs -0 -n1 bash -n
+
+      - name: Run the suite
+        run: bash deploy/agent/tests/run.sh
 
   # ── PR title is a Conventional Commit ─────────────────────────────────────
   # A squash merge takes the PR TITLE as the commit subject on main, and

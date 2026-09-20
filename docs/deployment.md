@@ -61,6 +61,35 @@ container start with `exec format error`, which does not say why. Building from
 source ([Path 2](#path-2--build-from-source)) is the option on other
 architectures.
 
+### With the installer agent
+
+The bundle ships an agent that does the rest of this section by
+conversation. Unpack the tarball, run `claude` (or `codex`) inside the
+unpacked directory, and say what you want.
+
+```sh
+curl -LO https://github.com/kkucherenkov/course_shelf/releases/download/vX.Y.Z-release/courseshelf-release-vX.Y.Z.tar.gz
+tar xzf courseshelf-release-vX.Y.Z.tar.gz
+cd courseshelf-release-vX.Y.Z
+claude
+```
+
+It checks the host, asks for the two answers it cannot guess (the folder
+holding your courses, and the URL you will open), generates the four
+secrets, brings the stack up, and tells you how to create the first
+account. Every command that changes the machine is shown and confirmed
+first. The install runs as eight resumable steps, so a download that dies
+half way costs one step rather than the whole run:
+
+```sh
+bash .claude/skills/shelf-install/scripts/install.sh --check    # what is done, what is next
+bash .claude/skills/shelf-install/scripts/install.sh --resume   # continue
+```
+
+The same agent handles upgrades (`shelf-upgrade`), logs and backups
+(`shelf-manage`), and diagnosis (`shelf-diagnose`). What it is and how it
+is built: [`deploy/agent/README.md`](../deploy/agent/README.md).
+
 ### Manual (docker compose)
 
 Open `https://github.com/kkucherenkov/course_shelf/releases`, pick the
@@ -70,8 +99,10 @@ release you want, and grab `courseshelf-release-vX.Y.Z.tar.gz`.
 curl -LO https://github.com/kkucherenkov/course_shelf/releases/download/vX.Y.Z-release/courseshelf-release-vX.Y.Z.tar.gz
 tar xzf courseshelf-release-vX.Y.Z.tar.gz
 # The bundle contains compose.yml + nginx-prod.conf (bind-mounted by the
-# proxy service) + .env.example + CHANGELOG.md + README.md. Don't move
-# compose.yml out of the directory — the bind-mount uses ./nginx-prod.conf.
+# proxy service) + .env.example + CHANGELOG.md + README.md, plus the
+# installer agent (CLAUDE.md, AGENTS.md, .claude/). Don't move compose.yml
+# out of the directory — the bind-mount uses ./nginx-prod.conf, and the
+# agent's scripts find the stack by looking beside themselves.
 cd courseshelf-release-vX.Y.Z
 
 cp .env.example .env
@@ -81,7 +112,11 @@ docker compose --env-file .env -f compose.yml pull
 docker compose --env-file .env -f compose.yml up -d
 ```
 
-Browse to `http://<your-host>:${PROXY_PORT}` (default `:8080`).
+Browse to `http://<your-host>:${PROXY_PORT}` (default `:8080`) and
+register — while the instance has no users every route redirects to the
+sign-up wizard, and **the first account created becomes the
+administrator**. That first sign-up is allowed even with the recommended
+`AUTH_SELF_REGISTRATION=false`; the toggle applies to everyone after.
 
 Upgrades: download the next release's tarball, point your existing `.env`
 at it, run `pull && up -d`. Migrations apply on backend boot — see the
@@ -134,7 +169,11 @@ docker compose \
   up -d --build
 ```
 
-Browse to `http://<your-host>:${PROXY_PORT}` (default `:8080`).
+Browse to `http://<your-host>:${PROXY_PORT}` (default `:8080`) and
+register — while the instance has no users every route redirects to the
+sign-up wizard, and **the first account created becomes the
+administrator**. That first sign-up is allowed even with the recommended
+`AUTH_SELF_REGISTRATION=false`; the toggle applies to everyone after.
 
 ## Required environment
 

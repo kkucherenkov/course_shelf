@@ -10,6 +10,7 @@
 [![pnpm >=10](https://img.shields.io/badge/pnpm-%E2%89%A510-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
 
 > Релизные образы публикуются в `ghcr.io/kkucherenkov/courseshelf-{backend,web}` — см. [`docs/deployment.md`](docs/deployment.md).
+> В релизном бандле едет агент-установщик: распаковать, запустить `claude` в этой папке — и стек поднимется через диалог, без знания Docker ([`deploy/agent/`](deploy/agent/README.md)).
 
 ---
 

@@ -207,15 +207,23 @@ assert_eq "three steps are done" "3" "$(printf '%s' "$out" | grep -c '\[OK\]')"
 printf '%s' "$out" | grep -q 'Next step: 4 '
 assert "the next step is 4" $?
 
-it "install --fresh backs the old .env up before clearing markers"
+it "install --fresh backs the old .env up, then clears every marker"
+# The docker mock refuses `info`, so step 1 dies and nothing re-creates the
+# markers --fresh just removed. A mock that let the run continue would
+# re-mark them and the assertion below would pass without meaning anything.
 stack=$(new_stack)
 mkdir -p "$stack/.courseshelf"
-touch "$stack/.courseshelf/.install_step_1_ok"
+for n in 1 2 3 4 5 6 7 8; do touch "$stack/.courseshelf/.install_step_${n}_ok"; done
 printf 'PUBLIC_BASE_URL=http://old.example\n' >"$stack/.env"
-bin=$(new_mockbin "$HEALTH_OK" '{"hasUsers":true}')
-out=$(PATH="$bin:$PATH" CS_STACK_DIR="$stack" CS_HEALTH_TIMEOUT=6 bash "$INSTALL" --fresh --courses /tmp \
+bin=$(new_mockbin "" "")
+printf '#!/usr/bin/env bash\n[ "$1" = "info" ] && exit 1\nexit 0\n' >"$bin/docker"
+chmod +x "$bin/docker"
+out=$(PATH="$bin:$PATH" CS_STACK_DIR="$stack" bash "$INSTALL" --fresh --courses /tmp \
   --public-url http://x.example --force 2>&1)
-assert_eq "the old marker is gone" "0" "$(ls "$stack/.courseshelf" | grep -c 'install_step_1_ok')"
+printf '%s' "$out" | grep -q 'cannot talk to the docker daemon'
+assert "step 1 stops on a dead daemon" $?
+check=$(CS_STACK_DIR="$stack" bash "$INSTALL" --check)
+assert_eq "all eight markers were cleared" "8" "$(printf '%s' "$check" | grep -c '\[TODO\]')"
 backup=$(find "$stack/.courseshelf/backups" -name '.env.*' 2>/dev/null | head -1)
 assert "a backup of the old .env exists" "$([ -n "$backup" ] && echo 0 || echo 1)"
 if [ -n "$backup" ]; then

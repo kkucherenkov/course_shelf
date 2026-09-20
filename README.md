@@ -10,6 +10,7 @@
 [![pnpm >=10](https://img.shields.io/badge/pnpm-%E2%89%A510-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
 
 > Release images are published to `ghcr.io/kkucherenkov/courseshelf-{backend,web}` — see [`docs/deployment.md`](docs/deployment.md).
+> The release bundle carries an installer agent: unpack it, run `claude` in the directory, and it stands the stack up by conversation — [`deploy/agent/`](deploy/agent/README.md).
 
 ---
 

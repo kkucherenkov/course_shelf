@@ -17,6 +17,7 @@ export default {
         'web',
         'mobile',
         'docker',
+        'deploy',
         'ci',
         'github',
         'husky',

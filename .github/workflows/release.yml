@@ -327,13 +327,35 @@ jobs:
           cp docker/nginx/prod.conf "$STAGE/nginx-prod.conf"
           cp .env.release.example "$STAGE/.env.example"
           cp release-notes.md "$STAGE/CHANGELOG.md"
+
+          # The installer agent travels with the bundle: unpack, run `claude`
+          # (or `codex`) in the directory, and the skills in .claude/ drive
+          # the install against the compose.yml sitting next to them — which
+          # is why the scripts resolve their stack directory by walking up
+          # from themselves. deploy/agent/tests/ is deliberately left behind;
+          # it mocks docker and is of no use to someone installing.
+          cp deploy/agent/CLAUDE.md deploy/agent/AGENTS.md "$STAGE/"
+          cp -R deploy/agent/.claude "$STAGE/.claude"
           cat > "$STAGE/README.md" <<EOF
           # CourseShelf $SEMVER — release bundle
+
+          ## Option A — let the agent do it
+
+          Run \`claude\` (or \`codex\`) in this directory and say what you
+          want. It checks the host, asks for your courses folder and the URL
+          you will use, generates the secrets, starts the stack and tells you
+          how to create the first account. It asks before every command that
+          changes anything.
+
+          ## Option B — by hand
 
           1. Copy \`.env.example\` to \`.env\` and fill in the secrets.
           2. \`docker compose --env-file .env -f compose.yml pull\`
           3. \`docker compose --env-file .env -f compose.yml up -d\`
           4. Browse to http://<your-host>:\${PROXY_PORT:-8080}
+          5. Register on the page it sends you to — while there are no
+             users, every route redirects to the sign-up wizard, and the
+             first account created becomes the administrator.
 
           See CHANGELOG.md for what changed in this release.
           EOF

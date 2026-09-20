@@ -72,5 +72,7 @@
   the link. `apps/web/app/middleware/auth.global.ts:84-88` redirects every
   route to the wizard while `hasUsers === false`, so opening the base URL is
   enough. Fixed in all six places before commit.
-- Status: in-progress
+- Status: done
 - Blockers: —
+- Completed: 2026-09-20
+- Result: https://github.com/kkucherenkov/course_shelf/pull/754

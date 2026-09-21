@@ -11,7 +11,7 @@ denominator below.
 Progress (update by hand):
 
 - **v1** — `119 / 119` complete. 121 cards, 2 cancelled.
-- **v2** — `42 / 45` complete. 46 cards across E25–E32, 1 cancelled.
+- **v2** — `42 / 46` complete. 47 cards across E25–E32, 1 cancelled.
 - **2.0** — `0 / 10` complete. 10 cards, all in E33.
 
 v1 is the shipped product; v2 is the transcript-first direction and the
@@ -281,6 +281,7 @@ finished.
 - [x] [E32-F01-S04](./tasks/E32-F01-S04.md) `A` — Two videos may share a filename in different section folders · ⇐ E32-F01-S03
 - [x] [E32-F01-S05](./tasks/E32-F01-S05.md) `A` — A course title with no Latin letters must not delete the course · ⇐ E32-F01-S04
 - [x] [E32-F02-S01](./tasks/E32-F02-S01.md) `A` — Transcribe a single course · ⇐ E32-F01-S02
+- [ ] [E32-F01-S06](./tasks/E32-F01-S06.md) `A` — Nested folders are sections, not one flattened list · ⇐ E32-F01-S01
 
 ## E33 — Ownership and taxonomy
 

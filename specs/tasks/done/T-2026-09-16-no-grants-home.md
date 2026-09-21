@@ -58,6 +58,8 @@
         one `smoke.spec.ts` backend-health failure is the missing backend,
         not this change
   - [x] CI green on #670 after the fixture fix (all checks passed)
-- Status: in-progress — PR #670 open and green, awaiting merge
+- Status: done
 - Blockers: —
+- Completed: 2026-09-16
+- Result: https://github.com/kkucherenkov/course_shelf/pull/670
 - PR: https://github.com/kkucherenkov/course_shelf/pull/670 (merged)

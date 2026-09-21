@@ -27,8 +27,10 @@
         mount) and reran the same script — text lost, matching the reported
         defect exactly. Restored the fix, reran — green again.
   - [x] gates: `@app/ui` lint/test — 23/23 `AppNoteEditor` tests green.
-- Status: ready for PR
+- Status: done
 - Blockers: —
+- Completed: 2026-09-16
+- Result: https://github.com/kkucherenkov/course_shelf/pull/634
 - Not fixed (flagged, not in scope): `PlayerNotesTab.vue` duplicates the
   "N time ago" formatter a third time in the project (admin has its own,
   fixed by another lane this wave) — no shared helper exists yet; told the

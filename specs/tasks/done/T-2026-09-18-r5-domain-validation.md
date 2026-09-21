@@ -44,5 +44,7 @@
         `UPDATE 0` on every table (idempotent), and a decoy row under a
         `rootPath` containing `_` proves the `left()` comparison doesn't fall
         into the `LIKE`-wildcard trap a naive pattern match would
-- Status: in-progress
-- Blockers: — (awaiting CI on the backfill commit, PR https://github.com/kkucherenkov/course_shelf/pull/752)
+- Status: done
+- Blockers: —
+- Completed: 2026-09-21
+- Result: https://github.com/kkucherenkov/course_shelf/pull/752

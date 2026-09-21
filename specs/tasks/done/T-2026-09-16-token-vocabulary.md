@@ -62,7 +62,9 @@
         ("Показать полностью"), click removes the clamp and shows all 4734
         characters, label flips to "Свернуть" — screenshotted both states
   - [x] Gates + PR
-- Status: in-progress (PR open, awaiting review/merge; final
+- Status: done
   `themedAliasLines()` removal deferred to maintainer go-ahead)
 - Blockers: —
+- Completed: 2026-09-16
+- Result: https://github.com/kkucherenkov/course_shelf/pull/663
 - PR: https://github.com/kkucherenkov/course_shelf/pull/663 (merged)

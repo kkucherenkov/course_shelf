@@ -43,6 +43,8 @@
         `@app/ui` lint clean, 931/931 tests; both typecheck clean (after
         `pnpm design:build` — the generated tokens file is gitignored and
         was simply missing in this fresh worktree, not a real defect).
-- Status: ready for PR
+- Status: done
 - Blockers: —
+- Completed: 2026-09-16
+- Result: https://github.com/kkucherenkov/course_shelf/pull/627
 - PR: https://github.com/kkucherenkov/course_shelf/pull/627 (merged)

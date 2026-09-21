@@ -20,8 +20,10 @@
         (`AdminIdentifyTaskReview`, shows changed-field count)
   - [x] gates: lint, stylelint, format, `turbo run lint test typecheck` — all
         green (474 web + 918 ui tests)
-- Status: in-progress — PR #611 open, all checks green except one
-- Blockers: "Storybook visual regression" fails on PR #611 with 3 drifted
+- Status: done
+- Blockers: —
+- Completed: 2026-09-16
+- Result: https://github.com/kkucherenkov/course_shelf/pull/611
   stories (`AppNavigationShell`, `AppPlayerChrome`, `IconCS`) — none in this
   branch's diff (no `packages/ui` files touched). Confirmed pre-existing:
   the same check already fails on `main` at `ed3653d0` and `a99a7b80` before

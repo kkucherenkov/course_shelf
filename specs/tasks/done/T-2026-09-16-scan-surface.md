@@ -48,5 +48,5 @@
         (button only on the matching row). Confirmed red before fix.
   - [x] gates: lint, stylelint, format, `check:i18n`,
         `turbo run lint test typecheck` — all green
-- Status: ready for PR
+- Status: done
 - PR: https://github.com/kkucherenkov/course_shelf/pull/626 (merged)

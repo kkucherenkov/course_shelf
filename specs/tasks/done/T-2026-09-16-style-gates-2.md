@@ -64,5 +64,7 @@
         on the serial re-run: 18/18 tasks, 567/567 web tests), `pnpm
 check:i18n` clean (758/758 en=ru, unchanged — no strings touched)
   - [x] Open PR, `Closes #676` — https://github.com/kkucherenkov/course_shelf/pull/677
-- Status: in-progress (PR open, awaiting review/merge)
+- Status: done
 - Blockers: —
+- Completed: 2026-09-16
+- Result: https://github.com/kkucherenkov/course_shelf/pull/677

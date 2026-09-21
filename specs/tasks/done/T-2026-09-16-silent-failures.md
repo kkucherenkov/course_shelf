@@ -72,7 +72,7 @@ margin: auto`. `AppDialog` isn't in this wave's ownership table;
         other spec is route-mocked and hermetic).
   - [x] gates: lint, stylelint, format, `pnpm check:i18n`,
         `turbo run lint test typecheck` (@app/web 533/533, @app/ui 933/933)
-- Status: ready for PR
+- Status: done
 - Not closing #623 (other lanes own the rest); not touching
   `admin/libraries/[id].vue` (scan-surface) or `layouts/default.vue`'s
   discarded `useScanLifecycle` status (nav-and-keys) — flagged, not fixed.

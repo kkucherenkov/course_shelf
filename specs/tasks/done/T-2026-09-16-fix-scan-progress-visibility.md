@@ -24,6 +24,8 @@
         `useScanProgress` and `ScanLifecycleNotifier`
   - [x] gates: lint, stylelint, format, `turbo run lint test typecheck`
         (@app/web 475/475, @app/ui 918/918, both clean)
-- Status: ready for PR
+- Status: done
 - Blockers: —
+- Completed: 2026-09-16
+- Result: https://github.com/kkucherenkov/course_shelf/pull/612
 - PR: https://github.com/kkucherenkov/course_shelf/pull/612 (merged)

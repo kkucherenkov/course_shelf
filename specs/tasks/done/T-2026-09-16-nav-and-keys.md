@@ -39,8 +39,10 @@
         Libraries trap), admin dashboard's Libraries card reads
         "0 courses · 0 lessons" (not the raw key), admin sidebar has exactly
         one library-management entry
-- Status: in-progress — PR #625 open
+- Status: done
 - Blockers: —
+- Completed: 2026-09-16
+- Result: https://github.com/kkucherenkov/course_shelf/pull/625
 
 Reported to maintainer, not fixed here (owned by other lanes / not mine):
 `nuxt.config.ts:30` claims locale messages live in `.json` (they're `.ts`);

@@ -6,12 +6,17 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { LessonNotFoundError } from '../../../../common/catalog-tokens';
+import { FlashcardSourceCueInvalidError } from '../../domain/flashcard/flashcard.errors';
 
 import { CreateFlashcardCommand } from './create-flashcard.command';
 import { CreateFlashcardHandler } from './create-flashcard.handler';
 
 import type { AuthorizationService } from '../../../../common/access/authorization.service';
-import type { CourseRepository, LessonRepository } from '../../../../common/catalog-tokens';
+import type {
+  CourseRepository,
+  LessonRepository,
+  TranscriptRepository,
+} from '../../../../common/catalog-tokens';
 import type { FlashcardRepository } from '../../domain/flashcard/flashcard.repository';
 
 // ---------------------------------------------------------------------------
@@ -50,21 +55,44 @@ function makeFlashcardRepo(): FlashcardRepository {
   };
 }
 
+function makeTranscriptRepo(cueBelongs = true): TranscriptRepository {
+  return {
+    findGeneratedForLessons: vi.fn(),
+    findAnyGeneratedForLessons: vi.fn(),
+    replaceGenerated: vi.fn(),
+    findExisting: vi.fn(),
+    replaceSidecar: vi.fn(),
+    deleteForLesson: vi.fn(),
+    findGeneratedByLanguage: vi.fn(),
+    reclassifyGenerated: vi.fn(),
+    findCuesForLesson: vi.fn(),
+    cueBelongsToLesson: vi.fn().mockResolvedValue(cueBelongs),
+  } as unknown as TranscriptRepository;
+}
+
 function makeHandler(
   opts: {
     lesson?: unknown;
     course?: unknown;
     allowed?: boolean;
     flashcardRepo?: FlashcardRepository;
+    transcripts?: TranscriptRepository;
   } = {},
 ) {
   const lessonRepo = makeLessonRepo('lesson' in opts ? opts.lesson : LESSON);
   const courseRepo = makeCourseRepo('course' in opts ? opts.course : COURSE);
   const authz = makeAuthz(opts.allowed ?? true);
   const flashcardRepo = opts.flashcardRepo ?? makeFlashcardRepo();
+  const transcripts = opts.transcripts ?? makeTranscriptRepo();
 
-  const handler = new CreateFlashcardHandler(lessonRepo, courseRepo, authz, flashcardRepo);
-  return { handler, lessonRepo, courseRepo, authz, flashcardRepo };
+  const handler = new CreateFlashcardHandler(
+    lessonRepo,
+    courseRepo,
+    authz,
+    flashcardRepo,
+    transcripts,
+  );
+  return { handler, lessonRepo, courseRepo, authz, flashcardRepo, transcripts };
 }
 
 function makeCommand(actor = ADMIN, sourceCueId?: string): CreateFlashcardCommand {
@@ -104,12 +132,20 @@ describe('CreateFlashcardHandler', () => {
       expect(dto.easeFactor).toBe(2.5);
     });
 
-    it('persists sourceCueId when provided', async () => {
-      const { handler, flashcardRepo } = makeHandler();
+    it('persists sourceCueId when it belongs to this lesson', async () => {
+      const { handler, flashcardRepo, transcripts } = makeHandler();
       await handler.execute(makeCommand(ADMIN, 'cue-1'));
 
+      expect(transcripts.cueBelongsToLesson).toHaveBeenCalledWith('cue-1', 'lesson-1');
       const saved = vi.mocked(flashcardRepo.save).mock.calls[0]?.[0];
       expect(saved?.sourceCueId).toBe('cue-1');
+    });
+
+    it('does not check cue ownership when sourceCueId is omitted', async () => {
+      const { handler, transcripts } = makeHandler();
+      await handler.execute(makeCommand());
+
+      expect(transcripts.cueBelongsToLesson).not.toHaveBeenCalled();
     });
 
     it('omits sourceCueId from the DTO when not provided (manual creation)', async () => {
@@ -136,6 +172,21 @@ describe('CreateFlashcardHandler', () => {
     it('throws LessonNotFoundError when parent course is missing (orphan lesson)', async () => {
       const { handler } = makeHandler({ course: null });
       await expect(handler.execute(makeCommand())).rejects.toBeInstanceOf(LessonNotFoundError);
+    });
+
+    it('throws FlashcardSourceCueInvalidError when sourceCueId belongs to another lesson', async () => {
+      const { handler, flashcardRepo } = makeHandler({ transcripts: makeTranscriptRepo(false) });
+      await expect(handler.execute(makeCommand(ADMIN, 'cue-other'))).rejects.toBeInstanceOf(
+        FlashcardSourceCueInvalidError,
+      );
+      expect(flashcardRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('throws FlashcardSourceCueInvalidError when sourceCueId does not exist', async () => {
+      const { handler } = makeHandler({ transcripts: makeTranscriptRepo(false) });
+      await expect(handler.execute(makeCommand(ADMIN, 'cue-missing'))).rejects.toBeInstanceOf(
+        FlashcardSourceCueInvalidError,
+      );
     });
   });
 });

@@ -1078,7 +1078,12 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
                 for (const m of entry.materials) {
                   try {
                     lesson.addMaterial(
-                      Material.fromFile({ id: nanoid(), path: m.path, sizeBytes: m.sizeBytes }),
+                      Material.fromFile({
+                        id: nanoid(),
+                        path: m.path,
+                        libraryRoot: rootPath,
+                        sizeBytes: m.sizeBytes,
+                      }),
                     );
                   } catch (error) {
                     if (error instanceof MaterialKindUnsupportedError) {
@@ -1096,7 +1101,9 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
                 for (const subtitlePath of dedupeSubtitlePathsByLanguage(
                   entry.subtitles.map((s) => s.path),
                 )) {
-                  lesson.addSubtitle(Subtitle.fromFile({ id: nanoid(), path: subtitlePath }));
+                  lesson.addSubtitle(
+                    Subtitle.fromFile({ id: nanoid(), path: subtitlePath, libraryRoot: rootPath }),
+                  );
                 }
 
                 await this.lessonRepo.save(lesson);

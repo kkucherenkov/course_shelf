@@ -126,7 +126,7 @@ export class PrismaLessonRepository implements LessonRepository {
               lessonId: lesson.id,
               kind: m.kind,
               label: m.label,
-              path: m.path,
+              path: m.path.value,
               sizeBytes: m.sizeBytes,
             })),
           });
@@ -141,7 +141,7 @@ export class PrismaLessonRepository implements LessonRepository {
               lessonId: lesson.id,
               language: s.language,
               label: s.label,
-              path: s.path,
+              path: s.path.value,
             })),
           });
         }
@@ -269,7 +269,7 @@ export class PrismaLessonRepository implements LessonRepository {
           id: m.id,
           kind: m.kind as import('../domain/lesson/material').MaterialKindValue,
           label: m.label,
-          path: m.path,
+          path: LibraryRelativePath.reconstitute(m.path),
           sizeBytes: m.sizeBytes,
         }),
       ),
@@ -279,7 +279,7 @@ export class PrismaLessonRepository implements LessonRepository {
         Subtitle.reconstitute({
           id: s.id,
           language: s.language,
-          path: s.path,
+          path: LibraryRelativePath.reconstitute(s.path),
         }),
       ),
     });

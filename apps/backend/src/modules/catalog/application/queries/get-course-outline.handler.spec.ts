@@ -112,6 +112,7 @@ function makeTranscriptRepo(
     findGeneratedByLanguage: vi.fn().mockResolvedValue([]),
     reclassifyGenerated: vi.fn(),
     findCuesForLesson: vi.fn().mockResolvedValue(null),
+    cueBelongsToLesson: vi.fn().mockResolvedValue(true),
   };
 }
 
@@ -164,7 +165,11 @@ function makeLesson(opts: {
 }
 
 function makeSubtitle(language = 'en'): Subtitle {
-  return Subtitle.reconstitute({ id: `sub-${language}`, language, path: `lesson.${language}.srt` });
+  return Subtitle.reconstitute({
+    id: `sub-${language}`,
+    language,
+    path: LibraryRelativePath.reconstitute(`lesson.${language}.srt`),
+  });
 }
 
 function makeMaterial(id: string): Material {
@@ -172,7 +177,7 @@ function makeMaterial(id: string): Material {
     id,
     kind: 'doc',
     label: 'Notes',
-    path: 'notes.pdf',
+    path: LibraryRelativePath.reconstitute('notes.pdf'),
     sizeBytes: 512,
   });
 }

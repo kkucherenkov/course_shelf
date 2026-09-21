@@ -70,7 +70,35 @@ const MATERIAL_ID = 'mat-1';
 const MATERIAL_RELATIVE = 'intro/notes.pdf';
 const EXPECTED_MATERIAL_ABS = path.resolve(ROOT, MATERIAL_RELATIVE);
 
-function makeLessonWithSubtitles(subtitles: { language: string; path: string }[] = []): object {
+/**
+ * `Subtitle.path` / `Material.path` are `LibraryRelativePath` instances on the
+ * real domain type (tuxedo 174), so a fixture standing in for one needs the
+ * same `absolutePath(libraryRoot)` shape `LessonFileLocator` actually calls —
+ * mirroring `absoluteVideoPath` above. A plain `relative` string is enough to
+ * build one; the traversal tests below pass an escaping `relative` on purpose,
+ * the same way the videoPath traversal tests fake `absoluteVideoPath`.
+ */
+function subtitleFixture(language: string, relative: string): object {
+  return { language, absolutePath: (root: string) => path.resolve(root, relative) };
+}
+
+function materialFixture(
+  id: string,
+  relative: string,
+  kind: string,
+  label: string,
+  sizeBytes: number,
+): object {
+  return {
+    id,
+    absolutePath: (root: string) => path.resolve(root, relative),
+    kind,
+    label,
+    sizeBytes,
+  };
+}
+
+function makeLessonWithSubtitles(subtitles: object[] = []): object {
   return {
     id: LESSON_ID,
     courseId: COURSE_ID,
@@ -80,9 +108,7 @@ function makeLessonWithSubtitles(subtitles: { language: string; path: string }[]
   };
 }
 
-function makeLessonWithMaterials(
-  materials: { id: string; path: string; kind: string; label: string; sizeBytes: number }[] = [],
-): object {
+function makeLessonWithMaterials(materials: object[] = []): object {
   return {
     id: LESSON_ID,
     courseId: COURSE_ID,
@@ -149,6 +175,7 @@ function makeTranscriptRepo(overrides?: Partial<TranscriptRepository>): Transcri
     findGeneratedByLanguage: vi.fn().mockResolvedValue([]),
     reclassifyGenerated: vi.fn(),
     findCuesForLesson: vi.fn().mockResolvedValue(null),
+    cueBelongsToLesson: vi.fn().mockResolvedValue(true),
     ...overrides,
   };
 }
@@ -281,9 +308,7 @@ describe('LessonFileLocator', () => {
 
   it('locateSubtitle happy path — VTT returns extension .vtt', async () => {
     statSpy.mockResolvedValue({ size: 1 } as Awaited<ReturnType<typeof fs.stat>>);
-    const lessonWithVtt = makeLessonWithSubtitles([
-      { language: 'en', path: SUBTITLE_VTT_RELATIVE },
-    ]);
+    const lessonWithVtt = makeLessonWithSubtitles([subtitleFixture('en', SUBTITLE_VTT_RELATIVE)]);
     const locator = makeLocator(
       makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithVtt) }),
       makeCourseRepo(),
@@ -300,9 +325,7 @@ describe('LessonFileLocator', () => {
 
   it('locateSubtitle happy path — SRT returns extension .srt', async () => {
     statSpy.mockResolvedValue({ size: 1 } as Awaited<ReturnType<typeof fs.stat>>);
-    const lessonWithSrt = makeLessonWithSubtitles([
-      { language: 'ru', path: SUBTITLE_SRT_RELATIVE },
-    ]);
+    const lessonWithSrt = makeLessonWithSubtitles([subtitleFixture('ru', SUBTITLE_SRT_RELATIVE)]);
     const locator = makeLocator(
       makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithSrt) }),
       makeCourseRepo(),
@@ -317,9 +340,7 @@ describe('LessonFileLocator', () => {
 
   it('locateSubtitle — language lookup is case-insensitive', async () => {
     statSpy.mockResolvedValue({ size: 1 } as Awaited<ReturnType<typeof fs.stat>>);
-    const lessonWithVtt = makeLessonWithSubtitles([
-      { language: 'EN', path: SUBTITLE_VTT_RELATIVE },
-    ]);
+    const lessonWithVtt = makeLessonWithSubtitles([subtitleFixture('EN', SUBTITLE_VTT_RELATIVE)]);
     const locator = makeLocator(
       makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithVtt) }),
       makeCourseRepo(),
@@ -432,9 +453,7 @@ describe('LessonFileLocator', () => {
 
   it('locateSubtitle prefers a sidecar over a generated transcript in the same language', async () => {
     statSpy.mockResolvedValue({ size: 1 } as Awaited<ReturnType<typeof fs.stat>>);
-    const lessonWithVtt = makeLessonWithSubtitles([
-      { language: 'en', path: SUBTITLE_VTT_RELATIVE },
-    ]);
+    const lessonWithVtt = makeLessonWithSubtitles([subtitleFixture('en', SUBTITLE_VTT_RELATIVE)]);
     const transcriptRepo = makeTranscriptRepo();
     const locator = makeLocator(
       makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithVtt) }),
@@ -479,9 +498,7 @@ describe('LessonFileLocator', () => {
   // must 404 through the same locator check, not 500 downstream.
   it('locateSubtitle throws SubtitleNotFoundError when the sidecar .vtt row exists but the file is gone from disk', async () => {
     statSpy.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
-    const lessonWithVtt = makeLessonWithSubtitles([
-      { language: 'en', path: SUBTITLE_VTT_RELATIVE },
-    ]);
+    const lessonWithVtt = makeLessonWithSubtitles([subtitleFixture('en', SUBTITLE_VTT_RELATIVE)]);
     const locator = makeLocator(
       makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithVtt) }),
       makeCourseRepo(),
@@ -495,9 +512,7 @@ describe('LessonFileLocator', () => {
 
   it('locateSubtitle throws SubtitleNotFoundError when the sidecar .srt row exists but the file is gone from disk', async () => {
     statSpy.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
-    const lessonWithSrt = makeLessonWithSubtitles([
-      { language: 'ru', path: SUBTITLE_SRT_RELATIVE },
-    ]);
+    const lessonWithSrt = makeLessonWithSubtitles([subtitleFixture('ru', SUBTITLE_SRT_RELATIVE)]);
     const locator = makeLocator(
       makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithSrt) }),
       makeCourseRepo(),
@@ -532,7 +547,7 @@ describe('LessonFileLocator', () => {
 
   it('locateSubtitle throws LessonFilePathEscapedError for traversal on subtitle path', async () => {
     const lessonWithEvilSubtitle = makeLessonWithSubtitles([
-      { language: 'en', path: '../../etc/passwd' },
+      subtitleFixture('en', '../../etc/passwd'),
     ]);
     const locator = makeLocator(
       makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithEvilSubtitle) }),
@@ -553,7 +568,7 @@ describe('LessonFileLocator', () => {
     statSpy.mockResolvedValue({ size: 8192 } as Awaited<ReturnType<typeof fs.stat>>);
 
     const lessonWithMaterial = makeLessonWithMaterials([
-      { id: MATERIAL_ID, path: MATERIAL_RELATIVE, kind: 'doc', label: 'Notes', sizeBytes: 8192 },
+      materialFixture(MATERIAL_ID, MATERIAL_RELATIVE, 'doc', 'Notes', 8192),
     ]);
     const locator = makeLocator(
       makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithMaterial) }),
@@ -586,13 +601,7 @@ describe('LessonFileLocator', () => {
 
   it('locateMaterial throws LessonFilePathEscapedError for traversal on material path', async () => {
     const lessonWithEvilMaterial = makeLessonWithMaterials([
-      {
-        id: MATERIAL_ID,
-        path: '../../etc/passwd',
-        kind: 'doc',
-        label: 'Evil',
-        sizeBytes: 1,
-      },
+      materialFixture(MATERIAL_ID, '../../etc/passwd', 'doc', 'Evil', 1),
     ]);
     const locator = makeLocator(
       makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithEvilMaterial) }),
@@ -609,7 +618,7 @@ describe('LessonFileLocator', () => {
     statSpy.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
 
     const lessonWithMaterial = makeLessonWithMaterials([
-      { id: MATERIAL_ID, path: MATERIAL_RELATIVE, kind: 'doc', label: 'Notes', sizeBytes: 100 },
+      materialFixture(MATERIAL_ID, MATERIAL_RELATIVE, 'doc', 'Notes', 100),
     ]);
     const locator = makeLocator(
       makeLessonRepo({ findById: vi.fn().mockResolvedValue(lessonWithMaterial) }),

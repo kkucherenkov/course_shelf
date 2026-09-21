@@ -51,6 +51,7 @@ function makeTranscripts(
     findGeneratedByLanguage: vi.fn(async () => []),
     reclassifyGenerated: vi.fn(async () => undefined),
     findCuesForLesson: vi.fn(async () => null),
+    cueBelongsToLesson: vi.fn(async () => true),
   };
 }
 

@@ -28,8 +28,13 @@ interface TranscriptDelegate {
   create: ReturnType<typeof vi.fn>;
 }
 
+interface TranscriptCueDelegate {
+  findFirst: ReturnType<typeof vi.fn>;
+}
+
 interface MockPrisma {
   transcript: TranscriptDelegate;
+  transcriptCue: TranscriptCueDelegate;
   $transaction: ReturnType<typeof vi.fn>;
 }
 
@@ -40,6 +45,9 @@ function makePrisma(): MockPrisma {
       findUnique: vi.fn().mockResolvedValue(null),
       deleteMany: vi.fn().mockResolvedValue(undefined),
       create: vi.fn().mockResolvedValue(undefined),
+    },
+    transcriptCue: {
+      findFirst: vi.fn().mockResolvedValue(null),
     },
     $transaction: vi.fn(),
   };
@@ -185,6 +193,25 @@ describe('PrismaTranscriptRepository', () => {
       vi.mocked(unlink).mockRejectedValueOnce(new Error('ENOENT'));
 
       await expect(repo.deleteForLesson('l1')).resolves.toBeUndefined();
+    });
+  });
+
+  describe('cueBelongsToLesson', () => {
+    it('returns true when a TranscriptCue row matches (cueId, lessonId)', async () => {
+      prisma.transcriptCue.findFirst.mockResolvedValue({ id: 'cue-1' });
+
+      const result = await repo.cueBelongsToLesson('cue-1', 'l1');
+
+      expect(prisma.transcriptCue.findFirst).toHaveBeenCalledWith({
+        where: { id: 'cue-1', transcript: { lessonId: 'l1' } },
+        select: { id: true },
+      });
+      expect(result).toBe(true);
+    });
+
+    it('returns false when the cue belongs to another lesson or does not exist', async () => {
+      prisma.transcriptCue.findFirst.mockResolvedValue(null);
+      expect(await repo.cueBelongsToLesson('cue-1', 'l1')).toBe(false);
     });
   });
 });

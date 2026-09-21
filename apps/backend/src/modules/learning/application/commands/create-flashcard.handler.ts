@@ -9,7 +9,10 @@
  *   1. Load lesson. Missing → LessonNotFoundError.
  *   2. Load parent course for libraryId.
  *   3. AuthorizationService.canSee → PermissionDenied if non-admin without grant.
- *   4. Create a Flashcard aggregate via nanoid id stamped with actor.id,
+ *   4. When sourceCueId is given, verify it names a TranscriptCue on this
+ *      lesson's own transcript (tuxedo 208) — a foreign or nonexistent id is
+ *      FlashcardSourceCueInvalidError, not a silently saved reference.
+ *   5. Create a Flashcard aggregate via nanoid id stamped with actor.id,
  *      due immediately, and persist.
  *
  * No NestJS HTTP exceptions. HttpExceptionFilter translates DomainError subclasses.
@@ -23,9 +26,11 @@ import {
   COURSE_REPOSITORY,
   LESSON_REPOSITORY,
   LessonNotFoundError,
+  TRANSCRIPT_REPOSITORY,
 } from '../../../../common/catalog-tokens';
 import { PermissionDenied } from '../../../../shared/domain-error';
 import { Flashcard } from '../../domain/flashcard/flashcard';
+import { FlashcardSourceCueInvalidError } from '../../domain/flashcard/flashcard.errors';
 import { FLASHCARD_REPOSITORY } from '../../domain/flashcard/flashcard.repository';
 
 import { CreateFlashcardCommand } from './create-flashcard.command';
@@ -35,7 +40,11 @@ import type {
   CourseId,
   LibraryId,
 } from '../../../../common/access/authorization.service';
-import type { CourseRepository, LessonRepository } from '../../../../common/catalog-tokens';
+import type {
+  CourseRepository,
+  LessonRepository,
+  TranscriptRepository,
+} from '../../../../common/catalog-tokens';
 import type { FlashcardRepository } from '../../domain/flashcard/flashcard.repository';
 import type { FlashcardDto } from '@app/api-client-ts';
 
@@ -66,6 +75,7 @@ export class CreateFlashcardHandler implements ICommandHandler<
     @Inject(COURSE_REPOSITORY) private readonly courseRepo: CourseRepository,
     @Inject(AUTHORIZATION_SERVICE) private readonly authz: AuthorizationService,
     @Inject(FLASHCARD_REPOSITORY) private readonly flashcardRepo: FlashcardRepository,
+    @Inject(TRANSCRIPT_REPOSITORY) private readonly transcripts: TranscriptRepository,
   ) {}
 
   async execute(command: CreateFlashcardCommand): Promise<FlashcardDto> {
@@ -89,6 +99,13 @@ export class CreateFlashcardHandler implements ICommandHandler<
     });
     if (!allowed) {
       throw new PermissionDenied('You do not have access to this lesson.');
+    }
+
+    if (sourceCueId !== undefined) {
+      const belongs = await this.transcripts.cueBelongsToLesson(sourceCueId, lessonId);
+      if (!belongs) {
+        throw new FlashcardSourceCueInvalidError(sourceCueId);
+      }
     }
 
     const flashcard = Flashcard.create({

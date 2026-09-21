@@ -185,4 +185,13 @@ export interface TranscriptRepository {
    * transcript at all.
    */
   findCuesForLesson(lessonId: string): Promise<LessonCues | null>;
+
+  /**
+   * Whether `cueId` names a `TranscriptCue` belonging to one of `lessonId`'s
+   * own transcripts — the ownership check `CreateFlashcardHandler` needs
+   * before trusting a client-supplied `sourceCueId` (tuxedo 208). A cue from
+   * another lesson, or an id that does not exist at all, both return false;
+   * the caller does not need to tell the two apart.
+   */
+  cueBelongsToLesson(cueId: string, lessonId: string): Promise<boolean>;
 }

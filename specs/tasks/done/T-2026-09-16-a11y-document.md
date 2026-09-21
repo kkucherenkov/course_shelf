@@ -48,5 +48,5 @@
   - [x] Storybook visual baselines regenerated via `regen-snapshots.yml`
         (`suite: storybook`) — `AppNavigationShell` PNGs (locale toggle +
         bold active tab shift every story's topbar/bottom-tab a few px)
-- Status: in-progress
+- Status: done
 - PR: https://github.com/kkucherenkov/course_shelf/pull/615 (merged)

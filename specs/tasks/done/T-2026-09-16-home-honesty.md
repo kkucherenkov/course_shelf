@@ -65,7 +65,9 @@ check:i18n`, `pnpm exec turbo run lint test typecheck --filter=@app/web
         course-scope grant on `/admin/permissions/[userId]` as the admin —
         confirmed the dialog now reads `Revoke access to "Seed course —
 fundamentals" from Member Zero?` before it fires.
-- Status: ready for PR
-- Blockers: — (resumeLabel flagged above, needs a DTO change out of this
+- Status: done
+- Blockers: —
+- Completed: 2026-09-16
+- Result: https://github.com/kkucherenkov/course_shelf/pull/637
   lane's scope)
 - PR: https://github.com/kkucherenkov/course_shelf/pull/637 (merged)

@@ -109,9 +109,11 @@ lint --fix`, `pnpm --filter @app/web lint --fix`,
         `pnpm turbo run lint test typecheck` (18/18, 569/569 web),
         `pnpm check:i18n` clean, `pnpm --filter @app/ui storybook:build`
         succeeds with the story gone
-- Status: in-progress (PR #668 open, second commit pushed, awaiting
+- Status: done
   review/merge)
-- Blockers: waiting on `dead-surfaces`' PR to land before starting
+- Blockers: —
+- Completed: 2026-09-16
+- Result: https://github.com/kkucherenkov/course_shelf/pull/668
   apps/web cleanup — it's deleting `apps/web/app/pages/libraries.vue`
   outright, which carries a font-weight literal (line 210) and a
   duplicate `@keyframes` (line 277) this lane would otherwise redo work

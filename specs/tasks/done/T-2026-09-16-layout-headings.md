@@ -63,8 +63,10 @@
   - [x] gates: lint, stylelint, format, `check:i18n`,
         `turbo run lint test typecheck --filter=@app/web --filter=@app/ui`
         — all green (`@app/web` 524/524, `@app/ui` typecheck clean)
-- Status: ready for PR
-- Blockers: — (320px topbar content-floor and the pre-existing
+- Status: done
+- Blockers: —
+- Completed: 2026-09-16
+- Result: https://github.com/kkucherenkov/course_shelf/pull/629
   desktop-width Storybook viewport gap flagged above, not fixed — out of
   this ticket's stated criterion)
 - PR: https://github.com/kkucherenkov/course_shelf/pull/629 (merged)

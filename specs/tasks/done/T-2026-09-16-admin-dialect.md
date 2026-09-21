@@ -70,5 +70,7 @@ call, owned by `token-vocabulary`).
 lane `edit-sheet`, #653). Short token aliases (`--text-muted` etc.) are lane
 `token-vocabulary`'s (#654) — leave them as-is.
 
-- Status: in-progress (PR open, awaiting review/merge) — https://github.com/kkucherenkov/course_shelf/pull/660
+- Status: done
 - Blockers: —
+- Completed: 2026-09-16
+- Result: https://github.com/kkucherenkov/course_shelf/pull/660

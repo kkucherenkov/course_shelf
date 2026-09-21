@@ -50,5 +50,7 @@ whose parsed labels match land in one row.
   - [x] Match a rescanned folder to its persisted section by `sourcePath`, falling back to title while the column is null
   - [x] Prove a moved lesson keeps its id — covers the orphaned `lesson_progress` / `bookmark` risk
   - [x] Card `docs/roadmap/tasks/E32-F01-S06.md` + GitHub issue
-- Status: in-progress
+- Status: done
+- Completed: 2026-09-21
+- Result: https://github.com/kkucherenkov/course_shelf/pull/758
 - Blockers: —

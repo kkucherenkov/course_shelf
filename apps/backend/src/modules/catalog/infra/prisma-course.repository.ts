@@ -60,7 +60,13 @@ interface CourseRow {
   ratingCount: number | null;
   createdAt: Date;
   updatedAt: Date;
-  sections: { id: string; courseId: string; position: number; title: string }[];
+  sections: {
+    id: string;
+    courseId: string;
+    position: number;
+    title: string;
+    sourcePath: string | null;
+  }[];
   instructors: {
     instructorId: string;
     position: number;
@@ -93,7 +99,7 @@ const COURSE_WITH_SECTIONS_SELECT = {
   createdAt: true,
   updatedAt: true,
   sections: {
-    select: { id: true, courseId: true, position: true, title: true },
+    select: { id: true, courseId: true, position: true, title: true, sourcePath: true },
     orderBy: { position: 'asc' as const },
   },
   instructors: {
@@ -219,11 +225,13 @@ export class PrismaCourseRepository implements CourseRepository {
               courseId: course.id,
               position: s.position,
               title: s.title,
+              sourcePath: s.sourcePath ?? null,
             },
             update: {
               courseId: course.id,
               position: s.position,
               title: s.title,
+              sourcePath: s.sourcePath ?? null,
             },
           });
         }
@@ -412,6 +420,7 @@ export class PrismaCourseRepository implements CourseRepository {
         id: s.id,
         position: s.position,
         title: s.title,
+        ...(s.sourcePath === null ? {} : { sourcePath: s.sourcePath }),
       })),
       instructors: row.instructors.map((ci) => ({
         id: ci.instructor.id,

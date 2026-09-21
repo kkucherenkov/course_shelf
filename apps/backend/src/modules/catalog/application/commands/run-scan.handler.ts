@@ -78,6 +78,11 @@ import { FFMPEG_ADAPTER } from '../../domain/scan/ffmpeg-adapter';
 import { FS_ADAPTER } from '../../domain/scan/fs-adapter';
 import { parseFolderName, parseLessonFileName } from '../../domain/scan/folder-name.parser';
 import { assignLessonPositions } from '../../domain/scan/lesson-position';
+import {
+  compareSectionKeys,
+  resolveSectionFolder,
+  sectionSortKey,
+} from '../../domain/scan/section-folder';
 import { SLUG_MAX_LENGTH, slugify } from '../../domain/shared-vo/entity-slug';
 import { LibraryRelativePath } from '../../domain/shared-vo/library-relative-path';
 import { stemMatch } from '../../domain/scan/stem-match';
@@ -127,6 +132,11 @@ import type {
 //   '01 - NestJS: Basics & Beyond'  → '01-nestjs-basics-beyond'
 //   'Графы и комбинаторика'         → 'графы-и-комбинаторика'
 // ---------------------------------------------------------------------------
+/** Path segments from a course folder down to and including the filename. */
+function courseRelativeSegments(courseFolder: string, absolutePath: string): string[] {
+  return path.relative(courseFolder, absolutePath).split(/[/\\]/);
+}
+
 function toSlug(title: string): string {
   try {
     return slugify(title);
@@ -506,12 +516,12 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
           }
         >();
 
-        // section label → smallest ordinal seen for that label (or undefined
-        // when none of the sibling folders carry one). Persisted as a Map so
-        // section order downstream is the natural ordinal order rather than
-        // file-walk insertion order — `1, 2, 3, …, 10` instead of the
-        // lexicographic `1, 10, 2, …` that a Set would produce.
-        const sectionMap = new Map<string, number | undefined>();
+        // Course-relative section FOLDER → its display title. Keyed by the
+        // folder rather than by the title (E32-F01-S06): `27. Enemy AI` and
+        // `38. Enemy AI` both reduce to the title "Enemy AI", and keying by
+        // title merged them into one section holding both folders' lessons.
+        // Filled after the grouping loop — see the section-folder block below.
+        const sectionMap = new Map<string, string>();
 
         for (const file of files) {
           const fileBasename = path.basename(file.path);
@@ -564,37 +574,49 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               });
             }
           }
+        }
 
-          // Track section folders for course metadata.
-          const relFromCourse = path.relative(courseFolder, file.path);
-          const relSegments = relFromCourse.split(/[/\\]/);
-          if (relSegments.length > 1) {
-            const sectionFolder = relSegments[0] ?? '';
-            const { label, ordinal } = parseFolderName(sectionFolder);
-            // Keep the smallest ordinal seen for this label so two sibling
-            // folders that collapse to the same label (e.g. "1 Урок" and
-            // "2 Урок" both producing label="Урок") do not overwrite the
-            // first ordinal recorded.
-            const prev = sectionMap.get(label);
-            if (!sectionMap.has(label)) {
-              sectionMap.set(label, ordinal);
-            } else if (ordinal !== undefined && (prev === undefined || ordinal < prev)) {
-              sectionMap.set(label, ordinal);
-            }
+        // -----------------------------------------------------------------------
+        // Section folders (E32-F01-S06).
+        //
+        // Resolved AFTER the grouping loop, not inside it: the rule asks how
+        // many videos a directory holds, and that is only known once every
+        // file has been classified. `stemGroups` is the count — one group with
+        // a video is one lesson, so a directory's group count is its video
+        // count, and the ten PDFs beside a single lecture do not inflate it.
+        // -----------------------------------------------------------------------
+        const videoCountByDir = new Map<string, number>();
+        for (const [, group] of stemGroups) {
+          if (!group.video) continue;
+          const dir = courseRelativeSegments(courseFolder, group.video.path).slice(0, -1).join('/');
+          videoCountByDir.set(dir, (videoCountByDir.get(dir) ?? 0) + 1);
+        }
+
+        /** Course-relative section folder per video path; absent = flat layout. */
+        const sectionFolderByVideo = new Map<string, string>();
+        for (const [, group] of stemGroups) {
+          if (!group.video) continue;
+          const folder = resolveSectionFolder({
+            relSegments: courseRelativeSegments(courseFolder, group.video.path),
+            videoCountByDir,
+          });
+          if (folder !== undefined) sectionFolderByVideo.set(group.video.path, folder);
+          if (folder !== undefined && !sectionMap.has(folder)) {
+            sectionMap.set(folder, parseFolderName(folder.split('/').at(-1) ?? '').label);
           }
         }
 
-        // Sort sections by their parsed ordinal; labels without an ordinal go
-        // last in alphabetical order (so a course mixing "01 - Intro" with
-        // "Bonus Material" lands the bonus folder after the numbered sections).
-        const sortedSectionEntries = [...sectionMap.entries()].toSorted(
-          ([labelA, ordA], [labelB, ordB]) => {
-            if (ordA !== undefined && ordB !== undefined) return ordA - ordB;
-            if (ordA !== undefined) return -1;
-            if (ordB !== undefined) return 1;
-            return labelA.localeCompare(labelB);
-          },
-        );
+        // Sort sections by the composed ordinals of their whole path; folders
+        // without an ordinal go last in alphabetical order (so a course mixing
+        // "01 - Intro" with "Bonus Material" lands the bonus folder after the
+        // numbered sections).
+        const sortedSectionEntries = [...sectionMap.entries()].toSorted(([folderA], [folderB]) => {
+          const byOrdinal = compareSectionKeys(
+            sectionSortKey(folderA, (s) => parseFolderName(s).ordinal),
+            sectionSortKey(folderB, (s) => parseFolderName(s).ordinal),
+          );
+          return byOrdinal === 0 ? folderA.localeCompare(folderB) : byOrdinal;
+        });
 
         // -----------------------------------------------------------------------
         // Step 2: Process each stem group.
@@ -771,7 +793,7 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
 
         // Record the course if it has at least one lesson file.
         if (lessonFiles.length > 0) {
-          const sortedSectionTitles = sortedSectionEntries.map(([title]) => title);
+          const sortedSectionTitles = sortedSectionEntries.map(([, title]) => title);
           scan.incrementCoursesDiscovered({
             path: courseFolder,
             title: courseTitle,
@@ -865,27 +887,48 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
             // Build Course aggregate with sections.
             // When the course has no sub-folder sections (flat layout: all
             // videos directly inside the course folder), a synthetic "Lessons"
-            // section is created so every lesson has a valid sectionId.
-            const sectionTitleList =
+            // section is created so every lesson has a valid sectionId — it
+            // has no folder behind it, hence no sourcePath.
+            const sectionList: { folder: string | undefined; title: string }[] =
               sortedSectionEntries.length > 0
-                ? sortedSectionEntries.map(([title]) => title)
-                : ['Lessons'];
+                ? sortedSectionEntries.map(([folder, title]) => ({ folder, title }))
+                : [{ folder: undefined, title: 'Lessons' }];
 
             let course: Course;
             if (scopeCourse) {
               // Force-resync: keep the course row exactly as it is (its title
               // may be a user rename that no longer matches the folder) and
               // re-derive only its sections. Reuse the id of every section
-              // whose title survived — Lesson.section is onDelete: Cascade, so
+              // whose folder survived — Lesson.section is onDelete: Cascade, so
               // a section that changes id drops its lessons on the way (#317).
+              //
+              // Matched on sourcePath, falling back to the title while that
+              // column is still null (E32-F01-S06 added it; every row written
+              // before the first rescan has none). The title fallback consumes
+              // each match so two folders sharing a title cannot both claim the
+              // one persisted id — that would throw on the duplicate id and
+              // fail the whole course.
               course = scopeCourse;
-              const persistedSectionIdByTitle = new Map(
-                course.sections.map((s) => [s.title, s.id]),
+              const idBySourcePath = new Map(
+                course.sections
+                  .filter((s) => s.sourcePath !== undefined)
+                  .map((s) => [s.sourcePath, s.id]),
               );
+              const unclaimedIdByTitle = new Map<string, string[]>();
+              for (const s of course.sections) {
+                if (s.sourcePath !== undefined) continue;
+                const bucket = unclaimedIdByTitle.get(s.title) ?? [];
+                bucket.push(s.id);
+                unclaimedIdByTitle.set(s.title, bucket);
+              }
               course.replaceSections(
-                sectionTitleList.map((title) => ({
-                  id: persistedSectionIdByTitle.get(title.trim()) ?? nanoid(),
+                sectionList.map(({ folder, title }) => ({
+                  id:
+                    (folder === undefined ? undefined : idBySourcePath.get(folder)) ??
+                    unclaimedIdByTitle.get(title.trim())?.shift() ??
+                    nanoid(),
                   title,
+                  ...(folder === undefined ? {} : { sourcePath: folder }),
                 })),
               );
             } else if (reconcileCourse) {
@@ -904,8 +947,13 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
                 slug,
                 title: courseTitle,
               });
-              for (const [i, sectionTitle] of sectionTitleList.entries()) {
-                course.addSection({ id: nanoid(), title: sectionTitle, position: i + 1 });
+              for (const [i, { folder, title }] of sectionList.entries()) {
+                course.addSection({
+                  id: nanoid(),
+                  title,
+                  position: i + 1,
+                  ...(folder === undefined ? {} : { sourcePath: folder }),
+                });
               }
             }
             await this.courseRepo.save(course);
@@ -922,7 +970,17 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               existingFolderBySlug.set(slug, folderName);
             }
 
-            // Build a title → sectionId lookup from the freshly-created sections.
+            // Folder → sectionId, with a title fallback.
+            //
+            // The folder is the real key (E32-F01-S06). The title map stays
+            // for the reconcile path, which keeps the sections exactly as
+            // persisted: rows written before this column existed carry no
+            // sourcePath, and their lessons still have to find them.
+            const sectionIdByFolder = new Map<string, string>(
+              course.sections.flatMap((s) =>
+                s.sourcePath === undefined ? [] : [[s.sourcePath, s.id] as const],
+              ),
+            );
             const sectionIdByTitle = new Map<string, string>(
               course.sections.map((s) => [s.title, s.id]),
             );
@@ -961,14 +1019,19 @@ export class RunScanHandler implements ICommandHandler<RunScanCommand, Scan> {
               const parsed = parseLessonFileName(videoBasename);
 
               // Determine which section this lesson belongs to.
+              const sectionFolder = sectionFolderByVideo.get(entry.videoPath);
               const sectionId =
-                relSegments.length > 1
-                  ? // Lesson is inside a sub-folder (section folder).
-                    (sectionIdByTitle.get(parseFolderName(relSegments[0] ?? '').label) ?? '')
-                  : // Flat layout — all videos directly in the course folder.
+                sectionFolder === undefined
+                  ? // Flat layout — all videos directly in the course folder.
                     // A synthetic "Lessons" section was added above; it is
                     // always sections[0] in this branch.
-                    (course.sections[0]?.id ?? '');
+                    (course.sections[0]?.id ?? '')
+                  : // Lesson is inside a section folder. On the reconcile path
+                    // the persisted sections may predate `sourcePath`, so fall
+                    // back to their title.
+                    (sectionIdByFolder.get(sectionFolder) ??
+                    sectionIdByTitle.get(parseFolderName(relSegments[0] ?? '').label) ??
+                    '');
 
               if (!sectionId) {
                 // Could not resolve a section — record non-fatal error and skip.

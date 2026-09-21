@@ -129,6 +129,40 @@ priority order:
 If a numeric prefix has no title after it (a folder literally named `07`), the
 folder name itself is used as the title — you never get a blank entry.
 
+**Sections can nest one level deeper.** A subfolder holding **several** videos
+becomes a section of its own, so a course grouped by block and then by week
+imports as one section per week rather than one flat list:
+
+```
+/media/courses/
+└── Slap Bass in 6 Weeks/
+    ├── Week 1/            ← 7 videos, so "Week 1" is a section
+    │   ├── 00 - Introduction.mkv
+    │   └── 01 - A brief history.mkv
+    └── Week 2/            ← likewise
+        └── 00 - Introduction.mkv
+```
+
+A subfolder holding **exactly one** video is read as that lesson's own folder
+instead — the layout where a lesson keeps its slides and exercises beside it.
+Its section stays the folder above:
+
+```
+└── Chess for beginners/
+    ├── Урок 1/            ← one video, so this is a lesson, not a section
+    │   ├── video.mp4
+    │   └── notes.pdf
+    └── Урок 2/
+        └── video.mp4
+```
+
+Sections are ordered by the numbers along their whole path, so
+`06 - Practice/11 - Tests` sits inside block 6 rather than after section 10.
+
+Re-shaping an already-imported course into sections happens on **Rescan** from
+the course page, not on an ordinary library scan — an ordinary scan never
+rearranges sections you already have.
+
 **Recognised video extensions:** `.mp4`, `.m4v`, `.mkv`, `.webm`, `.wmv`.
 Anything else is reported as a per-file scan warning, not a scan failure.
 
@@ -238,8 +272,11 @@ and unlike a library scan it *re-imports* what it finds:
 - lessons are renumbered to match the files on disk;
 - a lesson whose video file is gone is removed, together with its transcript,
   your progress on it, and its bookmarks and notes;
-- lessons that are still there keep their identity, so your progress and
-  bookmarks survive the rescan.
+- sections are re-derived from the folders, so a course imported before
+  nested sections were understood splits into them here;
+- lessons that are still there keep their identity — including one that moves
+  into a newly-split section — so your progress and bookmarks survive the
+  rescan.
 
 **Your edits to the course itself are kept** — title, description, poster,
 level, language, rating, instructors, studio and tags are never taken back from

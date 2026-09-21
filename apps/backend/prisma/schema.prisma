@@ -312,10 +312,18 @@ model Section {
   courseId String
   position Int
   title    String
+  /// Library-relative path of the folder this section was scanned from.
+  /// Null for the synthetic "Lessons" section of a flat course, and for every
+  /// row written before E32-F01-S06 — a rescan fills it in. The scan matches a
+  /// folder to its section on this, not on the title: `27. Enemy AI` and
+  /// `38. Enemy AI` both parse to "Enemy AI", and matching by title merged
+  /// them into one section holding 50 lessons.
+  sourcePath String?
   course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessons  Lesson[]
 
   @@unique([courseId, position], name: "uq_section_course_position")
+  @@unique([courseId, sourcePath], name: "uq_section_course_source_path")
   // pg_trgm GIN index backing SearchPort.findCourseHits' section-title OR
   // clause — same reasoning as transcript_cue.text.
   @@index([title(ops: raw("gin_trgm_ops"))], type: Gin)

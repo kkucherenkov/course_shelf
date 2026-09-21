@@ -51,6 +51,19 @@ export interface SectionData {
   readonly id: string;
   readonly position: number;
   readonly title: string;
+  /**
+   * Library-relative path of the folder this section was scanned from, or
+   * `undefined` for a section with no folder behind it (the synthetic
+   * "Lessons" section of a flat course, and every row written before
+   * E32-F01-S06 added the column).
+   *
+   * WHY the path and not the title: two sibling folders can reduce to one
+   * title — `27. Enemy AI` and `38. Enemy AI` both parse to "Enemy AI" — and
+   * the scan used to match a folder to its section by title, so the second
+   * folder's lessons joined the first folder's section. 3 sections and 79
+   * lessons on the maintainer's library. The path is what is actually unique.
+   */
+  readonly sourcePath?: string;
 }
 
 export interface CourseProps {
@@ -401,7 +414,7 @@ export class Course {
    *
    * Rejects duplicate section id or duplicate position.
    */
-  addSection(params: { id: string; title: string; position?: number }): void {
+  addSection(params: { id: string; title: string; position?: number; sourcePath?: string }): void {
     const titleVo = Title.from(params.title);
 
     if (this._sections.some((s) => s.id === params.id)) {
@@ -421,7 +434,12 @@ export class Course {
       );
     }
 
-    this._sections.push({ id: params.id, position, title: titleVo.value });
+    this._sections.push({
+      id: params.id,
+      position,
+      title: titleVo.value,
+      ...(params.sourcePath === undefined ? {} : { sourcePath: params.sourcePath }),
+    });
     this._sections = this._sections.toSorted((a, b) => a.position - b.position);
     this._touch();
   }
@@ -432,15 +450,17 @@ export class Course {
    *
    * Exists for the force-resync path of a scoped rescan (E32-F01-S03), which
    * re-derives a course's sections from the folders currently on disk. Callers
-   * MUST pass the id of the existing section whenever its title survived:
+   * MUST pass the id of the existing section whenever its folder survived:
    * `Lesson.section` is `onDelete: Cascade`, so a section that disappears from
    * this list takes every lesson in it with it — that is how #317 emptied
    * courses. Reusing the id turns the write into a position/title update.
+   * Match on `sourcePath` rather than on the title (E32-F01-S06) — two folders
+   * can share a title, and then matching by title reuses one id twice.
    *
    * Rejects a duplicate id for the same reason `addSection` does: two entries
    * claiming one section row is a reconciliation bug, not a layout.
    */
-  replaceSections(sections: readonly { id: string; title: string }[]): void {
+  replaceSections(sections: readonly { id: string; title: string; sourcePath?: string }[]): void {
     const next: SectionData[] = [];
     for (const [index, section] of sections.entries()) {
       if (next.some((s) => s.id === section.id)) {
@@ -452,6 +472,7 @@ export class Course {
         id: section.id,
         position: Position.from(index + 1).value,
         title: Title.from(section.title).value,
+        ...(section.sourcePath === undefined ? {} : { sourcePath: section.sourcePath }),
       });
     }
 

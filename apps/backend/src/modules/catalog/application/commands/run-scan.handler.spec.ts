@@ -612,6 +612,43 @@ async function drainMicrotasks(): Promise<void> {
 // Tests
 // ---------------------------------------------------------------------------
 
+/**
+ * Runs one scan of a `Course N` fixture and returns the persisted aggregate.
+ *
+ * Takes its repositories as arguments rather than closing over the suite's,
+ * so the nested-section cases read as data plus one call.
+ */
+async function scanNestedFixture(params: {
+  files: FileRecord[];
+  libraryId: string;
+  courseRepo: ReturnType<typeof makeCourseRepo>;
+  lessonRepo: ReturnType<typeof makeLessonRepo>;
+}): Promise<Course> {
+  const { files, libraryId, courseRepo, lessonRepo } = params;
+  vi.useRealTimers();
+
+  const handler = new RunScanHandler(
+    makeLibraryRepo(Library.register({ id: libraryId, name: 'Lib', rootPath: '/lib' })),
+    makeScanRepo(),
+    courseRepo,
+    lessonRepo,
+    new FakeFsAdapter(files),
+    makePassthroughFfmpeg(),
+    makeTranscriptRepo(),
+    makeFakeAppConfig(),
+    makeCentrifugoService(),
+    makeMetadataLinker(),
+    makePosterSync(),
+  );
+
+  await handler.execute(new RunScanCommand(libraryId, ACTOR_USER_ID));
+  await drainMicrotasks();
+
+  const course = [...courseRepo.store.values()].find((c) => c.slug === 'course-n');
+  expect(course).toBeDefined();
+  return course as Course;
+}
+
 describe('RunScanHandler', () => {
   let libraryRepo: LibraryRepository;
   let scanRepo: ReturnType<typeof makeScanRepo>;
@@ -2097,6 +2134,126 @@ describe('RunScanHandler', () => {
   });
 
   // -------------------------------------------------------------------------
+  // Nested section folders (E32-F01-S06)
+  //
+  // The scan used to read `relSegments[0]` as the section for every lesson, so
+  // a course laid out `Course/Block/Week/video.mp4` folded all six weeks into
+  // one section and interleaved them. Measured on the maintainer's library:
+  // 13 sections held 371 lessons belonging to several real subsections.
+  //
+  // The rule that replaced it descends while a subfolder holds MORE THAN ONE
+  // video. A folder holding exactly one video is a lesson folder (its sidecars
+  // live beside it) and must not become a section — 49 sections in the same
+  // library are that layout and were correct already.
+  // -------------------------------------------------------------------------
+  describe('nested section folders', () => {
+    it('a subfolder holding several videos becomes its own section', async () => {
+      const course = await scanNestedFixture({
+        files: [
+          { path: '/lib/Course N/01 - Block/01 - Basics/a.mp4', mtime: BASE_TIME, size: 100 },
+          { path: '/lib/Course N/01 - Block/01 - Basics/b.mp4', mtime: BASE_TIME, size: 100 },
+          { path: '/lib/Course N/01 - Block/02 - Advanced/c.mp4', mtime: BASE_TIME, size: 100 },
+          { path: '/lib/Course N/01 - Block/02 - Advanced/d.mp4', mtime: BASE_TIME, size: 100 },
+        ],
+        libraryId: 'lib-nested-1',
+        courseRepo,
+        lessonRepo,
+      });
+
+      expect(course.sections.map((s) => s.title)).toEqual(['Basics', 'Advanced']);
+      expect(course.sections.map((s) => s.position)).toEqual([1, 2]);
+    });
+
+    it('a subfolder holding exactly one video stays a lesson folder', async () => {
+      const course = await scanNestedFixture({
+        files: [
+          { path: '/lib/Course N/01 - Block/Lesson One/video.mp4', mtime: BASE_TIME, size: 100 },
+          { path: '/lib/Course N/01 - Block/Lesson Two/video.mp4', mtime: BASE_TIME, size: 100 },
+        ],
+        libraryId: 'lib-nested-2',
+        courseRepo,
+        lessonRepo,
+      });
+
+      expect(course.sections.map((s) => s.title)).toEqual(['Block']);
+    });
+
+    it('two sibling folders reducing to the same title stay two sections', async () => {
+      // `27. Enemy AI` and `38. Enemy AI` both parse to the label "Enemy AI".
+      // Sections used to be looked up by title, so the second folder's lessons
+      // joined the first folder's section: 50 lessons in one row on the real
+      // library.
+      const course = await scanNestedFixture({
+        files: [
+          { path: '/lib/Course N/27. Enemy AI/a.mp4', mtime: BASE_TIME, size: 100 },
+          { path: '/lib/Course N/27. Enemy AI/b.mp4', mtime: BASE_TIME, size: 100 },
+          { path: '/lib/Course N/38. Enemy AI/c.mp4', mtime: BASE_TIME, size: 100 },
+          { path: '/lib/Course N/38. Enemy AI/d.mp4', mtime: BASE_TIME, size: 100 },
+        ],
+        libraryId: 'lib-nested-3',
+        courseRepo,
+        lessonRepo,
+      });
+
+      expect(course.sections).toHaveLength(2);
+      expect(course.sections.map((s) => s.title)).toEqual(['Enemy AI', 'Enemy AI']);
+      expect(new Set(course.sections.map((s) => s.id)).size).toBe(2);
+    });
+
+    it('orders a nested section by the composed ordinals of its whole path', async () => {
+      // `06 - Practice/11 - Tests` composes to [6, 11] and must sort BEFORE
+      // `08 - Docker` ([8]) — comparing only the deepest segment would read 11
+      // and place it after every single-digit section.
+      const course = await scanNestedFixture({
+        files: [
+          { path: '/lib/Course N/06 - Practice/11 - Tests/a.mp4', mtime: BASE_TIME, size: 100 },
+          { path: '/lib/Course N/06 - Practice/11 - Tests/b.mp4', mtime: BASE_TIME, size: 100 },
+          { path: '/lib/Course N/08 - Docker/c.mp4', mtime: BASE_TIME, size: 100 },
+          { path: '/lib/Course N/08 - Docker/d.mp4', mtime: BASE_TIME, size: 100 },
+        ],
+        libraryId: 'lib-nested-4',
+        courseRepo,
+        lessonRepo,
+      });
+
+      expect(course.sections.map((s) => s.title)).toEqual(['Tests', 'Docker']);
+    });
+
+    it('lessons of a nested section run in the author order, not interleaved', async () => {
+      // The Slap Bass fixture: six week folders, each opening with the same
+      // `00 - Introduction`. Ordering by the file ordinal alone put all six
+      // introductions first.
+      const course = await scanNestedFixture({
+        files: [
+          { path: '/lib/Course N/Weeks/Week 1/00 - Intro.mp4', mtime: BASE_TIME, size: 100 },
+          { path: '/lib/Course N/Weeks/Week 1/01 - Slap.mp4', mtime: BASE_TIME, size: 100 },
+          { path: '/lib/Course N/Weeks/Week 2/00 - Intro.mp4', mtime: BASE_TIME, size: 100 },
+          { path: '/lib/Course N/Weeks/Week 2/01 - Pop.mp4', mtime: BASE_TIME, size: 100 },
+        ],
+        libraryId: 'lib-nested-5',
+        courseRepo,
+        lessonRepo,
+      });
+
+      expect(course.sections.map((s) => s.title)).toEqual(['Week 1', 'Week 2']);
+
+      const saved = [...lessonRepo.store.values()].filter((l) => l.courseId === course.id);
+      const bySection = new Map<string, string[]>();
+      for (const section of course.sections) {
+        bySection.set(
+          section.title,
+          saved
+            .filter((l) => l.sectionId === section.id)
+            .toSorted((a, b) => a.position - b.position)
+            .map((l) => l.title),
+        );
+      }
+      expect(bySection.get('Week 1')).toEqual(['Intro', 'Slap']);
+      expect(bySection.get('Week 2')).toEqual(['Intro', 'Pop']);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Slice 7: metadata pipeline integration
   //
   // Verifies that course.json v1/v2 data drives upserts of Instructor/Studio/Tag
@@ -3172,6 +3329,140 @@ describe('RunScanHandler', () => {
         .get('course-target')!
         .sections.find((s) => s.title === 'Basics');
       expect(basics?.id).toBe('sec-basics');
+    });
+
+    it('records the section folder so the next rescan matches on it, not on the title', async () => {
+      const { courseRepo2 } = await rescanTarget();
+
+      const basics = courseRepo2.store
+        .get('course-target')!
+        .sections.find((s) => s.id === 'sec-basics');
+      expect(basics?.sourcePath).toBe('01 - Basics');
+    });
+
+    it('keeps a lesson id when the rescan moves that lesson into a new nested section', async () => {
+      // The migration case for E32-F01-S06: a course imported before the rule
+      // has one section, and the rescan splits it. LessonProgress, Bookmark,
+      // Note and Transcript all reference lessonId with no foreign key behind
+      // them, so a lesson that comes back under a new id orphans all four
+      // silently — moving between sections must not be a delete-and-recreate.
+      vi.useRealTimers();
+      const nestedFiles: FileRecord[] = [
+        { path: `/lib/${targetFolder}/01 - Basics/Week 1/a.mp4`, mtime: BASE_TIME, size: 500 },
+        { path: `/lib/${targetFolder}/01 - Basics/Week 1/b.mp4`, mtime: BASE_TIME, size: 500 },
+        { path: `/lib/${targetFolder}/01 - Basics/Week 2/c.mp4`, mtime: BASE_TIME, size: 500 },
+        { path: `/lib/${targetFolder}/01 - Basics/Week 2/d.mp4`, mtime: BASE_TIME, size: 500 },
+      ];
+      const movedPath = `/lib/${targetFolder}/01 - Basics/Week 1/a.mp4`;
+
+      const fixture = seedFixture();
+      // The stale import: every video flattened into the one "Basics" section.
+      fixture.lessonRepo2.store.set(
+        'lesson-moved',
+        Lesson.create({
+          id: 'lesson-moved',
+          courseId: 'course-target',
+          sectionId: 'sec-basics',
+          position: 3,
+          title: 'a',
+          videoPath: LibraryRelativePath.from(movedPath, '/lib'),
+          mtime: BASE_TIME,
+          sizeBytes: 500,
+        }),
+      );
+
+      const handler = new RunScanHandler(
+        makeLibraryRepo(Library.register({ id: 'lib-1', name: 'Lib', rootPath: '/lib' })),
+        fixture.scanRepo2,
+        fixture.courseRepo2,
+        fixture.lessonRepo2,
+        new FakeFsAdapter(nestedFiles),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        makeCentrifugoService(),
+        makeMetadataLinker(),
+        makePosterSync(),
+      );
+      await handler.execute(
+        new RunScanCommand(undefined, ACTOR_USER_ID, { courseId: 'course-target' }),
+      );
+      await drainMicrotasks();
+
+      const course = fixture.courseRepo2.store.get('course-target')!;
+      expect(course.sections.map((s) => s.title)).toEqual(['Week 1', 'Week 2']);
+
+      const moved = fixture.lessonRepo2.store.get('lesson-moved');
+      expect(moved).toBeDefined();
+      expect(moved!.videoPath).toBe(rel(movedPath));
+      // It moved to the new section rather than being re-minted under a new id.
+      expect(moved!.sectionId).toBe(course.sections.find((s) => s.title === 'Week 1')!.id);
+      expect(
+        [...fixture.lessonRepo2.store.values()].filter((l) => l.videoPath === rel(movedPath)),
+      ).toHaveLength(1);
+    });
+
+    it('reuses a section id matched by folder even after the folder was renumbered', async () => {
+      // `01 - Basics` becomes `03 - Basics` on disk: same folder path in the
+      // persisted row would not match, but the title does — and once
+      // sourcePath is written, a pure renumber keeps matching on the title
+      // fallback rather than cascading the section's lessons away.
+      vi.useRealTimers();
+      const fixture = seedFixture();
+      const target = fixture.courseRepo2.store.get('course-target')!;
+      target.replaceSections([{ id: 'sec-basics', title: 'Basics', sourcePath: '01 - Basics' }]);
+
+      await fixture.h.execute(
+        new RunScanCommand(undefined, ACTOR_USER_ID, { courseId: 'course-target' }),
+      );
+      await drainMicrotasks();
+
+      const basics = fixture.courseRepo2.store
+        .get('course-target')!
+        .sections.find((s) => s.sourcePath === '01 - Basics');
+      expect(basics?.id).toBe('sec-basics');
+    });
+
+    it('does not hand one persisted id to two folders sharing a title', async () => {
+      // Both folders reduce to the title "Basics". Matching by title would
+      // claim `sec-basics` twice, and replaceSections rejects a duplicate id
+      // — failing the whole course instead of importing it.
+      vi.useRealTimers();
+      const twinFiles: FileRecord[] = [
+        { path: `/lib/${targetFolder}/01 - Basics/a.mp4`, mtime: BASE_TIME, size: 100 },
+        { path: `/lib/${targetFolder}/02 - Basics/b.mp4`, mtime: BASE_TIME, size: 100 },
+      ];
+      const fixture = seedFixture();
+      const handler = new RunScanHandler(
+        makeLibraryRepo(Library.register({ id: 'lib-1', name: 'Lib', rootPath: '/lib' })),
+        fixture.scanRepo2,
+        fixture.courseRepo2,
+        fixture.lessonRepo2,
+        new FakeFsAdapter(twinFiles),
+        makePassthroughFfmpeg(),
+        makeTranscriptRepo(),
+        makeFakeAppConfig(),
+        makeCentrifugoService(),
+        makeMetadataLinker(),
+        makePosterSync(),
+      );
+
+      const scan = await handler.execute(
+        new RunScanCommand(undefined, ACTOR_USER_ID, { courseId: 'course-target' }),
+      );
+      await drainMicrotasks();
+
+      // The course still persists. A duplicate id would have thrown out of
+      // replaceSections and recorded a course-level failure instead.
+      expect(
+        fixture.scanRepo2.store
+          .get(scan.id)!
+          .errors.filter((e) => e.code === 'course-persist-failed'),
+      ).toHaveLength(0);
+      const sections = fixture.courseRepo2.store.get('course-target')!.sections;
+      expect(sections).toHaveLength(2);
+      expect(new Set(sections.map((s) => s.id)).size).toBe(2);
+      expect(sections.map((s) => s.sourcePath)).toEqual(['01 - Basics', '02 - Basics']);
     });
 
     it('leaves the course metadata the user edited alone', async () => {

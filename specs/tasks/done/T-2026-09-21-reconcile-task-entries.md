@@ -23,4 +23,4 @@ health)` is now a required context on `main`
 - Status: done
 - Blockers: —
 - Completed: 2026-09-22
-- Result: PR_URL_PLACEHOLDER
+- Result: https://github.com/kkucherenkov/course_shelf/pull/760

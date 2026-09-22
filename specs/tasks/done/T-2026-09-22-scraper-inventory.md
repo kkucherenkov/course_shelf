@@ -27,6 +27,8 @@
   - [x] Roadmap bookkeeping: card sub-steps, `TODO.md` row, regenerate
         `ROADMAP.md` (`--roadmap-only`)
   - [x] Open PR, `Closes #238` and `Closes #489`
-  - [ ] Wait for required CI checks
-- Status: in-progress
+  - [x] Wait for required CI checks
+- Status: done
 - Blockers: —
+- Completed: 2026-09-22
+- Result: https://github.com/kkucherenkov/course_shelf/pull/765

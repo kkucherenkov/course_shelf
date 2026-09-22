@@ -215,6 +215,7 @@ gantt
     Flashcard API                                                :done, e29f01s02, after e29f01s01, 2d
     Review UI on web                                             :done, e29f01s03, after e29f01s02, 2d
     Quizzes generated from a transcript                          :crit, done, e29f02s01, after e27f01s01, 3d
+    Lesson summary with screenshots                              :active, e29f04s01, after e27f01s01 e28f01s01, 4d
 
     section E30 Scraper plugins
     Declarative scraper definitions                              :crit, done, e30f01s01, after e06f02s01, 3d

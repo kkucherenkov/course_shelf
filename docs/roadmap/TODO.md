@@ -11,7 +11,7 @@ denominator below.
 Progress (update by hand):
 
 - **v1** — `119 / 119` complete. 121 cards, 2 cancelled.
-- **v2** — `43 / 46` complete. 47 cards across E25–E32, 1 cancelled.
+- **v2** — `44 / 46` complete. 47 cards across E25–E32, 1 cancelled.
 - **2.0** — `0 / 10` complete. 10 cards, all in E33.
 
 v1 is the shipped product; v2 is the transcript-first direction and the

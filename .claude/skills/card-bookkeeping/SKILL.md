@@ -64,7 +64,7 @@ help here, so after **every** merge that touches `TODO.md`, recount instead of
 trusting the arithmetic:
 
 ```sh
-grep -cE '^- \[x\] \[E(2[5-9]|3[01])-' docs/roadmap/TODO.md   # v2 epics E25-E31
+grep -cE '^- \[x\] \[E(2[5-9]|3[012])-' docs/roadmap/TODO.md  # v2 epics E25-E32
 ```
 
 Set the counter to what that prints. Do the same for v1 with its own epic

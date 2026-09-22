@@ -89,12 +89,30 @@
     });
   });
 
+  // Audit run20 finding 7: the tile read "0" whenever no scan fell in the
+  // 24h window, indistinguishable from "scans ran and found nothing wrong" —
+  // a health indicator that fails toward "everything is fine" is not a
+  // health indicator. `latestScan` is the most recent scan across every
+  // library (highest `startedAt`); if even that one predates the window, no
+  // scan could have landed in it, and `errorsLast24h`'s honest value is "no
+  // data", not "zero".
+  const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+  const hasScanInLast24h = computed(() => {
+    const startedAt = dashData.value?.latestScan?.startedAt;
+    if (!startedAt) return false;
+    return Date.now() - new Date(startedAt).getTime() < TWENTY_FOUR_HOURS_MS;
+  });
+
   const statErrors24hValue = computed(() => {
     if (!dashData.value) return '—';
+    if (!hasScanInLast24h.value) return t('admin.dashboard.errorsWindowNone');
     return String(dashData.value.errorsLast24h);
   });
 
-  const statErrors24hIsError = computed(() => (dashData.value?.errorsLast24h ?? 0) > 0);
+  const statErrors24hIsError = computed(
+    () => hasScanInLast24h.value && (dashData.value?.errorsLast24h ?? 0) > 0,
+  );
 
   // ── Scan table ───────────────────────────────────────────────────────────────
 
@@ -220,6 +238,7 @@
       :col-errors="t('pages.admin.dashboard.tableErrors')"
       :label-running="t('pages.admin.dashboard.scanRunning')"
       :label-succeeded="t('pages.libraries.statusSucceeded')"
+      :label-succeeded-with-errors="t('admin.dashboard.scanCompletedWithErrors')"
       :label-partial="t('pages.libraries.statusPartial')"
       :label-failed="t('pages.libraries.statusFailed')"
       :label-cancelled="t('pages.libraries.statusCancelled')"

@@ -5,6 +5,7 @@
     AppButton,
     AppChip,
     AppEmptyState,
+    AppErrorState,
     AppNoPermission,
     AppSelect,
     CoursePosterCard,
@@ -112,7 +113,11 @@
   // Library and instructor options come from their own endpoints. Both are
   // non-fatal: an errored list collapses to just the "any" option, so a
   // broken sidecar request never takes the shelf down with it.
-  const { data: librariesData, status: librariesStatus } = useLibraries();
+  const {
+    data: librariesData,
+    status: librariesStatus,
+    refresh: refreshLibraries,
+  } = useLibraries();
   const { data: instructorsData } = useInstructors();
 
   const libraryOptions = computed<{ id: string; label: string }[]>(() => [
@@ -146,8 +151,11 @@
   // library- or course-level; see its doc comment for why a course-level
   // grant needs its own probe — tuxedo 249). Either one being non-empty means
   // "granted"; both empty means "nothing was ever granted to this account".
-  const { hasAnyCourse: hasAnyCatalogCourse, status: catalogAccessStatus } =
-    useCourseCatalogAccess();
+  const {
+    hasAnyCourse: hasAnyCatalogCourse,
+    status: catalogAccessStatus,
+    refetch: refetchCatalogAccess,
+  } = useCourseCatalogAccess();
   const auth = useAuthStore();
   const isAdmin = computed(() => auth.user?.role?.toLowerCase() === 'admin');
 
@@ -156,16 +164,36 @@
   // here rather than inventing a second pattern (#701). Independent of
   // `hasActiveFilter`: a stale filter in a bookmarked URL must not mask a
   // real access denial behind the "filtered" copy.
-  const hasCatalogAccess = computed(() => {
-    if (isAdmin.value) return true;
+  //
+  // Three answers, not two (audit run20 finding 7/synthesis): a failed probe
+  // used to fall through to the same "denied" branch as a genuinely empty
+  // account, so a 500 on `/courses` or `/libraries` read as "you have no
+  // access" — sending the user to bother an administrator about a
+  // permission problem that does not exist.
+  type CatalogAccessState = 'pending' | 'granted' | 'denied' | 'error';
+
+  const catalogAccessState = computed<CatalogAccessState>(() => {
+    if (isAdmin.value) return 'granted';
     // Neither probe has resolved yet — default to the safe, always-true
     // state rather than briefly asserting "no access" off either probe's
     // pre-fetch `{ items: [] }` default.
-    if (librariesStatus.value === 'pending' || librariesStatus.value === 'idle') return true;
+    if (librariesStatus.value === 'pending' || librariesStatus.value === 'idle') return 'pending';
     if (catalogAccessStatus.value === 'pending' || catalogAccessStatus.value === 'idle')
-      return true;
-    return (librariesData.value?.items.length ?? 0) > 0 || hasAnyCatalogCourse.value;
+      return 'pending';
+    if ((librariesData.value?.items.length ?? 0) > 0 || hasAnyCatalogCourse.value) return 'granted';
+    // Neither probe proved access. If either outright failed, that's a load
+    // failure, not a denial.
+    if (librariesStatus.value === 'error' || catalogAccessStatus.value === 'error') return 'error';
+    return 'denied';
   });
+
+  const hasCatalogAccess = computed(
+    () => catalogAccessState.value === 'granted' || catalogAccessState.value === 'pending',
+  );
+
+  async function retryCatalogAccess(): Promise<void> {
+    await Promise.all([refreshLibraries(), refetchCatalogAccess()]);
+  }
 
   // Reached only once `hasCatalogAccess` is true (see the template) — the
   // remaining distinctions are all about *what* is empty, not *whether* the
@@ -241,13 +269,33 @@
     </header>
 
     <!--
+      ── Failed to load: retryable, not a denial (audit run20 finding 7) ──
+      A 500 on the unfiltered courses/libraries probe used to fall through
+      to the same "no access" copy as a genuinely empty account.
+    -->
+    <AppErrorState
+      v-if="catalogAccessState === 'error'"
+      :title="t('errors.catalogLoadFailedTitle')"
+      :body="t('errors.catalogLoadFailedBody')"
+    >
+      <template #action>
+        <AppButton
+          variant="secondary"
+          size="md"
+          :label="t('errors.retry')"
+          @click="retryCatalogAccess"
+        />
+      </template>
+    </AppErrorState>
+
+    <!--
       ── No library access: one explanation, not a filter bar above it (#701) ──
       Same lesson as the home page's #666: a user with zero grants gets the
       denial and nothing else — no chips, no selects, no "0 courses" acting
       on a shelf they were never given access to.
     -->
     <AppNoPermission
-      v-if="!hasCatalogAccess"
+      v-else-if="catalogAccessState === 'denied'"
       icon="lock"
       :title="t('pages.browse.emptyNoAccessTitle')"
       :body="t('pages.browse.emptyNoAccessBody')"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-  import { AppIconButton } from '@app/ui';
+  import { AppButton, AppIconButton } from '@app/ui';
   import type { TranscriptCue } from '~/composables/useTranscriptCues';
   import { formatCueTime } from '~/utils/format-time';
 
@@ -8,8 +8,23 @@
     cues: TranscriptCue[];
     /** Index (into `cues`) of the cue under the playhead, `-1` when none. */
     activeIndex: number;
-    /** Shown when the lesson has no transcript at all. */
+    /**
+     * Whether this lesson has a transcript at all — a server-known signal
+     * (`LessonDto.subtitles.length > 0`), not inferred from `cues.length`.
+     * Keeping the two apart is the whole point: a transcript that exists but
+     * failed to load must not read as "this lesson has no transcript".
+     */
+    hasTranscript: boolean;
+    /** The selected track failed to load (network error, 404, …). */
+    loadError: boolean;
+    /** Shown when the lesson genuinely has no transcript. */
     emptyLabel: string;
+    /** Shown when `hasTranscript` is true but the track failed to load. */
+    errorLabel: string;
+    /** Shown while `hasTranscript` is true and cues haven't arrived yet. */
+    loadingLabel: string;
+    /** Retry action's label, shown alongside `errorLabel`. */
+    retryLabel: string;
     /** Shown when the filter matches none of the cues. */
     noMatchLabel: string;
     /** Placeholder and accessible label for the filter input. */
@@ -22,6 +37,8 @@
     seek: [time: number];
     /** A line the reader wants turned into a flashcard — front/back left to the caller. */
     createFlashcard: [cue: TranscriptCue];
+    /** The reader asked to retry a failed track load. */
+    retry: [];
   }>();
 
   const query = ref('');
@@ -83,13 +100,24 @@
 
 <template>
   <div ref="containerRef" class="player-transcript-tab">
-    <!-- The panel is no longer gated on the lesson having cues — it moved out
-         of the sidebar into the player column and hiding it left "this lesson
-         has no transcript" reachable from nowhere. Without this branch the
-         filter's own `noMatchLabel` answered instead, telling a reader their
-         search found nothing when they had not searched. -->
-    <div v-if="props.cues.length === 0" class="player-transcript-tab__empty">
+    <!-- Three states, not two (audit run20 finding 1): a transcript that
+         exists but failed to load must read differently from a lesson that
+         genuinely has none, and both from the brief instant before cues
+         arrive. The panel is no longer gated on the lesson having cues — it
+         moved out of the sidebar into the player column and hiding it left
+         "this lesson has no transcript" reachable from nowhere. Without a
+         branch here the filter's own `noMatchLabel` answered instead,
+         telling a reader their search found nothing when they had not
+         searched. -->
+    <div v-if="props.loadError" class="player-transcript-tab__error" role="alert">
+      <span>{{ props.errorLabel }}</span>
+      <AppButton variant="secondary" size="sm" :label="props.retryLabel" @click="emit('retry')" />
+    </div>
+    <div v-else-if="!props.hasTranscript" class="player-transcript-tab__empty">
       {{ props.emptyLabel }}
+    </div>
+    <div v-else-if="props.cues.length === 0" class="player-transcript-tab__empty">
+      {{ props.loadingLabel }}
     </div>
     <template v-else>
       <input
@@ -138,11 +166,23 @@
     flex-direction: column;
     gap: var(--space-2);
 
-    &__no-match {
+    &__no-match,
+    &__empty {
       font-size: var(--text-base);
       color: var(--text-secondary);
       padding: var(--space-4) 0;
       text-align: center;
+    }
+
+    &__error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-4) 0;
+      text-align: center;
+      font-size: var(--text-base);
+      color: var(--status-error-fg);
     }
 
     &__filter {

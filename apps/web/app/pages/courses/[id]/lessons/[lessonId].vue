@@ -20,6 +20,7 @@
   import { useStreamUrl } from '~/composables/useStreamUrl';
   import { useTranscriptCues } from '~/composables/useTranscriptCues';
   import type { TranscriptCue } from '~/composables/useTranscriptCues';
+  import { useAuthStore } from '~/stores/auth';
   import { usePreferencesStore } from '~/stores/preferences';
   import { parseStartTime } from '~/utils/start-time';
   import { buildSubtitleTracks } from '~/utils/subtitle-url';
@@ -32,6 +33,8 @@
   const { t, locale } = useI18n();
   const route = useRoute();
   const toast = useToast();
+  const auth = useAuthStore();
+  const isAdmin = computed(() => auth.user?.role?.toLowerCase() === 'admin');
 
   const courseId = route.params.id as string;
   const lessonId = route.params.lessonId as string;
@@ -142,11 +145,21 @@
 
   // ── Transcript ────────────────────────────────────────────────────────────────
 
-  const { cues: transcriptCues, activeIndex: transcriptActiveIndex } = useTranscriptCues({
+  const {
+    cues: transcriptCues,
+    activeIndex: transcriptActiveIndex,
+    hasError: transcriptLoadError,
+  } = useTranscriptCues({
     videoRef,
     position,
     preferredLanguage: locale,
   });
+
+  // Server-known signal (audit run20 finding 1) — whether this lesson has a
+  // transcript at all must not be inferred from whether the browser managed
+  // to parse a VTT, or a 404/network error on the subtitle track reads as
+  // "no transcript" instead of "failed to load".
+  const lessonHasTranscript = computed(() => (lessonData.value?.subtitles.length ?? 0) > 0);
 
   // `?t=` deep link — a link to a moment must land on that moment, so it beats
   // both the stored resume position and the "Resume where I left off"
@@ -398,8 +411,34 @@
     () => lessonErrorStatus.value === 403 || streamErrorStatus.value === 403,
   );
 
+  // The failing path behind a media error — `streamUrl` is the exact URL the
+  // `<video>` tried to play, stripped of its signed-token query string so it
+  // isn't echoed into the UI. Only meaningful once a stream URL was actually
+  // issued (a 404 on the byte-serving route, not on issuing the signed URL).
+  const mediaErrorPath = computed(() => {
+    if (!streamUrl.value) return '';
+    try {
+      return new URL(streamUrl.value).pathname;
+    } catch {
+      return streamUrl.value;
+    }
+  });
+
+  // Audit run20 finding 8: a missing media file was reported with the same
+  // generic "lesson failed to load" copy as an actual lesson-load failure,
+  // even though the lesson's own metadata had loaded fine (200) and it was
+  // the video byte-serving route that 404'd. `streamStatus === 'error'` means
+  // issuing the signed URL itself failed (network/backend down); the native
+  // `<video>` element going to `playerState === 'error'` while the signed URL
+  // issuance succeeded means the file behind that URL is the problem — a
+  // moved or renamed file, not hypothetical (18,531 recorded scan errors).
   const errorMessage = computed(() => {
     if (streamStatus.value === 'error') return t('pages.lessonPlayer.streamError');
+    if (playerState.value === 'error') {
+      return isAdmin.value
+        ? t('errors.mediaUnavailableAdminBody', { path: mediaErrorPath.value })
+        : t('errors.mediaUnavailableBody');
+    }
     return t('pages.lessonPlayer.loadingError');
   });
 
@@ -587,12 +626,18 @@
               class="page-lesson-player__transcript-body"
               :cues="transcriptCues"
               :active-index="transcriptActiveIndex"
+              :has-transcript="lessonHasTranscript"
+              :load-error="transcriptLoadError"
               :empty-label="t('pages.lessonPlayer.transcript.empty')"
+              :error-label="t('transcript.loadError')"
+              :loading-label="t('transcript.loading')"
+              :retry-label="t('transcript.retry')"
               :no-match-label="t('pages.lessonPlayer.transcript.noMatch')"
               :filter-placeholder="t('pages.lessonPlayer.transcript.filterPlaceholder')"
               :add-flashcard-label="t('pages.lessonPlayer.flashcard.createFromTranscript')"
               @seek="onBookmarkSeek"
               @create-flashcard="onTranscriptCreateFlashcard"
+              @retry="onRetry"
             />
           </section>
         </div>

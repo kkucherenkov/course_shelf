@@ -56,12 +56,13 @@ vi.mock('~/stores/auth', () => ({
 
 const librariesData = ref<LibraryListDto | undefined>({ items: [] });
 const librariesStatus = ref<'idle' | 'pending' | 'success' | 'error'>('success');
+const refreshLibraries = vi.fn();
 vi.mock('~/composables/useLibraries', () => ({
   useLibraries: () => ({
     data: librariesData,
     status: librariesStatus,
     error: ref(null),
-    refresh: vi.fn(),
+    refresh: refreshLibraries,
     register: vi.fn(),
     registerErrorDetail: ref(null),
   }),
@@ -72,10 +73,12 @@ vi.mock('~/composables/useLibraries', () => ({
 // non-empty while `librariesData` stays empty.
 const hasAnyCatalogCourse = ref(false);
 const catalogAccessStatus = ref<'idle' | 'pending' | 'success' | 'error'>('success');
+const refetchCatalogAccess = vi.fn();
 vi.mock('~/composables/useCoursesList', () => ({
   useCourseCatalogAccess: () => ({
     hasAnyCourse: hasAnyCatalogCourse,
     status: catalogAccessStatus,
+    refetch: refetchCatalogAccess,
   }),
 }));
 
@@ -149,6 +152,17 @@ vi.mock('@app/ui', () => ({
     name: 'AppNoPermission',
     props: ['title', 'body'],
     template: '<div class="no-permission-probe">{{ title }}::{{ body }}</div>',
+  },
+  AppErrorState: {
+    name: 'AppErrorState',
+    props: ['title', 'body'],
+    template: '<div class="error-state-probe">{{ title }}::{{ body }}<slot name="action" /></div>',
+  },
+  AppButton: {
+    name: 'AppButton',
+    props: ['variant', 'size', 'label'],
+    emits: ['click'],
+    template: '<button type="button" @click="$emit(\'click\')">{{ label }}</button>',
   },
 }));
 
@@ -493,5 +507,69 @@ describe('pages/index.vue — continue-watching resume label (tuxedo 200)', () =
 
     const card = wrapper.findComponent({ name: 'CourseWideCard' });
     expect(card.props('resumeLabel')).toBeUndefined();
+  });
+});
+
+// Audit run20 finding 7/synthesis: a 500 on the unfiltered courses/libraries
+// probe used to fall through to the exact same "no access" copy as a
+// genuinely empty account, sending the user to bother an administrator about
+// a permission problem that does not exist.
+describe('pages/index.vue — failed catalog-access probe reads as an error, not a denial (audit run20 finding 7)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authUser.value = { role: 'USER' };
+    recentlyAddedData.value = { items: [] };
+    recentlyCompletedData.value = { items: [] };
+    recentlyCompletedStatus.value = 'success';
+  });
+
+  it('shows a retryable error, not "no access granted", when both probes fail', async () => {
+    librariesData.value = { items: [] };
+    librariesStatus.value = 'error';
+    hasAnyCatalogCourse.value = false;
+    catalogAccessStatus.value = 'error';
+    const wrapper = await mountPage();
+
+    const errorState = wrapper.find('.error-state-probe');
+    expect(errorState.exists()).toBe(true);
+    expect(errorState.text()).toContain('errors.catalogLoadFailedTitle');
+    expect(wrapper.find('.no-permission-probe').exists()).toBe(false);
+  });
+
+  it('still reads as "no access" when both probes genuinely succeed empty', async () => {
+    librariesData.value = { items: [] };
+    librariesStatus.value = 'success';
+    hasAnyCatalogCourse.value = false;
+    catalogAccessStatus.value = 'success';
+    const wrapper = await mountPage();
+
+    expect(wrapper.find('.error-state-probe').exists()).toBe(false);
+    expect(wrapper.find('.no-permission-probe').exists()).toBe(true);
+  });
+
+  it('shows the granted layout when one probe fails but the other already proved access', async () => {
+    librariesData.value = {
+      items: [{ id: 'lib-1', name: 'CS' } as LibraryListDto['items'][number]],
+    };
+    librariesStatus.value = 'success';
+    hasAnyCatalogCourse.value = false;
+    catalogAccessStatus.value = 'error';
+    const wrapper = await mountPage();
+
+    expect(wrapper.find('.error-state-probe').exists()).toBe(false);
+    expect(wrapper.find('.no-permission-probe').exists()).toBe(false);
+  });
+
+  it("retries both probes when the error state's retry action is clicked", async () => {
+    librariesData.value = { items: [] };
+    librariesStatus.value = 'error';
+    hasAnyCatalogCourse.value = false;
+    catalogAccessStatus.value = 'error';
+    const wrapper = await mountPage();
+
+    await wrapper.find('.error-state-probe button').trigger('click');
+
+    expect(refreshLibraries).toHaveBeenCalledTimes(1);
+    expect(refetchCatalogAccess).toHaveBeenCalledTimes(1);
   });
 });

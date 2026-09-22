@@ -124,7 +124,11 @@ const fakeSession = {
 
 async function mockAllEndpoints(
   page: Page,
-  options: { libraries?: typeof oneLibraryFixture } = {},
+  options: {
+    libraries?: typeof oneLibraryFixture;
+    /** Forces the catalog-access probe to fail instead of resolving empty. */
+    coursesError?: boolean;
+  } = {},
 ): Promise<void> {
   // Auth: has-users probe (global middleware gate).
   await page.route('**/api/v1/admin/has-users**', (route) => {
@@ -152,6 +156,21 @@ async function mockAllEndpoints(
       contentType: 'application/json',
       body: JSON.stringify(options.libraries ?? oneLibraryFixture),
     });
+  });
+
+  // Catalog access probe — the unfiltered `GET /courses` half of the OR that
+  // decides `catalogAccessState` (audit run20 finding 7: this used to be
+  // unmocked, so it fell through to a live/failed request; the resulting
+  // `catalogAccessStatus === 'error'` used to still read as "denied" because
+  // the old boolean check couldn't tell the two apart — the exact defect
+  // this suite is meant to catch). Always empty here: every test needing a
+  // granted account already gets there via the libraries fixture above.
+  await page.route('**/api/v1/courses**', (route) => {
+    void route.fulfill(
+      options.coursesError
+        ? { status: 500, contentType: 'application/json', body: '{}' }
+        : { status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }) },
+    );
   });
 
   // Home endpoints
@@ -198,7 +217,7 @@ async function mockAllEndpoints(
  */
 async function gotoHome(
   page: Page,
-  options: { libraries?: typeof oneLibraryFixture } = {},
+  options: { libraries?: typeof oneLibraryFixture; coursesError?: boolean } = {},
 ): Promise<void> {
   // addInitScript runs in every page context before any scripts — localStorage
   // is available because the origin is already known from the baseURL config.
@@ -267,6 +286,26 @@ test.describe('home page — 1440x900', () => {
     // "0 min watched" scoreboard next to them.
     await expect(page.locator('.home-row')).toHaveCount(0);
     await expect(page.locator('.page-home__rail')).toHaveCount(0);
+  });
+
+  // Audit run20 finding 7/synthesis: a failed catalog-access probe used to
+  // read as the exact same "no access granted" denial as a genuinely empty
+  // account — a test that only pins the empty-state copy (above) would pass
+  // just as happily through that bug. This asserts the two are distinct
+  // states on the same route.
+  test('a failed catalog-access probe shows a retryable error, not the no-access denial', async ({
+    page,
+  }) => {
+    await gotoHome(page, { libraries: { items: [] }, coursesError: true });
+
+    await expect(page.locator('.page-home')).toBeVisible({ timeout: 10_000 });
+
+    await expect(page.getByText('Could not load your library access')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
+
+    // Not the denial copy — a load failure must not masquerade as "you have
+    // no grants".
+    await expect(page.getByText('No courses available to you yet')).toHaveCount(0);
   });
 });
 

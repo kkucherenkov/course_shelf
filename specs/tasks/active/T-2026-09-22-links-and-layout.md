@@ -47,6 +47,10 @@
         `pnpm stylelint:fix`, `pnpm format`
   - [x] `pnpm --filter @app/ui test`, `pnpm --filter @app/web test`,
         `pnpm check:i18n`
+  - [x] `tests/e2e/course-detail.spec.ts` mark-complete case updated to go
+        through the new confirm dialog; added the dismiss-leaves-uncompleted
+        case (Playwright smoke caught the old test driving around the
+        confirmation instead of through it)
   - [x] Open PR (https://github.com/kkucherenkov/course_shelf/pull/787), wait
         for required CI checks
 - Status: in-progress

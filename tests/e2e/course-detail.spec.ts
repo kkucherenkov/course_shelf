@@ -313,7 +313,16 @@ test.describe('course detail — Locked / NoAccess state', () => {
 test.describe('course detail — Mark complete mutation', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('mark complete click shows refreshed outline with completed state', async ({ page }) => {
+  // #783 — this used to fire straight through on click. It now opens the same
+  // confirm dialog rescan/transcribe/reset already use, so both directions
+  // need covering: confirming still completes the course (the mutation
+  // itself didn't change), and — the case that makes the confirmation worth
+  // having — dismissing it leaves the course untouched. A happy-path-only
+  // test would pass identically with the confirmation removed again.
+
+  test('confirming mark complete shows refreshed outline with completed state', async ({
+    page,
+  }) => {
     await mockOutline(page, makeOutline('in-progress'));
     await mockMarkComplete(page, completedOutline);
     await gotoCourseDetail(page);
@@ -325,8 +334,45 @@ test.describe('course detail — Mark complete mutation', () => {
     await expect(markBtn).toBeVisible();
     await markBtn.click();
 
+    // Dialog should appear
+    const dialog = page.locator('.app-dialog');
+    await expect(dialog).toBeVisible({ timeout: 3000 });
+
+    // Confirm
+    const confirmBtn = dialog.locator('.app-button', { hasText: /Mark complete|Отметить/i });
+    await expect(confirmBtn).toBeVisible();
+    await confirmBtn.click();
+
+    // Dialog should close
+    await expect(dialog).not.toBeVisible({ timeout: 3000 });
+
     // After mutation, completed banner should appear
     await expect(page.locator('.course-completed-banner')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('dismissing the confirm dialog leaves the course NOT completed', async ({ page }) => {
+    await mockOutline(page, makeOutline('in-progress'));
+    await mockMarkComplete(page, completedOutline);
+    await gotoCourseDetail(page);
+
+    await expect(page.locator('.course-hero')).toBeVisible({ timeout: 10_000 });
+
+    const markBtn = page.locator('.app-button', { hasText: /Mark complete|Отметить/i });
+    await expect(markBtn).toBeVisible();
+    await markBtn.click();
+
+    const dialog = page.locator('.app-dialog');
+    await expect(dialog).toBeVisible({ timeout: 3000 });
+
+    // Cancel instead of confirming
+    const cancelBtn = dialog.locator('.app-button', { hasText: /Cancel|Отмена/i });
+    await expect(cancelBtn).toBeVisible();
+    await cancelBtn.click();
+
+    await expect(dialog).not.toBeVisible({ timeout: 3000 });
+
+    // No mutation happened — the course is still in-progress, no banner
+    await expect(page.locator('.course-completed-banner')).not.toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -336,7 +382,6 @@ test.describe('course detail — Reset progress mutation', () => {
   test('opens reset dialog, confirms, calls mutation, shows refreshed outline', async ({
     page,
   }) => {
-    const defaultOutline = makeOutline('default');
     const resetOutline = makeOutline('default'); // All not-started after reset
     resetOutline.sections[0]!.lessons[0]!.state = 'not-started';
     resetOutline.sections[0]!.lessons[0]!.progressPercent = 0;

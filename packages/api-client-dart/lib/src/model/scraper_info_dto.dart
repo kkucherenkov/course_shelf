@@ -14,18 +14,18 @@ part 'scraper_info_dto.g.dart';
 /// Metadata about a single registered scraper. Listed even when rejected at load time — see `loadError`. `origin` and `loadError` are absent on a response from a handler that predates this widening; a caller reading either treats a missing key the same as `null`.
 ///
 /// Properties:
-/// * [id] - Stable scraper identifier used as the `source` field in requests.
-/// * [supportedKinds] - Invocation kinds this scraper handles.
+/// * [id] - Stable scraper identifier used as the `source` field in requests. For a definition file rejected before it could be parsed, this is the file's stem (`acme-academy.json` -> `acme-academy`) rather than an id declared inside it — a failed parse never produces one.
+/// * [supportedKinds] - Invocation kinds this scraper handles. Empty for a rejected definition file: the kinds live inside the definition, and a failed parse never produces one to read them from.
 /// * [configured] - True when the scraper loaded and holds all required credentials / config (e.g. YouTube requires an API key). False when configuration is missing, or when `loadError` is set.
 /// * [origin] 
 /// * [loadError] - Why this scraper was rejected at load time, e.g. a definition file that failed schema validation. Null for a scraper that loaded successfully.
 @BuiltValue()
 abstract class ScraperInfoDto implements Built<ScraperInfoDto, ScraperInfoDtoBuilder> {
-  /// Stable scraper identifier used as the `source` field in requests.
+  /// Stable scraper identifier used as the `source` field in requests. For a definition file rejected before it could be parsed, this is the file's stem (`acme-academy.json` -> `acme-academy`) rather than an id declared inside it — a failed parse never produces one.
   @BuiltValueField(wireName: r'id')
   String get id;
 
-  /// Invocation kinds this scraper handles.
+  /// Invocation kinds this scraper handles. Empty for a rejected definition file: the kinds live inside the definition, and a failed parse never produces one to read them from.
   @BuiltValueField(wireName: r'supportedKinds')
   BuiltList<ScraperKind> get supportedKinds;
 

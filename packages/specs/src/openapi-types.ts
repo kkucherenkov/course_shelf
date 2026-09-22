@@ -2312,12 +2312,12 @@ export interface components {
      */
     ScraperInfoDto: {
       /**
-       * @description Stable scraper identifier used as the `source` field in requests.
+       * @description Stable scraper identifier used as the `source` field in requests. For a definition file rejected before it could be parsed, this is the file's stem (`acme-academy.json` -> `acme-academy`) rather than an id declared inside it — a failed parse never produces one.
        * @example youtube
        */
       id: string;
       /**
-       * @description Invocation kinds this scraper handles.
+       * @description Invocation kinds this scraper handles. Empty for a rejected definition file: the kinds live inside the definition, and a failed parse never produces one to read them from.
        * @example [
        *       "url",
        *       "name",
@@ -2376,9 +2376,7 @@ export interface components {
      *         },
      *         {
      *           "id": "acme-academy",
-     *           "supportedKinds": [
-     *             "url"
-     *           ],
+     *           "supportedKinds": [],
      *           "configured": false,
      *           "origin": "definition-file",
      *           "loadError": "selector \"title\" did not match \"$.selectors.title\": required property"

@@ -97,6 +97,16 @@ export interface RateLimitConfig {
   readonly authTtlMs: number;
   /** Requests allowed per window for the auth budget above. Default 10. */
   readonly authLimit: number;
+  /** Window for `/api/v1/stream/*` — see `stream-throttle.ts`. Default 60 000. */
+  readonly streamTtlMs: number;
+  /**
+   * Requests allowed per window for media streaming. Default 600, an order of
+   * magnitude above the global budget on purpose: byte-range playback issues
+   * many requests per single view and each seek issues another, so counting
+   * requests measures the wrong thing. Sharing the global 60 meant six
+   * navigations a minute took the catalogue down with the player (#792).
+   */
+  readonly streamLimit: number;
   /**
    * Window for `GET /api/v1/auth/get-session` — every cold SPA load makes
    * one of these, so it needs a looser, ordinary-traffic budget rather than
@@ -411,6 +421,8 @@ export class AppConfig {
       authLimit: this.numberOrDefault('RATE_LIMIT_AUTH_MAX', 10),
       authSessionTtlMs: this.numberOrDefault('RATE_LIMIT_AUTH_SESSION_TTL_MS', 60_000),
       authSessionLimit: this.numberOrDefault('RATE_LIMIT_AUTH_SESSION_MAX', 60),
+      streamTtlMs: this.numberOrDefault('RATE_LIMIT_STREAM_TTL_MS', 60_000),
+      streamLimit: this.numberOrDefault('RATE_LIMIT_STREAM_MAX', 600),
     };
   }
 

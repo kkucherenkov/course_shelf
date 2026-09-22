@@ -18,6 +18,15 @@ export interface NoteRepository {
    * Returns true if a row was deleted, false if no row existed (idempotent).
    */
   deleteByUserAndLesson(userId: string, lessonId: string): Promise<boolean>;
+  /**
+   * Batch lookup across every lesson in a course export — one `IN (…)` query
+   * instead of one round-trip per lesson (E28-F01-S01). Lessons the user
+   * never wrote a note for are absent from the map.
+   */
+  findManyByUserAndLessons(
+    userId: string,
+    lessonIds: readonly string[],
+  ): Promise<Map<string, Note>>;
 }
 
 /** Nest DI injection token — Symbol prevents collisions with class-name strings. */

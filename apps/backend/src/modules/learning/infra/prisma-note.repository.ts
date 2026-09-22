@@ -90,4 +90,16 @@ export class PrismaNoteRepository implements NoteRepository {
     });
     return result.count > 0;
   }
+
+  async findManyByUserAndLessons(
+    userId: string,
+    lessonIds: readonly string[],
+  ): Promise<Map<string, Note>> {
+    if (lessonIds.length === 0) return new Map();
+    const rows = await this.prisma.note.findMany({
+      where: { userId, lessonId: { in: [...lessonIds] } },
+      select: SELECT,
+    });
+    return new Map(rows.map((row) => [row.lessonId, rowToAggregate(row)]));
+  }
 }

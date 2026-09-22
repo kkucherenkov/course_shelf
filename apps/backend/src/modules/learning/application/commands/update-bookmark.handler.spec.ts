@@ -46,6 +46,7 @@ function makeRepo(bookmark: Bookmark | null = makeBookmark()): BookmarkRepositor
     findById: vi.fn().mockResolvedValue(bookmark),
     findByIdempotencyKey: vi.fn().mockResolvedValue(null),
     findManyByUserAndLesson: vi.fn().mockResolvedValue([]),
+    findManyByUserAndLessons: vi.fn().mockResolvedValue(new Map()),
     delete: vi.fn().mockResolvedValue(undefined),
   };
 }

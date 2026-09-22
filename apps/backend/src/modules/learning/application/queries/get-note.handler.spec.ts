@@ -46,6 +46,7 @@ function makeNoteRepo(existing: Note | null): NoteRepository {
     upsert: vi.fn().mockResolvedValue(undefined),
     findByUserAndLesson: vi.fn().mockResolvedValue(existing),
     deleteByUserAndLesson: vi.fn().mockResolvedValue(false),
+    findManyByUserAndLessons: vi.fn().mockResolvedValue(new Map()),
   };
 }
 

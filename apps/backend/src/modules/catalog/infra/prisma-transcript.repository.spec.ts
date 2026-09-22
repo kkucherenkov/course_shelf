@@ -214,4 +214,37 @@ describe('PrismaTranscriptRepository', () => {
       expect(await repo.cueBelongsToLesson('cue-1', 'l1')).toBe(false);
     });
   });
+
+  describe('findCuesForLessons', () => {
+    it('returns an empty map without querying when lessonIds is empty', async () => {
+      const result = await repo.findCuesForLessons([]);
+      expect(result.size).toBe(0);
+      expect(prisma.transcript.findMany).not.toHaveBeenCalled();
+    });
+
+    it('returns a Map keyed by lessonId, one entry per distinct lesson', async () => {
+      prisma.transcript.findMany.mockResolvedValue([
+        { lessonId: 'l1', language: 'en', cues: [{ startMs: 0, endMs: 1000, text: 'hi' }] },
+        { lessonId: 'l2', language: 'ru', cues: [] },
+      ]);
+
+      const result = await repo.findCuesForLessons(['l1', 'l2']);
+      expect(result.size).toBe(2);
+      expect(result.get('l1')).toEqual({
+        language: 'en',
+        cues: [{ startMs: 0, endMs: 1000, text: 'hi' }],
+      });
+      expect(result.get('l2')).toEqual({ language: 'ru', cues: [] });
+    });
+
+    it('queries distinct on lessonId, ordered lessonId asc then createdAt desc', async () => {
+      prisma.transcript.findMany.mockResolvedValue([]);
+      await repo.findCuesForLessons(['l1', 'l2']);
+
+      const call = vi.mocked(prisma.transcript.findMany).mock.calls[0]?.[0];
+      expect(call?.where).toEqual({ lessonId: { in: ['l1', 'l2'] } });
+      expect(call?.distinct).toEqual(['lessonId']);
+      expect(call?.orderBy).toEqual([{ lessonId: 'asc' }, { createdAt: 'desc' }]);
+    });
+  });
 });

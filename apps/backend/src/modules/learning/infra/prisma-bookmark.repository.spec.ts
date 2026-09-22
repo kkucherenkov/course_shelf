@@ -286,6 +286,39 @@ describe('PrismaBookmarkRepository', () => {
   });
 
   // -------------------------------------------------------------------------
+  // findManyByUserAndLessons
+  // -------------------------------------------------------------------------
+
+  describe('findManyByUserAndLessons', () => {
+    it('returns an empty map without querying when lessonIds is empty', async () => {
+      const result = await repo.findManyByUserAndLessons('user-1', []);
+      expect(result.size).toBe(0);
+      expect(prisma.bookmark.findMany).not.toHaveBeenCalled();
+    });
+
+    it('groups rows by lessonId, preserving positionSeconds ASC order per group', async () => {
+      vi.mocked(prisma.bookmark.findMany).mockResolvedValue([
+        makeRow({ id: 'bm-1', lessonId: 'lesson-1', positionSeconds: 10 }),
+        makeRow({ id: 'bm-2', lessonId: 'lesson-1', positionSeconds: 20 }),
+        makeRow({ id: 'bm-3', lessonId: 'lesson-2', positionSeconds: 5 }),
+      ]);
+
+      const result = await repo.findManyByUserAndLessons('user-1', ['lesson-1', 'lesson-2']);
+      expect(result.get('lesson-1')?.map((b) => b.id)).toEqual(['bm-1', 'bm-2']);
+      expect(result.get('lesson-2')?.map((b) => b.id)).toEqual(['bm-3']);
+    });
+
+    it('passes an IN clause scoped to userId, ordered by positionSeconds asc', async () => {
+      vi.mocked(prisma.bookmark.findMany).mockResolvedValue([]);
+      await repo.findManyByUserAndLessons('user-1', ['lesson-1', 'lesson-2']);
+
+      const call = vi.mocked(prisma.bookmark.findMany).mock.calls[0]?.[0];
+      expect(call?.where).toEqual({ userId: 'user-1', lessonId: { in: ['lesson-1', 'lesson-2'] } });
+      expect(call?.orderBy).toEqual({ positionSeconds: 'asc' });
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // delete
   // -------------------------------------------------------------------------
 

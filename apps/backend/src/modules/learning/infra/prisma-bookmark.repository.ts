@@ -127,6 +127,29 @@ export class PrismaBookmarkRepository implements BookmarkRepository {
     return rows.map((row) => rowToAggregate(row));
   }
 
+  async findManyByUserAndLessons(
+    userId: string,
+    lessonIds: readonly string[],
+  ): Promise<Map<string, Bookmark[]>> {
+    if (lessonIds.length === 0) return new Map();
+    const rows = await this.prisma.bookmark.findMany({
+      where: { userId, lessonId: { in: [...lessonIds] } },
+      select: SELECT,
+      orderBy: { positionSeconds: 'asc' },
+    });
+    const byLesson = new Map<string, Bookmark[]>();
+    for (const row of rows) {
+      const bookmark = rowToAggregate(row);
+      const bucket = byLesson.get(row.lessonId);
+      if (bucket) {
+        bucket.push(bookmark);
+      } else {
+        byLesson.set(row.lessonId, [bookmark]);
+      }
+    }
+    return byLesson;
+  }
+
   async delete(id: string): Promise<void> {
     await this.prisma.bookmark.delete({ where: { id } });
   }

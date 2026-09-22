@@ -187,6 +187,13 @@ export interface TranscriptRepository {
   findCuesForLesson(lessonId: string): Promise<LessonCues | null>;
 
   /**
+   * Batch form of findCuesForLesson across every lesson in a course export
+   * (E28-F01-S01) — one query instead of one round-trip per lesson. Lessons
+   * with no transcript are absent from the map.
+   */
+  findCuesForLessons(lessonIds: readonly string[]): Promise<Map<string, LessonCues>>;
+
+  /**
    * Whether `cueId` names a `TranscriptCue` belonging to one of `lessonId`'s
    * own transcripts — the ownership check `CreateFlashcardHandler` needs
    * before trusting a client-supplied `sourceCueId` (tuxedo 208). A cue from

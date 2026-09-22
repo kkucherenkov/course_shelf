@@ -793,36 +793,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/courses/{courseId}/export': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Download a course as a Markdown archive
-     * @description Streams a ZIP: `course.md`, one `lessons/NN-slug.md` per lesson in
-     *     outline order, and one shared `images/` folder. Each lesson file
-     *     carries the lesson's note, its bookmarks — each with its timestamp,
-     *     its `?t=` deep link back into the player, and the transcript lines
-     *     it points at — and, when the lesson has an applied summary, that
-     *     summary with its `frame:` placeholders rewritten to `images/NNN.jpg`.
-     *     A lesson without an applied summary renders without that section;
-     *     the export does not require one.
-     *
-     *     Access is course-level, same as `getCourse`: a READ grant on the
-     *     course's library.
-     */
-    get: operations['exportCourse'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/v1/courses/{id}/mark-complete': {
     parameters: {
       query?: never;
@@ -1460,35 +1430,6 @@ export interface paths {
      *     grant on the parent library or course, or be an admin.
      */
     get: operations['issueMaterialDownloadUrl'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/lessons/{lessonId}/export': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Download a lesson as a Markdown archive
-     * @description Streams a ZIP: `lesson.md` plus `images/`. `lesson.md` carries the
-     *     lesson title, a deep link back into the player, the user's note,
-     *     the bookmarks — each with its timestamp, its `?t=` deep link, and
-     *     the transcript lines it points at — and, when the lesson has an
-     *     applied summary, that summary with its `frame:` placeholders
-     *     rewritten to `images/NNN.jpg`. A lesson without an applied summary
-     *     renders without that section; the export does not require one.
-     *
-     *     Access mirrors `getLesson`: a READ grant covering the parent
-     *     library or course.
-     */
-    get: operations['exportLesson'];
     put?: never;
     post?: never;
     delete?: never;
@@ -6526,58 +6467,6 @@ export interface operations {
       429: components['responses']['TooManyRequests'];
     };
   };
-  exportCourse: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Server-generated cuid identifying the course. */
-        courseId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The course's Markdown export, as a ZIP archive. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/zip': string;
-        };
-      };
-      400: components['responses']['BadRequest'];
-      /** @description Missing or invalid bearer token */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['Problem'];
-        };
-      };
-      /** @description Caller does not have a READ grant for the course's library */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['Problem'];
-        };
-      };
-      /** @description Course not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['Problem'];
-        };
-      };
-      429: components['responses']['TooManyRequests'];
-    };
-  };
   markCourseComplete: {
     parameters: {
       query?: never;
@@ -7871,58 +7760,6 @@ export interface operations {
         };
       };
       /** @description Material or parent lesson not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['Problem'];
-        };
-      };
-      429: components['responses']['TooManyRequests'];
-    };
-  };
-  exportLesson: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Server-generated cuid identifying the lesson. */
-        lessonId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The lesson's Markdown export, as a ZIP archive. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/zip': string;
-        };
-      };
-      400: components['responses']['BadRequest'];
-      /** @description Missing or invalid bearer token */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['Problem'];
-        };
-      };
-      /** @description Requester has no READ grant covering the parent library or course */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['Problem'];
-        };
-      };
-      /** @description Lesson not found */
       404: {
         headers: {
           [name: string]: unknown;

@@ -105,8 +105,6 @@ Class | Method | HTTP request | Description
 [*AdminApi*](doc/AdminApi.md) | [**upsertStudio**](doc/AdminApi.md#upsertstudio) | **POST** /api/v1/admin/studios | Create or update a studio
 [*AdminApi*](doc/AdminApi.md) | [**upsertTag**](doc/AdminApi.md#upserttag) | **POST** /api/v1/admin/tags | Create or update a tag
 [*CatalogApi*](doc/CatalogApi.md) | [**cancelTranscription**](doc/CatalogApi.md#canceltranscription) | **POST** /api/v1/transcriptions/{id}/cancel | Request cancellation of a running transcription
-[*CatalogApi*](doc/CatalogApi.md) | [**exportCourse**](doc/CatalogApi.md#exportcourse) | **GET** /api/v1/courses/{courseId}/export | Download a course as a Markdown archive
-[*CatalogApi*](doc/CatalogApi.md) | [**exportLesson**](doc/CatalogApi.md#exportlesson) | **GET** /api/v1/lessons/{lessonId}/export | Download a lesson as a Markdown archive
 [*CatalogApi*](doc/CatalogApi.md) | [**getContinueWatching**](doc/CatalogApi.md#getcontinuewatching) | **GET** /api/v1/home/continue-watching | List courses the requester is in the middle of
 [*CatalogApi*](doc/CatalogApi.md) | [**getCourse**](doc/CatalogApi.md#getcourse) | **GET** /api/v1/courses/{id} | Get a single course
 [*CatalogApi*](doc/CatalogApi.md) | [**getCourseDownloadEstimate**](doc/CatalogApi.md#getcoursedownloadestimate) | **GET** /api/v1/courses/{id}/download-estimate | Total download size for a course

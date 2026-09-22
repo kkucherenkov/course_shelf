@@ -164,6 +164,23 @@ retrigger itself. The pull request keeps showing the previous run, so a stale
 red looks like a slow queue. Push something of your own, or update the branch,
 to get the verdict on the new baselines.
 
+**After a regeneration, the branch's next run needs approving by hand.** The
+regen pushes as `github-actions[bot]`, and a branch carrying a bot commit puts
+subsequent workflow runs into `action_required` — GitHub waits for a human
+before starting them. They never begin on their own, and in the pull request's
+check list they are simply absent, so it reads as "the checks have not started
+yet" rather than "the checks are blocked". Approve each run:
+
+```sh
+gh api -X POST repos/:owner/:repo/actions/runs/<id>/approve
+```
+
+Find them with `gh run list --branch <branch> --json databaseId,conclusion`
+and look for `conclusion: action_required`. Loop over the ids with
+`printf '%s\n' $ids | while read -r id` — a bare `for id in $ids` approves
+exactly one of them under zsh, and the output looks like it approved them all.
+Five runs sat waiting for fifteen minutes on #787 before this was spotted.
+
 **Regeneration rewrites every baseline whose bytes differ**, including
 sub-threshold drift the visual check deliberately ignores. Twice this pulled an
 unrelated component's image into a pull request that never touched it. Read the

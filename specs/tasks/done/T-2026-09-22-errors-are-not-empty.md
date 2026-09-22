@@ -45,5 +45,7 @@
         only (en+ru).
   - [x] Lint/stylelint/format, `pnpm --filter @app/web test`, `pnpm check:i18n`.
   - [x] PR opened against `main`, CI green on all five required contexts.
-- Status: in-progress
-- Blockers: waiting on review/merge
+- Status: done
+- Blockers: —
+- Completed: 2026-09-22
+- Result: https://github.com/kkucherenkov/course_shelf/pull/786

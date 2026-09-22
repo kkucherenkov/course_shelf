@@ -10,11 +10,8 @@
     sections: SectionOutline[];
     /** The lesson id considered "current" (highlighted in the row). */
     currentLessonId: string | null;
-    /** Called when user clicks a lesson row — emits the lesson id. */
-  }>();
-
-  const emit = defineEmits<{
-    selectLesson: [lessonId: string];
+    /** Course the sections belong to — builds each lesson row's route (#780). */
+    courseId: string;
   }>();
 
   const { t } = useI18n();
@@ -81,7 +78,7 @@
           :transcript="lesson.hasTranscript"
           :current="lesson.id === currentLessonId"
           :progress="lesson.progressPercent"
-          @select="emit('selectLesson', lesson.id)"
+          :to="`/courses/${courseId}/lessons/${lesson.id}`"
         />
       </div>
     </div>

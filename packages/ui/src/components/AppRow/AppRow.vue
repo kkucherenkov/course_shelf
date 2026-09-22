@@ -1,11 +1,14 @@
 <script setup lang="ts">
-  withDefaults(
+  import { computed, resolveComponent } from 'vue';
+  import type { RouteLocationRaw } from 'vue-router';
+
+  const props = withDefaults(
     defineProps<{
       /**
        * Visual selection only. No ARIA is emitted: `aria-selected` is valid
        * solely on `option`/`row`/`tab`/`treeitem`-like roles, and this renders
-       * a plain `<button>` or `<div>` — axe's `aria-allowed-attr` failed on
-       * every selected row. The consumer owns the semantics and passes them
+       * a plain `<button>`, `<a>` or `<div>` — axe's `aria-allowed-attr` failed
+       * on every selected row. The consumer owns the semantics and passes them
        * through as fallthrough attrs (AppNavigationShell already sets
        * `aria-current="page"`, which is the correct one for navigation).
        */
@@ -13,21 +16,35 @@
       compact?: boolean;
       /** When true, renders as <button type="button">; otherwise <div>. */
       interactive?: boolean;
+      /**
+       * Navigation target. When set, the row renders as a `NuxtLink` — a real
+       * `<a href>` a browser can middle-click, ctrl/cmd-click into a new tab,
+       * or copy — instead of a `<button>`/`<div>` that only a JS click handler
+       * can activate (#780). Takes priority over `interactive`; a row with
+       * both is still a single anchor, not a button-in-a-button.
+       */
+      to?: RouteLocationRaw;
     }>(),
-    { selected: false, compact: false, interactive: false },
+    { selected: false, compact: false, interactive: false, to: undefined },
+  );
+
+  const isLink = computed(() => Boolean(props.to));
+  const rootTag = computed(() =>
+    isLink.value ? resolveComponent('NuxtLink') : props.interactive ? 'button' : 'div',
   );
 </script>
 
 <template>
   <component
-    :is="interactive ? 'button' : 'div'"
-    :type="interactive ? 'button' : undefined"
+    :is="rootTag"
+    :to="isLink ? to : undefined"
+    :type="!isLink && interactive ? 'button' : undefined"
     :class="[
       'app-row',
       {
         'app-row--selected': selected,
         'app-row--compact': compact,
-        'app-row--interactive': interactive,
+        'app-row--interactive': interactive || isLink,
       },
     ]"
   >
@@ -59,6 +76,11 @@
     padding: var(--space-3) var(--space-3); // 10px 12px ≈ closest shipped: 12px/12px
     border-radius: var(--radius-md);
     transition: background var(--dur-fast) var(--ease-default);
+    // Neutralises the anchor default (blue, underlined) when `to` renders a
+    // NuxtLink root — harmless on the <button>/<div> variants, which never
+    // pick up either property.
+    color: inherit;
+    text-decoration: none;
 
     &__leading {
       flex-shrink: 0;

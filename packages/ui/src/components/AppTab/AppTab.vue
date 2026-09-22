@@ -93,6 +93,11 @@
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
     cursor: pointer;
+    // A tab's own label never wraps or shrinks — a row that doesn't fit
+    // should scroll (see AppTabs consumers), not fold a label onto a second
+    // line where it loses its border-bottom "selected" underline (#782).
+    flex-shrink: 0;
+    white-space: nowrap;
     transition:
       color var(--dur-fast) var(--ease-default),
       border-color var(--dur-fast) var(--ease-default);

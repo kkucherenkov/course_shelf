@@ -215,6 +215,10 @@ export default {
       resetDialogDescription:
         "Clears this course's lesson-by-lesson progress. There's no undo; rewatching is the only way to rebuild it.",
       resetDialogConfirm: 'Reset progress',
+      completeDialogTitle: 'Mark all lessons complete?',
+      completeDialogDescription:
+        "Marks all {n} lesson in this course as watched. There's no undo. | Marks all {n} lessons in this course as watched. There's no undo.",
+      completeDialogConfirm: 'Mark complete',
       completedBanner: 'All lessons completed · {hours}h watched',
       toastMarkCompleteSuccess: 'Course marked as complete.',
       toastMarkCompleteError: 'Could not mark course complete. Please try again.',

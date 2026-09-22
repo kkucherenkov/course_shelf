@@ -14,8 +14,8 @@ exports[`AdminScansTable > matches snapshot (empty state) 1`] = `
         <th data-v-164d419a="" class="adm-scans-tbl__col--lg">Files</th>
         <th data-v-164d419a="" class="adm-scans-tbl__col--lg">Added</th>
         <th data-v-164d419a="" class="adm-scans-tbl__col--lg">Errors</th>
-        <th data-v-164d419a="" class="adm-scans-tbl__col--md-combined" aria-label="Files / Added"></th>
-        <th data-v-164d419a="" aria-label="admin.scansTable.expandColumnLabel"></th>
+        <th data-v-164d419a="" class="adm-scans-tbl__col--md-combined"><span data-v-164d419a="" class="adm-scans-tbl__sr-only">Files / Added</span></th>
+        <th data-v-164d419a=""><span data-v-164d419a="" class="adm-scans-tbl__sr-only">admin.scansTable.expandColumnLabel</span></th>
       </tr>
     </thead>
     <tbody data-v-164d419a=""></tbody>
@@ -37,8 +37,8 @@ exports[`AdminScansTable > matches snapshot (with items) 1`] = `
         <th data-v-164d419a="" class="adm-scans-tbl__col--lg">Files</th>
         <th data-v-164d419a="" class="adm-scans-tbl__col--lg">Added</th>
         <th data-v-164d419a="" class="adm-scans-tbl__col--lg">Errors</th>
-        <th data-v-164d419a="" class="adm-scans-tbl__col--md-combined" aria-label="Files / Added"></th>
-        <th data-v-164d419a="" aria-label="admin.scansTable.expandColumnLabel"></th>
+        <th data-v-164d419a="" class="adm-scans-tbl__col--md-combined"><span data-v-164d419a="" class="adm-scans-tbl__sr-only">Files / Added</span></th>
+        <th data-v-164d419a=""><span data-v-164d419a="" class="adm-scans-tbl__sr-only">admin.scansTable.expandColumnLabel</span></th>
       </tr>
     </thead>
     <tbody data-v-164d419a="">

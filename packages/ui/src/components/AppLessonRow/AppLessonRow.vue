@@ -1,5 +1,6 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, resolveComponent } from 'vue';
+  import type { RouteLocationRaw } from 'vue-router';
 
   import AppSkeleton from '../AppSkeleton/AppSkeleton.vue';
   import IconCS from '../IconCS/IconCS.vue';
@@ -40,6 +41,15 @@
        * number; `@app/ui` never calls `t()` itself.
        */
       formatWatched?: (percent: number) => string;
+      /**
+       * Navigation target. When set (and the row is neither loading nor
+       * locked), the row renders as a `NuxtLink` — a real `<a href>` — instead
+       * of a `<div role="button">` only a click/keydown handler can activate
+       * (#780: a 540-lesson course page had 3 real links in 5486 DOM nodes).
+       * Locked/loading rows never become a link regardless: there is nothing
+       * to navigate to yet.
+       */
+      to?: RouteLocationRaw;
     }>(),
     {
       state: 'not-started',
@@ -52,10 +62,21 @@
       materialsLabel: 'Materials available',
       transcriptLabel: 'Transcript available',
       formatWatched: undefined,
+      to: undefined,
     },
   );
 
   const emit = defineEmits<{ select: [] }>();
+
+  const isLink = computed(() => Boolean(props.to) && !props.loading && props.state !== 'locked');
+  const rootTag = computed(() => (isLink.value ? resolveComponent('NuxtLink') : 'div'));
+  // A real `<a href>` is focusable/activatable on its own — no role/tabindex
+  // needed, and a locked row (no `to`, or `to` withheld by the consumer) is
+  // never a tab stop.
+  const rowTabindex = computed(() => {
+    if (isLink.value) return;
+    return props.state === 'locked' ? -1 : 0;
+  });
 
   const iconName = computed<IconName>(() => {
     if (props.state === 'completed') return 'check-circle';
@@ -121,21 +142,23 @@
     </div>
     <AppSkeleton width="40px" height="12px" />
   </div>
-  <div
+  <component
+    :is="rootTag"
     v-else
+    :to="isLink ? to : undefined"
     class="app-lesson-row"
     :class="{
       'app-lesson-row--current': current,
       'app-lesson-row--locked': state === 'locked',
     }"
-    role="button"
-    :tabindex="state === 'locked' ? -1 : 0"
+    :role="isLink ? undefined : 'button'"
+    :tabindex="rowTabindex"
     :aria-current="current ? 'true' : undefined"
-    :aria-disabled="state === 'locked' ? 'true' : undefined"
+    :aria-disabled="!isLink && state === 'locked' ? 'true' : undefined"
     :data-current="current"
     :data-state="state"
-    @click="onActivate"
-    @keydown="onKey"
+    @click="isLink ? undefined : onActivate()"
+    @keydown="isLink ? undefined : onKey($event)"
   >
     <div class="app-lesson-row__num">
       {{ String(num).padStart(2, '0') }}
@@ -171,7 +194,7 @@
       />
       <span class="app-lesson-row__duration">{{ formattedDuration }}</span>
     </div>
-  </div>
+  </component>
 </template>
 
 <style scoped lang="scss">
@@ -197,6 +220,10 @@
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: background var(--dur-fast);
+    // Neutralises the anchor default (blue, underlined) when `to` renders a
+    // NuxtLink root — harmless on the plain-div variant.
+    color: inherit;
+    text-decoration: none;
 
     &:hover {
       background: var(--surface-raised);

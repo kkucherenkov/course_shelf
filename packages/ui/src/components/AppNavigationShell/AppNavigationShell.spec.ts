@@ -139,6 +139,32 @@ describe('AppNavigationShell', () => {
     expect(w.emitted('nav')).toEqual([['search']]);
   });
 
+  // #780 — a nav row with a `to` renders as a real `<a href>`, not a
+  // `<button>` only a click handler can activate.
+  it('renders a nav item carrying `to` as an anchor whose href matches the route', () => {
+    const navWithRoute: NavItem[] = [
+      { key: 'home', label: 'Home', icon: 'home', to: '/' },
+      { key: 'browse', label: 'Browse', icon: 'library', to: '/browse' },
+    ];
+    const w = mount(AppNavigationShell, {
+      global: {
+        components: { NuxtLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } },
+      },
+      props: {
+        activeRoute: 'home',
+        nav: navWithRoute,
+        user: defaultUser,
+        sidebarLabel: 'Sidebar',
+        rightRailLabel: 'Secondary content',
+        userMenuLabel: 'User menu',
+      },
+    });
+    const browseLink = w
+      .findAll('.app-navigation-shell__nav a')
+      .find((el) => el.text().includes('Browse'));
+    expect(browseLink?.attributes('href')).toBe('/browse');
+  });
+
   // ── Admin section ─────────────────────────────────────────────────────────
 
   it('does not render admin section when adminNav is empty (default)', () => {

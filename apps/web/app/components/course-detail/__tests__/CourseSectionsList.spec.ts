@@ -42,8 +42,8 @@ vi.mock('~/stores/preferences', async (importOriginal) => {
 vi.mock('@app/ui', () => ({
   AppSectionHeader: { props: ['idx', 'title'], template: '<div><slot /></div>' },
   AppLessonRow: {
-    props: ['num', 'title', 'state', 'progress'],
-    template: '<div class="fake-lesson-row" :data-state="state" :data-num="num" />',
+    props: ['num', 'title', 'state', 'progress', 'to'],
+    template: '<div class="fake-lesson-row" :data-state="state" :data-num="num" :data-to="to" />',
   },
 }));
 
@@ -71,7 +71,7 @@ function section(overrides: Partial<SectionOutline> = {}): SectionOutline {
 
 function mountList(sections: SectionOutline[]) {
   return mount(CourseSectionsList, {
-    props: { sections, currentLessonId: 'l1' },
+    props: { sections, currentLessonId: 'l1', courseId: 'course-1' },
   });
 }
 
@@ -86,5 +86,13 @@ describe('CourseSectionsList', () => {
     completionThreshold = 90;
     const wrapper = mountList([section()]);
     expect(wrapper.find('.fake-lesson-row').attributes('data-state')).toBe('in-progress');
+  });
+
+  // #780 — the lesson row must carry a real route, not just a click handler.
+  it('builds each lesson row route from courseId and lesson id', () => {
+    const wrapper = mountList([section()]);
+    expect(wrapper.find('.fake-lesson-row').attributes('data-to')).toBe(
+      '/courses/course-1/lessons/l1',
+    );
   });
 });

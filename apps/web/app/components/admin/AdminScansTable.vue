@@ -105,11 +105,14 @@
           <th class="adm-scans-tbl__col--lg">{{ props.colFiles }}</th>
           <th class="adm-scans-tbl__col--lg">{{ props.colAdded }}</th>
           <th class="adm-scans-tbl__col--lg">{{ props.colErrors }}</th>
-          <th
-            class="adm-scans-tbl__col--md-combined"
-            :aria-label="`${props.colFiles} / ${props.colAdded}`"
-          />
-          <th :aria-label="t('admin.scansTable.expandColumnLabel')" />
+          <th class="adm-scans-tbl__col--md-combined">
+            <span class="adm-scans-tbl__sr-only">{{ props.colFiles }} / {{ props.colAdded }}</span>
+          </th>
+          <th>
+            <span class="adm-scans-tbl__sr-only">{{
+              t('admin.scansTable.expandColumnLabel')
+            }}</span>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -319,6 +322,23 @@
 
     &__chevron-cell {
       text-align: right;
+    }
+
+    // Visible to screen readers only — axe's `empty-table-header` checks for
+    // *text content* an assistive tech announces, not `aria-label` alone
+    // (#784). These two header cells are intentionally blank on screen (a
+    // combined-column marker and the row-expand chevron), so the label lives
+    // here instead of as a visible column heading.
+    &__sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
     }
 
     &__chevron {

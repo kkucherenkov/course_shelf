@@ -91,16 +91,19 @@
     &__tabs {
       flex-shrink: 0;
       // #696 (historical): five tabs (448px) never fit the sidebar at any
-      // desktop width (359px, 279px at 1024px), and a horizontally-scrolling
-      // strip with no affordance hid Transcript entirely — 1952 transcripts,
-      // unreachable. Wrap onto a second row instead of an overflow menu:
-      // every tab stays visible and directly clickable at every width, no JS
-      // needed. #216 moved Transcript into its own panel below the video,
-      // leaving four tabs here; their combined width at four is not
-      // remeasured, so the wrap stays as a width-agnostic guarantee rather
-      // than being dropped on an unverified assumption that four now fit on
-      // one row.
-      flex-wrap: wrap;
+      // desktop width, so this wrapped onto a second row instead of an
+      // overflow menu — every tab stayed visible and directly clickable, no
+      // JS needed. #216 then moved Transcript into its own panel, leaving
+      // four tabs.
+      // The 1.9.0 audit (#782) found wrapping's own cost: the row's active
+      // underline stays on the first line, so a tab that spills onto the
+      // second reads as a heading rather than a selectable tab — at both
+      // 1440px and 390px, with only four tabs. Scroll instead: every tab
+      // stays one click away, on one line, with `scrollbar-width: thin`
+      // supplying the visible affordance #696 specifically found missing
+      // from an unstyled overflow strip.
+      overflow-x: auto;
+      scrollbar-width: thin;
     }
 
     &__body {

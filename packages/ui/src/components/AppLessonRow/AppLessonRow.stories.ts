@@ -47,6 +47,10 @@ export const WithTranscript: Story = { args: { ...base, transcript: true } };
 
 export const Loading: Story = { args: { ...base, loading: true } };
 
+// A route-bearing row: real `<a href>` under the hood (via NuxtLink) instead
+// of a `<div role="button">` only a click handler could activate (#780).
+export const Link: Story = { args: { ...base, to: '/courses/abc/lessons/def' } };
+
 export const Stack: Story = {
   render: () => ({
     components: { AppLessonRow },

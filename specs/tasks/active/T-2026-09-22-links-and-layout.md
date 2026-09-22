@@ -45,6 +45,7 @@
         `pnpm stylelint:fix`, `pnpm format`
   - [x] `pnpm --filter @app/ui test`, `pnpm --filter @app/web test`,
         `pnpm check:i18n`
-  - [ ] Open PR, wait for required CI checks
+  - [x] Open PR (https://github.com/kkucherenkov/course_shelf/pull/787), wait
+        for required CI checks
 - Status: in-progress
 - Blockers: —

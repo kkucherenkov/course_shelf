@@ -40,12 +40,20 @@ const PERSONAS = {
 // Full matrix here; every other surface gets one pass. Override with
 // AUDIT_CORE / AUDIT_ALL (comma-separated) when the routes change.
 const CORE = (process.env.AUDIT_CORE ?? '/,/browse,/settings').split(',');
-const ALL = [
+// `ALL` used to be a bare literal while the comment above promised an
+// AUDIT_ALL override. Auditing 1.9.0 hit that: two new surfaces were passed in
+// AUDIT_ALL, the run reported 14 routes instead of 16, and the release's only
+// new screens went unaudited while the report looked complete.
+const ALL = process.env.AUDIT_ALL?.split(',') ?? [
   '/',
   '/browse',
   '/search',
-  '/libraries',
   '/settings',
+  // `/libraries` used to sit here. The app has no such route — it is
+  // `/admin/libraries`, already listed below — so every run audited Nuxt's
+  // 404 page and filed its empty <title> as a `document-title` violation.
+  // Four runs' worth of that finding were about the error page, not a screen.
+  '/flashcards/review',
   '/courses/IUJgcSn2VoE9cPFTG63Lw',
   '/courses/IUJgcSn2VoE9cPFTG63Lw/edit',
   '/courses/IUJgcSn2VoE9cPFTG63Lw/lessons/VzjmQ4VtlzJzXp_k-fj4m',
@@ -55,6 +63,7 @@ const ALL = [
   '/admin/permissions',
   '/admin/backups',
   '/admin/identify-tasks',
+  '/admin/scrapers',
 ];
 
 const VIEWPORTS = [

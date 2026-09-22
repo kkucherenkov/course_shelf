@@ -34,8 +34,10 @@
   - [x] Creation entry points
   - [x] Due count on Home
   - [x] Locale keys in both languages
-- Status: in-progress
+- Status: done
 - Blockers: —
+- Completed: 2026-09-22
+- Result: https://github.com/kkucherenkov/course_shelf/pull/762
 
 ### Notes
 

@@ -141,6 +141,8 @@ component names.
 | Learning   | `AppBookmark`         | ✓               | ✓                  |
 | Learning   | `AppBookmarkAdd`      | ✓               | ✓                  |
 | Learning   | `AppBookmarkList`     | ✓               | ✓                  |
+| Learning   | `AppFlashcardEditor`  | ✓               | —                  |
+| Learning   | `AppFlashcardReview`  | ✓               | —                  |
 | Learning   | `AppNoteEditor`       | ✓               | ✓                  |
 | Media      | `AppAvatar`           | ✓               | ✓                  |
 | Media      | `AppIcon`             | ✓               | —                  |

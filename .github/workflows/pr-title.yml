@@ -1,0 +1,56 @@
+name: PR title
+
+# Why this is its own file and not a job in ci.yml, where it used to live:
+# the gate has to re-evaluate a CORRECTED title, and `ci.yml` cannot let it.
+#
+# `on: pull_request` with no `types:` defaults to
+# `[opened, synchronize, reopened]`. `edited` is not in that list, so retitling
+# a PR never re-ran the job: the check stayed red describing a title that no
+# longer existed, and the only way to clear it was to push something unrelated.
+# #766 did exactly that on 2026-09-22 — a `chore: retrigger PR title check
+# after retitle` commit whose entire purpose was to make GitHub look again.
+# The one correction this gate exists to catch was the one it could not see.
+#
+# Adding `edited` to ci.yml's own trigger would re-run the whole workflow —
+# Flutter, the full test suite, the vulnerability scan — every time somebody
+# fixed a typo in a PR body. Gating the expensive jobs behind
+# `github.event.action != 'edited'` is worse still: branch protection counts a
+# skipped required job as blocking rather than passing (see the `flutter` job's
+# comment in ci.yml), so an edit would leave the PR unmergeable.
+#
+# One small job in its own file takes the `edited` trigger without dragging
+# anything else along with it.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+
+concurrency:
+  group: pr-title-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # A squash merge takes the PR TITLE as the commit subject on main, and
+  # `commitlint` only ever saw local commits through the husky commit-msg
+  # hook. So a PR whose commits were all conventional could still land an
+  # unconventional subject — #560 did, and `cliff.toml` drops what it cannot
+  # parse, which would have left the largest change of that release out of
+  # the notes entirely.
+  #
+  # The title is author-controlled text. It reaches the shell through `env:`,
+  # never through `${{ }}` interpolation inside `run:`, which would let a
+  # title containing shell metacharacters execute as code.
+  pr-title:
+    name: PR title (conventional commit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-cs
+
+      - name: Lint the PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: printf '%s\n' "$PR_TITLE" | npx --no-install commitlint

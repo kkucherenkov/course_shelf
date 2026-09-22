@@ -1,12 +1,21 @@
 name: CI
 
 # CI for github.com/kkucherenkov/course_shelf — the sole repo since the
-# self-hosted Forgejo was dropped on 2026-07-14. This file is the only CI that
-# runs.
+# self-hosted Forgejo was dropped on 2026-07-14.
 #
-# Runners are free for public repos, so everything gates here: the consolidated
-# `checks` job, codegen drift with a full Flutter toolchain, the Flutter
-# analyze/test/golden job, trufflehog, license check and the vulnerability scan.
+# Runners are free for public repos, so most of the gating happens here: the
+# consolidated `checks` job, codegen drift with a full Flutter toolchain, the
+# Flutter analyze/test/golden job, trufflehog, license check and the
+# vulnerability scan.
+#
+# It is NOT the whole of CI, and a claim that it was lived in this comment for
+# months. Four of the five required contexts on `main` come from here —
+# `checks`, `codegen-drift`, `flutter` and `security`. The fifth and the rest
+# live in their own files, each for a reason this one cannot accommodate:
+# `e2e.yml` owns `Playwright smoke`, needs a running stack and must not cancel
+# a queued run, `quality.yml` captures screenshots in a pinned Playwright image,
+# and `pr-title.yml` needs the `edited` trigger that would make every job below
+# re-run on a typo.
 
 on:
   push:
@@ -79,32 +88,10 @@ jobs:
       - name: Run the suite
         run: bash deploy/agent/tests/run.sh
 
-  # ── PR title is a Conventional Commit ─────────────────────────────────────
-  # A squash merge takes the PR TITLE as the commit subject on main, and
-  # `commitlint` only ever saw local commits through the husky commit-msg
-  # hook. So a PR whose commits were all conventional could still land an
-  # unconventional subject — #560 did, and `cliff.toml` drops what it cannot
-  # parse, which would have left the largest change of that release out of
-  # the notes entirely.
-  #
-  # The title is author-controlled text. It reaches the shell through `env:`,
-  # never through `${{ }}` interpolation inside `run:`, which would let a
-  # title containing shell metacharacters execute as code.
-  pr-title:
-    name: PR title (conventional commit)
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: ./.github/actions/setup-cs
-
-      - name: Lint the PR title
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-        run: printf '%s\n' "$PR_TITLE" | npx --no-install commitlint
+  # The Conventional-Commit check on the PR title lives in its own file,
+  # `pr-title.yml`, because it needs the `edited` trigger and this workflow
+  # must not have it — an edit here would re-run Flutter and the whole test
+  # suite, and skipping those instead would leave the PR unmergeable.
 
   # ── Checks (consolidated lint · typecheck · test · specs · ui audit) ──────
   # One job sharing one pnpm install + one design:build + one prisma generate.

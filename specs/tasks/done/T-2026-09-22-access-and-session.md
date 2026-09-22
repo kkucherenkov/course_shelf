@@ -44,5 +44,7 @@
   - [x] Web: page titles for the two new 1.9.0 screens.
   - [x] Lint/format/test/i18n gates green.
   - [x] PR against `main`.
-- Status: in-progress
+- Status: done
 - Blockers: —
+- Completed: 2026-09-22
+- Result: https://github.com/kkucherenkov/course_shelf/pull/788

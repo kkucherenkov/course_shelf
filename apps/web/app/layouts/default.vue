@@ -121,7 +121,14 @@
   // is one fetch for the whole session, not one per navigation — and Nuxt
   // keeps every call to the same key on the same shared `data` ref, so
   // grading a card on the review page updates this badge for free.
-  const dueFlashcards = useFlashcardReviewQueue();
+  //
+  // `immediate: hasSession.value` — this layout also wraps public routes
+  // with no auth at all (`/dev/foundations`, per `auth.global.ts`'s
+  // `PUBLIC_ROUTES`); an authenticated-only fetch has no reason to fire
+  // there. `hasSession.value` is read once, at setup time, not reactively —
+  // the token is already hydrated synchronously off `useAuthStore()` above
+  // by the time this runs, so a real session is never missed.
+  const dueFlashcards = useFlashcardReviewQueue(undefined, { immediate: hasSession.value });
   const dueFlashcardCount = computed(() =>
     dueFlashcards.status.value === 'success' ? dueFlashcards.queue.value.length : 0,
   );

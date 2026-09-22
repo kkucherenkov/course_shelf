@@ -131,6 +131,40 @@ describe('AppNavigationShell', () => {
     expect(browseItem?.attributes('aria-current')).toBeUndefined();
   });
 
+  // ── Nav badge (#775) ─────────────────────────────────────────────────────
+
+  it('renders a badge on a nav item that has one', () => {
+    const navWithBadge: NavItem[] = [
+      ...defaultNav,
+      { key: 'review', label: 'Review', icon: 'circle-stack', badge: 3 },
+    ];
+    const w = factory({ props: { nav: navWithBadge } });
+    const reviewRow = w
+      .findAll('.app-navigation-shell__nav .app-row')
+      .find((el) => el.text().includes('Review'));
+    expect(reviewRow?.find('.app-badge').text()).toBe('3');
+  });
+
+  it('renders no badge for a nav item without one', () => {
+    const w = factory();
+    const homeRow = w
+      .findAll('.app-navigation-shell__nav .app-row')
+      .find((el) => el.text().includes('Home'));
+    expect(homeRow?.find('.app-badge').exists()).toBe(false);
+  });
+
+  it('renders the same badge count in the bottom-tab bar', () => {
+    const navWithBadge: NavItem[] = [
+      ...defaultNav,
+      { key: 'review', label: 'Review', icon: 'circle-stack', badge: 3 },
+    ];
+    const w = factory({ props: { nav: navWithBadge } });
+    const tabItem = w
+      .findAll('.app-navigation-shell__tab-item')
+      .find((el) => el.text().includes('Review'));
+    expect(tabItem?.find('.app-navigation-shell__tab-badge').text()).toBe('3');
+  });
+
   it('emits "nav" with item key when a nav item is clicked', async () => {
     const w = factory({ props: { activeRoute: 'home' } });
     const navItems = w.findAll('.app-navigation-shell__nav .app-row');

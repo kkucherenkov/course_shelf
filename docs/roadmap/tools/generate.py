@@ -2555,6 +2555,15 @@ add(
     goal="Check whether a lesson actually landed, using the words it actually used.",
 )
 add(
+    id="E29-F04-S01",
+    epic="E29", epic_title="Learning mechanics",
+    feature="F04", feature_title="Generated summaries",
+    title="Lesson summary with screenshots",
+    duration=4, stage="A",
+    deps=["E27-F01-S01", "E28-F01-S01"],
+    goal="A lesson's transcript and its slides become a draft you would keep, generated on demand and reviewed before it counts.",
+)
+add(
     id="E29-F03-S01",
     epic="E29", epic_title="Learning mechanics",
     feature="F03", feature_title="Learning paths",

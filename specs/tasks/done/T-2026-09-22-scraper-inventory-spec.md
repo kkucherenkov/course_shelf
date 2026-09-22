@@ -32,6 +32,8 @@ expected 401`, `validateSecurity: false` means auth is enforced by a
         Saved to
         `/tmp/claude-1000/-home-kkucherenkov-projects-petProjects-course-shelf/95efa642-b094-4314-b33b-5b4ad47cc481/scratchpad/export-routes.yaml`
         for that lane.
-  - [ ] Wait for required CI checks
-- Status: in-progress
+  - [x] Wait for required CI checks
+- Status: done
 - Blockers: —
+- Completed: 2026-09-22
+- Result: https://github.com/kkucherenkov/course_shelf/pull/761

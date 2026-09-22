@@ -11,7 +11,7 @@ denominator below.
 Progress (update by hand):
 
 - **v1** — `119 / 119` complete. 121 cards, 2 cancelled.
-- **v2** — `44 / 46` complete. 47 cards across E25–E32, 1 cancelled.
+- **v2** — `46 / 47` complete. 48 cards across E25–E32, 1 cancelled.
 - **2.0** — `0 / 10` complete. 10 cards, all in E33.
 
 v1 is the shipped product; v2 is the transcript-first direction and the
@@ -253,6 +253,7 @@ finished.
 - [x] [E29-F01-S03](./tasks/E29-F01-S03.md) `A` — Review UI on web · ⇐ E29-F01-S02
 - [x] [E29-F02-S01](./tasks/E29-F02-S01.md) `B` — Quizzes generated from a transcript · ⇐ E27-F01-S01
 - ❌ [E29-F03-S01](./tasks/E29-F03-S01.md) `B` — Learning paths · ⇐ E06-F03-S01 · **cancelled** — a single-user library already knows the order of its courses
+- [ ] [E29-F04-S01](./tasks/E29-F04-S01.md) `A` — Lesson summary with screenshots · ⇐ E27-F01-S01, E28-F01-S01
 
 ## E30 — Scraper plugins
 

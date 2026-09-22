@@ -24,6 +24,16 @@ export interface BookmarkRepository {
     idempotencyKey: string,
   ): Promise<Bookmark | null>;
   findManyByUserAndLesson(userId: string, lessonId: string): Promise<Bookmark[]>;
+  /**
+   * Batch form of findManyByUserAndLesson across every lesson in a course
+   * export — one `IN (…)` query instead of one round-trip per lesson
+   * (E28-F01-S01). Each list is positionSeconds ASC, same guarantee as the
+   * single-lesson form. Lessons with no bookmarks are absent from the map.
+   */
+  findManyByUserAndLessons(
+    userId: string,
+    lessonIds: readonly string[],
+  ): Promise<Map<string, Bookmark[]>>;
   delete(id: string): Promise<void>;
 }
 

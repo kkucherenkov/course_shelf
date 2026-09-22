@@ -113,8 +113,11 @@ export function registerOpenApiValidator(app: INestApplication, nodeEnv: string)
       // itself IS in the spec and must stay validated.
       // `/v1/courses/<id>/poster` (#496) is exempt for the same reason: an
       // image byte body, no JSON schema — the 5th route in the #278 family.
+      // `/v1/lessons/<id>/export` and `/v1/courses/<id>/export` (E28-F01-S01)
+      // are exempt for the same reason: the response is a streamed ZIP
+      // (`application/zip`), no JSON schema to validate against.
       ignorePaths:
-        /\/v1\/(?:auth(?:\/|$)|stream\/lessons\/|stream\/materials\/|admin\/backups\/[^/]+\/download|courses\/[^/]+\/poster(?:\?|$))/,
+        /\/v1\/(?:auth(?:\/|$)|stream\/lessons\/|stream\/materials\/|admin\/backups\/[^/]+\/download|courses\/[^/]+\/(?:poster|export)(?:\?|$)|lessons\/[^/]+\/export(?:\?|$))/,
     }),
   );
 

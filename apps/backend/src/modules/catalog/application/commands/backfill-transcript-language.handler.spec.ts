@@ -50,6 +50,7 @@ function makeTranscriptRepo(
     findGeneratedByLanguage: vi.fn(async (language: string) => (language === 'und' ? rows : [])),
     reclassifyGenerated: vi.fn(async () => undefined),
     findCuesForLesson: vi.fn(async () => null),
+    findCuesForLessons: vi.fn(async () => new Map()),
     cueBelongsToLesson: vi.fn(async () => true),
   };
 }

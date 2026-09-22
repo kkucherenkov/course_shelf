@@ -219,6 +219,8 @@ export default {
       toastResetSuccess: 'Прогресс сброшен.',
       toastResetError: 'Не удалось сбросить прогресс. Попробуйте ещё раз.',
       toastDownloadError: 'Не удалось скачать материал. Попробуйте ещё раз.',
+      exportCta: 'Экспорт',
+      toastExportError: 'Не удалось экспортировать курс. Попробуйте ещё раз.',
       materialsHeading: 'Материалы курса',
       materialDownloadAria: 'Скачать материал',
       materialsEmpty: 'У этого курса нет материалов.',
@@ -387,6 +389,8 @@ export default {
       materialsEmpty: 'У этого урока нет материалов.',
       sectionLabel: 'Раздел {n} · {title}',
       bookmarkAdd: '+ Отметить текущую позицию',
+      exportCta: 'Экспорт',
+      toastExportError: 'Не удалось экспортировать урок. Попробуйте ещё раз.',
       transcript: {
         empty: 'У этого урока нет транскрипта.',
         noMatch: 'Ничего не найдено по вашему запросу.',

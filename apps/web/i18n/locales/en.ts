@@ -221,6 +221,8 @@ export default {
       toastResetSuccess: 'Progress has been reset.',
       toastResetError: 'Could not reset progress. Please try again.',
       toastDownloadError: 'Could not download material. Please try again.',
+      exportCta: 'Export',
+      toastExportError: 'Could not export this course. Please try again.',
       materialsHeading: 'Course materials',
       materialDownloadAria: 'Download material',
       materialsEmpty: 'No materials for this course.',
@@ -389,6 +391,8 @@ export default {
       materialsEmpty: 'No materials for this lesson.',
       sectionLabel: 'Section {n} · {title}',
       bookmarkAdd: '+ Bookmark current position',
+      exportCta: 'Export',
+      toastExportError: 'Could not export this lesson. Please try again.',
       transcript: {
         empty: 'This lesson has no transcript.',
         noMatch: 'No lines match your search.',

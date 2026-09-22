@@ -10,6 +10,8 @@ All URIs are relative to *http://localhost:3000*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**cancelTranscription**](CatalogApi.md#canceltranscription) | **POST** /api/v1/transcriptions/{id}/cancel | Request cancellation of a running transcription
+[**exportCourse**](CatalogApi.md#exportcourse) | **GET** /api/v1/courses/{courseId}/export | Download a course as a Markdown archive
+[**exportLesson**](CatalogApi.md#exportlesson) | **GET** /api/v1/lessons/{lessonId}/export | Download a lesson as a Markdown archive
 [**getContinueWatching**](CatalogApi.md#getcontinuewatching) | **GET** /api/v1/home/continue-watching | List courses the requester is in the middle of
 [**getCourse**](CatalogApi.md#getcourse) | **GET** /api/v1/courses/{id} | Get a single course
 [**getCourseDownloadEstimate**](CatalogApi.md#getcoursedownloadestimate) | **GET** /api/v1/courses/{id}/download-estimate | Total download size for a course
@@ -76,6 +78,92 @@ Name | Type | Description  | Notes
 
  - **Content-Type**: Not defined
  - **Accept**: application/json, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **exportCourse**
+> Uint8List exportCourse(courseId)
+
+Download a course as a Markdown archive
+
+Streams a ZIP: `course.md`, one `lessons/NN-slug.md` per lesson in outline order, and one shared `images/` folder. Each lesson file carries the lesson's note and its bookmarks — each with its timestamp, its `?t=` deep link back into the player, and the transcript lines it points at.  Access is course-level, same as `getCourse`: a READ grant on the course's library. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String courseId = courseId_example; // String | Server-generated cuid identifying the course.
+
+try {
+    final response = api.exportCourse(courseId);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->exportCourse: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **courseId** | **String**| Server-generated cuid identifying the course. | 
+
+### Return type
+
+[**Uint8List**](Uint8List.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/zip, application/problem+json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **exportLesson**
+> Uint8List exportLesson(lessonId)
+
+Download a lesson as a Markdown archive
+
+Streams a ZIP: `lesson.md` plus an `images/` folder. `lesson.md` carries the lesson title, a deep link back into the player, the user's note, and its bookmarks — each with its timestamp, its `?t=` deep link, and the transcript lines it points at.  Access mirrors `getLesson`: a READ grant covering the parent library or course. 
+
+### Example
+```dart
+import 'package:app_api_client/api.dart';
+
+final api = AppApiClient().getCatalogApi();
+final String lessonId = lessonId_example; // String | Server-generated cuid identifying the lesson.
+
+try {
+    final response = api.exportLesson(lessonId);
+    print(response);
+} on DioException catch (e) {
+    print('Exception when calling CatalogApi->exportLesson: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **lessonId** | **String**| Server-generated cuid identifying the lesson. | 
+
+### Return type
+
+[**Uint8List**](Uint8List.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/zip, application/problem+json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

@@ -14,6 +14,8 @@
  *   - GenerateCourseQuizController — POST courses/:id/quizzes (E29-F02-S01)
  *   - QuizzesController — GET quizzes(?status=&lessonId=&courseId=),
  *     GET quizzes/:id, POST quizzes/:id/apply|discard (E29-F02-S01)
+ *   - ExportController — GET lessons/:lessonId/export, GET
+ *     courses/:courseId/export (E28-F01-S01), both `application/zip`
  *   - RecordProgressHandler (application command)
  *   - GetLessonProgressHandler (application query)
  *   - ListBookmarksHandler, CreateBookmarkHandler, UpdateBookmarkHandler,
@@ -26,6 +28,9 @@
  *     E29-F01-S02)
  *   - GenerateQuizHandler, ApplyQuizHandler, DiscardQuizHandler,
  *     ListQuizzesHandler, GetQuizHandler (E29-F02-S01)
+ *   - ExportLessonHandler, ExportCourseHandler (application queries,
+ *     E28-F01-S01) — render via domain/export/export-renderer.ts (pure) and
+ *     stream via infra/zip-writer.ts (yazl)
  *   - PrismaLessonProgressRepository bound behind LESSON_PROGRESS_REPOSITORY
  *   - PrismaBookmarkRepository bound behind BOOKMARK_REPOSITORY
  *   - PrismaNoteRepository bound behind NOTE_REPOSITORY
@@ -69,6 +74,8 @@ import { UpdateBookmarkHandler } from './application/commands/update-bookmark.ha
 import { UpdateFlashcardHandler } from './application/commands/update-flashcard.handler';
 import { UpsertNoteHandler } from './application/commands/upsert-note.handler';
 import { QuizGenerationLockService } from './application/quiz-generation-lock.service';
+import { ExportCourseHandler } from './application/queries/export-course.handler';
+import { ExportLessonHandler } from './application/queries/export-lesson.handler';
 import { GetLessonProgressHandler } from './application/queries/get-lesson-progress.handler';
 import { GetNoteHandler } from './application/queries/get-note.handler';
 import { GetQuizHandler } from './application/queries/get-quiz.handler';
@@ -91,6 +98,7 @@ import { PrismaNoteRepository } from './infra/prisma-note.repository';
 import { PrismaLessonProgressRepository } from './infra/prisma-lesson-progress.repository';
 import { PrismaQuizRepository } from './infra/prisma-quiz.repository';
 import { BookmarksController } from './bookmarks.controller';
+import { ExportController } from './export.controller';
 import { FlashcardsController } from './flashcards.controller';
 import { GenerateCourseQuizController } from './generate-course-quiz.controller';
 import { GenerateLessonQuizController } from './generate-lesson-quiz.controller';
@@ -121,6 +129,7 @@ export function textModelAdapterFactory(config: AppConfig): TextModelAdapter {
     GenerateLessonQuizController,
     GenerateCourseQuizController,
     QuizzesController,
+    ExportController,
   ],
   providers: [
     AdminGuard,
@@ -145,6 +154,8 @@ export function textModelAdapterFactory(config: AppConfig): TextModelAdapter {
     DiscardQuizHandler,
     ListQuizzesHandler,
     GetQuizHandler,
+    ExportLessonHandler,
+    ExportCourseHandler,
     QuizGenerationLockService,
     { provide: LESSON_PROGRESS_REPOSITORY, useClass: PrismaLessonProgressRepository },
     { provide: BOOKMARK_REPOSITORY, useClass: PrismaBookmarkRepository },

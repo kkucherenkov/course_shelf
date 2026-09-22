@@ -244,7 +244,7 @@ finished.
 
 ## E28 — Notes export
 
-- [ ] [E28-F01-S01](./tasks/E28-F01-S01.md) `B` — Export a lesson or course digest as Markdown · ⇐ E27-F01-S01, E09-F02-S02
+- [x] [E28-F01-S01](./tasks/E28-F01-S01.md) `B` — Export a lesson or course digest as Markdown · ⇐ E27-F01-S01, E09-F02-S02
 
 ## E29 — Learning mechanics
 

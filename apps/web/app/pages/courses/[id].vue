@@ -8,6 +8,7 @@
   import { descriptionBody } from '~/utils/description-lead';
   import { problemDetail } from '~/utils/library-register';
   import { useCourseOutline } from '~/composables/useCourseOutline';
+  import { useExportDownload } from '~/composables/useExportDownload';
   import { useMaterialDownload } from '~/composables/useMaterialDownload';
   import { useContinueWatching } from '~/composables/useHome';
   import { useAuthStore } from '~/stores/auth';
@@ -321,6 +322,18 @@
   }
 
   const { download: downloadMaterial } = useMaterialDownload();
+  const { downloadCourseExport } = useExportDownload();
+  const isExporting = ref(false);
+
+  async function onExportCourse(): Promise<void> {
+    isExporting.value = true;
+    const filename = `${data.value?.course.title ?? 'course'}.zip`;
+    const err = await downloadCourseExport({ courseId, filename });
+    if (err) {
+      toast.add({ title: t('pages.courseDetail.toastExportError'), color: 'error' });
+    }
+    isExporting.value = false;
+  }
 
   async function onDownloadAttempt(material: CourseMaterialItem): Promise<void> {
     const err = await downloadMaterial({
@@ -419,6 +432,17 @@
         class="page-course-detail__actions"
         @mark-complete="onMarkComplete"
         @reset-progress="pendingCourseAction = 'reset'"
+      />
+
+      <!-- Export as Markdown ZIP (E28-F01-S01) — any user with access, not admin-gated -->
+      <AppButton
+        variant="ghost"
+        size="sm"
+        icon-leading="download"
+        :label="t('pages.courseDetail.exportCta')"
+        :loading="isExporting"
+        class="page-course-detail__export-cta"
+        @click="onExportCourse"
       />
 
       <!-- Admin-only entry point to the metadata editor -->

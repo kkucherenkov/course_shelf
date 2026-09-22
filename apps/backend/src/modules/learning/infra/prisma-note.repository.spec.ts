@@ -20,6 +20,7 @@ import { PrismaNoteRepository } from './prisma-note.repository';
 interface NoteDelegate {
   upsert: ReturnType<typeof vi.fn>;
   findUnique: ReturnType<typeof vi.fn>;
+  findMany: ReturnType<typeof vi.fn>;
   deleteMany: ReturnType<typeof vi.fn>;
 }
 
@@ -28,6 +29,7 @@ function makePrisma(): { note: NoteDelegate } {
     note: {
       upsert: vi.fn().mockResolvedValue(undefined),
       findUnique: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
   };
@@ -169,6 +171,38 @@ describe('PrismaNoteRepository', () => {
 
       const call = vi.mocked(prisma.note.deleteMany).mock.calls[0]?.[0];
       expect(call?.where).toEqual({ userId: 'user-42', lessonId: 'lesson-99' });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // findManyByUserAndLessons
+  // -------------------------------------------------------------------------
+
+  describe('findManyByUserAndLessons', () => {
+    it('returns an empty map without querying when lessonIds is empty', async () => {
+      const result = await repo.findManyByUserAndLessons('user-1', []);
+      expect(result.size).toBe(0);
+      expect(prisma.note.findMany).not.toHaveBeenCalled();
+    });
+
+    it('keys the returned map by lessonId', async () => {
+      vi.mocked(prisma.note.findMany).mockResolvedValue([
+        makeRow({ id: 'note-1', lessonId: 'lesson-1' }),
+        makeRow({ id: 'note-2', lessonId: 'lesson-2', body: 'second' }),
+      ]);
+
+      const result = await repo.findManyByUserAndLessons('user-1', ['lesson-1', 'lesson-2']);
+      expect(result.size).toBe(2);
+      expect(result.get('lesson-1')?.id).toBe('note-1');
+      expect(result.get('lesson-2')?.body).toBe('second');
+    });
+
+    it('passes an IN clause scoped to userId', async () => {
+      vi.mocked(prisma.note.findMany).mockResolvedValue([]);
+      await repo.findManyByUserAndLessons('user-1', ['lesson-1', 'lesson-2']);
+
+      const call = vi.mocked(prisma.note.findMany).mock.calls[0]?.[0];
+      expect(call?.where).toEqual({ userId: 'user-1', lessonId: { in: ['lesson-1', 'lesson-2'] } });
     });
   });
 });

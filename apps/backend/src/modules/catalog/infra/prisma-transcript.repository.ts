@@ -205,6 +205,24 @@ export class PrismaTranscriptRepository implements TranscriptRepository {
     return row === null ? null : { language: row.language, cues: row.cues };
   }
 
+  async findCuesForLessons(lessonIds: readonly string[]): Promise<Map<string, LessonCues>> {
+    if (lessonIds.length === 0) return new Map();
+    // `distinct: ['lessonId']` + orderBy leading with the distinct field is
+    // Prisma's DISTINCT ON — one query picks each lesson's most recently
+    // created transcript row, same "latest wins" rule as findCuesForLesson.
+    const rows = await this.prisma.transcript.findMany({
+      where: { lessonId: { in: [...lessonIds] } },
+      distinct: ['lessonId'],
+      orderBy: [{ lessonId: 'asc' }, { createdAt: 'desc' }],
+      select: {
+        lessonId: true,
+        language: true,
+        cues: { select: { startMs: true, endMs: true, text: true }, orderBy: { startMs: 'asc' } },
+      },
+    });
+    return new Map(rows.map((row) => [row.lessonId, { language: row.language, cues: row.cues }]));
+  }
+
   async cueBelongsToLesson(cueId: string, lessonId: string): Promise<boolean> {
     const row = await this.prisma.transcriptCue.findFirst({
       where: { id: cueId, transcript: { lessonId } },

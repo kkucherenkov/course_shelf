@@ -32,6 +32,12 @@ import {
   REALTIME_TOKEN_THROTTLER,
   isRealtimeTokenRequest,
 } from './modules/realtime/realtime-throttle';
+import {
+  AUTH_DEFAULT_THROTTLER,
+  AUTH_SESSION_THROTTLER,
+  isAuthNonSessionRequest,
+  isAuthSessionRequest,
+} from './common/auth/auth-throttle';
 import { StreamingModule } from './modules/streaming/streaming.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { HealthModule } from './modules/health/health.module';
@@ -65,6 +71,24 @@ const devOnlyModules: ImportableModule[] = [];
             ttl: config.rateLimit.realtimeTokenTtlMs,
             limit: config.rateLimit.realtimeTokenLimit,
             skipIf: (context) => !isRealtimeTokenRequest(context),
+          },
+          // Splits `/api/v1/auth/*` in two — see `auth-throttle.ts`. Sign-in
+          // etc. keep the old 10/60s budget under its own name; get-session
+          // gets a looser one so it stops sharing sign-in's brute-force
+          // limiter (#777). `AuthController` carries `@SkipThrottle({
+          // default: true })` so the global 'default' budget above doesn't
+          // also apply and double-throttle the same requests.
+          {
+            name: AUTH_DEFAULT_THROTTLER,
+            ttl: config.rateLimit.authTtlMs,
+            limit: config.rateLimit.authLimit,
+            skipIf: (context) => !isAuthNonSessionRequest(context),
+          },
+          {
+            name: AUTH_SESSION_THROTTLER,
+            ttl: config.rateLimit.authSessionTtlMs,
+            limit: config.rateLimit.authSessionLimit,
+            skipIf: (context) => !isAuthSessionRequest(context),
           },
         ],
       }),

@@ -2,6 +2,7 @@
   import { computed, nextTick, onUnmounted, ref, useSlots } from 'vue';
 
   import AppAvatar from '../AppAvatar/AppAvatar.vue';
+  import AppBadge from '../AppBadge/AppBadge.vue';
   import AppDialog from '../AppDialog/AppDialog.vue';
   import AppRow from '../AppRow/AppRow.vue';
   import AppSegmented from '../AppSegmented/AppSegmented.vue';
@@ -19,6 +20,12 @@
      * the consumer is responsible for calling `navigateTo()` / `router.push()`.
      */
     to?: string | { name: string; params?: Record<string, string> };
+    /**
+     * Optional count badge (e.g. due flashcards). Omit, `undefined` or `0`
+     * renders no badge — a permanent nav entry with a badge that appears
+     * only when there's something to act on.
+     */
+    badge?: number;
   }
 
   export interface ShellUser {
@@ -347,6 +354,9 @@
             <IconCS :name="item.icon" :size="18" />
           </template>
           {{ item.label }}
+          <template v-if="item.badge" #trailing>
+            <AppBadge :label="String(item.badge)" color="primary" size="sm" />
+          </template>
         </AppRow>
       </nav>
 
@@ -368,6 +378,9 @@
               <IconCS :name="item.icon" :size="18" />
             </template>
             {{ item.label }}
+            <template v-if="item.badge" #trailing>
+              <AppBadge :label="String(item.badge)" color="primary" size="sm" />
+            </template>
           </AppRow>
         </nav>
       </template>
@@ -543,7 +556,16 @@
         :aria-current="item.key === activeRoute ? 'page' : undefined"
         @click="onNavClick(item)"
       >
-        <IconCS :name="item.icon" :size="20" />
+        <span class="app-navigation-shell__tab-icon-wrap">
+          <IconCS :name="item.icon" :size="20" />
+          <AppBadge
+            v-if="item.badge"
+            :label="String(item.badge)"
+            color="primary"
+            size="sm"
+            class="app-navigation-shell__tab-badge"
+          />
+        </span>
         <span class="app-navigation-shell__tab-label">{{ item.label }}</span>
       </button>
 
@@ -585,6 +607,9 @@
             <IconCS :name="item.icon" :size="18" />
           </template>
           {{ item.label }}
+          <template v-if="item.badge" #trailing>
+            <AppBadge :label="String(item.badge)" color="primary" size="sm" />
+          </template>
         </AppRow>
       </nav>
 
@@ -605,6 +630,9 @@
               <IconCS :name="item.icon" :size="18" />
             </template>
             {{ item.label }}
+            <template v-if="item.badge" #trailing>
+              <AppBadge :label="String(item.badge)" color="primary" size="sm" />
+            </template>
           </AppRow>
         </nav>
       </template>
@@ -619,6 +647,10 @@
   $topbar-height: 56px;
   $search-max-width: 420px;
   $menu-min-width: 180px;
+  // Bottom-tab badge offset (#775) — positions it over the icon's top-right
+  // corner; no matching --space-* step at this size.
+  $tab-badge-offset-top: -6px;
+  $tab-badge-offset-right: -10px;
 
   // ── Shell root ─────────────────────────────────────────────────────────────
   .app-navigation-shell {
@@ -1033,6 +1065,17 @@
       // Nearest token to the bundle's 1.2 — 0.05 off at this font size is
       // sub-pixel.
       line-height: var(--leading-tight);
+    }
+
+    &__tab-icon-wrap {
+      position: relative;
+      display: inline-flex;
+    }
+
+    &__tab-badge {
+      position: absolute;
+      top: $tab-badge-offset-top;
+      right: $tab-badge-offset-right;
     }
   }
 

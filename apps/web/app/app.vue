@@ -36,6 +36,12 @@
     { test: (p) => p === '/settings', key: 'pages.settings.title' },
     { test: (p) => p === '/search', key: 'pages.search.title' },
     { test: (p) => p === '/browse', key: 'pages.browse.title' },
+    // Both reuse an existing key rather than adding a title-only duplicate
+    // (#779) — `pages.flashcards.review.title` is already this screen's H1
+    // and its sidebar nav label; `pages.admin.scrapers.title` already names
+    // the page the same way `pages.admin.libraries.title` does below.
+    { test: (p) => p === '/flashcards/review', key: 'pages.flashcards.review.title' },
+    { test: (p) => p.startsWith('/admin/scrapers'), key: 'pages.admin.scrapers.title' },
     {
       test: (p) => p.startsWith('/courses/') && p.endsWith('/edit'),
       key: 'pages.courseEdit.title',

@@ -69,6 +69,12 @@ const DEFAULT_QUEUE_LIMIT = 20;
 
 export function useFlashcardReviewQueue(
   limit = DEFAULT_QUEUE_LIMIT,
+  // `immediate: false` lets a caller that isn't sure a session exists yet
+  // (`layouts/default.vue`'s due-count badge, mounted on every page
+  // including public/anonymous ones) skip the auto-fetch entirely rather
+  // than firing an authenticated call that can only 401. Defaults to `true`
+  // so `pages/flashcards/review.vue` — always behind auth — is unaffected.
+  options: { immediate?: boolean } = {},
 ): UseFlashcardReviewQueueReturn {
   const total = ref(0);
   const grading = ref(false);
@@ -83,7 +89,7 @@ export function useFlashcardReviewQueue(
       total.value = items.length;
       return items;
     },
-    { lazy: true },
+    { lazy: true, immediate: options.immediate ?? true },
   );
 
   const queue = computed(() => data.value ?? []);

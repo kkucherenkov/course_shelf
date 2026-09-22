@@ -78,6 +78,16 @@ export default defineNuxtConfig({
       authBaseUrl: process.env.NUXT_PUBLIC_AUTH_BASE_URL ?? 'http://localhost:3000',
       centrifugoUrl:
         process.env.NUXT_PUBLIC_CENTRIFUGO_URL ?? 'ws://localhost:8000/connection/websocket',
+      // Shown on the no-grants empty state (`/`, `/browse`) so a user with
+      // zero course access has *a* next step instead of a dead end (#669,
+      // #780). Deliberately deployer-configured rather than an API call: the
+      // instance admin's identity is PII the backend doesn't expose to a
+      // non-admin caller today (no endpoint returns it — `/admin/users` is
+      // admin-gated), and a real "who can grant me access" lookup is a spec
+      // change for a future request-access flow, not this fix. Empty by
+      // default — the contact block hides itself rather than showing a
+      // broken mailto link.
+      supportEmail: process.env.NUXT_PUBLIC_SUPPORT_EMAIL ?? '',
     },
   },
 

@@ -9,6 +9,20 @@ export default {
       searchPlaceholder: 'Search courses, lessons…',
     },
   },
+  access: {
+    adminGate: {
+      loadingLabel: 'Checking your access…',
+      deniedBody: "You don't have permission to view the admin area.",
+    },
+    sessionUnconfirmed: {
+      title: 'Session not confirmed',
+      body: "We couldn't confirm your session just now. Some sections may be hidden until this clears.",
+      retry: 'Retry',
+    },
+    noGrants: {
+      contactBody: 'Write to the instance administrator:',
+    },
+  },
   pages: {
     home: {
       title: 'Welcome to Course Shelf',
@@ -64,8 +78,12 @@ export default {
         errorTitle: 'Could not load your review queue',
         errorBody: 'Check your connection, then try again.',
         retry: 'Retry',
-        emptyTitle: 'All caught up',
-        emptyBody: 'No cards are due right now. Come back tomorrow.',
+        emptyNeverTitle: 'No cards yet',
+        emptyNeverBody:
+          'Create your first flashcard from a lesson note or a transcript line — it shows up here once due.',
+        emptyNeverCta: 'Browse courses',
+        emptyDoneTitle: 'All caught up for today',
+        emptyDoneBody: 'New cards will appear here once they are due again.',
         reveal: 'Show answer',
         gradeGroupLabel: 'Grade your recall',
         gradeAgain: 'Again',

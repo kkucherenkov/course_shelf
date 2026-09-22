@@ -107,6 +107,42 @@ export const Default: Story = {
   }),
 };
 
+// ── WithNavBadge (#775 — due-count badge on a primary nav item) ──────────────
+
+export const WithNavBadge: Story = {
+  parameters: {
+    viewport: { defaultViewport: 'desktop' },
+  },
+  args: {
+    nav: [...primaryNav, { key: 'review', label: 'Review', icon: 'circle-stack', badge: 3 }],
+  },
+  render: (args) => ({
+    components: { AppNavigationShell },
+    setup() {
+      const search = ref('');
+      const colorMode = ref<'light' | 'dark' | 'system'>('dark');
+      const active = ref(args.activeRoute);
+      return { args, search, colorMode, active };
+    },
+    template: `
+      <AppNavigationShell
+        v-bind="args"
+        :activeRoute="active"
+        :searchValue="search"
+        :colorMode="colorMode"
+        @update:searchValue="search = $event"
+        @update:colorMode="colorMode = $event"
+        @nav="active = $event"
+      >
+        <div style="padding: var(--space-5);">
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-2xl); color: var(--text-fg);">Home</h1>
+          <p style="color: var(--text-secondary); margin: 0;">3 flashcards due — the sidebar and bottom-tab entries both carry the count.</p>
+        </div>
+      </AppNavigationShell>
+    `,
+  }),
+};
+
 // ── Admin (adminNav populated) ────────────────────────────────────────────────
 
 export const Admin: Story = {

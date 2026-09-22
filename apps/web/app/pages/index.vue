@@ -1,5 +1,9 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
+  // Explicit import (rather than the bare auto-import) keeps the test
+  // environment able to resolve it through the '#imports' shim — same
+  // reasoning as `stores/auth.ts`'s identical import.
+  import { useRuntimeConfig } from '#imports';
   import {
     AppButton,
     AppErrorState,
@@ -36,6 +40,10 @@
 
   const { t, locale } = useI18n();
   const authStore = useAuthStore();
+
+  // No-grants contact block (#669, #780) — see nuxt.config.ts's runtimeConfig
+  // comment for why this is a deployer-set value and not an API call.
+  const supportEmail = useRuntimeConfig().public.supportEmail;
 
   // ── Auth user info ──────────────────────────────────────────────────────────
 
@@ -300,7 +308,16 @@
       :title="t('pages.browse.emptyNoAccessTitle')"
       :body="t('pages.browse.emptyNoAccessBody')"
       class="page-home__no-access"
-    />
+    >
+      <template v-if="supportEmail" #action>
+        <p class="page-home__no-access-contact">
+          {{ t('access.noGrants.contactBody') }}
+          <a :href="`mailto:${supportEmail}`" class="page-home__no-access-link">{{
+            supportEmail
+          }}</a>
+        </p>
+      </template>
+    </AppNoPermission>
 
     <!-- ── Two-column layout at lg+ ──────────────────────────────────────── -->
     <div v-else class="page-home__layout">
@@ -449,6 +466,17 @@
 
     &__no-access {
       margin-top: var(--space-4);
+    }
+
+    &__no-access-contact {
+      margin: 0;
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+    }
+
+    &__no-access-link {
+      color: var(--brand-accent);
+      text-decoration: underline;
     }
 
     // ── Two-column layout ──────────────────────────────────────────────────

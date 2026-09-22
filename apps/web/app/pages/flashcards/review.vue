@@ -15,9 +15,26 @@
   const { t } = useI18n();
   const toast = useToast();
 
-  const { queue, status, current, grading, gradeError, grade, refetch } = useFlashcardReviewQueue();
+  const { queue, status, current, total, grading, gradeError, grade, refetch } =
+    useFlashcardReviewQueue();
 
   const isLoading = computed(() => status.value === 'pending' || status.value === 'idle');
+
+  // Two distinct empty states (#775) — the endpoint only ever returns *due*
+  // cards, so it can't tell "never created one" apart from "created some,
+  // none due right now" on a page that loads with zero either way. `total`
+  // is the due-queue size at the *first* successful fetch: if it was ever
+  // > 0 this session, the user has cards and just finished today's batch —
+  // an unambiguous "done for today". If it was 0 from the start, this
+  // defaults to "no cards yet", which is the common case the audit found
+  // (0 flashcards, 0 notes in the whole instance) and the safer of the two
+  // possible misreads for the rarer case (cards exist, none due yet) — it
+  // says "here's how to make one" instead of falsely claiming completion,
+  // which was the original bug. Telling the two rarer-case readings apart
+  // for certain needs a signal the API doesn't return today (whether the
+  // user has ever created a card at all) — flagged in the PR, not silently
+  // guessed further than this.
+  const hasEverHadDueCards = computed(() => total.value > 0);
 
   // Controlled here (not internal to AppFlashcardReview) because the keyboard
   // shortcut below has to drive the exact same state a click does.
@@ -103,10 +120,25 @@
     </AppErrorState>
 
     <AppEmptyState
+      v-else-if="!current && !hasEverHadDueCards"
+      icon="circle-stack"
+      :title="t('pages.flashcards.review.emptyNeverTitle')"
+      :body="t('pages.flashcards.review.emptyNeverBody')"
+    >
+      <template #action>
+        <AppButton
+          :label="t('pages.flashcards.review.emptyNeverCta')"
+          to="/browse"
+          variant="secondary"
+        />
+      </template>
+    </AppEmptyState>
+
+    <AppEmptyState
       v-else-if="!current"
       icon="check-circle"
-      :title="t('pages.flashcards.review.emptyTitle')"
-      :body="t('pages.flashcards.review.emptyBody')"
+      :title="t('pages.flashcards.review.emptyDoneTitle')"
+      :body="t('pages.flashcards.review.emptyDoneBody')"
     />
 
     <template v-else>

@@ -49,6 +49,16 @@ vi.mock('~/composables/useScanLifecycle', () => ({
   useScanLifecycle: () => ({ status: { value: 'idle' } }),
 }));
 
+// The real composable calls `useAsyncData`, a Nuxt auto-import this plain
+// Vitest environment doesn't provide — same reason every other composable
+// call in this file is mocked rather than left real.
+vi.mock('~/composables/useFlashcards', () => ({
+  useFlashcardReviewQueue: () => ({
+    queue: { value: [] },
+    status: { value: 'success' },
+  }),
+}));
+
 let authUser: { displayName?: string; role?: string } | null = {
   displayName: 'Admin User',
   role: 'admin',
@@ -102,11 +112,38 @@ vi.mock('@app/ui', () => ({
     props: ['open', 'commands'],
     template: '<div />',
   },
+  // Session-unconfirmed banner (#777) and its retry button — covered by
+  // their own tests below, stubbed minimally everywhere else.
+  AppBanner: {
+    name: 'AppBanner',
+    props: ['variant', 'title', 'body'],
+    template: '<div class="stub-banner">{{ title }}<slot name="actions" /></div>',
+  },
+  AppButton: {
+    name: 'AppButton',
+    props: ['label', 'size', 'variant', 'loading'],
+    emits: ['click'],
+    template: '<button @click="$emit(\'click\')">{{ label }}</button>',
+  },
+  // Pulled in transitively via AdminAccessGate.vue, which is not itself
+  // covered by this '@app/ui' mock (it's a local component, not a barrel
+  // export) — its own behaviour is AdminAccessGate.spec.ts's job.
+  AppSkeleton: { name: 'AppSkeleton', props: ['width', 'height', 'radius'], template: '<div />' },
+  AppNoPermission: {
+    name: 'AppNoPermission',
+    props: ['title', 'body'],
+    template: '<div class="stub-no-permission">{{ title }}</div>',
+  },
 }));
 
-async function mountDefaultLayout(): Promise<VueWrapper> {
+async function mountDefaultLayout(options: { pageMarker?: boolean } = {}): Promise<VueWrapper> {
   const mod = await import('../default.vue');
-  return mount(mod.default, { global: { stubs: { ScanLifecycleNotifier: true } } });
+  return mount(mod.default, {
+    global: { stubs: { ScanLifecycleNotifier: true } },
+    slots: options.pageMarker
+      ? { default: '<div data-testid="page-content">Page</div>' }
+      : undefined,
+  });
 }
 
 describe('layouts/default.vue', () => {
@@ -242,5 +279,80 @@ describe('layouts/default.vue', () => {
 
     await palette.vm.$emit('select', homeCommand);
     expect(navigateToMock).toHaveBeenCalledWith('/');
+  });
+
+  // ── Admin gate (#776) ────────────────────────────────────────────────────
+
+  it('permanently offers a "Review" entry with the due-flashcard count as its badge (#775)', async () => {
+    routePath = '/';
+    authUser = { displayName: 'Learner', role: 'user' };
+    authToken = 'token-123';
+    const w = await mountDefaultLayout();
+    const shell = w.getComponent({ name: 'AppNavigationShell' });
+    const nav = shell.props('nav') as { key: string; to?: string; badge?: number }[];
+    const review = nav.find((item) => item.key === 'flashcards-review');
+    expect(review?.to).toBe('/flashcards/review');
+    // The mocked composable above returns an empty queue — no cards due, so
+    // the badge stays hidden rather than showing a false "0".
+    expect(review?.badge).toBeUndefined();
+  });
+
+  it('shows a loading state, not the real page, on /admin/* while role is unknown', async () => {
+    routePath = '/admin';
+    authUser = null; // live token, no confirmed session — role unknown
+    authToken = 'token-123';
+    const w = await mountDefaultLayout({ pageMarker: true });
+    expect(w.find('[data-testid="page-content"]').exists()).toBe(false);
+    expect(w.find('[role="status"]').exists()).toBe(true);
+  });
+
+  it('shows AppNoPermission, not the real page, on /admin/* once role is confirmed non-admin', async () => {
+    routePath = '/admin';
+    authUser = { displayName: 'Learner', role: 'user' };
+    authToken = 'token-123';
+    const w = await mountDefaultLayout({ pageMarker: true });
+    expect(w.find('[data-testid="page-content"]').exists()).toBe(false);
+    expect(w.find('.stub-no-permission').text()).toBe('pages.courseDetail.noAccess');
+  });
+
+  it('renders the real page on /admin/* once role is confirmed admin', async () => {
+    routePath = '/admin';
+    authUser = { displayName: 'Admin User', role: 'admin' };
+    authToken = 'token-123';
+    const w = await mountDefaultLayout({ pageMarker: true });
+    expect(w.find('[data-testid="page-content"]').exists()).toBe(true);
+  });
+
+  it('does not gate a non-admin route on adminGateState', async () => {
+    routePath = '/';
+    authUser = null; // role unknown — would gate on /admin, must not gate here
+    authToken = 'token-123';
+    const w = await mountDefaultLayout({ pageMarker: true });
+    expect(w.find('[data-testid="page-content"]').exists()).toBe(true);
+  });
+
+  // ── Session-unconfirmed banner (#777) ───────────────────────────────────
+
+  it('shows a retryable banner when a transient get-session failure was recorded', async () => {
+    const { lastTransientRefreshFailureAt } =
+      await import('~/composables/useSessionRefreshCooldown');
+    routePath = '/';
+    authUser = null;
+    authToken = 'token-123';
+    lastTransientRefreshFailureAt.value = Date.now();
+    const w = await mountDefaultLayout();
+    expect(w.find('.stub-banner').exists()).toBe(true);
+    lastTransientRefreshFailureAt.value = 0; // reset for later tests
+  });
+
+  it('shows no banner once the session is confirmed', async () => {
+    const { lastTransientRefreshFailureAt } =
+      await import('~/composables/useSessionRefreshCooldown');
+    routePath = '/';
+    authUser = { displayName: 'Learner', role: 'user' };
+    authToken = 'token-123';
+    lastTransientRefreshFailureAt.value = 0;
+    const w = await mountDefaultLayout();
+    expect(w.find('.stub-banner').exists()).toBe(false);
   });
 });

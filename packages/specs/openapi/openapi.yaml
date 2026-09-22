@@ -1370,7 +1370,7 @@ paths:
                         origin: built-in
                         loadError: null
                       - id: acme-academy
-                        supportedKinds: [url]
+                        supportedKinds: []
                         configured: false
                         origin: definition-file
                         loadError: 'selector "title" did not match "$.selectors.title": required property'
@@ -8261,13 +8261,21 @@ components:
       properties:
         id:
           type: string
-          description: Stable scraper identifier used as the `source` field in requests.
+          description: >-
+            Stable scraper identifier used as the `source` field in
+            requests. For a definition file rejected before it could be
+            parsed, this is the file's stem (`acme-academy.json` ->
+            `acme-academy`) rather than an id declared inside it — a failed
+            parse never produces one.
           example: youtube
         supportedKinds:
           type: array
           items:
             $ref: "#/components/schemas/ScraperKind"
-          description: Invocation kinds this scraper handles.
+          description: >-
+            Invocation kinds this scraper handles. Empty for a rejected
+            definition file: the kinds live inside the definition, and a
+            failed parse never produces one to read them from.
           example: [url, name, fragment]
         configured:
           type: boolean
@@ -8334,7 +8342,7 @@ components:
             origin: built-in
             loadError: null
           - id: acme-academy
-            supportedKinds: [url]
+            supportedKinds: []
             configured: false
             origin: definition-file
             loadError: 'selector "title" did not match "$.selectors.title": required property'

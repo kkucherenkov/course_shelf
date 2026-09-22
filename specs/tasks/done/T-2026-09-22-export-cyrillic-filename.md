@@ -33,10 +33,12 @@
         `it.each` asserting the header carries no byte outside ASCII at all
   - [x] `pnpm --filter @app/backend test src/modules/learning` — 378 passed in
         46 files; typecheck and lint clean
-  - [ ] PR with `Closes #790`, wait for the five required contexts by name
+  - [x] PR with `Closes #790`, five required contexts green by name
 - Deviation: the RFC 5987 escape table is a literal map rather than a computed
   `codePointAt`, because the excluded set is fixed by the RFC and the computed
   form returns `number | undefined`, which would need an assertion to satisfy
   `tsc`.
-- Status: in-progress
+- Status: done
 - Blockers: —
+- Completed: 2026-09-22
+- Result: https://github.com/kkucherenkov/course_shelf/pull/791

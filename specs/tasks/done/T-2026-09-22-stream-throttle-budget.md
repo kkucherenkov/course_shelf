@@ -40,6 +40,8 @@
         routes asserted NOT to match
   - [x] `pnpm --filter @app/backend test` — 2453 passed, 235 files; typecheck
         and lint clean
-  - [ ] PR with `Closes #792`, wait for the five required contexts by name
-- Status: in-progress
+  - [x] PR with `Closes #792`, five required contexts green by name
+- Status: done
 - Blockers: —
+- Completed: 2026-09-22
+- Result: https://github.com/kkucherenkov/course_shelf/pull/793

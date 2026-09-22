@@ -25,7 +25,7 @@
   - [x] Edit openapi.yaml — export routes
   - [x] Edit openapi.yaml — scraper inventory widening
   - [x] spec:validate / spec:bundle / spec:codegen
-  - [ ] Open PR, land codegen artefacts in their own commit
+  - [x] Open PR (#761), land codegen artefacts in their own commit
   - [ ] Wait for required CI checks
 - Status: in-progress
 - Blockers: —

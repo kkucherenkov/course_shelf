@@ -1,15 +1,24 @@
 <script setup lang="ts">
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-  import { AppButton, AppPlayerChrome, AppSkeleton, AppNoPermission } from '@app/ui';
+  import {
+    AppButton,
+    AppDialog,
+    AppFlashcardEditor,
+    AppPlayerChrome,
+    AppSkeleton,
+    AppNoPermission,
+  } from '@app/ui';
   import { getLesson, listLessonBookmarks } from '@app/api-client-ts';
   import type { LessonDto, BookmarkDto, LessonOutlineItem, MaterialDto } from '@app/api-client-ts';
 
   import { useCourseOutline } from '~/composables/useCourseOutline';
+  import { useCreateFlashcard } from '~/composables/useFlashcards';
   import { PLAYBACK_SPEEDS, useLessonPlayer } from '~/composables/useLessonPlayer';
   import { useMaterialDownload } from '~/composables/useMaterialDownload';
   import { useProgressReporter } from '~/composables/useProgressReporter';
   import { useStreamUrl } from '~/composables/useStreamUrl';
   import { useTranscriptCues } from '~/composables/useTranscriptCues';
+  import type { TranscriptCue } from '~/composables/useTranscriptCues';
   import { usePreferencesStore } from '~/stores/preferences';
   import { parseStartTime } from '~/utils/start-time';
   import { buildSubtitleTracks } from '~/utils/subtitle-url';
@@ -315,6 +324,37 @@
     onSeek(time);
   }
 
+  // ── Create a flashcard from a transcript line (E29-F01-S03) ─────────────────
+  //
+  // `sourceCueId` is deliberately omitted: `useTranscriptCues` reads cues out
+  // of the browser's own parsed `TextTrack`, which carries no server-side
+  // TranscriptCue id, and no endpoint this page calls exposes one either.
+
+  const { submitting: creatingTranscriptFlashcard, create: createTranscriptFlashcard } =
+    useCreateFlashcard();
+  const transcriptFlashcardDialogOpen = ref(false);
+  const transcriptFlashcardFront = ref('');
+  const transcriptFlashcardBack = ref('');
+
+  function onTranscriptCreateFlashcard(cue: TranscriptCue): void {
+    transcriptFlashcardFront.value = '';
+    transcriptFlashcardBack.value = cue.text;
+    transcriptFlashcardDialogOpen.value = true;
+  }
+
+  async function onSaveTranscriptFlashcard(payload: {
+    front: string;
+    back: string;
+  }): Promise<void> {
+    const created = await createTranscriptFlashcard(lessonId, payload);
+    if (!created) {
+      toast.add({ title: t('pages.lessonPlayer.flashcard.error'), color: 'error' });
+      return;
+    }
+    transcriptFlashcardDialogOpen.value = false;
+    toast.add({ title: t('pages.lessonPlayer.flashcard.created'), color: 'success' });
+  }
+
   const { download: downloadMaterial } = useMaterialDownload();
 
   async function onDownloadAttempt(material: MaterialDto): Promise<void> {
@@ -524,7 +564,9 @@
               :empty-label="t('pages.lessonPlayer.transcript.empty')"
               :no-match-label="t('pages.lessonPlayer.transcript.noMatch')"
               :filter-placeholder="t('pages.lessonPlayer.transcript.filterPlaceholder')"
+              :add-flashcard-label="t('pages.lessonPlayer.flashcard.createFromTranscript')"
               @seek="onBookmarkSeek"
+              @create-flashcard="onTranscriptCreateFlashcard"
             />
           </section>
         </div>
@@ -554,6 +596,28 @@
         />
       </div>
     </template>
+
+    <AppDialog
+      :open="transcriptFlashcardDialogOpen"
+      :title="t('pages.lessonPlayer.flashcard.dialogTitle')"
+      :dismiss-label="t('pages.lessonPlayer.flashcard.dialogDismiss')"
+      @update:open="transcriptFlashcardDialogOpen = $event"
+    >
+      <AppFlashcardEditor
+        :front="transcriptFlashcardFront"
+        :back="transcriptFlashcardBack"
+        :submitting="creatingTranscriptFlashcard"
+        :front-label="t('pages.lessonPlayer.flashcard.frontLabel')"
+        :back-label="t('pages.lessonPlayer.flashcard.backLabel')"
+        :front-placeholder="t('pages.lessonPlayer.flashcard.frontPlaceholder')"
+        :save-label="t('pages.lessonPlayer.flashcard.save')"
+        :cancel-label="t('pages.lessonPlayer.flashcard.cancel')"
+        @update:front="transcriptFlashcardFront = $event"
+        @update:back="transcriptFlashcardBack = $event"
+        @save="onSaveTranscriptFlashcard"
+        @cancel="transcriptFlashcardDialogOpen = false"
+      />
+    </AppDialog>
   </div>
 </template>
 

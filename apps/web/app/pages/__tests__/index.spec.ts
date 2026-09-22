@@ -33,10 +33,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { mount } from '@vue/test-utils';
 import type {
   ContinueWatchingDto,
+  FlashcardDto,
   LibraryListDto,
   RecentlyAddedDto,
   RecentlyCompletedDto,
@@ -110,6 +111,25 @@ vi.mock('~/composables/useHome', () => ({
     status: ref('success'),
     error: ref(null),
     errorStatus: ref(null),
+    refetch: vi.fn(),
+  }),
+}));
+
+// Due-flashcard queue (E29-F01-S03) — same-key `useAsyncData` composable the
+// review screen also calls; mocked here so the page's own top-level call
+// doesn't need the real Nuxt auto-import.
+const dueQueueData = ref<FlashcardDto[]>([]);
+const dueQueueStatus = ref<'idle' | 'pending' | 'success' | 'error'>('success');
+vi.mock('~/composables/useFlashcards', () => ({
+  useFlashcardReviewQueue: () => ({
+    queue: computed(() => dueQueueData.value),
+    status: dueQueueStatus,
+    error: ref(null),
+    current: computed(() => dueQueueData.value[0] ?? null),
+    total: ref(dueQueueData.value.length),
+    grading: ref(false),
+    gradeError: ref(null),
+    grade: vi.fn(),
     refetch: vi.fn(),
   }),
 }));

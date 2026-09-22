@@ -60,3 +60,5 @@ export { AppBookmarkList } from './components/AppBookmarkList';
 export type { BookmarkEntry } from './components/AppBookmarkList';
 export { AppNoteEditor } from './components/AppNoteEditor';
 export type { NoteSyncState } from './components/AppNoteEditor';
+export { AppFlashcardReview } from './components/AppFlashcardReview';
+export { AppFlashcardEditor } from './components/AppFlashcardEditor';

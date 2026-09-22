@@ -1,9 +1,11 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { AppNoteEditor } from '@app/ui';
+  import { AppButton, AppDialog, AppFlashcardEditor, AppNoteEditor } from '@app/ui';
   import { getNote, upsertNote } from '@app/api-client-ts';
   import type { NoteDto } from '@app/api-client-ts';
+
+  import { useCreateFlashcard } from '~/composables/useFlashcards';
 
   type SyncState = 'syncing' | 'saved' | 'failed' | 'offline';
 
@@ -12,6 +14,7 @@
   }>();
 
   const { t } = useI18n();
+  const toast = useToast();
 
   // `@app/ui` ships English defaults and never calls `t()` itself — it has no
   // locale — so every string it renders is handed to it here.
@@ -67,6 +70,32 @@
   function onRetry(): void {
     void onSave(noteBody.value);
   }
+
+  // ── Create a flashcard from this note (E29-F01-S03) ─────────────────────────
+  //
+  // Seeded with the note's own body on the "back" side — the note is already
+  // the answer the reader wrote down; they type the question.
+
+  const { submitting: creatingFlashcard, create: createFlashcard } = useCreateFlashcard();
+  const flashcardDialogOpen = ref(false);
+  const flashcardFront = ref('');
+  const flashcardBack = ref('');
+
+  function openFlashcardDialog(): void {
+    flashcardFront.value = '';
+    flashcardBack.value = noteBody.value;
+    flashcardDialogOpen.value = true;
+  }
+
+  async function onSaveFlashcard(payload: { front: string; back: string }): Promise<void> {
+    const created = await createFlashcard(props.lessonId, payload);
+    if (!created) {
+      toast.add({ title: t('pages.lessonPlayer.flashcard.error'), color: 'error' });
+      return;
+    }
+    flashcardDialogOpen.value = false;
+    toast.add({ title: t('pages.lessonPlayer.flashcard.created'), color: 'success' });
+  }
 </script>
 
 <template>
@@ -97,11 +126,49 @@
       @save="onSave"
       @retry="onRetry"
     />
+
+    <AppButton
+      variant="ghost"
+      size="sm"
+      icon-leading="plus"
+      :label="t('pages.lessonPlayer.flashcard.createFromNote')"
+      class="player-notes-tab__create-flashcard"
+      @click="openFlashcardDialog"
+    />
+
+    <AppDialog
+      :open="flashcardDialogOpen"
+      :title="t('pages.lessonPlayer.flashcard.dialogTitle')"
+      :dismiss-label="t('pages.lessonPlayer.flashcard.dialogDismiss')"
+      @update:open="flashcardDialogOpen = $event"
+    >
+      <AppFlashcardEditor
+        :front="flashcardFront"
+        :back="flashcardBack"
+        :submitting="creatingFlashcard"
+        :front-label="t('pages.lessonPlayer.flashcard.frontLabel')"
+        :back-label="t('pages.lessonPlayer.flashcard.backLabel')"
+        :front-placeholder="t('pages.lessonPlayer.flashcard.frontPlaceholder')"
+        :save-label="t('pages.lessonPlayer.flashcard.save')"
+        :cancel-label="t('pages.lessonPlayer.flashcard.cancel')"
+        @update:front="flashcardFront = $event"
+        @update:back="flashcardBack = $event"
+        @save="onSaveFlashcard"
+        @cancel="flashcardDialogOpen = false"
+      />
+    </AppDialog>
   </div>
 </template>
 
 <style scoped lang="scss">
   .player-notes-tab {
     padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+
+    &__create-flashcard {
+      align-self: flex-start;
+    }
   }
 </style>

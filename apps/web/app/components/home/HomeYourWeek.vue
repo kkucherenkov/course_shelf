@@ -20,6 +20,17 @@
     errorBody?: string;
     /** Retry button label — already translated. */
     retryLabel?: string;
+    /**
+     * Due flashcard count (E29-F01-S03). `undefined` while the count hasn't
+     * loaded yet (or failed) — the whole block hides rather than showing a
+     * stale/zero count, since this is a secondary data source independent
+     * of `data`/`status` above.
+     */
+    dueCount?: number;
+    /** "{n} card due | {n} cards due" — already translated. */
+    dueLabel?: string;
+    /** CTA to `/flashcards/review` — already translated; shown only when `dueCount > 0`. */
+    reviewLabel?: string;
   }>();
 
   const emit = defineEmits<{ retry: [] }>();
@@ -60,6 +71,20 @@
       <p class="home-your-week__lessons">{{ lessonsLabel }}</p>
       <p v-if="rangeLabel" class="home-your-week__range">{{ rangeLabel }}</p>
     </template>
+
+    <!-- Due flashcards (E29-F01-S03) — independent of the week-stats fetch
+         above, so it renders in whatever state `dueCount` itself reaches. -->
+    <div v-if="dueCount !== undefined" class="home-your-week__due">
+      <p class="home-your-week__due-label">{{ dueLabel }}</p>
+      <AppButton
+        v-if="dueCount > 0"
+        :label="reviewLabel"
+        to="/flashcards/review"
+        variant="secondary"
+        size="sm"
+        class="home-your-week__due-cta"
+      />
+    </div>
   </aside>
 </template>
 
@@ -111,6 +136,24 @@
 
     &__error {
       padding: var(--space-3) 0;
+    }
+
+    &__due {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--border-default);
+    }
+
+    &__due-label {
+      margin: 0;
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+    }
+
+    &__due-cta {
+      align-self: flex-start;
     }
   }
 </style>

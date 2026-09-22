@@ -187,21 +187,26 @@ export type ScrapePreviewResponse = {
 };
 
 /**
- * Metadata about a single registered scraper.
+ * Metadata about a single registered scraper. Listed even when rejected at load time — see `loadError`. `origin` and `loadError` are absent on a response from a handler that predates this widening; a caller reading either treats a missing key the same as `null`.
  */
 export type ScraperInfoDto = {
     /**
-     * Stable scraper identifier used as the `source` field in requests.
+     * Stable scraper identifier used as the `source` field in requests. For a definition file rejected before it could be parsed, this is the file's stem (`acme-academy.json` -> `acme-academy`) rather than an id declared inside it — a failed parse never produces one.
      */
     id: string;
     /**
-     * Invocation kinds this scraper handles.
+     * Invocation kinds this scraper handles. Empty for a rejected definition file: the kinds live inside the definition, and a failed parse never produces one to read them from.
      */
     supportedKinds: Array<ScraperKind>;
     /**
-     * True when all required credentials / config are present on this instance (e.g. YouTube requires an API key). Unconfigured scrapers are omitted from the registry entirely — this flag is always true for listed scrapers.
+     * True when the scraper loaded and holds all required credentials / config (e.g. YouTube requires an API key). False when configuration is missing, or when `loadError` is set.
      */
     configured: boolean;
+    origin?: ScraperOrigin;
+    /**
+     * Why this scraper was rejected at load time, e.g. a definition file that failed schema validation. Null for a scraper that loaded successfully.
+     */
+    loadError?: string | null;
 };
 
 /**
@@ -210,7 +215,12 @@ export type ScraperInfoDto = {
 export type ScraperKind = 'url' | 'name' | 'fragment';
 
 /**
- * List of scrapers configured on this instance.
+ * Where a scraper's implementation came from: `built-in` ships with the backend, `definition-file` was loaded from a scraper definition file on this instance.
+ */
+export type ScraperOrigin = 'built-in' | 'definition-file';
+
+/**
+ * List of scrapers configured on this instance, including any rejected at load time.
  */
 export type ScraperListDto = {
     /**

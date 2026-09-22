@@ -129,6 +129,7 @@ export 'package:app_api_client/src/model/scraped_course_fragment_dto.dart';
 export 'package:app_api_client/src/model/scraper_info_dto.dart';
 export 'package:app_api_client/src/model/scraper_kind.dart';
 export 'package:app_api_client/src/model/scraper_list_dto.dart';
+export 'package:app_api_client/src/model/scraper_origin.dart';
 export 'package:app_api_client/src/model/search_course_hit.dart';
 export 'package:app_api_client/src/model/search_lesson_hit.dart';
 export 'package:app_api_client/src/model/search_result_dto.dart';

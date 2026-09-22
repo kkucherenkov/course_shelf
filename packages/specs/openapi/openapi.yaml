@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.19.1
+  version: 0.20.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -1357,12 +1357,23 @@ paths:
                       - id: youtube
                         supportedKinds: [url, name, fragment]
                         configured: true
+                        origin: built-in
+                        loadError: null
                       - id: udemy
                         supportedKinds: [url, name, fragment]
                         configured: true
+                        origin: built-in
+                        loadError: null
                       - id: json-ld
                         supportedKinds: [url, fragment]
                         configured: true
+                        origin: built-in
+                        loadError: null
+                      - id: acme-academy
+                        supportedKinds: []
+                        configured: false
+                        origin: definition-file
+                        loadError: 'selector "title" did not match "$.selectors.title": required property'
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -8242,30 +8253,52 @@ components:
     ScraperInfoDto:
       type: object
       required: [id, supportedKinds, configured]
-      description: Metadata about a single registered scraper.
+      description: >-
+        Metadata about a single registered scraper. Listed even when
+        rejected at load time — see `loadError`. `origin` and `loadError`
+        are absent on a response from a handler that predates this widening;
+        a caller reading either treats a missing key the same as `null`.
       properties:
         id:
           type: string
-          description: Stable scraper identifier used as the `source` field in requests.
+          description: >-
+            Stable scraper identifier used as the `source` field in
+            requests. For a definition file rejected before it could be
+            parsed, this is the file's stem (`acme-academy.json` ->
+            `acme-academy`) rather than an id declared inside it — a failed
+            parse never produces one.
           example: youtube
         supportedKinds:
           type: array
           items:
             $ref: "#/components/schemas/ScraperKind"
-          description: Invocation kinds this scraper handles.
+          description: >-
+            Invocation kinds this scraper handles. Empty for a rejected
+            definition file: the kinds live inside the definition, and a
+            failed parse never produces one to read them from.
           example: [url, name, fragment]
         configured:
           type: boolean
           description: >-
-            True when all required credentials / config are present on this
-            instance (e.g. YouTube requires an API key). Unconfigured scrapers
-            are omitted from the registry entirely — this flag is always true
-            for listed scrapers.
+            True when the scraper loaded and holds all required credentials
+            / config (e.g. YouTube requires an API key). False when
+            configuration is missing, or when `loadError` is set.
           example: true
+        origin:
+          $ref: "#/components/schemas/ScraperOrigin"
+        loadError:
+          type: ["string", "null"]
+          description: >-
+            Why this scraper was rejected at load time, e.g. a definition
+            file that failed schema validation. Null for a scraper that
+            loaded successfully.
+          example: null
       example:
         id: youtube
         supportedKinds: [url, name, fragment]
         configured: true
+        origin: built-in
+        loadError: null
 
     ScraperKind:
       type: string
@@ -8277,10 +8310,19 @@ components:
         `fragment` — parse a raw HTML or JSON-LD string supplied by the caller.
       example: url
 
+    ScraperOrigin:
+      type: string
+      enum: [built-in, definition-file]
+      description: >-
+        Where a scraper's implementation came from: `built-in` ships with
+        the backend, `definition-file` was loaded from a scraper
+        definition file on this instance.
+      example: built-in
+
     ScraperListDto:
       type: object
       required: [scrapers]
-      description: List of scrapers configured on this instance.
+      description: List of scrapers configured on this instance, including any rejected at load time.
       properties:
         scrapers:
           type: array
@@ -8292,9 +8334,18 @@ components:
           - id: youtube
             supportedKinds: [url, name, fragment]
             configured: true
+            origin: built-in
+            loadError: null
           - id: json-ld
             supportedKinds: [url, fragment]
             configured: true
+            origin: built-in
+            loadError: null
+          - id: acme-academy
+            supportedKinds: []
+            configured: false
+            origin: definition-file
+            loadError: 'selector "title" did not match "$.selectors.title": required property'
 
     MergeMode:
       type: string

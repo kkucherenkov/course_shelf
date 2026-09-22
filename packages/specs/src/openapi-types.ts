@@ -2297,7 +2297,7 @@ export interface components {
       candidates: components['schemas']['ScrapeCandidateDto'][];
     };
     /**
-     * @description Metadata about a single registered scraper.
+     * @description Metadata about a single registered scraper. Listed even when rejected at load time — see `loadError`. `origin` and `loadError` are absent on a response from a handler that predates this widening; a caller reading either treats a missing key the same as `null`.
      * @example {
      *       "id": "youtube",
      *       "supportedKinds": [
@@ -2305,17 +2305,19 @@ export interface components {
      *         "name",
      *         "fragment"
      *       ],
-     *       "configured": true
+     *       "configured": true,
+     *       "origin": "built-in",
+     *       "loadError": null
      *     }
      */
     ScraperInfoDto: {
       /**
-       * @description Stable scraper identifier used as the `source` field in requests.
+       * @description Stable scraper identifier used as the `source` field in requests. For a definition file rejected before it could be parsed, this is the file's stem (`acme-academy.json` -> `acme-academy`) rather than an id declared inside it — a failed parse never produces one.
        * @example youtube
        */
       id: string;
       /**
-       * @description Invocation kinds this scraper handles.
+       * @description Invocation kinds this scraper handles. Empty for a rejected definition file: the kinds live inside the definition, and a failed parse never produces one to read them from.
        * @example [
        *       "url",
        *       "name",
@@ -2324,10 +2326,16 @@ export interface components {
        */
       supportedKinds: components['schemas']['ScraperKind'][];
       /**
-       * @description True when all required credentials / config are present on this instance (e.g. YouTube requires an API key). Unconfigured scrapers are omitted from the registry entirely — this flag is always true for listed scrapers.
+       * @description True when the scraper loaded and holds all required credentials / config (e.g. YouTube requires an API key). False when configuration is missing, or when `loadError` is set.
        * @example true
        */
       configured: boolean;
+      origin?: components['schemas']['ScraperOrigin'];
+      /**
+       * @description Why this scraper was rejected at load time, e.g. a definition file that failed schema validation. Null for a scraper that loaded successfully.
+       * @example null
+       */
+      loadError?: string | null;
     };
     /**
      * @description Invocation kind for the scrape-preview endpoint. `url` — fetch and parse a remote URL; `name` — search the source by course title; `fragment` — parse a raw HTML or JSON-LD string supplied by the caller.
@@ -2336,7 +2344,13 @@ export interface components {
      */
     ScraperKind: 'url' | 'name' | 'fragment';
     /**
-     * @description List of scrapers configured on this instance.
+     * @description Where a scraper's implementation came from: `built-in` ships with the backend, `definition-file` was loaded from a scraper definition file on this instance.
+     * @example built-in
+     * @enum {string}
+     */
+    ScraperOrigin: 'built-in' | 'definition-file';
+    /**
+     * @description List of scrapers configured on this instance, including any rejected at load time.
      * @example {
      *       "scrapers": [
      *         {
@@ -2346,7 +2360,9 @@ export interface components {
      *             "name",
      *             "fragment"
      *           ],
-     *           "configured": true
+     *           "configured": true,
+     *           "origin": "built-in",
+     *           "loadError": null
      *         },
      *         {
      *           "id": "json-ld",
@@ -2354,7 +2370,16 @@ export interface components {
      *             "url",
      *             "fragment"
      *           ],
-     *           "configured": true
+     *           "configured": true,
+     *           "origin": "built-in",
+     *           "loadError": null
+     *         },
+     *         {
+     *           "id": "acme-academy",
+     *           "supportedKinds": [],
+     *           "configured": false,
+     *           "origin": "definition-file",
+     *           "loadError": "selector \"title\" did not match \"$.selectors.title\": required property"
      *         }
      *       ]
      *     }

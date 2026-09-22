@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: App API
-  version: 0.19.1
+  version: 0.20.0
   description: |
     Spec-first HTTP API. Paths include the versioned prefix (`/api/v1`) so
     generated clients can be used without additional base-URL rewriting.
@@ -1357,12 +1357,23 @@ paths:
                       - id: youtube
                         supportedKinds: [url, name, fragment]
                         configured: true
+                        origin: built-in
+                        loadError: null
                       - id: udemy
                         supportedKinds: [url, name, fragment]
                         configured: true
+                        origin: built-in
+                        loadError: null
                       - id: json-ld
                         supportedKinds: [url, fragment]
                         configured: true
+                        origin: built-in
+                        loadError: null
+                      - id: acme-academy
+                        supportedKinds: [url]
+                        configured: false
+                        origin: definition-file
+                        loadError: 'selector "title" did not match "$.selectors.title": required property'
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -3045,6 +3056,83 @@ paths:
                     courseId: clxvcrs0000000000000000001
                     totalBytes: 1288490188
                     lessonCount: 42
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Caller does not have a READ grant for the course's library
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not have access to this course.
+        "404":
+          description: Course not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No course with that id exists.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /api/v1/courses/{courseId}/export:
+    get:
+      operationId: exportCourse
+      summary: Download a course as a Markdown archive
+      description: |
+        Streams a ZIP: `course.md`, one `lessons/NN-slug.md` per lesson in
+        outline order, and one shared `images/` folder. Each lesson file
+        carries the lesson's note, its bookmarks — each with its timestamp,
+        its `?t=` deep link back into the player, and the transcript lines
+        it points at — and, when the lesson has an applied summary, that
+        summary with its `frame:` placeholders rewritten to `images/NNN.jpg`.
+        A lesson without an applied summary renders without that section;
+        the export does not require one.
+
+        Access is course-level, same as `getCourse`: a READ grant on the
+        course's library.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          description: Server-generated cuid identifying the course.
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: The course's Markdown export, as a ZIP archive.
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -5226,6 +5314,82 @@ paths:
                     title: Not Found
                     status: 404
                     detail: No material with that id exists on this lesson.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /api/v1/lessons/{lessonId}/export:
+    get:
+      operationId: exportLesson
+      summary: Download a lesson as a Markdown archive
+      description: |
+        Streams a ZIP: `lesson.md` plus `images/`. `lesson.md` carries the
+        lesson title, a deep link back into the player, the user's note,
+        the bookmarks — each with its timestamp, its `?t=` deep link, and
+        the transcript lines it points at — and, when the lesson has an
+        applied summary, that summary with its `frame:` placeholders
+        rewritten to `images/NNN.jpg`. A lesson without an applied summary
+        renders without that section; the export does not require one.
+
+        Access mirrors `getLesson`: a READ grant covering the parent
+        library or course.
+      tags: [Catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          description: Server-generated cuid identifying the lesson.
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: The lesson's Markdown export, as a ZIP archive.
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Missing or invalid bearer token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unauthorized:
+                  value:
+                    type: about:blank
+                    title: Unauthorized
+                    status: 401
+        "403":
+          description: Requester has no READ grant covering the parent library or course
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                forbidden:
+                  value:
+                    type: about:blank
+                    title: Forbidden
+                    status: 403
+                    detail: You do not have access to this lesson.
+        "404":
+          description: Lesson not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notFound:
+                  value:
+                    type: about:blank
+                    title: Not Found
+                    status: 404
+                    detail: No lesson with that id exists.
         "429":
           $ref: "#/components/responses/TooManyRequests"
   /api/v1/lessons/{lessonId}/bookmarks:
@@ -8241,8 +8405,10 @@ components:
 
     ScraperInfoDto:
       type: object
-      required: [id, supportedKinds, configured]
-      description: Metadata about a single registered scraper.
+      required: [id, supportedKinds, configured, origin, loadError]
+      description: >-
+        Metadata about a single registered scraper. Listed even when
+        rejected at load time — see `loadError`.
       properties:
         id:
           type: string
@@ -8257,15 +8423,25 @@ components:
         configured:
           type: boolean
           description: >-
-            True when all required credentials / config are present on this
-            instance (e.g. YouTube requires an API key). Unconfigured scrapers
-            are omitted from the registry entirely — this flag is always true
-            for listed scrapers.
+            True when the scraper loaded and holds all required credentials
+            / config (e.g. YouTube requires an API key). False when
+            configuration is missing, or when `loadError` is set.
           example: true
+        origin:
+          $ref: "#/components/schemas/ScraperOrigin"
+        loadError:
+          type: ["string", "null"]
+          description: >-
+            Why this scraper was rejected at load time, e.g. a definition
+            file that failed schema validation. Null for a scraper that
+            loaded successfully.
+          example: null
       example:
         id: youtube
         supportedKinds: [url, name, fragment]
         configured: true
+        origin: built-in
+        loadError: null
 
     ScraperKind:
       type: string
@@ -8277,10 +8453,19 @@ components:
         `fragment` — parse a raw HTML or JSON-LD string supplied by the caller.
       example: url
 
+    ScraperOrigin:
+      type: string
+      enum: [built-in, definition-file]
+      description: >-
+        Where a scraper's implementation came from: `built-in` ships with
+        the backend, `definition-file` was loaded from a scraper
+        definition file on this instance.
+      example: built-in
+
     ScraperListDto:
       type: object
       required: [scrapers]
-      description: List of scrapers configured on this instance.
+      description: List of scrapers configured on this instance, including any rejected at load time.
       properties:
         scrapers:
           type: array
@@ -8292,9 +8477,18 @@ components:
           - id: youtube
             supportedKinds: [url, name, fragment]
             configured: true
+            origin: built-in
+            loadError: null
           - id: json-ld
             supportedKinds: [url, fragment]
             configured: true
+            origin: built-in
+            loadError: null
+          - id: acme-academy
+            supportedKinds: [url]
+            configured: false
+            origin: definition-file
+            loadError: 'selector "title" did not match "$.selectors.title": required property'
 
     MergeMode:
       type: string

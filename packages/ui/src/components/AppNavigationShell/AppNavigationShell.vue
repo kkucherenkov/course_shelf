@@ -233,6 +233,13 @@
 
   // ── Event handlers ─────────────────────────────────────────────────────────
 
+  // Each sidebar/overflow row below also carries `:to` (#780), so a plain
+  // click already navigates via a real `<a href>`; `emit('nav', ...)` still
+  // fires alongside it so the consumer's existing `navigateTo()` wiring
+  // keeps working unchanged. A modified click (new tab, middle-click,
+  // copy-link) is handled entirely by the anchor itself — NuxtLink does not
+  // preventDefault or push in that case — so the emit here is a same-page,
+  // same-tab no-op underneath it, never a swallowed modifier click.
   function onNavClick(item: NavItem) {
     emit('nav', item.key);
     closeMobileNav();
@@ -332,6 +339,7 @@
           :selected="item.key === activeRoute"
           compact
           interactive
+          :to="item.to"
           :aria-current="item.key === activeRoute ? 'page' : undefined"
           @click="onNavClick(item)"
         >
@@ -352,6 +360,7 @@
             :selected="item.key === activeRoute"
             compact
             interactive
+            :to="item.to"
             :aria-current="item.key === activeRoute ? 'page' : undefined"
             @click="onNavClick(item)"
           >
@@ -568,6 +577,7 @@
           :selected="item.key === activeRoute"
           compact
           interactive
+          :to="item.to"
           :aria-current="item.key === activeRoute ? 'page' : undefined"
           @click="onNavClick(item)"
         >
@@ -587,6 +597,7 @@
             :selected="item.key === activeRoute"
             compact
             interactive
+            :to="item.to"
             :aria-current="item.key === activeRoute ? 'page' : undefined"
             @click="onNavClick(item)"
           >

@@ -73,6 +73,30 @@ export const Interactive: Story = {
   }),
 };
 
+// A route-bearing row: real `<a href>` under the hood (via NuxtLink), so a
+// browser's native open-in-new-tab/copy-link/middle-click affordances work
+// without any custom click handling (#780).
+export const Link: Story = {
+  args: { to: '/courses/abc/lessons/def' },
+  render: (args) => ({
+    components: { AppRow },
+    setup() {
+      return { args };
+    },
+    template: `
+      <AppRow v-bind="args">
+        <template #leading>
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--surface-overlay);" />
+        </template>
+        <div>
+          <div style="font-size:var(--text-md);font-weight:500;color:var(--text-loud);">01 · Setting up your editor</div>
+        </div>
+        <template #trailing>3:00</template>
+      </AppRow>
+    `,
+  }),
+};
+
 export const NoSlots: Story = {
   render: (args) => ({
     components: { AppRow },

@@ -101,16 +101,17 @@
     }
   }
 
-  // ── Rescan/transcribe/reset confirm dialog (#606, #624) ──────────────────────
-  // All three rewrite consequential state with no cheap undo: rescan replaces
+  // ── Rescan/transcribe/reset/complete confirm dialog (#606, #624, #783) ───────
+  // All four rewrite consequential state with no cheap undo: rescan replaces
   // the course's section/lesson list, transcription can occupy a GPU for
-  // hours, and reset progress clears every lesson's watched state — on the
-  // largest course in the audit database that's 540 lessons with no restore
-  // button, not "reversible by rewatching" (the claim a previous wave used to
-  // remove this dialog). "Mark complete" is the one action left that still
-  // fires straight through, because it only adds progress and never destroys
-  // it. One dialog shared by all three rather than near-identical copies.
-  const pendingCourseAction = ref<'rescan' | 'transcribe' | 'reset' | null>(null);
+  // hours, reset progress clears every lesson's watched state, and mark
+  // complete does the reverse — on the largest course in the audit database
+  // that's 540 lessons in one click, sitting directly under the primary CTA,
+  // with no confirmation (#783: it used to fire straight through on the claim
+  // that adding progress is harmless — true for one lesson, not for closing
+  // out an entire 50-hour course by mistake). One dialog shared by all four
+  // rather than near-identical copies.
+  const pendingCourseAction = ref<'rescan' | 'transcribe' | 'reset' | 'complete' | null>(null);
 
   const courseActionDialog = computed(() => {
     if (pendingCourseAction.value === 'rescan') {
@@ -134,6 +135,14 @@
         confirmLabel: t('pages.courseDetail.resetDialogConfirm'),
       };
     }
+    if (pendingCourseAction.value === 'complete') {
+      const n = allLessons.value.length;
+      return {
+        title: t('pages.courseDetail.completeDialogTitle'),
+        description: t('pages.courseDetail.completeDialogDescription', n, { named: { n } }),
+        confirmLabel: t('pages.courseDetail.completeDialogConfirm'),
+      };
+    }
     return null;
   });
 
@@ -151,6 +160,10 @@
       }
       case 'reset': {
         void onResetProgress();
+        break;
+      }
+      case 'complete': {
+        void onMarkComplete();
         break;
       }
       // No default
@@ -346,10 +359,6 @@
     }
   }
 
-  function onSelectLesson(lessonId: string): void {
-    void navigateTo(`/courses/${courseId}/lessons/${lessonId}`);
-  }
-
   // Document heading (#701): every one of the 68 courses shared the static
   // "Course Shelf" tab title — bookmarks, history and tab switching couldn't
   // tell them apart. Falls back to a generic title before the outline loads
@@ -430,7 +439,7 @@
         :reset-progress-label="t('pages.courseDetail.ctaResetProgress')"
         :mutating="mutating"
         class="page-course-detail__actions"
-        @mark-complete="onMarkComplete"
+        @mark-complete="pendingCourseAction = 'complete'"
         @reset-progress="pendingCourseAction = 'reset'"
       />
 
@@ -518,8 +527,8 @@
           <CourseSectionsList
             :sections="data.sections"
             :current-lesson-id="currentLessonId"
+            :course-id="courseId"
             class="page-course-detail__sections"
-            @select-lesson="onSelectLesson"
           />
         </div>
 
@@ -582,6 +591,11 @@
 
     &__admin-actions {
       display: flex;
+      // #781 — at 390px this row ran past the viewport edge with no
+      // horizontal scroll, so the buttons were simply unreachable. Wrapping
+      // keeps every action reachable at any width without hiding any of
+      // them behind a menu.
+      flex-wrap: wrap;
       gap: var(--space-2);
     }
 

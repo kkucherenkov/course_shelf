@@ -129,4 +129,54 @@ describe('AppRow', () => {
     expect(wrapper.classes()).toContain('app-row--selected');
     expect(wrapper.classes()).toContain('app-row--compact');
   });
+
+  // --- link mode (`to`) — #780: sidebar/lesson rows were `<button>`, so a
+  // browser had nothing to middle-click, ctrl-click into a new tab, or copy.
+
+  // Register NuxtLink as a plain anchor so resolveComponent('NuxtLink')
+  // resolves in the unit env and we can assert the rendered tag/attributes —
+  // same stub AppButton.spec.ts uses for its own `to` prop.
+  const linkGlobal = {
+    components: { NuxtLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } },
+  } as const;
+
+  it('renders as a link (anchor) whose href matches the route when `to` is set', () => {
+    const wrapper = mount(AppRow, {
+      global: linkGlobal,
+      props: { to: '/courses/abc/lessons/def' },
+      slots: { default: 'Lesson 1' },
+    });
+    const a = wrapper.find('a');
+    expect(a.exists()).toBe(true);
+    expect(a.attributes('href')).toBe('/courses/abc/lessons/def');
+    expect(a.classes()).toContain('app-row');
+    expect(wrapper.find('button').exists()).toBe(false);
+  });
+
+  it('applies the interactive modifier class for a link even without interactive=true', () => {
+    const wrapper = mount(AppRow, {
+      global: linkGlobal,
+      props: { to: '/browse' },
+      slots: { default: 'x' },
+    });
+    expect(wrapper.classes()).toContain('app-row--interactive');
+  });
+
+  it('renders as <div> when `to` is unset, regardless of interactive', () => {
+    const wrapper = mount(AppRow, {
+      global: linkGlobal,
+      slots: { default: 'x' },
+    });
+    expect(wrapper.element.tagName).toBe('DIV');
+    expect(wrapper.find('a').exists()).toBe(false);
+  });
+
+  it('does not set a `type` attribute on the link variant', () => {
+    const wrapper = mount(AppRow, {
+      global: linkGlobal,
+      props: { to: '/browse', interactive: true },
+      slots: { default: 'x' },
+    });
+    expect(wrapper.attributes('type')).toBeUndefined();
+  });
 });

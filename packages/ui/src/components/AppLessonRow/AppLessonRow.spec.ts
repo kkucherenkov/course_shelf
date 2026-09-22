@@ -146,4 +146,43 @@ describe('AppLessonRow', () => {
     });
     expect(wrapper.find('.app-lesson-row__meta').text()).toBe('Просмотрено 42%');
   });
+
+  // --- link mode (`to`) — #780: 540-lesson course page had 3 real links in
+  // 5486 DOM nodes; the row itself opened only through a JS click handler.
+
+  // Register NuxtLink as a plain anchor so resolveComponent('NuxtLink')
+  // resolves in the unit env — same stub AppButton.spec.ts uses.
+  const linkGlobal = {
+    components: { NuxtLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } },
+  } as const;
+
+  it('renders as a link (anchor) whose href matches the route when `to` is set', () => {
+    const wrapper = mount(AppLessonRow, {
+      global: linkGlobal,
+      props: { ...baseProps, to: '/courses/abc/lessons/def' },
+    });
+    const a = wrapper.find('a');
+    expect(a.exists()).toBe(true);
+    expect(a.attributes('href')).toBe('/courses/abc/lessons/def');
+    expect(a.classes()).toContain('app-lesson-row');
+    expect(a.attributes('role')).toBeUndefined();
+    expect(a.attributes('tabindex')).toBeUndefined();
+  });
+
+  it('falls back to a <div role="button"> when `to` is set but the row is locked', () => {
+    const wrapper = mount(AppLessonRow, {
+      global: linkGlobal,
+      props: { ...baseProps, to: '/courses/abc/lessons/def', state: 'locked' },
+    });
+    expect(wrapper.find('a').exists()).toBe(false);
+    expect(wrapper.find('.app-lesson-row').attributes('role')).toBe('button');
+  });
+
+  it('falls back to a <div role="button"> when `to` is set but the row is loading', () => {
+    const wrapper = mount(AppLessonRow, {
+      global: linkGlobal,
+      props: { ...baseProps, to: '/courses/abc/lessons/def', loading: true },
+    });
+    expect(wrapper.find('a').exists()).toBe(false);
+  });
 });

@@ -88,6 +88,23 @@ export interface RateLimitConfig {
   readonly realtimeTokenTtlMs: number;
   /** Requests allowed per window for realtime-token minting. Default 30. */
   readonly realtimeTokenLimit: number;
+  /**
+   * Window for every `/api/v1/auth/*` route except `get-session` (sign-in,
+   * sign-up, sign-out, forgot/reset-password, ...). Default 60 000. Sign-in
+   * itself additionally carries its own brute-force limiter
+   * (`SignInRateLimitMiddleware`) on top of this.
+   */
+  readonly authTtlMs: number;
+  /** Requests allowed per window for the auth budget above. Default 10. */
+  readonly authLimit: number;
+  /**
+   * Window for `GET /api/v1/auth/get-session` — every cold SPA load makes
+   * one of these, so it needs a looser, ordinary-traffic budget rather than
+   * sharing `authLimit` with sign-in (#777). Default 60 000.
+   */
+  readonly authSessionTtlMs: number;
+  /** Requests allowed per window for session reads. Default 60. */
+  readonly authSessionLimit: number;
 }
 
 export interface FirebaseConfig {
@@ -390,6 +407,10 @@ export class AppConfig {
       limit: this.numberOrDefault('RATE_LIMIT_MAX', 60),
       realtimeTokenTtlMs: this.numberOrDefault('RATE_LIMIT_REALTIME_TOKEN_TTL_MS', 60_000),
       realtimeTokenLimit: this.numberOrDefault('RATE_LIMIT_REALTIME_TOKEN_MAX', 30),
+      authTtlMs: this.numberOrDefault('RATE_LIMIT_AUTH_TTL_MS', 60_000),
+      authLimit: this.numberOrDefault('RATE_LIMIT_AUTH_MAX', 10),
+      authSessionTtlMs: this.numberOrDefault('RATE_LIMIT_AUTH_SESSION_TTL_MS', 60_000),
+      authSessionLimit: this.numberOrDefault('RATE_LIMIT_AUTH_SESSION_MAX', 60),
     };
   }
 

@@ -53,5 +53,7 @@
         confirmation instead of through it)
   - [x] Open PR (https://github.com/kkucherenkov/course_shelf/pull/787), wait
         for required CI checks
-- Status: in-progress
+- Status: done
 - Blockers: —
+- Completed: 2026-09-22
+- Result: https://github.com/kkucherenkov/course_shelf/pull/787

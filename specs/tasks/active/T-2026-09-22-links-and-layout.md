@@ -40,7 +40,9 @@
         rescan/transcribe/reset confirm dialog, lesson count in the copy
   - [x] `AdminScansTable`: sr-only span replaces `aria-label` on the two
         empty `<th>` cells
-  - [x] Storybook stories for the new `to`/`Link` variants
+  - [x] Storybook stories for the new `to`/`Link` variants — 2 new baselines
+        regenerated via `regen-snapshots.yml` (192b4587), zero drift on
+        unrelated components
   - [x] `pnpm --filter @app/ui lint --fix`, `pnpm --filter @app/web lint --fix`,
         `pnpm stylelint:fix`, `pnpm format`
   - [x] `pnpm --filter @app/ui test`, `pnpm --filter @app/web test`,

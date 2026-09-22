@@ -20,11 +20,7 @@ import path from 'node:path';
 import { parseScraperDefinition } from '../../domain/scraper/scraper-definition.schema';
 
 import type { ScraperDefinition } from '../../domain/scraper/scraper-definition.schema';
-
-export interface ScraperDefinitionLoadError {
-  readonly file: string;
-  readonly reason: string;
-}
+import type { ScraperDefinitionLoadError } from '../../domain/scraper/scraper.types';
 
 export interface ScraperDefinitionLoadResult {
   readonly definitions: readonly ScraperDefinition[];

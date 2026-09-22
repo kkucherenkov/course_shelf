@@ -9,6 +9,7 @@
  */
 import { Body, Controller, Get, HttpCode, Inject, Param, Post, UseGuards } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
+import path from 'node:path';
 
 import { AdminGuard } from '../../common/auth/admin.guard';
 import { ScrapeCourseCommand } from './application/commands/scrape-course.command';
@@ -33,13 +34,23 @@ export class CatalogScrapeAdminController {
   /** GET /api/v1/admin/scrapers */
   @Get('scrapers')
   listScrapers(): ScraperListDto {
-    return {
-      scrapers: this.registry.all().map((s) => ({
-        id: s.id,
-        supportedKinds: [...s.supportedKinds],
-        configured: true,
-      })),
-    };
+    const loaded = this.registry.entries().map(({ scraper, origin }) => ({
+      id: scraper.id,
+      supportedKinds: [...scraper.supportedKinds],
+      configured: true,
+      origin,
+      loadError: null,
+    }));
+    // A rejected definition never produced an id or supportedKinds (its parse
+    // threw first) — the id reported here is the file's stem, per ScraperInfoDto.
+    const rejected = this.registry.rejected().map(({ file, reason }) => ({
+      id: path.basename(file, path.extname(file)),
+      supportedKinds: [],
+      configured: false,
+      origin: 'definition-file' as const,
+      loadError: reason,
+    }));
+    return { scrapers: [...loaded, ...rejected] };
   }
 
   /** POST /api/v1/admin/courses/:id/scrape-preview */

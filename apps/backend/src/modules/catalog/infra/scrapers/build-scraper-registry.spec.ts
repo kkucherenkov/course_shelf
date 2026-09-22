@@ -66,4 +66,15 @@ describe('buildScraperRegistry', () => {
     const registry = buildScraperRegistry(config, path.join(derivedRoot, 'never-created'));
     expect(registry.all().map((s) => s.id)).toEqual(['udemy', 'coursera', 'stepik', 'json-ld']);
   });
+
+  // E30-F01-S02: a rejected definition never throws (D6) but is retained on
+  // the registry so the admin listing can report it.
+  it('retains a rejected definition on the registry instead of only logging it', () => {
+    write('broken.json', { id: 'broken-site', kinds: ['url'], rules: {} }); // no match.urlPattern
+
+    const registry = buildScraperRegistry(config, derivedRoot);
+    expect(registry.all().map((s) => s.id)).toEqual(['udemy', 'coursera', 'stepik', 'json-ld']);
+    expect(registry.rejected()).toHaveLength(1);
+    expect(registry.rejected()[0]?.file).toContain('broken.json');
+  });
 });

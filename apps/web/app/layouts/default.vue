@@ -85,6 +85,12 @@
         icon: 'library',
         to: '/admin/libraries',
       },
+      {
+        key: 'admin-scrapers',
+        label: t('pages.admin.navScrapers'),
+        icon: 'cloud-down',
+        to: '/admin/scrapers',
+      },
       { key: 'admin-users', label: t('pages.admin.navUsers'), icon: 'users', to: '/admin/users' },
       {
         key: 'admin-identify-tasks',
@@ -118,6 +124,7 @@
     if (p.startsWith('/admin/permissions')) return 'admin-permissions';
     if (p.startsWith('/admin/identify-tasks')) return 'admin-identify-tasks';
     if (p.startsWith('/admin/users')) return 'admin-users';
+    if (p.startsWith('/admin/scrapers')) return 'admin-scrapers';
     if (p.startsWith('/admin/libraries')) return 'admin-libraries';
     if (p.startsWith('/admin')) return 'admin-dashboard';
     if (p.startsWith('/search')) return 'browse'; // search is scoped under browse conceptually

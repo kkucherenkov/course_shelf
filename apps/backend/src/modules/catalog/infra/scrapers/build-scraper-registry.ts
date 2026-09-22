@@ -16,8 +16,9 @@
  * for per-lesson transcript paths does not apply here).
  *
  * A definition that fails to load is logged and skipped, never thrown —
- * startup must survive every malformed-definition case (D6). Persisting those
- * errors for an admin surface is E30-F01-S02, not built here.
+ * startup must survive every malformed-definition case (D6). Errors are also
+ * handed to DefaultScraperRegistry so the admin listing (E30-F01-S02) can
+ * report them without re-reading container logs.
  */
 import { Logger } from '@nestjs/common';
 import path from 'node:path';
@@ -74,5 +75,5 @@ export function buildScraperRegistry(
   }
 
   list.push(new JsonLdScraper(fetcher, extractor)); // generic fallback LAST
-  return new DefaultScraperRegistry(list);
+  return new DefaultScraperRegistry(list, errors);
 }

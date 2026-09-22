@@ -155,7 +155,9 @@ describe('ExportController', () => {
 
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toBe('application/zip');
-      expect(res.headers['content-disposition']).toBe('attachment; filename="intro.zip"');
+      expect(res.headers['content-disposition']).toBe(
+        'attachment; filename="intro.zip"; filename*=UTF-8\'\'intro.zip',
+      );
 
       const entries = readZipEntries(res.body as Buffer);
       expect(entries.map((e) => e.path)).toEqual(['images/', 'lesson.md']);
@@ -190,7 +192,9 @@ describe('ExportController', () => {
         .parse(binaryParser);
 
       expect(res.status).toBe(200);
-      expect(res.headers['content-disposition']).toBe('attachment; filename="signals.zip"');
+      expect(res.headers['content-disposition']).toBe(
+        'attachment; filename="signals.zip"; filename*=UTF-8\'\'signals.zip',
+      );
 
       const entries = readZipEntries(res.body as Buffer);
       expect(entries.map((e) => e.path)).toEqual([

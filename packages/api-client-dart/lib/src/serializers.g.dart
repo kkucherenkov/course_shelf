@@ -122,6 +122,7 @@ Serializers _$serializers =
           ..add(ScraperInfoDto.serializer)
           ..add(ScraperKind.serializer)
           ..add(ScraperListDto.serializer)
+          ..add(ScraperOrigin.serializer)
           ..add(SearchCourseHit.serializer)
           ..add(SearchLessonHit.serializer)
           ..add(SearchResultDto.serializer)

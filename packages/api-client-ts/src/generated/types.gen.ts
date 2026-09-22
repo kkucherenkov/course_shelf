@@ -187,7 +187,7 @@ export type ScrapePreviewResponse = {
 };
 
 /**
- * Metadata about a single registered scraper.
+ * Metadata about a single registered scraper. Listed even when rejected at load time — see `loadError`.
  */
 export type ScraperInfoDto = {
     /**
@@ -199,9 +199,14 @@ export type ScraperInfoDto = {
      */
     supportedKinds: Array<ScraperKind>;
     /**
-     * True when all required credentials / config are present on this instance (e.g. YouTube requires an API key). Unconfigured scrapers are omitted from the registry entirely — this flag is always true for listed scrapers.
+     * True when the scraper loaded and holds all required credentials / config (e.g. YouTube requires an API key). False when configuration is missing, or when `loadError` is set.
      */
     configured: boolean;
+    origin: ScraperOrigin;
+    /**
+     * Why this scraper was rejected at load time, e.g. a definition file that failed schema validation. Null for a scraper that loaded successfully.
+     */
+    loadError: string | null;
 };
 
 /**
@@ -210,7 +215,12 @@ export type ScraperInfoDto = {
 export type ScraperKind = 'url' | 'name' | 'fragment';
 
 /**
- * List of scrapers configured on this instance.
+ * Where a scraper's implementation came from: `built-in` ships with the backend, `definition-file` was loaded from a scraper definition file on this instance.
+ */
+export type ScraperOrigin = 'built-in' | 'definition-file';
+
+/**
+ * List of scrapers configured on this instance, including any rejected at load time.
  */
 export type ScraperListDto = {
     /**
@@ -4010,6 +4020,56 @@ export type GetCourseDownloadEstimateResponses = {
 
 export type GetCourseDownloadEstimateResponse = GetCourseDownloadEstimateResponses[keyof GetCourseDownloadEstimateResponses];
 
+export type ExportCourseData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the course.
+         */
+        courseId: string;
+    };
+    query?: never;
+    url: '/api/v1/courses/{courseId}/export';
+};
+
+export type ExportCourseErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Caller does not have a READ grant for the course's library
+     */
+    403: Problem;
+    /**
+     * Course not found
+     */
+    404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type ExportCourseError = ExportCourseErrors[keyof ExportCourseErrors];
+
+export type ExportCourseResponses = {
+    /**
+     * The course's Markdown export, as a ZIP archive.
+     */
+    200: Blob | File;
+};
+
+export type ExportCourseResponse = ExportCourseResponses[keyof ExportCourseResponses];
+
 export type MarkCourseCompleteData = {
     body?: never;
     path: {
@@ -5294,6 +5354,56 @@ export type IssueMaterialDownloadUrlResponses = {
 };
 
 export type IssueMaterialDownloadUrlResponse = IssueMaterialDownloadUrlResponses[keyof IssueMaterialDownloadUrlResponses];
+
+export type ExportLessonData = {
+    body?: never;
+    path: {
+        /**
+         * Server-generated cuid identifying the lesson.
+         */
+        lessonId: string;
+    };
+    query?: never;
+    url: '/api/v1/lessons/{lessonId}/export';
+};
+
+export type ExportLessonErrors = {
+    /**
+     * Request failed validation. Every operation is behind `express-openapi-validator`, so any request carrying an unknown query parameter, a malformed path parameter or a body that does not match the schema is rejected here before it reaches a handler.
+     *
+     * One rule is enforced ahead of the schema rather than by it: a `U+0000` (NUL) anywhere in the request line or in any string of the body is rejected with `code: null-byte-in-payload`. PostgreSQL cannot store the byte in a `text` column, and JSON Schema can only forbid it with a `pattern` repeated on every string in this document — so it lives as one check at the trust boundary instead. It is not expressible per-field, which is why it is written here rather than in the schemas.
+     *
+     */
+    400: Problem;
+    /**
+     * Missing or invalid bearer token
+     */
+    401: Problem;
+    /**
+     * Requester has no READ grant covering the parent library or course
+     */
+    403: Problem;
+    /**
+     * Lesson not found
+     */
+    404: Problem;
+    /**
+     * Rate limit exceeded. `ThrottlerGuard` is registered as a global `APP_GUARD` (60 requests per 60 seconds), so this is reachable on every operation rather than on a chosen few — which is why it is documented on all of them.
+     *
+     */
+    429: Problem;
+};
+
+export type ExportLessonError = ExportLessonErrors[keyof ExportLessonErrors];
+
+export type ExportLessonResponses = {
+    /**
+     * The lesson's Markdown export, as a ZIP archive.
+     */
+    200: Blob | File;
+};
+
+export type ExportLessonResponse = ExportLessonResponses[keyof ExportLessonResponses];
 
 export type ListLessonBookmarksData = {
     body?: never;

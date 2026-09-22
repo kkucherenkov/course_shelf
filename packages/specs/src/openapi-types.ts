@@ -793,6 +793,36 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/courses/{courseId}/export': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Download a course as a Markdown archive
+     * @description Streams a ZIP: `course.md`, one `lessons/NN-slug.md` per lesson in
+     *     outline order, and one shared `images/` folder. Each lesson file
+     *     carries the lesson's note, its bookmarks — each with its timestamp,
+     *     its `?t=` deep link back into the player, and the transcript lines
+     *     it points at — and, when the lesson has an applied summary, that
+     *     summary with its `frame:` placeholders rewritten to `images/NNN.jpg`.
+     *     A lesson without an applied summary renders without that section;
+     *     the export does not require one.
+     *
+     *     Access is course-level, same as `getCourse`: a READ grant on the
+     *     course's library.
+     */
+    get: operations['exportCourse'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/courses/{id}/mark-complete': {
     parameters: {
       query?: never;
@@ -1430,6 +1460,35 @@ export interface paths {
      *     grant on the parent library or course, or be an admin.
      */
     get: operations['issueMaterialDownloadUrl'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/lessons/{lessonId}/export': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Download a lesson as a Markdown archive
+     * @description Streams a ZIP: `lesson.md` plus `images/`. `lesson.md` carries the
+     *     lesson title, a deep link back into the player, the user's note,
+     *     the bookmarks — each with its timestamp, its `?t=` deep link, and
+     *     the transcript lines it points at — and, when the lesson has an
+     *     applied summary, that summary with its `frame:` placeholders
+     *     rewritten to `images/NNN.jpg`. A lesson without an applied summary
+     *     renders without that section; the export does not require one.
+     *
+     *     Access mirrors `getLesson`: a READ grant covering the parent
+     *     library or course.
+     */
+    get: operations['exportLesson'];
     put?: never;
     post?: never;
     delete?: never;
@@ -2297,7 +2356,7 @@ export interface components {
       candidates: components['schemas']['ScrapeCandidateDto'][];
     };
     /**
-     * @description Metadata about a single registered scraper.
+     * @description Metadata about a single registered scraper. Listed even when rejected at load time — see `loadError`.
      * @example {
      *       "id": "youtube",
      *       "supportedKinds": [
@@ -2305,7 +2364,9 @@ export interface components {
      *         "name",
      *         "fragment"
      *       ],
-     *       "configured": true
+     *       "configured": true,
+     *       "origin": "built-in",
+     *       "loadError": null
      *     }
      */
     ScraperInfoDto: {
@@ -2324,10 +2385,16 @@ export interface components {
        */
       supportedKinds: components['schemas']['ScraperKind'][];
       /**
-       * @description True when all required credentials / config are present on this instance (e.g. YouTube requires an API key). Unconfigured scrapers are omitted from the registry entirely — this flag is always true for listed scrapers.
+       * @description True when the scraper loaded and holds all required credentials / config (e.g. YouTube requires an API key). False when configuration is missing, or when `loadError` is set.
        * @example true
        */
       configured: boolean;
+      origin: components['schemas']['ScraperOrigin'];
+      /**
+       * @description Why this scraper was rejected at load time, e.g. a definition file that failed schema validation. Null for a scraper that loaded successfully.
+       * @example null
+       */
+      loadError: string | null;
     };
     /**
      * @description Invocation kind for the scrape-preview endpoint. `url` — fetch and parse a remote URL; `name` — search the source by course title; `fragment` — parse a raw HTML or JSON-LD string supplied by the caller.
@@ -2336,7 +2403,13 @@ export interface components {
      */
     ScraperKind: 'url' | 'name' | 'fragment';
     /**
-     * @description List of scrapers configured on this instance.
+     * @description Where a scraper's implementation came from: `built-in` ships with the backend, `definition-file` was loaded from a scraper definition file on this instance.
+     * @example built-in
+     * @enum {string}
+     */
+    ScraperOrigin: 'built-in' | 'definition-file';
+    /**
+     * @description List of scrapers configured on this instance, including any rejected at load time.
      * @example {
      *       "scrapers": [
      *         {
@@ -2346,7 +2419,9 @@ export interface components {
      *             "name",
      *             "fragment"
      *           ],
-     *           "configured": true
+     *           "configured": true,
+     *           "origin": "built-in",
+     *           "loadError": null
      *         },
      *         {
      *           "id": "json-ld",
@@ -2354,7 +2429,18 @@ export interface components {
      *             "url",
      *             "fragment"
      *           ],
-     *           "configured": true
+     *           "configured": true,
+     *           "origin": "built-in",
+     *           "loadError": null
+     *         },
+     *         {
+     *           "id": "acme-academy",
+     *           "supportedKinds": [
+     *             "url"
+     *           ],
+     *           "configured": false,
+     *           "origin": "definition-file",
+     *           "loadError": "selector \"title\" did not match \"$.selectors.title\": required property"
      *         }
      *       ]
      *     }
@@ -6440,6 +6526,58 @@ export interface operations {
       429: components['responses']['TooManyRequests'];
     };
   };
+  exportCourse: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the course. */
+        courseId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The course's Markdown export, as a ZIP archive. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/zip': string;
+        };
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Caller does not have a READ grant for the course's library */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Course not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+    };
+  };
   markCourseComplete: {
     parameters: {
       query?: never;
@@ -7733,6 +7871,58 @@ export interface operations {
         };
       };
       /** @description Material or parent lesson not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      429: components['responses']['TooManyRequests'];
+    };
+  };
+  exportLesson: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Server-generated cuid identifying the lesson. */
+        lessonId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The lesson's Markdown export, as a ZIP archive. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/zip': string;
+        };
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Missing or invalid bearer token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Requester has no READ grant covering the parent library or course */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Lesson not found */
       404: {
         headers: {
           [name: string]: unknown;

@@ -119,6 +119,7 @@ import 'package:app_api_client/src/model/scraped_course_fragment_dto.dart';
 import 'package:app_api_client/src/model/scraper_info_dto.dart';
 import 'package:app_api_client/src/model/scraper_kind.dart';
 import 'package:app_api_client/src/model/scraper_list_dto.dart';
+import 'package:app_api_client/src/model/scraper_origin.dart';
 import 'package:app_api_client/src/model/search_course_hit.dart';
 import 'package:app_api_client/src/model/search_lesson_hit.dart';
 import 'package:app_api_client/src/model/search_result_dto.dart';
@@ -260,6 +261,7 @@ part 'serializers.g.dart';
   ScraperInfoDto,
   ScraperKind,
   ScraperListDto,
+  ScraperOrigin,
   SearchCourseHit,
   SearchLessonHit,
   SearchResultDto,

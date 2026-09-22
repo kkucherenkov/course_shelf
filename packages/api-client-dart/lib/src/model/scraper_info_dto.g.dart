@@ -13,6 +13,10 @@ class _$ScraperInfoDto extends ScraperInfoDto {
   final BuiltList<ScraperKind> supportedKinds;
   @override
   final bool configured;
+  @override
+  final ScraperOrigin origin;
+  @override
+  final String? loadError;
 
   factory _$ScraperInfoDto([void Function(ScraperInfoDtoBuilder)? updates]) =>
       (ScraperInfoDtoBuilder()..update(updates))._build();
@@ -21,6 +25,8 @@ class _$ScraperInfoDto extends ScraperInfoDto {
     required this.id,
     required this.supportedKinds,
     required this.configured,
+    required this.origin,
+    this.loadError,
   }) : super._();
   @override
   ScraperInfoDto rebuild(void Function(ScraperInfoDtoBuilder) updates) =>
@@ -35,7 +41,9 @@ class _$ScraperInfoDto extends ScraperInfoDto {
     return other is ScraperInfoDto &&
         id == other.id &&
         supportedKinds == other.supportedKinds &&
-        configured == other.configured;
+        configured == other.configured &&
+        origin == other.origin &&
+        loadError == other.loadError;
   }
 
   @override
@@ -44,6 +52,8 @@ class _$ScraperInfoDto extends ScraperInfoDto {
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, supportedKinds.hashCode);
     _$hash = $jc(_$hash, configured.hashCode);
+    _$hash = $jc(_$hash, origin.hashCode);
+    _$hash = $jc(_$hash, loadError.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -53,7 +63,9 @@ class _$ScraperInfoDto extends ScraperInfoDto {
     return (newBuiltValueToStringHelper(r'ScraperInfoDto')
           ..add('id', id)
           ..add('supportedKinds', supportedKinds)
-          ..add('configured', configured))
+          ..add('configured', configured)
+          ..add('origin', origin)
+          ..add('loadError', loadError))
         .toString();
   }
 }
@@ -76,6 +88,14 @@ class ScraperInfoDtoBuilder
   bool? get configured => _$this._configured;
   set configured(bool? configured) => _$this._configured = configured;
 
+  ScraperOrigin? _origin;
+  ScraperOrigin? get origin => _$this._origin;
+  set origin(ScraperOrigin? origin) => _$this._origin = origin;
+
+  String? _loadError;
+  String? get loadError => _$this._loadError;
+  set loadError(String? loadError) => _$this._loadError = loadError;
+
   ScraperInfoDtoBuilder() {
     ScraperInfoDto._defaults(this);
   }
@@ -86,6 +106,8 @@ class ScraperInfoDtoBuilder
       _id = $v.id;
       _supportedKinds = $v.supportedKinds.toBuilder();
       _configured = $v.configured;
+      _origin = $v.origin;
+      _loadError = $v.loadError;
       _$v = null;
     }
     return this;
@@ -121,6 +143,12 @@ class ScraperInfoDtoBuilder
               r'ScraperInfoDto',
               'configured',
             ),
+            origin: BuiltValueNullFieldError.checkNotNull(
+              origin,
+              r'ScraperInfoDto',
+              'origin',
+            ),
+            loadError: loadError,
           );
     } catch (_) {
       late String _$failedField;

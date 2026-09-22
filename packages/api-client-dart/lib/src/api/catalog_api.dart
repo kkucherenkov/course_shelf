@@ -118,6 +118,164 @@ class CatalogApi {
     );
   }
 
+  /// Download a course as a Markdown archive
+  /// Streams a ZIP: &#x60;course.md&#x60;, one &#x60;lessons/NN-slug.md&#x60; per lesson in outline order, and one shared &#x60;images/&#x60; folder. Each lesson file carries the lesson&#39;s note, its bookmarks — each with its timestamp, its &#x60;?t&#x3D;&#x60; deep link back into the player, and the transcript lines it points at — and, when the lesson has an applied summary, that summary with its &#x60;frame:&#x60; placeholders rewritten to &#x60;images/NNN.jpg&#x60;. A lesson without an applied summary renders without that section; the export does not require one.  Access is course-level, same as &#x60;getCourse&#x60;: a READ grant on the course&#39;s library. 
+  ///
+  /// Parameters:
+  /// * [courseId] - Server-generated cuid identifying the course.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [Uint8List] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<Uint8List>> exportCourse({ 
+    required String courseId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/courses/{courseId}/export'.replaceAll('{' r'courseId' '}', encodeQueryParameter(_serializers, courseId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'GET',
+      responseType: ResponseType.bytes,
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    Uint8List? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : rawResponse as Uint8List;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<Uint8List>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Download a lesson as a Markdown archive
+  /// Streams a ZIP: &#x60;lesson.md&#x60; plus &#x60;images/&#x60;. &#x60;lesson.md&#x60; carries the lesson title, a deep link back into the player, the user&#39;s note, the bookmarks — each with its timestamp, its &#x60;?t&#x3D;&#x60; deep link, and the transcript lines it points at — and, when the lesson has an applied summary, that summary with its &#x60;frame:&#x60; placeholders rewritten to &#x60;images/NNN.jpg&#x60;. A lesson without an applied summary renders without that section; the export does not require one.  Access mirrors &#x60;getLesson&#x60;: a READ grant covering the parent library or course. 
+  ///
+  /// Parameters:
+  /// * [lessonId] - Server-generated cuid identifying the lesson.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [Uint8List] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<Uint8List>> exportLesson({ 
+    required String lessonId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/v1/lessons/{lessonId}/export'.replaceAll('{' r'lessonId' '}', encodeQueryParameter(_serializers, lessonId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'GET',
+      responseType: ResponseType.bytes,
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    Uint8List? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : rawResponse as Uint8List;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<Uint8List>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
   /// List courses the requester is in the middle of
   /// Returns the requester&#39;s courses ordered by recency (most-recently-watched first), capped by &#x60;limit&#x60;. Reads from a denormalised &#x60;CourseProgressReadModel&#x60; projection that&#39;s updated by &#x60;LessonCompleted&#x60; and &#x60;LessonProgressRecorded&#x60; events. Empty array for new users. 
   ///

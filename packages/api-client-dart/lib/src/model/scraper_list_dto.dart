@@ -10,7 +10,7 @@ import 'package:built_value/serializer.dart';
 
 part 'scraper_list_dto.g.dart';
 
-/// List of scrapers configured on this instance.
+/// List of scrapers configured on this instance, including any rejected at load time.
 ///
 /// Properties:
 /// * [scrapers] - All configured scrapers in registration order.

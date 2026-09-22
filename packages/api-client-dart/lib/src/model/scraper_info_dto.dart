@@ -5,17 +5,20 @@
 // ignore_for_file: unused_element
 import 'package:built_collection/built_collection.dart';
 import 'package:app_api_client/src/model/scraper_kind.dart';
+import 'package:app_api_client/src/model/scraper_origin.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
 part 'scraper_info_dto.g.dart';
 
-/// Metadata about a single registered scraper.
+/// Metadata about a single registered scraper. Listed even when rejected at load time — see `loadError`.
 ///
 /// Properties:
 /// * [id] - Stable scraper identifier used as the `source` field in requests.
 /// * [supportedKinds] - Invocation kinds this scraper handles.
-/// * [configured] - True when all required credentials / config are present on this instance (e.g. YouTube requires an API key). Unconfigured scrapers are omitted from the registry entirely — this flag is always true for listed scrapers.
+/// * [configured] - True when the scraper loaded and holds all required credentials / config (e.g. YouTube requires an API key). False when configuration is missing, or when `loadError` is set.
+/// * [origin] 
+/// * [loadError] - Why this scraper was rejected at load time, e.g. a definition file that failed schema validation. Null for a scraper that loaded successfully.
 @BuiltValue()
 abstract class ScraperInfoDto implements Built<ScraperInfoDto, ScraperInfoDtoBuilder> {
   /// Stable scraper identifier used as the `source` field in requests.
@@ -26,9 +29,17 @@ abstract class ScraperInfoDto implements Built<ScraperInfoDto, ScraperInfoDtoBui
   @BuiltValueField(wireName: r'supportedKinds')
   BuiltList<ScraperKind> get supportedKinds;
 
-  /// True when all required credentials / config are present on this instance (e.g. YouTube requires an API key). Unconfigured scrapers are omitted from the registry entirely — this flag is always true for listed scrapers.
+  /// True when the scraper loaded and holds all required credentials / config (e.g. YouTube requires an API key). False when configuration is missing, or when `loadError` is set.
   @BuiltValueField(wireName: r'configured')
   bool get configured;
+
+  @BuiltValueField(wireName: r'origin')
+  ScraperOrigin get origin;
+  // enum originEnum {  built-in,  definition-file,  };
+
+  /// Why this scraper was rejected at load time, e.g. a definition file that failed schema validation. Null for a scraper that loaded successfully.
+  @BuiltValueField(wireName: r'loadError')
+  String? get loadError;
 
   ScraperInfoDto._();
 
@@ -67,6 +78,16 @@ class _$ScraperInfoDtoSerializer implements PrimitiveSerializer<ScraperInfoDto> 
     yield serializers.serialize(
       object.configured,
       specifiedType: const FullType(bool),
+    );
+    yield r'origin';
+    yield serializers.serialize(
+      object.origin,
+      specifiedType: const FullType(ScraperOrigin),
+    );
+    yield r'loadError';
+    yield object.loadError == null ? null : serializers.serialize(
+      object.loadError,
+      specifiedType: const FullType.nullable(String),
     );
   }
 
@@ -111,6 +132,21 @@ class _$ScraperInfoDtoSerializer implements PrimitiveSerializer<ScraperInfoDto> 
             specifiedType: const FullType(bool),
           ) as bool;
           result.configured = valueDes;
+          break;
+        case r'origin':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(ScraperOrigin),
+          ) as ScraperOrigin;
+          result.origin = valueDes;
+          break;
+        case r'loadError':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.loadError = valueDes;
           break;
         default:
           unhandled.add(key);

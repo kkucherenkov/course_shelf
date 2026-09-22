@@ -4,32 +4,25 @@
  * Apply via `definePageMeta({ middleware: 'admin' })` on every page under
  * `pages/admin/*`. Not global — opt-in only.
  *
- * Accepts both `'ADMIN'` (historical backend stamp) and `'admin'` (lowercase)
- * so the guard stays correct while the SPA cache might still hold a stale
- * uppercase value from an older session.
+ * A no-op now (#776) — kept only because every `admin/*.vue` page still
+ * opts in via `definePageMeta({ middleware: 'admin' })` and Nuxt requires
+ * the named middleware to exist. It used to redirect a confirmed non-admin
+ * to `/`, which meant the full admin dashboard still mounted (and 403'd)
+ * during the "role not yet known" window (#695) — `auth.global.ts`
+ * deliberately lets navigation through on a live token with no confirmed
+ * session, so this redirect never actually saw that state to catch it, and
+ * a redirect can't show the "no access" screen the audit asked for anyway
+ * (the URL changes before the message would render).
  *
- * Three states, not two (#695). `auth.global.ts` already lets navigation
- * through when a live token has no confirmed session yet — a transient
- * `get-session` failure (network, 5xx, 429; see #581/#693), not a "no
- * session" answer. Treating that as "not an admin" one middleware later
- * ejects the owner from `/admin` and tells them they lack access, on exactly
- * the page where that message is worst. Role-unknown must resolve the same
- * way here as it does there: pass through, don't redirect.
+ * The real three-state gate (unknown / denied / granted) now lives in
+ * `useAdminAccess.ts` + `AdminAccessGate.vue`, wired from
+ * `layouts/default.vue`: it replaces the page's own `<slot/>` outright, so
+ * an admin page never mounts (and never fires its own data fetch) while
+ * role is unresolved or confirmed absent — strictly stronger than this
+ * redirect ever was, and it renders `AppNoPermission` inline on the actual
+ * `/admin` URL instead of bouncing home.
  */
 
-import { useAuthStore } from '~/stores/auth';
-
-export default defineNuxtRouteMiddleware(() => {
-  if (import.meta.server) return;
-
-  const auth = useAuthStore();
-
-  // Live token, session not (yet) confirmed — role unknown, not "not admin".
-  if (!auth.isAuthenticated && auth.token) return;
-
-  const role = auth.user?.role?.toLowerCase();
-
-  if (role !== 'admin') {
-    return navigateTo('/');
-  }
-});
+// Genuinely a no-op by design — see the doc comment above for why.
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+export default defineNuxtRouteMiddleware(() => {});

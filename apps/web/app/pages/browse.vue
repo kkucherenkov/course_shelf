@@ -1,5 +1,9 @@
 <script setup lang="ts">
   import { computed } from 'vue';
+  // Explicit import (rather than the bare auto-import) keeps the test
+  // environment able to resolve it through the '#imports' shim — same
+  // reasoning as `stores/auth.ts`'s identical import.
+  import { useRuntimeConfig } from '#imports';
   import {
     AppBanner,
     AppButton,
@@ -30,6 +34,10 @@
   definePageMeta({ layout: 'default' });
 
   const { t } = useI18n();
+
+  // No-grants contact block (#669, #780) — see nuxt.config.ts's runtimeConfig
+  // comment for why this is a deployer-set value and not an API call.
+  const supportEmail = useRuntimeConfig().public.supportEmail;
 
   // Every filter lives in the query string, so a reload, a bookmark and a
   // shared link all reproduce the same shelf. Defaults stay out of the URL.
@@ -299,7 +307,16 @@
       icon="lock"
       :title="t('pages.browse.emptyNoAccessTitle')"
       :body="t('pages.browse.emptyNoAccessBody')"
-    />
+    >
+      <template v-if="supportEmail" #action>
+        <p class="page-browse__no-access-contact">
+          {{ t('access.noGrants.contactBody') }}
+          <a :href="`mailto:${supportEmail}`" class="page-browse__no-access-link">{{
+            supportEmail
+          }}</a>
+        </p>
+      </template>
+    </AppNoPermission>
 
     <template v-else>
       <!-- Filters + sort row. Wraps under tight viewports; no dedicated
@@ -453,6 +470,17 @@
       margin: var(--space-1) 0 0;
       font-size: var(--text-sm);
       color: var(--text-secondary);
+    }
+
+    &__no-access-contact {
+      margin: 0;
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+    }
+
+    &__no-access-link {
+      color: var(--brand-accent);
+      text-decoration: underline;
     }
 
     // A column, not a wrapping row. As a row with `space-between` the selects

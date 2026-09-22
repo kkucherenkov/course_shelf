@@ -25,11 +25,15 @@
    * downstream crashes on it.
    */
   import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-  import { AppNavigationShell, AppCommandPalette } from '@app/ui';
+  import { AppNavigationShell, AppCommandPalette, AppBanner, AppButton } from '@app/ui';
   import type { IconName, Command } from '@app/ui';
 
+  import AdminAccessGate from '~/components/AdminAccessGate.vue';
   import { useAuthStore } from '~/stores/auth';
   import { useScanLifecycle } from '~/composables/useScanLifecycle';
+  import { useFlashcardReviewQueue } from '~/composables/useFlashcards';
+  import { resolveAdminAccess } from '~/composables/useAdminAccess';
+  import { lastTransientRefreshFailureAt } from '~/composables/useSessionRefreshCooldown';
 
   // The AppNavigationShell types live alongside its `.vue` file; ESLint's
   // typescript-parser does not resolve types re-exported through `.vue`
@@ -43,6 +47,8 @@
     label: string;
     icon: IconName;
     to?: string | { name: string; params?: Record<string, string> };
+    /** Count badge (e.g. due flashcards). Omit/0 renders no badge. */
+    badge?: number;
   }
   interface ShellUser {
     name: string;
@@ -65,7 +71,60 @@
   const hasSession = computed(() => authStore.token !== null);
   const isAdmin = computed(() => authStore.user?.role?.toLowerCase() === 'admin');
 
+  // ── Admin gate (#776) ────────────────────────────────────────────────────
+  // Replaces `<slot/>` on `/admin/*` instead of `middleware/admin.ts`
+  // redirecting away — see that file's doc comment and `useAdminAccess.ts`.
+  const adminGateState = computed<'unknown' | 'denied' | null>(() => {
+    if (!route.path.startsWith('/admin')) return null;
+    const access = resolveAdminAccess(
+      authStore.token !== null,
+      authStore.isAuthenticated,
+      authStore.user?.role,
+    );
+    return access === 'granted' ? null : access;
+  });
+
+  // ── Unconfirmed session banner (#777) ───────────────────────────────────
+  // `lastTransientRefreshFailureAt` is set by `auth.global.ts` (and, below,
+  // by this banner's own retry) whenever a `refresh()` fails without the
+  // token being cleared — i.e. the server didn't confirm "no session", it
+  // just didn't answer (429/5xx/network). Silently keeping the sidebar in
+  // its degraded, nameless state was the bug (#777's web half); this makes
+  // that state visible and gives it a retry instead of waiting for the next
+  // navigation to try again.
+  const sessionUnconfirmed = computed(
+    () => hasSession.value && !authStore.user && lastTransientRefreshFailureAt.value > 0,
+  );
+  const retryingSession = ref(false);
+
+  async function onRetrySession(): Promise<void> {
+    retryingSession.value = true;
+    try {
+      const ok = await authStore.refresh();
+      if (!ok && authStore.token) {
+        // Still transient — same bookkeeping `auth.global.ts` does, so a
+        // manual retry doesn't defeat the cooldown between attempts.
+        lastTransientRefreshFailureAt.value = Date.now();
+      }
+    } finally {
+      retryingSession.value = false;
+    }
+  }
+
   // ── Nav items ───────────────────────────────────────────────────────────
+
+  // Due flashcards (#775) — a permanent nav entry so the review screen has an
+  // entry point at zero cards, not just a CTA that hides itself at dueCount
+  // === 0. Shares `useFlashcardReviewQueue`'s `'flashcards:due'` key with
+  // `pages/flashcards/review.vue`: the layout mounts once per session (Vue
+  // Router swaps only the routed page, not the persistent layout), so this
+  // is one fetch for the whole session, not one per navigation — and Nuxt
+  // keeps every call to the same key on the same shared `data` ref, so
+  // grading a card on the review page updates this badge for free.
+  const dueFlashcards = useFlashcardReviewQueue();
+  const dueFlashcardCount = computed(() =>
+    dueFlashcards.status.value === 'success' ? dueFlashcards.queue.value.length : 0,
+  );
 
   // No 'libraries' entry here: register/rescan lives under the admin block
   // (`admin-libraries` below) only — there is no separate `/libraries` route
@@ -73,6 +132,15 @@
   const nav = computed<NavItem[]>(() => [
     { key: 'home', label: t('layouts.default.navHome'), icon: 'home', to: '/' },
     { key: 'browse', label: t('layouts.default.navBrowse'), icon: 'search', to: '/browse' },
+    {
+      key: 'flashcards-review',
+      // Reuses the review page's own title — same word in the nav, the H1
+      // and the document title reads as one feature, not three (Nielsen #6).
+      label: t('pages.flashcards.review.title'),
+      icon: 'circle-stack',
+      to: '/flashcards/review',
+      badge: dueFlashcardCount.value > 0 ? dueFlashcardCount.value : undefined,
+    },
   ]);
 
   const adminNav = computed<NavItem[]>(() => {
@@ -127,6 +195,7 @@
     if (p.startsWith('/admin/scrapers')) return 'admin-scrapers';
     if (p.startsWith('/admin/libraries')) return 'admin-libraries';
     if (p.startsWith('/admin')) return 'admin-dashboard';
+    if (p.startsWith('/flashcards')) return 'flashcards-review';
     if (p.startsWith('/search')) return 'browse'; // search is scoped under browse conceptually
     if (p.startsWith('/browse')) return 'browse';
     if (p.startsWith('/courses')) return 'browse'; // course pages live under /browse conceptually
@@ -379,7 +448,34 @@
     @settings="onSettings"
     @sign-out="onSignOut"
   >
-    <slot />
+    <AppBanner
+      v-if="sessionUnconfirmed"
+      variant="warning"
+      :title="t('access.sessionUnconfirmed.title')"
+      :body="t('access.sessionUnconfirmed.body')"
+      class="default-layout-session-banner"
+    >
+      <template #actions>
+        <AppButton
+          :label="t('access.sessionUnconfirmed.retry')"
+          size="sm"
+          variant="secondary"
+          :loading="retryingSession"
+          @click="onRetrySession"
+        />
+      </template>
+    </AppBanner>
+
+    <AdminAccessGate
+      v-if="adminGateState !== null"
+      :state="adminGateState"
+      :loading-label="t('access.adminGate.loadingLabel')"
+      :denied-title="t('pages.courseDetail.noAccess')"
+      :denied-body="t('access.adminGate.deniedBody')"
+    >
+      <slot />
+    </AdminAccessGate>
+    <slot v-else />
   </AppNavigationShell>
 
   <!-- Floating scan lifecycle notifier — fixed position, sits above everything. -->
@@ -413,5 +509,9 @@
     min-height: 100dvh;
     background: var(--surface-page);
     color: var(--text-fg);
+  }
+
+  .default-layout-session-banner {
+    margin: var(--space-4) var(--space-4) 0;
   }
 </style>

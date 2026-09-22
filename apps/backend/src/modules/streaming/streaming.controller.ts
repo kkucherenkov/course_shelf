@@ -59,6 +59,7 @@ import { pipeline } from 'node:stream/promises';
 import { randomBytes } from 'node:crypto';
 
 import { BadRequestException, Controller, Get, Param, Query, Req, Res } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { QueryBus } from '@nestjs/cqrs';
 
 import { AllowAnonymous, Session } from '../../common/auth/decorators';
@@ -179,7 +180,12 @@ export class StreamingController {
    * the standard NestJS documented exception for full response control.
    */
   @AllowAnonymous()
+  // Byte-range playback, subtitle tracks and material downloads answer to
+  // STREAM_THROTTLER instead of the global budget (#792) — see
+  // `stream-throttle.ts`. Applied per method rather than to the class: the two
+  // `*-url` routes above are ordinary JSON and keep the global limit.
   @Get('stream/lessons/:id')
+  @SkipThrottle({ default: true })
   async getLessonStream(
     @Req() req: Request,
     @Res() res: Response,
@@ -295,6 +301,7 @@ export class StreamingController {
    */
   @AllowAnonymous()
   @Get('stream/lessons/:id/subtitles/:language')
+  @SkipThrottle({ default: true })
   async getLessonSubtitle(
     @Req() req: Request,
     @Res() res: Response,
@@ -383,6 +390,7 @@ export class StreamingController {
    */
   @AllowAnonymous()
   @Get('stream/materials/:materialId')
+  @SkipThrottle({ default: true })
   async getMaterialStream(
     @Req() req: Request,
     @Res() res: Response,

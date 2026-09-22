@@ -38,6 +38,7 @@ import {
   isAuthNonSessionRequest,
   isAuthSessionRequest,
 } from './common/auth/auth-throttle';
+import { STREAM_THROTTLER, isStreamRequest } from './modules/streaming/stream-throttle';
 import { StreamingModule } from './modules/streaming/streaming.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { HealthModule } from './modules/health/health.module';
@@ -89,6 +90,19 @@ const devOnlyModules: ImportableModule[] = [];
             ttl: config.rateLimit.authSessionTtlMs,
             limit: config.rateLimit.authSessionLimit,
             skipIf: (context) => !isAuthSessionRequest(context),
+          },
+          // Media streaming off the global budget — see `stream-throttle.ts`.
+          // Byte-range playback is many requests per view by construction, so
+          // it used to spend the same 60/60s that serves the catalogue: past
+          // the limit `GET /courses` answered 429 too and the library vanished
+          // while the user was merely watching a lesson (#792).
+          // `StreamingController` carries `@SkipThrottle({ default: true })`
+          // so the two budgets do not stack.
+          {
+            name: STREAM_THROTTLER,
+            ttl: config.rateLimit.streamTtlMs,
+            limit: config.rateLimit.streamLimit,
+            skipIf: (context) => !isStreamRequest(context),
           },
         ],
       }),

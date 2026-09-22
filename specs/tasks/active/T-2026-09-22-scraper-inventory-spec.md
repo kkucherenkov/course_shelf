@@ -26,7 +26,7 @@
   - [x] Drop the export routes originally scoped into this lane — a path
         with no controller can't satisfy the Schemathesis contract test
         (`Missing header not rejected: 404 when missing Authorization,
-    expected 401`, `validateSecurity: false` means auth is enforced by a
+expected 401`, `validateSecurity: false` means auth is enforced by a
         guard that doesn't exist yet). They move into the E28-F01-S01
         implementation lane instead, landed with their controller in one PR.
         Saved to

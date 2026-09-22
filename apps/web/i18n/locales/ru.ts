@@ -519,6 +519,7 @@ export default {
     admin: {
       navDashboard: 'Дашборд',
       navLibrariesManage: 'Управление библиотеками',
+      navScrapers: 'Скраперы',
       navUsers: 'Пользователи',
       navPermissions: 'Права доступа',
       navIdentifyTasks: 'Задачи идентификации',
@@ -612,6 +613,21 @@ export default {
           'Укажите абсолютный путь — он должен начинаться с / (например, /data/courses) или с буквы диска в Windows.',
         addSheetErrorRegister:
           'Не удалось зарегистрировать библиотеку. Сервер не объяснил причину — попробуйте ещё раз.',
+      },
+      scrapers: {
+        title: 'Скраперы',
+        subtitle: '{n} скрапер | {n} скрапера | {n} скраперов',
+        subtitleWithRejected:
+          '{n} скрапер, отклонено {rejected} | {n} скрапера, отклонено {rejected} | {n} скраперов, отклонено {rejected}',
+        errorTitle: 'Не удалось загрузить скраперы',
+        errorRetry: 'Повторить',
+        emptyTitle: 'Скраперы не настроены',
+        originBuiltIn: 'Встроенный',
+        originDefinitionFile: 'Файл определения',
+        statusRejected: 'Отклонён',
+        kindUrl: 'URL',
+        kindName: 'Название',
+        kindFragment: 'Фрагмент',
       },
       users: {
         title: 'Пользователи',

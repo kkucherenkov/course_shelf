@@ -10,21 +10,66 @@ function commandBus(result: unknown): CommandBus {
 }
 
 const registry = {
-  all: () => [
+  entries: () => [
     {
-      id: 'json-ld',
-      supportedKinds: ['url', 'fragment'],
-      canHandle: () => true,
-      scrape: async () => [],
+      scraper: {
+        id: 'json-ld',
+        supportedKinds: ['url', 'fragment'],
+        canHandle: () => true,
+        scrape: async () => [],
+      },
+      origin: 'built-in',
     },
   ],
+  rejected: () => [],
 } as unknown as ScraperRegistry;
 
 describe('CatalogScrapeAdminController', () => {
   it('GET /admin/scrapers maps the registry to ScraperListDto', () => {
     const controller = new CatalogScrapeAdminController(commandBus([]), registry);
     expect(controller.listScrapers()).toEqual({
-      scrapers: [{ id: 'json-ld', supportedKinds: ['url', 'fragment'], configured: true }],
+      scrapers: [
+        {
+          id: 'json-ld',
+          supportedKinds: ['url', 'fragment'],
+          configured: true,
+          origin: 'built-in',
+          loadError: null,
+        },
+      ],
+    });
+  });
+
+  // tuxedo/E30-F01-S02: a rejected definition file is still listed, with the
+  // file's stem as id and no supportedKinds — its parse threw before either existed.
+  it('GET /admin/scrapers appends rejected definitions after loaded scrapers', () => {
+    const withRejection = {
+      entries: registry.entries,
+      rejected: () => [
+        {
+          file: '/data/derived/scrapers/acme-academy.json',
+          reason: 'selector "title" did not match "$.selectors.title": required property',
+        },
+      ],
+    } as unknown as ScraperRegistry;
+    const controller = new CatalogScrapeAdminController(commandBus([]), withRejection);
+    expect(controller.listScrapers()).toEqual({
+      scrapers: [
+        {
+          id: 'json-ld',
+          supportedKinds: ['url', 'fragment'],
+          configured: true,
+          origin: 'built-in',
+          loadError: null,
+        },
+        {
+          id: 'acme-academy',
+          supportedKinds: [],
+          configured: false,
+          origin: 'definition-file',
+          loadError: 'selector "title" did not match "$.selectors.title": required property',
+        },
+      ],
     });
   });
 

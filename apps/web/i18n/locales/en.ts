@@ -520,6 +520,7 @@ export default {
     admin: {
       navDashboard: 'Dashboard',
       navLibrariesManage: 'Manage libraries',
+      navScrapers: 'Scrapers',
       navUsers: 'Users',
       navPermissions: 'Permissions',
       navIdentifyTasks: 'Identify tasks',
@@ -616,6 +617,21 @@ export default {
           'Enter an absolute path — it has to start with / (for example /data/courses), or with a drive letter on Windows.',
         addSheetErrorRegister:
           'Could not register the library. The server gave no reason — try again.',
+      },
+      scrapers: {
+        title: 'Scrapers',
+        subtitle: '{n} scraper | {n} scrapers',
+        subtitleWithRejected:
+          '{n} scraper, {rejected} rejected | {n} scrapers, {rejected} rejected',
+        errorTitle: "Couldn't load scrapers",
+        errorRetry: 'Retry',
+        emptyTitle: 'No scrapers configured',
+        originBuiltIn: 'Built-in',
+        originDefinitionFile: 'Definition file',
+        statusRejected: 'Rejected',
+        kindUrl: 'URL',
+        kindName: 'Name',
+        kindFragment: 'Fragment',
       },
       users: {
         title: 'Users',

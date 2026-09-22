@@ -45,3 +45,14 @@ export interface ScrapeCandidate {
   readonly sourceUrl?: string;
   readonly confidence?: number;
 }
+
+/**
+ * A scraper definition file that failed to load (E30-F01-S02). `file` is the
+ * full path — useful in a startup log — the admin listing derives a
+ * presentation id from its stem itself, since that derivation is specific to
+ * that one caller.
+ */
+export interface ScraperDefinitionLoadError {
+  readonly file: string;
+  readonly reason: string;
+}

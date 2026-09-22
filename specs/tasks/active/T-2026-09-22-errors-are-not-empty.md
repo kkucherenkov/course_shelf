@@ -44,6 +44,6 @@
   - [x] Locale keys added under `errors.*`, `transcript.*`, `admin.dashboard.*`
         only (en+ru).
   - [x] Lint/stylelint/format, `pnpm --filter @app/web test`, `pnpm check:i18n`.
-  - [ ] PR opened against `main`, CI green on all five required contexts.
+  - [x] PR opened against `main`, CI green on all five required contexts.
 - Status: in-progress
-- Blockers: waiting on PR + CI
+- Blockers: waiting on review/merge

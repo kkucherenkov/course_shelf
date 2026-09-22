@@ -1,0 +1,23 @@
+## T-2026-09-22-lesson-export — Export a lesson or course as a Markdown ZIP
+
+- Created: 2026-09-22
+- Owner: claude
+- Spec: [E28-F01-S01](../../../docs/roadmap/tasks/E28-F01-S01.md), [design §6-7](../../../docs/superpowers/specs/2026-09-17-lesson-summary-and-export-design.md), issue #231
+- Goal: let a user take a lesson's note, bookmarks, and transcript context out of the app as a ZIP they can keep in a notes vault.
+- Acceptance:
+  - `GET /lessons/{id}/export` streams a ZIP with `lesson.md` — title, deep link, note, bookmarks with `?t=` links and nearby transcript lines
+  - `GET /courses/{id}/export` streams a ZIP with `course.md` + `lessons/NN-slug.md` in outline order
+  - Both routes are access-controlled exactly like `getLesson`/`getCourse` (same 403/404 shape)
+  - No summary section anywhere — that feature was cut from this card on 2026-09-22
+- Spec diff: `packages/specs/openapi/openapi.yaml` — `GET /lessons/{lessonId}/export`, `GET /courses/{courseId}/export` (paths recovered from PR #761, descriptions stripped of summary-section promises)
+- Codegen impact: yes — `@app/api-client-ts` (+ Dart)
+- Design impact: none
+- Tests: renderer unit tests (fixture in, Markdown out), access-control unit tests on both query handlers, one integration test unpacking both a lesson and a course ZIP
+- Sub-steps:
+  - [x] OpenAPI + codegen
+  - [x] Renderer + handler
+  - [x] Web entry point
+- Status: done
+- Blockers: —
+- Completed: 2026-09-22
+- Result: https://github.com/kkucherenkov/course_shelf/pull/766

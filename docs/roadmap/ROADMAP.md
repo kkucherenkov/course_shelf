@@ -208,7 +208,7 @@ gantt
     Transcript results on the web search page                    :done, e27f02s02, after e27f02s01 e26f01s04, 1d
 
     section E28 Notes export
-    Export a lesson or course digest as Markdown                 :crit, active, e28f01s01, after e27f01s01 e09f02s02, 2d
+    Export a lesson or course digest as Markdown                 :crit, done, e28f01s01, after e27f01s01 e09f02s02, 2d
 
     section E29 Learning mechanics
     Flashcard and review schedule domain (SM-2)                  :crit, done, e29f01s01, after e09f02s02, 2d

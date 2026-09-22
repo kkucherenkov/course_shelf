@@ -11,7 +11,7 @@ import 'package:built_value/serializer.dart';
 
 part 'scraper_info_dto.g.dart';
 
-/// Metadata about a single registered scraper. Listed even when rejected at load time — see `loadError`.
+/// Metadata about a single registered scraper. Listed even when rejected at load time — see `loadError`. `origin` and `loadError` are absent on a response from a handler that predates this widening; a caller reading either treats a missing key the same as `null`.
 ///
 /// Properties:
 /// * [id] - Stable scraper identifier used as the `source` field in requests.
@@ -34,7 +34,7 @@ abstract class ScraperInfoDto implements Built<ScraperInfoDto, ScraperInfoDtoBui
   bool get configured;
 
   @BuiltValueField(wireName: r'origin')
-  ScraperOrigin get origin;
+  ScraperOrigin? get origin;
   // enum originEnum {  built-in,  definition-file,  };
 
   /// Why this scraper was rejected at load time, e.g. a definition file that failed schema validation. Null for a scraper that loaded successfully.
@@ -79,16 +79,20 @@ class _$ScraperInfoDtoSerializer implements PrimitiveSerializer<ScraperInfoDto> 
       object.configured,
       specifiedType: const FullType(bool),
     );
-    yield r'origin';
-    yield serializers.serialize(
-      object.origin,
-      specifiedType: const FullType(ScraperOrigin),
-    );
-    yield r'loadError';
-    yield object.loadError == null ? null : serializers.serialize(
-      object.loadError,
-      specifiedType: const FullType.nullable(String),
-    );
+    if (object.origin != null) {
+      yield r'origin';
+      yield serializers.serialize(
+        object.origin,
+        specifiedType: const FullType(ScraperOrigin),
+      );
+    }
+    if (object.loadError != null) {
+      yield r'loadError';
+      yield serializers.serialize(
+        object.loadError,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
   }
 
   @override

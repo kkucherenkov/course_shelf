@@ -187,7 +187,7 @@ export type ScrapePreviewResponse = {
 };
 
 /**
- * Metadata about a single registered scraper. Listed even when rejected at load time — see `loadError`.
+ * Metadata about a single registered scraper. Listed even when rejected at load time — see `loadError`. `origin` and `loadError` are absent on a response from a handler that predates this widening; a caller reading either treats a missing key the same as `null`.
  */
 export type ScraperInfoDto = {
     /**
@@ -202,11 +202,11 @@ export type ScraperInfoDto = {
      * True when the scraper loaded and holds all required credentials / config (e.g. YouTube requires an API key). False when configuration is missing, or when `loadError` is set.
      */
     configured: boolean;
-    origin: ScraperOrigin;
+    origin?: ScraperOrigin;
     /**
      * Why this scraper was rejected at load time, e.g. a definition file that failed schema validation. Null for a scraper that loaded successfully.
      */
-    loadError: string | null;
+    loadError?: string | null;
 };
 
 /**

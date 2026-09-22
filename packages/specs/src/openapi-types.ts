@@ -2356,7 +2356,7 @@ export interface components {
       candidates: components['schemas']['ScrapeCandidateDto'][];
     };
     /**
-     * @description Metadata about a single registered scraper. Listed even when rejected at load time — see `loadError`.
+     * @description Metadata about a single registered scraper. Listed even when rejected at load time — see `loadError`. `origin` and `loadError` are absent on a response from a handler that predates this widening; a caller reading either treats a missing key the same as `null`.
      * @example {
      *       "id": "youtube",
      *       "supportedKinds": [
@@ -2389,12 +2389,12 @@ export interface components {
        * @example true
        */
       configured: boolean;
-      origin: components['schemas']['ScraperOrigin'];
+      origin?: components['schemas']['ScraperOrigin'];
       /**
        * @description Why this scraper was rejected at load time, e.g. a definition file that failed schema validation. Null for a scraper that loaded successfully.
        * @example null
        */
-      loadError: string | null;
+      loadError?: string | null;
     };
     /**
      * @description Invocation kind for the scrape-preview endpoint. `url` — fetch and parse a remote URL; `name` — search the source by course title; `fragment` — parse a raw HTML or JSON-LD string supplied by the caller.

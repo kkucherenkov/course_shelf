@@ -14,7 +14,7 @@ class _$ScraperInfoDto extends ScraperInfoDto {
   @override
   final bool configured;
   @override
-  final ScraperOrigin origin;
+  final ScraperOrigin? origin;
   @override
   final String? loadError;
 
@@ -25,7 +25,7 @@ class _$ScraperInfoDto extends ScraperInfoDto {
     required this.id,
     required this.supportedKinds,
     required this.configured,
-    required this.origin,
+    this.origin,
     this.loadError,
   }) : super._();
   @override
@@ -143,11 +143,7 @@ class ScraperInfoDtoBuilder
               r'ScraperInfoDto',
               'configured',
             ),
-            origin: BuiltValueNullFieldError.checkNotNull(
-              origin,
-              r'ScraperInfoDto',
-              'origin',
-            ),
+            origin: origin,
             loadError: loadError,
           );
     } catch (_) {

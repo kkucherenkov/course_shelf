@@ -16,7 +16,11 @@
 - Sub-steps:
   - [x] flip 19 stale `done/` entries to their real PR and merge date
   - [x] move `T-2026-09-18-r3-quiz-model` into `done/` with #751's outcome
-  - [ ] decide what to do with `T-2026-09-18-r6-e2e-gate`, still `blocked`
-        on a PR that has since merged
-- Status: in-progress
+  - [x] decide what to do with `T-2026-09-18-r6-e2e-gate`, still `blocked`
+        on a PR that has since merged — closed as done: its blocker was the
+        branch-protection toggle, and `Playwright smoke (web + backend
+health)` is now a required context on `main`
+- Status: done
 - Blockers: —
+- Completed: 2026-09-22
+- Result: https://github.com/kkucherenkov/course_shelf/pull/760

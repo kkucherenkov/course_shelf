@@ -4,11 +4,14 @@
  * happy-dom ships no `TextTrackList`, so the composable is driven by a fake
  * video element: an array-like track list plus the two event targets the real
  * one exposes. Everything the composable actually depends on — `language`,
- * `mode`, `cues`, `addtrack` and the capture-phase `load` — is modelled here.
+ * `mode`, `cues`, `addtrack` and the capture-phase `load`/`error` — is
+ * modelled here, including `querySelectorAll('track')` returning a fake
+ * `<track>` element per `TextTrack` with its own `readyState`, mirroring the
+ * real (no reverse-link-on-TextTrack) DOM shape `findTrackElement` walks.
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { effectScope, ref } from 'vue';
+import { effectScope, markRaw, ref } from 'vue';
 
 import { useTranscriptCues } from '../useTranscriptCues';
 import type { TranscriptCue } from '../useTranscriptCues';
@@ -33,8 +36,17 @@ class FakeTrack {
   }
 }
 
+/** Spec value for `HTMLTrackElement.readyState` — 3 is `ERROR`. */
+const TRACK_READY_STATE_ERROR = 3;
+
+class FakeTrackElement {
+  readyState = 0;
+  constructor(public readonly track: FakeTrack) {}
+}
+
 function fakeVideo(tracks: FakeTrack[]) {
   const listeners = new Map<string, Set<EventListener>>();
+  const elements = new WeakMap<FakeTrack, FakeTrackElement>();
 
   const on = (type: string, fn: EventListener): void => {
     const set = listeners.get(type) ?? new Set();
@@ -48,17 +60,42 @@ function fakeVideo(tracks: FakeTrack[]) {
     for (const fn of listeners.get(type) ?? []) fn(new Event(type));
   };
 
+  function trackElement(track: FakeTrack): FakeTrackElement {
+    let el = elements.get(track);
+    if (!el) {
+      el = new FakeTrackElement(track);
+      elements.set(track, el);
+    }
+    return el;
+  }
+
   const textTracks = Object.assign([...tracks], {
     addEventListener: on,
     removeEventListener: off,
   });
 
-  const el = { textTracks, addEventListener: on, removeEventListener: off };
+  const el = {
+    textTracks,
+    addEventListener: on,
+    removeEventListener: off,
+    querySelectorAll: (_selector: string) =>
+      (textTracks as FakeTrack[]).map((t) => trackElement(t)),
+  };
 
   return {
-    el: el as unknown as HTMLVideoElement,
+    // A real `HTMLVideoElement` isn't a plain object, so Vue's `reactive()`
+    // (which `ref()` calls for object values) leaves it alone — this fake
+    // IS a plain object, and without `markRaw` gets deeply proxied, which
+    // silently breaks every `===` identity check the composable does
+    // against values read back off it (e.g. `findTrackElement`'s track
+    // lookup) since a proxy is never `===` the raw object it wraps.
+    el: markRaw(el) as unknown as HTMLVideoElement,
     fire,
     listenerCount: (type: string) => listeners.get(type)?.size ?? 0,
+    /** Flips the given track's element to `readyState: ERROR`. */
+    failTrack: (track: FakeTrack) => {
+      trackElement(track).readyState = TRACK_READY_STATE_ERROR;
+    },
   };
 }
 
@@ -84,13 +121,13 @@ describe('useTranscriptCues', () => {
     const en = new FakeTrack('en', 'disabled', CUES);
     const { el } = fakeVideo([en, ru]);
 
-    const { cues, hasTranscript } = mount({
+    const { cues, hasError } = mount({
       videoRef: ref(el),
       position: ref(0),
       preferredLanguage: 'ru-RU',
     });
 
-    expect(hasTranscript.value).toBe(true);
+    expect(hasError.value).toBe(false);
     expect(cues.value.map((c: TranscriptCue) => c.text)).toEqual(['привет']);
   });
 
@@ -111,15 +148,17 @@ describe('useTranscriptCues', () => {
     const track = new FakeTrack('en', 'disabled', null);
     const { el } = fakeVideo([track]);
 
-    const { hasTranscript } = mount({
+    const { cues, hasError } = mount({
       videoRef: ref(el),
       position: ref(0),
       preferredLanguage: 'en',
     });
 
     expect(track.mode).toBe('hidden');
-    // `cues === null` on a track the browser has not parsed yet.
-    expect(hasTranscript.value).toBe(false);
+    // `cues === null` on a track the browser has not parsed yet — not an
+    // error, just not loaded.
+    expect(cues.value).toEqual([]);
+    expect(hasError.value).toBe(false);
   });
 
   it('leaves a showing track alone', () => {
@@ -134,14 +173,14 @@ describe('useTranscriptCues', () => {
   it('is empty with no tracks at all', () => {
     const { el } = fakeVideo([]);
 
-    const { cues, activeIndex, hasTranscript } = mount({
+    const { cues, activeIndex, hasError } = mount({
       videoRef: ref(el),
       position: ref(1),
       preferredLanguage: 'en',
     });
 
     expect(cues.value).toEqual([]);
-    expect(hasTranscript.value).toBe(false);
+    expect(hasError.value).toBe(false);
     expect(activeIndex.value).toBe(-1);
   });
 
@@ -149,7 +188,7 @@ describe('useTranscriptCues', () => {
     const track = new FakeTrack('en', 'disabled', null);
     const { el, fire } = fakeVideo([track]);
 
-    const { cues, hasTranscript } = mount({
+    const { cues, hasError } = mount({
       videoRef: ref(el),
       position: ref(0),
       preferredLanguage: 'en',
@@ -160,8 +199,48 @@ describe('useTranscriptCues', () => {
     track.cues = CUES;
     fire('load');
 
-    expect(hasTranscript.value).toBe(true);
+    expect(hasError.value).toBe(false);
     expect(cues.value[0]).toEqual({ start: 0, end: 2, text: 'first' });
+  });
+
+  it('reports hasError when the selected track fails to load', () => {
+    const track = new FakeTrack('en', 'disabled', null);
+    const { el, fire, failTrack } = fakeVideo([track]);
+
+    const { cues, hasError } = mount({
+      videoRef: ref(el),
+      position: ref(0),
+      preferredLanguage: 'en',
+    });
+
+    expect(hasError.value).toBe(false);
+
+    // A 404/network failure flips the track element's own readyState and
+    // fires `error` on it — the same capture-phase idiom as `load`.
+    failTrack(track);
+    fire('error');
+
+    expect(hasError.value).toBe(true);
+    // Distinct from "no transcript": the caller decides that from the
+    // lesson payload, not from this composable's cue count.
+    expect(cues.value).toEqual([]);
+  });
+
+  it('does not report hasError for a track that is not the selected one', () => {
+    const preferred = new FakeTrack('en', 'disabled', CUES);
+    const other = new FakeTrack('de', 'disabled', null);
+    const { el, fire, failTrack } = fakeVideo([preferred, other]);
+
+    const { hasError } = mount({
+      videoRef: ref(el),
+      position: ref(0),
+      preferredLanguage: 'en',
+    });
+
+    failTrack(other);
+    fire('error');
+
+    expect(hasError.value).toBe(false);
   });
 
   it('re-reads when a track is added after mount', () => {

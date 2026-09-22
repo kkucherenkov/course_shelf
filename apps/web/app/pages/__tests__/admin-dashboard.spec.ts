@@ -97,15 +97,15 @@ vi.mock('~/components/admin/AdminStatCard.vue', () => ({
     name: 'AdminStatCard',
     props: ['label', 'value', 'meta', 'error', 'loading'],
     template:
-      '<div class="stub-stat-card">{{ label }}: {{ value }} ({{ meta }}) loading={{ loading }} error={{ error }}</div>',
+      '<div class="stub-stat-card" :data-label="label">{{ label }}: {{ value }} ({{ meta }}) loading={{ loading }} error={{ error }}</div>',
   },
 }));
 vi.mock('~/components/admin/AdminScansTable.vue', () => ({
   default: {
     name: 'AdminScansTable',
-    props: ['items', 'loading', 'expandableScanId', 'expandedScanId'],
+    props: ['items', 'loading', 'expandableScanId', 'expandedScanId', 'labelSucceededWithErrors'],
     template:
-      '<div data-testid="scans-table" :data-expandable-scan-id="expandableScanId">{{ items.length }} rows, loading={{ loading }}</div>',
+      '<div data-testid="scans-table" :data-expandable-scan-id="expandableScanId" :data-label-succeeded-with-errors="labelSucceededWithErrors">{{ items.length }} rows, loading={{ loading }}</div>',
   },
 }));
 
@@ -285,5 +285,86 @@ describe('admin dashboard page', () => {
     expect(
       wrapper.get('[data-testid="scans-table"]').attributes('data-expandable-scan-id'),
     ).toBeUndefined();
+  });
+
+  // Audit run20 finding 7: "0" over the errors-24h tile read the same
+  // whether zero scans ran in the window or scans ran and found nothing —
+  // a health indicator that fails toward "everything is fine" is not one.
+  describe('errors · 24h tile distinguishes "no scans" from a real zero (audit run20 finding 7)', () => {
+    it('shows "no scans" copy, not a bare 0, when the latest scan predates the 24h window', async () => {
+      dashData.value = {
+        ...DASH,
+        latestScan: { ...DASH.latestScan!, startedAt: '2020-01-01T00:00:00Z' },
+        errorsLast24h: 0,
+      };
+      dashStatus.value = 'success';
+      scansData.value = { items: [] };
+      scansStatus.value = 'success';
+
+      const wrapper = await mountPage();
+
+      const tile = wrapper.get('[data-label="pages.admin.dashboard.statErrors24h"]');
+      expect(tile.text()).toContain('admin.dashboard.errorsWindowNone');
+      expect(tile.text()).not.toContain('error=true');
+    });
+
+    it('shows "no scans" copy when no scan has ever run', async () => {
+      dashData.value = { ...DASH, latestScan: null, errorsLast24h: 0 };
+      dashStatus.value = 'success';
+      scansData.value = { items: [] };
+      scansStatus.value = 'success';
+
+      const wrapper = await mountPage();
+
+      const tile = wrapper.get('[data-label="pages.admin.dashboard.statErrors24h"]');
+      expect(tile.text()).toContain('admin.dashboard.errorsWindowNone');
+    });
+
+    it('shows the real number when a scan ran in the window, error styling included', async () => {
+      dashData.value = {
+        ...DASH,
+        latestScan: { ...DASH.latestScan!, startedAt: new Date().toISOString() },
+        errorsLast24h: 9221,
+      };
+      dashStatus.value = 'success';
+      scansData.value = { items: [] };
+      scansStatus.value = 'success';
+
+      const wrapper = await mountPage();
+
+      const tile = wrapper.get('[data-label="pages.admin.dashboard.statErrors24h"]');
+      expect(tile.text()).toContain('9221');
+      expect(tile.text()).toContain('error=true');
+    });
+
+    it('shows a trustworthy 0 (no error styling) when a scan ran in the window and found nothing', async () => {
+      dashData.value = {
+        ...DASH,
+        latestScan: { ...DASH.latestScan!, startedAt: new Date().toISOString() },
+        errorsLast24h: 0,
+      };
+      dashStatus.value = 'success';
+      scansData.value = { items: [] };
+      scansStatus.value = 'success';
+
+      const wrapper = await mountPage();
+
+      const tile = wrapper.get('[data-label="pages.admin.dashboard.statErrors24h"]');
+      expect(tile.text()).toContain(': 0 (');
+      expect(tile.text()).toContain('error=false');
+    });
+  });
+
+  it('passes the "completed with errors" label through to the scans table (audit run20 finding 7)', async () => {
+    dashData.value = DASH;
+    dashStatus.value = 'success';
+    scansData.value = { items: [] };
+    scansStatus.value = 'success';
+
+    const wrapper = await mountPage();
+
+    expect(
+      wrapper.get('[data-testid="scans-table"]').attributes('data-label-succeeded-with-errors'),
+    ).toBe('admin.dashboard.scanCompletedWithErrors');
   });
 });

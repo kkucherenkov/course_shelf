@@ -196,10 +196,12 @@ export function useCoursesList(options: UseCoursesListOptions = {}): {
 export function useCourseCatalogAccess(): {
   hasAnyCourse: ComputedRef<boolean>;
   status: Ref<RowStatus>;
+  refetch: () => Promise<void>;
 } {
-  const { data, status } = useCoursesList();
+  const { data, status, refetch } = useCoursesList();
   return {
     hasAnyCourse: computed(() => (data.value?.items.length ?? 0) > 0),
     status,
+    refetch,
   };
 }

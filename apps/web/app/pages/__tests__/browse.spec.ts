@@ -45,6 +45,7 @@ let lastOptions: Record<string, { value: string }> = {};
 // makes THIS one non-empty while `libraries` below stays empty).
 const hasAnyCatalogCourse = ref(false);
 const catalogAccessStatus = ref<'idle' | 'pending' | 'success' | 'error'>('success');
+const refetchCatalogAccess = vi.fn();
 
 vi.mock('~/composables/useCoursesList', async () => {
   const actual = await vi.importActual<typeof CoursesListModule>(
@@ -65,6 +66,7 @@ vi.mock('~/composables/useCoursesList', async () => {
     useCourseCatalogAccess: () => ({
       hasAnyCourse: hasAnyCatalogCourse,
       status: catalogAccessStatus,
+      refetch: refetchCatalogAccess,
     }),
   };
 });
@@ -81,8 +83,9 @@ const libraries = ref<LibraryListDto>({
   ],
 });
 const librariesStatus = ref<'idle' | 'pending' | 'success' | 'error'>('success');
+const refreshLibraries = vi.fn();
 vi.mock('~/composables/useLibraries', () => ({
-  useLibraries: () => ({ data: libraries, status: librariesStatus }),
+  useLibraries: () => ({ data: libraries, status: librariesStatus, refresh: refreshLibraries }),
 }));
 
 // Default to admin so every pre-existing test below (none of which cares
@@ -128,6 +131,11 @@ vi.mock('@app/ui', () => ({
     props: ['icon', 'title', 'body'],
     template: '<div class="no-permission">{{ title }}</div>',
   },
+  AppErrorState: {
+    name: 'AppErrorState',
+    props: ['title', 'body'],
+    template: '<div class="error-state-probe">{{ title }}::{{ body }}<slot name="action" /></div>',
+  },
   AppSelect: {
     name: 'AppSelect',
     props: ['modelValue', 'options', 'size'],
@@ -169,6 +177,8 @@ describe('browse page filters', () => {
     hasAnyCatalogCourse.value = false;
     catalogAccessStatus.value = 'success';
     authUser.value = { role: 'admin' };
+    refreshLibraries.mockClear();
+    refetchCatalogAccess.mockClear();
   });
 
   it('renders the library, duration and sort controls', async () => {
@@ -427,5 +437,53 @@ describe('browse page filters', () => {
       'url(/api/v1/courses/c-poster/poster?token=tok) center / cover no-repeat',
     );
     expect(cards[1]?.attributes('data-cover')).toBeUndefined();
+  });
+
+  // Audit run20 finding 7/synthesis: a 500 on the unfiltered courses/libraries
+  // probe used to read as "you have no access", the exact copy shown for a
+  // genuinely empty account — sending the user to bother an administrator
+  // about a permission problem that does not exist.
+  describe('failed catalog-access probe reads as an error, not a denial (audit run20 finding 7)', () => {
+    it('shows a retryable error, not "no access granted", when both probes fail', async () => {
+      authUser.value = { role: 'member' };
+      libraries.value = { items: [] };
+      librariesStatus.value = 'error';
+      hasAnyCatalogCourse.value = false;
+      catalogAccessStatus.value = 'error';
+      const wrapper = await mountBrowse();
+
+      const errorState = wrapper.find('.error-state-probe');
+      expect(errorState.exists()).toBe(true);
+      expect(errorState.text()).toContain('errors.catalogLoadFailedTitle');
+      expect(wrapper.find('.no-permission').exists()).toBe(false);
+    });
+
+    it('shows the catalogue when one probe fails but the other already proved access', async () => {
+      authUser.value = { role: 'member' };
+      libraries.value = {
+        items: [{ id: 'lib-1', name: 'Backend', rootPath: '/srv/backend' }],
+      } as unknown as LibraryListDto;
+      librariesStatus.value = 'success';
+      hasAnyCatalogCourse.value = false;
+      catalogAccessStatus.value = 'error';
+      const wrapper = await mountBrowse();
+
+      expect(wrapper.find('.error-state-probe').exists()).toBe(false);
+      expect(wrapper.find('.no-permission').exists()).toBe(false);
+    });
+
+    it("retries both probes when the error state's retry action is clicked", async () => {
+      authUser.value = { role: 'member' };
+      libraries.value = { items: [] };
+      librariesStatus.value = 'error';
+      hasAnyCatalogCourse.value = false;
+      catalogAccessStatus.value = 'error';
+      const wrapper = await mountBrowse();
+
+      await wrapper.find('.error-state-probe button').trigger('click');
+
+      expect(refreshLibraries).toHaveBeenCalledTimes(1);
+      expect(refetchCatalogAccess).toHaveBeenCalledTimes(1);
+    });
   });
 });

@@ -15,6 +15,13 @@
     // Status label strings (pre-translated)
     labelRunning: string;
     labelSucceeded: string;
+    /**
+     * A `succeeded` scan whose `errorsCount > 0` gets this label instead of
+     * `labelSucceeded` — the scan process completed, but badging it the same
+     * green "Succeeded" as a clean run buries a five-digit error count under
+     * a status that reads as "nothing to see here" (audit run20 finding 7).
+     */
+    labelSucceededWithErrors: string;
     labelPartial: string;
     labelFailed: string;
     labelCancelled: string;
@@ -44,10 +51,24 @@
 
   const { t } = useI18n();
 
-  function statusLabel(status: ScanStatus): string {
-    const map: Record<ScanStatus, string> = {
+  // A `succeeded` scan with `errorsCount > 0` gets its own pill state rather
+  // than sharing `succeeded`'s green badge — the scan process finished, but
+  // that isn't the same claim as "nothing went wrong" (audit run20 finding 7).
+  // Client-derived because the server's `ScanStatus` is a process-completion
+  // signal, not a data-quality one, and the two axes are genuinely different
+  // questions; this only changes how the row is badged, never the data.
+  type PillStatus = ScanStatus | 'succeeded-with-errors';
+
+  function pillStatus(row: AdminScanListItem): PillStatus {
+    if (row.status === 'succeeded' && row.errorsCount > 0) return 'succeeded-with-errors';
+    return row.status;
+  }
+
+  function statusLabel(status: PillStatus): string {
+    const map: Record<PillStatus, string> = {
       running: props.labelRunning,
       succeeded: props.labelSucceeded,
+      'succeeded-with-errors': props.labelSucceededWithErrors,
       partial: props.labelPartial,
       failed: props.labelFailed,
       cancelled: props.labelCancelled,
@@ -123,9 +144,9 @@
           </td>
           <!-- Status pill -->
           <td>
-            <span class="adm-scans-tbl__status-pill" :data-status="row.status">
+            <span class="adm-scans-tbl__status-pill" :data-status="pillStatus(row)">
               <span class="adm-scans-tbl__status-dot" aria-hidden="true" />
-              {{ statusLabel(row.status) }}
+              {{ statusLabel(pillStatus(row)) }}
             </span>
           </td>
           <!-- Started (md+) -->
@@ -353,6 +374,15 @@
 
         .adm-scans-tbl__status-dot {
           background: var(--status-success-fg);
+        }
+      }
+
+      &[data-status='succeeded-with-errors'] {
+        background: var(--status-warning-soft);
+        color: var(--status-warning-fg);
+
+        .adm-scans-tbl__status-dot {
+          background: var(--status-warning-fg);
         }
       }
 

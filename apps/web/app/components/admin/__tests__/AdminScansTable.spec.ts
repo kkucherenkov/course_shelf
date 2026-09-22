@@ -39,6 +39,7 @@ const baseProps = {
   colErrors: 'Errors',
   labelRunning: 'Running',
   labelSucceeded: 'Succeeded',
+  labelSucceededWithErrors: 'Completed with errors',
   labelPartial: 'Partial',
   labelFailed: 'Failed',
   labelCancelled: 'Cancelled',
@@ -99,6 +100,32 @@ describe('AdminScansTable', () => {
     });
     expect(wrapper.text()).toContain('Succeeded');
     expect(wrapper.text()).toContain('Failed');
+  });
+
+  it('badges a succeeded scan with errors as "completed with errors", not green "Succeeded" (audit run20 finding 7)', () => {
+    const succeededWithErrors: AdminScanListItem = {
+      ...sampleItems[0]!,
+      scanId: 'scan-3',
+      errorsCount: 9221,
+    };
+    const wrapper = mount(AdminScansTable, {
+      props: { ...baseProps, items: [succeededWithErrors] },
+    });
+
+    const pill = wrapper.find('.adm-scans-tbl__status-pill');
+    expect(pill.attributes('data-status')).toBe('succeeded-with-errors');
+    expect(pill.text()).toContain('Completed with errors');
+    expect(pill.text()).not.toContain('Succeeded');
+  });
+
+  it('still badges a succeeded scan with zero errors "Succeeded"', () => {
+    const wrapper = mount(AdminScansTable, {
+      props: { ...baseProps, items: [sampleItems[0]!] },
+    });
+
+    const pill = wrapper.find('.adm-scans-tbl__status-pill');
+    expect(pill.attributes('data-status')).toBe('succeeded');
+    expect(pill.text()).toContain('Succeeded');
   });
 
   it('formats "started" through i18n, not hardcoded English "ago"', () => {

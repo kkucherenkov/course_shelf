@@ -1,6 +1,12 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
-  import { AppNoPermission, CourseWideCard, CoursePosterCard } from '@app/ui';
+  import {
+    AppButton,
+    AppErrorState,
+    AppNoPermission,
+    CourseWideCard,
+    CoursePosterCard,
+  } from '@app/ui';
   import type { Course } from '@app/ui';
   import type {
     ContinueWatchingItem,
@@ -75,19 +81,43 @@
   // to act on. Two unfiltered probes, OR'd together — see
   // `useCourseCatalogAccess`'s doc comment for why `useLibraries` alone
   // misses a course-level grant (tuxedo 249).
-  const { data: librariesData, status: librariesStatus } = useLibraries();
-  const { hasAnyCourse: hasAnyCatalogCourse, status: catalogAccessStatus } =
-    useCourseCatalogAccess();
+  const {
+    data: librariesData,
+    status: librariesStatus,
+    refresh: refreshLibraries,
+  } = useLibraries();
+  const {
+    hasAnyCourse: hasAnyCatalogCourse,
+    status: catalogAccessStatus,
+    refetch: refetchCatalogAccess,
+  } = useCourseCatalogAccess();
 
-  const hasCatalogAccess = computed(() => {
-    if (userRole.value === 'ADMIN') return true;
+  // Three answers, not two (audit run20 finding 7/synthesis): a failed probe
+  // used to fall through to the same "granted: false" branch as a genuinely
+  // empty account, so a 500 on `/courses` or `/libraries` read as "you have
+  // no access" — sending the user to bother an administrator about a
+  // permission problem that does not exist.
+  type CatalogAccessState = 'pending' | 'granted' | 'denied' | 'error';
+
+  const catalogAccessState = computed<CatalogAccessState>(() => {
+    if (userRole.value === 'ADMIN') return 'granted';
     // Default to the safe, always-true state while neither probe has
     // resolved yet, rather than briefly asserting "no access".
-    if (librariesStatus.value === 'pending' || librariesStatus.value === 'idle') return true;
+    if (librariesStatus.value === 'pending' || librariesStatus.value === 'idle') return 'pending';
     if (catalogAccessStatus.value === 'pending' || catalogAccessStatus.value === 'idle')
-      return true;
-    return (librariesData.value?.items.length ?? 0) > 0 || hasAnyCatalogCourse.value;
+      return 'pending';
+    if ((librariesData.value?.items.length ?? 0) > 0 || hasAnyCatalogCourse.value) return 'granted';
+    // Neither probe proved access. If either outright failed, that's a load
+    // failure, not a denial — a library-scoped grant already covered by the
+    // other probe still wins above, so this only fires when both are either
+    // empty or broken.
+    if (librariesStatus.value === 'error' || catalogAccessStatus.value === 'error') return 'error';
+    return 'denied';
   });
+
+  async function retryCatalogAccess(): Promise<void> {
+    await Promise.all([refreshLibraries(), refetchCatalogAccess()]);
+  }
 
   // ── Recently completed — collapsible state ─────────────────────────────────
 
@@ -235,6 +265,27 @@
     />
 
     <!--
+      ── Failed to load: retryable, not a denial (audit run20 finding 7) ──
+      A 500 on the unfiltered courses/libraries probe used to fall through
+      to the same "no access" copy as a genuinely empty account.
+    -->
+    <AppErrorState
+      v-if="catalogAccessState === 'error'"
+      :title="t('errors.catalogLoadFailedTitle')"
+      :body="t('errors.catalogLoadFailedBody')"
+      class="page-home__no-access"
+    >
+      <template #action>
+        <AppButton
+          variant="secondary"
+          size="md"
+          :label="t('errors.retry')"
+          @click="retryCatalogAccess"
+        />
+      </template>
+    </AppErrorState>
+
+    <!--
       ── No library access: one explanation, not one per row (#666) ──────
       No #action slot on purpose: the honest next step here is "ask an
       administrator" (already said in the body), not a button. A "check
@@ -245,7 +296,7 @@
       flow) — out of scope for this fix, tracked separately.
     -->
     <AppNoPermission
-      v-if="!hasCatalogAccess"
+      v-else-if="catalogAccessState === 'denied'"
       :title="t('pages.browse.emptyNoAccessTitle')"
       :body="t('pages.browse.emptyNoAccessBody')"
       class="page-home__no-access"

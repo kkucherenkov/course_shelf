@@ -35,8 +35,27 @@ export interface UseTranscriptCuesReturn {
   cues: Ref<TranscriptCue[]>;
   /** Index of the cue covering the playhead, `-1` when none does. */
   activeIndex: ComputedRef<number>;
-  hasTranscript: ComputedRef<boolean>;
+  /**
+   * Whether the selected `<track>` failed to load (network error, 404 on the
+   * subtitle route, …). Read from the DOM element's own `readyState` rather
+   * than a `TextTrack` field — `TextTrack` has no error state of its own.
+   *
+   * Deliberately not "hasTranscript": this composable only knows what the
+   * browser managed to fetch and parse, which is silent on a lesson that has
+   * a transcript the browser simply failed to load. The caller already knows
+   * whether a transcript exists — the lesson payload's own `subtitles` array
+   * — and should use that instead of asking this composable to infer it from
+   * `cues.length` (see tuxedo/audit run20 finding 1).
+   */
+  hasError: Ref<boolean>;
 }
+
+// `HTMLTrackElement.ERROR` per spec — hardcoded rather than read off the
+// class's own static property because happy-dom (the unit-test environment)
+// implements `readyState` but leaves the `NONE`/`LOADING`/`LOADED`/`ERROR`
+// statics `undefined`, which would make every comparison silently false in
+// tests. The numeric value is part of the HTML spec and stable.
+const TRACK_READY_STATE_ERROR = 3;
 
 /** The track whose language matches the UI locale, else the first one. */
 function selectTrack(el: HTMLVideoElement, preferred: string | null | undefined): TextTrack | null {
@@ -50,20 +69,34 @@ function selectTrack(el: HTMLVideoElement, preferred: string | null | undefined)
   return tracks[0] ?? null;
 }
 
+/** The `<track>` DOM element backing a given `TextTrack` — no standard
+ * reverse link exists, so this walks the video's own track elements. */
+function findTrackElement(el: HTMLVideoElement, target: TextTrack): HTMLTrackElement | null {
+  for (const trackEl of el.querySelectorAll('track')) {
+    if (trackEl.track === target) return trackEl;
+  }
+  return null;
+}
+
 export function useTranscriptCues(opts: UseTranscriptCuesOptions): UseTranscriptCuesReturn {
   const { videoRef, position, preferredLanguage } = opts;
 
   const cues = ref<TranscriptCue[]>([]);
+  const hasError = ref(false);
 
   function read(): void {
     const el = videoRef.value;
     const track = el ? selectTrack(el, toValue(preferredLanguage)) : null;
     if (!track) {
       cues.value = [];
+      hasError.value = false;
       return;
     }
 
     if (track.mode === 'disabled') track.mode = 'hidden';
+
+    const trackEl = el ? findTrackElement(el, track) : null;
+    hasError.value = trackEl?.readyState === TRACK_READY_STATE_ERROR;
 
     const list = track.cues;
     const next: TranscriptCue[] = [];
@@ -77,15 +110,20 @@ export function useTranscriptCues(opts: UseTranscriptCuesOptions): UseTranscript
   }
 
   function listen(el: HTMLVideoElement): void {
-    // `load` on a `<track>` does not bubble, so listen in the capture phase:
-    // the track elements are rendered from the stream URL, i.e. after this
-    // composable has already latched onto the `<video>`.
+    // Neither `load` nor `error` on a `<track>` bubbles, so both are bound in
+    // the capture phase on the video — the track elements are rendered from
+    // the stream URL, i.e. after this composable has already latched onto
+    // the `<video>`. Both transitions re-run the same `read()`: a failed
+    // track's `readyState` flips to `ERROR` right as `error` fires, so one
+    // function recomputes cues and the error flag together.
     el.addEventListener('load', read, true);
+    el.addEventListener('error', read, true);
     el.textTracks.addEventListener('addtrack', read);
   }
 
   function unlisten(el: HTMLVideoElement): void {
     el.removeEventListener('load', read, true);
+    el.removeEventListener('error', read, true);
     el.textTracks.removeEventListener('addtrack', read);
   }
 
@@ -111,7 +149,5 @@ export function useTranscriptCues(opts: UseTranscriptCuesOptions): UseTranscript
     return cues.value.findIndex((cue) => at >= cue.start && at < cue.end);
   });
 
-  const hasTranscript = computed(() => cues.value.length > 0);
-
-  return { cues, activeIndex, hasTranscript };
+  return { cues, activeIndex, hasError };
 }

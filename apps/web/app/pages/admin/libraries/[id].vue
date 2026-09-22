@@ -380,6 +380,7 @@
             :col-errors="t('pages.admin.libraryDetail.tableErrors')"
             :label-running="t('pages.libraries.statusRunning')"
             :label-succeeded="t('pages.libraries.statusSucceeded')"
+            :label-succeeded-with-errors="t('admin.dashboard.scanCompletedWithErrors')"
             :label-partial="t('pages.libraries.statusPartial')"
             :label-failed="t('pages.libraries.statusFailed')"
             :label-cancelled="t('pages.libraries.statusCancelled')"

@@ -9,13 +9,20 @@ import type { TranscriptCue } from '~/composables/useTranscriptCues';
 
 // The real `@app/ui` barrel drags in Nuxt UI components this test
 // environment can't resolve (no Nuxt build context) — same reason
-// search.spec.ts stubs it. AppIconButton is the only one this file uses.
+// search.spec.ts stubs it. AppIconButton/AppButton are the only ones this
+// file uses.
 vi.mock('@app/ui', () => ({
   AppIconButton: {
     name: 'AppIconButton',
     props: ['name', 'variant', 'size', 'ariaLabel'],
     emits: ['click'],
     template: '<button type="button" :aria-label="ariaLabel" @click="$emit(\'click\', $event)" />',
+  },
+  AppButton: {
+    name: 'AppButton',
+    props: ['variant', 'size', 'label'],
+    emits: ['click'],
+    template: '<button type="button" @click="$emit(\'click\', $event)">{{ label }}</button>',
   },
 }));
 
@@ -28,7 +35,12 @@ const CUES: TranscriptCue[] = [
 const baseProps = {
   cues: CUES,
   activeIndex: -1,
+  hasTranscript: true,
+  loadError: false,
   emptyLabel: 'This lesson has no transcript.',
+  errorLabel: 'Could not load the transcript.',
+  loadingLabel: 'Loading transcript…',
+  retryLabel: 'Try again',
   noMatchLabel: 'No lines match your search.',
   filterPlaceholder: 'Filter transcript',
   addFlashcardLabel: 'Create a flashcard from this line',
@@ -41,12 +53,50 @@ describe('PlayerTranscriptTab', () => {
     // telling a reader their search found nothing when they had not searched.
     // Removing that `v-if` (the panel now carries the empty state, since the
     // sidebar tab that used to is gone) is what made this reachable.
-    const wrapper = mount(PlayerTranscriptTab, { props: { ...baseProps, cues: [] } });
+    const wrapper = mount(PlayerTranscriptTab, {
+      props: { ...baseProps, cues: [], hasTranscript: false },
+    });
 
     expect(wrapper.text()).toContain('This lesson has no transcript.');
     expect(wrapper.text()).not.toContain('No lines match your search.');
     // No filter to offer when there is nothing to filter.
     expect(wrapper.find('input[type="search"]').exists()).toBe(false);
+  });
+
+  it('says loading failed, not "no transcript", when the track errored (audit run20 finding 1)', () => {
+    // Whether the lesson has a transcript is a server-known signal
+    // (`hasTranscript`), independent of `loadError` — a lesson can have one
+    // and still fail to load it. The two used to be conflated into a single
+    // `cues.length === 0` check, which made a 404 on the subtitle track read
+    // as "this lesson has no transcript" — the flagship v2 feature looking
+    // unimplemented on any network error.
+    const wrapper = mount(PlayerTranscriptTab, {
+      props: { ...baseProps, cues: [], hasTranscript: true, loadError: true },
+    });
+
+    expect(wrapper.text()).toContain('Could not load the transcript.');
+    expect(wrapper.text()).not.toContain('This lesson has no transcript.');
+    expect(wrapper.find('input[type="search"]').exists()).toBe(false);
+  });
+
+  it('emits retry when the retry action is clicked on the error state', async () => {
+    const wrapper = mount(PlayerTranscriptTab, {
+      props: { ...baseProps, cues: [], hasTranscript: true, loadError: true },
+    });
+
+    await wrapper.find('.player-transcript-tab__error button').trigger('click');
+
+    expect(wrapper.emitted('retry')).toHaveLength(1);
+  });
+
+  it('shows a loading line, not "no transcript", while a known transcript has not produced cues yet', () => {
+    const wrapper = mount(PlayerTranscriptTab, {
+      props: { ...baseProps, cues: [], hasTranscript: true, loadError: false },
+    });
+
+    expect(wrapper.text()).toContain('Loading transcript…');
+    expect(wrapper.text()).not.toContain('This lesson has no transcript.');
+    expect(wrapper.text()).not.toContain('Could not load the transcript.');
   });
 
   it('renders one row per cue', () => {

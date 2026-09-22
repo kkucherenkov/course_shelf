@@ -939,6 +939,38 @@ export default {
     scansTable: {
       expandColumnLabel: 'Details',
     },
+    // Audit run20 finding 7 — the dashboard's error tile and scans table
+    // both failed toward "everything is fine" on ambiguous data.
+    dashboard: {
+      // Shown as the "errors · 24h" tile's value when no scan's `startedAt`
+      // falls in the rolling window — a real "0" (scans ran, no errors)
+      // stays a number; this only replaces it when there is no data at all.
+      errorsWindowNone: 'No scans in 24h',
+      // A `succeeded` scan with `errorsCount > 0` — the process completed,
+      // but that is a different claim from "nothing went wrong".
+      scanCompletedWithErrors: 'Completed with errors',
+    },
+  },
+  // Audit run20 finding 1 (transcript) and 7/8 (rendered-as-empty errors) —
+  // shared across the pages that had this exact defect on different screens.
+  // The lesson-page-scoped `pages.lessonPlayer.transcript.*` keeps its own
+  // "no transcript" / "no match" copy; these are only the new load-failure
+  // states that didn't exist before.
+  transcript: {
+    loadError: 'Could not load the transcript. Please try again.',
+    loading: 'Loading transcript…',
+    retry: 'Try again',
+  },
+  errors: {
+    catalogLoadFailedTitle: 'Could not load your library access',
+    catalogLoadFailedBody: 'Something went wrong loading your courses. Please try again.',
+    retry: 'Try again',
+    mediaUnavailableBody:
+      "This lesson's video could not be found. Please try again or contact an administrator.",
+    // Admin-only — names the path that 404'd, since a moved or renamed file
+    // is routine (18,531 recorded scan errors), not hypothetical.
+    mediaUnavailableAdminBody:
+      "This lesson's video file could not be found at {path}. It may have been moved or renamed on disk.",
   },
   /**
    * Copy for `@app/ui` components. The design package ships English defaults

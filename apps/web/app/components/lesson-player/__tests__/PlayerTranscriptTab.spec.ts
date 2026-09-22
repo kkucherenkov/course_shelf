@@ -7,6 +7,18 @@ import { mount } from '@vue/test-utils';
 import PlayerTranscriptTab from '../PlayerTranscriptTab.vue';
 import type { TranscriptCue } from '~/composables/useTranscriptCues';
 
+// The real `@app/ui` barrel drags in Nuxt UI components this test
+// environment can't resolve (no Nuxt build context) — same reason
+// search.spec.ts stubs it. AppIconButton is the only one this file uses.
+vi.mock('@app/ui', () => ({
+  AppIconButton: {
+    name: 'AppIconButton',
+    props: ['name', 'variant', 'size', 'ariaLabel'],
+    emits: ['click'],
+    template: '<button type="button" :aria-label="ariaLabel" @click="$emit(\'click\', $event)" />',
+  },
+}));
+
 const CUES: TranscriptCue[] = [
   { start: 0, end: 4, text: 'Welcome to the lesson' },
   { start: 4, end: 65, text: 'Today we cover hooks' },
@@ -19,6 +31,7 @@ const baseProps = {
   emptyLabel: 'This lesson has no transcript.',
   noMatchLabel: 'No lines match your search.',
   filterPlaceholder: 'Filter transcript',
+  addFlashcardLabel: 'Create a flashcard from this line',
 };
 
 describe('PlayerTranscriptTab', () => {
@@ -74,6 +87,12 @@ describe('PlayerTranscriptTab', () => {
     await wrapper.find('.player-transcript-tab__filter').setValue('nonexistent');
     expect(wrapper.find('.player-transcript-tab__no-match').text()).toBe(baseProps.noMatchLabel);
     expect(wrapper.find('.player-transcript-tab__row').exists()).toBe(false);
+  });
+
+  it("emits createFlashcard with that row's cue when its add button is clicked (E29-F01-S03)", async () => {
+    const wrapper = mount(PlayerTranscriptTab, { props: baseProps });
+    await wrapper.findAll('.player-transcript-tab__add')[1]?.trigger('click');
+    expect(wrapper.emitted('createFlashcard')).toEqual([[CUES[1]]]);
   });
 });
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+  import { AppIconButton } from '@app/ui';
   import type { TranscriptCue } from '~/composables/useTranscriptCues';
   import { formatCueTime } from '~/utils/format-time';
 
@@ -13,10 +14,14 @@
     noMatchLabel: string;
     /** Placeholder and accessible label for the filter input. */
     filterPlaceholder: string;
+    /** aria-label for each row's "make a flashcard" button (E29-F01-S03). */
+    addFlashcardLabel: string;
   }>();
 
   const emit = defineEmits<{
     seek: [time: number];
+    /** A line the reader wants turned into a flashcard — front/back left to the caller. */
+    createFlashcard: [cue: TranscriptCue];
   }>();
 
   const query = ref('');
@@ -99,17 +104,27 @@
       </div>
       <ul v-else class="player-transcript-tab__list">
         <li v-for="item in filteredCues" :key="item.index" class="player-transcript-tab__item">
-          <button
-            :ref="(el) => setRowRef(item.index, el as Element | null)"
-            type="button"
-            class="player-transcript-tab__row"
-            :class="{ 'player-transcript-tab__row--active': item.index === props.activeIndex }"
-            :aria-current="item.index === props.activeIndex ? 'true' : undefined"
-            @click="emit('seek', item.cue.start)"
-          >
-            <span class="player-transcript-tab__time">{{ formatCueTime(item.cue.start) }}</span>
-            <span class="player-transcript-tab__text">{{ item.cue.text }}</span>
-          </button>
+          <div class="player-transcript-tab__row-wrap">
+            <button
+              :ref="(el) => setRowRef(item.index, el as Element | null)"
+              type="button"
+              class="player-transcript-tab__row"
+              :class="{ 'player-transcript-tab__row--active': item.index === props.activeIndex }"
+              :aria-current="item.index === props.activeIndex ? 'true' : undefined"
+              @click="emit('seek', item.cue.start)"
+            >
+              <span class="player-transcript-tab__time">{{ formatCueTime(item.cue.start) }}</span>
+              <span class="player-transcript-tab__text">{{ item.cue.text }}</span>
+            </button>
+            <AppIconButton
+              name="plus"
+              variant="ghost"
+              size="sm"
+              :ariaLabel="addFlashcardLabel"
+              class="player-transcript-tab__add"
+              @click="emit('createFlashcard', item.cue)"
+            />
+          </div>
         </li>
       </ul>
     </template>
@@ -158,11 +173,22 @@
       display: block;
     }
 
+    &__row-wrap {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    &__add {
+      flex-shrink: 0;
+    }
+
     &__row {
       display: flex;
       align-items: baseline;
       gap: var(--space-2);
-      width: 100%;
+      flex: 1 1 auto;
+      min-width: 0;
       padding: var(--space-2) var(--space-3);
       border-radius: var(--radius-md);
       background: transparent;

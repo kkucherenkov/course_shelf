@@ -19,6 +19,7 @@
     useRecentlyCompleted,
     useYourWeek,
   } from '~/composables/useHome';
+  import { useFlashcardReviewQueue } from '~/composables/useFlashcards';
   import { useCourseCatalogAccess } from '~/composables/useCoursesList';
   import { useLibraries } from '~/composables/useLibraries';
 
@@ -59,6 +60,11 @@
   const recentlyAdded = useRecentlyAdded();
   const recentlyCompleted = useRecentlyCompleted();
   const yourWeek = useYourWeek();
+
+  // Same `useAsyncData` key as the review screen (E29-F01-S03) — Nuxt shares
+  // the cached queue between them, so a card graded on `/flashcards/review`
+  // is already reflected here on the way back without a second fetch.
+  const dueFlashcards = useFlashcardReviewQueue();
 
   // ── Catalog access (#623) ────────────────────────────────────────────────────
   //
@@ -155,6 +161,17 @@
       from: fmtDate(range.from),
       to: fmtDate(range.to),
     });
+  });
+
+  // ── Due flashcards (E29-F01-S03) ────────────────────────────────────────────
+
+  const dueCount = computed<number | undefined>(() =>
+    dueFlashcards.status.value === 'success' ? dueFlashcards.queue.value.length : undefined,
+  );
+
+  const dueLabel = computed(() => {
+    const n = dueCount.value ?? 0;
+    return t('pages.home.yourWeek.dueCount', n, { named: { n } });
   });
 
   // ── Recently completed meta label ───────────────────────────────────────────
@@ -343,6 +360,9 @@
           :error-title="t('pages.home.yourWeek.error')"
           :error-body="yourWeekErrorBody"
           :retry-label="t('pages.home.yourWeek.retry')"
+          :due-count="dueCount"
+          :due-label="dueLabel"
+          :review-label="t('pages.home.yourWeek.reviewCta')"
           @retry="yourWeek.refetch()"
         />
       </div>

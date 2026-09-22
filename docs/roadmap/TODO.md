@@ -250,7 +250,7 @@ finished.
 
 - [x] [E29-F01-S01](./tasks/E29-F01-S01.md) `B` — Flashcard and review schedule domain (SM-2) · ⇐ E09-F02-S02
 - [x] [E29-F01-S02](./tasks/E29-F01-S02.md) `A` — Flashcard API · ⇐ E29-F01-S01
-- [ ] [E29-F01-S03](./tasks/E29-F01-S03.md) `A` — Review UI on web · ⇐ E29-F01-S02
+- [x] [E29-F01-S03](./tasks/E29-F01-S03.md) `A` — Review UI on web · ⇐ E29-F01-S02
 - [x] [E29-F02-S01](./tasks/E29-F02-S01.md) `B` — Quizzes generated from a transcript · ⇐ E27-F01-S01
 - ❌ [E29-F03-S01](./tasks/E29-F03-S01.md) `B` — Learning paths · ⇐ E06-F03-S01 · **cancelled** — a single-user library already knows the order of its courses
 

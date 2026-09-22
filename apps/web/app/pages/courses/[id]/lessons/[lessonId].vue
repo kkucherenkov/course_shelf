@@ -13,6 +13,7 @@
 
   import { useCourseOutline } from '~/composables/useCourseOutline';
   import { useCreateFlashcard } from '~/composables/useFlashcards';
+  import { useExportDownload } from '~/composables/useExportDownload';
   import { PLAYBACK_SPEEDS, useLessonPlayer } from '~/composables/useLessonPlayer';
   import { useMaterialDownload } from '~/composables/useMaterialDownload';
   import { useProgressReporter } from '~/composables/useProgressReporter';
@@ -368,6 +369,19 @@
     }
   }
 
+  const { downloadLessonExport } = useExportDownload();
+  const isExporting = ref(false);
+
+  async function onExportLesson(): Promise<void> {
+    isExporting.value = true;
+    const filename = `${lessonData.value?.title ?? 'lesson'}.zip`;
+    const err = await downloadLessonExport({ lessonId, filename });
+    if (err) {
+      toast.add({ title: t('pages.lessonPlayer.toastExportError'), color: 'error' });
+    }
+    isExporting.value = false;
+  }
+
   // ── Derived states ────────────────────────────────────────────────────────────
 
   const isLoading = computed(
@@ -459,6 +473,18 @@
       :label="backToCourseLabel"
       :to="`/courses/${courseId}`"
       class="page-lesson-player__back"
+    />
+
+    <!-- Export as Markdown ZIP (E28-F01-S01) -->
+    <AppButton
+      v-if="lessonData"
+      variant="ghost"
+      size="sm"
+      icon-leading="download"
+      :label="t('pages.lessonPlayer.exportCta')"
+      :loading="isExporting"
+      class="page-lesson-player__export"
+      @click="onExportLesson"
     />
 
     <!-- No permission -->

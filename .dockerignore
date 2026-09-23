@@ -7,8 +7,15 @@
 .pnpm-store
 
 # Nuxt + Vite + Turbo build caches
-.nuxt
-.output
+# Both need `**/` — they live at `apps/web/.nuxt` and `apps/web/.output`, and a
+# bare pattern matches only the context root. Without it a developer's local
+# (possibly half-generated) `.nuxt` is copied into the image, `nuxt generate`
+# finds the directory already there, does not recreate it, and the build dies
+# on a missing `.nuxt/tsconfig.json`. CI never sees it — a fresh checkout has
+# no `.nuxt` — so it surfaces as "the release image build is broken on my
+# machine only" (#805).
+**/.nuxt
+**/.output
 **/.turbo
 **/.cache
 

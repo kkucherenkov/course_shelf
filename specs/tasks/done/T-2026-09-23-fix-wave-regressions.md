@@ -31,4 +31,4 @@
 - Status: done
 - Blockers: —
 - Completed: 2026-09-23
-- Result: (PR link added after opening)
+- Result: https://github.com/kkucherenkov/course_shelf/pull/803

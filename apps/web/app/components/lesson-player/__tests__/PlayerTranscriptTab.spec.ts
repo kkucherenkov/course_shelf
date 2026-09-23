@@ -40,7 +40,6 @@ const baseProps = {
   emptyLabel: 'This lesson has no transcript.',
   errorLabel: 'Could not load the transcript.',
   loadingLabel: 'Loading transcript…',
-  retryLabel: 'Try again',
   noMatchLabel: 'No lines match your search.',
   filterPlaceholder: 'Filter transcript',
   addFlashcardLabel: 'Create a flashcard from this line',
@@ -79,14 +78,17 @@ describe('PlayerTranscriptTab', () => {
     expect(wrapper.find('input[type="search"]').exists()).toBe(false);
   });
 
-  it('emits retry when the retry action is clicked on the error state', async () => {
+  // Audit run22 finding 6/#799: this used to pair the error with a "Retry"
+  // button that could never succeed on a lesson whose sidecar file is
+  // genuinely missing — the browser's `<track>` API gives no HTTP status to
+  // tell that apart from a transient failure, so there is no signal here
+  // that would make a retry action honest.
+  it('does not offer a retry action on the error state', () => {
     const wrapper = mount(PlayerTranscriptTab, {
       props: { ...baseProps, cues: [], hasTranscript: true, loadError: true },
     });
 
-    await wrapper.find('.player-transcript-tab__error button').trigger('click');
-
-    expect(wrapper.emitted('retry')).toHaveLength(1);
+    expect(wrapper.find('.player-transcript-tab__error button').exists()).toBe(false);
   });
 
   it('shows a loading line, not "no transcript", while a known transcript has not produced cues yet', () => {

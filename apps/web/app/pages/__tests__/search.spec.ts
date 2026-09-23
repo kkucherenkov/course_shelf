@@ -14,6 +14,7 @@ import { mount, type VueWrapper } from '@vue/test-utils';
 
 import type { LocationQuery } from 'vue-router';
 import type {
+  LibraryListDto,
   SearchCourseHit,
   SearchLessonHit,
   SearchResultDto,
@@ -42,6 +43,36 @@ vi.mock('~/composables/useSearch', () => ({
   }),
 }));
 
+// ── Catalog-access probe (audit run22 finding 6/#801) ─────────────────────
+// Same two-probe check browse.spec.ts stubs. Defaults to "granted" so every
+// pre-existing test below (none of which cares about access) keeps seeing
+// exactly what it did before — only the dedicated describe block flips these.
+const hasAnyCatalogCourse = ref(false);
+const catalogAccessStatus = ref<'idle' | 'pending' | 'success' | 'error'>('success');
+vi.mock('~/composables/useCoursesList', () => ({
+  useCourseCatalogAccess: () => ({
+    hasAnyCourse: hasAnyCatalogCourse,
+    status: catalogAccessStatus,
+    refetch: vi.fn(),
+  }),
+}));
+
+const grantedLibrary: LibraryListDto['items'][number] = {
+  id: 'lib-1',
+  name: 'Backend',
+  rootPath: '/srv/backend',
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: '2026-01-01T00:00:00Z',
+};
+const libraries = ref<LibraryListDto>({ items: [grantedLibrary] });
+const librariesStatus = ref<'idle' | 'pending' | 'success' | 'error'>('success');
+vi.mock('~/composables/useLibraries', () => ({
+  useLibraries: () => ({ data: libraries, status: librariesStatus, refresh: vi.fn() }),
+}));
+
+const authUser = ref<{ role?: string } | null>({ role: 'member' });
+vi.mock('~/stores/auth', () => ({ useAuthStore: () => ({ user: authUser.value }) }));
+
 vi.mock('@app/ui', async () => {
   // `initials`/`COVER` are the actual fix under test (#569: search.vue must
   // consume the one shared implementation, not a local copy) — keep them
@@ -67,6 +98,11 @@ vi.mock('@app/ui', async () => {
       props: ['icon', 'title', 'body'],
       template:
         '<div class="error-state" role="alert">{{ title }}<p>{{ body }}</p><slot name="action" /></div>',
+    },
+    AppNoPermission: {
+      name: 'AppNoPermission',
+      props: ['icon', 'title', 'body'],
+      template: '<div class="no-permission">{{ title }}::{{ body }}</div>',
     },
     AppSkeleton: {
       name: 'AppSkeleton',
@@ -124,6 +160,16 @@ async function mountSearch(): Promise<VueWrapper> {
     global: { stubs: { NuxtLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } } },
   });
 }
+
+// Reset the access probes to "granted" before every test — only the
+// dedicated describe block below sets them to a denied shape.
+beforeEach(() => {
+  hasAnyCatalogCourse.value = false;
+  catalogAccessStatus.value = 'success';
+  libraries.value = { items: [grantedLibrary] };
+  librariesStatus.value = 'success';
+  authUser.value = { role: 'member' };
+});
 
 describe('search page — transcript wiring', () => {
   beforeEach(() => {
@@ -209,5 +255,49 @@ describe('search page — error state', () => {
     const wrapper = await mountSearch();
 
     expect(wrapper.find('.error-state').text()).toContain('pages.search.errorBodyRateLimited');
+  });
+});
+
+// Audit run22 finding 6/#801: a zero-grant account used to get "Ничего не
+// найдено… проверьте написание" — the same wrong advice /browse fixed for
+// itself in #701, now reused here instead of re-invented.
+describe('search page — zero-grant account blames access, not spelling', () => {
+  beforeEach(() => {
+    route.query = { q: 'физика' };
+    searchStatus.value = 'success';
+    searchData.value = { query: 'физика', courses: [], lessons: [] };
+  });
+
+  it('shows the access-denied state, not "no matches", when the account has zero grants', async () => {
+    libraries.value = { items: [] };
+    hasAnyCatalogCourse.value = false;
+    const wrapper = await mountSearch();
+
+    expect(wrapper.find('.no-permission').text()).toContain('pages.browse.emptyNoAccessTitle');
+    expect(wrapper.text()).not.toContain('pages.search.emptyNoMatches');
+  });
+
+  it('shows the ordinary no-matches state when the account has access', async () => {
+    const wrapper = await mountSearch();
+
+    expect(wrapper.find('.no-permission').exists()).toBe(false);
+    expect(wrapper.text()).toContain('pages.search.emptyNoMatches');
+  });
+
+  it('never shows access-denied for an admin session — admins have no grant gate', async () => {
+    // isAdmin short-circuits hasCatalogAccess to true in the page's own
+    // logic; an admin's zero-course result is a genuine empty catalog, not a
+    // denial, so this must NOT show the access-denied copy.
+    authUser.value = { role: 'admin' };
+    libraries.value = { items: [] };
+    hasAnyCatalogCourse.value = false;
+    const wrapper = await mountSearch();
+
+    expect(wrapper.find('.no-permission').exists()).toBe(false);
+  });
+
+  it('does not repeat the empty-state title as a subtitle above it', async () => {
+    const wrapper = await mountSearch();
+    expect(wrapper.find('.page-search__subtitle').exists()).toBe(false);
   });
 });

@@ -9,13 +9,18 @@ import AdminLibraryRow from '../AdminLibraryRow.vue';
 
 // Mirrors the real `t(key, count, { named: { n: count } })` plural call
 // shape, so a fall-back to hardcoded English (the pre-#620 `formatRelative`)
-// is visible as a raw locale key instead of "d ago".
+// is visible as a raw locale key instead of "d ago". Also handles the plain
+// `t(key, { time })` shape `lastScanText()` uses — the inner `formatRelative`
+// call's (stubbed) result flows through as the `time` value, so a test can
+// still assert on it via `.toContain(...)`.
 vi.stubGlobal('useI18n', () => ({
   t: (key: string, ...args: unknown[]) => {
     const opts = args.find((a) => typeof a === 'object' && a !== null) as
-      | { named?: { n?: unknown } }
+      | { named?: { n?: unknown }; time?: unknown }
       | undefined;
-    return opts?.named?.n === undefined ? key : `${key}:${String(opts.named.n)}`;
+    if (opts?.named?.n !== undefined) return `${key}:${String(opts.named.n)}`;
+    if (opts?.time !== undefined) return `${key}:${String(opts.time)}`;
+    return key;
   },
 }));
 
@@ -55,12 +60,12 @@ const baseProps = {
   library: baseLibrary,
   courseCountLabel: '12 courses',
   lastScanNeverLabel: 'Never scanned',
-  lastScanLabel: 'Last scan {time}',
   scanCtaLabel: 'Scan',
   moreCtaLabel: 'More',
   copyPathAriaLabel: 'Copy path',
   labelRunning: 'Running',
   labelSucceeded: 'Succeeded',
+  labelSucceededWithErrors: 'Completed with errors',
   labelPartial: 'Partial',
   labelFailed: 'Failed',
   labelCancelled: 'Cancelled',
@@ -112,6 +117,37 @@ describe('AdminLibraryRow', () => {
       },
     });
     expect(wrapper.text()).toContain('Succeeded');
+  });
+
+  // Audit run22 finding 4/#798: this row used to read `status` alone and say
+  // "Успешно" for the exact scan AdminScansTable badged "Завершён с
+  // ошибками" — two admin screens, one scan, opposite verdicts.
+  it('badges a succeeded scan with errors as "completed with errors", not plain "Succeeded"', () => {
+    const wrapper = mount(AdminLibraryRow, {
+      props: {
+        ...baseProps,
+        library: {
+          ...baseLibrary,
+          lastScan: {
+            status: 'succeeded',
+            startedAt: new Date(Date.now() - 60_000).toISOString(),
+            finishedAt: new Date().toISOString(),
+            errorsCount: 106,
+          },
+        },
+      },
+    });
+
+    const pill = wrapper.find('.adm-lib-row__status-pill');
+    expect(pill.attributes('data-status')).toBe('succeeded-with-errors');
+    expect(pill.text()).toContain('Completed with errors');
+    expect(pill.text()).not.toContain('Succeeded');
+  });
+
+  // Audit run22 finding 8/#802: was the untranslated literal `{{ ' courses' }}`.
+  it('shows the course count through the translated, pluralised label, not a hardcoded English word', () => {
+    const wrapper = mount(AdminLibraryRow, { props: baseProps });
+    expect(wrapper.find('.adm-lib-row__courses').text()).toBe('12 courses');
   });
 
   it('emits click when the row-wide hit target is clicked', async () => {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-  import { AppButton, AppIconButton } from '@app/ui';
+  import { AppIconButton } from '@app/ui';
   import type { TranscriptCue } from '~/composables/useTranscriptCues';
   import { formatCueTime } from '~/utils/format-time';
 
@@ -19,12 +19,16 @@
     loadError: boolean;
     /** Shown when the lesson genuinely has no transcript. */
     emptyLabel: string;
-    /** Shown when `hasTranscript` is true but the track failed to load. */
+    /**
+     * Shown when `hasTranscript` is true but the track failed to load. Carries
+     * no retry action (audit run22 finding 6/#799): the browser's `<track>`
+     * API exposes no HTTP status, so this component cannot tell a transient
+     * failure from a subtitle file that is permanently gone — offering
+     * "Повторить" for the latter is a button that can never work.
+     */
     errorLabel: string;
     /** Shown while `hasTranscript` is true and cues haven't arrived yet. */
     loadingLabel: string;
-    /** Retry action's label, shown alongside `errorLabel`. */
-    retryLabel: string;
     /** Shown when the filter matches none of the cues. */
     noMatchLabel: string;
     /** Placeholder and accessible label for the filter input. */
@@ -37,8 +41,6 @@
     seek: [time: number];
     /** A line the reader wants turned into a flashcard — front/back left to the caller. */
     createFlashcard: [cue: TranscriptCue];
-    /** The reader asked to retry a failed track load. */
-    retry: [];
   }>();
 
   const query = ref('');
@@ -111,7 +113,6 @@
          searched. -->
     <div v-if="props.loadError" class="player-transcript-tab__error" role="alert">
       <span>{{ props.errorLabel }}</span>
-      <AppButton variant="secondary" size="sm" :label="props.retryLabel" @click="emit('retry')" />
     </div>
     <div v-else-if="!props.hasTranscript" class="player-transcript-tab__empty">
       {{ props.emptyLabel }}

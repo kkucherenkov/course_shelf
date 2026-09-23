@@ -477,7 +477,6 @@ export default {
       // exactly one alternative, so content placed in only one form vanishes
       // whenever a different form is chosen.
       headerCount: '{n} result for "{q}" | {n} results for "{q}"',
-      headerCountZero: 'No results for "{q}"',
       groupCourses: 'Courses',
       groupLessons: 'Lessons',
       groupTranscripts: 'Transcripts',
@@ -960,6 +959,16 @@ export default {
     // name at all, which fails axe's empty-table-header rule.
     scansTable: {
       expandColumnLabel: 'Details',
+      // Durations under an hour always show minutes+seconds; an hour or more
+      // adds hours. Was hardcoded `h`/`m`/`s` regardless of locale (audit
+      // run22 finding 8/#802).
+      durationHms: '{h}h {m}m {s}s',
+      durationMs: '{m}m {s}s',
+      durationS: '{s}s',
+      // Shown as a `title` on a nonzero errors count that isn't the row's
+      // own expandable scan — there is no endpoint that returns a historic
+      // scan's per-file errors, only its count (audit run22 finding 9/#800).
+      errorsDetailUnavailable: 'Detail is only available for the most recent scan',
     },
     // Audit run20 finding 7 — the dashboard's error tile and scans table
     // both failed toward "everything is fine" on ambiguous data.
@@ -979,9 +988,12 @@ export default {
   // "no transcript" / "no match" copy; these are only the new load-failure
   // states that didn't exist before.
   transcript: {
-    loadError: 'Could not load the transcript. Please try again.',
+    // No retry action — the button this used to sit next to is gone (audit
+    // run22 finding 6/#799): a 404 on a subtitle track can be permanent (the
+    // sidecar file is genuinely missing), and the browser's `<track>` API
+    // gives no way to tell that apart from a transient blip.
+    loadError: "This lesson's transcript failed to load.",
     loading: 'Loading transcript…',
-    retry: 'Try again',
   },
   errors: {
     catalogLoadFailedTitle: 'Could not load your library access',

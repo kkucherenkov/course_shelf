@@ -15,8 +15,17 @@
   const { t } = useI18n();
   const toast = useToast();
 
-  const { queue, status, current, total, grading, gradeError, grade, refetch } =
+  const { queue, status, errorStatus, current, total, grading, gradeError, grade, refetch } =
     useFlashcardReviewQueue();
+
+  // A 429 is not a network problem — the generic errorBody's "check your
+  // connection" advice is actively wrong for it and just extends the block
+  // on retry (#799, same fix as pages/index.vue's rows, #701).
+  const errorBody = computed(() =>
+    errorStatus.value === 429
+      ? t('ui.errors.rateLimitedBody')
+      : t('pages.flashcards.review.errorBody'),
+  );
 
   const isLoading = computed(() => status.value === 'pending' || status.value === 'idle');
 
@@ -108,7 +117,7 @@
     <AppErrorState
       v-else-if="status === 'error'"
       :title="t('pages.flashcards.review.errorTitle')"
-      :body="t('pages.flashcards.review.errorBody')"
+      :body="errorBody"
     >
       <template #action>
         <AppButton

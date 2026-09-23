@@ -7,9 +7,13 @@
    * `<NuxtPage />` whenever a child route is active, so this page renders in
    * place of the course detail view rather than the two composing visually.
    *
-   * The `admin` middleware is the real guard (redirects non-admins before
-   * this component ever runs) — the "Edit metadata" entry point on the course
-   * detail page is just a convenience link, not the boundary.
+   * `definePageMeta({ middleware: 'admin' })` below is vestigial — same as
+   * every `pages/admin/*.vue` page's, see `middleware/admin.ts`'s doc
+   * comment. The real guard is `AdminAccessGate`, wired from
+   * `layouts/default.vue` and matching this route via
+   * `useAdminAccess.ts`'s `isAdminGatedRoute` (#795) — the "Edit metadata"
+   * entry point on the course detail page is just a convenience link, not
+   * the boundary.
    */
   import { ref } from 'vue';
   import { onBeforeRouteLeave } from 'vue-router';

@@ -116,6 +116,46 @@ describe('useFlashcardReviewQueue', () => {
     expect(gradeError.value?.message).toBe('No such flashcard.');
     expect(queue.value.map((c) => c.id)).toEqual(['a']);
   });
+
+  it('derives "ever had due cards" from the shared queue even when this call\'s own fetcher never runs (#796)', async () => {
+    // `useAsyncData` dedupes by key — in the real app,
+    // `layouts/default.vue`'s nav-badge call registers 'flashcards:due'
+    // first and is the only one whose handler ever executes; every later
+    // call (the review page itself) gets the same shared `data`/`status`
+    // refs back, untouched. `loadQueue` above hands every test a fresh
+    // `data` ref and never calls the handler at all — it cannot see this
+    // bug. Model the real dedup instead.
+    const data = ref<FlashcardDto[] | undefined>(undefined);
+    const status = ref<'idle' | 'pending' | 'success' | 'error'>('pending');
+    let registrations = 0;
+    vi.stubGlobal('useAsyncData', (_key: string, handler: () => Promise<FlashcardDto[]>) => {
+      registrations += 1;
+      if (registrations === 1) {
+        // Only the first registration's fetcher ever fires — same as Nuxt.
+        void handler().then((items) => {
+          data.value = items;
+          status.value = 'success';
+        });
+      }
+      return { data, status, error: ref<Error | null>(null), refresh: vi.fn() };
+    });
+    mockListDueFlashcards.mockResolvedValueOnce({
+      data: { items: [card('a')] },
+      error: null,
+      response: { status: 200 },
+    });
+
+    const { useFlashcardReviewQueue } = await import('../useFlashcards');
+    useFlashcardReviewQueue(); // stands in for the layout's nav badge
+    const page = useFlashcardReviewQueue(); // stands in for the review page
+
+    await vi.waitFor(() => expect(status.value).toBe('success'));
+
+    // This is exactly the signal the review page's empty state uses to tell
+    // "never had a card" apart from "done for today" — it must be non-zero
+    // even though this call's own fetcher closure never ran.
+    expect(page.total.value).toBe(1);
+  });
 });
 
 describe('useCreateFlashcard', () => {

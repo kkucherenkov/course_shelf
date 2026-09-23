@@ -32,7 +32,7 @@
   import { useAuthStore } from '~/stores/auth';
   import { useScanLifecycle } from '~/composables/useScanLifecycle';
   import { useFlashcardReviewQueue } from '~/composables/useFlashcards';
-  import { resolveAdminAccess } from '~/composables/useAdminAccess';
+  import { isAdminGatedRoute, resolveAdminAccess } from '~/composables/useAdminAccess';
   import { lastTransientRefreshFailureAt } from '~/composables/useSessionRefreshCooldown';
 
   // The AppNavigationShell types live alongside its `.vue` file; ESLint's
@@ -71,11 +71,12 @@
   const hasSession = computed(() => authStore.token !== null);
   const isAdmin = computed(() => authStore.user?.role?.toLowerCase() === 'admin');
 
-  // ── Admin gate (#776) ────────────────────────────────────────────────────
-  // Replaces `<slot/>` on `/admin/*` instead of `middleware/admin.ts`
+  // ── Admin gate (#776, #795) ──────────────────────────────────────────────
+  // Replaces `<slot/>` on every route `isAdminGatedRoute` names (`/admin/*`
+  // plus the course metadata editor) instead of `middleware/admin.ts`
   // redirecting away — see that file's doc comment and `useAdminAccess.ts`.
   const adminGateState = computed<'unknown' | 'denied' | null>(() => {
-    if (!route.path.startsWith('/admin')) return null;
+    if (!isAdminGatedRoute(route.path)) return null;
     const access = resolveAdminAccess(
       authStore.token !== null,
       authStore.isAuthenticated,

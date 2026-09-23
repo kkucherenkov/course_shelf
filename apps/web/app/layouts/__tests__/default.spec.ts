@@ -331,6 +331,33 @@ describe('layouts/default.vue', () => {
     expect(w.find('[data-testid="page-content"]').exists()).toBe(true);
   });
 
+  // ── Course editor also gates on AdminAccessGate (#795) ──────────────────
+
+  it('shows AppNoPermission, not the course editor, for a confirmed non-admin', async () => {
+    routePath = '/courses/abc123/edit';
+    authUser = { displayName: 'Learner', role: 'user' };
+    authToken = 'token-123';
+    const w = await mountDefaultLayout({ pageMarker: true });
+    expect(w.find('[data-testid="page-content"]').exists()).toBe(false);
+    expect(w.find('.stub-no-permission').exists()).toBe(true);
+  });
+
+  it('renders the course editor once role is confirmed admin', async () => {
+    routePath = '/courses/abc123/edit';
+    authUser = { displayName: 'Admin User', role: 'admin' };
+    authToken = 'token-123';
+    const w = await mountDefaultLayout({ pageMarker: true });
+    expect(w.find('[data-testid="page-content"]').exists()).toBe(true);
+  });
+
+  it('does not gate the course detail page (only its /edit child)', async () => {
+    routePath = '/courses/abc123';
+    authUser = { displayName: 'Learner', role: 'user' };
+    authToken = 'token-123';
+    const w = await mountDefaultLayout({ pageMarker: true });
+    expect(w.find('[data-testid="page-content"]').exists()).toBe(true);
+  });
+
   // ── Session-unconfirmed banner (#777) ───────────────────────────────────
 
   it('shows a retryable banner when a transient get-session failure was recorded', async () => {

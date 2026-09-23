@@ -21,6 +21,8 @@
   - [x] #799 (transcript slice) — drop the retry action that could never succeed on the load-failure state
   - [x] #802 — remove hard-coded English, fix double-interpolation in `AdminLibraryRow.vue`
   - [x] lint/stylelint/format, `pnpm --filter @app/web test`, `pnpm check:i18n` green
-  - [ ] PR against `main`, closes all five issues
-- Status: in-progress
+  - [x] PR against `main`, closes all five issues
+- Status: done
 - Blockers: —
+- Completed: 2026-09-23
+- Result: https://github.com/kkucherenkov/course_shelf/pull/804

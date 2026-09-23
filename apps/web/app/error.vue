@@ -60,11 +60,16 @@
 
 <template>
   <NuxtLayout v-if="isNotFound && hasSession" name="default">
-    <main class="app-error">
+    <!-- `default` layout's own AppNavigationShell already renders a `<main>`
+         around its slot — a second one here doubled `landmark-one-main`
+         instead of satisfying it (#797). Not a landmark on this branch;
+         the standalone branch below still needs one, since nothing else
+         supplies it there. -->
+    <div class="app-error">
       <h1 class="app-error__title">{{ title }}</h1>
       <p class="app-error__body">{{ body }}</p>
       <AppButton :label="t('pages.error.homeCta')" @click="goHome" />
-    </main>
+    </div>
   </NuxtLayout>
   <main v-else class="app-error">
     <h1 class="app-error__title">{{ title }}</h1>

@@ -48,6 +48,17 @@ describe('error.vue', () => {
     expect(w.find('.stub-layout .app-error').exists()).toBe(true);
   });
 
+  it('does not render its own <main> when wrapped in the layout (#797)', async () => {
+    // The layout stub above is bare and carries no landmark itself — this
+    // only proves this file stopped adding a second one on top of whatever
+    // AppNavigationShell renders in production; it can't see that shell's
+    // own `<main>` from here.
+    authToken = 'token-123';
+    const w = await mountError(404);
+    expect(w.find('.stub-layout main').exists()).toBe(false);
+    expect(w.find('.stub-layout .app-error').element.tagName).toBe('DIV');
+  });
+
   it('renders a bare 404 with no layout when there is no session', async () => {
     authToken = null;
     const w = await mountError(404);

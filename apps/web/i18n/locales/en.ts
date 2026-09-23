@@ -12,11 +12,17 @@ export default {
   access: {
     adminGate: {
       loadingLabel: 'Checking your access…',
-      deniedBody: "You don't have permission to view the admin area.",
+      // Covers both `/admin/*` and any other admin-only page the gate
+      // protects (e.g. the course metadata editor, #795) — "the admin area"
+      // was wrong for the latter.
+      deniedBody: "You don't have permission to view this page.",
     },
     sessionUnconfirmed: {
       title: 'Session not confirmed',
-      body: "We couldn't confirm your session just now. Some sections may be hidden until this clears.",
+      // Names what's actually gated on the confirmed profile instead of a
+      // vague "some sections" (#799) — today that's only the Admin nav
+      // block, since nothing else in the shell branches on role.
+      body: "We couldn't confirm your session just now. Admin tools and other role-based sections may be hidden until this clears.",
       retry: 'Retry',
     },
     noGrants: {

@@ -12,7 +12,7 @@
  * lesson note, a transcript line) call.
  */
 
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { ComputedRef, Ref } from 'vue';
 import { createFlashcard, gradeFlashcard, listDueFlashcards } from '@app/api-client-ts';
 import type {
@@ -47,12 +47,27 @@ function toError(raw: unknown, statusCode: number): Error {
   return new HttpStatusError(statusCode, msg);
 }
 
+// Same duck-typed read as useHome.ts's `errorStatusOf` — `useAsyncData`
+// re-wraps a thrown error with `createError`, which keeps `statusCode`/
+// `status` but breaks `instanceof HttpStatusError`. Lets the review page
+// tell a 429 ("wait a moment") apart from a genuine connection failure (#799).
+function errorStatusOf(error: Ref<Error | null>): ComputedRef<number | null> {
+  return computed(() => {
+    const e = error.value as { statusCode?: number; status?: number } | null;
+    if (typeof e?.statusCode === 'number') return e.statusCode;
+    if (typeof e?.status === 'number') return e.status;
+    return null;
+  });
+}
+
 // ── Review queue ──────────────────────────────────────────────────────────
 
 export interface UseFlashcardReviewQueueReturn {
   queue: ComputedRef<FlashcardDto[]>;
   status: Ref<RowStatus>;
   error: Ref<Error | null>;
+  /** HTTP status of the last failed request — 429 needs different advice (#799). */
+  errorStatus: ComputedRef<number | null>;
   /** The card to show — `queue[0]`, most overdue first. */
   current: ComputedRef<FlashcardDto | null>;
   /** Size of the queue as first fetched — the review screen's "N left" denominator. */
@@ -76,7 +91,6 @@ export function useFlashcardReviewQueue(
   // so `pages/flashcards/review.vue` — always behind auth — is unaffected.
   options: { immediate?: boolean } = {},
 ): UseFlashcardReviewQueueReturn {
-  const total = ref(0);
   const grading = ref(false);
   const gradeError = ref<Error | null>(null);
 
@@ -85,11 +99,32 @@ export function useFlashcardReviewQueue(
     async () => {
       const res = await listDueFlashcards({ query: { limit } });
       if (res.error) throw toError(res.error, res.response.status);
-      const items = (res.data as FlashcardListDto).items;
-      total.value = items.length;
-      return items;
+      return (res.data as FlashcardListDto).items;
     },
     { lazy: true, immediate: options.immediate ?? true },
+  );
+
+  // `useAsyncData` dedupes by key — only the first caller registered under
+  // 'flashcards:due' this session (typically `layouts/default.vue`'s nav
+  // badge, which mounts before any page) actually runs the fetcher above;
+  // every later `useFlashcardReviewQueue()` call gets the same shared `data`
+  // back without its own fetcher ever firing. A value set *inside* that
+  // closure — the old `total.value = items.length` here — was local to
+  // whichever call owned the fetcher, so every other caller's copy stayed
+  // at its initial 0 forever (#796). Watching the shared `data` instead runs
+  // for every caller, and capturing only the first non-pending value (never
+  // overwriting on a later grade shrinking the queue to 0) keeps it what the
+  // field is documented as: the queue size as first fetched.
+  const total = ref(0);
+  let capturedInitialTotal = false;
+  watch(
+    data,
+    (items) => {
+      if (capturedInitialTotal || !items) return;
+      capturedInitialTotal = true;
+      total.value = items.length;
+    },
+    { immediate: true },
   );
 
   const queue = computed(() => data.value ?? []);
@@ -116,6 +151,7 @@ export function useFlashcardReviewQueue(
     queue,
     status: status as Ref<RowStatus>,
     error: error as Ref<Error | null>,
+    errorStatus: errorStatusOf(error as Ref<Error | null>),
     current,
     total,
     grading,

@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { AppSkeleton, IconCS } from '@app/ui';
-  import type { AdminScanListItem, ScanStatus } from '@app/api-client-ts';
+  import type { AdminScanListItem } from '@app/api-client-ts';
+  import { scanPillStatus, type ScanPillStatus } from '~/utils/scan-status';
 
   interface Props {
     items: AdminScanListItem[];
@@ -51,21 +52,12 @@
 
   const { t } = useI18n();
 
-  // A `succeeded` scan with `errorsCount > 0` gets its own pill state rather
-  // than sharing `succeeded`'s green badge — the scan process finished, but
-  // that isn't the same claim as "nothing went wrong" (audit run20 finding 7).
-  // Client-derived because the server's `ScanStatus` is a process-completion
-  // signal, not a data-quality one, and the two axes are genuinely different
-  // questions; this only changes how the row is badged, never the data.
-  type PillStatus = ScanStatus | 'succeeded-with-errors';
-
-  function pillStatus(row: AdminScanListItem): PillStatus {
-    if (row.status === 'succeeded' && row.errorsCount > 0) return 'succeeded-with-errors';
-    return row.status;
+  function pillStatus(row: AdminScanListItem): ScanPillStatus {
+    return scanPillStatus(row.status, row.errorsCount);
   }
 
-  function statusLabel(status: PillStatus): string {
-    const map: Record<PillStatus, string> = {
+  function statusLabel(status: ScanPillStatus): string {
+    const map: Record<ScanPillStatus, string> = {
       running: props.labelRunning,
       succeeded: props.labelSucceeded,
       'succeeded-with-errors': props.labelSucceededWithErrors,
@@ -89,6 +81,11 @@
     return t('ui.noteEditor.agoDays', diffD, { named: { n: diffD } });
   }
 
+  // Was hardcoded `h`/`m`/`s` suffixes regardless of locale (audit run22
+  // finding 8/#802) — `8m 50s` on a Russian screen. Three cases (not every
+  // h/m/s combination) is enough: a scan's duration is always shown with
+  // full precision down to seconds, so the only branch is how many units
+  // are non-zero at the top.
   function formatDuration(startedAt: string, finishedAt: string | null): string {
     if (!finishedAt) return '—';
     const ms = new Date(finishedAt).getTime() - new Date(startedAt).getTime();
@@ -96,11 +93,9 @@
     const h = Math.floor(totalSec / 3600);
     const m = Math.floor((totalSec % 3600) / 60);
     const s = totalSec % 60;
-    const parts: string[] = [];
-    if (h > 0) parts.push(`${String(h)}h`);
-    if (m > 0) parts.push(`${m.toString().padStart(h > 0 ? 2 : 1, '0')}m`);
-    if (s > 0 || parts.length === 0) parts.push(`${String(s)}s`);
-    return parts.join(' ');
+    if (h > 0) return t('admin.scansTable.durationHms', { h, m, s });
+    if (m > 0) return t('admin.scansTable.durationMs', { m, s });
+    return t('admin.scansTable.durationS', { s });
   }
 </script>
 
@@ -183,6 +178,19 @@
             >
               {{ row.errorsCount }}
             </button>
+            <!-- Only the row backed by a live per-scan detail endpoint
+                 (`GET /libraries/{id}/scans/latest`) can expand — there is no
+                 endpoint for a historic scan's error list. #620 made that one
+                 row a button; the rest used to render as identically-styled
+                 red text with no indication they were different (audit run22
+                 finding 9/#800: "9221 and 9204 are dead red text"). A `title`
+                 says why, honestly, rather than pretending the number would
+                 open into anything. -->
+            <span
+              v-else-if="row.errorsCount > 0"
+              :title="t('admin.scansTable.errorsDetailUnavailable')"
+              >{{ row.errorsCount }}</span
+            >
             <template v-else>{{ row.errorsCount }}</template>
           </td>
           <!-- Files+Added combined (md) -->

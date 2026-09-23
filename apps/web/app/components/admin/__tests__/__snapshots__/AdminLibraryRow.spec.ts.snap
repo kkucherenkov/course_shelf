@@ -17,8 +17,14 @@ exports[`AdminLibraryRow > matches snapshot 1`] = `
     <div data-v-9ac31328="" class="adm-lib-row__name">Computer Science</div>
     <div data-v-9ac31328="" class="adm-lib-row__sub adm-lib-row__sub--xs"><span data-v-9ac31328="">12 courses</span><span data-v-9ac31328="" class="adm-lib-row__sep">·</span><span data-v-9ac31328="">Never scanned</span></div>
     <div data-v-9ac31328="" class="adm-lib-row__sub adm-lib-row__sub--md-up"><span data-v-9ac31328="">Never scanned</span></div>
-  </div><!-- Copyable path (md+) --><button data-v-9ac31328="" class="stub-copyable-path adm-lib-row__path">/srv/courses/cs</button><!-- Course count (lg) -->
-  <div data-v-9ac31328="" class="adm-lib-row__courses"><span data-v-9ac31328="" class="adm-lib-row__courses-num">12</span> courses</div><!-- Status pill (md+) --><span data-v-9ac31328="" class="adm-lib-row__status-pill adm-lib-row__status-pill--none"></span>
+  </div><!-- Copyable path (md+) --><button data-v-9ac31328="" class="stub-copyable-path adm-lib-row__path">/srv/courses/cs</button>
+  <!-- Course count (lg) — reuses \`courseCountLabel\` verbatim (already
+         correctly pluralised/translated, and already rendered plain, not
+         mono, two lines up in the xs sub-line of this same component) rather
+         than the bare \`{{ ' courses' }}\` literal that used to sit here
+         untranslated on every locale but English (audit run22 finding
+         8/#802). -->
+  <div data-v-9ac31328="" class="adm-lib-row__courses">12 courses</div><!-- Status pill (md+) --><span data-v-9ac31328="" class="adm-lib-row__status-pill adm-lib-row__status-pill--none"></span>
   <!-- Actions — true siblings of \`__hit\` above, not nested inside it, so
          no \`@click.stop\` is needed to keep their clicks from also opening
          the library (sibling clicks never bubble to \`__hit\`). -->

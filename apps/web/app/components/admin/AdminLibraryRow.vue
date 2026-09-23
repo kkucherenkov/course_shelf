@@ -1,6 +1,8 @@
 <script setup lang="ts">
+  import { computed } from 'vue';
   import { AppIconButton, IconCS } from '@app/ui';
-  import type { AdminLibraryListItem, ScanStatus } from '@app/api-client-ts';
+  import type { AdminLibraryListItem } from '@app/api-client-ts';
+  import { scanPillStatus, type ScanPillStatus } from '~/utils/scan-status';
   import AdminCopyablePath from './AdminCopyablePath.vue';
 
   interface Props {
@@ -8,13 +10,20 @@
     // Pre-translated strings
     courseCountLabel: string;
     lastScanNeverLabel: string;
-    lastScanLabel: string;
     scanCtaLabel: string;
     moreCtaLabel: string;
     copyPathAriaLabel: string;
     // Status labels for the pill
     labelRunning: string;
     labelSucceeded: string;
+    /**
+     * A `succeeded` scan whose `errorsCount > 0` gets this label instead of
+     * `labelSucceeded` — same rule `AdminScansTable` applies to the same
+     * payload. Reading `status` alone here is what made this row say
+     * "Успешно" while the dashboard said "Завершён с ошибками" for the exact
+     * same scan (audit run22 finding 4/#798).
+     */
+    labelSucceededWithErrors: string;
     labelPartial: string;
     labelFailed: string;
     labelCancelled: string;
@@ -44,22 +53,37 @@
     return t('ui.noteEditor.agoDays', diffD, { named: { n: diffD } });
   }
 
+  // Interpolate `{time}` in the same `t()` call that resolves the key,
+  // rather than pre-translating in the parent and `.replace()`-ing here: a
+  // key translated with no params has vue-i18n substitute `{time}` with
+  // nothing (not leave the literal placeholder), so the parent's
+  // `t('pages.admin.libraries.lastScan')` already produced "Последнее
+  // сканирование " with the placeholder gone — this `.replace()` then had
+  // nothing left to find (audit run22 finding 7/#802: the date silently
+  // disappeared here, while the dashboard's separately-computed value for
+  // the same scan showed "8 дн назад").
   function lastScanText(): string {
     const scan = props.library.lastScan;
     if (!scan) return props.lastScanNeverLabel;
-    return props.lastScanLabel.replace('{time}', formatRelative(scan.startedAt));
+    return t('pages.admin.libraries.lastScan', { time: formatRelative(scan.startedAt) });
   }
 
-  function statusLabel(status: ScanStatus | null | undefined): string {
+  const pillStatus = computed<ScanPillStatus | null>(() => {
+    const scan = props.library.lastScan;
+    return scan ? scanPillStatus(scan.status, scan.errorsCount) : null;
+  });
+
+  function statusLabel(status: ScanPillStatus | null): string {
     if (!status) return '';
-    const map: Record<string, string> = {
+    const map: Record<ScanPillStatus, string> = {
       running: props.labelRunning,
       succeeded: props.labelSucceeded,
+      'succeeded-with-errors': props.labelSucceededWithErrors,
       partial: props.labelPartial,
       failed: props.labelFailed,
       cancelled: props.labelCancelled,
     };
-    return map[status] ?? status;
+    return map[status];
   }
 
   function openAriaLabel(): string {
@@ -111,20 +135,20 @@
       :ariaLabel="props.copyPathAriaLabel"
     />
 
-    <!-- Course count (lg) -->
+    <!-- Course count (lg) — reuses `courseCountLabel` verbatim (already
+         correctly pluralised/translated, and already rendered plain, not
+         mono, two lines up in the xs sub-line of this same component) rather
+         than the bare `{{ ' courses' }}` literal that used to sit here
+         untranslated on every locale but English (audit run22 finding
+         8/#802). -->
     <div class="adm-lib-row__courses">
-      <span class="adm-lib-row__courses-num">{{ props.library.coursesCount }}</span>
-      {{ ' courses' }}
+      {{ props.courseCountLabel }}
     </div>
 
     <!-- Status pill (md+) -->
-    <span
-      v-if="props.library.lastScan"
-      class="adm-lib-row__status-pill"
-      :data-status="props.library.lastScan.status"
-    >
+    <span v-if="pillStatus" class="adm-lib-row__status-pill" :data-status="pillStatus">
       <span class="adm-lib-row__status-dot" aria-hidden="true" />
-      {{ statusLabel(props.library.lastScan.status) }}
+      {{ statusLabel(pillStatus) }}
     </span>
     <span v-else class="adm-lib-row__status-pill adm-lib-row__status-pill--none" />
 
@@ -291,11 +315,6 @@
       }
     }
 
-    &__courses-num {
-      color: var(--text-loud);
-      font-family: var(--font-mono);
-    }
-
     // ── Status pill (md+) ────────────────────────────────────────────────────
     &__status-pill {
       display: none;
@@ -326,6 +345,15 @@
 
         .adm-lib-row__status-dot {
           background: var(--status-success-fg);
+        }
+      }
+
+      &[data-status='succeeded-with-errors'] {
+        background: var(--status-warning-soft);
+        color: var(--status-warning-fg);
+
+        .adm-lib-row__status-dot {
+          background: var(--status-warning-fg);
         }
       }
 

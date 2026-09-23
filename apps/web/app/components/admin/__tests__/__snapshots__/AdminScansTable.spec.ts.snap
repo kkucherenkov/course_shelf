@@ -48,7 +48,7 @@ exports[`AdminScansTable > matches snapshot (with items) 1`] = `
         <!-- Status pill -->
         <td data-v-164d419a=""><span data-v-164d419a="" class="adm-scans-tbl__status-pill" data-status="succeeded"><span data-v-164d419a="" class="adm-scans-tbl__status-dot" aria-hidden="true"></span> Succeeded</span></td><!-- Started (md+) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--md-up adm-scans-tbl__mute">ui.noteEditor.agoHours:1</td><!-- Duration -->
-        <td data-v-164d419a="" class="adm-scans-tbl__num-cell">1m</td><!-- Files (lg) -->
+        <td data-v-164d419a="" class="adm-scans-tbl__num-cell">admin.scansTable.durationMs</td><!-- Files (lg) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell">200</td><!-- Added (lg) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell adm-scans-tbl__added"> +5</td><!-- Errors (lg) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell">0</td><!-- Files+Added combined (md) -->
@@ -61,10 +61,19 @@ exports[`AdminScansTable > matches snapshot (with items) 1`] = `
         <!-- Status pill -->
         <td data-v-164d419a=""><span data-v-164d419a="" class="adm-scans-tbl__status-pill" data-status="failed"><span data-v-164d419a="" class="adm-scans-tbl__status-dot" aria-hidden="true"></span> Failed</span></td><!-- Started (md+) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--md-up adm-scans-tbl__mute">ui.noteEditor.agoHours:2</td><!-- Duration -->
-        <td data-v-164d419a="" class="adm-scans-tbl__num-cell">1m</td><!-- Files (lg) -->
+        <td data-v-164d419a="" class="adm-scans-tbl__num-cell">admin.scansTable.durationMs</td><!-- Files (lg) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell">50</td><!-- Added (lg) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell adm-scans-tbl__added"> +0</td><!-- Errors (lg) -->
-        <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell adm-scans-tbl__errors--nonzero">3</td><!-- Files+Added combined (md) -->
+        <td data-v-164d419a="" class="adm-scans-tbl__col--lg adm-scans-tbl__num-cell adm-scans-tbl__errors--nonzero">
+          <!-- Only the row backed by a live per-scan detail endpoint
+                 (\`GET /libraries/{id}/scans/latest\`) can expand — there is no
+                 endpoint for a historic scan's error list. #620 made that one
+                 row a button; the rest used to render as identically-styled
+                 red text with no indication they were different (audit run22
+                 finding 9/#800: "9221 and 9204 are dead red text"). A \`title\`
+                 says why, honestly, rather than pretending the number would
+                 open into anything. --><span data-v-164d419a="" title="admin.scansTable.errorsDetailUnavailable">3</span>
+        </td><!-- Files+Added combined (md) -->
         <td data-v-164d419a="" class="adm-scans-tbl__col--md-combined adm-scans-tbl__num-cell">50 <span data-v-164d419a="" class="adm-scans-tbl__added">+0</span></td><!-- Chevron -->
         <td data-v-164d419a="" class="adm-scans-tbl__chevron-cell"><svg data-v-164d419a="" class="stub-icon adm-scans-tbl__chevron" data-name="chevron-right"></svg></td>
       </tr>

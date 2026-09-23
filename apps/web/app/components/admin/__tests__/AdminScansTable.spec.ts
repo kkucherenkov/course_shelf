@@ -136,6 +136,15 @@ describe('AdminScansTable', () => {
     expect(wrapper.text()).not.toMatch(/\d+[smhd] ago/);
   });
 
+  it('formats duration through i18n, not hardcoded English h/m/s suffixes', () => {
+    // scan-1: 60s apart → h=0, m=1, s=0 → the m+s branch.
+    const wrapper = mount(AdminScansTable, {
+      props: { ...baseProps, items: [sampleItems[0]!] },
+    });
+    expect(wrapper.text()).toContain('admin.scansTable.durationMs');
+    expect(wrapper.text()).not.toMatch(/\d+[hms]\b/);
+  });
+
   it('shows column headers', () => {
     const wrapper = mount(AdminScansTable, {
       props: { ...baseProps, items: sampleItems },
@@ -187,6 +196,18 @@ describe('AdminScansTable', () => {
     });
     await wrapper.find('.adm-scans-tbl__errors-btn').trigger('click');
     expect(wrapper.emitted('toggle-errors')).toEqual([['scan-2']]);
+  });
+
+  // Audit run22 finding 9/#800: 9221 and 9204 used to be identically-styled
+  // red text with no indication they differed from the one clickable row —
+  // an explanatory title instead of silent dead text.
+  it('titles a nonzero errors count that is not the expandable scan, rather than leaving it unexplained', () => {
+    const wrapper = mount(AdminScansTable, {
+      props: { ...baseProps, items: sampleItems, expandableScanId: 'some-other-scan' },
+    });
+    const cell = wrapper.find('.adm-scans-tbl__errors--nonzero span');
+    expect(cell.attributes('title')).toBe('admin.scansTable.errorsDetailUnavailable');
+    expect(wrapper.find('.adm-scans-tbl__errors-btn').exists()).toBe(false);
   });
 
   it('reflects expandedScanId as aria-expanded on the errors button', () => {

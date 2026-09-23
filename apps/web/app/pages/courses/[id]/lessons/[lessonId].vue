@@ -631,13 +631,11 @@
               :empty-label="t('pages.lessonPlayer.transcript.empty')"
               :error-label="t('transcript.loadError')"
               :loading-label="t('transcript.loading')"
-              :retry-label="t('transcript.retry')"
               :no-match-label="t('pages.lessonPlayer.transcript.noMatch')"
               :filter-placeholder="t('pages.lessonPlayer.transcript.filterPlaceholder')"
               :add-flashcard-label="t('pages.lessonPlayer.flashcard.createFromTranscript')"
               @seek="onBookmarkSeek"
               @create-flashcard="onTranscriptCreateFlashcard"
-              @retry="onRetry"
             />
           </section>
         </div>

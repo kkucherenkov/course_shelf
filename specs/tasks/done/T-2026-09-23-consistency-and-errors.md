@@ -1,0 +1,28 @@
+## T-2026-09-23-consistency-and-errors — fix consistency & error-recovery defects from 1.9.0 audit
+
+- Created: 2026-09-23
+- Owner: claude
+- Spec: `~/audit-courseshelf/run22/assessment-a.md` (Nielsen heuristics 3 "consistency" and 6 "error recovery", both scored 1/4)
+- Goal: bring `/admin`, `/admin/libraries`, `/search`, and the player transcript tab in line with the sibling screens that already behave correctly, so scan status, access-vs-empty, and load-failure states read the same everywhere.
+- Acceptance:
+  - `/admin` and `/admin/libraries` show the same verdict (succeeded-with-errors) for a scan with `errorsCount > 0`, driven by one shared predicate (`utils/scan-status.ts`).
+  - Every scan row with `errorsCount > 0` is honest about whether it can be opened: the row backed by `GET /libraries/{id}/scans/latest` is a button; the rest carry a `title` explaining why they aren't, instead of unstyled dead text (no backend endpoint returns a historic scan's per-file errors — confirmed against `openapi.yaml`, out of this lane's scope).
+  - `/search` with an access-denied cause tells the user about access, not spelling (reuses `/browse`'s own copy); page heading and empty-state heading no longer duplicate the same string.
+  - Player transcript tab's load-failure message no longer offers a retry action that can never succeed on a permanently-missing sidecar (the `hasTranscript`/`loadError` state split itself already existed).
+  - `AdminLibraryRow.vue` has no hard-coded English strings and no broken double-interpolation on the last-scan date.
+- Spec diff: none
+- Codegen impact: no
+- Design impact: none (reusing existing predicates/components)
+- Tests: unit tests for the shared scan-status predicate's consumers; component specs updated for `AdminLibraryRow`, `AdminScansTable`, `search.vue`, `PlayerTranscriptTab`
+- Sub-steps:
+  - [x] #798 — lift scan-status predicate to a shared helper, use in both admin screens
+  - [x] #800 — honest affordance for every row's error count (button where detail exists, explanatory title where it can't)
+  - [x] #801 — search empty state distinguishes access-denied from no-match; dedupe heading strings
+  - [x] #799 (transcript slice) — drop the retry action that could never succeed on the load-failure state
+  - [x] #802 — remove hard-coded English, fix double-interpolation in `AdminLibraryRow.vue`
+  - [x] lint/stylelint/format, `pnpm --filter @app/web test`, `pnpm check:i18n` green
+  - [x] PR against `main`, closes all five issues
+- Status: done
+- Blockers: —
+- Completed: 2026-09-23
+- Result: https://github.com/kkucherenkov/course_shelf/pull/804

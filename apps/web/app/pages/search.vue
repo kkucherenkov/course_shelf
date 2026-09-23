@@ -1,6 +1,14 @@
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { AppButton, AppEmptyState, AppErrorState, AppSkeleton, COVER, initials } from '@app/ui';
+  import {
+    AppButton,
+    AppEmptyState,
+    AppErrorState,
+    AppNoPermission,
+    AppSkeleton,
+    COVER,
+    initials,
+  } from '@app/ui';
   import type {
     SearchCourseHit,
     SearchLessonHit,
@@ -8,6 +16,9 @@
   } from '@app/api-client-ts';
 
   import { useSearch } from '~/composables/useSearch';
+  import { useCourseCatalogAccess } from '~/composables/useCoursesList';
+  import { useLibraries } from '~/composables/useLibraries';
+  import { useAuthStore } from '~/stores/auth';
   import { highlight } from '~/utils/highlight';
   import { accentFromId } from '~/utils/course-accent';
   import SearchTranscriptGroup from '~/components/search/SearchTranscriptGroup.vue';
@@ -57,6 +68,31 @@
       lessons.value.length === 0 &&
       transcripts.value.length === 0,
   );
+
+  // ── Access vs. genuine no-match (audit run22 finding 6/#801) ─────────────────
+  //
+  // A zero-grant account used to see the same "check your spelling" body as a
+  // real no-match — the same cause /browse already names correctly ("Вам пока
+  // не выдан доступ к курсам"). Same two-probe check /browse runs (#701):
+  // `GET /libraries` for library-level grants, `useCourseCatalogAccess`'s
+  // unfiltered `GET /courses` for course-level grants (tuxedo 249) — either
+  // one non-empty means "granted". Folded to a single boolean here (unlike
+  // /browse, this page has no dedicated "probe failed" screen of its own to
+  // route to, so an errored probe just falls back to the ordinary no-match
+  // copy rather than asserting a denial it cannot confirm).
+  const { hasAnyCourse: hasAnyCatalogCourse, status: catalogAccessStatus } =
+    useCourseCatalogAccess();
+  const { data: librariesData, status: librariesStatus } = useLibraries();
+  const auth = useAuthStore();
+  const isAdmin = computed(() => auth.user?.role?.toLowerCase() === 'admin');
+
+  const hasCatalogAccess = computed(() => {
+    if (isAdmin.value) return true;
+    if (librariesStatus.value === 'pending' || librariesStatus.value === 'idle') return true;
+    if (catalogAccessStatus.value === 'pending' || catalogAccessStatus.value === 'idle')
+      return true;
+    return (librariesData.value?.items.length ?? 0) > 0 || hasAnyCatalogCourse.value;
+  });
 </script>
 
 <template>
@@ -64,12 +100,12 @@
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
     <header class="page-search__header">
       <h1 class="page-search__title">{{ t('pages.search.title') }}</h1>
-      <p v-if="q && status === 'success'" class="page-search__subtitle">
-        {{
-          totalCount === 0
-            ? t('pages.search.headerCountZero', { q })
-            : t('pages.search.headerCount', { n: totalCount, q })
-        }}
+      <!-- Silent at zero rather than repeating the empty state's own title
+           word for word right below it (audit run22 finding 3/#801:
+           `headerCountZero` and `emptyNoMatches` rendered the identical
+           string back to back). -->
+      <p v-if="q && status === 'success' && totalCount > 0" class="page-search__subtitle">
+        {{ t('pages.search.headerCount', { n: totalCount, q }) }}
       </p>
     </header>
 
@@ -129,7 +165,19 @@
       </template>
     </AppErrorState>
 
-    <!-- ── No results ─────────────────────────────────────────────────────── -->
+    <!-- ── No results, no catalog access at all ──────────────────────────────
+         Same cause /browse already names correctly (audit run22 finding
+         6/#801) — a zero-grant account gets zero matches on every query, and
+         telling it to check its spelling sends it to fix a word it spelled
+         correctly. -->
+    <AppNoPermission
+      v-else-if="isEmpty && !hasCatalogAccess"
+      icon="lock"
+      :title="t('pages.browse.emptyNoAccessTitle')"
+      :body="t('pages.browse.emptyNoAccessBody')"
+    />
+
+    <!-- ── No results, a genuine no-match ────────────────────────────────── -->
     <AppEmptyState
       v-else-if="isEmpty"
       icon="search"

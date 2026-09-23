@@ -476,7 +476,6 @@ export default {
       // whenever a different form is chosen.
       headerCount:
         '{n} результат по запросу «{q}» | {n} результата по запросу «{q}» | {n} результатов по запросу «{q}»',
-      headerCountZero: 'Ничего не найдено по запросу «{q}»',
       groupCourses: 'Курсы',
       groupLessons: 'Уроки',
       groupTranscripts: 'Расшифровки',
@@ -955,6 +954,16 @@ export default {
     },
     scansTable: {
       expandColumnLabel: 'Подробности',
+      // Durations under an hour always show minutes+seconds; an hour or more
+      // adds hours. Was hardcoded `h`/`m`/`s` regardless of locale (audit
+      // run22 finding 8/#802).
+      durationHms: '{h} ч {m} мин {s} с',
+      durationMs: '{m} мин {s} с',
+      durationS: '{s} с',
+      // Shown as a `title` on a nonzero errors count that isn't the row's
+      // own expandable scan — there is no endpoint that returns a historic
+      // scan's per-file errors, only its count (audit run22 finding 9/#800).
+      errorsDetailUnavailable: 'Подробности доступны только для последнего скана',
     },
     // Находка 7 аудита run20 — плитка ошибок и таблица сканов дашборда обе
     // ошибались в сторону «всё в порядке» на неоднозначных данных.
@@ -974,9 +983,12 @@ export default {
   // сохраняют текст «нет транскрипта» / «ничего не найдено»; здесь — только
   // новые состояния сбоя загрузки, которых раньше не было.
   transcript: {
-    loadError: 'Не удалось загрузить транскрипт. Попробуйте ещё раз.',
+    // No "Попробуйте ещё раз" — the retry button this used to sit next to
+    // is gone (audit run22 finding 6/#799): a 404 on a subtitle track can be
+    // permanent (the sidecar file is genuinely missing), and the browser's
+    // `<track>` API gives no way to tell that apart from a transient blip.
+    loadError: 'Транскрипт этого урока не загрузился.',
     loading: 'Загрузка транскрипта…',
-    retry: 'Повторить',
   },
   errors: {
     catalogLoadFailedTitle: 'Не удалось проверить доступ к библиотеке',

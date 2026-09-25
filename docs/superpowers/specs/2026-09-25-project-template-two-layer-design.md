@@ -65,10 +65,11 @@ project-skeleton/
   specs/tasks/README.md
   specs/tasks/templates/feature.md
   .github/workflows/pr-title.yml
+  scripts/check-pr-title.sh
+  scripts/check-pr-title.test.sh
   docs/adr/0001-record-architecture-decisions.md
   CONTRIBUTING.md
   README.md
-  commitlint.config.mjs
 ```
 
 ### Composing a new project
@@ -140,7 +141,25 @@ key, the `dnote` book, and the vault folder — because they are queried togethe
 | --- | --- | --- |
 | `specs/tasks/README.md` | `task-stack` | Drop "Entries older than the split"; it is this repository's history. The reasoning for a branch-slug id over a counter, and for separate files over a merge driver, travels intact. |
 | `CLAUDE.md` § Parallel work, § A subagent shares your checkout | `lane-discipline` | Paths become placeholders. "A subagent without its own worktree commits to your branch" and "a lane that runs `docker compose up` without its own project name rewrites the dev stack" stay word for word. |
-| `.github/workflows/pr-title.yml` | template | Verbatim, including the `edited` trigger it was split out of `ci.yml` to get. |
+
+### Reimplemented — the reasoning travels, the implementation cannot
+
+`.github/workflows/pr-title.yml` keeps its trigger list and both comment
+blocks: the `edited` trigger this file was split out of `ci.yml` to get, and
+the note that a squash merge puts the PR title on the default branch, so a PR
+whose commits are all conventional can still land an unconventional subject.
+
+The check itself does not travel. It runs `npx --no-install commitlint` behind
+`./.github/actions/setup-cs`, a composite action that exists only here, and it
+presumes Node in a skeleton whose stack is not chosen yet — the template must
+not be the reason a project picks a package manager. It becomes
+`scripts/check-pr-title.sh`, a POSIX shell validator with a table test covering
+the breaking-change marker, `revert:`, the length boundary and a title
+containing shell metacharacters.
+
+`commitlint.config.mjs` does not travel at all: its `scope-enum` is this
+repository's package list, and a wrong allow-list is worse than none because it
+rejects correct titles and teaches people to bypass the gate.
 
 ### Rewritten — procedure stays, facts move to `CLAUDE.md`
 
@@ -286,7 +305,7 @@ them earlier trades a working process for a tidier layout.
 | --- | --- | --- |
 | 0 | #807 / #808, then cut and deploy 1.9.1 | in flight; blocked on removing a root-owned `apps/web/.nuxt` |
 | 1 | `shipyard`: manifests, six skills, the trap re-filing, `auth-adapter.mjs` split out of the driver, README, tags | — |
-| 2 | `project-skeleton`: the contract, `specs/tasks/`, `pr-title.yml`, `/bootstrap` | — |
+| 2 | `project-skeleton`: the contract, `specs/tasks/`, the PR-title gate, ADR 0001 | — |
 | 3 | This repository becomes a consumer: bake, delete, contract sections | 0, 1, 2 |
 | 4 | `stacks/ts-monorepo`, drafted then run against the PIM project's scaffold | 2 |
 
@@ -297,6 +316,13 @@ repository's layout, the PIM scaffold is its first run, and every place it
 fails is a recipe fix made the same day — which is D12's self-check performed
 by hand the first time. What it does wait for is phase 2, because the project
 needs the process layer on day one rather than retrofitted.
+
+`/bootstrap` sits across the seam: it is a command, so it ships in the plugin
+(phase 1), but what it fills is the template (phase 2). Phase 2 therefore
+delivers a skeleton whose placeholders are filled by hand. That is not a gap to
+close later — the first manual fill is what tells `/bootstrap` which questions
+are worth asking, and writing the command before anyone has filled the file
+once is the same speculative move D8 rejects.
 
 Each repository's README is a deliverable of its phase, not an afterthought,
 and covers: what the layer is for, what it does not do, install and update, the

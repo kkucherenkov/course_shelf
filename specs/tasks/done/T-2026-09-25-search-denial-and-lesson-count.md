@@ -15,6 +15,8 @@
 - Sub-steps:
   - [x] `/search`: treat a failed probe as inconclusive, not as a denial
   - [x] `/admin/libraries/{id}`: omit the lesson label when the total is 0
-  - [ ] gates green, PR opened with both `Closes` lines
-- Status: in-progress
+  - [x] gates green, PR opened with both `Closes` lines
+- Status: done
 - Blockers: —
+- Completed: 2026-09-25
+- Result: https://github.com/kkucherenkov/course_shelf/pull/809

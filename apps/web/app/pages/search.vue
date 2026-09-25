@@ -86,11 +86,20 @@
   const auth = useAuthStore();
   const isAdmin = computed(() => auth.user?.role?.toLowerCase() === 'admin');
 
+  // `error` belongs with `pending` and `idle`, not with a confirmed empty
+  // answer (#807). A probe that 429'd or 5xx'd has told us nothing about the
+  // user's grants, and falling through to the final line turns "we could not
+  // ask" into "you have no access" — which is the same error-shown-as-state
+  // defect this page's own fix (#801) was written to remove, reintroduced one
+  // layer up. Asserting a denial to someone who does have access is worse than
+  // the typo copy it replaced.
+  const probeInconclusive = (status: string): boolean =>
+    status === 'pending' || status === 'idle' || status === 'error';
+
   const hasCatalogAccess = computed(() => {
     if (isAdmin.value) return true;
-    if (librariesStatus.value === 'pending' || librariesStatus.value === 'idle') return true;
-    if (catalogAccessStatus.value === 'pending' || catalogAccessStatus.value === 'idle')
-      return true;
+    if (probeInconclusive(librariesStatus.value)) return true;
+    if (probeInconclusive(catalogAccessStatus.value)) return true;
     return (librariesData.value?.items.length ?? 0) > 0 || hasAnyCatalogCourse.value;
   });
 </script>

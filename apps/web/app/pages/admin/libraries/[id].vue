@@ -79,7 +79,17 @@
       coursesData.value?.items.map((c) => ({
         id: c.id,
         title: c.title,
-        lessonsLabel: t('pages.admin.libraryDetail.courseLessons', { n: c.progress.lessonsTotal }),
+        // `progress.lessonsTotal` comes from the progress read-model, so it is
+        // the course's real lesson count where a row exists and 0 where one does
+        // not — 67 of 68 courses on a production dump. Printing that 0 asserts
+        // "this course has no lessons" beside this page's own `library.lessonsCount`
+        // of 5973 (#808). The list DTO carries no true per-course count to fall
+        // back on (`sections` have id/position/title only), so say nothing rather
+        // than something false; the contract gap is carded separately.
+        lessonsLabel:
+          c.progress.lessonsTotal > 0
+            ? t('pages.admin.libraryDetail.courseLessons', { n: c.progress.lessonsTotal })
+            : undefined,
       })) ?? [],
   );
   const coursesLoading = computed(() => coursesFetchStatus.value === 'pending');

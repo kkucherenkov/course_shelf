@@ -14,7 +14,8 @@
     id: string;
     title: string;
     /** Pre-translated, e.g. "12 lessons" — pluralisation is the caller's job. */
-    lessonsLabel: string;
+    /** Omitted when the true lesson count is unknown — see the caller (#808). */
+    lessonsLabel?: string;
   }
 
   interface Props {
@@ -45,7 +46,9 @@
     <li v-for="item in items" :key="item.id" class="adm-course-list__item">
       <NuxtLink :to="`/courses/${item.id}`" class="adm-course-list__link">
         <span class="adm-course-list__title">{{ item.title }}</span>
-        <span class="adm-course-list__lessons">{{ item.lessonsLabel }}</span>
+        <span v-if="item.lessonsLabel" class="adm-course-list__lessons">{{
+          item.lessonsLabel
+        }}</span>
         <IconCS name="chevron-right" :size="14" class="adm-course-list__chevron" />
       </NuxtLink>
     </li>

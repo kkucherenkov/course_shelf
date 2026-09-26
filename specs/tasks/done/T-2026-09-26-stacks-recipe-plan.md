@@ -8,9 +8,10 @@
 - Acceptance:
   - `docs/superpowers/plans/ts-monorepo-recipe-notes.md` covers todoer through
     the CLI outbox wave and is tracked by git (it is untracked today)
-  - `docs/superpowers/plans/2026-09-26-stacks-ts-monorepo.md` exists, names every
-    one of the 11 modules, and says per module whether it is extracted-and-diffed
-    or first-run
+  - `docs/superpowers/plans/2026-09-26-stacks-monorepo.md` exists (the `ts-`
+    dropped with the spec correction below), carries 11 tasks over the six
+    modules D8 leaves in scope, and says per module whether it is
+    extracted-and-diffed or first-run
 - Spec diff: none
 - Codegen impact: no
 - Design impact: none
@@ -47,14 +48,22 @@ Optional Flutter, asked for directly by the maintainer.
   the whole `packages/api-client-dart` package. Declining mobile must also
   remove the Dart 3.12.2 toolchain requirement (tuxedo 265) rather than leave
   it documented for a project that will never need it.
-- **OPEN: can a module be added later?** A project that declines Flutter on day
-  one and wants it in month six. Leaning to re-runnable per-module installs,
-  because `realtime` is deferred by the spec for the first consumer and lands in
-  the same trap otherwise. Not yet decided.
-- **OPEN: the spec is inconsistent about agents.** Its `stacks/ts-monorepo/agents/`
-  tree lists five — `backend-engineer`, `frontend-engineer`, `spec-writer`,
-  `spec-reviewer`, `codegen-runner` — with no `flutter-engineer`, while `mobile`
-  is a module. If a module ships, its agent ships with it.
+- **SETTLED: a module can be added later.** The maintainer chose one plugin with
+  modules inside, installable individually and repeatedly. The shipped
+  `SKILL.md` is written for re-entry rather than for one pass, which is what
+  lets a project decline a module on day one and install it in month six.
+- **SETTLED: an agent ships with its module.** The shipped `agents/` carries
+  four — `backend-engineer`, `codegen-runner`, `spec-reviewer`, `spec-writer` —
+  because those are the agents the six in-scope modules need. `frontend-engineer`
+  and `flutter-engineer` are deferred with `web`, `ui` and `mobile` under D8, so
+  the spec's five-agent tree describes the finished recipe rather than this
+  phase.
 
-- Status: in-progress
+- Status: done
 - Blockers: —
+- Completed: 2026-09-27
+- Result: https://github.com/kkucherenkov/course_shelf/pull/815
+- Follow-on: the plan was then executed in full — 11 tasks, one fix wave after
+  the whole-branch review — and shipped as
+  https://github.com/kkucherenkov/shipyard/pull/1. Two validator gaps the
+  execution exposed are tuxedo 366 and 367.

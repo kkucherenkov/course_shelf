@@ -271,6 +271,20 @@ Established by reading the repository during the interview, not by asking.
   rule: the composed key is `sectionOrdinal * 1_000_000 + ordinal`, the fallback
   is the full `videoPath` lexicographically, and the emitted position is always
   the 1-based rank — which is what makes collisions structurally impossible.
+- **Corrected 2026-09-26: the `videoPath` fallback never runs.** Found while
+  planning this work, and it makes the line above half false. `sortKey` returns
+  `Number.POSITIVE_INFINITY` when nothing parses, so for two ordinal-less
+  entries the comparator computes `Infinity - Infinity`, which is `NaN`; the
+  guard is `if (diff !== 0) return diff`, and `NaN !== 0` is true, so the
+  comparator returns `NaN` and the `localeCompare` tiebreak on the next line is
+  unreachable (`lesson-position.ts:62-66`). A comparator returning `NaN` is
+  treated as equal, and a stable sort then preserves input order — which is
+  `FsAdapter.walk()`'s enumeration order, the very thing the file's WHY comment
+  says it refuses to depend on because it is not guaranteed stable across two
+  listings. So the 344 lessons this release is about are not in path order and
+  are not reproducibly in any order; the ranking is only correct when at least
+  one entry of a compared pair parsed an ordinal. The fix belongs with the new
+  tiers rather than in its own card.
 - **A lesson has no write route.** The spec's lesson operations are `getLesson`,
   `streamLessonVideo`, `streamLessonSubtitle`, `exportLesson`, plus bookmarks,
   flashcards, quizzes and progress hanging off the id. Nothing mutates the lesson

@@ -391,8 +391,10 @@ kind of test there is.
   in the direction that matters.
 - ESLint flat config at the workspace root, `typescript-eslint`
   `recommendedTypeChecked` with `projectService`.
-- Prettier with `singleQuote` and width 80, plus a `.prettierignore` covering
-  generated code and the lockfile.
+- Prettier, with a `.prettierignore` covering generated code and the lockfile.
+  The style values themselves are the consumer's, below — the recipe carries
+  that Prettier is configured and what it is kept away from, not how wide the
+  lines are.
 - A `lint` turbo task declaring `dependsOn: ["^build"]`.
 - `Lint` as its own CI check, separate from the test job and needing no
   database.

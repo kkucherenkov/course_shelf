@@ -16,10 +16,15 @@
 - Design impact: none
 - Tests: none — documents only. The plan's own tasks carry the tests.
 - Sub-steps:
-  - [ ] Harvest the 50 todoer commits since 2026-09-25 21:35 into the notes
-  - [ ] Track the notes file with `git add -f` (global gitignore hides `docs/`)
-  - [ ] Write the phase-4 plan, after the shipyard repository exists
-  - [ ] Correct tuxedo 337 — phase 1's plan landed in PR #814
+  - [x] Harvest the 50 todoer commits since 2026-09-25 21:35 into the notes
+  - [x] Track the notes file with `git add -f` (global gitignore hides `docs/`)
+  - [x] Write the phase-4 plan, after the shipyard repository exists —
+        `docs/superpowers/plans/2026-09-26-stacks-monorepo.md`, 11 tasks. Scoped
+        to the six modules the first consumer has actually built; `web`, `ui`,
+        `tokens` and `mobile` are deferred by D8 until a consumer needs them.
+  - [x] Correct the spec: it named the plugin `ts-monorepo` and put `SKILL.md`
+        at the plugin root, where Claude Code never loads it
+  - [x] Correct tuxedo 337 — phase 1's plan landed in PR #814
 
 ### Design points the phase-4 plan must settle (raised 2026-09-26)
 

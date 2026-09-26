@@ -39,7 +39,7 @@ being copied by hand.
 ```text
 shipyard/
   .claude-plugin/
-    marketplace.json      # plugins: [shipyard, shipyard-ts-monorepo]
+    marketplace.json      # plugins: [shipyard, shipyard-monorepo]
     plugin.json           # name, version, keywords
   skills/
     task-stack/
@@ -51,7 +51,7 @@ shipyard/
   commands/
     bootstrap.md
   stacks/
-    ts-monorepo/          # second plugin, phase 4 (section 5)
+    monorepo/             # second plugin, phase 4 (section 5)
   README.md
 ```
 
@@ -216,8 +216,12 @@ decide the shape: which parts rot, and which parts a given project even wants.
 | Lockfile, `pnpm.overrides`, pins | does not travel | this is where the `vue` pin lives |
 
 ```text
-stacks/ts-monorepo/
-  SKILL.md
+stacks/monorepo/
+  .claude-plugin/
+    plugin.json           # this is a plugin in its own right
+  skills/
+    monorepo-stack/
+      SKILL.md            # NOT at the plugin root — see the correction below
   agents/            # backend-engineer, frontend-engineer, spec-writer,
                      # spec-reviewer, codegen-runner
   templates/
@@ -225,6 +229,17 @@ stacks/ts-monorepo/
     docs/
     claude-md-block.md    # written between STACK:BEGIN and STACK:END
 ```
+
+**Corrected 2026-09-26, twice.** The name lost its `ts-`: the stack layer is
+defined by the shape of the monorepo, not by its language — a Go CLI is a
+legitimate module in it — so `ts-monorepo` misnamed the thing and the second
+plugin is `shipyard-monorepo`. And the tree above originally put `SKILL.md` at
+the plugin root, which is where Claude Code never looks: a plugin's skills are
+discovered under `skills/<name>/SKILL.md`, as layer 1 itself demonstrates.
+Written the original way, every word of the recipe would have been unreachable,
+and nothing would have reported it — the validator checks the files it finds,
+not the files that should exist. Found while planning phase 4, before anything
+was built against it.
 
 Conventions the recipe carries, none of which depend on a version: the
 spec-first loop; `AppConfig` rather than `process.env`; no `any` to escape a

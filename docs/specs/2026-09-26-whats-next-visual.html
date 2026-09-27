@@ -1,0 +1,1316 @@
+<!doctype html>
+<!--
+  VISUAL — grill-with-ui, session 20260926-111833
+  Topic: "What's next for course_shelf" — the visual's subject is the lesson-order
+  mechanism, where twelve of the twenty-one questions landed, plus a secondary strip
+  for the three tracks around it.
+
+  Kind: diagram (architecture / data flow). Version 1 — first cut.
+
+  Questions reflected (all answered; nothing is drawn as assumed):
+    q1  B — next work is chosen by measurement, not the roadmap: lesson order first
+    q2  B — mobile revived as one card (device pass + the fix list it produces)
+    q3  A — one reconciliation pass over the 46 debt items, then a standing rule
+    q4  A — order is the first usage pain
+    q5  C — build the mobile audit procedure first, so the pass produces a score
+    q6  A — every survivor of the pass becomes a card + an issue
+    q7  B — parent-folder ordinal tier for the shared-basename shape; mtime only for the rest
+    q8  A — (superseded in storage by q17; the ordered-list shape from q14 survives)
+    q10 D — cluster cards for clusters, single cards for genuine one-offs
+    q11 B — an override read by the scan, written by an admin reorder route (home settled by q17)
+    q12 A — mobile audit runs on an Android emulator against a seeded local stack
+    q13 D — the tracks run as parallel lanes
+    q14 A — the override is an ordered list of library-relative video paths per section
+    q15 B — integration_test drives fixed states; a human scores the screenshots
+    q16 C — debt pass in the coordinator session; order lane takes the one stack; mobile waits
+    q17 C — the override is a Postgres table read as an INPUT to ranking (the crux)
+    q18 B — screenshots stay out of git; only the scored findings are committed
+    q19 A — it ships as 1.10.0
+    q20 A — PUT /api/v1/admin/courses/{id}/lesson-order, whole course, block inside edit.vue
+    q21 D — an entry naming a missing path stays in the list and is skipped
+    q22 A — a per-lesson orderSource reaches LessonDto
+
+  Assumed regions: none. Every question is answered, so every region is drawn plain.
+
+  Self-contained: no network, no external assets, system fonts. The SVG namespace is
+  read off the inline <svg> element rather than written as a literal, so the
+  file contains no external reference of any kind.
+-->
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lesson order — mechanism and the tracks around it</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --ink: #14161b;
+        --muted: #5d6472;
+        --faint: #878e9c;
+        --line: #d6dae2;
+        --line-strong: #9aa2b1;
+
+        --new: #5b46d9;
+        --new-bg: #f1eeff;
+        --new-line: #b3a6f5;
+
+        --crux: #b4600b;
+        --crux-bg: #fff6e8;
+        --crux-line: #e0a35a;
+
+        --stop: #b3392c;
+        --stop-bg: #fdeeeb;
+        --stop-line: #e5a79f;
+
+        --ok: #1f7a4d;
+        --ok-bg: #eef8f2;
+
+        --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+          "Liberation Mono", monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 26px 22px 40px;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 13px;
+        line-height: 1.45;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+      }
+
+      /* ── page head ───────────────────────────────────────────────── */
+      .head {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 4px;
+      }
+      h1 {
+        font-size: 19px;
+        font-weight: 640;
+        letter-spacing: -0.01em;
+        margin: 0;
+      }
+      .head .sub {
+        color: var(--muted);
+        font-size: 12.5px;
+      }
+      .lede {
+        color: var(--muted);
+        max-width: 96ch;
+        margin: 6px 0 16px;
+        font-size: 12.5px;
+      }
+
+      /* ── legend ──────────────────────────────────────────────────── */
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 18px;
+        padding: 9px 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 11.5px;
+        color: var(--muted);
+      }
+      .legend b {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .sw {
+        display: inline-block;
+        width: 22px;
+        height: 0;
+        border-top: 2px solid var(--line-strong);
+        vertical-align: middle;
+        margin-right: 6px;
+      }
+      .sw.box {
+        height: 11px;
+        width: 15px;
+        border: 1.5px solid var(--line-strong);
+        border-radius: 3px;
+        background: var(--panel);
+      }
+      .sw.box.new {
+        border-color: var(--new);
+        background: var(--new-bg);
+      }
+      .sw.box.crux {
+        border-color: var(--crux-line);
+        background: var(--crux-bg);
+      }
+      .sw.box.stop {
+        border: 1.5px dashed var(--stop-line);
+        background: var(--stop-bg);
+      }
+
+      /* ── diagram grid ────────────────────────────────────────────── */
+      .stage {
+        position: relative;
+      }
+      svg.edges {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 2;
+        overflow: visible;
+      }
+      .grid {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 1.06fr 1fr 1.16fr;
+        grid-template-areas:
+          'mount  mount  ro'
+          'scan   scan   ovr'
+          'ladder mtime  ovr'
+          'rank   rank   rank'
+          'rows   dto    put'
+          'ui     ui     put';
+        gap: 46px 54px;
+        padding-right: 40px; /* right-margin lane for the loop-back edge */
+      }
+
+      .a-mount {
+        grid-area: mount;
+      }
+      .a-ro {
+        grid-area: ro;
+      }
+      .a-scan {
+        grid-area: scan;
+      }
+      .a-ladder {
+        grid-area: ladder;
+      }
+      .a-mtime {
+        grid-area: mtime;
+        align-self: start;
+      }
+      .a-ovr {
+        grid-area: ovr;
+        align-self: start;
+      }
+      .a-rank {
+        grid-area: rank;
+      }
+      .a-rows {
+        grid-area: rows;
+      }
+      .a-dto {
+        grid-area: dto;
+      }
+      .a-put {
+        grid-area: put;
+        align-self: start;
+      }
+      .a-ui {
+        grid-area: ui;
+      }
+
+      /* ── node ────────────────────────────────────────────────────── */
+      .node {
+        background: var(--panel);
+        border: 1.5px solid var(--line);
+        border-radius: 9px;
+        padding: 11px 13px 12px;
+        box-shadow: 0 1px 2px rgb(20 22 27 / 5%);
+      }
+      .node.new {
+        border-color: var(--new-line);
+        background: var(--new-bg);
+      }
+      .node.crux {
+        border-color: var(--crux-line);
+        background: var(--crux-bg);
+        border-width: 2px;
+      }
+      .node.stop {
+        border: 1.5px dashed var(--stop-line);
+        background: var(--stop-bg);
+      }
+
+      .nhead {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 2px;
+      }
+      .ntitle {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        font-weight: 650;
+        letter-spacing: -0.01em;
+      }
+      .npath {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--faint);
+        word-break: break-all;
+        margin-bottom: 7px;
+      }
+      .nbody {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .nbody p {
+        margin: 0 0 6px;
+      }
+      .nbody p:last-child {
+        margin-bottom: 0;
+      }
+      .nbody code,
+      .ntitle code {
+        font-family: var(--mono);
+        font-size: 11px;
+        background: rgb(20 22 27 / 5%);
+        padding: 0.5px 3px;
+        border-radius: 3px;
+        color: var(--ink);
+      }
+      .node.new .nbody code,
+      .node.crux .nbody code,
+      .node.stop .nbody code {
+        background: rgb(255 255 255 / 70%);
+      }
+
+      .chip {
+        display: inline-block;
+        font-size: 9.5px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 2px 6px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .chip.new {
+        background: var(--new);
+        color: #fff;
+      }
+      .chip.crux {
+        background: var(--crux);
+        color: #fff;
+      }
+      .chip.stop {
+        background: var(--stop);
+        color: #fff;
+      }
+      .chip.today {
+        background: #e8ebf0;
+        color: var(--muted);
+      }
+
+      /* ── tier ladder ─────────────────────────────────────────────── */
+      ol.tiers {
+        list-style: none;
+        margin: 4px 0 0;
+        padding: 0;
+        counter-reset: tier;
+      }
+      ol.tiers li {
+        display: grid;
+        grid-template-columns: 52px 1fr;
+        gap: 9px;
+        align-items: baseline;
+        padding: 4.5px 0;
+        border-top: 1px solid var(--line);
+        font-size: 11.5px;
+        color: var(--muted);
+      }
+      ol.tiers li:first-child {
+        border-top: none;
+      }
+      ol.tiers li .tno {
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--faint);
+        letter-spacing: 0.02em;
+      }
+      ol.tiers li .tw {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink);
+      }
+      ol.tiers li .tnote {
+        display: block;
+        font-family: var(--sans);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      ol.tiers li.added {
+        background: rgb(91 70 217 / 8%);
+        border-top: 1px solid var(--new-line);
+        margin: 0 -13px;
+        padding: 6px 13px;
+      }
+      ol.tiers li.added .tno {
+        color: var(--new);
+      }
+      .footnote {
+        margin-top: 9px;
+        padding-top: 8px;
+        border-top: 1px dashed var(--line);
+        font-size: 11px;
+        color: var(--faint);
+      }
+
+      /* ── key order list inside rank ──────────────────────────────── */
+      .keys {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 7px 0 9px;
+        align-items: center;
+      }
+      .key {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        padding: 3px 8px;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        background: var(--panel);
+        white-space: nowrap;
+      }
+      .key.new {
+        border-color: var(--new-line);
+        background: var(--new-bg);
+        color: var(--new);
+        font-weight: 600;
+      }
+      .key .ord {
+        color: var(--faint);
+        font-weight: 700;
+        margin-right: 4px;
+      }
+      .arrowlet {
+        color: var(--faint);
+        font-size: 11px;
+      }
+      .cruxline {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border-left: 3px solid var(--crux);
+        background: rgb(180 96 11 / 7%);
+        border-radius: 0 5px 5px 0;
+        color: #7a4207;
+        font-size: 11.5px;
+      }
+      .cruxline b {
+        color: #5e3305;
+      }
+
+      .rowcols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      /* ── secondary strip ─────────────────────────────────────────── */
+      .strip {
+        margin-top: 34px;
+        padding-top: 20px;
+        border-top: 1px solid var(--line);
+      }
+      .strip h2 {
+        font-size: 13.5px;
+        font-weight: 640;
+        margin: 0 0 3px;
+      }
+      .strip .sub {
+        color: var(--muted);
+        font-size: 12px;
+        margin: 0 0 14px;
+      }
+      .tracks {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+      .track {
+        background: var(--panel);
+        border: 1.5px solid var(--line);
+        border-radius: 9px;
+        padding: 11px 13px 12px;
+      }
+      .track h3 {
+        font-size: 12.5px;
+        margin: 0 0 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .track ul {
+        margin: 0;
+        padding-left: 16px;
+        color: var(--muted);
+        font-size: 11.5px;
+      }
+      .track li {
+        margin-bottom: 4px;
+      }
+      .track li:last-child {
+        margin-bottom: 0;
+      }
+      .track code {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        background: rgb(20 22 27 / 5%);
+        padding: 0.5px 3px;
+        border-radius: 3px;
+        color: var(--ink);
+      }
+      .track.holds-stack {
+        border-color: #9fb6d8;
+        background: #f2f7fd;
+      }
+      .track.holds-stack code {
+        background: rgb(255 255 255 / 70%);
+      }
+      .stackchip {
+        background: #2f5f9e;
+        color: #fff;
+      }
+      .waitchip {
+        background: #e8ebf0;
+        color: var(--muted);
+      }
+      .coordchip {
+        background: #3d7d5b;
+        color: #fff;
+      }
+
+      .ship {
+        margin-top: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 11px 14px;
+        background: var(--ok-bg);
+        border: 1.5px solid #b6ddc6;
+        border-radius: 9px;
+        font-size: 12px;
+        color: #235e42;
+      }
+      .ship .tag {
+        font-family: var(--mono);
+        font-weight: 700;
+        font-size: 13px;
+        color: #14603c;
+        background: #fff;
+        border: 1.5px solid #9dd1b4;
+        border-radius: 6px;
+        padding: 3px 9px;
+      }
+      .ship .step {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .ship .sep {
+        color: #6ba587;
+        font-weight: 700;
+      }
+
+      /* edge labels */
+      .elabel {
+        font-family: var(--sans);
+        font-size: 10.5px;
+        fill: var(--muted);
+        paint-order: stroke fill;
+        stroke: var(--bg);
+        stroke-width: 4px;
+        stroke-linejoin: round;
+      }
+      .elabel.strong {
+        fill: var(--crux);
+        font-weight: 700;
+        font-size: 11px;
+      }
+      .elabel.added {
+        fill: var(--new);
+        font-weight: 600;
+      }
+      path.edge {
+        fill: none;
+        stroke: var(--line-strong);
+        stroke-width: 1.6;
+      }
+      path.edge.added {
+        stroke: var(--new-line);
+        stroke-width: 1.8;
+      }
+      path.edge.crux {
+        stroke: var(--crux-line);
+        stroke-width: 2.6;
+      }
+
+      @media (max-width: 1000px) {
+        .grid {
+          grid-template-columns: 1fr;
+          grid-template-areas:
+            'mount' 'ro' 'scan' 'ladder' 'mtime' 'ovr' 'rank' 'rows' 'dto' 'ui'
+            'put';
+          gap: 16px;
+          padding-right: 0;
+        }
+        svg.edges {
+          display: none;
+        }
+        .tracks {
+          grid-template-columns: 1fr;
+        }
+        .rowcols {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <div class="head">
+        <h1>Как курс получает порядок уроков</h1>
+        <span class="sub"
+          >механизм целиком: что работает сегодня и что добавляет этот grill</span
+        >
+      </div>
+      <p class="lede">
+        Двенадцать из двадцати одного вопроса сессии приземлились здесь. Слева направо и
+        сверху вниз — путь от смонтированной библиотеки до номера урока на экране; справа
+        — ручная петля, которую grill добавляет. Ключевой узел выделен янтарным: override
+        читается как <b>вход</b> ранжирования, а не как патч поверх его результата.
+      </p>
+
+      <div class="legend">
+        <span><span class="sw box"></span><b>сплошной</b> — существует в коде сегодня</span>
+        <span
+          ><span class="sw box new"></span><b>фиолетовый</b> — добавляет этот grill (чип с
+          номером вопроса)</span
+        >
+        <span
+          ><span class="sw box crux"></span><b>янтарный</b> — крукс: override как вход
+          ранжирования (Q17)</span
+        >
+        <span
+          ><span class="sw box stop"></span><b>красный пунктир</b> — граница read-only /
+          отвергнутый вариант</span
+        >
+      </div>
+
+      <!-- ══════════════════ main diagram ══════════════════ -->
+      <div class="stage">
+        <svg class="edges" id="edges" aria-hidden="true">
+          <defs>
+            <marker
+              id="ah"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#9aa2b1" />
+            </marker>
+            <marker
+              id="ah-new"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#b3a6f5" />
+            </marker>
+            <marker
+              id="ah-crux"
+              viewBox="0 0 10 10"
+              refX="8"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#e0a35a" />
+            </marker>
+          </defs>
+        </svg>
+
+        <div class="grid">
+          <!-- ① library mount -->
+          <div class="node stop a-mount" id="n-mount">
+            <div class="nhead">
+              <span class="ntitle">/data/courses</span>
+              <span class="chip stop">read-only · :ro</span>
+              <span class="chip today">сегодня</span>
+            </div>
+            <div class="npath">
+              docker/compose.prod.yml:142 · docker/compose.release.yml:140
+            </div>
+            <div class="nbody">
+              <p>
+                Библиотека смонтирована в бэкенд только на чтение. Бэкенд
+                <b>никогда</b> не пишет сюда — поэтому override физически не может лежать
+                рядом с видео, и файл в дереве курса отпадает как вариант хранения.
+              </p>
+            </div>
+          </div>
+
+          <!-- read-only boundary callout -->
+          <div class="node stop a-ro" id="n-ro">
+            <div class="nhead"><span class="ntitle">Граница записи</span></div>
+            <div class="nbody">
+              <p>
+                Всё, что выше этой границы, — чужие файлы: их читают и не трогают.
+                Единственные записываемые тома — Postgres и
+                <code>/data/derived</code>.
+              </p>
+              <p>
+                <code>/data/derived</code> отвергнут как дом для override:
+                <b>у него нет бэкапа</b> — существует только <code>pg_dump</code> (Q17).
+              </p>
+            </div>
+          </div>
+
+          <!-- ② scan -->
+          <div class="node a-scan" id="n-scan">
+            <div class="nhead">
+              <span class="ntitle">RunScanHandler</span>
+              <span class="chip today">сегодня</span>
+            </div>
+            <div class="npath">
+              apps/backend/src/modules/catalog/application/commands/run-scan.handler.ts
+            </div>
+            <div class="nbody">
+              <p>
+                Обходит библиотеку, разрешает секцию каждого урока (проход 1), складывает
+                <code>resolved</code> в корзины по <code>sectionId</code> и передаёт каждую
+                корзину в <code>assignLessonPositions</code> как набор
+                <code>{ videoPath, parsed }</code>.
+              </p>
+              <p>
+                Уже считает уроки без разобранного ordinal и пишет один
+                <code>course-order-unreliable</code> ScanError на курс — единственный
+                сегодняшний сигнал, что порядок угадан.
+              </p>
+            </div>
+          </div>
+
+          <!-- ③ tier ladder -->
+          <div class="node a-ladder" id="n-ladder">
+            <div class="nhead">
+              <span class="ntitle">parseLessonFileName(basename)</span>
+            </div>
+            <div class="npath">
+              apps/backend/src/modules/catalog/domain/scan/folder-name.parser.ts
+            </div>
+            <div class="nbody">
+              <p>Тиры в том порядке, в каком их пробует код; первое совпадение выигрывает.</p>
+            </div>
+            <ol class="tiers">
+              <li>
+                <span class="tno">exempt</span>
+                <span
+                  ><span class="tw">CALENDAR_DATE_RE</span>
+                  <span class="tnote"
+                    ><code>2022-11-12.mp4</code> — имя сохраняется целиком, ordinal не
+                    извлекается (#498)</span
+                  ></span
+                >
+              </li>
+              <li>
+                <span class="tno">T3</span>
+                <span
+                  ><span class="tw">COMPOSITE_LESSON_RE</span>
+                  <span class="tnote"
+                    ><code>2.5 Title</code> → <code>(sectionOrdinal, ordinal)</code></span
+                  ></span
+                >
+              </li>
+              <li>
+                <span class="tno">T1</span>
+                <span
+                  ><span class="tw">PREFIX_RE</span>
+                  <span class="tnote"
+                    ><code>01 - Title</code>, <code>01_Title</code>, <code>07</code></span
+                  ></span
+                >
+              </li>
+              <li>
+                <span class="tno">T4</span>
+                <span
+                  ><span class="tw">TRAILING_DIGITS_RE</span>
+                  <span class="tnote"
+                    ><code>lesson23</code>, <code>Занятие5</code></span
+                  ></span
+                >
+              </li>
+              <li>
+                <span class="tno">T5</span>
+                <span
+                  ><span class="tw">MARKER_ORDINAL_RE</span>
+                  <span class="tnote"
+                    ><code>Лекция #9</code>, <code>Lecture №12</code> (#499)</span
+                  ></span
+                >
+              </li>
+              <li>
+                <span class="tno">T6</span>
+                <span
+                  ><span class="tw">bare title</span>
+                  <span class="tnote"
+                    >ordinal нет → ранг падает на лексикографический
+                    <code>videoPath</code></span
+                  ></span
+                >
+              </li>
+              <li class="added">
+                <span class="tno">T7 · new</span>
+                <span
+                  ><span class="tw">parent-folder ordinal</span>
+                  <span class="chip new" style="margin-left: 6px">Q7 = B</span>
+                  <span class="tnote"
+                    >форма «все соседи зовутся одинаково»: 62 урока Foxford, все
+                    <code>video.mp4</code> — ordinal лежит уровнем выше, в имени
+                    родительской папки. Детерминированно, без догадок.</span
+                  ></span
+                >
+              </li>
+              <li class="added">
+                <span class="tno">T8 · new</span>
+                <span
+                  ><span class="tw">mtime</span>
+                  <span class="chip new" style="margin-left: 6px">Q7 = B</span>
+                  <span class="tnote"
+                    >последний рубеж там, где сигнала в имени нет вообще: 282 урока
+                    PurpleSchool. Это улика, а не информация — первым шагом карты идёт
+                    замер на NAS, монотонны ли эти mtime.</span
+                  ></span
+                >
+              </li>
+            </ol>
+            <div class="footnote">
+              T2 <code>WORD_PREFIXED_RE</code> (<code>Модуль 2 — …</code>) — только для
+              папок: его пробует <code>parseFolderName</code>, а
+              <code>parseLessonFileName</code> нет.
+            </div>
+          </div>
+
+          <!-- ④ mtime provenance -->
+          <div class="node a-mtime" id="n-mtime">
+            <div class="nhead">
+              <span class="ntitle">mtime уже донесён</span>
+              <span class="chip today">сегодня</span>
+            </div>
+            <div class="nbody">
+              <p>
+                <code>NodeFsAdapter.walk()</code> → <code>stat().mtime</code>
+                <span class="npath" style="display: inline"
+                  >(infra/node-fs-adapter.ts:87)</span
+                >
+              </p>
+              <p>
+                → <code>PrismaScanRepository</code> → <code>PrismaLessonRepository</code>
+              </p>
+              <p>
+                Новой проводки для T8 не нужно: значение уже путешествует по всему
+                конвейеру вместе с <code>size</code>. Тиру остаётся его прочитать.
+              </p>
+            </div>
+          </div>
+
+          <!-- ⑤ override table -->
+          <div class="node crux a-ovr" id="n-ovr">
+            <div class="nhead">
+              <span class="ntitle">lesson order override — таблица Postgres</span>
+              <span class="chip crux">Q17 = C · крукс</span>
+            </div>
+            <div class="nbody">
+              <p>
+                <b>Читается как вход ранжирования</b>, а не как патч поверх его результата.
+                Ничто в скане не узнаёт, что какие-то строки неприкасаемы — инвариант
+                «позиции вычисляются, а не правятся» остаётся целым.
+              </p>
+              <p>
+                <span class="chip new">Q14 = A</span> Содержимое: на каждую секцию —
+                <b>упорядоченный список library-relative путей к видео</b>. Файл, которого
+                в списке нет, ранжируется <i>позади</i> списка по своему эвристическому
+                ключу. Новое видео — не дырка в нумерации, просто «пока не размещено».
+              </p>
+              <p>
+                <span class="chip new">Q21 = D</span> Запись, называющая путь без урока,
+                <b>остаётся в списке и пропускается</b>. Восстановленный файл возвращает
+                себе место — ровно то, что произойдёт при force-resync восьми курсов.
+              </p>
+              <p style="color: var(--stop); border-top: 1px dashed var(--stop-line); padding-top: 7px">
+                Отвергнуто: <code>&lt;derivedRoot&gt;/…/lesson-order.json</code> — у
+                derived-тома нет бэкапа, и ключ по <code>libraryId</code> меняется при
+                пересборке базы. Цена выбора названа честно: порядок больше не виден из
+                файловой системы, скопированный курс приезжает неупорядоченным.
+              </p>
+            </div>
+          </div>
+
+          <!-- ⑥ ranking -->
+          <div class="node a-rank" id="n-rank">
+            <div class="nhead">
+              <span class="ntitle">assignLessonPositions(entries)</span>
+              <span class="chip today">сегодня + 2 новых ключа</span>
+            </div>
+            <div class="npath">
+              apps/backend/src/modules/catalog/domain/scan/lesson-position.ts — вызывается
+              по одной секции за раз
+            </div>
+            <div class="nbody">
+              <p>Порядок ключа сортировки, слева направо:</p>
+              <div class="keys">
+                <span class="key new"><span class="ord">1</span>индекс в override</span>
+                <span class="arrowlet">›</span>
+                <span class="key"
+                  ><span class="ord">2</span>sectionOrdinal·10⁶ + ordinal</span
+                >
+                <span class="arrowlet">›</span>
+                <span class="key"><span class="ord">3</span>ordinal папки</span>
+                <span class="arrowlet">›</span>
+                <span class="key new"><span class="ord">4</span>mtime</span>
+                <span class="arrowlet">›</span>
+                <span class="key"
+                  ><span class="ord">5</span>videoPath.localeCompare</span
+                >
+              </div>
+              <p>
+                Отдаёт <code>Map&lt;videoPath, number&gt;</code> — <b>1-based ранг</b>,
+                никогда не сам ключ сортировки. N записей всегда дают N различных позиций
+                1..N, поэтому коллизия <code>(sectionId, position)</code> структурно
+                невозможна.
+              </p>
+              <p>
+                <span class="chip new">Q22 = A</span> Дополнительно отдаёт на каждый урок
+                <code>orderSource</code>: <code>parsed</code> | <code>folder</code> |
+                <code>mtime</code> | <code>manual</code>. Значение решает та же функция
+                ранжирования, так что логика бесплатна; платит за это контракт.
+              </p>
+              <div class="cruxline">
+                <b>Суть развилки.</b> Позиции остаются пересчитываемыми рангами на каждом
+                скане. Override меняет вход, а не выход: нет ни флага «вручную
+                упорядочено», ни правила «эту строку не трогать» — того самого правила,
+                на котором эта область уже обжигалась (потеря 112 из 128 уроков в
+                «Основы Golang», E32-F01-S01).
+              </div>
+            </div>
+          </div>
+
+          <!-- ⑦ persisted rows -->
+          <div class="node a-rows" id="n-rows">
+            <div class="nhead">
+              <span class="ntitle">Lesson rows</span>
+              <span class="chip today">сегодня</span>
+            </div>
+            <div class="npath">infra/prisma-lesson.repository.ts — save()</div>
+            <div class="nbody">
+              <p>
+                <code>(sectionId, position)</code> — уникальный индекс. P2002 теперь может
+                означать только баг в другом месте, и этот путь остаётся проведён через
+                <code>LessonPositionConflictError</code> →
+                <code>lesson-persist-failed</code>, а не тихую перезапись.
+              </p>
+            </div>
+          </div>
+
+          <!-- ⑧ dto -->
+          <div class="node a-dto" id="n-dto">
+            <div class="nhead">
+              <span class="ntitle">LessonDto</span>
+              <span class="chip new">Q22 = A · новое поле</span>
+            </div>
+            <div class="npath">packages/specs/openapi/openapi.yaml:10843</div>
+            <div class="nbody">
+              <p>
+                <code>position: integer ≥ 1</code> — есть сегодня, UI рисует его прямо как
+                номер урока (<code>CourseSectionsList.vue</code>,
+                <code>:num="lesson.position"</code>).
+              </p>
+              <p>
+                <b>+ <code>orderSource</code></b> — enum на урок. Честная цена: правка
+                контракта идёт spec-first, значит codegen и перегенерированный Dart-клиент
+                ради одного админского экрана.
+              </p>
+            </div>
+          </div>
+
+          <!-- ⑨ PUT route -->
+          <div class="node new a-put" id="n-put">
+            <div class="nhead">
+              <span class="ntitle">PUT /api/v1/admin/courses/{id}/lesson-order</span>
+              <span class="chip new">Q20 = A</span>
+            </div>
+            <div class="npath">packages/specs/openapi/openapi.yaml → apps/backend</div>
+            <div class="nbody">
+              <p>
+                Пишет override <b>целиком на курс</b>: в теле все секции, даже если
+                переехала одна строка. Идемпотентно, совпадает по форме с уже
+                существующими админскими маршрутами и не даёт двум секциям сохраниться
+                против разных сканов.
+              </p>
+              <p>
+                Цена, названная в карте: конкурентность. Две вкладки молча перезапишут
+                друг друга, если ответ не понесёт версию, — last-write-wins должен быть
+                решением, а не случайностью.
+              </p>
+            </div>
+          </div>
+
+          <!-- ⑩ admin UI -->
+          <div class="node a-ui" id="n-ui">
+            <div class="nhead">
+              <span class="ntitle">apps/web/app/pages/courses/[id]/edit.vue</span>
+              <span class="chip today">страница есть</span>
+              <span class="chip new">Q20 = A · новый блок</span>
+            </div>
+            <div class="npath">
+              198 строк сегодня: CourseMetadataForm + onBeforeRouteLeave + beforeunload
+              (#570)
+            </div>
+            <div class="nbody">
+              <div class="rowcols">
+                <div>
+                  <p>
+                    Drag-to-reorder живёт <b>блоком внутри существующей страницы</b>, а не
+                    отдельным маршрутом <code>order.vue</code>. Так он даром наследует
+                    leave guard, а он тут не опциональный: перетащить двенадцать строк и
+                    уйти со страницы — ровно то, как эта фича теряет работу.
+                  </p>
+                  <p>
+                    Метаданные и порядок остаются разными сохранениями: у формы тегов и у
+                    списка перетаскивания разные режимы отказа и разная валидация.
+                  </p>
+                </div>
+                <div>
+                  <p>
+                    <span class="chip new">Q22 = A</span> В каждой строке виден
+                    <code>orderSource</code> — курс обычно смешанный: двенадцать уроков
+                    разобраны, три провалились, и вопрос — именно эти три.
+                  </p>
+                  <p>
+                    <span class="chip new">Q21 = D</span> Несопоставленные записи override
+                    показаны, а не спрятаны, иначе файл становится местом, где ошибочность
+                    копится незаметно.
+                  </p>
+                  <p>
+                    Правило «сначала список, потом эвристика» должно быть видно на экране —
+                    иначе полуупорядоченная секция удивит.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════ secondary strip ══════════════════ -->
+      <div class="strip">
+        <h2>Что вокруг: три дорожки и одна поставка</h2>
+        <p class="sub">
+          Q13 = D (дорожки идут параллельно), уточнён Q16 = C — стек в проекте один, потому
+          что подсеть прибита гвоздями.
+        </p>
+
+        <div class="tracks">
+          <div class="track holds-stack">
+            <h3>
+              Order lane <span class="chip stackchip">держит Docker-стек</span>
+            </h3>
+            <ul>
+              <li>
+                Владеет <code>packages/specs/openapi/openapi.yaml</code>,
+                <code>apps/backend</code>,
+                <code>apps/web/app/pages/courses/[id]/edit.vue</code>.
+              </li>
+              <li>
+                Стек один на всё: подсеть пинованная, две копии одновременно не поднять —
+                дорожка забирает его на время и говорит об этом вслух.
+              </li>
+              <li>Первый шаг карты — замер mtime у 282 файлов PurpleSchool, не код.</li>
+              <li>Сверяет восемь scan-пунктов долга по ходу дела (Q13).</li>
+            </ul>
+          </div>
+
+          <div class="track">
+            <h3>
+              Debt reconciliation <span class="chip coordchip">сессия-координатор</span>
+            </h3>
+            <ul>
+              <li>
+                Не worktree — потому что пишет в <code>tuxedo</code>, а пять дорожек не
+                правят одну заметку одновременно.
+              </li>
+              <li>46 пунктов сверяются с кодом; протухшее закрывается (Q3 = A).</li>
+              <li>
+                Выжившие становятся карточками: кластерная карта на кластер, отдельная — на
+                настоящий one-off (Q10 = D), у каждой issue (Q6 = A).
+              </li>
+              <li>Ни стека, ни кода — только документы и список.</li>
+            </ul>
+          </div>
+
+          <div class="track">
+            <h3>Mobile <span class="chip waitchip">ждёт стек</span></h3>
+            <ul>
+              <li>
+                Сначала процедура аудита, потом проход руками (Q5 = C) — иначе проход даёт
+                прозу, а проза тухнет.
+              </li>
+              <li>
+                Риг: эмулятор Android + <code>integration_test</code> прогоняет
+                фиксированные состояния и снимает скриншоты (Q12 = A, Q15 = B).
+              </li>
+              <li>
+                Оценивает человек по эвристикам Нильсена: ассерт не отвечает на вопрос
+                «хорошо ли это».
+              </li>
+              <li>
+                Скриншоты <b>не коммитятся</b> (Q18 = B) — в репозиторий едут только
+                находки, и они должны стоять без картинок.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="ship">
+          <span class="step"><span class="tag">1.10.0</span></span>
+          <span class="sep">→</span>
+          <span class="step"
+            >минор, а не патч: маршрут, админский экран и новая таблица. В заметках к
+            релизу прямым текстом — нумерация уроков у существующих курсов изменится
+            (Q19 = A)</span
+          >
+          <span class="sep">→</span>
+          <span class="step">доехал до NAS</span>
+          <span class="sep">→</span>
+          <span class="step"
+            >force-resync восьми переформованных курсов и сверка счётчиков
+            (tuxedo 283) — шаг релиза, а не забытый follow-up</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var svg = document.getElementById('edges');
+        var NS = svg.namespaceURI; // avoids writing the namespace URL as a literal
+        var stage = svg.parentNode;
+
+        // from / to: element id + side (t,b,l,r) + offset along that side (0..1)
+        var EDGES = [
+          { f: 'n-mount', fs: 'b', fo: 0.3, t: 'n-scan', ts: 't', to: 0.3,
+            label: 'walk() → { path, mtime, size }' },
+          { f: 'n-scan', fs: 'b', fo: 0.22, t: 'n-ladder', ts: 't', to: 0.5,
+            label: 'basename, сгруппировано по sectionId' },
+          { f: 'n-scan', fs: 'b', fo: 0.82, t: 'n-mtime', ts: 't', to: 0.5,
+            label: 'stat().mtime' },
+          { f: 'n-mtime', fs: 'l', fo: 0.32, t: 'n-ladder', ts: 'r', to: 0.86,
+            label: 'питает T8', cls: 'added' },
+          { f: 'n-ladder', fs: 'b', fo: 0.42, t: 'n-rank', ts: 't', to: 0.2,
+            label: '{ videoPath, parsed }' },
+          { f: 'n-ovr', fs: 'b', fo: 0.5, t: 'n-rank', ts: 't', to: 0.8,
+            label: 'ВХОД ранжирования, не патч', cls: 'crux' },
+          { f: 'n-rank', fs: 'b', fo: 0.16, t: 'n-rows', ts: 't', to: 0.5,
+            label: 'position = 1-based ранг' },
+          { f: 'n-rows', fs: 'r', fo: 0.45, t: 'n-dto', ts: 'l', to: 0.45,
+            label: '+ orderSource' },
+          { f: 'n-dto', fs: 'b', fo: 0.5, t: 'n-ui', ts: 't', to: 0.62,
+            label: 'GET course → экран' },
+          { f: 'n-ui', fs: 'r', fo: 0.3, t: 'n-put', ts: 'l', to: 0.72,
+            label: 'перетащил → сохранить', cls: 'added' },
+          { f: 'n-put', fs: 'r', fo: 0.4, t: 'n-ovr', ts: 'r', to: 0.6,
+            label: 'пишет override целиком', cls: 'added', lane: true },
+        ];
+
+        function rects() {
+          var base = stage.getBoundingClientRect();
+          var map = {};
+          EDGES.forEach(function (e) {
+            [e.f, e.t].forEach(function (id) {
+              if (map[id]) return;
+              var el = document.getElementById(id);
+              if (!el) return;
+              var r = el.getBoundingClientRect();
+              map[id] = {
+                x: r.left - base.left,
+                y: r.top - base.top,
+                w: r.width,
+                h: r.height,
+              };
+            });
+          });
+          return map;
+        }
+
+        function anchor(r, side, off) {
+          if (side === 't') return { x: r.x + r.w * off, y: r.y };
+          if (side === 'b') return { x: r.x + r.w * off, y: r.y + r.h };
+          if (side === 'l') return { x: r.x, y: r.y + r.h * off };
+          return { x: r.x + r.w, y: r.y + r.h * off };
+        }
+
+        function route(e, a, b, laneX) {
+          var pad = 12;
+          var pts;
+          if (e.lane) {
+            // out to the right margin, along it, back in from the right
+            pts = [a, { x: laneX, y: a.y }, { x: laneX, y: b.y }, b];
+          } else if (e.fs === 'b' && e.ts === 't') {
+            var my = (a.y + b.y) / 2;
+            pts = a.x === b.x ? [a, b] : [a, { x: a.x, y: my }, { x: b.x, y: my }, b];
+          } else if (e.fs === 'r' && e.ts === 'l') {
+            var mx = (a.x + b.x) / 2;
+            pts = a.y === b.y ? [a, b] : [a, { x: mx, y: a.y }, { x: mx, y: b.y }, b];
+          } else if (e.fs === 'l' && e.ts === 'r') {
+            var mx2 = (a.x + b.x) / 2;
+            pts = a.y === b.y ? [a, b] : [a, { x: mx2, y: a.y }, { x: mx2, y: b.y }, b];
+          } else {
+            pts = [a, b];
+          }
+          // nudge the arrow tip just off the border so the head is visible
+          var last = pts[pts.length - 1];
+          if (e.ts === 't') last.y -= 1;
+          if (e.ts === 'b') last.y += 1;
+          if (e.ts === 'l') last.x -= 1;
+          if (e.ts === 'r') last.x += 1;
+          void pad;
+          return pts;
+        }
+
+        function pathOf(pts) {
+          var d = 'M ' + pts[0].x.toFixed(1) + ' ' + pts[0].y.toFixed(1);
+          for (var i = 1; i < pts.length; i++) {
+            d += ' L ' + pts[i].x.toFixed(1) + ' ' + pts[i].y.toFixed(1);
+          }
+          return d;
+        }
+
+        function midpoint(pts) {
+          var total = 0;
+          var segs = [];
+          for (var i = 1; i < pts.length; i++) {
+            var dx = pts[i].x - pts[i - 1].x;
+            var dy = pts[i].y - pts[i - 1].y;
+            var len = Math.sqrt(dx * dx + dy * dy);
+            segs.push(len);
+            total += len;
+          }
+          var want = total / 2;
+          var acc = 0;
+          for (var j = 0; j < segs.length; j++) {
+            if (acc + segs[j] >= want) {
+              var k = segs[j] === 0 ? 0 : (want - acc) / segs[j];
+              return {
+                x: pts[j].x + (pts[j + 1].x - pts[j].x) * k,
+                y: pts[j].y + (pts[j + 1].y - pts[j].y) * k,
+                vertical: Math.abs(pts[j + 1].x - pts[j].x) < 1,
+              };
+            }
+            acc += segs[j];
+          }
+          return { x: pts[0].x, y: pts[0].y, vertical: true };
+        }
+
+        function draw() {
+          // clear everything but <defs>
+          var kids = Array.prototype.slice.call(svg.childNodes);
+          kids.forEach(function (n) {
+            if (n.nodeName.toLowerCase() !== 'defs') svg.removeChild(n);
+          });
+
+          var R = rects();
+          var laneX = stage.getBoundingClientRect().width - 14;
+
+          EDGES.forEach(function (e) {
+            var rf = R[e.f];
+            var rt = R[e.t];
+            if (!rf || !rt) return;
+            var a = anchor(rf, e.fs, e.fo);
+            var b = anchor(rt, e.ts, e.to);
+            var pts = route(e, a, b, laneX);
+
+            var p = document.createElementNS(NS, 'path');
+            p.setAttribute('d', pathOf(pts));
+            p.setAttribute('class', 'edge' + (e.cls ? ' ' + e.cls : ''));
+            p.setAttribute(
+              'marker-end',
+              e.cls === 'crux'
+                ? 'url(#ah-crux)'
+                : e.cls === 'added'
+                  ? 'url(#ah-new)'
+                  : 'url(#ah)',
+            );
+            svg.appendChild(p);
+
+            if (!e.label) return;
+            var m = midpoint(pts);
+            var tx = document.createElementNS(NS, 'text');
+            var onLane = e.lane === true;
+            tx.setAttribute(
+              'x',
+              (m.x + (onLane ? -8 : m.vertical ? 8 : 0)).toFixed(1),
+            );
+            tx.setAttribute('y', (m.y + (m.vertical ? 0 : -5)).toFixed(1));
+            tx.setAttribute(
+              'text-anchor',
+              onLane ? 'end' : m.vertical ? 'start' : 'middle',
+            );
+            tx.setAttribute('dominant-baseline', m.vertical ? 'middle' : 'auto');
+            tx.setAttribute(
+              'class',
+              'elabel' + (e.cls === 'crux' ? ' strong' : e.cls === 'added' ? ' added' : ''),
+            );
+            tx.textContent = e.label;
+            svg.appendChild(tx);
+          });
+        }
+
+        function schedule() {
+          window.requestAnimationFrame(draw);
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', schedule);
+        } else {
+          schedule();
+        }
+        window.addEventListener('resize', schedule);
+        window.addEventListener('load', schedule);
+        if (window.ResizeObserver) {
+          new window.ResizeObserver(schedule).observe(stage);
+        }
+      })();
+    </script>
+  </body>
+</html>
